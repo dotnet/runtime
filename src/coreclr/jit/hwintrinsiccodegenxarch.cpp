@@ -840,7 +840,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     switch (intrinsicId)
                     {
-                        case NI_SSE41_BlendVariable:
+                        case NI_SSE42_BlendVariable:
                         case NI_AVX_BlendVariable:
                         case NI_AVX2_BlendVariable:
                         case NI_AVX512_BlendVariableMask:
@@ -954,13 +954,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case InstructionSet_SSE41:
-        case InstructionSet_SSE41_X64:
-        {
-            genSSE41Intrinsic(node, instOptions);
-            break;
-        }
-
         case InstructionSet_SSE42:
         case InstructionSet_SSE42_X64:
         {
@@ -998,14 +991,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             assert(instOptions == INS_OPTS_NONE);
             genLZCNTIntrinsic(node);
-            break;
-        }
-
-        case InstructionSet_POPCNT:
-        case InstructionSet_POPCNT_X64:
-        {
-            assert(instOptions == INS_OPTS_NONE);
-            genPOPCNTIntrinsic(node);
             break;
         }
 
@@ -1856,7 +1841,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
                         if (!canCombineLoad)
                         {
-                            if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                            if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
                             {
                                 genHWIntrinsic_R_RM(node, ins, baseAttr, targetReg, loPart, instOptions);
                                 inst_RV_RV_TT_IV(INS_pinsrd, EA_16BYTE, targetReg, targetReg, hiPart, 0x01,
@@ -1909,7 +1894,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
                         if (baseType == TYP_FLOAT)
                         {
-                            if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                            if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
                             {
                                 // insertps imm8 is:
                                 //  * Bits 0-3: zmask
@@ -2085,7 +2070,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 {
                     if (ival == 1)
                     {
-                        if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE3))
+                        if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
                         {
                             emit->emitIns_R_R(INS_movshdup, attr, targetReg, op1Reg);
                         }
@@ -2513,85 +2498,6 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 }
 
 //------------------------------------------------------------------------
-// genSSE41Intrinsic: Generates the code for an SSE4.1 hardware intrinsic node
-//
-// Arguments:
-//    node - The hardware intrinsic node
-//
-void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
-{
-    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-    GenTree*       op1         = node->Op(1);
-    regNumber      targetReg   = node->GetRegNum();
-    var_types      baseType    = node->GetSimdBaseType();
-
-    emitter* emit = GetEmitter();
-
-    genConsumeMultiOpOperands(node);
-
-    switch (intrinsicId)
-    {
-        case NI_SSE41_ConvertToVector128Int16:
-        case NI_SSE41_ConvertToVector128Int32:
-        case NI_SSE41_ConvertToVector128Int64:
-        {
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
-
-            if (!varTypeIsSIMD(op1->gtType))
-            {
-                // Until we improve the handling of addressing modes in the emitter, we'll create a
-                // temporary GT_IND to generate code with.
-                GenTreeIndir load = indirForm(node->TypeGet(), op1);
-                emit->emitInsLoadInd(ins, emitTypeSize(TYP_SIMD16), node->GetRegNum(), &load);
-            }
-            else
-            {
-                genHWIntrinsic_R_RM(node, ins, EA_16BYTE, targetReg, op1, instOptions);
-            }
-            break;
-        }
-
-        case NI_SSE41_Extract:
-        case NI_SSE41_X64_Extract:
-        {
-            assert(!varTypeIsFloating(baseType));
-
-            GenTree*    op2  = node->Op(2);
-            instruction ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
-            emitAttr    attr = emitActualTypeSize(node->TypeGet());
-
-            auto emitSwCase = [&](int8_t i) {
-                inst_RV_TT_IV(ins, attr, targetReg, op1, i, instOptions);
-            };
-
-            if (op2->IsCnsIntOrI())
-            {
-                ssize_t ival = op2->AsIntCon()->IconValue();
-                assert((ival >= 0) && (ival <= 255));
-                emitSwCase((int8_t)ival);
-            }
-            else
-            {
-                // We emit a fallback case for the scenario when the imm-op is not a constant. This should
-                // normally happen when the intrinsic is called indirectly, such as via Reflection. However, it
-                // can also occur if the consumer calls it directly and just doesn't pass a constant value.
-                regNumber baseReg = internalRegisters.Extract(node);
-                regNumber offsReg = internalRegisters.GetSingle(node);
-                genHWIntrinsicJumpTableFallback(intrinsicId, ins, EA_16BYTE, op2->GetRegNum(), baseReg, offsReg,
-                                                emitSwCase);
-            }
-            break;
-        }
-
-        default:
-            unreached();
-            break;
-    }
-
-    genProduceReg(node);
-}
-
-//------------------------------------------------------------------------
 // genSSE42Intrinsic: Generates the code for an SSE4.2 hardware intrinsic node
 //
 // Arguments:
@@ -2602,29 +2508,49 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     regNumber      targetReg   = node->GetRegNum();
     GenTree*       op1         = node->Op(1);
-    GenTree*       op2         = node->Op(2);
     var_types      baseType    = node->GetSimdBaseType();
     var_types      targetType  = node->TypeGet();
     emitter*       emit        = GetEmitter();
 
-    genConsumeMultiOpOperands(node);
-    regNumber op1Reg = op1->GetRegNum();
-
     assert(targetReg != REG_NA);
-    assert(op1Reg != REG_NA);
     assert(!node->OperIsCommutative());
+
+    genConsumeMultiOpOperands(node);
 
     switch (intrinsicId)
     {
+        case NI_SSE42_ConvertToVector128Int16:
+        case NI_SSE42_ConvertToVector128Int32:
+        case NI_SSE42_ConvertToVector128Int64:
+        {
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+
+            if (!varTypeIsSIMD(op1->TypeGet()))
+            {
+                // Until we improve the handling of addressing modes in the emitter, we'll create a
+                // temporary GT_IND to generate code with.
+                GenTreeIndir load = indirForm(targetType, op1);
+                emit->emitInsLoadInd(ins, EA_16BYTE, targetReg, &load);
+            }
+            else
+            {
+                genHWIntrinsic_R_RM(node, ins, EA_16BYTE, targetReg, op1, instOptions);
+            }
+            break;
+        }
+
         case NI_SSE42_Crc32:
         case NI_SSE42_X64_Crc32:
         {
             assert(instOptions == INS_OPTS_NONE);
 
+            instruction ins    = INS_crc32;
+            regNumber   op1Reg = op1->GetRegNum();
+            GenTree*    op2    = node->Op(2);
+
             assert(!op2->isUsedFromReg() || (op2->GetRegNum() != targetReg) || (op1Reg == targetReg));
             emit->emitIns_Mov(INS_mov, emitTypeSize(targetType), targetReg, op1Reg, /* canSkip */ true);
 
-            instruction ins = INS_crc32;
 #ifdef TARGET_AMD64
             bool needsEvex = false;
             if (emit->IsExtendedGPReg(targetReg))
@@ -2656,6 +2582,7 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 ins = INS_crc32_apx;
             }
 #endif                                                               // TARGET_AMD64
+
             if ((baseType == TYP_UBYTE) || (baseType == TYP_USHORT)) // baseType is the type of the second argument
             {
                 assert(targetType == TYP_INT);
@@ -2666,7 +2593,45 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 assert((targetType == TYP_INT) || (targetType == TYP_LONG));
                 genHWIntrinsic_R_RM(node, ins, emitTypeSize(targetType), targetReg, op2, instOptions);
             }
+            break;
+        }
 
+        case NI_SSE42_Extract:
+        case NI_SSE42_X64_Extract:
+        {
+            assert(!varTypeIsFloating(baseType));
+
+            instruction ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+            GenTree*    op2  = node->Op(2);
+            emitAttr    attr = emitActualTypeSize(targetType);
+
+            auto emitSwCase = [&](int8_t i) {
+                inst_RV_TT_IV(ins, attr, targetReg, op1, i, instOptions);
+            };
+
+            if (op2->IsCnsIntOrI())
+            {
+                ssize_t ival = op2->AsIntCon()->IconValue();
+                assert((ival >= 0) && (ival <= 255));
+                emitSwCase((int8_t)ival);
+            }
+            else
+            {
+                // We emit a fallback case for the scenario when the imm-op is not a constant. This should
+                // normally happen when the intrinsic is called indirectly, such as via Reflection. However, it
+                // can also occur if the consumer calls it directly and just doesn't pass a constant value.
+                regNumber baseReg = internalRegisters.Extract(node);
+                regNumber offsReg = internalRegisters.GetSingle(node);
+                genHWIntrinsicJumpTableFallback(intrinsicId, ins, EA_16BYTE, op2->GetRegNum(), baseReg, offsReg,
+                                                emitSwCase);
+            }
+            break;
+        }
+
+        case NI_SSE42_PopCount:
+        case NI_SSE42_X64_PopCount:
+        {
+            genXCNTIntrinsic(node, INS_popcnt);
             break;
         }
 
@@ -3738,21 +3703,6 @@ void CodeGen::genLZCNTIntrinsic(GenTreeHWIntrinsic* node)
 
     genConsumeMultiOpOperands(node);
     genXCNTIntrinsic(node, INS_lzcnt);
-    genProduceReg(node);
-}
-
-//------------------------------------------------------------------------
-// genPOPCNTIntrinsic: Generates the code for a POPCNT hardware intrinsic node
-//
-// Arguments:
-//    node - The hardware intrinsic node
-//
-void CodeGen::genPOPCNTIntrinsic(GenTreeHWIntrinsic* node)
-{
-    assert(node->GetHWIntrinsicId() == NI_POPCNT_PopCount || node->GetHWIntrinsicId() == NI_POPCNT_X64_PopCount);
-
-    genConsumeMultiOpOperands(node);
-    genXCNTIntrinsic(node, INS_popcnt);
     genProduceReg(node);
 }
 

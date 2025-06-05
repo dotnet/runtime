@@ -187,8 +187,7 @@ namespace System.CommandLine
                 // Note that we do not indicate support for AVX, or any other instruction set which uses the VEX encodings as
                 // the presence of those makes otherwise acceptable code be unusable on hardware which does not support VEX encodings.
                 //
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2"); // Lower SSE versions included by implication
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse42");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni");

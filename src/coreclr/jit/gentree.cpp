@@ -18403,7 +18403,7 @@ bool Compiler::IsValidForShuffle(
     {
         assert(simdSize == 16);
 
-        if (varTypeIsSmall(simdBaseType) && (!compOpportunisticallyDependsOn(InstructionSet_SSSE3)))
+        if (varTypeIsSmall(simdBaseType) && (!compOpportunisticallyDependsOn(InstructionSet_SSE42)))
         {
             // TYP_BYTE, TYP_UBYTE, TYP_SHORT, and TYP_USHORT need SSSE3 to be able to shuffle any operation
             return false;
@@ -18423,7 +18423,7 @@ bool Compiler::IsValidForShuffle(
                 }
             }
         }
-        if (isVariableShuffle && (!compOpportunisticallyDependsOn(InstructionSet_SSSE3)))
+        if (isVariableShuffle && (!compOpportunisticallyDependsOn(InstructionSet_SSE42)))
         {
             // the variable implementation for Vector128 Shuffle always needs SSSE3
             // however, this can become valid later if it becomes constant
@@ -20311,8 +20311,8 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_X86Base_X64_ConvertToInt64:
         case NI_X86Base_X64_ConvertToUInt64:
         case NI_X86Base_Extract:
-        case NI_SSE41_Extract:
-        case NI_SSE41_X64_Extract:
+        case NI_SSE42_Extract:
+        case NI_SSE42_X64_Extract:
         case NI_AVX_ExtractVector128:
         case NI_AVX2_ConvertToInt32:
         case NI_AVX2_ConvertToUInt32:
@@ -20355,8 +20355,8 @@ bool GenTree::isContainableHWIntrinsic() const
             return true;
         }
 
-        case NI_SSE3_LoadAndDuplicateToVector128:
-        case NI_SSE3_MoveAndDuplicate:
+        case NI_SSE42_LoadAndDuplicateToVector128:
+        case NI_SSE42_MoveAndDuplicate:
         case NI_AVX_BroadcastScalarToVector128:
         case NI_AVX_BroadcastScalarToVector256:
         case NI_AVX2_BroadcastScalarToVector128:
@@ -20763,9 +20763,9 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX512));
         intrinsic = NI_AVX512_Abs;
     }
-    else if (compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+    else if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
-        intrinsic = NI_SSSE3_Abs;
+        intrinsic = NI_SSE42_Abs;
     }
 
     if (intrinsic != NI_Illegal)
@@ -21466,8 +21466,8 @@ GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, CorInfoType s
     }
     else
     {
-        assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
-        intrinsic = NI_SSE41_Ceiling;
+        assert(compIsaSupportedDebugOnly(InstructionSet_SSE42));
+        intrinsic = NI_SSE42_Ceiling;
     }
 #elif defined(TARGET_ARM64)
     if (simdBaseType == TYP_DOUBLE)
@@ -21536,7 +21536,7 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
 
 #if defined(TARGET_XARCH)
     assert(compIsaSupportedDebugOnly(InstructionSet_AVX512) ||
-           ((simdTargetBaseType == TYP_INT) && ((simdSize == 16 && compIsaSupportedDebugOnly(InstructionSet_SSE41)) ||
+           ((simdTargetBaseType == TYP_INT) && ((simdSize == 16 && compIsaSupportedDebugOnly(InstructionSet_SSE42)) ||
                                                 (simdSize == 32 && compIsaSupportedDebugOnly(InstructionSet_AVX)))));
 
     GenTree* fixupVal;
@@ -21991,7 +21991,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
             // complicates the test matrix for little gains.
 
             if (((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2)) ||
-                ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
+                ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE42)))
             {
                 // TODO-AVX512: We can use this trick for longs only with AVX-512
                 if (!varTypeIsLong(simdBaseType))
@@ -23107,7 +23107,7 @@ GenTree* Compiler::gtNewSimdDotProdNode(
     else
     {
         assert(((simdBaseType != TYP_INT) && (simdBaseType != TYP_UINT)) ||
-               compIsaSupportedDebugOnly(InstructionSet_SSE41));
+               compIsaSupportedDebugOnly(InstructionSet_SSE42));
         intrinsic = NI_Vector128_Dot;
     }
 #elif defined(TARGET_ARM64)
@@ -23147,8 +23147,8 @@ GenTree* Compiler::gtNewSimdFloorNode(var_types type, GenTree* op1, CorInfoType 
     }
     else
     {
-        assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
-        intrinsic = NI_SSE41_Floor;
+        assert(compIsaSupportedDebugOnly(InstructionSet_SSE42));
+        intrinsic = NI_SSE42_Floor;
     }
 #elif defined(TARGET_ARM64)
     if (simdBaseType == TYP_DOUBLE)
@@ -23244,7 +23244,7 @@ GenTree* Compiler::gtNewSimdGetElementNode(
         case TYP_ULONG:
         {
             // Using software fallback if simdBaseType is not supported by hardware
-            assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
+            assert(compIsaSupportedDebugOnly(InstructionSet_SSE42));
             break;
         }
 
@@ -24123,9 +24123,9 @@ GenTree* Compiler::gtNewSimdLoadNonTemporalNode(var_types   type,
         intrinsic     = NI_AVX512_LoadAlignedVector512NonTemporal;
         isNonTemporal = true;
     }
-    else if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    else if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
-        intrinsic     = NI_SSE41_LoadAlignedVector128NonTemporal;
+        intrinsic     = NI_SSE42_LoadAlignedVector128NonTemporal;
         isNonTemporal = true;
     }
     else
@@ -24295,9 +24295,9 @@ GenTree* Compiler::gtNewSimdMaxNativeNode(
             case TYP_BYTE:
             case TYP_USHORT:
             {
-                if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
                 {
-                    intrinsic = NI_SSE41_Max;
+                    intrinsic = NI_SSE42_Max;
                     break;
                 }
 
@@ -24372,9 +24372,9 @@ GenTree* Compiler::gtNewSimdMaxNativeNode(
             case TYP_INT:
             case TYP_UINT:
             {
-                if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
                 {
-                    intrinsic = NI_SSE41_Max;
+                    intrinsic = NI_SSE42_Max;
                 }
                 break;
             }
@@ -24568,9 +24568,9 @@ GenTree* Compiler::gtNewSimdMinNativeNode(
             case TYP_BYTE:
             case TYP_USHORT:
             {
-                if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
                 {
-                    intrinsic = NI_SSE41_Min;
+                    intrinsic = NI_SSE42_Min;
                     break;
                 }
 
@@ -24641,9 +24641,9 @@ GenTree* Compiler::gtNewSimdMinNativeNode(
             case TYP_INT:
             case TYP_UINT:
             {
-                if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
                 {
-                    intrinsic = NI_SSE41_Min;
+                    intrinsic = NI_SSE42_Min;
                 }
                 break;
             }
@@ -25041,7 +25041,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 // op2 = Elements 4, 5, 6, 7;      4L, 4U, 5L, 5U, 6L, 6U, 7L, 7U
                 //
                 // ...
-                if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
                 {
                     // ...
                     //
@@ -25066,7 +25066,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                     tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                     tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
 
-                    return gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, NI_SSE41_PackUnsignedSaturate,
+                    return gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, NI_SSE42_PackUnsignedSaturate,
                                                     CORINFO_TYPE_USHORT, simdSize);
                 }
                 else
@@ -25245,8 +25245,8 @@ GenTree* Compiler::gtNewSimdRoundNode(var_types type, GenTree* op1, CorInfoType 
     }
     else
     {
-        assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
-        intrinsic = NI_SSE41_RoundToNearestInteger;
+        assert(compIsaSupportedDebugOnly(InstructionSet_SSE42));
+        intrinsic = NI_SSE42_RoundToNearestInteger;
     }
 #elif defined(TARGET_ARM64)
     if (simdBaseType == TYP_DOUBLE)
@@ -25363,9 +25363,9 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     }
     else if ((elementSize == 1) && (simdSize == 16))
     {
-        assert(compIsaSupportedDebugOnly(InstructionSet_SSSE3));
+        assert(compIsaSupportedDebugOnly(InstructionSet_SSE42));
 
-        retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSSE3_Shuffle, simdBaseJitType, simdSize);
+        retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSE42_Shuffle, simdBaseJitType, simdSize);
 
         // high bit on index gives 0 already
         canUseSignedComparisonHint = true;
@@ -25658,7 +25658,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
         }
         else
         {
-            assert(compIsaSupportedDebugOnly(InstructionSet_SSSE3));
+            assert(compIsaSupportedDebugOnly(InstructionSet_SSE42));
             assert(simdSize == 16);
             assert(elementSize > 1);
 
@@ -25701,7 +25701,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
             cnsNode                        = gtNewVconNode(type);
             cnsNode->AsVecCon()->gtSimdVal = shufCns;
 
-            op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_SSSE3_Shuffle, simdBaseJitType, simdSize);
+            op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_SSE42_Shuffle, simdBaseJitType, simdSize);
 
             // or the relevant bits
 
@@ -25718,7 +25718,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
 
             // apply normal byte shuffle now that we've converted it
 
-            retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSSE3_Shuffle, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSE42_Shuffle, simdBaseJitType, simdSize);
         }
     }
 #elif defined(TARGET_ARM64)
@@ -26377,14 +26377,14 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     }
     else
     {
-        if (needsZero && compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+        if (needsZero && compOpportunisticallyDependsOn(InstructionSet_SSE42))
         {
             simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
 
             op2                          = gtNewVconNode(type);
             op2->AsVecCon()->gtSimd16Val = vecCns.v128[0];
 
-            return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSSE3_Shuffle, simdBaseJitType, simdSize);
+            return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSE42_Shuffle, simdBaseJitType, simdSize);
         }
 
         if (varTypeIsLong(simdBaseType))
@@ -26421,7 +26421,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
     if (needsZero)
     {
-        assert((simdSize == 32) || (!compIsaSupportedDebugOnly(InstructionSet_SSSE3)));
+        assert((simdSize == 32) || (!compIsaSupportedDebugOnly(InstructionSet_SSE42)));
 
         op2                        = gtNewVconNode(type);
         op2->AsVecCon()->gtSimdVal = mskCns;
@@ -27029,8 +27029,8 @@ GenTree* Compiler::gtNewSimdTruncNode(var_types type, GenTree* op1, CorInfoType 
     }
     else
     {
-        assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
-        intrinsic = NI_SSE41_RoundToZero;
+        assert(compIsaSupportedDebugOnly(InstructionSet_SSE42));
+        intrinsic = NI_SSE42_RoundToZero;
     }
 #elif defined(TARGET_ARM64)
     if (simdBaseType == TYP_DOUBLE)
@@ -27265,28 +27265,28 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(var_types type, GenTree* op1, CorInfo
         assert(intrinsic != NI_Illegal);
         return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseJitType, simdSize);
     }
-    else if ((simdBaseType == TYP_FLOAT) || compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    else if ((simdBaseType == TYP_FLOAT) || compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         switch (simdBaseType)
         {
             case TYP_BYTE:
             case TYP_UBYTE:
             {
-                intrinsic = NI_SSE41_ConvertToVector128Int16;
+                intrinsic = NI_SSE42_ConvertToVector128Int16;
                 break;
             }
 
             case TYP_SHORT:
             case TYP_USHORT:
             {
-                intrinsic = NI_SSE41_ConvertToVector128Int32;
+                intrinsic = NI_SSE42_ConvertToVector128Int32;
                 break;
             }
 
             case TYP_INT:
             case TYP_UINT:
             {
-                intrinsic = NI_SSE41_ConvertToVector128Int64;
+                intrinsic = NI_SSE42_ConvertToVector128Int64;
                 break;
             }
 
@@ -27486,7 +27486,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, CorInfo
         tmp1 = gtNewSimdHWIntrinsicNode(type, op1, op1Dup, NI_X86Base_MoveHighToLow, simdBaseJitType, simdSize);
         return gtNewSimdHWIntrinsicNode(type, tmp1, NI_X86Base_ConvertToVector128Double, simdBaseJitType, simdSize);
     }
-    else if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    else if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         tmp1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode(8), NI_X86Base_ShiftRightLogical128BitLane,
                                         simdBaseJitType, simdSize);
@@ -27496,21 +27496,21 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, CorInfo
             case TYP_BYTE:
             case TYP_UBYTE:
             {
-                intrinsic = NI_SSE41_ConvertToVector128Int16;
+                intrinsic = NI_SSE42_ConvertToVector128Int16;
                 break;
             }
 
             case TYP_SHORT:
             case TYP_USHORT:
             {
-                intrinsic = NI_SSE41_ConvertToVector128Int32;
+                intrinsic = NI_SSE42_ConvertToVector128Int32;
                 break;
             }
 
             case TYP_INT:
             case TYP_UINT:
             {
-                intrinsic = NI_SSE41_ConvertToVector128Int64;
+                intrinsic = NI_SSE42_ConvertToVector128Int64;
                 break;
             }
 
@@ -27602,12 +27602,12 @@ GenTree* Compiler::gtNewSimdWithElementNode(
         case TYP_UBYTE:
         case TYP_INT:
         case TYP_UINT:
-            assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
+            assert(compIsaSupportedDebugOnly(InstructionSet_SSE42));
             break;
 
         case TYP_LONG:
         case TYP_ULONG:
-            assert(compIsaSupportedDebugOnly(InstructionSet_SSE41_X64));
+            assert(compIsaSupportedDebugOnly(InstructionSet_SSE42_X64));
             break;
 
         case TYP_DOUBLE:
@@ -28032,9 +28032,9 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
 
             switch (intrinsicId)
             {
-                case NI_SSE41_ConvertToVector128Int16:
-                case NI_SSE41_ConvertToVector128Int32:
-                case NI_SSE41_ConvertToVector128Int64:
+                case NI_SSE42_ConvertToVector128Int16:
+                case NI_SSE42_ConvertToVector128Int32:
+                case NI_SSE42_ConvertToVector128Int64:
                 case NI_AVX2_BroadcastScalarToVector128:
                 case NI_AVX2_BroadcastScalarToVector256:
                 case NI_AVX2_ConvertToVector256Int16:
@@ -28263,8 +28263,8 @@ bool GenTreeHWIntrinsic::OperIsBroadcastScalar() const
         case NI_AVX2_BroadcastScalarToVector256:
         case NI_AVX_BroadcastScalarToVector128:
         case NI_AVX_BroadcastScalarToVector256:
-        case NI_SSE3_LoadAndDuplicateToVector128:
-        case NI_SSE3_MoveAndDuplicate:
+        case NI_SSE42_LoadAndDuplicateToVector128:
+        case NI_SSE42_MoveAndDuplicate:
         case NI_AVX512_BroadcastScalarToVector512:
             return true;
         default:
@@ -28820,7 +28820,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 
 #if defined(TARGET_XARCH)
         case NI_X86Base_MultiplyLow:
-        case NI_SSE41_MultiplyLow:
+        case NI_SSE42_MultiplyLow:
         case NI_AVX_Multiply:
         case NI_AVX2_MultiplyLow:
         case NI_AVX512_MultiplyLow:
@@ -29003,7 +29003,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 
 #if defined(TARGET_XARCH)
         case NI_X86Base_CompareEqual:
-        case NI_SSE41_CompareEqual:
+        case NI_SSE42_CompareEqual:
         case NI_AVX_CompareEqual:
         case NI_AVX2_CompareEqual:
         case NI_AVX512_CompareEqualMask:
@@ -29624,9 +29624,9 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             }
             else if (varTypeIsInt(simdBaseType))
             {
-                if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE42))
                 {
-                    id = NI_SSE41_MultiplyLow;
+                    id = NI_SSE42_MultiplyLow;
                 }
             }
             else if (varTypeIsShort(simdBaseType))
@@ -30061,9 +30061,9 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             }
             else if (varTypeIsLong(simdBaseType))
             {
-                if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE42))
                 {
-                    id = NI_SSE41_CompareEqual;
+                    id = NI_SSE42_CompareEqual;
                 }
             }
             else
@@ -30441,7 +30441,7 @@ bool GenTreeHWIntrinsic::ShouldConstantProp(GenTree* operand, GenTreeVecCon* vec
 #endif // TARGET_ARM64
 
 #if defined(TARGET_XARCH)
-        case NI_SSE41_Insert:
+        case NI_SSE42_Insert:
         {
             // We can optimize for float when the constant is zero
             // due to a specialized encoding for the instruction

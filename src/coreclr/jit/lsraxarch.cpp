@@ -1700,9 +1700,9 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
                     simdTemp = buildInternalFloatRegisterDefForNode(putArgStk);
                 }
 
-                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
                 {
-                    // To store SIMD12 without SSE4.1 (extractps) we will need
+                    // To store SIMD12 without extractps we will need
                     // a temp xmm reg to do the shuffle.
                     buildInternalFloatRegisterDefForNode(use.GetNode());
                 }
@@ -2261,7 +2261,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         srcCount += 1;
 
                         if ((baseType == TYP_FLOAT) && HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId) &&
-                            !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                            !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
                         {
                             setDelayFree(op1Use);
                         }
@@ -2278,7 +2278,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     dstCandidates = allByteRegs();
                 }
-                else if (varTypeIsLong(baseType) && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                else if (varTypeIsLong(baseType) && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
                 {
                     // For SSE2 fallbacks, we will need a temp register to insert the upper half of a long
                     buildInternalFloatRegisterDefForNode(intrinsicTree);
@@ -2380,7 +2380,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_SSE41_BlendVariable:
+            case NI_SSE42_BlendVariable:
             {
                 assert(numArgs == 3);
 
@@ -2388,7 +2388,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     assert(isRMW);
 
-                    // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
+                    // pre-VEX blendv* hardcodes the mask vector (op3) in XMM0
                     tgtPrefUse = BuildUse(op1, BuildEvexIncompatibleMask(op1));
 
                     srcCount += 1;
@@ -2408,7 +2408,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_SSE41_Extract:
+            case NI_SSE42_Extract:
             {
                 assert(!varTypeIsFloating(baseType));
 
@@ -3089,7 +3089,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 
 #ifdef FEATURE_SIMD
     if (indirTree->TypeIs(TYP_SIMD12) && indirTree->OperIs(GT_STOREIND) &&
-        !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41) && !indirTree->Data()->IsVectorZero())
+        !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42) && !indirTree->Data()->IsVectorZero())
     {
         // GT_STOREIND needs an internal register so the upper 4 bytes can be extracted
         buildInternalFloatRegisterDefForNode(indirTree);

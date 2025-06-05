@@ -3893,7 +3893,7 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_pextrd:
         case INS_pextrq:
         case INS_pextrw:
-        case INS_pextrw_sse41:
+        case INS_pextrw_sse42:
         case INS_rorx:
         case INS_shlx:
         case INS_sarx:
@@ -6936,7 +6936,7 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
     // Store lower 8 bytes
     emitIns_S_R(INS_movsd_simd, EA_8BYTE, dataReg, varNum, offset);
 
-    if (emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    if (emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         // Extract and store upper 4 bytes
         emitIns_S_R_I(INS_extractps, EA_16BYTE, varNum, offset + 8, dataReg, 2);
@@ -13639,7 +13639,7 @@ void emitter::emitDispIns(
                 case INS_extractps:
                 case INS_pextrb:
                 case INS_pextrw:
-                case INS_pextrw_sse41:
+                case INS_pextrw_sse42:
                 case INS_pextrd:
                 {
                     tgtAttr = EA_4BYTE;
@@ -21633,7 +21633,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pextrd:
         case INS_pextrw:
         case INS_pextrq:
-        case INS_pextrw_sse41:
+        case INS_pextrw_sse42:
         case INS_addsubps:
         case INS_addsubpd:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;

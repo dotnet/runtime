@@ -1265,11 +1265,7 @@ void EEJitManager::SetCpuInfo()
 
     if (((cpuFeatures & XArchIntrinsicConstants_Sse42) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE42))
     {
-        CPUCompileFlags.Set(InstructionSet_SSE3);
-        CPUCompileFlags.Set(InstructionSet_SSSE3);
-        CPUCompileFlags.Set(InstructionSet_SSE41);
         CPUCompileFlags.Set(InstructionSet_SSE42);
-        CPUCompileFlags.Set(InstructionSet_POPCNT);
     }
 
     // x86-64-v3

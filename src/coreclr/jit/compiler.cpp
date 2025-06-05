@@ -6042,11 +6042,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
         if (JitConfig.EnableSSE42() != 0)
         {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE3);
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSSE3);
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE41);
             instructionSetFlags.AddInstructionSet(InstructionSet_SSE42);
-            instructionSetFlags.AddInstructionSet(InstructionSet_POPCNT);
         }
 
         if (JitConfig.EnableAVX() != 0)

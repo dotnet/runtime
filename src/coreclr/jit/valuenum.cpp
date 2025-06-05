@@ -6702,8 +6702,8 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 case VNF_MDArrLowerBound:
 #ifdef FEATURE_HW_INTRINSICS
 #ifdef TARGET_XARCH
-                case VNF_HWI_POPCNT_PopCount:
-                case VNF_HWI_POPCNT_X64_PopCount:
+                case VNF_HWI_SSE42_PopCount:
+                case VNF_HWI_SSE42_X64_PopCount:
                 case VNF_HWI_LZCNT_LeadingZeroCount:
                 case VNF_HWI_LZCNT_X64_LeadingZeroCount:
                 case VNF_HWI_BMI1_TrailingZeroCount:
@@ -8011,7 +8011,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForLongCon(static_cast<int64_t>(result));
             }
 
-            case NI_POPCNT_PopCount:
+            case NI_SSE42_PopCount:
             {
                 assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
 
@@ -8021,7 +8021,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForIntCon(static_cast<int32_t>(result));
             }
 
-            case NI_POPCNT_X64_PopCount:
+            case NI_SSE42_X64_PopCount:
             {
                 assert(varTypeIsLong(type));
 

@@ -20,16 +20,8 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
     {
         case InstructionSet_X86Base:
             return InstructionSet_X86Base_X64;
-        case InstructionSet_SSE3:
-            return InstructionSet_SSE3_X64;
-        case InstructionSet_SSSE3:
-            return InstructionSet_SSSE3_X64;
-        case InstructionSet_SSE41:
-            return InstructionSet_SSE41_X64;
         case InstructionSet_SSE42:
             return InstructionSet_SSE42_X64;
-        case InstructionSet_POPCNT:
-            return InstructionSet_POPCNT_X64;
         case InstructionSet_AVX:
             return InstructionSet_AVX_X64;
         case InstructionSet_AVX2:
@@ -334,7 +326,7 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         }
         else if (strcmp(className + 1, "opcnt") == 0)
         {
-            return InstructionSet_POPCNT;
+            return InstructionSet_SSE42;
         }
     }
     else if (className[0] == 'S')
@@ -351,11 +343,11 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
             }
             else if (strcmp(className + 3, "3") == 0)
             {
-                return InstructionSet_SSE3;
+                return InstructionSet_SSE42;
             }
             else if (strcmp(className + 3, "41") == 0)
             {
-                return InstructionSet_SSE41;
+                return InstructionSet_SSE42;
             }
             else if (strcmp(className + 3, "42") == 0)
             {
@@ -364,7 +356,7 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         }
         else if (strcmp(className + 1, "sse3") == 0)
         {
-            return InstructionSet_SSSE3;
+            return InstructionSet_SSE42;
         }
     }
     else if (className[0] == 'V')
@@ -947,9 +939,6 @@ bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
         case InstructionSet_X86Base:
         case InstructionSet_X86Base_X64:
         {
-            // InstructionSet_POPCNT and InstructionSet_POPCNT_X64 are excluded
-            // even though they are "scalar" ISA because they depend on SSE4.2
-            // and Popcnt.IsSupported implies Sse42.IsSupported
             return true;
         }
 
@@ -1177,54 +1166,54 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
             return static_cast<int>(FloatComparisonMode::UnorderedNonSignaling);
         }
 
-        case NI_SSE41_Ceiling:
-        case NI_SSE41_CeilingScalar:
+        case NI_SSE42_Ceiling:
+        case NI_SSE42_CeilingScalar:
         case NI_AVX_Ceiling:
         {
             FALLTHROUGH;
         }
 
-        case NI_SSE41_RoundToPositiveInfinity:
-        case NI_SSE41_RoundToPositiveInfinityScalar:
+        case NI_SSE42_RoundToPositiveInfinity:
+        case NI_SSE42_RoundToPositiveInfinityScalar:
         case NI_AVX_RoundToPositiveInfinity:
         {
             assert(varTypeIsFloating(simdBaseType));
             return static_cast<int>(FloatRoundingMode::ToPositiveInfinity);
         }
 
-        case NI_SSE41_Floor:
-        case NI_SSE41_FloorScalar:
+        case NI_SSE42_Floor:
+        case NI_SSE42_FloorScalar:
         case NI_AVX_Floor:
         {
             FALLTHROUGH;
         }
 
-        case NI_SSE41_RoundToNegativeInfinity:
-        case NI_SSE41_RoundToNegativeInfinityScalar:
+        case NI_SSE42_RoundToNegativeInfinity:
+        case NI_SSE42_RoundToNegativeInfinityScalar:
         case NI_AVX_RoundToNegativeInfinity:
         {
             assert(varTypeIsFloating(simdBaseType));
             return static_cast<int>(FloatRoundingMode::ToNegativeInfinity);
         }
 
-        case NI_SSE41_RoundCurrentDirection:
-        case NI_SSE41_RoundCurrentDirectionScalar:
+        case NI_SSE42_RoundCurrentDirection:
+        case NI_SSE42_RoundCurrentDirectionScalar:
         case NI_AVX_RoundCurrentDirection:
         {
             assert(varTypeIsFloating(simdBaseType));
             return static_cast<int>(FloatRoundingMode::CurrentDirection);
         }
 
-        case NI_SSE41_RoundToNearestInteger:
-        case NI_SSE41_RoundToNearestIntegerScalar:
+        case NI_SSE42_RoundToNearestInteger:
+        case NI_SSE42_RoundToNearestIntegerScalar:
         case NI_AVX_RoundToNearestInteger:
         {
             assert(varTypeIsFloating(simdBaseType));
             return static_cast<int>(FloatRoundingMode::ToNearestInteger);
         }
 
-        case NI_SSE41_RoundToZero:
-        case NI_SSE41_RoundToZeroScalar:
+        case NI_SSE42_RoundToZero:
+        case NI_SSE42_RoundToZeroScalar:
         case NI_AVX_RoundToZero:
         {
             assert(varTypeIsFloating(simdBaseType));
@@ -1906,9 +1895,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-            if ((simdSize < 32) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            if ((simdSize < 32) && !compOpportunisticallyDependsOn(InstructionSet_SSE42))
             {
-                // Ceiling is only supported for floating-point types on SSE4.1 or later
                 break;
             }
 
@@ -1966,7 +1954,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
 
-            if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
             {
                 op1     = impSIMDPopStack();
                 retNode = gtNewSimdCvtNode(retType, op1, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
@@ -2431,7 +2419,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impSIMDPopStack();
 
             if ((simdSize == 64) || varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType) ||
-                (varTypeIsInt(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE41)))
+                (varTypeIsInt(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE42)))
             {
                 // The lowering for Dot doesn't handle these cases, so import as Sum(left * right)
                 retNode = gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseJitType, simdSize);
@@ -2556,9 +2544,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             shuffleIntrinsic  = NI_AVX2_Shuffle;
                             moveMaskIntrinsic = NI_X86Base_MoveMask;
                         }
-                        else if (compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+                        else if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
                         {
-                            shuffleIntrinsic  = NI_SSSE3_Shuffle;
+                            shuffleIntrinsic  = NI_SSE42_Shuffle;
                             moveMaskIntrinsic = NI_X86Base_MoveMask;
                         }
                         else
@@ -2640,9 +2628,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-            if ((simdSize < 32) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            if ((simdSize < 32) && !compOpportunisticallyDependsOn(InstructionSet_SSE42))
             {
-                // Floor is only supported for floating-point types on SSE4.1 or later
                 break;
             }
 
@@ -2722,7 +2709,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_LONG:
                 case TYP_ULONG:
                 {
-                    if (!op2->IsIntegralConst(0) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                    if (!op2->IsIntegralConst(0) && !compOpportunisticallyDependsOn(InstructionSet_SSE42))
                     {
                         // Using software fallback if simdBaseType is not supported by hardware
                         return nullptr;
@@ -2902,7 +2889,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if ((simdSize == 16) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            if ((simdSize == 16) && !compOpportunisticallyDependsOn(InstructionSet_SSE42))
             {
                 break;
             }
@@ -3710,9 +3697,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-            if ((simdSize < 32) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            if ((simdSize < 32) && !compOpportunisticallyDependsOn(InstructionSet_SSE42))
             {
-                // Round is only supported for floating-point types on SSE4.1 or later
                 break;
             }
 
@@ -4106,9 +4092,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-            if ((simdSize < 32) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            if ((simdSize < 32) && !compOpportunisticallyDependsOn(InstructionSet_SSE42))
             {
-                // Truncate is only supported for floating-point types on SSE4.1 or later
                 break;
             }
 
@@ -4175,7 +4160,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_UBYTE:
                 case TYP_INT:
                 case TYP_UINT:
-                    if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                    if (!compOpportunisticallyDependsOn(InstructionSet_SSE42))
                     {
                         return nullptr;
                     }
@@ -4183,7 +4168,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 case TYP_LONG:
                 case TYP_ULONG:
-                    if (!compOpportunisticallyDependsOn(InstructionSet_SSE41_X64))
+                    if (!compOpportunisticallyDependsOn(InstructionSet_SSE42_X64))
                     {
                         return nullptr;
                     }

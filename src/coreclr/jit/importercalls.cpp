@@ -5947,12 +5947,12 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
-            if (compOpportunisticallyDependsOn(InstructionSet_POPCNT))
+            if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
             {
                 // Pop the value from the stack
                 impPopStack();
 
-                hwintrinsic = varTypeIsLong(baseType) ? NI_POPCNT_X64_PopCount : NI_POPCNT_PopCount;
+                hwintrinsic = varTypeIsLong(baseType) ? NI_SSE42_X64_PopCount : NI_SSE42_PopCount;
                 result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
             }
 #elif defined(TARGET_ARM64)
@@ -7918,7 +7918,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Floor:
         case NI_System_Math_Round:
         case NI_System_Math_Truncate:
-            return compOpportunisticallyDependsOn(InstructionSet_SSE41);
+            return compOpportunisticallyDependsOn(InstructionSet_SSE42);
 
         case NI_System_Math_FusedMultiplyAdd:
             return compOpportunisticallyDependsOn(InstructionSet_FMA);

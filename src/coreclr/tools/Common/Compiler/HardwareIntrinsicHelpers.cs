@@ -85,13 +85,7 @@ namespace ILCompiler
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
                 if ((flags & Sse42) != 0)
-                {
-                    builder.AddSupportedInstructionSet("sse3");
-                    builder.AddSupportedInstructionSet("ssse3");
-                    builder.AddSupportedInstructionSet("sse4.1");
-                    builder.AddSupportedInstructionSet("sse4.2");
-                    builder.AddSupportedInstructionSet("popcnt");
-                }
+                    builder.AddSupportedInstructionSet("sse42");
                 if ((flags & Avx) != 0)
                     builder.AddSupportedInstructionSet("avx");
                 if ((flags & Avx2) != 0)
@@ -157,22 +151,14 @@ namespace ILCompiler
             public static int FromInstructionSet(InstructionSet instructionSet)
             {
                 Debug.Assert(InstructionSet.X64_AES == InstructionSet.X86_AES);
-                Debug.Assert(InstructionSet.X64_SSE41 == InstructionSet.X86_SSE41);
+                Debug.Assert(InstructionSet.X64_SSE42 == InstructionSet.X86_SSE42);
                 Debug.Assert(InstructionSet.X64_LZCNT == InstructionSet.X86_LZCNT);
 
                 return instructionSet switch
                 {
                     // Optional ISAs - only available via opt-in or opportunistic light-up
-                    InstructionSet.X64_SSE3 => Sse42,
-                    InstructionSet.X64_SSE3_X64 => Sse42,
-                    InstructionSet.X64_SSSE3 => Sse42,
-                    InstructionSet.X64_SSSE3_X64 => Sse42,
-                    InstructionSet.X64_SSE41 => Sse42,
-                    InstructionSet.X64_SSE41_X64 => Sse42,
                     InstructionSet.X64_SSE42 => Sse42,
                     InstructionSet.X64_SSE42_X64 => Sse42,
-                    InstructionSet.X64_POPCNT => Sse42,
-                    InstructionSet.X64_POPCNT_X64 => Sse42,
 
                     InstructionSet.X64_AVX => Avx,
                     InstructionSet.X64_AVX_X64 => Avx,

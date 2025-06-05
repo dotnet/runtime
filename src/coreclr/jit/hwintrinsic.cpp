@@ -903,11 +903,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
     { FIRST_NI_X86Base, LAST_NI_X86Base },                      // X86Base
-    { FIRST_NI_SSE3, LAST_NI_SSE3 },                            // SSE3
-    { FIRST_NI_SSSE3, LAST_NI_SSSE3 },                          // SSSE3
-    { FIRST_NI_SSE41, LAST_NI_SSE41 },                          // SSE41
     { FIRST_NI_SSE42, LAST_NI_SSE42 },                          // SSE42
-    { FIRST_NI_POPCNT, LAST_NI_POPCNT },                        // POPCNT
     { FIRST_NI_AVX, LAST_NI_AVX },                              // AVX
     { FIRST_NI_AVX2, LAST_NI_AVX2 },                            // AVX2
     { FIRST_NI_BMI1, LAST_NI_BMI1 },                            // BMI1
@@ -944,11 +940,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      VectorT512
 
     { FIRST_NI_X86Base_X64, LAST_NI_X86Base_X64 },              // X86Base_X64
-    { NI_Illegal, NI_Illegal },                                 //      SSE3_X64
-    { NI_Illegal, NI_Illegal },                                 //      SSSE3_X64
-    { FIRST_NI_SSE41_X64, LAST_NI_SSE41_X64 },                  // SSE41_X64
     { FIRST_NI_SSE42_X64, LAST_NI_SSE42_X64 },                  // SSE42_X64
-    { FIRST_NI_POPCNT_X64, LAST_NI_POPCNT_X64 },                // POPCNT_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX2_X64
     { FIRST_NI_BMI1_X64, LAST_NI_BMI1_X64 },                    // BMI1_X64
@@ -2244,9 +2236,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #if defined(TARGET_XARCH)
                 switch (intrinsic)
                 {
-                    case NI_SSE41_ConvertToVector128Int16:
-                    case NI_SSE41_ConvertToVector128Int32:
-                    case NI_SSE41_ConvertToVector128Int64:
+                    case NI_SSE42_ConvertToVector128Int16:
+                    case NI_SSE42_ConvertToVector128Int32:
+                    case NI_SSE42_ConvertToVector128Int64:
                     case NI_AVX2_BroadcastScalarToVector128:
                     case NI_AVX2_BroadcastScalarToVector256:
                     case NI_AVX2_ConvertToVector256Int16:

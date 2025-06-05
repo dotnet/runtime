@@ -51,139 +51,123 @@ enum CORINFO_InstructionSet
 #endif // TARGET_RISCV64
 #ifdef TARGET_AMD64
     InstructionSet_X86Base=1,
-    InstructionSet_SSE3=2,
-    InstructionSet_SSSE3=3,
-    InstructionSet_SSE41=4,
-    InstructionSet_SSE42=5,
-    InstructionSet_POPCNT=6,
-    InstructionSet_AVX=7,
-    InstructionSet_AVX2=8,
-    InstructionSet_BMI1=9,
-    InstructionSet_BMI2=10,
-    InstructionSet_FMA=11,
-    InstructionSet_LZCNT=12,
-    InstructionSet_MOVBE=13,
-    InstructionSet_AVX512=14,
-    InstructionSet_AVX512VBMI=15,
-    InstructionSet_AVX512v3=16,
-    InstructionSet_AVX10v1=17,
-    InstructionSet_AVX10v2=18,
-    InstructionSet_APX=19,
-    InstructionSet_AES=20,
-    InstructionSet_PCLMULQDQ=21,
-    InstructionSet_AVX512VP2INTERSECT=22,
-    InstructionSet_AVXIFMA=23,
-    InstructionSet_AVXVNNI=24,
-    InstructionSet_GFNI=25,
-    InstructionSet_GFNI_V256=26,
-    InstructionSet_GFNI_V512=27,
-    InstructionSet_SHA=28,
-    InstructionSet_AES_V256=29,
-    InstructionSet_AES_V512=30,
-    InstructionSet_PCLMULQDQ_V256=31,
-    InstructionSet_PCLMULQDQ_V512=32,
-    InstructionSet_WAITPKG=33,
-    InstructionSet_X86Serialize=34,
-    InstructionSet_Vector128=35,
-    InstructionSet_Vector256=36,
-    InstructionSet_Vector512=37,
-    InstructionSet_VectorT128=38,
-    InstructionSet_VectorT256=39,
-    InstructionSet_VectorT512=40,
-    InstructionSet_X86Base_X64=41,
-    InstructionSet_SSE3_X64=42,
-    InstructionSet_SSSE3_X64=43,
-    InstructionSet_SSE41_X64=44,
-    InstructionSet_SSE42_X64=45,
-    InstructionSet_POPCNT_X64=46,
-    InstructionSet_AVX_X64=47,
-    InstructionSet_AVX2_X64=48,
-    InstructionSet_BMI1_X64=49,
-    InstructionSet_BMI2_X64=50,
-    InstructionSet_FMA_X64=51,
-    InstructionSet_LZCNT_X64=52,
-    InstructionSet_AVX512_X64=53,
-    InstructionSet_AVX512VBMI_X64=54,
-    InstructionSet_AVX512v3_X64=55,
-    InstructionSet_AVX10v1_X64=56,
-    InstructionSet_AVX10v2_X64=57,
-    InstructionSet_AES_X64=58,
-    InstructionSet_PCLMULQDQ_X64=59,
-    InstructionSet_AVX512VP2INTERSECT_X64=60,
-    InstructionSet_AVXIFMA_X64=61,
-    InstructionSet_AVXVNNI_X64=62,
-    InstructionSet_GFNI_X64=63,
-    InstructionSet_SHA_X64=64,
-    InstructionSet_WAITPKG_X64=65,
-    InstructionSet_X86Serialize_X64=66,
+    InstructionSet_SSE42=2,
+    InstructionSet_AVX=3,
+    InstructionSet_AVX2=4,
+    InstructionSet_BMI1=5,
+    InstructionSet_BMI2=6,
+    InstructionSet_FMA=7,
+    InstructionSet_LZCNT=8,
+    InstructionSet_MOVBE=9,
+    InstructionSet_AVX512=10,
+    InstructionSet_AVX512VBMI=11,
+    InstructionSet_AVX512v3=12,
+    InstructionSet_AVX10v1=13,
+    InstructionSet_AVX10v2=14,
+    InstructionSet_APX=15,
+    InstructionSet_AES=16,
+    InstructionSet_PCLMULQDQ=17,
+    InstructionSet_AVX512VP2INTERSECT=18,
+    InstructionSet_AVXIFMA=19,
+    InstructionSet_AVXVNNI=20,
+    InstructionSet_GFNI=21,
+    InstructionSet_GFNI_V256=22,
+    InstructionSet_GFNI_V512=23,
+    InstructionSet_SHA=24,
+    InstructionSet_AES_V256=25,
+    InstructionSet_AES_V512=26,
+    InstructionSet_PCLMULQDQ_V256=27,
+    InstructionSet_PCLMULQDQ_V512=28,
+    InstructionSet_WAITPKG=29,
+    InstructionSet_X86Serialize=30,
+    InstructionSet_Vector128=31,
+    InstructionSet_Vector256=32,
+    InstructionSet_Vector512=33,
+    InstructionSet_VectorT128=34,
+    InstructionSet_VectorT256=35,
+    InstructionSet_VectorT512=36,
+    InstructionSet_X86Base_X64=37,
+    InstructionSet_SSE42_X64=38,
+    InstructionSet_AVX_X64=39,
+    InstructionSet_AVX2_X64=40,
+    InstructionSet_BMI1_X64=41,
+    InstructionSet_BMI2_X64=42,
+    InstructionSet_FMA_X64=43,
+    InstructionSet_LZCNT_X64=44,
+    InstructionSet_AVX512_X64=45,
+    InstructionSet_AVX512VBMI_X64=46,
+    InstructionSet_AVX512v3_X64=47,
+    InstructionSet_AVX10v1_X64=48,
+    InstructionSet_AVX10v2_X64=49,
+    InstructionSet_AES_X64=50,
+    InstructionSet_PCLMULQDQ_X64=51,
+    InstructionSet_AVX512VP2INTERSECT_X64=52,
+    InstructionSet_AVXIFMA_X64=53,
+    InstructionSet_AVXVNNI_X64=54,
+    InstructionSet_GFNI_X64=55,
+    InstructionSet_SHA_X64=56,
+    InstructionSet_WAITPKG_X64=57,
+    InstructionSet_X86Serialize_X64=58,
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
     InstructionSet_X86Base=1,
-    InstructionSet_SSE3=2,
-    InstructionSet_SSSE3=3,
-    InstructionSet_SSE41=4,
-    InstructionSet_SSE42=5,
-    InstructionSet_POPCNT=6,
-    InstructionSet_AVX=7,
-    InstructionSet_AVX2=8,
-    InstructionSet_BMI1=9,
-    InstructionSet_BMI2=10,
-    InstructionSet_FMA=11,
-    InstructionSet_LZCNT=12,
-    InstructionSet_MOVBE=13,
-    InstructionSet_AVX512=14,
-    InstructionSet_AVX512VBMI=15,
-    InstructionSet_AVX512v3=16,
-    InstructionSet_AVX10v1=17,
-    InstructionSet_AVX10v2=18,
-    InstructionSet_APX=19,
-    InstructionSet_AES=20,
-    InstructionSet_PCLMULQDQ=21,
-    InstructionSet_AVX512VP2INTERSECT=22,
-    InstructionSet_AVXIFMA=23,
-    InstructionSet_AVXVNNI=24,
-    InstructionSet_GFNI=25,
-    InstructionSet_GFNI_V256=26,
-    InstructionSet_GFNI_V512=27,
-    InstructionSet_SHA=28,
-    InstructionSet_AES_V256=29,
-    InstructionSet_AES_V512=30,
-    InstructionSet_PCLMULQDQ_V256=31,
-    InstructionSet_PCLMULQDQ_V512=32,
-    InstructionSet_WAITPKG=33,
-    InstructionSet_X86Serialize=34,
-    InstructionSet_Vector128=35,
-    InstructionSet_Vector256=36,
-    InstructionSet_Vector512=37,
-    InstructionSet_VectorT128=38,
-    InstructionSet_VectorT256=39,
-    InstructionSet_VectorT512=40,
-    InstructionSet_X86Base_X64=41,
-    InstructionSet_SSE3_X64=42,
-    InstructionSet_SSSE3_X64=43,
-    InstructionSet_SSE41_X64=44,
-    InstructionSet_SSE42_X64=45,
-    InstructionSet_POPCNT_X64=46,
-    InstructionSet_AVX_X64=47,
-    InstructionSet_AVX2_X64=48,
-    InstructionSet_BMI1_X64=49,
-    InstructionSet_BMI2_X64=50,
-    InstructionSet_FMA_X64=51,
-    InstructionSet_LZCNT_X64=52,
-    InstructionSet_AVX512_X64=53,
-    InstructionSet_AVX512VBMI_X64=54,
-    InstructionSet_AVX512v3_X64=55,
-    InstructionSet_AVX10v1_X64=56,
-    InstructionSet_AVX10v2_X64=57,
-    InstructionSet_AES_X64=58,
-    InstructionSet_PCLMULQDQ_X64=59,
-    InstructionSet_AVX512VP2INTERSECT_X64=60,
-    InstructionSet_AVXIFMA_X64=61,
-    InstructionSet_AVXVNNI_X64=62,
-    InstructionSet_GFNI_X64=63,
-    InstructionSet_SHA_X64=64,
-    InstructionSet_WAITPKG_X64=65,
-    InstructionSet_X86Serialize_X64=66,
+    InstructionSet_SSE42=2,
+    InstructionSet_AVX=3,
+    InstructionSet_AVX2=4,
+    InstructionSet_BMI1=5,
+    InstructionSet_BMI2=6,
+    InstructionSet_FMA=7,
+    InstructionSet_LZCNT=8,
+    InstructionSet_MOVBE=9,
+    InstructionSet_AVX512=10,
+    InstructionSet_AVX512VBMI=11,
+    InstructionSet_AVX512v3=12,
+    InstructionSet_AVX10v1=13,
+    InstructionSet_AVX10v2=14,
+    InstructionSet_APX=15,
+    InstructionSet_AES=16,
+    InstructionSet_PCLMULQDQ=17,
+    InstructionSet_AVX512VP2INTERSECT=18,
+    InstructionSet_AVXIFMA=19,
+    InstructionSet_AVXVNNI=20,
+    InstructionSet_GFNI=21,
+    InstructionSet_GFNI_V256=22,
+    InstructionSet_GFNI_V512=23,
+    InstructionSet_SHA=24,
+    InstructionSet_AES_V256=25,
+    InstructionSet_AES_V512=26,
+    InstructionSet_PCLMULQDQ_V256=27,
+    InstructionSet_PCLMULQDQ_V512=28,
+    InstructionSet_WAITPKG=29,
+    InstructionSet_X86Serialize=30,
+    InstructionSet_Vector128=31,
+    InstructionSet_Vector256=32,
+    InstructionSet_Vector512=33,
+    InstructionSet_VectorT128=34,
+    InstructionSet_VectorT256=35,
+    InstructionSet_VectorT512=36,
+    InstructionSet_X86Base_X64=37,
+    InstructionSet_SSE42_X64=38,
+    InstructionSet_AVX_X64=39,
+    InstructionSet_AVX2_X64=40,
+    InstructionSet_BMI1_X64=41,
+    InstructionSet_BMI2_X64=42,
+    InstructionSet_FMA_X64=43,
+    InstructionSet_LZCNT_X64=44,
+    InstructionSet_AVX512_X64=45,
+    InstructionSet_AVX512VBMI_X64=46,
+    InstructionSet_AVX512v3_X64=47,
+    InstructionSet_AVX10v1_X64=48,
+    InstructionSet_AVX10v2_X64=49,
+    InstructionSet_AES_X64=50,
+    InstructionSet_PCLMULQDQ_X64=51,
+    InstructionSet_AVX512VP2INTERSECT_X64=52,
+    InstructionSet_AVXIFMA_X64=53,
+    InstructionSet_AVXVNNI_X64=54,
+    InstructionSet_GFNI_X64=55,
+    InstructionSet_SHA_X64=56,
+    InstructionSet_WAITPKG_X64=57,
+    InstructionSet_X86Serialize_X64=58,
 #endif // TARGET_X86
 
 };
@@ -305,16 +289,8 @@ public:
 #ifdef TARGET_AMD64
         if (HasInstructionSet(InstructionSet_X86Base))
             AddInstructionSet(InstructionSet_X86Base_X64);
-        if (HasInstructionSet(InstructionSet_SSE3))
-            AddInstructionSet(InstructionSet_SSE3_X64);
-        if (HasInstructionSet(InstructionSet_SSSE3))
-            AddInstructionSet(InstructionSet_SSSE3_X64);
-        if (HasInstructionSet(InstructionSet_SSE41))
-            AddInstructionSet(InstructionSet_SSE41_X64);
         if (HasInstructionSet(InstructionSet_SSE42))
             AddInstructionSet(InstructionSet_SSE42_X64);
-        if (HasInstructionSet(InstructionSet_POPCNT))
-            AddInstructionSet(InstructionSet_POPCNT_X64);
         if (HasInstructionSet(InstructionSet_AVX))
             AddInstructionSet(InstructionSet_AVX_X64);
         if (HasInstructionSet(InstructionSet_AVX2))
@@ -451,26 +427,10 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_X86Base);
         if (resultflags.HasInstructionSet(InstructionSet_X86Base_X64) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
             resultflags.RemoveInstructionSet(InstructionSet_X86Base_X64);
-        if (resultflags.HasInstructionSet(InstructionSet_SSE3) && !resultflags.HasInstructionSet(InstructionSet_SSE3_X64))
-            resultflags.RemoveInstructionSet(InstructionSet_SSE3);
-        if (resultflags.HasInstructionSet(InstructionSet_SSE3_X64) && !resultflags.HasInstructionSet(InstructionSet_SSE3))
-            resultflags.RemoveInstructionSet(InstructionSet_SSE3_X64);
-        if (resultflags.HasInstructionSet(InstructionSet_SSSE3) && !resultflags.HasInstructionSet(InstructionSet_SSSE3_X64))
-            resultflags.RemoveInstructionSet(InstructionSet_SSSE3);
-        if (resultflags.HasInstructionSet(InstructionSet_SSSE3_X64) && !resultflags.HasInstructionSet(InstructionSet_SSSE3))
-            resultflags.RemoveInstructionSet(InstructionSet_SSSE3_X64);
-        if (resultflags.HasInstructionSet(InstructionSet_SSE41) && !resultflags.HasInstructionSet(InstructionSet_SSE41_X64))
-            resultflags.RemoveInstructionSet(InstructionSet_SSE41);
-        if (resultflags.HasInstructionSet(InstructionSet_SSE41_X64) && !resultflags.HasInstructionSet(InstructionSet_SSE41))
-            resultflags.RemoveInstructionSet(InstructionSet_SSE41_X64);
         if (resultflags.HasInstructionSet(InstructionSet_SSE42) && !resultflags.HasInstructionSet(InstructionSet_SSE42_X64))
             resultflags.RemoveInstructionSet(InstructionSet_SSE42);
         if (resultflags.HasInstructionSet(InstructionSet_SSE42_X64) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
             resultflags.RemoveInstructionSet(InstructionSet_SSE42_X64);
-        if (resultflags.HasInstructionSet(InstructionSet_POPCNT) && !resultflags.HasInstructionSet(InstructionSet_POPCNT_X64))
-            resultflags.RemoveInstructionSet(InstructionSet_POPCNT);
-        if (resultflags.HasInstructionSet(InstructionSet_POPCNT_X64) && !resultflags.HasInstructionSet(InstructionSet_POPCNT))
-            resultflags.RemoveInstructionSet(InstructionSet_POPCNT_X64);
         if (resultflags.HasInstructionSet(InstructionSet_AVX) && !resultflags.HasInstructionSet(InstructionSet_AVX_X64))
             resultflags.RemoveInstructionSet(InstructionSet_AVX);
         if (resultflags.HasInstructionSet(InstructionSet_AVX_X64) && !resultflags.HasInstructionSet(InstructionSet_AVX))
@@ -551,17 +511,9 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_X86Serialize);
         if (resultflags.HasInstructionSet(InstructionSet_X86Serialize_X64) && !resultflags.HasInstructionSet(InstructionSet_X86Serialize))
             resultflags.RemoveInstructionSet(InstructionSet_X86Serialize_X64);
-        if (resultflags.HasInstructionSet(InstructionSet_SSE3) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
-            resultflags.RemoveInstructionSet(InstructionSet_SSE3);
-        if (resultflags.HasInstructionSet(InstructionSet_SSSE3) && !resultflags.HasInstructionSet(InstructionSet_SSE3))
-            resultflags.RemoveInstructionSet(InstructionSet_SSSE3);
-        if (resultflags.HasInstructionSet(InstructionSet_SSE41) && !resultflags.HasInstructionSet(InstructionSet_SSSE3))
-            resultflags.RemoveInstructionSet(InstructionSet_SSE41);
-        if (resultflags.HasInstructionSet(InstructionSet_SSE42) && !resultflags.HasInstructionSet(InstructionSet_SSE41))
+        if (resultflags.HasInstructionSet(InstructionSet_SSE42) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
             resultflags.RemoveInstructionSet(InstructionSet_SSE42);
-        if (resultflags.HasInstructionSet(InstructionSet_POPCNT) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
-            resultflags.RemoveInstructionSet(InstructionSet_POPCNT);
-        if (resultflags.HasInstructionSet(InstructionSet_AVX) && !resultflags.HasInstructionSet(InstructionSet_POPCNT))
+        if (resultflags.HasInstructionSet(InstructionSet_AVX) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
             resultflags.RemoveInstructionSet(InstructionSet_AVX);
         if (resultflags.HasInstructionSet(InstructionSet_BMI1) && !resultflags.HasInstructionSet(InstructionSet_AVX))
             resultflags.RemoveInstructionSet(InstructionSet_BMI1);
@@ -659,17 +611,9 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_VectorT512);
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
-        if (resultflags.HasInstructionSet(InstructionSet_SSE3) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
-            resultflags.RemoveInstructionSet(InstructionSet_SSE3);
-        if (resultflags.HasInstructionSet(InstructionSet_SSSE3) && !resultflags.HasInstructionSet(InstructionSet_SSE3))
-            resultflags.RemoveInstructionSet(InstructionSet_SSSE3);
-        if (resultflags.HasInstructionSet(InstructionSet_SSE41) && !resultflags.HasInstructionSet(InstructionSet_SSSE3))
-            resultflags.RemoveInstructionSet(InstructionSet_SSE41);
-        if (resultflags.HasInstructionSet(InstructionSet_SSE42) && !resultflags.HasInstructionSet(InstructionSet_SSE41))
+        if (resultflags.HasInstructionSet(InstructionSet_SSE42) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
             resultflags.RemoveInstructionSet(InstructionSet_SSE42);
-        if (resultflags.HasInstructionSet(InstructionSet_POPCNT) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
-            resultflags.RemoveInstructionSet(InstructionSet_POPCNT);
-        if (resultflags.HasInstructionSet(InstructionSet_AVX) && !resultflags.HasInstructionSet(InstructionSet_POPCNT))
+        if (resultflags.HasInstructionSet(InstructionSet_AVX) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
             resultflags.RemoveInstructionSet(InstructionSet_AVX);
         if (resultflags.HasInstructionSet(InstructionSet_BMI1) && !resultflags.HasInstructionSet(InstructionSet_AVX))
             resultflags.RemoveInstructionSet(InstructionSet_BMI1);
@@ -849,26 +793,10 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "X86Base";
         case InstructionSet_X86Base_X64 :
             return "X86Base_X64";
-        case InstructionSet_SSE3 :
-            return "SSE3";
-        case InstructionSet_SSE3_X64 :
-            return "SSE3_X64";
-        case InstructionSet_SSSE3 :
-            return "SSSE3";
-        case InstructionSet_SSSE3_X64 :
-            return "SSSE3_X64";
-        case InstructionSet_SSE41 :
-            return "SSE41";
-        case InstructionSet_SSE41_X64 :
-            return "SSE41_X64";
         case InstructionSet_SSE42 :
             return "SSE42";
         case InstructionSet_SSE42_X64 :
             return "SSE42_X64";
-        case InstructionSet_POPCNT :
-            return "POPCNT";
-        case InstructionSet_POPCNT_X64 :
-            return "POPCNT_X64";
         case InstructionSet_AVX :
             return "AVX";
         case InstructionSet_AVX_X64 :
@@ -981,16 +909,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
 #ifdef TARGET_X86
         case InstructionSet_X86Base :
             return "X86Base";
-        case InstructionSet_SSE3 :
-            return "SSE3";
-        case InstructionSet_SSSE3 :
-            return "SSSE3";
-        case InstructionSet_SSE41 :
-            return "SSE41";
         case InstructionSet_SSE42 :
             return "SSE42";
-        case InstructionSet_POPCNT :
-            return "POPCNT";
         case InstructionSet_AVX :
             return "AVX";
         case InstructionSet_AVX2 :
@@ -1103,11 +1023,11 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;
         case READYTORUN_INSTRUCTION_Sse: return InstructionSet_X86Base;
         case READYTORUN_INSTRUCTION_Sse2: return InstructionSet_X86Base;
-        case READYTORUN_INSTRUCTION_Sse3: return InstructionSet_SSE3;
-        case READYTORUN_INSTRUCTION_Ssse3: return InstructionSet_SSSE3;
-        case READYTORUN_INSTRUCTION_Sse41: return InstructionSet_SSE41;
         case READYTORUN_INSTRUCTION_Sse42: return InstructionSet_SSE42;
-        case READYTORUN_INSTRUCTION_Popcnt: return InstructionSet_POPCNT;
+        case READYTORUN_INSTRUCTION_Sse3: return InstructionSet_SSE42;
+        case READYTORUN_INSTRUCTION_Ssse3: return InstructionSet_SSE42;
+        case READYTORUN_INSTRUCTION_Sse41: return InstructionSet_SSE42;
+        case READYTORUN_INSTRUCTION_Popcnt: return InstructionSet_SSE42;
         case READYTORUN_INSTRUCTION_Avx: return InstructionSet_AVX;
         case READYTORUN_INSTRUCTION_Avx2: return InstructionSet_AVX2;
         case READYTORUN_INSTRUCTION_Bmi1: return InstructionSet_BMI1;
@@ -1168,11 +1088,11 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;
         case READYTORUN_INSTRUCTION_Sse: return InstructionSet_X86Base;
         case READYTORUN_INSTRUCTION_Sse2: return InstructionSet_X86Base;
-        case READYTORUN_INSTRUCTION_Sse3: return InstructionSet_SSE3;
-        case READYTORUN_INSTRUCTION_Ssse3: return InstructionSet_SSSE3;
-        case READYTORUN_INSTRUCTION_Sse41: return InstructionSet_SSE41;
         case READYTORUN_INSTRUCTION_Sse42: return InstructionSet_SSE42;
-        case READYTORUN_INSTRUCTION_Popcnt: return InstructionSet_POPCNT;
+        case READYTORUN_INSTRUCTION_Sse3: return InstructionSet_SSE42;
+        case READYTORUN_INSTRUCTION_Ssse3: return InstructionSet_SSE42;
+        case READYTORUN_INSTRUCTION_Sse41: return InstructionSet_SSE42;
+        case READYTORUN_INSTRUCTION_Popcnt: return InstructionSet_SSE42;
         case READYTORUN_INSTRUCTION_Avx: return InstructionSet_AVX;
         case READYTORUN_INSTRUCTION_Avx2: return InstructionSet_AVX2;
         case READYTORUN_INSTRUCTION_Bmi1: return InstructionSet_BMI1;
