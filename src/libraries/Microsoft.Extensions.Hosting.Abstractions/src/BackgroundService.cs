@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.Hosting
             _stoppingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
             // Execute all of ExecuteAsync as a background thread, and store the task we're executing so that we can wait for it later.
-            _executeTask = Task.Run(async () => await ExecuteAsync(_stoppingCts.Token).ConfigureAwait(false), _stoppingCts.Token);
+            _executeTask = Task.Run(() => ExecuteAsync(_stoppingCts.Token), _stoppingCts.Token);
 
             // If the task is completed then return it, this will bubble cancellation and failure to the caller
             if (_executeTask.IsCompleted)

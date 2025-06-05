@@ -75,6 +75,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             var service = new ThrowOnCancellationService();
 
             await service.StartAsync(CancellationToken.None);
+            await service.WaitForExecuteTask;
 
             var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
             await Assert.ThrowsAsync<AggregateException>(() => service.StopAsync(cts.Token));
@@ -163,6 +164,10 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         private class ThrowOnCancellationService : BackgroundService
         {
+            private TaskCompletionSource<object> _waitForExecuteTask = new TaskCompletionSource<object>();
+
+            public Task WaitForExecuteTask => _waitForExecuteTask.Task;
+
             public int TokenCalls { get; set; }
 
             protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -177,6 +182,8 @@ namespace Microsoft.Extensions.Hosting.Tests
                 {
                     TokenCalls++;
                 });
+
+                _waitForExecuteTask.TrySetResult(null);
 
                 return new TaskCompletionSource<object>().Task;
             }
