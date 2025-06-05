@@ -1192,7 +1192,7 @@ namespace System.Net.Security.Tests
                 ClientCertificates = new X509CertificateCollection(new X509Certificate2[] { clientCertificate }),
                 RemoteCertificateValidationCallback = delegate { return true; },
                 CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
-                AllowRsaPssPadding = !clientDisable
+                AllowRsaPssPadding = !clientDisable,
             }, CancellationToken.None);
             Task t2 = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions()
             {
@@ -1200,7 +1200,7 @@ namespace System.Net.Security.Tests
                 RemoteCertificateValidationCallback = delegate { return true; },
                 ClientCertificateRequired = true,
                 CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
-                AllowRsaPssPadding = !serverDisable
+                AllowRsaPssPadding = !serverDisable,
             }, CancellationToken.None);
 
             await Assert.ThrowsAsync<AuthenticationException>(() => t1.WaitAsync(TestConfiguration.PassingTestTimeout));

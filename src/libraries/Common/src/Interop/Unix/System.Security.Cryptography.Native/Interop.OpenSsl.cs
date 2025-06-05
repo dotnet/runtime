@@ -585,7 +585,8 @@ internal static partial class Interop
 
                 foreach (string alg in s_defaultSigAlgs.Value)
                 {
-                    if (alg.StartsWith("rsa_pss_pss_") && !enablePss)
+                    // includes both rsa_pss_pss_* and rsa_pss_rsae_*
+                    if (alg.StartsWith("rsa_pss_") && !enablePss)
                     {
                         continue;
                     }
