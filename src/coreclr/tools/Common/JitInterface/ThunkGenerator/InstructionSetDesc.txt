@@ -164,14 +164,18 @@ implication        ,X86   ,SSE41                ,SSSE3
 implication        ,X86   ,SSE42                ,SSE41
 implication        ,X86   ,POPCNT               ,SSE42
 
-implication        ,X86   ,AVX                  ,SSE42
+implication        ,X86   ,AVX                  ,POPCNT
 
-implication        ,X86   ,AVX2                 ,AVX
-implication        ,X86   ,BMI1                 ,AVX2
-implication        ,X86   ,BMI2                 ,AVX2
-implication        ,X86   ,FMA                  ,AVX2
-implication        ,X86   ,LZCNT                ,SSE42
-implication        ,X86   ,MOVBE                ,SSE42
+implication        ,X86   ,LZCNT                ,POPCNT
+implication        ,X86   ,MOVBE                ,POPCNT
+implication        ,X86   ,BMI1                 ,AVX
+implication        ,X86   ,BMI2                 ,AVX
+implication        ,X86   ,FMA                  ,AVX
+implication        ,X86   ,AVX2                 ,LZCNT
+implication        ,X86   ,AVX2                 ,MOVBE
+implication        ,X86   ,AVX2                 ,BMI1
+implication        ,X86   ,AVX2                 ,BMI2
+implication        ,X86   ,AVX2                 ,FMA
 
 implication        ,X86   ,AVX512               ,AVX2
 implication        ,X86   ,AVX512               ,BMI1

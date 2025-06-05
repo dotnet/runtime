@@ -301,7 +301,7 @@ int minipal_getcpufeatures(void)
             if (((cpuidInfo[CPUID_EBX] & (1 << 5)) != 0) &&                                                     // AVX2
                 ((cpuidInfo[CPUID_EBX] & (1 << 3)) != 0) &&                                                     // BMI1
                 ((cpuidInfo[CPUID_EBX] & (1 << 8)) != 0) &&                                                     // BMI2
-                hasAvx2Dependencies)                                                                           // F16C, FMA, LZCNT, MOVBE
+                hasAvx2Dependencies)                                                                            // F16C, FMA, LZCNT, MOVBE
             {
                 result |= XArchIntrinsicConstants_Avx2;
 
@@ -346,11 +346,6 @@ int minipal_getcpufeatures(void)
                 hasAvx2Dependencies = false;
             }
 
-            if ((cpuidInfo[CPUID_ECX] & (1 << 8)) != 0)                                                         // GFNI
-            {
-                result |= XArchIntrinsicConstants_Gfni;
-            }
-
             if ((result & XArchIntrinsicConstants_Aes) != 0)
             {
                 if (((cpuidInfo[CPUID_ECX] & (1 << 9)) != 0) &&                                                 // VAES
@@ -359,6 +354,11 @@ int minipal_getcpufeatures(void)
                     result |= XArchIntrinsicConstants_Vaes;
                 }
             }
+        }
+
+        if ((cpuidInfo[CPUID_ECX] & (1 << 8)) != 0)                                                             // GFNI
+        {
+            result |= XArchIntrinsicConstants_Gfni;
         }
 
         if ((cpuidInfo[CPUID_EBX] & (1 << 29)) != 0)                                                            // SHA

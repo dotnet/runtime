@@ -210,7 +210,6 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxifma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v256");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vaes");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul");
