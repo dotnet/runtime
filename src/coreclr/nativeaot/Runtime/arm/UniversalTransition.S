@@ -41,7 +41,7 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// RhpUniversalTransition
+// UniversalTransition
 //
 // At input to this function, r0-3, d0-7 and the stack may contain any number of arguments.
 //
@@ -81,7 +81,7 @@
 
 .macro UNIVERSAL_TRANSITION FunctionName
 
-NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
+NESTED_ENTRY \FunctionName, _TEXT, NoHandler
         // Save argument registers (including floating point) and the return address.
         // NOTE: While we do that, capture the two arguments in the red zone into r12 and r3.
         ldr          r12, [sp, #-4]          // Capture first argument from red zone into r12
@@ -102,7 +102,7 @@ NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         // frame, and the code at the call target is required to use only the transition frame
         // copies when dispatching this call to the eventual callee.
 
-        PREPARE_EXTERNAL_VAR RhpFpTrashValues, r3
+        PREPARE_EXTERNAL_VAR FpTrashValues, r3
         vldr        d0, [r3, #(0 * 8)]
         vldr        d1, [r3, #(1 * 8)]
         vldr        d2, [r3, #(2 * 8)]
@@ -112,7 +112,7 @@ NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         vldr        d6, [r3, #(6 * 8)]
         vldr        d7, [r3, #(7 * 8)]
 
-        PREPARE_EXTERNAL_VAR RhpIntegerTrashValues, r3
+        PREPARE_EXTERNAL_VAR IntegerTrashValues, r3
         ldr         r2, [r3, #(2 * 4)]
         ldr         r3, [r3, #(3 * 4)]
 
@@ -140,7 +140,7 @@ GLOBAL_LABEL ReturnFrom\FunctionName
         // Tailcall to the target address.
         EPILOG_BRANCH_REG r12
 
-NESTED_END Rhp\FunctionName, _TEXT
+NESTED_END \FunctionName, _TEXT
 
 .endm
 

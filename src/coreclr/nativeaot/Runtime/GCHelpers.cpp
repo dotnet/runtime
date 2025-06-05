@@ -111,7 +111,7 @@ void MethodTable::InitializeAsGcFreeType()
     m_uBaseSize = sizeof(Array) + SYNC_BLOCK_SKEW;
 }
 
-EXTERN_C void QCALLTYPE RhpCollect(uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP)
+EXTERN_C void QCALLTYPE GC_Collect(uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -126,7 +126,7 @@ EXTERN_C void QCALLTYPE RhpCollect(uint32_t uGeneration, uint32_t uMode, UInt32_
     pCurThread->EnablePreemptiveMode();
 }
 
-EXTERN_C int64_t QCALLTYPE RhpGetGcTotalMemory()
+EXTERN_C int64_t QCALLTYPE GetGcTotalMemory()
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -142,7 +142,7 @@ EXTERN_C int64_t QCALLTYPE RhpGetGcTotalMemory()
     return ret;
 }
 
-EXTERN_C int32_t QCALLTYPE RhpStartNoGCRegion(int64_t totalSize, UInt32_BOOL hasLohSize, int64_t lohSize, UInt32_BOOL disallowFullBlockingGC)
+EXTERN_C int32_t QCALLTYPE StartNoGCRegion(int64_t totalSize, UInt32_BOOL hasLohSize, int64_t lohSize, UInt32_BOOL disallowFullBlockingGC)
 {
     Thread *pCurThread = ThreadStore::GetCurrentThread();
     ASSERT(!pCurThread->IsCurrentThreadInCooperativeMode());
@@ -157,7 +157,7 @@ EXTERN_C int32_t QCALLTYPE RhpStartNoGCRegion(int64_t totalSize, UInt32_BOOL has
     return result;
 }
 
-EXTERN_C int32_t QCALLTYPE RhpEndNoGCRegion()
+EXTERN_C int32_t QCALLTYPE EndNoGCRegion()
 {
     ASSERT(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
@@ -655,7 +655,7 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
 //  numElements     -  number of array elements
 //  pTransitionFrame-  transition frame to make stack crawlable
 // Returns a pointer to the object allocated or NULL on failure.
-EXTERN_C void* RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame)
+EXTERN_C void* GcAlloc(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
@@ -794,7 +794,7 @@ EXTERN_C UInt32_BOOL g_fGcStressStarted;
 UInt32_BOOL g_fGcStressStarted = UInt32_FALSE; // UInt32_BOOL because asm code reads it
 
 // static
-EXTERN_C void F_CALL_CONV RhpStressGc()
+EXTERN_C void F_CALL_CONV StressGc()
 {
     // The GarbageCollect operation below may trash the last win32 error. We save the error here so that it can be
     // restored after the GC operation;
@@ -809,7 +809,7 @@ EXTERN_C void F_CALL_CONV RhpStressGc()
     PalSetLastError(lastErrorOnEntry);
 }
 
-FCIMPL0(void, RhpInitializeGcStress)
+FCIMPL0(void, InitializeGcStress)
 {
     g_fGcStressStarted = UInt32_TRUE;
 }

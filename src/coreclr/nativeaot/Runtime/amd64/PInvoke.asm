@@ -5,7 +5,7 @@ include asmmacros.inc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpPInvoke
+;; PInvoke
 ;;
 ;; IN:  RCX: address of pinvoke frame
 ;;
@@ -16,7 +16,7 @@ include asmmacros.inc
 ;; Also, the codegenerator must ensure that there are no live GC references in callee saved registers.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-LEAF_ENTRY RhpPInvoke, _TEXT
+LEAF_ENTRY PInvoke, _TEXT
         ;; R10 = GetThread(), TRASHES R11
         INLINE_GETTHREAD r10, r11
 
@@ -31,28 +31,28 @@ LEAF_ENTRY RhpPInvoke, _TEXT
 
         mov         qword ptr [r10 + OFFSETOF__Thread__m_pTransitionFrame], rcx
         ret
-LEAF_END RhpPInvoke, _TEXT
+LEAF_END PInvoke, _TEXT
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpPInvokeReturn
+;; PInvokeReturn
 ;;
 ;; IN:  RCX: address of pinvoke frame
 ;;
 ;; TRASHES: RCX, RDX, R8, R9, R10, R11
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-LEAF_ENTRY RhpPInvokeReturn, _TEXT
+LEAF_ENTRY PInvokeReturn, _TEXT
         mov         rdx, [rcx + OFFSETOF__PInvokeTransitionFrame__m_pThread]
         mov         qword ptr [rdx + OFFSETOF__Thread__m_pTransitionFrame], 0
-        cmp         [RhpTrapThreads], TrapThreadsFlags_None
+        cmp         [TrapThreads], TrapThreadsFlags_None
         jne         @F                  ; forward branch - predicted not taken
         ret
 @@:
         ; passing transition frame pointer in rcx
-        jmp         RhpWaitForGC2
-LEAF_END RhpPInvokeReturn, _TEXT
+        jmp         WaitForGC2
+LEAF_END PInvokeReturn, _TEXT
 
 
 END

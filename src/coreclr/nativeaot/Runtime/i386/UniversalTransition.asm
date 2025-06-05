@@ -38,7 +38,7 @@ ifdef FEATURE_DYNAMIC_CODE
 ;   {CallerRetaddr}                             ChildSP+014     CallerSP-004
 ;   {CallerEBP}                                 ChildSP+010     CallerSP-008
 ;   {ReturnBlock (0x8 bytes)}                   ChildSP+008     CallerSP-010
-;    -- On input (i.e., when control jumps to RhpUniversalTransition), the low 4 bytes of
+;    -- On input (i.e., when control jumps to UniversalTransition), the low 4 bytes of
 ;       the ReturnBlock area holds the address of the callee and the high 4 bytes holds the
 ;       extra argument to pass to the callee.
 ;   {IntArgRegs (edx,ecx) (0x8 bytes)}          ChildSP+000     CallerSP-018
@@ -56,13 +56,13 @@ ifdef FEATURE_DYNAMIC_CODE
 
 UNIVERSAL_TRANSITION macro FunctionName
 
-FASTCALL_FUNC Rhp&FunctionName&_FAKE_ENTRY, 0
+FASTCALL_FUNC &FunctionName&_FAKE_ENTRY, 0
         ; Set up an ebp frame
         push        ebp
         mov         ebp, esp
         push eax
         push eax
-ALTERNATE_ENTRY _Rhp&FunctionName&@0
+ALTERNATE_ENTRY _&FunctionName&@0
         push ecx
         push edx
 

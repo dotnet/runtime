@@ -13,7 +13,7 @@ namespace System.Runtime
     {
         private const string RuntimeLibrary = "*";
 
-        [RuntimeImport(RuntimeLibrary, "RhpGetModuleSection")]
+        [RuntimeImport(RuntimeLibrary, "GetModuleSection")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern IntPtr RhGetModuleSection(ref TypeManagerHandle module, ReadyToRunSectionType section, out int length);
 
@@ -23,12 +23,12 @@ namespace System.Runtime
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpCreateTypeManager")]
-        internal static extern unsafe TypeManagerHandle RhpCreateTypeManager(IntPtr osModule, IntPtr moduleHeader, IntPtr* pClasslibFunctions, int nClasslibFunctions);
+        [RuntimeImport(RuntimeLibrary, "CreateTypeManager")]
+        internal static extern unsafe TypeManagerHandle CreateTypeManager(IntPtr osModule, IntPtr moduleHeader, IntPtr* pClasslibFunctions, int nClasslibFunctions);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpRegisterOsModule")]
-        internal static extern unsafe IntPtr RhpRegisterOsModule(IntPtr osModule);
+        [RuntimeImport(RuntimeLibrary, "RegisterOsModule")]
+        internal static extern unsafe IntPtr RegisterOsModule(IntPtr osModule);
 
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -46,12 +46,12 @@ namespace System.Runtime
 
         // Allocate handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpHandleAlloc")]
-        private static extern IntPtr RhpHandleAlloc(Object value, GCHandleType type);
+        [RuntimeImport(RuntimeLibrary, "HandleAlloc")]
+        private static extern IntPtr HandleAlloc(Object value, GCHandleType type);
 
         internal static IntPtr RhHandleAlloc(Object value, GCHandleType type)
         {
-            IntPtr h = RhpHandleAlloc(value, type);
+            IntPtr h = HandleAlloc(value, type);
             if (h == IntPtr.Zero)
                 throw new OutOfMemoryException();
             return h;

@@ -110,7 +110,7 @@ BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeH
 
     PCODE addr;
     INTERFACE_DISPATCH_CACHED_OR_VSD(
-        addr = (PCODE)RhpInitialInterfaceDispatch // Always use the initial dispatch stub for cached interface dispatch
+        addr = (PCODE)InitialInterfaceDispatch // Always use the initial dispatch stub for cached interface dispatch
         ,
         addr = pMgr->GetCallStub(token))          // Acquire a stub which is token specific in the VSD case
 
@@ -4103,24 +4103,24 @@ VirtualCallStubManager *VirtualCallStubManagerIterator::Current()
 #ifndef DACCESS_COMPILE
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-extern "C" void RhpInterfaceDispatch1();
-extern "C" void RhpInterfaceDispatch2();
-extern "C" void RhpInterfaceDispatch4();
-extern "C" void RhpInterfaceDispatch8();
-extern "C" void RhpInterfaceDispatch16();
-extern "C" void RhpInterfaceDispatch32();
-extern "C" void RhpInterfaceDispatch64();
+extern "C" void InterfaceDispatch1();
+extern "C" void InterfaceDispatch2();
+extern "C" void InterfaceDispatch4();
+extern "C" void InterfaceDispatch8();
+extern "C" void InterfaceDispatch16();
+extern "C" void InterfaceDispatch32();
+extern "C" void InterfaceDispatch64();
 
-extern "C" void RhpVTableOffsetDispatch();
+extern "C" void VTableOffsetDispatch();
 
-extern "C" void RhpInterfaceDispatchAVLocation1();
-extern "C" void RhpInterfaceDispatchAVLocation2();
-extern "C" void RhpInterfaceDispatchAVLocation4();
-extern "C" void RhpInterfaceDispatchAVLocation8();
-extern "C" void RhpInterfaceDispatchAVLocation16();
-extern "C" void RhpInterfaceDispatchAVLocation32();
-extern "C" void RhpInterfaceDispatchAVLocation64();
-extern "C" void RhpVTableOffsetDispatchAVLocation();
+extern "C" void InterfaceDispatchAVLocation1();
+extern "C" void InterfaceDispatchAVLocation2();
+extern "C" void InterfaceDispatchAVLocation4();
+extern "C" void InterfaceDispatchAVLocation8();
+extern "C" void InterfaceDispatchAVLocation16();
+extern "C" void InterfaceDispatchAVLocation32();
+extern "C" void InterfaceDispatchAVLocation64();
+extern "C" void VTableOffsetDispatchAVLocation();
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
@@ -4140,28 +4140,28 @@ VirtualCallStubManagerManager::VirtualCallStubManagerManager()
 #define RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(helper) _ASSERTE(helperCount < CACHED_INTERFACE_DISPATCH_HELPER_COUNT); pCachedInterfaceDispatchHelpersAVLocation[helperCount++] = (PCODE)helper;
 
     pCachedInterfaceDispatchHelpers = new PCODE[CACHED_INTERFACE_DISPATCH_HELPER_COUNT];
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInterfaceDispatch1);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInterfaceDispatch2);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInterfaceDispatch4);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInterfaceDispatch8);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInterfaceDispatch16);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInterfaceDispatch32);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInterfaceDispatch64);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpVTableOffsetDispatch);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(RhpInitialInterfaceDispatch);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(InterfaceDispatch1);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(InterfaceDispatch2);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(InterfaceDispatch4);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(InterfaceDispatch8);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(InterfaceDispatch16);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(InterfaceDispatch32);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(InterfaceDispatch64);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(VTableOffsetDispatch);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER(InitialInterfaceDispatch);
     _ASSERTE(helperCount == CACHED_INTERFACE_DISPATCH_HELPER_COUNT);
 
     helperCount = 0;
     pCachedInterfaceDispatchHelpersAVLocation = new PCODE[CACHED_INTERFACE_DISPATCH_HELPER_COUNT];
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatchAVLocation1);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatchAVLocation2);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatchAVLocation4);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatchAVLocation8);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatchAVLocation16);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatchAVLocation32);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatchAVLocation64);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpVTableOffsetDispatchAVLocation);
-    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInitialInterfaceDispatch);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(InterfaceDispatchAVLocation1);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(InterfaceDispatchAVLocation2);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(InterfaceDispatchAVLocation4);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(InterfaceDispatchAVLocation8);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(InterfaceDispatchAVLocation16);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(InterfaceDispatchAVLocation32);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(InterfaceDispatchAVLocation64);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(VTableOffsetDispatchAVLocation);
+    RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(InitialInterfaceDispatch);
     _ASSERTE(helperCount == CACHED_INTERFACE_DISPATCH_HELPER_COUNT);
 
     countCachedInterfaceDispatchHelpers = helperCount;

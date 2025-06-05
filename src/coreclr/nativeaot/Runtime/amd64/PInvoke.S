@@ -6,7 +6,7 @@
 #include <unixasmmacros.inc>
 
 //
-// RhpPInvoke
+// PInvoke
 //
 // IN:  RDI: address of pinvoke frame
 //
@@ -14,7 +14,7 @@
 // The codegenerator must treat the callsite of this helper as GC triggering and generate the GC info for it.
 // Also, the codegenerator must ensure that there are no live GC references in callee saved registers.
 //
-NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
+NESTED_ENTRY PInvoke, _TEXT, NoHandler
         push_nonvol_reg rbx
         mov         rbx, rdi
 
@@ -33,21 +33,21 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         mov         qword ptr [rax + OFFSETOF__Thread__m_pTransitionFrame], rbx
         pop_nonvol_reg rbx
         ret
-NESTED_END RhpPInvoke, _TEXT
+NESTED_END PInvoke, _TEXT
 
 
 //
-// RhpPInvokeReturn
+// PInvokeReturn
 //
 // IN:  RDI: address of pinvoke frame
 //
-LEAF_ENTRY RhpPInvokeReturn, _TEXT
+LEAF_ENTRY PInvokeReturn, _TEXT
         mov         rsi, [rdi + OFFSETOF__PInvokeTransitionFrame__m_pThread]
         mov         qword ptr [rsi + OFFSETOF__Thread__m_pTransitionFrame], 0
-        cmp         dword ptr [C_VAR(RhpTrapThreads)], TrapThreadsFlags_None
+        cmp         dword ptr [C_VAR(TrapThreads)], TrapThreadsFlags_None
         jne         0f                  // forward branch - predicted not taken
         ret
 0:
         // passing transition frame pointer in rdi
-        jmp         C_FUNC(RhpWaitForGC2)
-LEAF_END RhpPInvokeReturn, _TEXT
+        jmp         C_FUNC(WaitForGC2)
+LEAF_END PInvokeReturn, _TEXT

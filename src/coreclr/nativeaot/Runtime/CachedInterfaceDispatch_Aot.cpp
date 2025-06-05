@@ -34,13 +34,13 @@ void *InterfaceDispatch_AllocPointerAligned(size_t size)
     return g_pAllocHeap->AllocAligned(size, sizeof(void*));
 }
 
-FCIMPL4(PCODE, RhpUpdateDispatchCellCache, InterfaceDispatchCell * pCell, PCODE pTargetCode, MethodTable* pInstanceType, DispatchCellInfo *pNewCellInfo)
+FCIMPL4(PCODE, UpdateDispatchCellCache, InterfaceDispatchCell * pCell, PCODE pTargetCode, MethodTable* pInstanceType, DispatchCellInfo *pNewCellInfo)
 {
     return InterfaceDispatch_UpdateDispatchCellCache(pCell, pTargetCode, pInstanceType, pNewCellInfo);
 }
 FCIMPLEND
 
-FCIMPL2(PCODE, RhpSearchDispatchCellCache, InterfaceDispatchCell * pCell, MethodTable* pInstanceType)
+FCIMPL2(PCODE, SearchDispatchCellCache, InterfaceDispatchCell * pCell, MethodTable* pInstanceType)
 {
     return InterfaceDispatch_SearchDispatchCellCache(pCell, pInstanceType);
 }
@@ -49,7 +49,7 @@ FCIMPLEND
 // Given a dispatch cell, get the type and slot associated with it. This function MUST be implemented
 // in cooperative native code, as the m_pCache field on the cell is unsafe to access from managed
 // code due to its use of the GC state as a lock, and as lifetime control
-FCIMPL2(void, RhpGetDispatchCellInfo, InterfaceDispatchCell * pCell, DispatchCellInfo* pDispatchCellInfo)
+FCIMPL2(void, GetDispatchCellInfo, InterfaceDispatchCell * pCell, DispatchCellInfo* pDispatchCellInfo)
 {
     *pDispatchCellInfo = pCell->GetDispatchCellInfo();
 }

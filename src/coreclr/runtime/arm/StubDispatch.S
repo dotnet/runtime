@@ -11,7 +11,7 @@
 // Macro that generates a stub consuming a cache with the given number of entries.
 .macro DEFINE_INTERFACE_DISPATCH_STUB entries
 
-NESTED_ENTRY RhpInterfaceDispatch\entries, _TEXT, NoHandler
+NESTED_ENTRY InterfaceDispatch\entries, _TEXT, NoHandler
         // r12 currently contains the indirection cell address. But we need more scratch registers and
         // we may A/V on a null this. Store r1 and r2 in red zone.
         str         r1, [sp, #-8]
@@ -21,7 +21,7 @@ NESTED_ENTRY RhpInterfaceDispatch\entries, _TEXT, NoHandler
         ldr         r2, [r12, #OFFSETOF__InterfaceDispatchCell__m_pCache]
 
         // Load the MethodTable from the object instance in r0.
-        GLOBAL_LABEL RhpInterfaceDispatchAVLocation\entries
+        GLOBAL_LABEL InterfaceDispatchAVLocation\entries
         ldr         r1, [r0]
 
         CurrentOffset = OFFSETOF__InterfaceDispatchCache__m_rgEntries
@@ -45,7 +45,7 @@ NESTED_ENTRY RhpInterfaceDispatch\entries, _TEXT, NoHandler
 
         ldr         r1, [sp, #-8]
         ldr         r2, [sp, #-4]
-        b           C_FUNC(RhpInterfaceDispatchSlow)
+        b           C_FUNC(InterfaceDispatchSlow)
 
         // Common epilog for cache hits. Have to out of line it here due to limitation on the number of
         // epilogs imposed by the unwind code macros.
@@ -59,7 +59,7 @@ LOCAL_LABEL(99_\entries):
         ldr         r2, [sp, #-4]
         EPILOG_BRANCH_REG r12
 
-NESTED_END RhpInterfaceDispatch\entries, _TEXT
+NESTED_END InterfaceDispatch\entries, _TEXT
 
 .endm // DEFINE_INTERFACE_DISPATCH_STUB
 
@@ -77,31 +77,31 @@ DEFINE_INTERFACE_DISPATCH_STUB 32
 DEFINE_INTERFACE_DISPATCH_STUB 64
 
 // Initial dispatch on an interface when we don't have a cache yet.
-LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
+LEAF_ENTRY InitialInterfaceDispatch, _TEXT
         // Just tail call to the cache miss helper.
-        b           C_FUNC(RhpInterfaceDispatchSlow)
-LEAF_END RhpInitialInterfaceDispatch, _TEXT
+        b           C_FUNC(InterfaceDispatchSlow)
+LEAF_END InitialInterfaceDispatch, _TEXT
 
 // No as alternate entry due to missed thumb bit in this case
 // See https://github.com/dotnet/runtime/issues/8608
-LEAF_ENTRY RhpInitialDynamicInterfaceDispatch, _TEXT
+LEAF_ENTRY InitialDynamicInterfaceDispatch, _TEXT
         // Just tail call to the cache miss helper.
-        b           C_FUNC(RhpInterfaceDispatchSlow)
-LEAF_END RhpInitialDynamicInterfaceDispatch, _TEXT
+        b           C_FUNC(InterfaceDispatchSlow)
+LEAF_END InitialDynamicInterfaceDispatch, _TEXT
 
 // Cache miss case, call the runtime to resolve the target and update the cache.
 // Use universal transition helper to allow an exception to flow out of resolution
-LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
+LEAF_ENTRY InterfaceDispatchSlow, _TEXT
         // r12 has the interface dispatch cell address in it.
         // The calling convention of the universal thunk is that the parameter
         // for the universal thunk target is to be placed in sp-8
         // and the universal thunk target address is to be placed in sp-4
         str         r12, [sp, #-8]
-        PREPARE_EXTERNAL_VAR RhpCidResolve, r12
+        PREPARE_EXTERNAL_VAR CidResolve, r12
         str         r12, [sp, #-4]
 
         // jump to universal transition thunk
-        b           C_FUNC(RhpUniversalTransition_DebugStepTailCall)
-LEAF_END RhpInterfaceDispatchSlow, _TEXT
+        b           C_FUNC(UniversalTransition_DebugStepTailCall)
+LEAF_END InterfaceDispatchSlow, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

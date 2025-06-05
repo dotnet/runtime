@@ -28,14 +28,14 @@ void InitJITAllocationHelpers()
         // if (multi-proc || server GC || non-Windows)
         if (GCHeapUtilities::UseThreadAllocationContexts())
         {
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST, RhpNewFast);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, RhpNewArrayFast);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_PTR, RhpNewPtrArrayFast);
+            SetJitHelperFunction(CORINFO_HELP_NEWSFAST, NewFast);
+            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, NewArrayFast);
+            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_PTR, NewPtrArrayFast);
 
 #if defined(FEATURE_64BIT_ALIGNMENT)
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, RhpNewFastAlign8);
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8_VC, RhpNewFastMisalign);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN8, RhpNewArrayFastAlign8);
+            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, NewFastAlign8);
+            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8_VC, NewFastMisalign);
+            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN8, NewArrayFastAlign8);
 #endif
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(RhNewString), ECall::FastAllocateString);
@@ -47,9 +47,9 @@ void InitJITAllocationHelpers()
             //
             // When we're running Workstation GC on a single proc box we don't have
             // InlineGetThread versions because there is no need to call GetThread
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST, RhpNewFast_UP);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, RhpNewArrayFast_UP);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_PTR, RhpNewPtrArrayFast_UP);
+            SetJitHelperFunction(CORINFO_HELP_NEWSFAST, NewFast_UP);
+            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, NewArrayFast_UP);
+            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_PTR, NewPtrArrayFast_UP);
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(RhNewString_UP), ECall::FastAllocateString);
 #else

@@ -8,8 +8,8 @@
 #endif
 
 #ifdef TRASH_SAVED_ARGUMENT_REGISTERS
-    EXTERN RhpIntegerTrashValues
-    EXTERN RhpFpTrashValues
+    EXTERN IntegerTrashValues
+    EXTERN FpTrashValues
 #endif ;; TRASH_SAVED_ARGUMENT_REGISTERS
 
 ;; Padding to account for the odd number of saved integer registers
@@ -49,7 +49,7 @@
 #define ARGUMENT_REGISTERS_OFFSET (FLOAT_ARG_OFFSET + FLOAT_ARG_REGISTERS_SIZE + RETURN_BLOCK_SIZE)
 
 ;;
-;; RhpUniversalTransition
+;; UniversalTransition
 ;;
 ;; At input to this function, x0-8, q0-7 and the stack may contain any number of arguments.
 ;;
@@ -91,7 +91,7 @@
     MACRO
         UNIVERSAL_TRANSITION $FunctionName
 
-    NESTED_ENTRY Rhp$FunctionName
+    NESTED_ENTRY $FunctionName
 
         ;; FP and LR registers
         PROLOG_SAVE_REG_PAIR   fp, lr, #-STACK_SIZE!            ;; Push down stack pointer and store FP and LR
@@ -120,7 +120,7 @@
         mov         x1, xip1                                        ;; Second parameter to target function
         blr         xip0
 
-    ALTERNATE_ENTRY ReturnFrom$FunctionName
+    ALTERNATE_ENTRY $FunctionName
 
         ;; Move the result (the target address) to x12 so it doesn't get overridden when we restore the
         ;; argument registers.
@@ -145,7 +145,7 @@
         ;; Tailcall to the target address.
         EPILOG_NOP br x12
 
-    NESTED_END Rhp$FunctionName
+    NESTED_END $FunctionName
 
     MEND
 

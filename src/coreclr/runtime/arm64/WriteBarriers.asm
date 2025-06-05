@@ -204,15 +204,15 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 ;;         if you add more trashed registers.
 ;;
 ;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1
+;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at ByRefAssignRefAVLocation1
 ;; - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
-    LEAF_ENTRY RhpByRefAssignRefArm64
+    LEAF_ENTRY ByRefAssignRefArm64
 
-    ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
+    ALTERNATE_ENTRY ByRefAssignRefAVLocation1
         ldr     x15, [x13], 8
-        b       RhpCheckedAssignRefArm64
+        b       CheckedAssignRefArm64
 
-    LEAF_END RhpByRefAssignRefArm64
+    LEAF_END ByRefAssignRefArm64
 
 
 ;; JIT_CheckedWriteBarrier(Object** dst, Object* src)
@@ -228,21 +228,21 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 ;; On exit:
 ;;   x12, x17 : trashed
 ;;   x14      : incremented by 8
-    LEAF_ENTRY RhpCheckedAssignRefArm64
+    LEAF_ENTRY CheckedAssignRefArm64
 
         ;; is destReg within the heap?
         PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address,  x12
         PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x17
         cmp     x14, x12
         ccmp    x14, x17, #0x2, hs
-        blo     RhpAssignRefArm64
+        blo     AssignRefArm64
 
 NotInHeap
-    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
+    ALTERNATE_ENTRY CheckedAssignRefAVLocation
         str     x15, [x14], 8
         ret
 
-    LEAF_END RhpCheckedAssignRefArm64
+    LEAF_END CheckedAssignRefArm64
 
 ;; JIT_WriteBarrier(Object** dst, Object* src)
 ;;
@@ -256,9 +256,9 @@ NotInHeap
 ;; On exit:
 ;;   x12, x17 : trashed
 ;;   x14 : incremented by 8
-    LEAF_ENTRY RhpAssignRefArm64
+    LEAF_ENTRY AssignRefArm64
 
-    ALTERNATE_ENTRY RhpAssignRefAVLocation
+    ALTERNATE_ENTRY AssignRefAVLocation
         stlr    x15, [x14]
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE x14, x15
@@ -266,21 +266,21 @@ NotInHeap
         add     x14, x14, 8
         ret
 
-    LEAF_END RhpAssignRefArm64
+    LEAF_END AssignRefArm64
 
-;; same as RhpAssignRefArm64, but with standard ABI.
-    LEAF_ENTRY RhpAssignRef
+;; same as AssignRefArm64, but with standard ABI.
+    LEAF_ENTRY AssignRef
         mov     x14, x0             ; x14 = dst
         mov     x15, x1             ; x15 = val
-        b       RhpAssignRefArm64
-    LEAF_END RhpAssignRef
+        b       AssignRefArm64
+    LEAF_END AssignRef
 
 #ifdef FEATURE_NATIVEAOT
 
 ;; Interlocked operation helpers where the location is an objectref, thus requiring a GC write barrier upon
 ;; successful updates.
 
-;; RhpCheckedLockCmpXchg(Object** dest, Object* value, Object* comparand)
+;; CheckedLockCmpXchg(Object** dest, Object* value, Object* comparand)
 ;;
 ;; Interlocked compare exchange on objectref.
 ;;
@@ -293,7 +293,7 @@ NotInHeap
 ;;  x0: original value of objectref
 ;;  x10, x12, x16, x17: trashed
 ;;
-    LEAF_ENTRY RhpCheckedLockCmpXchg
+    LEAF_ENTRY CheckedLockCmpXchg
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
         PREPARE_EXTERNAL_VAR_INDIRECT_W g_cpuFeatures, 16
@@ -336,9 +336,9 @@ NoBarrierCmpXchg
 #endif
         ret     lr
 
-    LEAF_END RhpCheckedLockCmpXchg
+    LEAF_END CheckedLockCmpXchg
 
-;; RhpCheckedXchg(Object** destination, Object* value)
+;; CheckedXchg(Object** destination, Object* value)
 ;;
 ;; Interlocked exchange on objectref.
 ;;
@@ -351,7 +351,7 @@ NoBarrierCmpXchg
 ;;  x10: trashed
 ;;  x12, x16, x17: trashed
 ;;
-    LEAF_ENTRY RhpCheckedXchg
+    LEAF_ENTRY CheckedXchg
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
         PREPARE_EXTERNAL_VAR_INDIRECT_W g_cpuFeatures, 16
@@ -388,7 +388,7 @@ NoBarrierXchg
 #endif
         ret
 
-    LEAF_END RhpCheckedXchg
+    LEAF_END CheckedXchg
 #endif // FEATURE_NATIVEAOT
 
     end

@@ -10,7 +10,7 @@
 #include "DebugMacrosExt.h"
 #include "PalLimitedContext.h"
 #include "Pal.h"
-#include "rhassert.h"
+#include "debugmacros.h"
 #include "slist.h"
 #include "volatile.h"
 #include "yieldprocessornormalized.h"

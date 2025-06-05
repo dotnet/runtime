@@ -14,7 +14,7 @@
 #ifdef TRASH_SAVED_ARGUMENT_REGISTERS
 
 //
-// Define tables of predictable distinguished values that RhpUniversalTransition can use to
+// Define tables of predictable distinguished values that UniversalTransition can use to
 // trash argument registers after they have been saved into the transition frame.
 //
 // Trashing these registers is a testability aid that makes it easier to detect bugs where
@@ -36,7 +36,7 @@
 
 EXTERN_C
 DECLSPEC_ALIGN(TRASH_VALUE_ALIGNMENT)
-const uint32_t RhpIntegerTrashValues[] = {
+const uint32_t IntegerTrashValues[] = {
  // Lo32         Hi32               Lo32       Hi32        Hi32:Lo32
  // -----------  -----------        ---------  ---------   ------------------
     0x07801001U, 0x07802002U,   // (125833217, 125837314) (540467148372316161)
@@ -51,7 +51,7 @@ const uint32_t RhpIntegerTrashValues[] = {
 
 EXTERN_C
 DECLSPEC_ALIGN(TRASH_VALUE_ALIGNMENT)
-const uint32_t RhpFpTrashValues[] = {
+const uint32_t FpTrashValues[] = {
  // Lo32         Hi32               Lo32                 Hi32                  Hi32:Lo32
  // -----------  -----------        -------------------  -------------------   -------------------
     0x42001001U, 0x42002002U,   // (32.0156288146972660, 32.0312576293945310) (8657061952.00781440)

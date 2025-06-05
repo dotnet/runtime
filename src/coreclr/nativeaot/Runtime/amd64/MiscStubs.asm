@@ -13,7 +13,7 @@ include AsmMacros.inc
 
 PROBE_STEP equ 1000h
 
-LEAF_ENTRY RhpStackProbe, _TEXT
+LEAF_ENTRY StackProbe, _TEXT
         ; On entry:
         ;   r11 - points to the lowest address on the stack frame being allocated (i.e. [InitialSp - FrameSize])
         ;   rsp - points to some byte on the last probed page
@@ -35,6 +35,6 @@ ProbeLoop:
 
         ret
 
-LEAF_END RhpStackProbe, _TEXT
+LEAF_END StackProbe, _TEXT
 
 end

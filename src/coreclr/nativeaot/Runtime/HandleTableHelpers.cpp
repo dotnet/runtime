@@ -8,13 +8,13 @@
 #include "gchandleutilities.h"
 
 
-FCIMPL2(OBJECTHANDLE, RhpHandleAlloc, Object *pObject, int type)
+FCIMPL2(OBJECTHANDLE, HandleAlloc, Object *pObject, int type)
 {
     return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateHandleOfType(pObject, (HandleType)type);
 }
 FCIMPLEND
 
-FCIMPL2(OBJECTHANDLE, RhpHandleAllocDependent, Object *pPrimary, Object *pSecondary)
+FCIMPL2(OBJECTHANDLE, HandleAllocDependent, Object *pPrimary, Object *pSecondary)
 {
     return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateDependentHandle(pPrimary, pSecondary);
 }

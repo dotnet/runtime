@@ -1,15 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
-#include "rhassert.h"
+#include "debugmacros.h"
 
 //
 // Floating point and 64-bit integer math helpers.
 //
 
-FCIMPL1_D(uint64_t, RhpDbl2ULng, double val)
+FCIMPL1_D(uint64_t, Dbl2ULng, double val)
 {
 #if defined(HOST_X86) || defined(HOST_AMD64)
     const double uint64_max_plus_1 = 4294967296.0 * 4294967296.0;
@@ -20,7 +21,7 @@ FCIMPL1_D(uint64_t, RhpDbl2ULng, double val)
 }
 FCIMPLEND
 
-FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
+FCIMPL1_D(int64_t, Dbl2Lng, double val)
 {
 #if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM)
     const double int64_min = -2147483648.0 * 4294967296.0;
@@ -32,7 +33,7 @@ FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
 }
 FCIMPLEND
 
-FCIMPL1_D(int32_t, RhpDbl2Int, double val)
+FCIMPL1_D(int32_t, Dbl2Int, double val)
 {
 #if defined(HOST_X86) || defined(HOST_AMD64)
     const double int32_min = -2147483648.0;
@@ -44,7 +45,7 @@ FCIMPL1_D(int32_t, RhpDbl2Int, double val)
 }
 FCIMPLEND
 
-FCIMPL1_D(uint32_t, RhpDbl2UInt, double val)
+FCIMPL1_D(uint32_t, Dbl2UInt, double val)
 {
 #if defined(HOST_X86) || defined(HOST_AMD64)
     const double uint_max = 4294967295.0;
@@ -84,25 +85,25 @@ FCIMPL2_LL(uint64_t, ModUInt64Internal, uint64_t i, uint64_t j)
 }
 FCIMPLEND
 
-FCIMPL1_L(double, RhpLng2Dbl, int64_t val)
+FCIMPL1_L(double, Lng2Dbl, int64_t val)
 {
     return (double)val;
 }
 FCIMPLEND
 
-FCIMPL1_L(double, RhpULng2Dbl, uint64_t val)
+FCIMPL1_L(double, ULng2Dbl, uint64_t val)
 {
     return (double)val;
 }
 FCIMPLEND
 
-FCIMPL1_L(float, RhpLng2Flt, int64_t val)
+FCIMPL1_L(float, Lng2Flt, int64_t val)
 {
     return (float)val;
 }
 FCIMPLEND
 
-FCIMPL1_L(float, RhpULng2Flt, uint64_t val)
+FCIMPL1_L(float, ULng2Flt, uint64_t val)
 {
     return (float)val;
 }
@@ -141,22 +142,22 @@ FCIMPLEND
 #endif
 
 #ifdef HOST_ARM
-EXTERN_C int64_t F_CALL_CONV RhpLMul(int64_t i, int64_t j)
+EXTERN_C int64_t F_CALL_CONV LMul(int64_t i, int64_t j)
 {
     return i * j;
 }
 
-EXTERN_C uint64_t F_CALL_CONV RhpLRsz(uint64_t i, int32_t j)
+EXTERN_C uint64_t F_CALL_CONV LRsz(uint64_t i, int32_t j)
 {
     return i >> (j & 0x3f);
 }
 
-EXTERN_C int64_t F_CALL_CONV RhpLRsh(int64_t i, int32_t j)
+EXTERN_C int64_t F_CALL_CONV LRsh(int64_t i, int32_t j)
 {
     return i >> (j & 0x3f);
 }
 
-EXTERN_C int64_t F_CALL_CONV RhpLLsh(int64_t i, int32_t j)
+EXTERN_C int64_t F_CALL_CONV LLsh(int64_t i, int32_t j)
 {
     return i << (j & 0x3f);
 }

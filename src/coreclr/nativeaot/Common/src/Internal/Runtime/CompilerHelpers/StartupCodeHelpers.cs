@@ -30,7 +30,7 @@ namespace Internal.Runtime.CompilerHelpers
         [UnmanagedCallersOnly(EntryPoint = "InitializeModules")]
         internal static unsafe void InitializeModules(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
         {
-            RuntimeImports.RhpRegisterOsModule(osModule);
+            RuntimeImports.RegisterOsModule(osModule);
             TypeManagerHandle[] modules = CreateTypeManagers(osModule, pModuleHeaders, count, pClasslibFunctions, nClasslibFunctions);
             object[] gcStaticBaseSpines = new object[count];
 
@@ -92,7 +92,7 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 if (pModuleHeaders[i] != IntPtr.Zero)
                 {
-                    TypeManagerHandle handle = RuntimeImports.RhpCreateTypeManager(osModule, pModuleHeaders[i], pClasslibFunctions, nClasslibFunctions);
+                    TypeManagerHandle handle = RuntimeImports.CreateTypeManager(osModule, pModuleHeaders[i], pClasslibFunctions, nClasslibFunctions);
 
                     // Rehydrate any dehydrated data structures
                     IntPtr dehydratedDataSection = RuntimeImports.RhGetModuleSection(

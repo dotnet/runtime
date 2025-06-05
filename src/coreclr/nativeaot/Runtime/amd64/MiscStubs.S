@@ -17,7 +17,7 @@
 
 #define PROBE_STEP 0x1000
 
-NESTED_ENTRY RhpStackProbe, _TEXT, NoHandler
+NESTED_ENTRY StackProbe, _TEXT, NoHandler
         // On entry:
         //   r11 - points to the lowest address on the stack frame being allocated (i.e. [InitialSp - FrameSize])
         //   rsp - points to some byte on the last probed page
@@ -43,4 +43,4 @@ LOCAL_LABEL(ProbeLoop):
 
         RESET_FRAME_WITH_RBP
         ret
-NESTED_END RhpStackProbe, _TEXT
+NESTED_END StackProbe, _TEXT

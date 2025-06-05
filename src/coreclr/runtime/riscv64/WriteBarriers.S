@@ -202,16 +202,16 @@
 //         if you add more trashed registers.
 //
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1
+// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at ByRefAssignRefAVLocation1
 // - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and RA contains the return address
-LEAF_ENTRY RhpByRefAssignRef, _TEXT
+LEAF_ENTRY ByRefAssignRef, _TEXT
 
-    ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
+    ALTERNATE_ENTRY ByRefAssignRefAVLocation1
         ld    t4, 0(t5)
         addi  t5, t5, 8
-        j C_FUNC(RhpCheckedAssignRef)
+        j C_FUNC(CheckedAssignRef)
 
-LEAF_END RhpByRefAssignRef, _TEXT
+LEAF_END ByRefAssignRef, _TEXT
 
 // JIT_CheckedWriteBarrier(Object** dst, Object* src)
 //
@@ -226,7 +226,7 @@ LEAF_END RhpByRefAssignRef, _TEXT
 // On exit:
 //   t2, t6 : trashed
 //   t3      : incremented by 8
-LEAF_ENTRY RhpCheckedAssignRef, _TEXT
+LEAF_ENTRY CheckedAssignRef, _TEXT
 
         # Check if the destination is within the heap bounds
         la      t2, C_FUNC(g_lowest_address)
@@ -237,16 +237,16 @@ LEAF_ENTRY RhpCheckedAssignRef, _TEXT
         bltu    t3, t2, LOCAL_LABEL(NotInHeap)
         bgeu    t3, t6, LOCAL_LABEL(NotInHeap)
 
-        j       C_FUNC(RhpAssignRefRiscV64)
+        j       C_FUNC(AssignRefRiscV64)
 
 LOCAL_LABEL(NotInHeap):
-        ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
+        ALTERNATE_ENTRY CheckedAssignRefAVLocation
         sd      t4, 0(t3)
         addi    t3, t3, 8
 
         ret
 
-LEAF_END RhpCheckedAssignRef, _TEXT
+LEAF_END CheckedAssignRef, _TEXT
 
 // JIT_WriteBarrier(Object** dst, Object* src)
 //
@@ -260,10 +260,10 @@ LEAF_END RhpCheckedAssignRef, _TEXT
 // On exit:
 //  t2, t6 : trashed
 //  t3 : incremented by 8
-LEAF_ENTRY RhpAssignRefRiscV64, _TEXT
+LEAF_ENTRY AssignRefRiscV64, _TEXT
         fence rw, rw
 
-    ALTERNATE_ENTRY RhpAssignRefAVLocation
+    ALTERNATE_ENTRY AssignRefAVLocation
         sd    t4, 0(t3)
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE t3, t4
@@ -272,25 +272,25 @@ LEAF_ENTRY RhpAssignRefRiscV64, _TEXT
 
         ret
 
-LEAF_END RhpAssignRefRiscV64, _TEXT
+LEAF_END AssignRefRiscV64, _TEXT
 
-// Same as RhpAssignRefRiscV64, but with standard ABI.
-LEAF_ENTRY RhpAssignRef, _TEXT
+// Same as AssignRefRiscV64, but with standard ABI.
+LEAF_ENTRY AssignRef, _TEXT
         mv   t3, a0                    ; t3 = dst
         mv   t4, a1                    ; t4 = val
         mv   a1, ra
-        j    C_FUNC(RhpAssignRefRiscV64)
-LEAF_END RhpAssignRef, _TEXT
+        j    C_FUNC(AssignRefRiscV64)
+LEAF_END AssignRef, _TEXT
 
 
 // Interlocked operation helpers where the location is an objectref, thus requiring a GC write barrier upon
 // successful updates.
 
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen within at RhpCheckedLockCmpXchgAVLocation
+// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen within at CheckedLockCmpXchgAVLocation
 // - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and RA contains the return address
 
-// RhpCheckedLockCmpXchg(Object** dest, Object* value, Object* comparand)
+// CheckedLockCmpXchg(Object** dest, Object* value, Object* comparand)
 //
 // Interlocked compare exchange on objectref.
 //
@@ -303,7 +303,7 @@ LEAF_END RhpAssignRef, _TEXT
 //  a0: original value of objectref
 //  t0, t1, t2, t6: trashed
 //
-LEAF_ENTRY RhpCheckedLockCmpXchg
+LEAF_ENTRY CheckedLockCmpXchg
 
 LOCAL_LABEL(CmpXchgRetry):
         // Load the current value at the destination address.
@@ -331,13 +331,13 @@ LOCAL_LABEL(CmpXchgNoUpdate):
 
         ret
 
-LEAF_END RhpCheckedLockCmpXchg
+LEAF_END CheckedLockCmpXchg
 
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen within at RhpCheckedXchgAVLocation
+// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen within at CheckedXchgAVLocation
 // - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and RA contains the return address
 
-// RhpCheckedXchg(Object** destination, Object* value)
+// CheckedXchg(Object** destination, Object* value)
 //
 // Interlocked exchange on objectref.
 //
@@ -349,7 +349,7 @@ LEAF_END RhpCheckedLockCmpXchg
 //  a0: original value of objectref
 //  t1, t6: trashed
 //
-LEAF_ENTRY RhpCheckedXchg
+LEAF_ENTRY CheckedXchg
         amoswap.d.aqrl t1, a1, (a0)
 
         // See comment at the top of PalInterlockedOperationBarrier method for explanation why this memory
@@ -368,4 +368,4 @@ DoCardsXchg:
 
         jalr ra
 
-LEAF_END RhpCheckedXchg, _TEXT
+LEAF_END CheckedXchg, _TEXT

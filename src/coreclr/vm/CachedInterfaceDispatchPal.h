@@ -6,7 +6,7 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-extern "C" void RhpInitialInterfaceDispatch();
+extern "C" void InitialInterfaceDispatch();
 
 
 bool InterfaceDispatch_InitializePal();

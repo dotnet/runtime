@@ -174,7 +174,7 @@ namespace System
             if (firstParameter is null)
                 throw new NullReferenceException();
 
-            _functionPointer = RuntimeImports.RhpResolveInterfaceMethod(firstParameter, dispatchCell);
+            _functionPointer = RuntimeImports.ResolveInterfaceMethod(firstParameter, dispatchCell);
             _firstParameter = firstParameter;
         }
 

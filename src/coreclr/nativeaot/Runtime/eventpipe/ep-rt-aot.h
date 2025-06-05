@@ -20,7 +20,7 @@
 #include <eventpipe/ep-session-provider.h>
 #include <eventpipe/ep-string.h>
 
-#include "rhassert.h"
+#include "debugmacros.h"
 #include <RhConfig.h>
 #include <runtime_version.h>
 

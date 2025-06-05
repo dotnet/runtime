@@ -17,7 +17,7 @@ namespace Internal.Runtime
         [RuntimeExport("IDynamicCastableGetInterfaceImplementation")]
         internal static IntPtr IDynamicCastableGetInterfaceImplementation(object instance, MethodTable* interfaceType, ushort slot)
         {
-            RuntimeImports.RhpFallbackFailFast();
+            RuntimeImports.FallbackFailFast();
             return default;
         }
     }

@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
 #include "PalLimitedContext.h"
 #include "Pal.h"
-#include "rhassert.h"
+#include "debugmacros.h"
 #include "slist.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -17,7 +18,7 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "RuntimeInstance.h"
-#include "rhbinder.h"
+#include "binder.h"
 #include "CachedInterfaceDispatch.h"
 #include "RhConfig.h"
 #include "stressLog.h"
@@ -37,9 +38,9 @@ uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
 #endif // PROFILE_STARTUP
 
 #ifdef HOST_WINDOWS
-LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
+LONG WINAPI VectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 #else
-int32_t RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
+int32_t HardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
 #endif
 
 extern "C" void PopulateDebugHeaders();
@@ -124,9 +125,9 @@ static bool InitDLL(HANDLE hPalInstance)
     // Note: The global exception handler uses RuntimeInstance
 #if !defined(USE_PORTABLE_HELPERS)
 #ifdef HOST_WINDOWS
-    AddVectoredExceptionHandler(1, RhpVectoredExceptionHandler);
+    AddVectoredExceptionHandler(1, VectoredExceptionHandler);
 #else
-    PalSetHardwareExceptionHandler(RhpHardwareExceptionHandler);
+    PalSetHardwareExceptionHandler(HardwareExceptionHandler);
 #endif
 #endif // !USE_PORTABLE_HELPERS
 

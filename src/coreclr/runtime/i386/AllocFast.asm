@@ -11,7 +11,7 @@ include AsmMacros_Shared.inc
 ; Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
 ; allocation context then automatically fallback to the slow allocation path.
 ;  ECX == MethodTable
-FASTCALL_FUNC   RhpNewFast, 4
+FASTCALL_FUNC   NewFast, 4
         ; edx = ee_alloc_context pointer, TRASHES eax
         INLINE_GET_ALLOC_CONTEXT_BASE edx, eax
 
@@ -30,20 +30,20 @@ FASTCALL_FUNC   RhpNewFast, 4
 
 AllocFailed:
         xor         edx, edx
-        jmp         @RhpNewObject@8
+        jmp         @NewObject@8
 FASTCALL_ENDFUNC
 
 ; Allocate non-array object with finalizer.
 ;  ECX == MethodTable
-FASTCALL_FUNC   RhpNewFinalizable, 4
+FASTCALL_FUNC   NewFinalizable, 4
         mov         edx, GC_ALLOC_FINALIZE                          ; Flags
-        jmp         @RhpNewObject@8
+        jmp         @NewObject@8
 FASTCALL_ENDFUNC
 
 ; Allocate non-array object
 ;  ECX == MethodTable
 ;  EDX == alloc flags
-FASTCALL_FUNC   RhpNewObject, 8
+FASTCALL_FUNC   NewObject, 8
         PUSH_COOP_PINVOKE_FRAME eax
 
         ; Preserve MethodTable in ESI.
@@ -55,8 +55,8 @@ FASTCALL_FUNC   RhpNewObject, 8
         push        ecx
 
         ;; Call the rest of the allocation helper.
-        ;; void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
-        call        RhpGcAlloc
+        ;; void* GcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        call        GcAlloc
 
         test        eax, eax
         jz          NewOutOfMemory
@@ -77,7 +77,7 @@ NewOutOfMemory:
         jmp         RhExceptionHandling_FailedAllocation
 FASTCALL_ENDFUNC
 
-; Shared code for RhNewString, RhpNewArrayFast and RhpNewPtrArrayFast
+; Shared code for RhNewString, NewArrayFast and NewPtrArrayFast
 ;  EAX == string/array size
 ;  ECX == MethodTable
 ;  EDX == character/element count
@@ -124,7 +124,7 @@ AllocContextOverflow:
         ; Restore the MethodTable and put it in ecx
         pop         ecx
 
-        jmp         @RhpNewVariableSizeObject@8
+        jmp         @NewVariableSizeObject@8
 ENDM
 
 ; Allocate a new string.
@@ -155,7 +155,7 @@ FASTCALL_ENDFUNC
 ; Allocate one dimensional, zero based array (SZARRAY).
 ;  ECX == MethodTable
 ;  EDX == element count
-FASTCALL_FUNC   RhpNewArrayFast, 8
+FASTCALL_FUNC   NewArrayFast, 8
         NEW_ARRAY_FAST_PROLOG
 
         ; Compute overall allocation size (align(base size + (element size * elements), 4)).
@@ -207,11 +207,11 @@ FASTCALL_ENDFUNC
 ; Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements.
 ;  ECX == MethodTable
 ;  EDX == element count
-FASTCALL_FUNC   RhpNewPtrArrayFast, 8
+FASTCALL_FUNC   NewPtrArrayFast, 8
         ; Delegate overflow handling to the generic helper conservatively
 
         cmp         edx, (40000000h / 4) ; sizeof(void*)
-        jae         @RhpNewVariableSizeObject@8
+        jae         @NewVariableSizeObject@8
 
         ; In this case we know the element size is sizeof(void *), or 4 for x86
         ; This helps us in two ways - we can shift instead of multiplying, and
@@ -224,12 +224,12 @@ FASTCALL_FUNC   RhpNewPtrArrayFast, 8
 FASTCALL_ENDFUNC
 
 ;
-; Object* RhpNewVariableSizeObject(MethodTable *pMT, INT_PTR size)
+; Object* NewVariableSizeObject(MethodTable *pMT, INT_PTR size)
 ;
 ; ecx == MethodTable
 ; edx == element count
 ;
-FASTCALL_FUNC RhpNewVariableSizeObject, 8
+FASTCALL_FUNC NewVariableSizeObject, 8
         PUSH_COOP_PINVOKE_FRAME eax
 
         ; Preserve MethodTable in ESI.
@@ -241,17 +241,17 @@ FASTCALL_FUNC RhpNewVariableSizeObject, 8
         push        0                                               ; Flags
         push        ecx                                             ; MethodTable
 
-        ; void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
-        call        RhpGcAlloc
+        ; void* GcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        call        GcAlloc
 
         test        eax, eax
-        jz          RhpNewVariableSizeObject_OutOfMemory
+        jz          NewVariableSizeObject_OutOfMemory
 
         POP_COOP_PINVOKE_FRAME
 
         ret
 
-RhpNewVariableSizeObject_OutOfMemory:
+NewVariableSizeObject_OutOfMemory:
         ; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         ; an out of memory exception that the caller of this allocator understands.
 

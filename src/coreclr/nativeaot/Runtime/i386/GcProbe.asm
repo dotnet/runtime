@@ -138,12 +138,12 @@ PopProbeFrame macro
         pop         eax
 endm
 
-RhpThrowHwEx equ @RhpThrowHwEx@8
-extern RhpThrowHwEx : proc
+ThrowHwEx equ @ThrowHwEx@8
+extern ThrowHwEx : proc
 
 ;;
 ;; Main worker for our GC probes.  Do not call directly!! This assumes that HijackFixupProlog has been done.
-;; Instead, go through RhpGcProbeHijack* or RhpGcStressHijack*. This waits for the
+;; Instead, go through GcProbeHijack* or GcStressHijack*. This waits for the
 ;; GC to complete then returns to the original return address.
 ;;
 ;; Register state on entry:
@@ -155,11 +155,11 @@ extern RhpThrowHwEx : proc
 ;; Register state on exit:
 ;;  All registers restored as they were when the hijack was first reached.
 ;;
-RhpWaitForGC  proc
+InternalWaitForGC  proc
         PushProbeFrame ecx      ; bitmask in ECX
 
         mov         ecx, esp
-        call        RhpWaitForGC2
+        call        WaitForGC2
 
         mov         edx, [esp + OFFSETOF__PInvokeTransitionFrame__m_Flags]
         ;;
@@ -177,29 +177,29 @@ Abort:
         pop         eax         ;; ecx was pushed here, but we don't care for its value
         pop         ebp
         pop         edx         ;; return address as exception RIP
-        jmp         RhpThrowHwEx
+        jmp         ThrowHwEx
 
-RhpWaitForGC  endp
+InternalWaitForGC  endp
 
-RhpGcPoll  proc
-        cmp         [RhpTrapThreads], TrapThreadsFlags_None
+GcPoll  proc
+        cmp         [TrapThreads], TrapThreadsFlags_None
         jne         @F                  ; forward branch - predicted not taken
         ret
 @@:
-        jmp         RhpGcPollRare
+        jmp         GcPollRare
 
-RhpGcPoll  endp
+GcPoll  endp
 
-RhpGcPollRare  proc
+GcPollRare  proc
         PUSH_COOP_PINVOKE_FRAME ecx
-        call        RhpGcPoll2
+        call        GcPoll2
         POP_COOP_PINVOKE_FRAME
         ret
-RhpGcPollRare  endp
+GcPollRare  endp
 
 ifdef FEATURE_GC_STRESS
 ;;
-;; Set the Thread state and invoke RhpStressGC().
+;; Set the Thread state and invoke StressGC().
 ;;
 ;; Assumes EBX is the Thread pointer.
 ;;
@@ -215,12 +215,12 @@ ifdef FEATURE_GC_STRESS
 ;;
 StressGC macro
         mov         [ebx + OFFSETOF__Thread__m_pDeferredTransitionFrame], esp
-        call        RhpStressGc
+        call        StressGc
 endm
 
 ;;
 ;; Worker for our GC stress probes.  Do not call directly!!
-;; Instead, go through RhpGcStressHijack. This performs the GC Stress
+;; Instead, go through GcStressHijack. This performs the GC Stress
 ;; work and returns to the original return address.
 ;;
 ;; Register state on entry:
@@ -232,7 +232,7 @@ endm
 ;; Register state on exit:
 ;;  All registers restored as they were when the hijack was first reached.
 ;;
-RhpGcStressProbe  proc
+GcStressProbe  proc
         PushProbeFrame ecx      ; bitmask in ECX
 
         StressGC
@@ -244,32 +244,32 @@ RhpGcStressProbe  proc
 
         HijackFixupEpilog
 
-RhpGcStressProbe  endp
+GcStressProbe  endp
 
 endif ;; FEATURE_GC_STRESS
 
-_RhpGcProbeHijack@0  proc public
+_GcProbeHijack@0  proc public
         HijackFixupProlog
-        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        test        [TrapThreads], TrapThreadsFlags_TrapThreads
         jnz         WaitForGC
         HijackFixupEpilog
 
 WaitForGC:
         or          ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX
-        jmp         RhpWaitForGC
+        jmp         InternalWaitForGC
 
-_RhpGcProbeHijack@0  endp
+_GcProbeHijack@0  endp
 
 ifdef FEATURE_GC_STRESS
-_RhpGcStressHijack@0  proc public
+_GcStressHijack@0  proc public
 
         HijackFixupProlog
         or          ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX
-        jmp         RhpGcStressProbe
+        jmp         GcStressProbe
 
-_RhpGcStressHijack@0  endp
+_GcStressHijack@0  endp
 
-_RhpHijackForGcStress@0  proc public
+_HijackForGcStress@0  proc public
         push        ebp
         mov         ebp, esp
 
@@ -304,7 +304,7 @@ _RhpHijackForGcStress@0  proc public
         pop         edx
         pop         ebp
         ret
-_RhpHijackForGcStress@0  endp
+_HijackForGcStress@0  endp
 endif ;; FEATURE_GC_STRESS
 
         end

@@ -220,72 +220,72 @@ LEAF_END ThunkPool7, TKS7
 NAMED_READWRITE_DATA_SECTION ThunkData7, ".tkd7"
 
 ;;
-;; IntPtr RhpGetThunksBase()
+;; IntPtr GetThunksBase()
 ;;
-LEAF_ENTRY RhpGetThunksBase, _TEXT
+LEAF_ENTRY GetThunksBase, _TEXT
         ;; Return the address of the first thunk pool to the caller (this is really the base address)
         lea     rax, [ThunkPool]
         ret
-LEAF_END RhpGetThunksBase, _TEXT
+LEAF_END GetThunksBase, _TEXT
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; General Helpers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;
-;; int RhpGetNumThunksPerBlock()
+;; int GetNumThunksPerBlock()
 ;;
-LEAF_ENTRY RhpGetNumThunksPerBlock, _TEXT
+LEAF_ENTRY GetNumThunksPerBlock, _TEXT
         mov     rax, THUNK_POOL_NUM_THUNKS_PER_PAGE
         ret
-LEAF_END RhpGetNumThunksPerBlock, _TEXT
+LEAF_END GetNumThunksPerBlock, _TEXT
 
 ;;
-;; int RhpGetThunkSize()
+;; int GetThunkSize()
 ;;
-LEAF_ENTRY RhpGetThunkSize, _TEXT
+LEAF_ENTRY GetThunkSize, _TEXT
         mov     rax, THUNK_CODESIZE
         ret
-LEAF_END RhpGetThunkSize, _TEXT
+LEAF_END GetThunkSize, _TEXT
 
 ;;
-;; int RhpGetNumThunkBlocksPerMapping()
+;; int GetNumThunkBlocksPerMapping()
 ;;
-LEAF_ENTRY RhpGetNumThunkBlocksPerMapping, _TEXT
+LEAF_ENTRY GetNumThunkBlocksPerMapping, _TEXT
         mov     rax, 8
         ret
-LEAF_END RhpGetNumThunkBlocksPerMapping, _TEXT
+LEAF_END GetNumThunkBlocksPerMapping, _TEXT
 
 ;;
-;; int RhpGetThunkBlockSize
+;; int GetThunkBlockSize
 ;;
-LEAF_ENTRY RhpGetThunkBlockSize, _TEXT
+LEAF_ENTRY GetThunkBlockSize, _TEXT
         mov     rax, PAGE_SIZE * 2
         ret
-LEAF_END RhpGetThunkBlockSize, _TEXT
+LEAF_END GetThunkBlockSize, _TEXT
 
 ;;
-;; IntPtr RhpGetThunkDataBlockAddress(IntPtr thunkStubAddress)
+;; IntPtr GetThunkDataBlockAddress(IntPtr thunkStubAddress)
 ;;
-LEAF_ENTRY RhpGetThunkDataBlockAddress, _TEXT
+LEAF_ENTRY GetThunkDataBlockAddress, _TEXT
         mov     rax, rcx
         mov     rcx, PAGE_SIZE - 1
         not     rcx
         and     rax, rcx
         add     rax, PAGE_SIZE
         ret
-LEAF_END RhpGetThunkDataBlockAddress, _TEXT
+LEAF_END GetThunkDataBlockAddress, _TEXT
 
 ;;
-;; IntPtr RhpGetThunkStubsBlockAddress(IntPtr thunkDataAddress)
+;; IntPtr GetThunkStubsBlockAddress(IntPtr thunkDataAddress)
 ;;
-LEAF_ENTRY RhpGetThunkStubsBlockAddress, _TEXT
+LEAF_ENTRY GetThunkStubsBlockAddress, _TEXT
         mov     rax, rcx
         mov     rcx, PAGE_SIZE - 1
         not     rcx
         and     rax, rcx
         sub     rax, PAGE_SIZE
         ret
-LEAF_END RhpGetThunkStubsBlockAddress, _TEXT
+LEAF_END GetThunkStubsBlockAddress, _TEXT
 
 
 end

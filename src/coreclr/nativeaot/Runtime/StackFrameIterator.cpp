@@ -8,7 +8,7 @@
 #include "daccess.h"
 #include "PalLimitedContext.h"
 #include "Pal.h"
-#include "rhassert.h"
+#include "debugmacros.h"
 #include "slist.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -24,7 +24,7 @@
 
 #include "shash.h"
 #include "RuntimeInstance.h"
-#include "rhbinder.h"
+#include "binder.h"
 
 #include "NativeContext.h"
 
@@ -38,12 +38,12 @@ EXTERN_C CODE_LOCATION ReturnFromUniversalTransition;
 EXTERN_C CODE_LOCATION ReturnFromUniversalTransition_DebugStepTailCall;
 #endif
 
-EXTERN_C CODE_LOCATION RhpCallCatchFunclet2;
-EXTERN_C CODE_LOCATION RhpCallFinallyFunclet2;
-EXTERN_C CODE_LOCATION RhpCallFilterFunclet2;
-EXTERN_C CODE_LOCATION RhpThrowEx2;
-EXTERN_C CODE_LOCATION RhpThrowHwEx2;
-EXTERN_C CODE_LOCATION RhpRethrow2;
+EXTERN_C CODE_LOCATION CallCatchFunclet2;
+EXTERN_C CODE_LOCATION CallFinallyFunclet2;
+EXTERN_C CODE_LOCATION CallFilterFunclet2;
+EXTERN_C CODE_LOCATION ThrowEx2;
+EXTERN_C CODE_LOCATION ThrowHwEx2;
+EXTERN_C CODE_LOCATION Rethrow2;
 #endif // !defined(USE_PORTABLE_HELPERS)
 
 // Addresses of functions in the DAC won't match their runtime counterparts so we
@@ -1042,7 +1042,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
     PTR_uintptr_t SP;
 
-    bool isFilterInvoke = EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallFilterFunclet2);
+    bool isFilterInvoke = EQUALS_RETURN_ADDRESS(m_ControlPC, CallFilterFunclet2);
 
 #if defined(UNIX_AMD64_ABI)
     SP = (PTR_uintptr_t)(m_RegDisplay.SP);
@@ -1061,7 +1061,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pR14 = m_RegDisplay.pR14;
         m_funcletPtrs.pR15 = m_RegDisplay.pR15;
 
-        if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
+        if (EQUALS_RETURN_ADDRESS(m_ControlPC, CallCatchFunclet2))
         {
             SP += 6 + 1; // 6 locals and stack alignment
         }
@@ -1105,7 +1105,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pR14 = m_RegDisplay.pR14;
         m_funcletPtrs.pR15 = m_RegDisplay.pR15;
 
-        if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
+        if (EQUALS_RETURN_ADDRESS(m_ControlPC, CallCatchFunclet2))
         {
             SP += 3; // 3 locals
         }
@@ -1143,7 +1143,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
     }
 
-    if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
+    if (EQUALS_RETURN_ADDRESS(m_ControlPC, CallCatchFunclet2))
     {
         SP += 2; // 2 locals
     }
@@ -1166,9 +1166,9 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
     SP = (PTR_uintptr_t)d;
 
-    // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
+    // CallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
     // thunks, but we don't need to know what they are here, so we just skip them.
-    SP += EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 3 : 1;
+    SP += EQUALS_RETURN_ADDRESS(m_ControlPC, CallCatchFunclet2) ? 3 : 1;
 
     if (!isFilterInvoke)
     {
@@ -1204,9 +1204,9 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
     if (!isFilterInvoke)
     {
-        // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
+        // CallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
         // thunks, but we don't need to know what they are here, so we just skip them.
-        SP += EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 6 : 4;
+        SP += EQUALS_RETURN_ADDRESS(m_ControlPC, CallCatchFunclet2) ? 6 : 4;
 
         // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
         m_funcletPtrs.pX19  = m_RegDisplay.pX19;
@@ -1249,9 +1249,9 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
     if (!isFilterInvoke)
     {
-        // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
+        // CallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
         // thunks, but we don't need to know what they are here, so we just skip them.
-        SP += EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 6 : 4;
+        SP += EQUALS_RETURN_ADDRESS(m_ControlPC, CallCatchFunclet2) ? 6 : 4;
         // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
         m_funcletPtrs.pR23  = m_RegDisplay.pR23;
         m_funcletPtrs.pR24  = m_RegDisplay.pR24;
@@ -1293,9 +1293,9 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
     if (!isFilterInvoke)
     {
-        // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
+        // CallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
         // thunks, but we don't need to know what they are here, so we just skip them.
-        SP += EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 6 : 4;
+        SP += EQUALS_RETURN_ADDRESS(m_ControlPC, CallCatchFunclet2) ? 6 : 4;
         // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
         m_funcletPtrs.pS1  = m_RegDisplay.pS1;
         m_funcletPtrs.pS2  = m_RegDisplay.pS2;
@@ -1346,7 +1346,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 }
 
 // For a given target architecture, the layout of this structure must precisely match the
-// stack frame layout used by the associated architecture-specific RhpUniversalTransition
+// stack frame layout used by the associated architecture-specific UniversalTransition
 // implementation.
 struct UniversalTransitionStackFrame
 {
@@ -1374,7 +1374,7 @@ public:
 
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
     {
-        // RhpUniversalTransition does not touch any non-volatile state on amd64.
+        // UniversalTransition does not touch any non-volatile state on amd64.
         UNREFERENCED_PARAMETER(pRegisterSet);
     }
 
@@ -1398,7 +1398,7 @@ public:
 
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
     {
-        // RhpUniversalTransition does not touch any non-volatile state on amd64.
+        // UniversalTransition does not touch any non-volatile state on amd64.
         UNREFERENCED_PARAMETER(pRegisterSet);
     }
 
@@ -1542,7 +1542,7 @@ typedef DPTR(UniversalTransitionStackFrame) PTR_UniversalTransitionStackFrame;
 // of stack-passed argument space to be callee-popped before control returns (or unwinds) to the
 // callsite.  Since the callsite signature (and thus the amount of callee-popped space) is unknown,
 // the recovered SP does not account for the callee-popped space is therefore "wrong" for the
-// purposes of unwind.  This implies that any x86 function which calls into RhpUniversalTransition
+// purposes of unwind.  This implies that any x86 function which calls into UniversalTransition
 // must have a frame pointer to ensure that the incorrect SP value is ignored and does not break the
 // unwind.
 void StackFrameIterator::UnwindUniversalTransitionThunk()
@@ -1554,7 +1554,7 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
 #else // defined(USE_PORTABLE_HELPERS)
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InUniversalTransitionThunk);
 
-    // The current PC is within RhpUniversalTransition, so establish a view of the surrounding stack frame.
+    // The current PC is within UniversalTransition, so establish a view of the surrounding stack frame.
     // NOTE: In DAC builds, the pointer will refer to a newly constructed object in the DAC host.
     UniversalTransitionStackFrame * stackFrame = (PTR_UniversalTransitionStackFrame)m_RegDisplay.SP;
 
@@ -2246,20 +2246,20 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
     }
 #endif
 
-    if (EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowEx2) ||
-        EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowHwEx2) ||
-        EQUALS_RETURN_ADDRESS(returnAddress, RhpRethrow2))
+    if (EQUALS_RETURN_ADDRESS(returnAddress, ThrowEx2) ||
+        EQUALS_RETURN_ADDRESS(returnAddress, ThrowHwEx2) ||
+        EQUALS_RETURN_ADDRESS(returnAddress, Rethrow2))
     {
         return InThrowSiteThunk;
     }
 
-    if (EQUALS_RETURN_ADDRESS(returnAddress, RhpCallCatchFunclet2) ||
-        EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFinallyFunclet2))
+    if (EQUALS_RETURN_ADDRESS(returnAddress, CallCatchFunclet2) ||
+        EQUALS_RETURN_ADDRESS(returnAddress, CallFinallyFunclet2))
     {
         return InFuncletInvokeThunk;
     }
 
-    if (EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFilterFunclet2))
+    if (EQUALS_RETURN_ADDRESS(returnAddress, CallFilterFunclet2))
     {
         return InFilterFuncletInvokeThunk;
     }
@@ -2332,7 +2332,7 @@ bool StackFrameIterator::Next(uint32_t* puExCollideClauseIdx, bool* pfUnwoundRev
     return isValid;
 }
 
-FCIMPL4(FC_BOOL_RET, RhpSfiInit, StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, FC_BOOL_ARG instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
+FCIMPL4(FC_BOOL_RET, SfiInit, StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, FC_BOOL_ARG instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
 {
     bool isValid = pThis->Init(pStackwalkCtx, FC_ACCESS_BOOL(instructionFault));
 
@@ -2345,7 +2345,7 @@ FCIMPL4(FC_BOOL_RET, RhpSfiInit, StackFrameIterator* pThis, PAL_LIMITED_CONTEXT*
 }
 FCIMPLEND
 
-FCIMPL4(FC_BOOL_RET, RhpSfiNext, StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted)
+FCIMPL4(FC_BOOL_RET, SfiNext, StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted)
 {
     bool isValid = pThis->Next(puExCollideClauseIdx, pfUnwoundReversePInvoke);
 

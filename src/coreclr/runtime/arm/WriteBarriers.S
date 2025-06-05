@@ -93,18 +93,18 @@ LOCAL_LABEL(\BASENAME\()_EXIT_\REFREG):
 // definition of the name of the helper).
 .macro DEFINE_UNCHECKED_WRITE_BARRIER REFREG, EXPORT_REG_NAME
 
-// Define a helper with a name of the form RhpAssignRefEAX etc. (along with suitable calling standard
+// Define a helper with a name of the form AssignRefEAX etc. (along with suitable calling standard
 // decoration). The location to be updated is in DESTREG. The object reference that will be assigned into that
 // location is in one of the other general registers determined by the value of REFREG.
 
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 // - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at WriteBarrierFunctionAvLOC
 // - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
-LEAF_ENTRY RhpAssignRef\EXPORT_REG_NAME, _TEXT
+LEAF_ENTRY AssignRef\EXPORT_REG_NAME, _TEXT
 
 // Export the canonical write barrier under unqualified name as well
 .ifc \REFREG, r1
-ALTERNATE_ENTRY RhpAssignRef
+ALTERNATE_ENTRY AssignRef
 .endif
 
           // Use the GC write barrier as a convenient place to implement the managed memory model for ARM. The
@@ -120,16 +120,16 @@ ALTERNATE_ENTRY RhpAssignRef
 
           // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
           // and the card table update we may perform below.
-GLOBAL_LABEL "RhpAssignRefAvLocation"\EXPORT_REG_NAME  // WriteBarrierFunctionAvLocation
+GLOBAL_LABEL "AssignRefAvLocation"\EXPORT_REG_NAME  // WriteBarrierFunctionAvLocation
 .ifc \REFREG, r1
-GLOBAL_LABEL RhpAssignRefAVLocation
+GLOBAL_LABEL AssignRefAVLocation
 .endif
           str          \REFREG, [r0]
 
-          DEFINE_UNCHECKED_WRITE_BARRIER_CORE RhpAssignRef, \REFREG, r3
+          DEFINE_UNCHECKED_WRITE_BARRIER_CORE AssignRef, \REFREG, r3
 
           bx           lr
-LEAF_END RhpAssignRef\EXPORT_REG_NAME, _TEXT
+LEAF_END AssignRef\EXPORT_REG_NAME, _TEXT
 .endm
 
 // One day we might have write barriers for all the possible argument registers but for now we have
@@ -164,18 +164,18 @@ DEFINE_UNCHECKED_WRITE_BARRIER r1, r1
 // definition of the name of the helper).
 .macro DEFINE_CHECKED_WRITE_BARRIER REFREG, EXPORT_REG_NAME
 
-// Define a helper with a name of the form RhpCheckedAssignRefEAX etc. (along with suitable calling standard
+// Define a helper with a name of the form CheckedAssignRefEAX etc. (along with suitable calling standard
 // decoration). The location to be updated is always in R0. The object reference that will be assigned into
 // that location is in one of the other general registers determined by the value of REFREG.
 
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 // - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen on the first instruction
 // - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
-LEAF_ENTRY RhpCheckedAssignRef\EXPORT_REG_NAME, _TEXT
+LEAF_ENTRY CheckedAssignRef\EXPORT_REG_NAME, _TEXT
 
 // Export the canonical write barrier under unqualified name as well
 .ifc \REFREG, r1
-ALTERNATE_ENTRY RhpCheckedAssignRef
+ALTERNATE_ENTRY CheckedAssignRef
 .endif
 
           // Use the GC write barrier as a convenient place to implement the managed memory model for ARM. The
@@ -190,16 +190,16 @@ ALTERNATE_ENTRY RhpCheckedAssignRef
           dmb
           // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
           // and the card table update we may perform below.
-GLOBAL_LABEL "RhpCheckedAssignRefAvLocation"\EXPORT_REG_NAME // WriteBarrierFunctionAvLocation
+GLOBAL_LABEL "CheckedAssignRefAvLocation"\EXPORT_REG_NAME // WriteBarrierFunctionAvLocation
 .ifc \REFREG, r1
-GLOBAL_LABEL RhpCheckedAssignRefAVLocation
+GLOBAL_LABEL CheckedAssignRefAVLocation
 .endif
           str          \REFREG, [r0]
 
-          DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedAssignRef, \REFREG, r3
+          DEFINE_CHECKED_WRITE_BARRIER_CORE CheckedAssignRef, \REFREG, r3
 
           bx           lr
-LEAF_END RhpCheckedAssignRef\EXPORT_REG_NAME, _TEXT
+LEAF_END CheckedAssignRef\EXPORT_REG_NAME, _TEXT
 .endm
 
 // One day we might have write barriers for all the possible argument registers but for now we have
@@ -211,49 +211,49 @@ DEFINE_CHECKED_WRITE_BARRIER r1, r1
 // r0 = destination address
 // r1 = value
 // r2 = comparand
-LEAF_ENTRY RhpCheckedLockCmpXchg, _TEXT
+LEAF_ENTRY CheckedLockCmpXchg, _TEXT
           // To implement our chosen memory model for ARM we insert a memory barrier at GC write brriers. This
           // barrier must occur before the object reference update, so we have to do it unconditionally even
           // though the update may fail below.
           dmb
-LOCAL_LABEL(RhpCheckedLockCmpXchgRetry):
+LOCAL_LABEL(CheckedLockCmpXchgRetry):
           ldrex        r3, [r0]
           cmp          r2, r3
-          bne          LOCAL_LABEL(RhpCheckedLockCmpXchg_NoBarrierRequired_r1)
+          bne          LOCAL_LABEL(CheckedLockCmpXchg_NoBarrierRequired_r1)
           strex        r3, r1, [r0]
           cmp          r3, #0
-          bne          LOCAL_LABEL(RhpCheckedLockCmpXchgRetry)
+          bne          LOCAL_LABEL(CheckedLockCmpXchgRetry)
           mov          r3, r2
 
-          DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, r1, r2
+          DEFINE_CHECKED_WRITE_BARRIER_CORE CheckedLockCmpXchg, r1, r2
 
           mov          r0, r3
           bx           lr
-LEAF_END RhpCheckedLockCmpXchg, _TEXT
+LEAF_END CheckedLockCmpXchg, _TEXT
 
 // r0 = destination address
 // r1 = value
-LEAF_ENTRY RhpCheckedXchg, _TEXT
+LEAF_ENTRY CheckedXchg, _TEXT
           // To implement our chosen memory model for ARM we insert a memory barrier at GC write barriers. This
           // barrier must occur before the object reference update.
           dmb
-LOCAL_LABEL(RhpCheckedXchgRetry):
+LOCAL_LABEL(CheckedXchgRetry):
           ldrex        r2, [r0]
           strex        r3, r1, [r0]
           cmp          r3, #0
-          bne          LOCAL_LABEL(RhpCheckedXchgRetry)
+          bne          LOCAL_LABEL(CheckedXchgRetry)
 
-          DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, r1, r3
+          DEFINE_CHECKED_WRITE_BARRIER_CORE CheckedXchg, r1, r3
 
           // The original value is currently in r2. We need to return it in r0.
           mov          r0, r2
 
           bx           lr
-LEAF_END RhpCheckedXchg, _TEXT
+LEAF_END CheckedXchg, _TEXT
 #endif // FEATURE_NATIVEAOT
 
 //
-// RhpByRefAssignRef simulates movs instruction for object references.
+// ByRefAssignRef simulates movs instruction for object references.
 //
 // On entry:
 //      r0: address of ref-field (assigned to)
@@ -265,24 +265,24 @@ LEAF_END RhpCheckedXchg, _TEXT
 //      r2, r3: trashed
 //
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1/2
+// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at ByRefAssignRefAVLocation1/2
 // - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
-LEAF_ENTRY RhpByRefAssignRef, _TEXT
-          // See comment in RhpAssignRef
+LEAF_ENTRY ByRefAssignRef, _TEXT
+          // See comment in AssignRef
           dmb
 
-GLOBAL_LABEL RhpByRefAssignRefAVLocation1
+GLOBAL_LABEL ByRefAssignRefAVLocation1
           ldr          r2, [r1]
-GLOBAL_LABEL RhpByRefAssignRefAVLocation2
+GLOBAL_LABEL ByRefAssignRefAVLocation2
           str          r2, [r0]
 
           // Check whether the writes were even into the heap. If not there's no card update required.
           PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, r3
           cmp          r0, r3
-          blo          LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
+          blo          LOCAL_LABEL(ByRefAssignRef_NotInHeap)
           PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, r3
           cmp          r0, r3
-          bhs          LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
+          bhs          LOCAL_LABEL(ByRefAssignRef_NotInHeap)
 
           // Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
           // we're in a debug build and write barrier checking has been enabled).
@@ -294,10 +294,10 @@ GLOBAL_LABEL RhpByRefAssignRefAVLocation2
           // (since the object won't be collected or moved by an ephemeral collection).
           PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_low, r3
           cmp          r2, r3
-          blo          LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
+          blo          LOCAL_LABEL(ByRefAssignRef_NotInHeap)
           PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_high, r3
           cmp          r2, r3
-          bhs          LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
+          bhs          LOCAL_LABEL(ByRefAssignRef_NotInHeap)
 
           // move current r0 value into r2 and then increment the pointers
           mov          r2, r0
@@ -312,18 +312,18 @@ GLOBAL_LABEL RhpByRefAssignRefAVLocation2
           add           r2, r3, r2, lsr #10
           ldrb          r3, [r2]
           cmp           r3, #0x0FF
-          bne           LOCAL_LABEL(RhpByRefAssignRef_UpdateCardTable)
+          bne           LOCAL_LABEL(ByRefAssignRef_UpdateCardTable)
           bx            lr
 
 // We get here if it's necessary to update the card table.
-LOCAL_LABEL(RhpByRefAssignRef_UpdateCardTable):
+LOCAL_LABEL(ByRefAssignRef_UpdateCardTable):
           mov           r3, #0x0FF
           strb          r3, [r2]
           bx            lr
 
-LOCAL_LABEL(RhpByRefAssignRef_NotInHeap):
+LOCAL_LABEL(ByRefAssignRef_NotInHeap):
           // Increment the pointers before leaving
           add           r0, #4
           add           r1, #4
           bx            lr
-LEAF_END RhpByRefAssignRef, _TEXT
+LEAF_END ByRefAssignRef, _TEXT

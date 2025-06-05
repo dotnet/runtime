@@ -4,7 +4,7 @@
 #ifndef __COMMONMACROS_H__
 #define __COMMONMACROS_H__
 
-#include "rhassert.h"
+#include "debugmacros.h"
 #include <minipal/utils.h>
 #ifdef PROFILE_STARTUP
 #include <minipal/time.h>

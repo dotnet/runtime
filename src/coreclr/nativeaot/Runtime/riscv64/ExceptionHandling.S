@@ -9,10 +9,10 @@
 #define HARDWARE_EXCEPTION 1
 #define SOFTWARE_EXCEPTION 0
 
-.global RhpTrapThreads
+.global TrapThreads
 
 // -----------------------------------------------------------------------------
-// Macro used to create frame of exception throwing helpers (RhpThrowEx, RhpThrowHwEx)
+// Macro used to create frame of exception throwing helpers (ThrowEx, ThrowHwEx)
 .macro ALLOC_THROW_FRAME exceptionType
 
     mv  a3, sp
@@ -60,7 +60,7 @@
 .endm
 
 // -----------------------------------------------------------------------------
-// Macro used to create frame of funclet calling helpers (RhpCallXXXXFunclet)
+// Macro used to create frame of funclet calling helpers (CallXXXXFunclet)
 // extraStackSize - extra stack space that the user of the macro can use to
 //                   store additional registers
     .macro ALLOC_CALL_FUNCLET_FRAME extraStackSize
@@ -85,7 +85,7 @@
         .endif
     .endm
 
-// Macro used to free frame of funclet calling helpers (RhpCallXXXXFunclet)
+// Macro used to free frame of funclet calling helpers (CallXXXXFunclet)
 // extraStackSize - extra stack space that the user of the macro can use to
 //                   store additional registers.
 //                   It needs to match the value passed to the corresponding
@@ -248,7 +248,7 @@
     addi  sp, sp, -16
     sd    a0, 0(sp)
     sd    a1, 8(sp)
-    call  C_FUNC(RhpGetThread)
+    call  C_FUNC(GetThread)
     mv    a2, a0
     ld    a0, 0(sp)
     ld    a1, 8(sp)
@@ -259,7 +259,7 @@
 #define rsp_offsetof_Context STACKSIZEOF_ExInfo
 
 //
-// RhpThrowHwEx
+// ThrowHwEx
 //
 // INPUT:  a0[31:0]:  exception code of fault
 //         a1:  faulting IP
@@ -267,7 +267,7 @@
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
+    NESTED_ENTRY ThrowHwEx, _TEXT, NoHandler
 
         ALLOC_THROW_FRAME HARDWARE_EXCEPTION
 
@@ -296,22 +296,22 @@
         // a1: ExInfo*
         call  C_FUNC(RhThrowHwEx)
 
-    ALTERNATE_ENTRY RhpThrowHwEx2
+    ALTERNATE_ENTRY ThrowHwEx2
 
         // No return
         EMIT_BREAKPOINT
 
-    NESTED_END RhpThrowHwEx, _TEXT
+    NESTED_END ThrowHwEx, _TEXT
 
 //
-// RhpThrowEx
+// ThrowEx
 //
 // INPUT:  a0:  exception object
 //
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
+    NESTED_ENTRY ThrowEx, _TEXT, NoHandler
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
@@ -373,22 +373,22 @@ LOCAL_LABEL(NotHijacked):
         // a1: ExInfo*
         call C_FUNC(RhThrowEx)
 
-    ALTERNATE_ENTRY RhpThrowEx2
+    ALTERNATE_ENTRY ThrowEx2
 
         // No return
         EMIT_BREAKPOINT
 
-    NESTED_END RhpThrowEx, _TEXT
+    NESTED_END ThrowEx, _TEXT
 
 //
-// void FASTCALL RhpRethrow()
+// void FASTCALL Rethrow()
 //
-// SUMMARY: Similar to RhpThrowEx, except that it passes along the currently active ExInfo
+// SUMMARY: Similar to ThrowEx, except that it passes along the currently active ExInfo
 //
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
+    NESTED_ENTRY Rethrow, _TEXT, NoHandler
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
@@ -426,14 +426,14 @@ LOCAL_LABEL(NotHijacked):
         // a1 contains the address of the new ExInfo
         call  C_FUNC(RhRethrow)
 
-    ALTERNATE_ENTRY RhpRethrow2
+    ALTERNATE_ENTRY Rethrow2
 
         // no return
         EMIT_BREAKPOINT
-    NESTED_END RhpRethrow, _TEXT
+    NESTED_END Rethrow, _TEXT
 
 //
-// void* FASTCALL RhpCallCatchFunclet(OBJECTREF exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
+// void* FASTCALL CallCatchFunclet(OBJECTREF exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
 //                                    ExInfo* pExInfo)
 //
 // INPUT:  a0:  exception object
@@ -444,7 +444,7 @@ LOCAL_LABEL(NotHijacked):
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
+    NESTED_ENTRY CallCatchFunclet, _TEXT, NoHandler
 
         // Allocate space for the call funclet frame
         ALLOC_CALL_FUNCLET_FRAME 0x90
@@ -478,7 +478,7 @@ LOCAL_LABEL(NotHijacked):
 #define rsp_CatchFunclet_offset_thread 0x88
 
         // Clear the DoNotTriggerGc flag, trashes a4-a6
-        call  C_FUNC(RhpGetThread)  // Call the RhpGetThread function
+        call  C_FUNC(GetThread)  // Call the GetThread function
         sd  a0, rsp_CatchFunclet_offset_thread(sp)
         mv  a5, a0
         ld  a0, rsp_offset_a0(sp)
@@ -505,7 +505,7 @@ LOCAL_LABEL(NotHijacked):
         // a0 still contains the exception object
         jalr  a1 // Jump to the handler funclet
 
-    ALTERNATE_ENTRY RhpCallCatchFunclet2
+    ALTERNATE_ENTRY CallCatchFunclet2
 
         // a0 contains resume IP
 
@@ -522,7 +522,7 @@ LOCAL_LABEL(NotHijacked):
         ld  a0, rsp_CatchFunclet_offset_thread(sp) // a0 <- Thread*
         ld  a1, rsp_offset_a3(sp)                  // a1 <- current ExInfo*
         ld  a2, OFFSETOF__REGDISPLAY__SP(a2)       // a2 <- resume SP value
-        call  C_FUNC(RhpValidateExInfoPop)
+        call  C_FUNC(ValidateExInfoPop)
 
         ld  a2, rsp_offset_a2(sp)                  // a2 <- REGDISPLAY*
 
@@ -548,7 +548,7 @@ LOCAL_LABEL(PopExInfoLoop):
 LOCAL_LABEL(DonePopping):
         sd  a3, OFFSETOF__Thread__m_pExInfoStackHead(a1)  // Store the new head on the Thread
 
-        PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, a3
+        PREPARE_EXTERNAL_VAR_INDIRECT_W TrapThreads, a3
 
         // Use `andi` with the immediate value 0
         andi  a6, a3, (1 << TrapThreadsFlags_AbortInProgress_Bit)  // Apply the mask directly
@@ -562,7 +562,7 @@ LOCAL_LABEL(DonePopping):
         mv  a1, a0  // a1 <- continuation address as exception PC
         li  a0, STATUS_NATIVEAOT_THREAD_ABORT
         mv  sp, a2
-        tail  C_FUNC(RhpThrowHwEx)
+        tail  C_FUNC(ThrowHwEx)
 
 LOCAL_LABEL(NoAbort):
         // Reset SP and jump to continuation address
@@ -576,10 +576,10 @@ LOCAL_LABEL(NoAbort):
 #undef rsp_offset_a3
 #undef rsp_CatchFunclet_offset_thread
 
-    NESTED_END RhpCallCatchFunclet, _TEXT
+    NESTED_END CallCatchFunclet, _TEXT
 
 //
-// void FASTCALL RhpCallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
+// void FASTCALL CallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
 //
 // INPUT:  a0:  handler funclet address
 //         a1:  REGDISPLAY*
@@ -587,7 +587,7 @@ LOCAL_LABEL(NoAbort):
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
+    NESTED_ENTRY CallFinallyFunclet, _TEXT, NoHandler
 
         // Allocate space for the call funclet frame
         ALLOC_CALL_FUNCLET_FRAME 0x80
@@ -614,7 +614,7 @@ LOCAL_LABEL(NoAbort):
 #define rsp_FinallyFunclet_offset_thread 0x70
 
         // Clear the DoNotTriggerGc flag
-        call  C_FUNC(RhpGetThread)
+        call  C_FUNC(GetThread)
         sd  a0, rsp_FinallyFunclet_offset_thread(sp)
         mv  a2, a0
         ld  a0, 0x60(sp)
@@ -634,7 +634,7 @@ LOCAL_LABEL(NoAbort):
         // Call the funclet
         jalr  a0  // Jump to the funclet
 
-    ALTERNATE_ENTRY RhpCallFinallyFunclet2
+    ALTERNATE_ENTRY CallFinallyFunclet2
 
         ld  a1, rsp_offset_a1(sp)  // Reload REGDISPLAY pointer
 
@@ -671,10 +671,10 @@ LOCAL_LABEL(NoAbort):
 #undef rsp_offset_a1
 #undef rsp_FinallyFunclet_offset_thread
 
-    NESTED_END RhpCallFinallyFunclet, _TEXT
+    NESTED_END CallFinallyFunclet, _TEXT
 
 //
-// void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
+// void* FASTCALL CallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
 //
 // INPUT:  a0:  exception object
 //         a1:  filter funclet address
@@ -683,7 +683,7 @@ LOCAL_LABEL(NoAbort):
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
+    NESTED_ENTRY CallFilterFunclet, _TEXT, NoHandler
         ALLOC_CALL_FUNCLET_FRAME 0x60
         fsd  fs0,  0x00(sp)
         fsd  fs1,  0x08(sp)
@@ -707,7 +707,7 @@ LOCAL_LABEL(NoAbort):
         // a0 still contains the exception object
         jalr  a1
 
-    ALTERNATE_ENTRY RhpCallFilterFunclet2
+    ALTERNATE_ENTRY CallFilterFunclet2
 
         fld  fs0,  0x00(sp)
         fld  fs1,  0x08(sp)
@@ -725,12 +725,12 @@ LOCAL_LABEL(NoAbort):
         FREE_CALL_FUNCLET_FRAME 0x60
         EPILOG_RETURN
 
-    NESTED_END RhpCallFilterFunclet, Text
+    NESTED_END CallFilterFunclet, Text
 
 #ifdef FEATURE_OBJCMARSHAL
 
 //
-// void* FASTCALL RhpCallPropagateExceptionCallback(void* pCallbackContext, void* pCallback, REGDISPLAY* pRegDisplay,
+// void* FASTCALL CallPropagateExceptionCallback(void* pCallbackContext, void* pCallback, REGDISPLAY* pRegDisplay,
 //                                    ExInfo* pExInfo, PInvokeTransitionFrame* pPreviousTransitionFrame)
 //
 // INPUT:  a0:  callback context
@@ -742,7 +742,7 @@ LOCAL_LABEL(NoAbort):
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpCallPropagateExceptionCallback, _TEXT, NoHandler
+    NESTED_ENTRY CallPropagateExceptionCallback, _TEXT, NoHandler
 
 #define rsp_offset_a0 0x10
 #define rsp_offset_a1 0x18
@@ -763,7 +763,7 @@ LOCAL_LABEL(NoAbort):
         sd    zero, rsp_CallPropagationCallback_offset_thread(sp) // zero makes space to store the thread obj
 
         // clear the DoNotTriggerGc flag, trashes a4-a6
-        call  C_FUNC(RhpGetThread)
+        call  C_FUNC(GetThread)
         sd    a0, rsp_CallPropagationCallback_offset_thread(sp)
         mv    a5, a0
         ld    a0, rsp_offset_a0(sp)
@@ -790,7 +790,7 @@ LOCAL_LABEL(NoAbort):
         ld    a0, rsp_CallPropagationCallback_offset_thread(sp)  // a0 <- Thread*
         ld    a1, rsp_offset_a3(sp)                              // a1 <- current ExInfo*
         ld    a2, OFFSETOF__REGDISPLAY__SP(a2)                   // a2 <- resume SP value
-        call  C_FUNC(RhpValidateExInfoPop)
+        call  C_FUNC(ValidateExInfoPop)
 
         ld    a2, rsp_offset_a2(sp)                              // a2 <- REGDISPLAY*
 
@@ -834,6 +834,6 @@ LOCAL_LABEL(Propagate_DonePopping):
 #undef rsp_offset_a3
 #undef rsp_CallPropagationCallback_offset_thread
 
-    NESTED_END RhpCallPropagateExceptionCallback, _TEXT
+    NESTED_END CallPropagateExceptionCallback, _TEXT
 
 #endif // FEATURE_OBJCMARSHAL

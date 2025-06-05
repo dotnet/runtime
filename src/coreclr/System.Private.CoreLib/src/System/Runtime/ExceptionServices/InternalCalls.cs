@@ -14,37 +14,37 @@ namespace System.Runtime.ExceptionServices
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SfiInit")]
         [return: MarshalAs(UnmanagedType.U1)]
-        internal static unsafe partial bool RhpSfiInit(ref StackFrameIterator pThis, void* pStackwalkCtx, [MarshalAs(UnmanagedType.U1)] bool instructionFault, bool* fIsExceptionIntercepted);
+        internal static unsafe partial bool SfiInit(ref StackFrameIterator pThis, void* pStackwalkCtx, [MarshalAs(UnmanagedType.U1)] bool instructionFault, bool* fIsExceptionIntercepted);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SfiNext")]
         [return: MarshalAs(UnmanagedType.U1)]
-        internal static unsafe partial bool RhpSfiNext(ref StackFrameIterator pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted);
+        internal static unsafe partial bool SfiNext(ref StackFrameIterator pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ResumeAtInterceptionLocation")]
         internal static unsafe partial void ResumeAtInterceptionLocation(void* pvRegDisplay);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CallCatchFunclet")]
-        internal static unsafe partial IntPtr RhpCallCatchFunclet(
+        internal static unsafe partial IntPtr CallCatchFunclet(
             ObjectHandleOnStack exceptionObj, byte* pHandlerIP, void* pvRegDisplay, EH.ExInfo* exInfo);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CallFinallyFunclet")]
-        internal static unsafe partial void RhpCallFinallyFunclet(byte* pHandlerIP, void* pvRegDisplay, EH.ExInfo* exInfo);
+        internal static unsafe partial void CallFinallyFunclet(byte* pHandlerIP, void* pvRegDisplay, EH.ExInfo* exInfo);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CallFilterFunclet")]
         [return: MarshalAs(UnmanagedType.U1)]
-        internal static unsafe partial bool RhpCallFilterFunclet(
+        internal static unsafe partial bool CallFilterFunclet(
             ObjectHandleOnStack exceptionObj, byte* pFilterIP, void* pvRegDisplay);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppendExceptionStackFrame")]
-        internal static unsafe partial void RhpAppendExceptionStackFrame(ObjectHandleOnStack exceptionObj, IntPtr ip, UIntPtr sp, int flags, EH.ExInfo* exInfo);
+        internal static unsafe partial void AppendExceptionStackFrame(ObjectHandleOnStack exceptionObj, IntPtr ip, UIntPtr sp, int flags, EH.ExInfo* exInfo);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EHEnumInitFromStackFrameIterator")]
         [SuppressGCTransition]
         [return: MarshalAs(UnmanagedType.U1)]
-        internal static unsafe partial bool RhpEHEnumInitFromStackFrameIterator(ref StackFrameIterator pFrameIter, out EH.MethodRegionInfo pMethodRegionInfo, void* pEHEnum);
+        internal static unsafe partial bool EHEnumInitFromStackFrameIterator(ref StackFrameIterator pFrameIter, out EH.MethodRegionInfo pMethodRegionInfo, void* pEHEnum);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EHEnumNext")]
         [return: MarshalAs(UnmanagedType.U1)]
-        internal static unsafe partial bool RhpEHEnumNext(void* pEHEnum, void* pEHClause);
+        internal static unsafe partial bool EHEnumNext(void* pEHEnum, void* pEHClause);
     }
 }

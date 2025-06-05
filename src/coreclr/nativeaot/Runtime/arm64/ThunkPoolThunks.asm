@@ -263,72 +263,72 @@ label_$groupIndex_$index_P$pageIndex
 
 
     ;;
-    ;; IntPtr RhpGetThunksBase()
+    ;; IntPtr GetThunksBase()
     ;;
     ;; ARM64TODO: There is a bug in the arm64 assembler which ends up with mis-sorted Pdata entries
     ;; for the functions in this file.  As a work around, don't generate pdata for these small stubs.
     ;; All the "No_PDATA" variants need to be removed after MASM bug 516396 is fixed.
-    LEAF_ENTRY_NO_PDATA RhpGetThunksBase
+    LEAF_ENTRY_NO_PDATA GetThunksBase
         ;; Return the address of the first thunk pool to the caller (this is really the base address)
         ldr     x0, =ThunkPool
         ret
-    LEAF_END_NO_PDATA RhpGetThunksBase
+    LEAF_END_NO_PDATA GetThunksBase
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; General Helpers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;;
-    ;; int RhpGetNumThunksPerBlock()
+    ;; int GetNumThunksPerBlock()
     ;;
-    LEAF_ENTRY_NO_PDATA RhpGetNumThunksPerBlock
+    LEAF_ENTRY_NO_PDATA GetNumThunksPerBlock
         mov     x0, THUNK_POOL_NUM_THUNKS_PER_PAGE
         ret
-    LEAF_END_NO_PDATA RhpGetNumThunksPerBlock
+    LEAF_END_NO_PDATA GetNumThunksPerBlock
 
     ;;
-    ;; int RhpGetThunkSize()
+    ;; int GetThunkSize()
     ;;
-    LEAF_ENTRY_NO_PDATA RhpGetThunkSize
+    LEAF_ENTRY_NO_PDATA GetThunkSize
         mov     x0, THUNK_CODESIZE
         ret
-    LEAF_END_NO_PDATA RhpGetThunkSize
+    LEAF_END_NO_PDATA GetThunkSize
 
     ;;
-    ;; int RhpGetNumThunkBlocksPerMapping()
+    ;; int GetNumThunkBlocksPerMapping()
     ;;
-    LEAF_ENTRY_NO_PDATA RhpGetNumThunkBlocksPerMapping
+    LEAF_ENTRY_NO_PDATA GetNumThunkBlocksPerMapping
         mov     x0, 8
         ret
-    LEAF_END_NO_PDATA RhpGetNumThunkBlocksPerMapping
+    LEAF_END_NO_PDATA GetNumThunkBlocksPerMapping
 
     ;;
-    ;; int RhpGetThunkBlockSize
+    ;; int GetThunkBlockSize
     ;;
-    LEAF_ENTRY_NO_PDATA RhpGetThunkBlockSize
+    LEAF_ENTRY_NO_PDATA GetThunkBlockSize
         mov     x0, PAGE_SIZE * 2
         ret
-    LEAF_END_NO_PDATA RhpGetThunkBlockSize
+    LEAF_END_NO_PDATA GetThunkBlockSize
 
     ;;
-    ;; IntPtr RhpGetThunkDataBlockAddress(IntPtr thunkStubAddress)
+    ;; IntPtr GetThunkDataBlockAddress(IntPtr thunkStubAddress)
     ;;
-    LEAF_ENTRY_NO_PDATA RhpGetThunkDataBlockAddress
+    LEAF_ENTRY_NO_PDATA GetThunkDataBlockAddress
         mov     x12, PAGE_SIZE - 1
         bic     x0, x0, x12
         mov     x12, PAGE_SIZE
         add     x0, x0, x12
         ret
-    LEAF_END_NO_PDATA RhpGetThunkDataBlockAddress
+    LEAF_END_NO_PDATA GetThunkDataBlockAddress
 
     ;;
-    ;; IntPtr RhpGetThunkStubsBlockAddress(IntPtr thunkDataAddress)
+    ;; IntPtr GetThunkStubsBlockAddress(IntPtr thunkDataAddress)
     ;;
-    LEAF_ENTRY_NO_PDATA RhpGetThunkStubsBlockAddress
+    LEAF_ENTRY_NO_PDATA GetThunkStubsBlockAddress
         mov     x12, PAGE_SIZE - 1
         bic     x0, x0, x12
         mov     x12, PAGE_SIZE
         sub     x0, x0, x12
         ret
-    LEAF_END_NO_PDATA RhpGetThunkStubsBlockAddress
+    LEAF_END_NO_PDATA GetThunkStubsBlockAddress
 
     END

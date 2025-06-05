@@ -33,7 +33,7 @@ namespace System.Runtime
             Head = Head.Next;
 
             // notify the runtime
-            InternalCalls.RhpInitializeGcStress();
+            InternalCalls.InitializeGcStress();
 #endif // FEATURE_GC_STRESS
         }
 
@@ -43,7 +43,7 @@ namespace System.Runtime
         {
 #if FEATURE_GC_STRESS
             if (GCStress.Initialized)
-                InternalCalls.RhCollect(-1, InternalGCCollectionMode.Blocking);
+                InternalCalls.GCCollect(-1, InternalGCCollectionMode.Blocking);
 #endif
         }
 

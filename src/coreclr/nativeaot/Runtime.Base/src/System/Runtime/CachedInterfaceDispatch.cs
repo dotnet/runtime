@@ -11,20 +11,20 @@ namespace System.Runtime
 {
     internal static unsafe class CachedInterfaceDispatch
     {
-        [RuntimeExport("RhpCidResolve")]
-        private static unsafe IntPtr RhpCidResolve(IntPtr callerTransitionBlockParam, IntPtr pCell)
+        [RuntimeExport("CidResolve")]
+        private static unsafe IntPtr CidResolve(IntPtr callerTransitionBlockParam, IntPtr pCell)
         {
             IntPtr locationOfThisPointer = callerTransitionBlockParam + TransitionBlock.GetThisOffset();
             object pObject = *(object*)locationOfThisPointer;
-            IntPtr dispatchResolveTarget = RhpCidResolve_Worker(pObject, pCell);
+            IntPtr dispatchResolveTarget = CidResolve_Worker(pObject, pCell);
             return dispatchResolveTarget;
         }
 
-        private static IntPtr RhpCidResolve_Worker(object pObject, IntPtr pCell)
+        private static IntPtr CidResolve_Worker(object pObject, IntPtr pCell)
         {
             DispatchCellInfo cellInfo;
 
-            InternalCalls.RhpGetDispatchCellInfo(pCell, out cellInfo);
+            InternalCalls.GetDispatchCellInfo(pCell, out cellInfo);
             IntPtr pTargetCode = RhResolveDispatchWorker(pObject, (void*)pCell, ref cellInfo);
             if (pTargetCode != IntPtr.Zero)
             {
@@ -33,7 +33,7 @@ namespace System.Runtime
                 // as the one we just resolved would do the resolution the same way. We will need to ask again.
                 if (!pObject.GetMethodTable()->IsIDynamicInterfaceCastable)
                 {
-                    return InternalCalls.RhpUpdateDispatchCellCache(pCell, pTargetCode, pObject.GetMethodTable(), ref cellInfo);
+                    return InternalCalls.UpdateDispatchCellCache(pCell, pTargetCode, pObject.GetMethodTable(), ref cellInfo);
                 }
                 else
                 {
@@ -46,8 +46,8 @@ namespace System.Runtime
             return IntPtr.Zero;
         }
 
-        [RuntimeExport("RhpResolveInterfaceMethod")]
-        private static IntPtr RhpResolveInterfaceMethod(object pObject, IntPtr pCell)
+        [RuntimeExport("ResolveInterfaceMethod")]
+        private static IntPtr ResolveInterfaceMethod(object pObject, IntPtr pCell)
         {
             if (pObject == null)
             {
@@ -60,11 +60,11 @@ namespace System.Runtime
 
             // This method is used for the implementation of LOAD_VIRT_FUNCTION and in that case the mapping we want
             // may already be in the cache.
-            IntPtr pTargetCode = InternalCalls.RhpSearchDispatchCellCache(pCell, pInstanceType);
+            IntPtr pTargetCode = InternalCalls.SearchDispatchCellCache(pCell, pInstanceType);
             if (pTargetCode == IntPtr.Zero)
             {
                 // Otherwise call the version of this method that knows how to resolve the method manually.
-                pTargetCode = RhpCidResolve_Worker(pObject, pCell);
+                pTargetCode = CidResolve_Worker(pObject, pCell);
             }
 
             return pTargetCode;

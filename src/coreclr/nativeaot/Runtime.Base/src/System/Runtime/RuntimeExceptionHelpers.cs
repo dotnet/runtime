@@ -9,7 +9,7 @@ namespace System
     {
         public static void FailFast(String message)
         {
-            InternalCalls.RhpFallbackFailFast();
+            InternalCalls.FallbackFailFast();
         }
     }
 }

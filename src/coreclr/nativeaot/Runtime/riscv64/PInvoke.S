@@ -4,10 +4,10 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-.global RhpTrapThreads
+.global TrapThreads
 
 //
-// RhpPInvoke
+// PInvoke
 //
 // IN:  a0: address of pinvoke frame
 //
@@ -16,7 +16,7 @@
 // Also, the code generator must ensure that there are no live GC references in callee saved registers.
 //
 
-NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
+NESTED_ENTRY PInvoke, _TEXT, NoHandler
         sd    fp, OFFSETOF__PInvokeTransitionFrame__m_FramePointer(a0)
         sd    ra, OFFSETOF__PInvokeTransitionFrame__m_RIP(a0)
         sd    sp, OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs(a0)
@@ -31,20 +31,20 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         sd    a1, OFFSETOF__PInvokeTransitionFrame__m_pThread(t2)
         sd    t2, OFFSETOF__Thread__m_pTransitionFrame(a1)
         ret
-NESTED_END RhpPInvoke, _TEXT
+NESTED_END PInvoke, _TEXT
 
-LEAF_ENTRY RhpPInvokeReturn, _TEXT
+LEAF_ENTRY PInvokeReturn, _TEXT
         ld    t0, OFFSETOF__PInvokeTransitionFrame__m_pThread(a0)
         mv    t1, zero
         sd    t1, OFFSETOF__Thread__m_pTransitionFrame(t0)
 
-        PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, t0
+        PREPARE_EXTERNAL_VAR_INDIRECT_W TrapThreads, t0
 
         bnez    t0, 0f  // If TrapThreadsFlags_None is non-zero, branch
         ret
 
 0:
         // Passing transition frame pointer in a0
-        tail    RhpWaitForGC2
+        tail    WaitForGC2
 
-LEAF_END RhpPInvokeReturn, _TEXT
+LEAF_END PInvokeReturn, _TEXT

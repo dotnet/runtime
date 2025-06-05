@@ -14,7 +14,7 @@ namespace System.Diagnostics
         {
             if (!condition)
             {
-                RuntimeImports.RhpFallbackFailFast();
+                RuntimeImports.FallbackFailFast();
             }
         }
 
@@ -24,7 +24,7 @@ namespace System.Diagnostics
         {
             if (!condition)
             {
-                RuntimeImports.RhpFallbackFailFast();
+                RuntimeImports.FallbackFailFast();
             }
         }
 

@@ -22,7 +22,7 @@ GC_ALLOC_FINALIZE               equ 1
 GC_ALLOC_ALIGN8_BIAS            equ 4
 GC_ALLOC_ALIGN8                 equ 8
 
-;; Note: these must match the defs in PInvokeTransitionFrameFlags defined in rhbinder.h
+;; Note: these must match the defs in PInvokeTransitionFrameFlags defined in binder.h
 PTFF_SAVE_X19           equ 0x00000001
 PTFF_SAVE_X20           equ 0x00000002
 PTFF_SAVE_X21           equ 0x00000004
@@ -84,15 +84,15 @@ OFFSETOF__ee_alloc_context                   equ OFFSETOF__Thread__m_eeAllocCont
 ;;
 ;; IMPORTS
 ;;
-    EXTERN RhpGcAlloc
+    EXTERN GcAlloc
     EXTERN RhExceptionHandling_FailedAllocation
     EXTERN RhDebugBreak
-    EXTERN RhpWaitForGC2
+    EXTERN WaitForGC2
     EXTERN RhThrowHwEx
     EXTERN RhThrowEx
     EXTERN RhRethrow
 
-    EXTERN RhpTrapThreads
+    EXTERN TrapThreads
     EXTERN g_lowest_address
     EXTERN g_highest_address
     EXTERN g_ephemeral_low
@@ -315,6 +315,6 @@ DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 #ifdef FEATURE_GC_STRESS
     SETALIAS THREAD__HIJACKFORGCSTRESS, ?HijackForGcStress@Thread@@SAXPEAUPAL_LIMITED_CONTEXT@@@Z
 
-    EXTERN RhpStressGc
+    EXTERN StressGc
     EXTERN $THREAD__HIJACKFORGCSTRESS
 #endif ;; FEATURE_GC_STRESS

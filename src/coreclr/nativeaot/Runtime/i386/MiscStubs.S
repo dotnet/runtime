@@ -5,7 +5,7 @@
 #include <unixasmmacros.inc>
 
 // *********************************************************************/
-// RhpStackProbe
+// StackProbe
 //
 // Purpose:
 //   the helper will access ("probe") a word on each page of the stack
@@ -17,7 +17,7 @@
 // NOTE: On Linux we must advance the stack pointer as we probe - it is not allowed to access 65535 bytes below esp.
 //
 #define PROBE_STEP 0x1000
-NESTED_ENTRY RhpStackProbe, _TEXT, NoHandler
+NESTED_ENTRY StackProbe, _TEXT, NoHandler
     // On entry:
     //   eax - the lowest address of the stack frame being allocated (i.e. [InitialSp - FrameSize])
     //
@@ -39,4 +39,4 @@ LOCAL_LABEL(ProbeLoop):
     EPILOG_END
     ret
 
-NESTED_END RhpStackProbe, _TEXT
+NESTED_END StackProbe, _TEXT

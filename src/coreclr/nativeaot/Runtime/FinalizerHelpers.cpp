@@ -119,7 +119,7 @@ void RhEnableFinalization()
 static int32_t g_fullGcCountSeenByFinalization;
 
 // Indicate that the current round of finalizations is complete.
-EXTERN_C void QCALLTYPE RhpSignalFinalizationComplete(uint32_t fcount, int32_t observedFullGcCount)
+EXTERN_C void QCALLTYPE SignalFinalizationComplete(uint32_t fcount, int32_t observedFullGcCount)
 {
     FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
 
@@ -172,7 +172,7 @@ EXTERN_C void QCALLTYPE RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWai
 
 // Block the current thread until at least one object needs to be finalized (returns true) or memory is low
 // (returns false and the finalizer thread should initiate a garbage collection).
-EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
+EXTERN_C UInt32_BOOL QCALLTYPE WaitForFinalizerRequest()
 {
     // We can wait for two events; finalization queue has been populated and low memory resource notification.
     // But if the latter is signalled we shouldn't wait on it again immediately -- if the garbage collection
@@ -239,7 +239,7 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
 //
 
 // Fetch next object which needs finalization or return null if we've reached the end of the list.
-FCIMPL0(OBJECTREF, RhpGetNextFinalizableObject)
+FCIMPL0(OBJECTREF, GetNextFinalizableObject)
 {
     while (true)
     {

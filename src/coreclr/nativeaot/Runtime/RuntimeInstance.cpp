@@ -7,11 +7,11 @@
 #include "daccess.h"
 #include "PalLimitedContext.h"
 #include "Pal.h"
-#include "rhassert.h"
+#include "debugmacros.h"
 #include "slist.h"
 #include "holder.h"
 #include "Crst.h"
-#include "rhbinder.h"
+#include "binder.h"
 #include "RuntimeInstance.h"
 #include "event.h"
 #include "regdisplay.h"
@@ -273,7 +273,7 @@ bool RuntimeInstance::RegisterTypeManager(TypeManager * pTypeManager)
     return true;
 }
 
-FCIMPL4(TypeManagerHandle, RhpCreateTypeManager, HANDLE osModule, void* pModuleHeader, PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions)
+FCIMPL4(TypeManagerHandle, CreateTypeManager, HANDLE osModule, void* pModuleHeader, PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions)
 {
     TypeManager * typeManager = TypeManager::Create(osModule, pModuleHeader, pClasslibFunctions, nClasslibFunctions);
     GetRuntimeInstance()->RegisterTypeManager(typeManager);
@@ -282,7 +282,7 @@ FCIMPL4(TypeManagerHandle, RhpCreateTypeManager, HANDLE osModule, void* pModuleH
 }
 FCIMPLEND
 
-FCIMPL1(void*, RhpRegisterOsModule, HANDLE hOsModule)
+FCIMPL1(void*, RegisterOsModule, HANDLE hOsModule)
 {
     RuntimeInstance::OsModuleEntry * pEntry = new (nothrow) RuntimeInstance::OsModuleEntry();
     if (NULL == pEntry)
@@ -350,7 +350,7 @@ bool RuntimeInstance::ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP)
 }
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-EXTERN_C void F_CALL_CONV RhpInitialDynamicInterfaceDispatch();
+EXTERN_C void F_CALL_CONV InitialDynamicInterfaceDispatch();
 
 FCIMPL2(void *, RhNewInterfaceDispatchCell, MethodTable * pInterface, int32_t slotNumber)
 {
@@ -363,7 +363,7 @@ FCIMPL2(void *, RhNewInterfaceDispatchCell, MethodTable * pInterface, int32_t sl
     ASSERT(IS_ALIGNED(pCell, 2 * POINTER_SIZE));
     ASSERT(IS_ALIGNED(pInterface, (InterfaceDispatchCell::IDC_CachePointerMask + 1)));
 
-    pCell[0].m_pStub = (uintptr_t)&RhpInitialDynamicInterfaceDispatch;
+    pCell[0].m_pStub = (uintptr_t)&InitialDynamicInterfaceDispatch;
     pCell[0].m_pCache = ((uintptr_t)pInterface) | InterfaceDispatchCell::IDC_CachePointerIsInterfacePointerOrMetadataToken;
     pCell[1].m_pStub = 0;
     pCell[1].m_pCache = (uintptr_t)slotNumber;

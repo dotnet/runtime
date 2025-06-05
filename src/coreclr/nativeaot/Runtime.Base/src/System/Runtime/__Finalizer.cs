@@ -24,7 +24,7 @@ namespace System.Runtime
             {
                 // Wait until there's some work to be done. If true is returned we should finalize objects,
                 // otherwise memory is low and we should initiate a collection.
-                if (InternalCalls.RhpWaitForFinalizerRequest() != 0)
+                if (InternalCalls.WaitForFinalizerRequest() != 0)
                 {
                     int observedFullGcCount = RuntimeImports.RhGetGcCollectionCount(RuntimeImports.RhGetMaxGcGeneration(), false);
                     uint finalizerCount = DrainQueue();
@@ -33,13 +33,13 @@ namespace System.Runtime
                     // race in that another thread starting a drain, as we leave a drain, may
                     // consider itself satisfied by the drain that just completed.
                     // Thus we include the Full GC count that we have certaily observed.
-                    InternalCalls.RhpSignalFinalizationComplete(finalizerCount, observedFullGcCount);
+                    InternalCalls.SignalFinalizationComplete(finalizerCount, observedFullGcCount);
                 }
                 else
                 {
-                    // RhpWaitForFinalizerRequest() returned false and indicated that memory is low. We help
+                    // WaitForFinalizerRequest() returned false and indicated that memory is low. We help
                     // out by initiating a garbage collection and then go back to waiting for another request.
-                    InternalCalls.RhCollect(0, InternalGCCollectionMode.Blocking, lowMemoryP: true);
+                    InternalCalls.GCCollect(0, InternalGCCollectionMode.Blocking, lowMemoryP: true);
                 }
             }
         }
@@ -54,7 +54,7 @@ namespace System.Runtime
             // Drain the queue of finalizable objects.
             while (true)
             {
-                object target = InternalCalls.RhpGetNextFinalizableObject();
+                object target = InternalCalls.GetNextFinalizableObject();
                 if (target == null)
                     return finalizerCount;
 

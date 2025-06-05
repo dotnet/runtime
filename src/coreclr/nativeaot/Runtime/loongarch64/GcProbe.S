@@ -113,26 +113,26 @@
 //
 // GC Probe Hijack target
 //
-NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
+NESTED_ENTRY GcProbeHijack, _TEXT, NoHandler
     FixupHijackedCallstack
 
-    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, $a3
+    PREPARE_EXTERNAL_VAR_INDIRECT_W TrapThreads, $a3
     bstrpick.d  $t8, $a3, TrapThreadsFlags_TrapThreads_Bit, TrapThreadsFlags_TrapThreads_Bit
     bnez  $t8, LOCAL_LABEL(WaitForGC)
     jirl  $r0, $ra, 0
 
 LOCAL_LABEL(WaitForGC):
     li.d  $t3, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5 + (PTFF_THREAD_HIJACK_HI << 32))
-    b  C_FUNC(RhpWaitForGC)
-NESTED_END RhpGcProbeHijack
+    b  C_FUNC(InternalWaitForGC)
+NESTED_END GcProbeHijack
 
-.global C_FUNC(RhpThrowHwEx)
+.global C_FUNC(ThrowHwEx)
 
-NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
+NESTED_ENTRY InternalWaitForGC, _TEXT, NoHandler
     PUSH_PROBE_FRAME $a2, $a3, $t3
 
     ld.d        $a0, $a2, OFFSETOF__Thread__m_pDeferredTransitionFrame
-    bl  C_FUNC(RhpWaitForGC2)
+    bl  C_FUNC(WaitForGC2)
 
     ld.d  $a2,$sp, OFFSETOF__PInvokeTransitionFrame__m_Flags
     bstrpick.d  $t8, $a2, PTFF_THREAD_ABORT_BIT, PTFF_THREAD_ABORT_BIT
@@ -147,23 +147,23 @@ LOCAL_LABEL(ThrowThreadAbort):
     POP_PROBE_FRAME
     addi.w  $a0, $zero, STATUS_NATIVEAOT_THREAD_ABORT
     ori  $a1, $ra, 0 // return address as exception PC
-    b  RhpThrowHwEx
-NESTED_END RhpWaitForGC
+    b  ThrowHwEx
+NESTED_END InternalWaitForGC
 
-.global C_FUNC(RhpGcPoll2)
+.global C_FUNC(GcPoll2)
 
-LEAF_ENTRY RhpGcPoll
-    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, $a0
-    bnez  $a0, C_FUNC(RhpGcPollRare)
+LEAF_ENTRY GcPoll
+    PREPARE_EXTERNAL_VAR_INDIRECT_W TrapThreads, $a0
+    bnez  $a0, C_FUNC(GcPollRare)
     jirl  $r0, $ra, 0
-LEAF_END RhpGcPoll
+LEAF_END GcPoll
 
-NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
+NESTED_ENTRY GcPollRare, _TEXT, NoHandler
     PUSH_COOP_PINVOKE_FRAME  $a0
-    bl  RhpGcPoll2
+    bl  GcPoll2
     POP_COOP_PINVOKE_FRAME
     jirl  $r0, $ra, 0
-NESTED_END RhpGcPollRare
+NESTED_END GcPollRare
 
 
 #ifdef FEATURE_GC_STRESS
@@ -171,9 +171,9 @@ NESTED_END RhpGcPollRare
 //
 // GC Stress Hijack targets
 //
-LEAF_ENTRY RhpGcStressHijack, _TEXT
+LEAF_ENTRY GcStressHijack, _TEXT
     // NYI
     EMIT_BREAKPOINT
-LEAF_END RhpGcStressHijack, _TEXT
+LEAF_END GcStressHijack, _TEXT
 
 #endif  // FEATURE_GC_STRESS

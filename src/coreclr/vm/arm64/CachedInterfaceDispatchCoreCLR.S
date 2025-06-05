@@ -9,10 +9,10 @@
 //
 // Stub dispatch routine for dispatch to a vtable slot
 //
-    LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
+    LEAF_ENTRY VTableOffsetDispatch, _TEXT
 
         // Load the MethodTable from the object instance in x0
-    ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
+    ALTERNATE_ENTRY VTableOffsetDispatchAVLocation
         ldr     x9, [x0]
 
         // x11 currently contains the indirection cell address.
@@ -37,13 +37,13 @@
         ldr     x9, [x9, x10]
 
         EPILOG_BRANCH_REG  x9
-    LEAF_END RhpVTableOffsetDispatch, _TEXT
+    LEAF_END VTableOffsetDispatch, _TEXT
 
 //
 // Cache miss case, call the runtime to resolve the target and update the cache.
 // x11 contains the interface dispatch cell address.
 //
-    NESTED_ENTRY RhpInterfaceDispatchSlow, _TEXT, NoHandler
+    NESTED_ENTRY InterfaceDispatchSlow, _TEXT, NoHandler
 
         PROLOG_WITH_TRANSITION_BLOCK
 
@@ -56,7 +56,7 @@
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         EPILOG_BRANCH_REG  x9
-    NESTED_END RhpInterfaceDispatchSlow, _TEXT
+    NESTED_END InterfaceDispatchSlow, _TEXT
 
 // x11 contains the address of the indirection cell (which is the MethodPtrAux field of the delegate)
     NESTED_ENTRY CID_VirtualOpenDelegateDispatch, _TEXT, NoHandler

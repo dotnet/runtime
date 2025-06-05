@@ -7,22 +7,22 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-    EXTERN RhpCidResolve
-    EXTERN RhpUniversalTransition_DebugStepTailCall
+    EXTERN CidResolve
+    EXTERN UniversalTransition_DebugStepTailCall
 
 ;;
 ;; Cache miss case, call the runtime to resolve the target and update the cache.
 ;; Use universal transition helper to allow an exception to flow out of resolution.
 ;;
-    LEAF_ENTRY RhpInterfaceDispatchSlow
+    LEAF_ENTRY InterfaceDispatchSlow
         ;; x11 contains the interface dispatch cell address.
         ;; Calling convention of the universal thunk is:
         ;;  xip0: target address for the thunk to call
         ;;  xip1: parameter of the thunk's target
-        ldr     xip0, =RhpCidResolve
+        ldr     xip0, =CidResolve
         mov     xip1, x11
-        b       RhpUniversalTransition_DebugStepTailCall
-    LEAF_END RhpInterfaceDispatchSlow
+        b       UniversalTransition_DebugStepTailCall
+    LEAF_END InterfaceDispatchSlow
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 

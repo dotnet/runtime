@@ -103,26 +103,26 @@
 //
 // GC Probe Hijack target
 //
-NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
+NESTED_ENTRY GcProbeHijack, _TEXT, NoHandler
         END_PROLOGUE
         FixupHijackedCallstack
 
-        test        dword ptr [C_VAR(RhpTrapThreads)], TrapThreadsFlags_TrapThreads
+        test        dword ptr [C_VAR(TrapThreads)], TrapThreadsFlags_TrapThreads
         jnz         LOCAL_LABEL(WaitForGC)
         ret
 
 LOCAL_LABEL(WaitForGC):
         mov         ecx, DEFAULT_FRAME_SAVE_FLAGS  + PTFF_SAVE_RAX + PTFF_SAVE_RDX + PTFF_THREAD_HIJACK
-        jmp         C_FUNC(RhpWaitForGC)
-NESTED_END RhpGcProbeHijack, _TEXT
+        jmp         C_FUNC(InternalWaitForGC)
+NESTED_END GcProbeHijack, _TEXT
 
-NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
+NESTED_ENTRY InternalWaitForGC, _TEXT, NoHandler
         PUSH_PROBE_FRAME r11, rax, rcx
         END_PROLOGUE
 
         mov         rbx, r11
         mov         rdi, [rbx + OFFSETOF__Thread__m_pDeferredTransitionFrame]
-        call        C_FUNC(RhpWaitForGC2)
+        call        C_FUNC(WaitForGC2)
 
         mov         rax, [rbx + OFFSETOF__Thread__m_pDeferredTransitionFrame]
         test        dword ptr [rax + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_THREAD_ABORT
@@ -133,26 +133,26 @@ LOCAL_LABEL(Abort):
         POP_PROBE_FRAME
         mov         rcx, STATUS_NATIVEAOT_THREAD_ABORT
         pop         rdx         // return address as exception RIP
-        jmp         C_FUNC(RhpThrowHwEx) // Throw the ThreadAbortException as a special kind of hardware exception
+        jmp         C_FUNC(ThrowHwEx) // Throw the ThreadAbortException as a special kind of hardware exception
 
-NESTED_END RhpWaitForGC, _TEXT
+NESTED_END InternalWaitForGC, _TEXT
 
 
-LEAF_ENTRY RhpGcPoll, _TEXT
-        cmp         dword ptr [C_VAR(RhpTrapThreads)], TrapThreadsFlags_None
-        jne         LOCAL_LABEL(RhpGcPoll_RarePath)
+LEAF_ENTRY GcPoll, _TEXT
+        cmp         dword ptr [C_VAR(TrapThreads)], TrapThreadsFlags_None
+        jne         LOCAL_LABEL(GcPoll_RarePath)
         ret
-LOCAL_LABEL(RhpGcPoll_RarePath):
-        jmp C_FUNC(RhpGcPollRare)
-LEAF_END RhpGcPoll, _TEXT
+LOCAL_LABEL(GcPoll_RarePath):
+        jmp C_FUNC(GcPollRare)
+LEAF_END GcPoll, _TEXT
 
-NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
+NESTED_ENTRY GcPollRare, _TEXT, NoHandler
         PUSH_COOP_PINVOKE_FRAME rdi
         END_PROLOGUE
-        call        C_FUNC(RhpGcPoll2)
+        call        C_FUNC(GcPoll2)
         POP_COOP_PINVOKE_FRAME
         ret
-NESTED_END RhpGcPollRare, _TEXT
+NESTED_END GcPollRare, _TEXT
 
 
 #ifdef FEATURE_GC_STRESS
@@ -160,9 +160,9 @@ NESTED_END RhpGcPollRare, _TEXT
 //
 // GC Stress Hijack targets
 //
-LEAF_ENTRY RhpGcStressHijack, _TEXT
+LEAF_ENTRY GcStressHijack, _TEXT
     // NYI
     int 3
-LEAF_END RhpGcStressHijack, _TEXT
+LEAF_END GcStressHijack, _TEXT
 
 #endif  // FEATURE_GC_STRESS

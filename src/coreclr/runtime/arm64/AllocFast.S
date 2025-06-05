@@ -6,7 +6,7 @@
 // Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
 // allocation context then automatically fallback to the slow allocation path.
 //  x0 == MethodTable
-    LEAF_ENTRY RhpNewFast, _TEXT
+    LEAF_ENTRY NewFast, _TEXT
 
         // x3 = ee_alloc_context pointer
         INLINE_GET_ALLOC_CONTEXT_BASE x3
@@ -32,7 +32,7 @@
         // Determine whether the end of the object is too big for the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         cmp         x2, x13
-        bhi         LOCAL_LABEL(RhpNewFast_RarePath)
+        bhi         LOCAL_LABEL(NewFast_RarePath)
 
         // Calculate the new alloc pointer to account for the allocation.
         add         x2, x2, x12
@@ -46,25 +46,25 @@
         mov         x0, x12
         ret
 
-LOCAL_LABEL(RhpNewFast_RarePath):
+LOCAL_LABEL(NewFast_RarePath):
         mov         x1, #0
-        b           C_FUNC(RhpNewObject)
+        b           C_FUNC(NewObject)
 
-    LEAF_END RhpNewFast, _TEXT
+    LEAF_END NewFast, _TEXT
 
 
 // Allocate non-array object with finalizer.
 //  x0 == MethodTable
-    LEAF_ENTRY RhpNewFinalizable, _TEXT
+    LEAF_ENTRY NewFinalizable, _TEXT
         mov         x1, #GC_ALLOC_FINALIZE
-        b           C_FUNC(RhpNewObject)
-    LEAF_END RhpNewFinalizable, _TEXT
+        b           C_FUNC(NewObject)
+    LEAF_END NewFinalizable, _TEXT
 
 
 // Allocate non-array object.
 //  x0 == MethodTable
 //  x1 == alloc flags
-    NESTED_ENTRY RhpNewObject, _TEXT, NoHandler
+    NESTED_ENTRY NewObject, _TEXT, NoHandler
 
         PUSH_COOP_PINVOKE_FRAME x3
 
@@ -76,8 +76,8 @@ LOCAL_LABEL(RhpNewFast_RarePath):
         mov         w2, 0               // numElements
 
         // Call the rest of the allocation helper.
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
-        bl          C_FUNC(RhpGcAlloc)
+        // void* GcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        bl          C_FUNC(GcAlloc)
 
         // Set the new object's MethodTable pointer on success.
         cbz         x0, LOCAL_LABEL(NewOutOfMemory)
@@ -97,10 +97,10 @@ LOCAL_LABEL(NewOutOfMemory):
         POP_COOP_PINVOKE_FRAME
         b C_FUNC(RhExceptionHandling_FailedAllocation)
 
-    NESTED_END RhpNewObject, _TEXT
+    NESTED_END NewObject, _TEXT
 
 
-// Shared code for RhNewString, RhpNewArrayFast and RhpNewPtrArrayFast
+// Shared code for RhNewString, NewArrayFast and NewPtrArrayFast
 //  x0 == MethodTable
 //  x1 == character/element count
 //  x2 == string/array size
@@ -121,7 +121,7 @@ LOCAL_LABEL(NewOutOfMemory):
 #if defined(__APPLE__)
         bhi         1f
 #else
-        bhi         C_FUNC(RhpNewVariableSizeObject)
+        bhi         C_FUNC(NewVariableSizeObject)
 #endif
 
         // Calculate the new alloc pointer to account for the allocation.
@@ -141,7 +141,7 @@ LOCAL_LABEL(NewOutOfMemory):
 
 #if defined(__APPLE__)
 1:
-        b           C_FUNC(RhpNewVariableSizeObject)
+        b           C_FUNC(NewVariableSizeObject)
 #endif
 
     .endm
@@ -181,7 +181,7 @@ LOCAL_LABEL(StringSizeOverflow):
 // Allocate one dimensional, zero based array (SZARRAY).
 //  x0 == MethodTable
 //  x1 == element count
-    LEAF_ENTRY RhpNewArrayFast, _Text
+    LEAF_ENTRY NewArrayFast, _Text
 
         // We want to limit the element count to the non-negative 32-bit int range.
         // If the element count is <= 0x7FFFFFFF, no overflow is possible because the component
@@ -207,13 +207,13 @@ LOCAL_LABEL(ArraySizeOverflow):
         mov         x1, #1                  // Indicate that we should throw OverflowException
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
 
-    LEAF_END    RhpNewArrayFast, _TEXT
+    LEAF_END    NewArrayFast, _TEXT
 
 
 // Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements.
 //  x0 == MethodTable
 //  x1 == element count
-    LEAF_ENTRY RhpNewPtrArrayFast, _Text
+    LEAF_ENTRY NewPtrArrayFast, _Text
 
         // Delegate overflow handling to the generic helper conservatively
 
@@ -222,7 +222,7 @@ LOCAL_LABEL(ArraySizeOverflow):
 #if defined(__APPLE__)
         bhs         1f
 #else
-        bhs         C_FUNC(RhpNewVariableSizeObject)
+        bhs         C_FUNC(NewVariableSizeObject)
 #endif
 
         // In this case we know the element size is sizeof(void *), or 8 for arm64
@@ -239,16 +239,16 @@ LOCAL_LABEL(ArraySizeOverflow):
 
 #if defined(__APPLE__)
 1:
-        b           C_FUNC(RhpNewVariableSizeObject)
+        b           C_FUNC(NewVariableSizeObject)
 #endif
 
-    LEAF_END    RhpNewPtrArrayFast, _TEXT
+    LEAF_END    NewPtrArrayFast, _TEXT
 
 
 // Allocate variable sized object (eg. array, string) using the slow path that calls a runtime helper.
 //  x0 == MethodTable
 //  x1 == element count
-    NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
+    NESTED_ENTRY NewVariableSizeObject, _TEXT, NoHandler
 
         PUSH_COOP_PINVOKE_FRAME x3
 
@@ -258,18 +258,18 @@ LOCAL_LABEL(ArraySizeOverflow):
         mov         x2, x1              // numElements
         mov         x1, #0              // uFlags
 
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
-        bl          C_FUNC(RhpGcAlloc)
+        // void* GcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        bl          C_FUNC(GcAlloc)
 
         // Set the new object's MethodTable pointer and length on success.
-        cbz         x0, LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory)
+        cbz         x0, LOCAL_LABEL(NewVariableSizeObject_OutOfMemory)
 
         .cfi_remember_state
         POP_COOP_PINVOKE_FRAME
         EPILOG_RETURN
 
         .cfi_restore_state
-LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory):
+LOCAL_LABEL(NewVariableSizeObject_OutOfMemory):
         // This is the OOM failure path. We are going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
@@ -279,4 +279,4 @@ LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory):
         POP_COOP_PINVOKE_FRAME
         b C_FUNC(RhExceptionHandling_FailedAllocation)
 
-    NESTED_END RhpNewVariableSizeObject, _TEXT
+    NESTED_END NewVariableSizeObject, _TEXT

@@ -5,7 +5,7 @@ include asmmacros.inc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpThrowHwEx
+;; ThrowHwEx
 ;;
 ;; INPUT:  RCX:  exception code of fault
 ;;         RDX:  faulting RIP
@@ -13,11 +13,11 @@ include asmmacros.inc
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpThrowHwEx, _TEXT
+NESTED_ENTRY ThrowHwEx, _TEXT
 
-ALTERNATE_ENTRY RhpThrowHwExGEHCONT ; this needs to be an EHCONT target since we'll be context-jumping here.
+ALTERNATE_ENTRY ThrowHwExGEHCONT ; this needs to be an EHCONT target since we'll be context-jumping here.
 
-.GEHCONT RhpThrowHwExGEHCONT
+.GEHCONT ThrowHwExGEHCONT
 
         SIZEOF_XmmSaves equ SIZEOF__PAL_LIMITED_CONTEXT - OFFSETOF__PAL_LIMITED_CONTEXT__Xmm6
         STACKSIZEOF_ExInfo equ ((SIZEOF__ExInfo + 15) AND (NOT 15))
@@ -98,23 +98,23 @@ ALTERNATE_ENTRY RhpThrowHwExGEHCONT ; this needs to be an EHCONT target since we
         ;; rdx contains the address of the ExInfo
         call    RhThrowHwEx
 
-ALTERNATE_ENTRY RhpThrowHwEx2
+ALTERNATE_ENTRY ThrowHwEx2
 
         ;; no return
         int 3
 
-NESTED_END RhpThrowHwEx, _TEXT
+NESTED_END ThrowHwEx, _TEXT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpThrowEx
+;; ThrowEx
 ;;
 ;; INPUT:  RCX:  exception object
 ;;
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpThrowEx, _TEXT
+NESTED_ENTRY ThrowEx, _TEXT
 
         SIZEOF_XmmSaves equ SIZEOF__PAL_LIMITED_CONTEXT - OFFSETOF__PAL_LIMITED_CONTEXT__Xmm6
         STACKSIZEOF_ExInfo equ ((SIZEOF__ExInfo + 15) AND (NOT 15))
@@ -164,7 +164,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT
 
         lea                     rbx, [rsp + rsp_offsetof_Context + SIZEOF__PAL_LIMITED_CONTEXT + 8h]    ;; rbx <- addr of return address
 
-        ;; There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic.  So the return
+        ;; There is runtime C# code that can tail call to ThrowEx using a binder intrinsic.  So the return
         ;; address could have been hijacked when we were in that C# code and we must remove the hijack and
         ;; reflect the correct return address in our exception context record.  The other throw helpers don't
         ;; need this because they cannot be tail-called from C#.
@@ -192,25 +192,25 @@ NESTED_ENTRY RhpThrowEx, _TEXT
         ;; rdx contains the address of the ExInfo
         call    RhThrowEx
 
-ALTERNATE_ENTRY RhpThrowEx2
+ALTERNATE_ENTRY ThrowEx2
 
         ;; no return
         int 3
 
-NESTED_END RhpThrowEx, _TEXT
+NESTED_END ThrowEx, _TEXT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; void FASTCALL RhpRethrow()
+;; void FASTCALL Rethrow()
 ;;
-;; SUMMARY:  Similar to RhpThrowEx, except that it passes along the currently active ExInfo
+;; SUMMARY:  Similar to ThrowEx, except that it passes along the currently active ExInfo
 ;;
 ;; INPUT:
 ;;
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpRethrow, _TEXT
+NESTED_ENTRY Rethrow, _TEXT
 
         SIZEOF_XmmSaves equ SIZEOF__PAL_LIMITED_CONTEXT - OFFSETOF__PAL_LIMITED_CONTEXT__Xmm6
         STACKSIZEOF_ExInfo equ ((SIZEOF__ExInfo + 15) AND (NOT 15))
@@ -279,15 +279,15 @@ NESTED_ENTRY RhpRethrow, _TEXT
         ;; rdx contains the address of the new ExInfo
         call    RhRethrow
 
-ALTERNATE_ENTRY RhpRethrow2
+ALTERNATE_ENTRY Rethrow2
 
         ;; no return
         int 3
 
-NESTED_END RhpRethrow, _TEXT
+NESTED_END Rethrow, _TEXT
 
 ;;
-;; Prologue of all funclet calling helpers (RhpCallXXXXFunclet)
+;; Prologue of all funclet calling helpers (CallXXXXFunclet)
 ;;
 FUNCLET_CALL_PROLOGUE macro localsCount, alignStack
 
@@ -323,7 +323,7 @@ FUNCLET_CALL_PROLOGUE macro localsCount, alignStack
 endm
 
 ;;
-;; Epilogue of all funclet calling helpers (RhpCallXXXXFunclet)
+;; Epilogue of all funclet calling helpers (CallXXXXFunclet)
 ;;
 FUNCLET_CALL_EPILOGUE macro
     movdqa  xmm6,  [rsp + arguments_scratch_area_size + 0 * 10h]
@@ -350,7 +350,7 @@ endm
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; void* FASTCALL RhpCallCatchFunclet(OBJECTREF exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
+;; void* FASTCALL CallCatchFunclet(OBJECTREF exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
 ;;                                    ExInfo* pExInfo)
 ;;
 ;; INPUT:  RCX:  exception object
@@ -361,7 +361,7 @@ endm
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpCallCatchFunclet, _TEXT
+NESTED_ENTRY CallCatchFunclet, _TEXT
 
         FUNCLET_CALL_PROLOGUE 3, 0
 
@@ -416,7 +416,7 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT
         mov     rcx, [rsp + rsp_offsetof_arguments + 0h]            ;; rcx <- exception object
         call    qword ptr [rsp + rsp_offsetof_arguments + 8h]       ;; call handler funclet
 
-ALTERNATE_ENTRY RhpCallCatchFunclet2
+ALTERNATE_ENTRY CallCatchFunclet2
 
         mov     r8, [rsp + rsp_offsetof_arguments + 10h]            ;; r8 <- dispatch context
 
@@ -445,7 +445,7 @@ ifdef _DEBUG
         mov     rcx, [rsp + rsp_offsetof_thread]                    ;; rcx <- Thread*
         mov     rdx, [rsp + rsp_offsetof_arguments + 18h]           ;; rdx <- current ExInfo *
         mov     r8, [r8 + OFFSETOF__REGDISPLAY__SP]                 ;; r8  <- resume SP value
-        call    RhpValidateExInfoPop
+        call    ValidateExInfoPop
 
         mov     r8, [rsp + rsp_offsetof_arguments + 10h]            ;; r8 <- dispatch context
         mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbx]
@@ -500,7 +500,7 @@ endif
         xor     r9, r9                                              ;; r9 <- 0
    endif
 
-        test    [RhpTrapThreads], TrapThreadsFlags_AbortInProgress
+        test    [TrapThreads], TrapThreadsFlags_AbortInProgress
         jz      @f
 
         ;; test if the exception handled by the catch was the ThreadAbortException
@@ -510,7 +510,7 @@ endif
         ;; It was the ThreadAbortException, so rethrow it
         mov     rcx, STATUS_NATIVEAOT_THREAD_ABORT
         mov     rdx, rax                                            ;; rdx <- continuation address as exception RIP
-        lea     rax, [RhpThrowHwEx]                                 ;; Throw the ThreadAbortException as a special kind of hardware exception
+        lea     rax, [ThrowHwEx]                                 ;; Throw the ThreadAbortException as a special kind of hardware exception
 
         ;; reset RSP and jump to RAX
    @@:  mov     rsp, r8                                             ;; reset the SP to resume SP value
@@ -534,11 +534,11 @@ endif
 No_Ssp_Update:  jmp     rax
 
 
-NESTED_END RhpCallCatchFunclet, _TEXT
+NESTED_END CallCatchFunclet, _TEXT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; void FASTCALL RhpCallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
+;; void FASTCALL CallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
 ;;
 ;; INPUT:  RCX:  handler funclet address
 ;;         RDX:  REGDISPLAY*
@@ -546,7 +546,7 @@ NESTED_END RhpCallCatchFunclet, _TEXT
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpCallFinallyFunclet, _TEXT
+NESTED_ENTRY CallFinallyFunclet, _TEXT
 
         FUNCLET_CALL_PROLOGUE 1, 0
 
@@ -598,7 +598,7 @@ NESTED_ENTRY RhpCallFinallyFunclet, _TEXT
 
         call    qword ptr [rsp + rsp_offsetof_arguments + 0h]       ;; handler funclet address
 
-ALTERNATE_ENTRY RhpCallFinallyFunclet2
+ALTERNATE_ENTRY CallFinallyFunclet2
 
         mov     rax, [rsp + rsp_offsetof_thread]                                    ;; rax <- Thread*
         lock or             dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
@@ -607,11 +607,11 @@ ALTERNATE_ENTRY RhpCallFinallyFunclet2
 
         ret
 
-NESTED_END RhpCallFinallyFunclet, _TEXT
+NESTED_END CallFinallyFunclet, _TEXT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
+;; void* FASTCALL CallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
 ;;
 ;; INPUT:  RCX:  exception object
 ;;         RDX:  filter funclet address
@@ -620,7 +620,7 @@ NESTED_END RhpCallFinallyFunclet, _TEXT
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpCallFilterFunclet, _TEXT
+NESTED_ENTRY CallFilterFunclet, _TEXT
 
         FUNCLET_CALL_PROLOGUE 0, 1
 
@@ -629,7 +629,7 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT
 
         call    rdx
 
-ALTERNATE_ENTRY RhpCallFilterFunclet2
+ALTERNATE_ENTRY CallFilterFunclet2
 
         ;; RAX contains the result of the filter execution
 
@@ -637,6 +637,6 @@ ALTERNATE_ENTRY RhpCallFilterFunclet2
 
         ret
 
-NESTED_END RhpCallFilterFunclet, _TEXT
+NESTED_END CallFilterFunclet, _TEXT
 
         end

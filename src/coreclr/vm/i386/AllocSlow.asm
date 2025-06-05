@@ -9,10 +9,10 @@
 include asmconstants.inc
 include asmmacros.inc
 
-EXTERN _RhpGcAllocMaybeFrozen@12 : PROC
+EXTERN _GcAllocMaybeFrozen@12 : PROC
 EXTERN _RhExceptionHandling_FailedAllocation_Helper@12 : PROC
-EXTERN @RhpNewObject@8 : PROC
-EXTERN @RhpNewVariableSizeObject@8 : PROC
+EXTERN @NewObject@8 : PROC
+EXTERN @NewVariableSizeObject@8 : PROC
 
 g_global_alloc_lock EQU _g_global_alloc_lock
 g_global_alloc_context EQU _g_global_alloc_context
@@ -21,44 +21,44 @@ EXTERN g_global_alloc_lock : DWORD
 EXTERN g_global_alloc_context : DWORD
 
 ;
-; Object* RhpNew(MethodTable *pMT)
+; Object* New(MethodTable *pMT)
 ;
 ; Allocate non-array object, slow path.
 ;
-FASTCALL_FUNC RhpNew, 4
+FASTCALL_FUNC New, 4
         xor         edx, edx
-        jmp         @RhpNewObject@8
+        jmp         @NewObject@8
 FASTCALL_ENDFUNC
 
 ;
-; Object* RhpNewMaybeFrozen(MethodTable *pMT)
+; Object* NewMaybeFrozen(MethodTable *pMT)
 ;
 ; Allocate non-array object, may be on frozen heap.
 ;
-FASTCALL_FUNC RhpNewMaybeFrozen, 4
+FASTCALL_FUNC NewMaybeFrozen, 4
         PUSH_COOP_PINVOKE_FRAME eax
 
         push        eax
         push        0
         push        ecx
-        call        _RhpGcAllocMaybeFrozen@12
+        call        _GcAllocMaybeFrozen@12
 
         POP_COOP_PINVOKE_FRAME
         ret
 FASTCALL_ENDFUNC
 
 ;
-; Object* RhpNewMaybeFrozen(MethodTable *pMT, INT_PTR size)
+; Object* NewMaybeFrozen(MethodTable *pMT, INT_PTR size)
 ;
 ; Allocate array object, may be on frozen heap.
 ;
-FASTCALL_FUNC RhpNewArrayMaybeFrozen, 8
+FASTCALL_FUNC NewArrayMaybeFrozen, 8
         PUSH_COOP_PINVOKE_FRAME eax
 
         push        eax
         push        edx
         push        ecx
-        call        _RhpGcAllocMaybeFrozen@12
+        call        _GcAllocMaybeFrozen@12
 
         POP_COOP_PINVOKE_FRAME
         ret
@@ -80,11 +80,11 @@ RhExceptionHandling_FailedAllocation PROC PUBLIC
 RhExceptionHandling_FailedAllocation ENDP
 
 ;
-; void RhpNewFast_UP(MethodTable *pMT)
+; void NewFast_UP(MethodTable *pMT)
 ;
 ; Allocate non-array object, uniprocessor version
 ;
-FASTCALL_FUNC   RhpNewFast_UP, 4
+FASTCALL_FUNC   NewFast_UP, 4
         inc         [g_global_alloc_lock]
         jnz         AllocFailed
 
@@ -107,18 +107,18 @@ AllocFailed_Unlock:
 
 AllocFailed:
         xor         edx, edx
-        jmp         @RhpNewObject@8
+        jmp         @NewObject@8
 FASTCALL_ENDFUNC
 
 ;
-; Shared code for RhNewString_UP, RhpNewArrayFast_UP and RhpNewPtrArrayFast_UP
+; Shared code for RhNewString_UP, NewArrayFast_UP and NewPtrArrayFast_UP
 ;  EAX == string/array size
 ;  ECX == MethodTable
 ;  EDX == character/element count
 ;
 NEW_ARRAY_FAST_PROLOG_UP MACRO
         inc         [g_global_alloc_lock]
-        jnz         @RhpNewVariableSizeObject@8
+        jnz         @NewVariableSizeObject@8
 
         push        ecx
         push        edx
@@ -164,7 +164,7 @@ AllocContextOverflow:
         pop         ecx
 
         mov         [g_global_alloc_lock], -1
-        jmp         @RhpNewVariableSizeObject@8
+        jmp         @NewVariableSizeObject@8
 ENDM
 
 ;
@@ -195,11 +195,11 @@ StringSizeOverflow:
 FASTCALL_ENDFUNC
 
 ;
-; Object* RhpNewArrayFast_UP(MethodTable *pMT, INT_PTR elementCount)
+; Object* NewArrayFast_UP(MethodTable *pMT, INT_PTR elementCount)
 ; 
 ; Allocate one dimensional, zero based array (SZARRAY), uniprocessor version
 ;
-FASTCALL_FUNC   RhpNewArrayFast_UP, 8
+FASTCALL_FUNC   NewArrayFast_UP, 8
         NEW_ARRAY_FAST_PROLOG_UP
 
         ; Compute overall allocation size (align(base size + (element size * elements), 4)).
@@ -249,16 +249,16 @@ ArraySizeOverflow:
 FASTCALL_ENDFUNC
 
 ;
-; Object* RhpNewPtrArrayFast_UP(MethodTable *pMT, INT_PTR elementCount)
+; Object* NewPtrArrayFast_UP(MethodTable *pMT, INT_PTR elementCount)
 ; 
 ; Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements,
 ; uniprocessor version
 ;
-FASTCALL_FUNC   RhpNewPtrArrayFast_UP, 8
+FASTCALL_FUNC   NewPtrArrayFast_UP, 8
         ; Delegate overflow handling to the generic helper conservatively
 
         cmp         edx, (40000000h / 4) ; sizeof(void*)
-        jae         @RhpNewVariableSizeObject@8
+        jae         @NewVariableSizeObject@8
 
         ; In this case we know the element size is sizeof(void *), or 4 for x86
         ; This helps us in two ways - we can shift instead of multiplying, and

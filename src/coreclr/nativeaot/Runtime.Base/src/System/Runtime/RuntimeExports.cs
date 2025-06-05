@@ -41,17 +41,17 @@ namespace System.Runtime
             if (pEEType->RequiresAlign8)
             {
                 if (pEEType->IsValueType)
-                    return InternalCalls.RhpNewFastMisalign(pEEType);
+                    return InternalCalls.NewFastMisalign(pEEType);
                 if (pEEType->IsFinalizable)
-                    return InternalCalls.RhpNewFinalizableAlign8(pEEType);
-                return InternalCalls.RhpNewFastAlign8(pEEType);
+                    return InternalCalls.NewFinalizableAlign8(pEEType);
+                return InternalCalls.NewFastAlign8(pEEType);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             {
                 if (pEEType->IsFinalizable)
-                    return InternalCalls.RhpNewFinalizable(pEEType);
-                return InternalCalls.RhpNewFast(pEEType);
+                    return InternalCalls.NewFinalizable(pEEType);
+                return InternalCalls.NewFast(pEEType);
             }
         }
 
@@ -64,12 +64,12 @@ namespace System.Runtime
             MethodTable* pEEElementType = pEEType->RelatedParameterType;
             if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
             {
-                return InternalCalls.RhpNewArrayFastAlign8(pEEType, length);
+                return InternalCalls.NewArrayFastAlign8(pEEType, length);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             {
-                return InternalCalls.RhpNewArrayFast(pEEType, length);
+                return InternalCalls.NewArrayFast(pEEType, length);
             }
         }
 
@@ -125,12 +125,12 @@ namespace System.Runtime
 #if FEATURE_64BIT_ALIGNMENT
             if (pEEType->RequiresAlign8)
             {
-                result = InternalCalls.RhpNewFastMisalign(pEEType);
+                result = InternalCalls.NewFastMisalign(pEEType);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             {
-                result = InternalCalls.RhpNewFast(pEEType);
+                result = InternalCalls.NewFast(pEEType);
             }
 
             // Copy the unboxed value type data into the new object.
@@ -268,7 +268,7 @@ namespace System.Runtime
                 Debug.Assert(pUnboxToEEType != null && pUnboxToEEType->IsNullable);
 
                 // Set HasValue to false and clear the value (in case there were GC references we wish to stop reporting).
-                InternalCalls.RhpGcSafeZeroMemory(
+                InternalCalls.GcSafeZeroMemory(
                     ref data,
                     pUnboxToEEType->ValueTypeSize);
 
@@ -313,12 +313,12 @@ namespace System.Runtime
         public static unsafe int RhGetCurrentThreadStackTrace(IntPtr[] outputBuffer)
         {
             fixed (IntPtr* pOutputBuffer = outputBuffer)
-                return RhpGetCurrentThreadStackTrace(pOutputBuffer, (uint)((outputBuffer != null) ? outputBuffer.Length : 0), new UIntPtr(&pOutputBuffer));
+                return GetCurrentThreadStackTrace(pOutputBuffer, (uint)((outputBuffer != null) ? outputBuffer.Length : 0), new UIntPtr(&pOutputBuffer));
         }
 
 #pragma warning disable SYSLIB1054 // Use DllImport here instead of LibraryImport because this file is used by Test.CoreLib.
         [DllImport("*")]
-        private static extern unsafe int RhpGetCurrentThreadStackTrace(IntPtr* pOutputBuffer, uint outputBufferLength, UIntPtr addressInCurrentFrame);
+        private static extern unsafe int GetCurrentThreadStackTrace(IntPtr* pOutputBuffer, uint outputBufferLength, UIntPtr addressInCurrentFrame);
 #pragma warning restore SYSLIB1054
 
         // Worker for RhGetCurrentThreadStackTrace.  RhGetCurrentThreadStackTrace just allocates a transition
@@ -333,8 +333,8 @@ namespace System.Runtime
         // NOTE: We don't want to allocate the array on behalf of the caller because we don't know which class
         // library's objects the caller understands (we support multiple class libraries with multiple root
         // System.Object types).
-        [UnmanagedCallersOnly(EntryPoint = "RhpCalculateStackTraceWorker")]
-        private static unsafe int RhpCalculateStackTraceWorker(IntPtr* pOutputBuffer, uint outputBufferLength, UIntPtr addressInCurrentFrame)
+        [UnmanagedCallersOnly(EntryPoint = "CalculateStackTraceWorker")]
+        private static unsafe int CalculateStackTraceWorker(IntPtr* pOutputBuffer, uint outputBufferLength, UIntPtr addressInCurrentFrame)
         {
             uint nFrames = 0;
             bool success = true;
@@ -371,18 +371,18 @@ namespace System.Runtime
                     if (pEEType->RequiresAlign8)
                     {
                         if (pEEType->IsFinalizable)
-                            return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.RhpNewFinalizableAlign8;
+                            return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.NewFinalizableAlign8;
                         else if (pEEType->IsValueType)            // returns true for enum types as well
-                            return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.RhpNewFastMisalign;
+                            return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.NewFastMisalign;
                         else
-                            return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.RhpNewFastAlign8;
+                            return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.NewFastAlign8;
                     }
 #endif // FEATURE_64BIT_ALIGNMENT
 
                     if (pEEType->IsFinalizable)
-                        return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.RhpNewFinalizable;
+                        return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.NewFinalizable;
                     else
-                        return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.RhpNewFast;
+                        return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.NewFast;
 
                 case RuntimeHelperKind.IsInst:
                     if (pEEType->HasGenericVariance || pEEType->IsParameterizedType || pEEType->IsFunctionPointer)
@@ -404,10 +404,10 @@ namespace System.Runtime
 #if FEATURE_64BIT_ALIGNMENT
                     MethodTable* pEEElementType = pEEType->RelatedParameterType;
                     if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
-                        return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArrayFastAlign8;
+                        return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.NewArrayFastAlign8;
 #endif // FEATURE_64BIT_ALIGNMENT
 
-                    return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArrayFast;
+                    return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.NewArrayFast;
 
                 default:
                     Debug.Fail("Unknown RuntimeHelperKind");

@@ -11,11 +11,11 @@
 #include "daccess.h"
 #include "PalLimitedContext.h"
 #include "Pal.h"
-#include "rhassert.h"
+#include "debugmacros.h"
 #include "slist.h"
 #include "holder.h"
 #include "Crst.h"
-#include "rhbinder.h"
+#include "binder.h"
 #include "RuntimeInstance.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -419,15 +419,15 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
 }
 FCIMPLEND
 
-EXTERN_C int32_t QCALLTYPE RhpCalculateStackTraceWorker(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);
+EXTERN_C int32_t QCALLTYPE CalculateStackTraceWorker(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);
 
-EXTERN_C int32_t QCALLTYPE RhpGetCurrentThreadStackTrace(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)
+EXTERN_C int32_t QCALLTYPE GetCurrentThreadStackTrace(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
     ThreadStore::GetCurrentThread()->DeferTransitionFrame();
 
-    return RhpCalculateStackTraceWorker(pOutputBuffer, outputBufferLength, pAddressInCurrentFrame);
+    return CalculateStackTraceWorker(pOutputBuffer, outputBufferLength, pAddressInCurrentFrame);
 }
 
 EXTERN_C UInt32_BOOL QCALLTYPE DebugDebugger_IsNativeDebuggerAttached()
@@ -451,7 +451,7 @@ FCIMPL2(FC_BOOL_RET, RhCompareObjectContentsAndPadding, Object* pObj1, Object* p
 }
 FCIMPLEND
 
-FCIMPL3(void*, RhpGetModuleSection, TypeManagerHandle *pModule, int32_t headerId, int32_t* length)
+FCIMPL3(void*, GetModuleSection, TypeManagerHandle *pModule, int32_t headerId, int32_t* length)
 {
     return pModule->AsTypeManager()->GetModuleSection((ReadyToRunSectionType)headerId, length);
 }
@@ -493,13 +493,13 @@ EXTERN_C void QCALLTYPE RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionI
 }
 #endif
 
-FCIMPL3(int32_t, RhpLockCmpXchg32, int32_t * location, int32_t value, int32_t comparand)
+FCIMPL3(int32_t, LockCmpXchg32, int32_t * location, int32_t value, int32_t comparand)
 {
     return PalInterlockedCompareExchange(location, value, comparand);
 }
 FCIMPLEND
 
-FCIMPL3_ILL(int64_t, RhpLockCmpXchg64, int64_t * location, int64_t value, int64_t comparand)
+FCIMPL3_ILL(int64_t, LockCmpXchg64, int64_t * location, int64_t value, int64_t comparand)
 {
     return PalInterlockedCompareExchange64(location, value, comparand);
 }

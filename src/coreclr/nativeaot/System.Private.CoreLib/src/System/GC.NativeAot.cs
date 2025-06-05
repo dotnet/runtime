@@ -126,7 +126,7 @@ namespace System
         public static void Collect()
         {
             //-1 says to GC all generations.
-            RuntimeImports.RhCollect(-1, InternalGCCollectionMode.Blocking);
+            RuntimeImports.GCCollect(-1, InternalGCCollectionMode.Blocking);
         }
 
         public static void Collect(int generation, GCCollectionMode mode)
@@ -191,7 +191,7 @@ namespace System
                 iInternalModes |= (int)InternalGCCollectionMode.NonBlocking;
             }
 
-            RuntimeImports.RhCollect(generation, (InternalGCCollectionMode)iInternalModes, lowMemoryPressure);
+            RuntimeImports.GCCollect(generation, (InternalGCCollectionMode)iInternalModes, lowMemoryPressure);
         }
 
         /// <summary>
@@ -634,7 +634,7 @@ namespace System
                         // last check - if we would exceed 20% of GC "duty cycle", do not trigger GC at this time
                         if ((RuntimeImports.RhGetGCNow() - RuntimeImports.RhGetLastGCStartTime(2)) > (RuntimeImports.RhGetLastGCDuration(2) * 5))
                         {
-                            RuntimeImports.RhCollect(2, InternalGCCollectionMode.NonBlocking);
+                            RuntimeImports.GCCollect(2, InternalGCCollectionMode.NonBlocking);
                             CheckCollectionCount();
                         }
                     }

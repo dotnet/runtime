@@ -98,27 +98,27 @@
 //
 // GC Probe Hijack target
 //
-NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
+NESTED_ENTRY GcProbeHijack, _TEXT, NoHandler
     FixupHijackedCallstack
 
-    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, t3
+    PREPARE_EXTERNAL_VAR_INDIRECT_W TrapThreads, t3
     andi  t3, t3, 1 << TrapThreadsFlags_TrapThreads_Bit
     bnez  t3, LOCAL_LABEL(WaitForGC)
     jr  ra
 
 LOCAL_LABEL(WaitForGC):
     li  t3, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_A0 + PTFF_SAVE_A1 + (PTFF_THREAD_HIJACK_HI << 32))
-    tail  C_FUNC(RhpWaitForGC)
-NESTED_END RhpGcProbeHijack
+    tail  C_FUNC(InternalWaitForGC)
+NESTED_END GcProbeHijack
 
-.global C_FUNC(RhpThrowHwEx)
+.global C_FUNC(ThrowHwEx)
 
 // Wait for GC function
-NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
+NESTED_ENTRY InternalWaitForGC, _TEXT, NoHandler
     PUSH_PROBE_FRAME a2, a3, t3
 
     ld  a0, OFFSETOF__Thread__m_pDeferredTransitionFrame(a2)
-    call  C_FUNC(RhpWaitForGC2)
+    call  C_FUNC(WaitForGC2)
 
     ld  a2, OFFSETOF__PInvokeTransitionFrame__m_Flags(sp)
 
@@ -136,32 +136,32 @@ LOCAL_LABEL(ThrowThreadAbort):
     POP_PROBE_FRAME
     li  a0, STATUS_NATIVEAOT_THREAD_ABORT
     mv  a1, ra      # Set return address as exception PC
-    call  C_FUNC(RhpThrowHwEx)
-NESTED_END RhpWaitForGC
+    call  C_FUNC(ThrowHwEx)
+NESTED_END InternalWaitForGC
 
-.global C_FUNC(RhpGcPoll2)
+.global C_FUNC(GcPoll2)
 
 // GC Poll function
-LEAF_ENTRY RhpGcPoll
-    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, a0
-    bne   a0, zero, C_FUNC(RhpGcPollRare)
+LEAF_ENTRY GcPoll
+    PREPARE_EXTERNAL_VAR_INDIRECT_W TrapThreads, a0
+    bne   a0, zero, C_FUNC(GcPollRare)
     jr  ra
-LEAF_END RhpGcPoll
+LEAF_END GcPoll
 
 // Rare GC Poll function
-NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
+NESTED_ENTRY GcPollRare, _TEXT, NoHandler
     PUSH_COOP_PINVOKE_FRAME a0
-    call  RhpGcPoll2
+    call  GcPoll2
     POP_COOP_PINVOKE_FRAME
     jr  ra
-NESTED_END RhpGcPollRare
+NESTED_END GcPollRare
 
 #ifdef FEATURE_GC_STRESS
 
 // GC Stress Hijack targets
-LEAF_ENTRY RhpGcStressHijack, _TEXT
+LEAF_ENTRY GcStressHijack, _TEXT
     // Not Yet Implemented (NYI)
     EMIT_BREAKPOINT
-LEAF_END RhpGcStressHijack, _TEXT
+LEAF_END GcStressHijack, _TEXT
 
 #endif  // FEATURE_GC_STRESS

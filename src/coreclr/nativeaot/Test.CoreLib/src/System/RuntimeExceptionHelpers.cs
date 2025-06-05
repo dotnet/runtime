@@ -70,7 +70,7 @@ namespace System
 
                     default:
                         Debug.Fail("unexpected ExceptionID");
-                        RuntimeImports.RhpFallbackFailFast();
+                        RuntimeImports.FallbackFailFast();
                         return null;
                 }
             }
@@ -86,12 +86,12 @@ namespace System
         [RuntimeExport("RuntimeFailFast")]
         internal static void RuntimeFailFast(RhFailFastReason reason, Exception exception, IntPtr pExAddress, IntPtr pExContext)
         {
-            RuntimeImports.RhpFallbackFailFast();
+            RuntimeImports.FallbackFailFast();
         }
 
         public static void FailFast(string message)
         {
-            RuntimeImports.RhpFallbackFailFast();
+            RuntimeImports.FallbackFailFast();
         }
 
         [RuntimeExport("AppendExceptionStackFrame")]

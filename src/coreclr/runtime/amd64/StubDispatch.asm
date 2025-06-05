@@ -6,7 +6,7 @@ include AsmMacros_Shared.inc
 
 ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-EXTERN RhpInterfaceDispatchSlow : PROC
+EXTERN InterfaceDispatchSlow : PROC
 
 ;; Macro that generates code to check a single cache entry.
 CHECK_CACHE_ENTRY macro entry
@@ -21,8 +21,8 @@ endm
 ;; Macro that generates a stub consuming a cache with the given number of entries.
 DEFINE_INTERFACE_DISPATCH_STUB macro entries
 
-StubName textequ @CatStr( RhpInterfaceDispatch, entries )
-StubAVLocation textequ @CatStr( RhpInterfaceDispatchAVLocation, entries )
+StubName textequ @CatStr( InterfaceDispatch, entries )
+StubAVLocation textequ @CatStr( InterfaceDispatchAVLocation, entries )
 
 LEAF_ENTRY StubName, _TEXT
 
@@ -45,7 +45,7 @@ CurrentEntry = CurrentEntry + 1
 
         ;; r11 still contains the indirection cell address.
 
-        jmp RhpInterfaceDispatchSlow
+        jmp InterfaceDispatchSlow
 
 LEAF_END StubName, _TEXT
 
@@ -70,18 +70,18 @@ DEFINE_INTERFACE_DISPATCH_STUB 32
 DEFINE_INTERFACE_DISPATCH_STUB 64
 
 ;; Initial dispatch on an interface when we don't have a cache yet.
-LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
-ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
+LEAF_ENTRY InitialInterfaceDispatch, _TEXT
+ALTERNATE_ENTRY InitialDynamicInterfaceDispatch
         ;; Trigger an AV if we're dispatching on a null this.
         ;; The exception handling infrastructure is aware of the fact that this is the first
-        ;; instruction of RhpInitialInterfaceDispatch and uses it to translate an AV here
+        ;; instruction of InitialInterfaceDispatch and uses it to translate an AV here
         ;; to a NullReferenceException at the callsite.
         cmp     byte ptr [rcx], 0
 
         ;; Just tail call to the cache miss helper.
-        jmp RhpInterfaceDispatchSlow
+        jmp InterfaceDispatchSlow
 
-LEAF_END RhpInitialInterfaceDispatch, _TEXT
+LEAF_END InitialInterfaceDispatch, _TEXT
 
 endif ;; FEATURE_CACHED_INTERFACE_DISPATCH
 

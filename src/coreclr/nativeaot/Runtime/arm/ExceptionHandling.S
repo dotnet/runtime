@@ -14,7 +14,7 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// RhpThrowHwEx
+// ThrowHwEx
 //
 // INPUT:  R0:  exception code of fault
 //         R1:  faulting RIP
@@ -22,7 +22,7 @@
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
+NESTED_ENTRY ThrowHwEx, _TEXT, NoHandler
 
         mov         r2, r0         // save exception code into r2
         mov         r0, sp         // get SP of fault site
@@ -71,24 +71,24 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
         // r1 contains the address of the ExInfo
         bl          C_FUNC(RhThrowHwEx)
 
-GLOBAL_LABEL RhpThrowHwEx2
+GLOBAL_LABEL ThrowHwEx2
 
         // no return
         EMIT_BREAKPOINT
 
-NESTED_END RhpThrowHwEx
+NESTED_END ThrowHwEx
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// RhpThrowEx
+// ThrowEx
 //
 // INPUT:  R0:  exception object
 //
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
+NESTED_ENTRY ThrowEx, _TEXT, NoHandler
 
         // Setup a PAL_LIMITED_CONTEXT on the stack {
         PROLOG_VPUSH {d8-d15}
@@ -108,7 +108,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
 
         add         r2, sp, #(rsp_offsetof_Context + SIZEOF__PAL_LIMITED_CONTEXT + 0x8) 	// r2 <- addr of return address
 
-        // There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic. So  the return
+        // There is runtime C# code that can tail call to ThrowEx using a binder intrinsic. So  the return
         // address could have been hijacked when we were in that C# code and we must remove the hijack and
         // reflect the correct return address in our exception context record.  The other throw helpers don't
         // need this because they cannot be tail-called from C#.
@@ -176,26 +176,26 @@ LOCAL_LABEL(NotHiJacked):
         // r1 contains the address of the new ExInfo
         bl          C_FUNC(RhThrowEx)
 
-GLOBAL_LABEL RhpThrowEx2
+GLOBAL_LABEL ThrowEx2
 
         // no return
         EMIT_BREAKPOINT
 
-NESTED_END RhpThrowEx, _TEXT
+NESTED_END ThrowEx, _TEXT
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// void FASTCALL RhpRethrow()
+// void FASTCALL Rethrow()
 //
-// SUMMARY:  Similar to RhpThrowEx, except that it passes along the currently active ExInfo
+// SUMMARY:  Similar to ThrowEx, except that it passes along the currently active ExInfo
 //
 // INPUT:
 //
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
+NESTED_ENTRY Rethrow, _TEXT, NoHandler
 
         // Setup a PAL_LIMITED_CONTEXT on the stack {
         PROLOG_VPUSH {d8-d15}
@@ -237,17 +237,17 @@ NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
         // r1 contains the address of the new ExInfo
         blx    C_FUNC(RhRethrow)
 
-GLOBAL_LABEL RhpRethrow2
+GLOBAL_LABEL Rethrow2
 
         // no return
         EMIT_BREAKPOINT
 
-NESTED_END RhpRethrow, _TEXT
+NESTED_END Rethrow, _TEXT
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// void* FASTCALL RhpCallCatchFunclet(OBJECTREF exceptionObj,
+// void* FASTCALL CallCatchFunclet(OBJECTREF exceptionObj,
 //                                    void* pHandlerIP,
 //                                    REGDISPLAY* pRegDisplay,
 //                                    ExInfo* pExInfo)
@@ -260,7 +260,7 @@ NESTED_END RhpRethrow, _TEXT
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
+NESTED_ENTRY CallCatchFunclet, _TEXT, NoHandler
 
         PROLOG_PUSH "{r0,r2-r11,lr}" // r0, r2 & r3 are saved so we have the exception object,
 	                                   // REGDISPLAY and ExInfo later
@@ -320,7 +320,7 @@ LOCAL_LABEL(ClearSuccess_Catch):
         // r0 <- exception object
         blx         r3                                 // call handler funclet
 
-GLOBAL_LABEL RhpCallCatchFunclet2
+GLOBAL_LABEL CallCatchFunclet2
 
         str         r0, [sp, #rsp_offset_r0]             // Save the result
 
@@ -348,11 +348,11 @@ LOCAL_LABEL(DonePopping):
         mov         sp, r2
         bx          r0
 
-NESTED_END RhpCallCatchFunclet, _TEXT
+NESTED_END CallCatchFunclet, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// void FASTCALL RhpCallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
+// void FASTCALL CallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
 //
 // INPUT:  R0:  handler funclet address
 //         R1:  REGDISPLAY*
@@ -360,7 +360,7 @@ NESTED_END RhpCallCatchFunclet, _TEXT
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
+NESTED_ENTRY CallFinallyFunclet, _TEXT, NoHandler
 
         PROLOG_PUSH "{r1,r4-r11,lr}"  // r1 is saved so we have the REGDISPLAY later
         PROLOG_VPUSH {d8-d15}
@@ -421,7 +421,7 @@ LOCAL_LABEL(ClearSuccess):
 
         blx         r2                                  // handler funclet address
 
-GLOBAL_LABEL RhpCallFinallyFunclet2
+GLOBAL_LABEL CallFinallyFunclet2
 
         ldr         r1, [sp, #rsp_offset_r1]        // reload REGDISPLAY pointer
 
@@ -466,11 +466,11 @@ LOCAL_LABEL(SetSuccess):
         EPILOG_VPOP {d8-d15}
         EPILOG_POP  "{r1,r4-r11,pc}"
 
-NESTED_END RhpCallFinallyFunclet, _TEXT
+NESTED_END CallFinallyFunclet, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
+// void* FASTCALL CallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
 //
 // INPUT:  R0:  exception object
 //         R1:  filter funclet address
@@ -479,7 +479,7 @@ NESTED_END RhpCallFinallyFunclet, _TEXT
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
+NESTED_ENTRY CallFilterFunclet, _TEXT, NoHandler
 
         PROLOG_PUSH "{r2,r4-r11,lr}"
         PROLOG_VPUSH {d8-d15}
@@ -497,11 +497,11 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
         //    r1 = establisher frame
         blx         r12
 
-GLOBAL_LABEL RhpCallFilterFunclet2
+GLOBAL_LABEL CallFilterFunclet2
 
         // R0 contains the result of the filter execution
 
         EPILOG_VPOP {d8-d15}
         EPILOG_POP  "{r2,r4-r11,pc}"
 
-NESTED_END RhpCallFilterFunclet, _TEXT
+NESTED_END CallFilterFunclet, _TEXT

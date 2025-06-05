@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 
 #include "CommonTypes.h"
@@ -9,12 +10,12 @@
 #include "CommonMacros.inl"
 #include "volatile.h"
 #include "Pal.h"
-#include "rhassert.h"
+#include "debugmacros.h"
 
 #include "slist.h"
 #include "shash.h"
 #include "holder.h"
-#include "rhbinder.h"
+#include "binder.h"
 #include "Crst.h"
 #include "RuntimeInstance.h"
 #include "event.h"
@@ -32,11 +33,11 @@
 #include "GCMemoryHelpers.inl"
 
 #if defined(USE_PORTABLE_HELPERS)
-EXTERN_C void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+EXTERN_C void* GcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 
 static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements)
 {
-    Object* pObject = (Object*)RhpGcAlloc(pEEType, uFlags, numElements, nullptr);
+    Object* pObject = (Object*)GcAlloc(pEEType, uFlags, numElements, nullptr);
     if (pObject == nullptr)
     {
         ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
@@ -54,7 +55,7 @@ struct gc_alloc_context
 //
 // Allocations
 //
-FCIMPL1(Object *, RhpNewFast, MethodTable* pEEType)
+FCIMPL1(Object *, NewFast, MethodTable* pEEType)
 {
     ASSERT(!pEEType->HasFinalizer());
 
@@ -81,14 +82,14 @@ FCIMPLEND
 #define GC_ALLOC_ALIGN8_BIAS 0x4 // TODO: Defined in gc.h
 #define GC_ALLOC_ALIGN8      0x8 // TODO: Defined in gc.h
 
-FCIMPL1(Object *, RhpNewFinalizable, MethodTable* pEEType)
+FCIMPL1(Object *, NewFinalizable, MethodTable* pEEType)
 {
     ASSERT(pEEType->HasFinalizer());
     return AllocateObject(pEEType, GC_ALLOC_FINALIZE, 0);
 }
 FCIMPLEND
 
-FCIMPL2(Array *, RhpNewArrayFast, MethodTable * pArrayEEType, int numElements)
+FCIMPL2(Array *, NewArrayFast, MethodTable * pArrayEEType, int numElements)
 {
     Thread * pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context * acontext = pCurThread->GetAllocContext();
@@ -129,9 +130,9 @@ FCIMPLEND
 
 FCIMPL2(String *, RhNewString, MethodTable * pArrayEEType, int numElements)
 {
-    // TODO: Implement. We tail call to RhpNewArrayFast for now since there's a bunch of TODOs in the places
+    // TODO: Implement. We tail call to NewArrayFast for now since there's a bunch of TODOs in the places
     // that matter anyway.
-    return (String*)RhpNewArrayFast(pArrayEEType, numElements);
+    return (String*)NewArrayFast(pArrayEEType, numElements);
 }
 FCIMPLEND
 
@@ -141,14 +142,14 @@ FCIMPLEND
 
 GPTR_DECL(MethodTable, g_pFreeObjectEEType);
 
-FCIMPL1(Object *, RhpNewFinalizableAlign8, MethodTable* pEEType)
+FCIMPL1(Object *, NewFinalizableAlign8, MethodTable* pEEType)
 {
     return AllocateObject(pEEType, GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8, 0);
 }
 FCIMPLEND
 
 #ifndef HOST_64BIT
-FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pEEType)
+FCIMPL1(Object*, NewFastAlign8, MethodTable* pEEType)
 {
     ASSERT(!pEEType->HasFinalizer());
 
@@ -186,7 +187,7 @@ FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pEEType)
 }
 FCIMPLEND
 
-FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pEEType)
+FCIMPL1(Object*, NewFastMisalign, MethodTable* pEEType)
 {
     Thread* pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context* acontext = pCurThread->GetAllocContext();
@@ -221,7 +222,7 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pEEType)
 }
 FCIMPLEND
 
-FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, int numElements)
+FCIMPL2(Array*, NewArrayFastAlign8, MethodTable* pArrayEEType, int numElements)
 {
     Thread* pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context* acontext = pCurThread->GetAllocContext();
@@ -274,49 +275,49 @@ FCIMPLEND
 #endif // !HOST_64BIT
 #endif // defined(HOST_ARM) || defined(HOST_WASM)
 
-FCIMPL0(void, RhpInitialDynamicInterfaceDispatch)
+FCIMPL0(void, InitialDynamicInterfaceDispatch)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
 FCIMPLEND
 
-FCIMPL0(void, RhpInterfaceDispatch1)
+FCIMPL0(void, InterfaceDispatch1)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
 FCIMPLEND
 
-FCIMPL0(void, RhpInterfaceDispatch2)
+FCIMPL0(void, InterfaceDispatch2)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
 FCIMPLEND
 
-FCIMPL0(void, RhpInterfaceDispatch4)
+FCIMPL0(void, InterfaceDispatch4)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
 FCIMPLEND
 
-FCIMPL0(void, RhpInterfaceDispatch8)
+FCIMPL0(void, InterfaceDispatch8)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
 FCIMPLEND
 
-FCIMPL0(void, RhpInterfaceDispatch16)
+FCIMPL0(void, InterfaceDispatch16)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
 FCIMPLEND
 
-FCIMPL0(void, RhpInterfaceDispatch32)
+FCIMPL0(void, InterfaceDispatch32)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
 FCIMPLEND
 
-FCIMPL0(void, RhpInterfaceDispatch64)
+FCIMPL0(void, InterfaceDispatch64)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
@@ -331,7 +332,7 @@ EXTERN_C void * ReturnFromUniversalTransition_DebugStepTailCall;
 void * ReturnFromUniversalTransition_DebugStepTailCall;
 
 #if !defined (HOST_ARM64)
-FCIMPL2(void, RhpAssignRef, Object ** dst, Object * ref)
+FCIMPL2(void, AssignRef, Object ** dst, Object * ref)
 {
     // @TODO: USE_PORTABLE_HELPERS - Null check
     *dst = ref;
@@ -339,7 +340,7 @@ FCIMPL2(void, RhpAssignRef, Object ** dst, Object * ref)
 }
 FCIMPLEND
 
-FCIMPL2(void, RhpCheckedAssignRef, Object ** dst, Object * ref)
+FCIMPL2(void, CheckedAssignRef, Object ** dst, Object * ref)
 {
     // @TODO: USE_PORTABLE_HELPERS - Null check
     *dst = ref;
@@ -348,7 +349,7 @@ FCIMPL2(void, RhpCheckedAssignRef, Object ** dst, Object * ref)
 FCIMPLEND
 #endif
 
-FCIMPL3(Object *, RhpCheckedLockCmpXchg, Object ** location, Object * value, Object * comparand)
+FCIMPL3(Object *, CheckedLockCmpXchg, Object ** location, Object * value, Object * comparand)
 {
     Object * ret = (Object *)PalInterlockedCompareExchangePointer((void * volatile *)location, value, comparand);
     InlineCheckedWriteBarrier(location, value);
@@ -356,7 +357,7 @@ FCIMPL3(Object *, RhpCheckedLockCmpXchg, Object ** location, Object * value, Obj
 }
 FCIMPLEND
 
-FCIMPL2(Object *, RhpCheckedXchg, Object ** location, Object * value)
+FCIMPL2(Object *, CheckedXchg, Object ** location, Object * value)
 {
     // @TODO: USE_PORTABLE_HELPERS - Null check
     Object * ret = (Object *)PalInterlockedExchangePointer((void * volatile *)location, value);
@@ -371,48 +372,48 @@ FCIMPL1(HRESULT, RhAllocateThunksMapping, void ** ppThunksSection)
 }
 FCIMPLEND
 
-FCIMPL0(void *, RhpGetThunksBase)
+FCIMPL0(void *, GetThunksBase)
 {
     return NULL;
 }
 FCIMPLEND
 
-FCIMPL0(int, RhpGetNumThunkBlocksPerMapping)
+FCIMPL0(int, GetNumThunkBlocksPerMapping)
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return 0;
 }
 FCIMPLEND
 
-FCIMPL0(int, RhpGetNumThunksPerBlock)
+FCIMPL0(int, GetNumThunksPerBlock)
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return 0;
 }
 FCIMPLEND
 
-FCIMPL0(int, RhpGetThunkSize)
+FCIMPL0(int, GetThunkSize)
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return 0;
 }
 FCIMPLEND
 
-FCIMPL1(void*, RhpGetThunkDataBlockAddress, void* pThunkStubAddress)
+FCIMPL1(void*, GetThunkDataBlockAddress, void* pThunkStubAddress)
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return NULL;
 }
 FCIMPLEND
 
-FCIMPL1(void*, RhpGetThunkStubsBlockAddress, void* pThunkDataAddress)
+FCIMPL1(void*, GetThunkStubsBlockAddress, void* pThunkDataAddress)
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return NULL;
 }
 FCIMPLEND
 
-FCIMPL0(int, RhpGetThunkBlockSize)
+FCIMPL0(int, GetThunkBlockSize)
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return 0;
@@ -433,7 +434,7 @@ FCIMPL0(void *, RhGetCurrentThunkContext)
 }
 FCIMPLEND
 
-FCIMPL0(void, RhpGcPoll)
+FCIMPL0(void, GcPoll)
 {
     // TODO: implement
 }

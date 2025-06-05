@@ -23,10 +23,10 @@ namespace ILCompiler
             switch (id)
             {
                 case ReadyToRunHelper.Throw:
-                    mangledName = "RhpThrowEx";
+                    mangledName = "ThrowEx";
                     break;
                 case ReadyToRunHelper.Rethrow:
-                    mangledName = "RhpRethrow";
+                    mangledName = "Rethrow";
                     break;
 
                 case ReadyToRunHelper.Overflow:
@@ -36,7 +36,7 @@ namespace ILCompiler
                     methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowIndexOutOfRangeException");
                     break;
                 case ReadyToRunHelper.FailFast:
-                    mangledName = "RhpFallbackFailFast"; // TODO: Report stack buffer overrun
+                    mangledName = "FallbackFailFast"; // TODO: Report stack buffer overrun
                     break;
                 case ReadyToRunHelper.ThrowNullRef:
                     methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowNullReferenceException");
@@ -64,56 +64,56 @@ namespace ILCompiler
                 case ReadyToRunHelper.WriteBarrier:
                     mangledName = context.Target.Architecture switch
                     {
-                        TargetArchitecture.ARM64 => "RhpAssignRefArm64",
-                        TargetArchitecture.LoongArch64 => "RhpAssignRefLoongArch64",
-                        TargetArchitecture.RiscV64 => "RhpAssignRefRiscV64",
-                        _ => "RhpAssignRef"
+                        TargetArchitecture.ARM64 => "AssignRefArm64",
+                        TargetArchitecture.LoongArch64 => "AssignRefLoongArch64",
+                        TargetArchitecture.RiscV64 => "AssignRefRiscV64",
+                        _ => "AssignRef"
                     };
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier:
-                    mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpCheckedAssignRefArm64" : "RhpCheckedAssignRef";
+                    mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "CheckedAssignRefArm64" : "CheckedAssignRef";
                     break;
                 case ReadyToRunHelper.BulkWriteBarrier:
                     methodDesc = context.GetCoreLibEntryPoint("System", "Buffer", "BulkMoveWithWriteBarrier", null);
                     break;
                 case ReadyToRunHelper.ByRefWriteBarrier:
-                    mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpByRefAssignRefArm64" : "RhpByRefAssignRef";
+                    mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "ByRefAssignRefArm64" : "ByRefAssignRef";
                     break;
                 case ReadyToRunHelper.WriteBarrier_EAX:
-                    mangledName = "RhpAssignRefEAX";
+                    mangledName = "AssignRefEAX";
                     break;
                 case ReadyToRunHelper.WriteBarrier_EBX:
-                    mangledName = "RhpAssignRefEBX";
+                    mangledName = "AssignRefEBX";
                     break;
                 case ReadyToRunHelper.WriteBarrier_ECX:
-                    mangledName = "RhpAssignRefECX";
+                    mangledName = "AssignRefECX";
                     break;
                 case ReadyToRunHelper.WriteBarrier_EDI:
-                    mangledName = "RhpAssignRefEDI";
+                    mangledName = "AssignRefEDI";
                     break;
                 case ReadyToRunHelper.WriteBarrier_ESI:
-                    mangledName = "RhpAssignRefESI";
+                    mangledName = "AssignRefESI";
                     break;
                 case ReadyToRunHelper.WriteBarrier_EBP:
-                    mangledName = "RhpAssignRefEBP";
+                    mangledName = "AssignRefEBP";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EAX:
-                    mangledName = "RhpCheckedAssignRefEAX";
+                    mangledName = "CheckedAssignRefEAX";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EBX:
-                    mangledName = "RhpCheckedAssignRefEBX";
+                    mangledName = "CheckedAssignRefEBX";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_ECX:
-                    mangledName = "RhpCheckedAssignRefECX";
+                    mangledName = "CheckedAssignRefECX";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EDI:
-                    mangledName = "RhpCheckedAssignRefEDI";
+                    mangledName = "CheckedAssignRefEDI";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_ESI:
-                    mangledName = "RhpCheckedAssignRefESI";
+                    mangledName = "CheckedAssignRefESI";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EBP:
-                    mangledName = "RhpCheckedAssignRefEBP";
+                    mangledName = "CheckedAssignRefEBP";
                     break;
                 case ReadyToRunHelper.Box:
                 case ReadyToRunHelper.Box_Nullable:
@@ -177,29 +177,29 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.Lng2Dbl:
-                    mangledName = "RhpLng2Dbl";
+                    mangledName = "Lng2Dbl";
                     break;
                 case ReadyToRunHelper.ULng2Dbl:
-                    mangledName = "RhpULng2Dbl";
+                    mangledName = "ULng2Dbl";
                     break;
                 case ReadyToRunHelper.Lng2Flt:
-                    mangledName = "RhpLng2Flt";
+                    mangledName = "Lng2Flt";
                     break;
                 case ReadyToRunHelper.ULng2Flt:
-                    mangledName = "RhpULng2Flt";
+                    mangledName = "ULng2Flt";
                     break;
 
                 case ReadyToRunHelper.Dbl2Lng:
-                    mangledName = "RhpDbl2Lng";
+                    mangledName = "Dbl2Lng";
                     break;
                 case ReadyToRunHelper.Dbl2ULng:
-                    mangledName = "RhpDbl2ULng";
+                    mangledName = "Dbl2ULng";
                     break;
                 case ReadyToRunHelper.Dbl2Int:
-                    mangledName = "RhpDbl2Int";
+                    mangledName = "Dbl2Int";
                     break;
                 case ReadyToRunHelper.Dbl2UInt:
-                    mangledName = "RhpDbl2UInt";
+                    mangledName = "Dbl2UInt";
                     break;
 
                 case ReadyToRunHelper.Dbl2IntOvf:
@@ -223,7 +223,7 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.LMul:
-                    mangledName = "RhpLMul";
+                    mangledName = "LMul";
                     break;
                 case ReadyToRunHelper.LMulOfv:
                     {
@@ -267,27 +267,27 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.LRsz:
-                    mangledName = "RhpLRsz";
+                    mangledName = "LRsz";
                     break;
                 case ReadyToRunHelper.LRsh:
-                    mangledName = "RhpLRsh";
+                    mangledName = "LRsh";
                     break;
                 case ReadyToRunHelper.LLsh:
-                    mangledName = "RhpLLsh";
+                    mangledName = "LLsh";
                     break;
 
                 case ReadyToRunHelper.PInvokeBegin:
-                    mangledName = "RhpPInvoke";
+                    mangledName = "PInvoke";
                     break;
                 case ReadyToRunHelper.PInvokeEnd:
-                    mangledName = "RhpPInvokeReturn";
+                    mangledName = "PInvokeReturn";
                     break;
 
                 case ReadyToRunHelper.ReversePInvokeEnter:
-                    mangledName = "RhpReversePInvoke";
+                    mangledName = "ReversePInvoke";
                     break;
                 case ReadyToRunHelper.ReversePInvokeExit:
-                    mangledName = "RhpReversePInvokeReturn";
+                    mangledName = "ReversePInvokeReturn";
                     break;
 
                 case ReadyToRunHelper.CheckCastAny:
@@ -354,18 +354,18 @@ namespace ILCompiler
             if (type.RequiresAlign8())
             {
                 if (type.HasFinalizer)
-                    return "RhpNewFinalizableAlign8";
+                    return "NewFinalizableAlign8";
 
                 if (type.IsValueType)
-                    return "RhpNewFastMisalign";
+                    return "NewFastMisalign";
 
-                return "RhpNewFastAlign8";
+                return "NewFastAlign8";
             }
 
             if (type.HasFinalizer)
-                return "RhpNewFinalizable";
+                return "NewFinalizable";
 
-            return "RhpNewFast";
+            return "NewFast";
         }
     }
 }

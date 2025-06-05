@@ -5897,53 +5897,53 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
 #endif // FEATURE_EH_FUNCLETS
 
 typedef uint8_t CODE_LOCATION;
-EXTERN_C CODE_LOCATION RhpAssignRefAVLocation;
+EXTERN_C CODE_LOCATION AssignRefAVLocation;
 #if defined(HOST_X86)
-EXTERN_C CODE_LOCATION RhpAssignRefEAXAVLocation;
-EXTERN_C CODE_LOCATION RhpAssignRefECXAVLocation;
-EXTERN_C CODE_LOCATION RhpAssignRefEBXAVLocation;
-EXTERN_C CODE_LOCATION RhpAssignRefESIAVLocation;
-EXTERN_C CODE_LOCATION RhpAssignRefEDIAVLocation;
-EXTERN_C CODE_LOCATION RhpAssignRefEBPAVLocation;
+EXTERN_C CODE_LOCATION AssignRefEAXAVLocation;
+EXTERN_C CODE_LOCATION AssignRefECXAVLocation;
+EXTERN_C CODE_LOCATION AssignRefEBXAVLocation;
+EXTERN_C CODE_LOCATION AssignRefESIAVLocation;
+EXTERN_C CODE_LOCATION AssignRefEDIAVLocation;
+EXTERN_C CODE_LOCATION AssignRefEBPAVLocation;
 #endif
-EXTERN_C CODE_LOCATION RhpCheckedAssignRefAVLocation;
+EXTERN_C CODE_LOCATION CheckedAssignRefAVLocation;
 #if defined(HOST_X86)
-EXTERN_C CODE_LOCATION RhpCheckedAssignRefEAXAVLocation;
-EXTERN_C CODE_LOCATION RhpCheckedAssignRefECXAVLocation;
-EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBXAVLocation;
-EXTERN_C CODE_LOCATION RhpCheckedAssignRefESIAVLocation;
-EXTERN_C CODE_LOCATION RhpCheckedAssignRefEDIAVLocation;
-EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
+EXTERN_C CODE_LOCATION CheckedAssignRefEAXAVLocation;
+EXTERN_C CODE_LOCATION CheckedAssignRefECXAVLocation;
+EXTERN_C CODE_LOCATION CheckedAssignRefEBXAVLocation;
+EXTERN_C CODE_LOCATION CheckedAssignRefESIAVLocation;
+EXTERN_C CODE_LOCATION CheckedAssignRefEDIAVLocation;
+EXTERN_C CODE_LOCATION CheckedAssignRefEBPAVLocation;
 #endif
-EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
+EXTERN_C CODE_LOCATION ByRefAssignRefAVLocation1;
 
 #if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
-EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation2;
+EXTERN_C CODE_LOCATION ByRefAssignRefAVLocation2;
 #endif
 
 static uintptr_t writeBarrierAVLocations[] =
 {
-    (uintptr_t)&RhpAssignRefAVLocation,
+    (uintptr_t)&AssignRefAVLocation,
 #if defined(HOST_X86)
-    (uintptr_t)&RhpAssignRefEAXAVLocation,
-    (uintptr_t)&RhpAssignRefECXAVLocation,
-    (uintptr_t)&RhpAssignRefEBXAVLocation,
-    (uintptr_t)&RhpAssignRefESIAVLocation,
-    (uintptr_t)&RhpAssignRefEDIAVLocation,
-    (uintptr_t)&RhpAssignRefEBPAVLocation,
+    (uintptr_t)&AssignRefEAXAVLocation,
+    (uintptr_t)&AssignRefECXAVLocation,
+    (uintptr_t)&AssignRefEBXAVLocation,
+    (uintptr_t)&AssignRefESIAVLocation,
+    (uintptr_t)&AssignRefEDIAVLocation,
+    (uintptr_t)&AssignRefEBPAVLocation,
 #endif
-    (uintptr_t)&RhpCheckedAssignRefAVLocation,
+    (uintptr_t)&CheckedAssignRefAVLocation,
 #if defined(HOST_X86)
-    (uintptr_t)&RhpCheckedAssignRefEAXAVLocation,
-    (uintptr_t)&RhpCheckedAssignRefECXAVLocation,
-    (uintptr_t)&RhpCheckedAssignRefEBXAVLocation,
-    (uintptr_t)&RhpCheckedAssignRefESIAVLocation,
-    (uintptr_t)&RhpCheckedAssignRefEDIAVLocation,
-    (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
+    (uintptr_t)&CheckedAssignRefEAXAVLocation,
+    (uintptr_t)&CheckedAssignRefECXAVLocation,
+    (uintptr_t)&CheckedAssignRefEBXAVLocation,
+    (uintptr_t)&CheckedAssignRefESIAVLocation,
+    (uintptr_t)&CheckedAssignRefEDIAVLocation,
+    (uintptr_t)&CheckedAssignRefEBPAVLocation,
 #endif
-    (uintptr_t)&RhpByRefAssignRefAVLocation1,
+    (uintptr_t)&ByRefAssignRefAVLocation1,
 #if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
-    (uintptr_t)&RhpByRefAssignRefAVLocation2,
+    (uintptr_t)&ByRefAssignRefAVLocation2,
 #endif
 };
 

@@ -166,7 +166,7 @@ C_FUNC(\Name):
     addi.d $sp, $sp, 16
 .endm
 
-// Inlined version of RhpGetThread. Target cannot be a0.
+// Inlined version of GetThread. Target cannot be a0.
 .macro INLINE_GETTHREAD target
     INLINE_GET_TLS_VAR  \target, C_FUNC(tls_CurrentThread)
 .endm

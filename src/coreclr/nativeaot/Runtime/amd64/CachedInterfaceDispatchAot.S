@@ -10,10 +10,10 @@
 
 // Cache miss case, call the runtime to resolve the target and update the cache.
 // Use universal transition helper to allow an exception to flow out of resolution
-LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
-        // r11 contains indirection cell address already, so it will naturally be passed to RhpCidResolve
-        // the universal transition thunk as an argument to RhpCidResolve
-        mov r10, [rip + REL_C_FUNC(RhpCidResolve)]
-        jmp qword ptr [rip + REL_C_FUNC(RhpUniversalTransition_DebugStepTailCall)]
+LEAF_ENTRY InterfaceDispatchSlow, _TEXT
+        // r11 contains indirection cell address already, so it will naturally be passed to CidResolve
+        // the universal transition thunk as an argument to CidResolve
+        mov r10, [rip + REL_C_FUNC(CidResolve)]
+        jmp qword ptr [rip + REL_C_FUNC(UniversalTransition_DebugStepTailCall)]
 
-LEAF_END RhpInterfaceDispatchSlow, _TEXT
+LEAF_END InterfaceDispatchSlow, _TEXT

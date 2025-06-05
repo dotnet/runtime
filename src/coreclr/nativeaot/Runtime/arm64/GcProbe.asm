@@ -5,11 +5,11 @@
 
     TEXTAREA
 
-    EXTERN      RhpGcPoll2
+    EXTERN      GcPoll2
     EXTERN      g_fGcStressStarted
 
     ;; Build a map of symbols representing offsets into the transition frame (see PInvokeTransitionFrame in
-    ;; rhbinder.h) and keep these two in sync.
+    ;; binder.h) and keep these two in sync.
     map 0
             field OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs
             field 10 * 8 ; x19..x28
@@ -142,13 +142,13 @@ PROBE_FRAME_SIZE    field 0
 ;; GC Probe Hijack target
 ;;
 
-    NESTED_ENTRY RhpGcProbeHijackWrapper, .text
+    NESTED_ENTRY GcProbeHijackWrapper, .text
         HijackTargetFakeProlog
 
-    LABELED_RETURN_ADDRESS RhpGcProbeHijack
+    LABELED_RETURN_ADDRESS GcProbeHijack
         FixupHijackedCallstack
 
-        ldr         x3, =RhpTrapThreads
+        ldr         x3, =TrapThreads
         ldr         w3, [x3]
         tbnz        x3, #TrapThreadsFlags_TrapThreads_Bit, WaitForGC
         ret
@@ -156,16 +156,16 @@ PROBE_FRAME_SIZE    field 0
 WaitForGC
         mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1)
         movk        x12, #PTFF_THREAD_HIJACK_HI, lsl #32
-        b           RhpWaitForGC
-    NESTED_END RhpGcProbeHijackWrapper
+        b           InternalWaitForGC
+    NESTED_END GcProbeHijackWrapper
 
-    EXTERN RhpThrowHwEx
+    EXTERN ThrowHwEx
 
-    NESTED_ENTRY RhpWaitForGC
+    NESTED_ENTRY InternalWaitForGC
         PUSH_PROBE_FRAME x2, x3, x12
 
         ldr         x0, [x2, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
-        bl          RhpWaitForGC2
+        bl          WaitForGC2
 
         ldr         x2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
         tbnz        x2, #PTFF_THREAD_ABORT_BIT, ThrowThreadAbort
@@ -176,22 +176,22 @@ ThrowThreadAbort
         POP_PROBE_FRAME
         EPILOG_NOP mov w0, #STATUS_NATIVEAOT_THREAD_ABORT
         EPILOG_NOP mov x1, lr ;; return address as exception PC
-        EPILOG_NOP b RhpThrowHwEx
-    NESTED_END RhpWaitForGC
+        EPILOG_NOP b ThrowHwEx
+    NESTED_END InternalWaitForGC
 
-    LEAF_ENTRY RhpGcPoll
-        ldr         x0, =RhpTrapThreads
+    LEAF_ENTRY GcPoll
+        ldr         x0, =TrapThreads
         ldr         w0, [x0]
-        cbnz        w0, RhpGcPollRare ;; TrapThreadsFlags_None = 0
+        cbnz        w0, GcPollRare ;; TrapThreadsFlags_None = 0
         ret
-    LEAF_END RhpGcPoll
+    LEAF_END GcPoll
 
-    NESTED_ENTRY RhpGcPollRare
+    NESTED_ENTRY GcPollRare
         PUSH_COOP_PINVOKE_FRAME x0
-        bl          RhpGcPoll2
+        bl          GcPoll2
         POP_COOP_PINVOKE_FRAME
         ret
-    NESTED_END RhpGcPollRare
+    NESTED_END GcPollRare
 
 
 #ifdef FEATURE_GC_STRESS
@@ -200,14 +200,14 @@ ThrowThreadAbort
 ;; GC Stress Hijack target
 ;;
 ;;
-    LEAF_ENTRY RhpGcStressHijack
+    LEAF_ENTRY GcStressHijack
         FixupHijackedCallstack
         orr         x12, x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1)
-        b           RhpGcStressProbe
-    LEAF_END RhpGcStressHijack
+        b           GcStressProbe
+    LEAF_END GcStressHijack
 ;;
 ;; Worker for our GC stress probes.  Do not call directly!!
-;; Instead, go through RhpGcStressHijack.
+;; Instead, go through GcStressHijack.
 ;; This worker performs the GC Stress work and returns to the original return address.
 ;;
 ;; Register state on entry:
@@ -220,16 +220,16 @@ ThrowThreadAbort
 ;;  Scratch registers, except for x0, have been trashed
 ;;  All other registers restored as they were when the hijack was first reached.
 ;;
-    NESTED_ENTRY RhpGcStressProbe
+    NESTED_ENTRY GcStressProbe
         PUSH_PROBE_FRAME x2, x3, x12
 
-        bl          RhpStressGc
+        bl          StressGc
 
         POP_PROBE_FRAME
         EPILOG_RETURN
-    NESTED_END RhpGcStressProbe
+    NESTED_END GcStressProbe
 
-    NESTED_ENTRY RhpHijackForGcStress
+    NESTED_ENTRY HijackForGcStress
         ;; This function should be called from right before epilog
 
         ;; Push FP and LR, and allocate stack to hold PAL_LIMITED_CONTEXT structure and VFP return value registers
@@ -282,9 +282,9 @@ ThrowThreadAbort
         EPILOG_RESTORE_REG_PAIR     fp, lr, #(SIZEOF__PAL_LIMITED_CONTEXT + 0x20)!
         EPILOG_RETURN
 
-    NESTED_END RhpHijackForGcStress
+    NESTED_END HijackForGcStress
 
-    NESTED_ENTRY RhpHijackForGcStressLeaf
+    NESTED_ENTRY HijackForGcStressLeaf
         ;; This should be jumped to, right before epilog
         ;; x9 has the return address (we don't care about trashing scratch regs at this point)
 
@@ -308,7 +308,7 @@ ThrowThreadAbort
             PROLOG_SAVE_REG_PAIR    x25, x26, #0x50
             PROLOG_SAVE_REG_PAIR    x27, x28, #0x60
             ; PROLOG_SAVE_REG macro doesn't let to use scratch reg:
-            PROLOG_NOP  str         x9, [sp, #0x78]           ; this is return address from RhpHijackForGcStress; lr is return address for it's caller
+            PROLOG_NOP  str         x9, [sp, #0x78]           ; this is return address from HijackForGcStress; lr is return address for it's caller
 
         ;; } end PAL_LIMITED_CONTEXT
 
@@ -340,12 +340,12 @@ ThrowThreadAbort
         EPILOG_RESTORE_REG_PAIR     fp, lr, #(SIZEOF__PAL_LIMITED_CONTEXT + 0x20)!
         EPILOG_NOP     br           x9
 
-    NESTED_END RhpHijackForGcStressLeaf
+    NESTED_END HijackForGcStressLeaf
 
 ;;
 ;; INVARIANT: Don't trash the argument registers, the binder codegen depends on this.
 ;;
-    LEAF_ENTRY RhpSuppressGcStress
+    LEAF_ENTRY SuppressGcStress
         INLINE_GETTHREAD x9, x10
         add         x9, x9, #OFFSETOF__Thread__m_ThreadStateFlags
 Retry
@@ -357,7 +357,7 @@ Retry
 
 Success
         ret
-    LEAF_END RhpSuppressGcStress
+    LEAF_END SuppressGcStress
 #endif ;; FEATURE_GC_STRESS
 
     end

@@ -15,7 +15,7 @@ LEAF_ENTRY RhCommonStub, _TEXT
     SAVE_FLOAT_ARGUMENT_REGISTERS 0
 
 #ifdef FEATURE_EMULATED_TLS
-    call    C_FUNC(RhpGetThunkData)
+    call    C_FUNC(GetThunkData)
 #else
     INLINE_GET_TLS_VAR  tls_thunkData
 #endif

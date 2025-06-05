@@ -85,7 +85,7 @@ namespace System.Runtime
         internal static void FallbackFailFast(RhFailFastReason reason, object? unhandledException)
         {
 #if NATIVEAOT
-            InternalCalls.RhpFallbackFailFast();
+            InternalCalls.FallbackFailFast();
 #else
             // TODO-NewEH: Debugging the FailFasts is difficult, debugger doesn't stop here, but
             // only after the process exits. The Debugger.Break() is a temporary solution to
@@ -108,7 +108,7 @@ namespace System.Runtime
 #if NATIVEAOT
             // Find the classlib function that will fail fast. This is a RuntimeExport function from the
             // classlib module, and is therefore managed-callable.
-            IntPtr pFailFastFunction = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(classlibAddress,
+            IntPtr pFailFastFunction = (IntPtr)InternalCalls.GetClasslibFunctionFromCodeAddress(classlibAddress,
                                                                            ClassLibFunctionId.FailFast);
 
             if (pFailFastFunction == IntPtr.Zero)
@@ -158,7 +158,7 @@ namespace System.Runtime
         private static void OnFirstChanceExceptionViaClassLib(object exception)
         {
             IntPtr pOnFirstChanceFunction =
-                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType(exception.GetMethodTable(), ClassLibFunctionId.OnFirstChance);
+                (IntPtr)InternalCalls.GetClasslibFunctionFromEEType(exception.GetMethodTable(), ClassLibFunctionId.OnFirstChance);
 
             if (pOnFirstChanceFunction == IntPtr.Zero)
             {
@@ -180,7 +180,7 @@ namespace System.Runtime
         {
 #if NATIVEAOT
             IntPtr pOnUnhandledExceptionFunction =
-                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType(exception.GetMethodTable(), ClassLibFunctionId.OnUnhandledException);
+                (IntPtr)InternalCalls.GetClasslibFunctionFromEEType(exception.GetMethodTable(), ClassLibFunctionId.OnUnhandledException);
 
             if (pOnUnhandledExceptionFunction == IntPtr.Zero)
             {
@@ -206,7 +206,7 @@ namespace System.Runtime
         {
 #if NATIVEAOT
             IntPtr pFailFastFunction =
-                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(classlibAddress, ClassLibFunctionId.FailFast);
+                (IntPtr)InternalCalls.GetClasslibFunctionFromCodeAddress(classlibAddress, ClassLibFunctionId.FailFast);
 
             if (pFailFastFunction == IntPtr.Zero)
             {
@@ -222,7 +222,7 @@ namespace System.Runtime
             byte* pbBuffer = stackalloc byte[sizeof(OSCONTEXT) + contextAlignment];
             void* pContext = PointerAlign(pbBuffer, contextAlignment);
 
-            InternalCalls.RhpCopyContextFromExInfo(pContext, sizeof(OSCONTEXT), exInfo._pExContext);
+            InternalCalls.CopyContextFromExInfo(pContext, sizeof(OSCONTEXT), exInfo._pExContext);
 #else
             void* pContext = null; // Fatal crash handler does not use the context on non-Windows
 #endif
@@ -260,7 +260,7 @@ namespace System.Runtime
             int flags = (isFirstFrame ? (int)RhEHFrameType.RH_EH_FIRST_FRAME : 0) |
                         (isFirstRethrowFrame ? (int)RhEHFrameType.RH_EH_FIRST_RETHROW_FRAME : 0);
 #if NATIVEAOT
-            IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(ip,
+            IntPtr pAppendStackFrame = (IntPtr)InternalCalls.GetClasslibFunctionFromCodeAddress(ip,
                 ClassLibFunctionId.AppendExceptionStackFrame);
 
             if (pAppendStackFrame != IntPtr.Zero)
@@ -281,7 +281,7 @@ namespace System.Runtime
 #else
             fixed (EH.ExInfo* pExInfo = &exInfo)
             {
-                InternalCalls.RhpAppendExceptionStackFrame(ObjectHandleOnStack.Create(ref exception), ip, sp, flags, pExInfo);
+                InternalCalls.AppendExceptionStackFrame(ObjectHandleOnStack.Create(ref exception), ip, sp, flags, pExInfo);
             }
 
             // Clear flags only if we called the function
@@ -299,7 +299,7 @@ namespace System.Runtime
             // Find the classlib function that will give us the exception object we want to throw. This
             // is a RuntimeExport function from the classlib module, and is therefore managed-callable.
             IntPtr pGetRuntimeExceptionFunction =
-                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(address, ClassLibFunctionId.GetRuntimeException);
+                (IntPtr)InternalCalls.GetClasslibFunctionFromCodeAddress(address, ClassLibFunctionId.GetRuntimeException);
 
             // Return the exception object we get from the classlib.
             Exception? e = null;
@@ -353,7 +353,7 @@ namespace System.Runtime
             IntPtr pGetRuntimeExceptionFunction = IntPtr.Zero;
             if (pEEType != null)
             {
-                pGetRuntimeExceptionFunction = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType(pEEType, ClassLibFunctionId.GetRuntimeException);
+                pGetRuntimeExceptionFunction = (IntPtr)InternalCalls.GetClasslibFunctionFromEEType(pEEType, ClassLibFunctionId.GetRuntimeException);
             }
 
             // Return the exception object we get from the classlib.
@@ -553,7 +553,7 @@ namespace System.Runtime
         }
 
         //
-        // Called by RhpThrowHwEx
+        // Called by ThrowHwEx
         //
 #if NATIVEAOT
         [RuntimeExport("RhThrowHwEx")]
@@ -565,7 +565,7 @@ namespace System.Runtime
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
             GCStress.TriggerGC();
 
-            InternalCalls.RhpValidateExInfoStack();
+            InternalCalls.ValidateExInfoStack();
 #endif
             IntPtr faultingCodeAddress = exInfo._pExContext->IP;
             bool instructionFault = true;
@@ -588,7 +588,7 @@ namespace System.Runtime
 
 #if NATIVEAOT
                 case (uint)HwExceptionCode.STATUS_NATIVEAOT_THREAD_ABORT:
-                    exceptionToThrow = InternalCalls.RhpGetThreadAbortException();
+                    exceptionToThrow = InternalCalls.GetThreadAbortException();
                     break;
 #endif
 
@@ -652,13 +652,13 @@ namespace System.Runtime
 
 #if TARGET_WINDOWS
             // Alert the debugger that we threw an exception.
-            InternalCalls.RhpFirstChanceExceptionNotification();
+            InternalCalls.FirstChanceExceptionNotification();
 #endif // TARGET_WINDOWS
 
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
             GCStress.TriggerGC();
 
-            InternalCalls.RhpValidateExInfoStack();
+            InternalCalls.ValidateExInfoStack();
 #endif // NATIVEAOT
 
             // Transform attempted throws of null to a throw of NullReferenceException.
@@ -717,7 +717,7 @@ namespace System.Runtime
                 object exceptionObj = exInfo.ThrownException;
                 fixed (EH.ExInfo* pExInfo = &exInfo)
                 {
-                    InternalCalls.RhpCallCatchFunclet(
+                    InternalCalls.CallCatchFunclet(
                         ObjectHandleOnStack.Create(ref exceptionObj), null, exInfo._frameIter.RegisterSet, pExInfo);
                 }
             }
@@ -742,13 +742,13 @@ namespace System.Runtime
 
 #if TARGET_WINDOWS
             // Alert the debugger that we threw an exception.
-            InternalCalls.RhpFirstChanceExceptionNotification();
+            InternalCalls.FirstChanceExceptionNotification();
 #endif // TARGET_WINDOWS
 
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
             GCStress.TriggerGC();
 
-            InternalCalls.RhpValidateExInfoStack();
+            InternalCalls.ValidateExInfoStack();
 #endif // NATIVEAOT
 
             // We need to copy the exception object to this stack location because collided unwinds
@@ -836,7 +836,7 @@ namespace System.Runtime
 #if FEATURE_OBJCMARSHAL
                 // We did not find any managed handlers before hitting a reverse P/Invoke boundary.
                 // See if the classlib has a handler to propagate the exception to native code.
-                IntPtr pGetHandlerClasslibFunction = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress((IntPtr)prevControlPC,
+                IntPtr pGetHandlerClasslibFunction = (IntPtr)InternalCalls.GetClasslibFunctionFromCodeAddress((IntPtr)prevControlPC,
                     ClassLibFunctionId.ObjectiveCMarshalGetUnhandledExceptionPropagationHandler);
                 if (pGetHandlerClasslibFunction != IntPtr.Zero)
                 {
@@ -889,7 +889,7 @@ namespace System.Runtime
             // 'main body' without first encountering the funclet.  The thunks used to invoke 2nd-pass
             // funclets will always toggle this mode off before invoking them.
 #if NATIVEAOT
-            InternalCalls.RhpSetThreadDoNotTriggerGC();
+            InternalCalls.SetThreadDoNotTriggerGC();
 #endif
             exInfo._passNumber = 2;
             exInfo._idxCurClause = catchingTryRegionIdx;
@@ -938,7 +938,7 @@ namespace System.Runtime
             if (pReversePInvokePropagationCallback != IntPtr.Zero)
             {
 #if NATIVEAOT
-                InternalCalls.RhpCallPropagateExceptionCallback(
+                InternalCalls.CallPropagateExceptionCallback(
                     pReversePInvokePropagationContext, pReversePInvokePropagationCallback, frameIter.RegisterSet, ref exInfo, frameIter.PreviousTransitionFrame);
                 // the helper should jump to propagation handler and not return
 #endif
@@ -955,16 +955,16 @@ namespace System.Runtime
             // ------------------------------------------------
             exInfo._idxCurClause = catchingTryRegionIdx;
 #if NATIVEAOT
-            InternalCalls.RhpCallCatchFunclet(
+            InternalCalls.CallCatchFunclet(
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, ref exInfo);
 #else // NATIVEAOT
             fixed (EH.ExInfo* pExInfo = &exInfo)
             {
-                InternalCalls.RhpCallCatchFunclet(
+                InternalCalls.CallCatchFunclet(
                     ObjectHandleOnStack.Create(ref exceptionObj), pCatchHandler, frameIter.RegisterSet, pExInfo);
             }
 #endif // NATIVEAOT
-            // currently, RhpCallCatchFunclet will resume after the catch
+            // currently, CallCatchFunclet will resume after the catch
             Debug.Fail("unreachable");
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
@@ -1025,7 +1025,7 @@ namespace System.Runtime
 
             EHEnum ehEnum;
             MethodRegionInfo methodRegionInfo;
-            if (!InternalCalls.RhpEHEnumInitFromStackFrameIterator(ref frameIter, out methodRegionInfo, &ehEnum))
+            if (!InternalCalls.EHEnumInitFromStackFrameIterator(ref frameIter, out methodRegionInfo, &ehEnum))
                 return false;
 
             byte* pbControlPC = frameIter.ControlPC;
@@ -1036,7 +1036,7 @@ namespace System.Runtime
 
             // Search the clauses for one that contains the current offset.
             RhEHClause ehClause;
-            for (uint curIdx = 0; InternalCalls.RhpEHEnumNext(&ehEnum, &ehClause); curIdx++)
+            for (uint curIdx = 0; InternalCalls.EHEnumNext(&ehEnum, &ehClause); curIdx++)
             {
                 //
                 // Skip to the starting try region.  This is used by collided unwinds and rethrows to pickup where
@@ -1093,7 +1093,7 @@ namespace System.Runtime
                     try
                     {
                         shouldInvokeHandler =
-                            InternalCalls.RhpCallFilterFunclet(exception, pFilterFunclet, frameIter.RegisterSet);
+                            InternalCalls.CallFilterFunclet(exception, pFilterFunclet, frameIter.RegisterSet);
                     }
                     catch when (true)
                     {
@@ -1101,7 +1101,7 @@ namespace System.Runtime
                     }
 #else // NATIVEAOT
                     shouldInvokeHandler =
-                        InternalCalls.RhpCallFilterFunclet(ObjectHandleOnStack.Create(ref exception), pFilterFunclet, frameIter.RegisterSet);
+                        InternalCalls.CallFilterFunclet(ObjectHandleOnStack.Create(ref exception), pFilterFunclet, frameIter.RegisterSet);
 #endif // NATIVEAOT
 
                     if (shouldInvokeHandler)
@@ -1180,7 +1180,7 @@ namespace System.Runtime
             EHEnum ehEnum;
             MethodRegionInfo methodRegionInfo;
 
-            if (!InternalCalls.RhpEHEnumInitFromStackFrameIterator(ref exInfo._frameIter, out methodRegionInfo, &ehEnum))
+            if (!InternalCalls.EHEnumInitFromStackFrameIterator(ref exInfo._frameIter, out methodRegionInfo, &ehEnum))
                 return;
 
             byte* pbControlPC = exInfo._frameIter.ControlPC;
@@ -1191,7 +1191,7 @@ namespace System.Runtime
 
             // Search the clauses for one that contains the current offset.
             RhEHClause ehClause;
-            for (uint curIdx = 0; InternalCalls.RhpEHEnumNext(&ehEnum, &ehClause) && curIdx < idxLimit; curIdx++)
+            for (uint curIdx = 0; InternalCalls.EHEnumNext(&ehEnum, &ehClause) && curIdx < idxLimit; curIdx++)
             {
                 //
                 // Skip to the starting try region.  This is used by collided unwinds and rethrows to pickup where
@@ -1236,18 +1236,18 @@ namespace System.Runtime
                 // here to the dispatcher, but before the next one is invoked).  Once they are running, it's
                 // fine for them to trigger a GC, obviously.
                 //
-                // As a result, RhpCallFinallyFunclet will set this state in the runtime upon return from the
+                // As a result, CallFinallyFunclet will set this state in the runtime upon return from the
                 // funclet, and we need to reset it if/when we fall out of the loop and we know that the
                 // method will no longer get any more GC callbacks.
 
                 byte* pFinallyHandler = ehClause._handlerAddress;
                 exInfo._idxCurClause = curIdx;
 #if NATIVEAOT
-                InternalCalls.RhpCallFinallyFunclet(pFinallyHandler, exInfo._frameIter.RegisterSet);
+                InternalCalls.CallFinallyFunclet(pFinallyHandler, exInfo._frameIter.RegisterSet);
 #else // NATIVEAOT
                 fixed (EH.ExInfo* pExInfo = &exInfo)
                 {
-                    InternalCalls.RhpCallFinallyFunclet(pFinallyHandler, exInfo._frameIter.RegisterSet, pExInfo);
+                    InternalCalls.CallFinallyFunclet(pFinallyHandler, exInfo._frameIter.RegisterSet, pExInfo);
                 }
 #endif // NATIVEAOT
                 exInfo._idxCurClause = MaxTryRegionIdx;
@@ -1256,13 +1256,13 @@ namespace System.Runtime
 
 #if NATIVEAOT
 #pragma warning disable IDE0060
-        [UnmanagedCallersOnly(EntryPoint = "RhpFailFastForPInvokeExceptionPreemp")]
-        public static void RhpFailFastForPInvokeExceptionPreemp(IntPtr PInvokeCallsiteReturnAddr, void* pExceptionRecord, void* pContextRecord)
+        [UnmanagedCallersOnly(EntryPoint = "FailFastForPInvokeExceptionPreemp")]
+        public static void FailFastForPInvokeExceptionPreemp(IntPtr PInvokeCallsiteReturnAddr, void* pExceptionRecord, void* pContextRecord)
         {
             FailFastViaClasslib(RhFailFastReason.UnhandledExceptionFromPInvoke, null, PInvokeCallsiteReturnAddr);
         }
-        [RuntimeExport("RhpFailFastForPInvokeExceptionCoop")]
-        public static void RhpFailFastForPInvokeExceptionCoop(IntPtr classlibBreadcrumb, void* pExceptionRecord, void* pContextRecord)
+        [RuntimeExport("FailFastForPInvokeExceptionCoop")]
+        public static void FailFastForPInvokeExceptionCoop(IntPtr classlibBreadcrumb, void* pExceptionRecord, void* pContextRecord)
         {
             FailFastViaClasslib(RhFailFastReason.UnhandledExceptionFromPInvoke, null, classlibBreadcrumb);
         }

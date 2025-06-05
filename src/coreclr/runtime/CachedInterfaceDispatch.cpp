@@ -192,26 +192,26 @@ static InterfaceDispatchCache * g_rgFreeLists[CID_MAX_CACHE_SIZE_LOG2 + 1];
 static CrstStatic g_sListLock;
 
 // Each cache size has an associated stub used to perform lookup over that cache.
-extern "C" void RhpInterfaceDispatch1();
-extern "C" void RhpInterfaceDispatch2();
-extern "C" void RhpInterfaceDispatch4();
-extern "C" void RhpInterfaceDispatch8();
-extern "C" void RhpInterfaceDispatch16();
-extern "C" void RhpInterfaceDispatch32();
-extern "C" void RhpInterfaceDispatch64();
+extern "C" void InterfaceDispatch1();
+extern "C" void InterfaceDispatch2();
+extern "C" void InterfaceDispatch4();
+extern "C" void InterfaceDispatch8();
+extern "C" void InterfaceDispatch16();
+extern "C" void InterfaceDispatch32();
+extern "C" void InterfaceDispatch64();
 
-extern "C" void RhpVTableOffsetDispatch();
+extern "C" void VTableOffsetDispatch();
 
 typedef void (*InterfaceDispatchStub)();
 
 static void * g_rgDispatchStubs[CID_MAX_CACHE_SIZE_LOG2 + 1] = {
-    (void *)&RhpInterfaceDispatch1,
-    (void *)&RhpInterfaceDispatch2,
-    (void *)&RhpInterfaceDispatch4,
-    (void *)&RhpInterfaceDispatch8,
-    (void *)&RhpInterfaceDispatch16,
-    (void *)&RhpInterfaceDispatch32,
-    (void *)&RhpInterfaceDispatch64,
+    (void *)&InterfaceDispatch1,
+    (void *)&InterfaceDispatch2,
+    (void *)&InterfaceDispatch4,
+    (void *)&InterfaceDispatch8,
+    (void *)&InterfaceDispatch16,
+    (void *)&InterfaceDispatch32,
+    (void *)&InterfaceDispatch64,
 };
 
 // Map a cache size into a linear index.
@@ -246,7 +246,7 @@ static uintptr_t AllocateCache(uint32_t cCacheEntries, InterfaceDispatchCache * 
 #ifndef FEATURE_NATIVEAOT
     if (pNewCellInfo->CellType == DispatchCellType::VTableOffset)
     {
-        *ppStub = (void *)&RhpVTableOffsetDispatch;
+        *ppStub = (void *)&VTableOffsetDispatch;
         ASSERT(!InterfaceDispatchCell::IsCache(pNewCellInfo->GetVTableOffset()));
         return pNewCellInfo->GetVTableOffset();
     }

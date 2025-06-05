@@ -72,7 +72,7 @@
 
 .macro UNIVERSAL_TRANSITION FunctionName
 
-NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
+NESTED_ENTRY \FunctionName, _TEXT, NoHandler
 
         alloc_stack DISTANCE_FROM_CHILDSP_TO_RETADDR
 
@@ -101,19 +101,19 @@ NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         // frame, and the code at the call target is required to use only the transition frame
         // copies when dispatching this call to the eventual callee.
 
-        movsd           xmm0, [C_VAR(RhpFpTrashValues) + 0x0]
-        movsd           xmm1, [C_VAR(RhpFpTrashValues) + 0x8]
-        movsd           xmm2, [C_VAR(RhpFpTrashValues) + 0x10]
-        movsd           xmm3, [C_VAR(RhpFpTrashValues) + 0x18]
-        movsd           xmm4, [C_VAR(RhpFpTrashValues) + 0x20]
-        movsd           xmm5, [C_VAR(RhpFpTrashValues) + 0x28]
-        movsd           xmm6, [C_VAR(RhpFpTrashValues) + 0x30]
-        movsd           xmm7, [C_VAR(RhpFpTrashValues) + 0x38]
+        movsd           xmm0, [C_VAR(FpTrashValues) + 0x0]
+        movsd           xmm1, [C_VAR(FpTrashValues) + 0x8]
+        movsd           xmm2, [C_VAR(FpTrashValues) + 0x10]
+        movsd           xmm3, [C_VAR(FpTrashValues) + 0x18]
+        movsd           xmm4, [C_VAR(FpTrashValues) + 0x20]
+        movsd           xmm5, [C_VAR(FpTrashValues) + 0x28]
+        movsd           xmm6, [C_VAR(FpTrashValues) + 0x30]
+        movsd           xmm7, [C_VAR(FpTrashValues) + 0x38]
 
-        mov             rcx, qword ptr [C_VAR(RhpIntegerTrashValues) + 0x10]
-        mov             rdx, qword ptr [C_VAR(RhpIntegerTrashValues) + 0x18]
-        mov             r8,  qword ptr [C_VAR(RhpIntegerTrashValues) + 0x20]
-        mov             r9,  qword ptr [C_VAR(RhpIntegerTrashValues) + 0x28]
+        mov             rcx, qword ptr [C_VAR(IntegerTrashValues) + 0x10]
+        mov             rdx, qword ptr [C_VAR(IntegerTrashValues) + 0x18]
+        mov             r8,  qword ptr [C_VAR(IntegerTrashValues) + 0x20]
+        mov             r9,  qword ptr [C_VAR(IntegerTrashValues) + 0x28]
 
 #endif // TRASH_SAVED_ARGUMENT_REGISTERS
 
@@ -149,7 +149,7 @@ ALTERNATE_ENTRY ReturnFrom\FunctionName
 
         jmp             rax
 
-NESTED_END Rhp\FunctionName, _TEXT
+NESTED_END \FunctionName, _TEXT
 
 .endm // UNIVERSAL_TRANSITION
 

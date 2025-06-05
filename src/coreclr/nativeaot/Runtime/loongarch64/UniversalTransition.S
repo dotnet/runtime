@@ -8,8 +8,8 @@
 #endif
 
 #ifdef TRASH_SAVED_ARGUMENT_REGISTERS
-    .global RhpIntegerTrashValues
-    .global RhpFpTrashValues
+    .global IntegerTrashValues
+    .global FpTrashValues
 #endif // TRASH_SAVED_ARGUMENT_REGISTERS
 
 #define COUNT_ARG_REGISTERS (8)
@@ -44,7 +44,7 @@
 #define ARGUMENT_REGISTERS_OFFSET (FLOAT_ARG_OFFSET + FLOAT_ARG_REGISTERS_SIZE + RETURN_BLOCK_SIZE)
 
 //
-// RhpUniversalTransition
+// UniversalTransition
 //
 // At input to this function, a0-7, f0-7 and the stack may contain any number of arguments.
 //
@@ -84,7 +84,7 @@
 
     .macro UNIVERSAL_TRANSITION FunctionName
 
-    NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
+    NESTED_ENTRY \FunctionName, _TEXT, NoHandler
 
         // FP and RA registers
         PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, STACK_SIZE // ;; Push down stack pointer and store FP and RA
@@ -112,7 +112,7 @@
         st.d  $a7, $sp, ARGUMENT_REGISTERS_OFFSET + 0x38
 
 #ifdef TRASH_SAVED_ARGUMENT_REGISTERS
-        PREPARE_EXTERNAL_VAR RhpFpTrashValues, $a1
+        PREPARE_EXTERNAL_VAR FpTrashValues, $a1
 
         fld.d  $f0, $a1, 0
         fld.d  $f1, $a1, 0x08
@@ -123,7 +123,7 @@
         fld.d  $f6, $a1, 0x30
         fld.d  $f7, $a1, 0x38
 
-        PREPARE_EXTERNAL_VAR RhpIntegerTrashValues, $a1
+        PREPARE_EXTERNAL_VAR IntegerTrashValues, $a1
 
         ld.d  $a2, $a1, 0x10
         ld.d  $a3, $a1, 0x18
@@ -169,7 +169,7 @@
         // Tailcall to the target address.
         jirl  $r0, $t3, 0
 
-    NESTED_END Rhp\FunctionName, _TEXT
+    NESTED_END \FunctionName, _TEXT
 
     .endm
 

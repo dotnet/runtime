@@ -224,7 +224,7 @@ C_FUNC(\Name):
     */
 .endm
 
-// Inlined version of RhpGetThread. Target cannot be x0.
+// Inlined version of GetThread. Target cannot be x0.
 .macro INLINE_GETTHREAD target
     INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
 .endm

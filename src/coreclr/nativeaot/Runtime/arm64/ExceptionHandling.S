@@ -9,10 +9,10 @@
 #define HARDWARE_EXCEPTION 1
 #define SOFTWARE_EXCEPTION 0
 
-.global RhpTrapThreads
+.global TrapThreads
 
 // -----------------------------------------------------------------------------
-// Macro used to create frame of exception throwing helpers (RhpThrowEx, RhpThrowHwEx)
+// Macro used to create frame of exception throwing helpers (ThrowEx, ThrowHwEx)
     .macro ALLOC_THROW_FRAME exceptionType
 
         mov x3, sp
@@ -44,7 +44,7 @@
     .endm
 
 // -----------------------------------------------------------------------------
-// Macro used to create frame of funclet calling helpers (RhpCallXXXXFunclet)
+// Macro used to create frame of funclet calling helpers (CallXXXXFunclet)
 // extraStackSize - extra stack space that the user of the macro can use to
 //                   store additional registers
     .macro ALLOC_CALL_FUNCLET_FRAME extraStackSize
@@ -69,7 +69,7 @@
     .endm
 
 // -----------------------------------------------------------------------------
-// Macro used to free frame of funclet calling helpers (RhpCallXXXXFunclet)
+// Macro used to free frame of funclet calling helpers (CallXXXXFunclet)
 // extraStackSize - extra stack space that the user of the macro can use to
 //                   store additional registers.
 //                   It needs to match the value passed to the corresponding
@@ -201,7 +201,7 @@
 
 .macro GetThreadX2
     stp x0, x1, [sp, -16]!
-    bl C_FUNC(RhpGetThread)
+    bl C_FUNC(GetThread)
     mov x2, x0
     ldp x0, x1, [sp], 16
 .endm
@@ -210,14 +210,14 @@
 #define rsp_offsetof_Context STACKSIZEOF_ExInfo
 
 //
-// RhpThrowHwEx
+// ThrowHwEx
 //
 // INPUT:  W0:  exception code of fault
 //         X1:  faulting IP
 //
 // OUTPUT:
 //
-    NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
+    NESTED_ENTRY ThrowHwEx, _TEXT, NoHandler
 
         ALLOC_THROW_FRAME HARDWARE_EXCEPTION
 
@@ -245,28 +245,28 @@
         // x1: ExInfo*
         bl          C_FUNC(RhThrowHwEx)
 
-    ALTERNATE_ENTRY RhpThrowHwEx2
+    ALTERNATE_ENTRY ThrowHwEx2
 
         // no return
         EMIT_BREAKPOINT
 
-    NESTED_END RhpThrowHwEx, _TEXT
+    NESTED_END ThrowHwEx, _TEXT
 
 //
-// RhpThrowEx
+// ThrowEx
 //
 // INPUT:  X0:  exception object
 //
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
+    NESTED_ENTRY ThrowEx, _TEXT, NoHandler
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
         GetThreadX2
 
-        // There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic.  So the return
+        // There is runtime C# code that can tail call to ThrowEx using a binder intrinsic.  So the return
         // address could have been hijacked when we were in that C# code and we must remove the hijack and
         // reflect the correct return address in our exception context record.  The other throw helpers don't
         // need this because they cannot be tail-called from C#.
@@ -332,24 +332,24 @@ LOCAL_LABEL(NotHijacked):
         // x1: ExInfo*
         bl          C_FUNC(RhThrowEx)
 
-    ALTERNATE_ENTRY RhpThrowEx2
+    ALTERNATE_ENTRY ThrowEx2
 
         // no return
         EMIT_BREAKPOINT
-    NESTED_END RhpThrowEx, _TEXT
+    NESTED_END ThrowEx, _TEXT
 
 
 //
-// void FASTCALL RhpRethrow()
+// void FASTCALL Rethrow()
 //
-// SUMMARY:  Similar to RhpThrowEx, except that it passes along the currently active ExInfo
+// SUMMARY:  Similar to ThrowEx, except that it passes along the currently active ExInfo
 //
 // INPUT:
 //
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
+    NESTED_ENTRY Rethrow, _TEXT, NoHandler
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
@@ -377,14 +377,14 @@ LOCAL_LABEL(NotHijacked):
         // x1 contains the address of the new ExInfo
         bl          C_FUNC(RhRethrow)
 
-    ALTERNATE_ENTRY RhpRethrow2
+    ALTERNATE_ENTRY Rethrow2
 
         // no return
         EMIT_BREAKPOINT
-    NESTED_END RhpRethrow, _TEXT
+    NESTED_END Rethrow, _TEXT
 
 //
-// void* FASTCALL RhpCallCatchFunclet(OBJECTREF exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
+// void* FASTCALL CallCatchFunclet(OBJECTREF exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
 //                                    ExInfo* pExInfo)
 //
 // INPUT:  X0:  exception object
@@ -395,7 +395,7 @@ LOCAL_LABEL(NotHijacked):
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
+    NESTED_ENTRY CallCatchFunclet, _TEXT, NoHandler
 
         ALLOC_CALL_FUNCLET_FRAME 0x70 // Size needs to be equal with ExceptionHandling.asm variant of this function
         stp d8, d9,   [sp, #0x00]
@@ -417,7 +417,7 @@ LOCAL_LABEL(NotHijacked):
         // clear the DoNotTriggerGc flag, trashes x4-x6
         //
 
-        bl C_FUNC(RhpGetThread)
+        bl C_FUNC(GetThread)
         str x0, [sp, rsp_CatchFunclet_offset_thread]
         mov x5,x0
         ldp x0, x1,   [sp, #0x40]
@@ -452,7 +452,7 @@ LOCAL_LABEL(ClearSuccess_Catch):
         // x0 still contains the exception object
         blr         x1
 
-ALTERNATE_ENTRY RhpCallCatchFunclet2
+ALTERNATE_ENTRY CallCatchFunclet2
 
         // x0 contains resume IP
 
@@ -469,7 +469,7 @@ ALTERNATE_ENTRY RhpCallCatchFunclet2
         ldr         x0, [sp, rsp_CatchFunclet_offset_thread]    // x0 <- Thread*
         ldr         x1, [sp, #rsp_offset_x3]                    // x1 <- current ExInfo*
         ldr         x2, [x2, #OFFSETOF__REGDISPLAY__SP]         // x2 <- resume SP value
-        bl          C_FUNC(RhpValidateExInfoPop)
+        bl          C_FUNC(ValidateExInfoPop)
 
         ldr         x2, [sp, rsp_offset_x2]                             // x2 <- REGDISPLAY*
 
@@ -496,7 +496,7 @@ LOCAL_LABEL(PopExInfoLoop):
 LOCAL_LABEL(DonePopping):
         str         x3, [x1, #OFFSETOF__Thread__m_pExInfoStackHead]     // store the new head on the Thread
 
-        PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 3
+        PREPARE_EXTERNAL_VAR_INDIRECT_W TrapThreads, 3
 
         tbz         x3, #TrapThreadsFlags_AbortInProgress_Bit, LOCAL_LABEL(NoAbort)
 
@@ -508,7 +508,7 @@ LOCAL_LABEL(DonePopping):
         mov         x1, x0                                     // x1 <- continuation address as exception PC
         mov         w0, #STATUS_NATIVEAOT_THREAD_ABORT
         mov         sp, x2
-        b           C_FUNC(RhpThrowHwEx)
+        b           C_FUNC(ThrowHwEx)
 
 LOCAL_LABEL(NoAbort):
         // reset SP and jump to continuation address
@@ -522,10 +522,10 @@ LOCAL_LABEL(NoAbort):
 #undef rsp_offset_x3
 #undef rsp_CatchFunclet_offset_thread
 
-    NESTED_END RhpCallCatchFunclet, _Text
+    NESTED_END CallCatchFunclet, _Text
 
 //
-// void FASTCALL RhpCallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
+// void FASTCALL CallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
 //
 // INPUT:  X0:  handler funclet address
 //         X1:  REGDISPLAY*
@@ -533,7 +533,7 @@ LOCAL_LABEL(NoAbort):
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
+    NESTED_ENTRY CallFinallyFunclet, _TEXT, NoHandler
 
         ALLOC_CALL_FUNCLET_FRAME 0x60 // Size needs to be equal with ExceptionHandling.asm variant of this function
         stp d8, d9,   [sp, #0x00]
@@ -557,7 +557,7 @@ LOCAL_LABEL(NoAbort):
         // clear the DoNotTriggerGc flag, trashes x2-x4
         //
 
-        bl C_FUNC(RhpGetThread)
+        bl C_FUNC(GetThread)
         str x0, [sp, rsp_FinallyFunclet_offset_thread]
         mov x2, x0
         ldp x0, x1, [sp, #0x40]
@@ -586,7 +586,7 @@ LOCAL_LABEL(ClearSuccess):
         //
         blr         x0
 
-ALTERNATE_ENTRY RhpCallFinallyFunclet2
+ALTERNATE_ENTRY CallFinallyFunclet2
 
         ldr         x1, [sp, #rsp_offset_x1]        // reload REGDISPLAY pointer
 
@@ -621,11 +621,11 @@ LOCAL_LABEL(SetSuccess):
 #undef rsp_offset_x1
 #undef rsp_FinallyFunclet_offset_thread
 
-    NESTED_END RhpCallFinallyFunclet, _Text
+    NESTED_END CallFinallyFunclet, _Text
 
 
 //
-// void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
+// void* FASTCALL CallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
 //
 // INPUT:  X0:  exception object
 //         X1:  filter funclet address
@@ -634,7 +634,7 @@ LOCAL_LABEL(SetSuccess):
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
+    NESTED_ENTRY CallFilterFunclet, _TEXT, NoHandler
         ALLOC_CALL_FUNCLET_FRAME 0x40
         stp d8, d9,   [sp, #0x00]
         stp d10, d11, [sp, #0x10]
@@ -650,7 +650,7 @@ LOCAL_LABEL(SetSuccess):
         // x0 still contains the exception object
         blr         x1
 
-ALTERNATE_ENTRY RhpCallFilterFunclet2
+ALTERNATE_ENTRY CallFilterFunclet2
 
         ldp         d8, d9,   [sp, #0x00]
         ldp         d10, d11, [sp, #0x10]
@@ -660,12 +660,12 @@ ALTERNATE_ENTRY RhpCallFilterFunclet2
         FREE_CALL_FUNCLET_FRAME 0x40
         EPILOG_RETURN
 
-    NESTED_END RhpCallFilterFunclet, Text
+    NESTED_END CallFilterFunclet, Text
 
 #ifdef FEATURE_OBJCMARSHAL
 
 //
-// void* FASTCALL RhpCallPropagateExceptionCallback(void* pCallbackContext, void* pCallback, REGDISPLAY* pRegDisplay,
+// void* FASTCALL CallPropagateExceptionCallback(void* pCallbackContext, void* pCallback, REGDISPLAY* pRegDisplay,
 //                                    ExInfo* pExInfo, PInvokeTransitionFrame* pPreviousTransitionFrame)
 //
 // INPUT:  X0:  callback context
@@ -677,7 +677,7 @@ ALTERNATE_ENTRY RhpCallFilterFunclet2
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpCallPropagateExceptionCallback, _TEXT, NoHandler
+    NESTED_ENTRY CallPropagateExceptionCallback, _TEXT, NoHandler
 
 #define rsp_offset_x0 0x10
 #define rsp_offset_x1 0x18
@@ -699,7 +699,7 @@ ALTERNATE_ENTRY RhpCallFilterFunclet2
         // clear the DoNotTriggerGc flag, trashes x4-x6
         //
 
-        bl C_FUNC(RhpGetThread)
+        bl C_FUNC(GetThread)
         str x0, [sp, rsp_CallPropagationCallback_offset_thread]
         mov x5,x0
         ldp x0, x1,   [sp, #rsp_offset_x0]
@@ -733,7 +733,7 @@ LOCAL_LABEL(ClearSuccess_Propagate):
         ldr         x0, [sp, rsp_CallPropagationCallback_offset_thread]  // x0 <- Thread*
         ldr         x1, [sp, #rsp_offset_x3]                             // x1 <- current ExInfo*
         ldr         x2, [x2, #OFFSETOF__REGDISPLAY__SP]                  // x2 <- resume SP value
-        bl          C_FUNC(RhpValidateExInfoPop)
+        bl          C_FUNC(ValidateExInfoPop)
 
         ldr         x2, [sp, rsp_offset_x2]                              // x2 <- REGDISPLAY*
 
@@ -778,6 +778,6 @@ LOCAL_LABEL(Propagate_DonePopping):
 #undef rsp_offset_x3
 #undef rsp_CallPropagationCallback_offset_thread
 
-    NESTED_END RhpCallPropagateExceptionCallback, _Text
+    NESTED_END CallPropagateExceptionCallback, _Text
 
 #endif // FEATURE_OBJCMARSHAL

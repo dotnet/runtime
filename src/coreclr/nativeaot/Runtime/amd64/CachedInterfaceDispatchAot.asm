@@ -3,19 +3,19 @@
 
 include AsmMacros.inc
 
-EXTERN RhpCidResolve : PROC
-EXTERN RhpUniversalTransition_DebugStepTailCall : PROC
+EXTERN CidResolve : PROC
+EXTERN UniversalTransition_DebugStepTailCall : PROC
 
-EXTERN RhpCidResolve : PROC
-EXTERN RhpUniversalTransition_DebugStepTailCall : PROC
+EXTERN CidResolve : PROC
+EXTERN UniversalTransition_DebugStepTailCall : PROC
 
 ;; Cache miss case, call the runtime to resolve the target and update the cache.
 ;; Use universal transition helper to allow an exception to flow out of resolution
-LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
+LEAF_ENTRY InterfaceDispatchSlow, _TEXT
         ;; r11 contains indirection cell address
-        lea r10, RhpCidResolve
-        jmp RhpUniversalTransition_DebugStepTailCall
+        lea r10, CidResolve
+        jmp UniversalTransition_DebugStepTailCall
 
-LEAF_END RhpInterfaceDispatchSlow, _TEXT
+LEAF_END InterfaceDispatchSlow, _TEXT
 
 end

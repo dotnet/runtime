@@ -8,7 +8,7 @@
 
 include AsmMacros.inc
 
-FASTCALL_FUNC RhpPInvoke, 4
+FASTCALL_FUNC PInvoke, 4
         INLINE_GETTHREAD eax, edx
 
         mov         edx, [esp]                  ; edx <- return address
@@ -25,15 +25,15 @@ FASTCALL_FUNC RhpPInvoke, 4
         ret
 FASTCALL_ENDFUNC
 
-FASTCALL_FUNC RhpPInvokeReturn, 4
+FASTCALL_FUNC PInvokeReturn, 4
         mov         edx, [ecx + OFFSETOF__PInvokeTransitionFrame__m_pThread]
         mov         dword ptr [edx + OFFSETOF__Thread__m_pTransitionFrame], 0
-        cmp         [RhpTrapThreads], TrapThreadsFlags_None
+        cmp         [TrapThreads], TrapThreadsFlags_None
         jne         @F                  ; forward branch - predicted not taken
         ret
 @@:
         ; passing transition frame pointer in rcx
-        jmp         RhpWaitForGC2
+        jmp         WaitForGC2
 FASTCALL_ENDFUNC
 
         end

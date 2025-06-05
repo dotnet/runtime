@@ -8,7 +8,7 @@
 ;; Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
 ;; allocation context then automatically fallback to the slow allocation path.
 ;;  x0 == MethodTable
-    LEAF_ENTRY RhpNewFast
+    LEAF_ENTRY NewFast
 
         ;; x3 = ee_alloc_context pointer, TRASHES x2
         INLINE_GET_ALLOC_CONTEXT_BASE x3, x2
@@ -34,7 +34,7 @@
         ;; Determine whether the end of the object is too big for the current allocation context. If so,
         ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
         cmp         x2, x13
-        bhi         RhpNewFast_RarePath
+        bhi         NewFast_RarePath
 
         ;; Calculate the new alloc pointer to account for the allocation.
         add         x2, x2, x12
@@ -48,22 +48,22 @@
         mov         x0, x12
         ret
 
-RhpNewFast_RarePath
+NewFast_RarePath
         mov         x1, #0
-        b           RhpNewObject
-    LEAF_END RhpNewFast
+        b           NewObject
+    LEAF_END NewFast
 
 ;; Allocate non-array object with finalizer.
 ;;  x0 == MethodTable
-    LEAF_ENTRY RhpNewFinalizable
+    LEAF_ENTRY NewFinalizable
         mov         x1, #GC_ALLOC_FINALIZE
-        b           RhpNewObject
-    LEAF_END RhpNewFinalizable
+        b           NewObject
+    LEAF_END NewFinalizable
 
 ;; Allocate non-array object.
 ;;  x0 == MethodTable
 ;;  x1 == alloc flags
-    NESTED_ENTRY RhpNewObject
+    NESTED_ENTRY NewObject
 
         PUSH_COOP_PINVOKE_FRAME x3
 
@@ -75,8 +75,8 @@ RhpNewFast_RarePath
         mov         w2, #0              ; numElements
 
         ;; Call the rest of the allocation helper.
-        ;; void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
-        bl          RhpGcAlloc
+        ;; void* GcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        bl          GcAlloc
 
         cbz         x0, NewOutOfMemory
 
@@ -93,9 +93,9 @@ NewOutOfMemory
         POP_COOP_PINVOKE_FRAME
         EPILOG_NOP b RhExceptionHandling_FailedAllocation
 
-    NESTED_END RhpNewObject
+    NESTED_END NewObject
 
-;; Shared code for RhNewString, RhpNewArrayFast and RhpNewPtrArrayFast
+;; Shared code for RhNewString, NewArrayFast and NewPtrArrayFast
 ;;  x0 == MethodTable
 ;;  x1 == character/element count
 ;;  x2 == string/array size
@@ -114,7 +114,7 @@ NewOutOfMemory
         ;; Determine whether the end of the object is too big for the current allocation context. If so,
         ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
         cmp         x2, x13
-        bhi         RhpNewVariableSizeObject
+        bhi         NewVariableSizeObject
 
         ;; Calculate the new alloc pointer to account for the allocation.
         add         x2, x2, x12
@@ -164,7 +164,7 @@ StringSizeOverflow
 ;; Allocate one dimensional, zero based array (SZARRAY).
 ;;  x0 == MethodTable
 ;;  x1 == element count
-    LEAF_ENTRY RhpNewArrayFast
+    LEAF_ENTRY NewArrayFast
 
         ;; We want to limit the element count to the non-negative 32-bit int range.
         ;; If the element count is <= 0x7FFFFFFF, no overflow is possible because the component
@@ -189,18 +189,18 @@ ArraySizeOverflow
         ; x0 holds MethodTable pointer already
         mov         x1, #1                  ; Indicate that we should throw OverflowException
         b           RhExceptionHandling_FailedAllocation
-    LEAF_END    RhpNewArrayFast
+    LEAF_END    NewArrayFast
 
 ;; Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements.
 ;;  x0 == MethodTable
 ;;  x1 == element count
-    LEAF_ENTRY RhpNewPtrArrayFast
+    LEAF_ENTRY NewPtrArrayFast
 
         ; Delegate overflow handling to the generic helper conservatively
 
         mov         x2, #(0x40000000 / 8) ; sizeof(void*)
         cmp         x1, x2
-        bhs         RhpNewVariableSizeObject
+        bhs         NewVariableSizeObject
 
         ; In this case we know the element size is sizeof(void *), or 8 for arm64
         ; This helps us in two ways - we can shift instead of multiplying, and
@@ -214,12 +214,12 @@ ArraySizeOverflow
 
         NEW_ARRAY_FAST
 
-    LEAF_END    RhpNewPtrArrayFast
+    LEAF_END    NewPtrArrayFast
 
 ;; Allocate variable sized object (eg. array, string) using the slow path that calls a runtime helper.
 ;;  x0 == MethodTable
 ;;  x1 == element count
-    NESTED_ENTRY RhpNewVariableSizeObject
+    NESTED_ENTRY NewVariableSizeObject
 
         PUSH_COOP_PINVOKE_FRAME x3
 
@@ -229,15 +229,15 @@ ArraySizeOverflow
         mov         x2, x1              ; numElements
         mov         x1, #0              ; uFlags
 
-        ;; void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
-        bl          RhpGcAlloc
+        ;; void* GcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        bl          GcAlloc
 
-        cbz         x0, RhpNewVariableSizeObject_OutOfMemory
+        cbz         x0, NewVariableSizeObject_OutOfMemory
 
         POP_COOP_PINVOKE_FRAME
         EPILOG_RETURN
 
-RhpNewVariableSizeObject_OutOfMemory
+NewVariableSizeObject_OutOfMemory
         ;; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         ;; an out of memory exception that the caller of this allocator understands.
 
@@ -247,6 +247,6 @@ RhpNewVariableSizeObject_OutOfMemory
         POP_COOP_PINVOKE_FRAME
         EPILOG_NOP b RhExceptionHandling_FailedAllocation
 
-    NESTED_END RhpNewVariableSizeObject
+    NESTED_END NewVariableSizeObject
 
     END

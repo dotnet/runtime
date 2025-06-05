@@ -8,7 +8,7 @@
 .thumb
 
 //
-// RhpPInvoke
+// PInvoke
 //
 // IN:  R0: address of pinvoke frame
 //
@@ -17,7 +17,7 @@
 // Also, the codegenerator must ensure that there are no live GC references in callee saved registers.
 //
 
-NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
+NESTED_ENTRY PInvoke, _TEXT, NoHandler
         str     lr, [r0, #OFFSETOF__PInvokeTransitionFrame__m_RIP]
         str     r11, [r0, #OFFSETOF__PInvokeTransitionFrame__m_FramePointer]
         // We need to save R9 which could be frame pointer if the caller method uses stackalloc (REG_SAVED_LOCALLOC_SP)
@@ -37,25 +37,25 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
 
         EPILOG_POP "{r5,pc}"
 
-NESTED_END RhpPInvoke, _TEXT
+NESTED_END PInvoke, _TEXT
 
 
 //
-// RhpPInvokeReturn
+// PInvokeReturn
 //
 // IN:  R0: address of pinvoke frame
 //
-LEAF_ENTRY RhpPInvokeReturn, _TEXT
+LEAF_ENTRY PInvokeReturn, _TEXT
         ldr     r3, [r0, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
 
         mov     r2, #0
         str     r2, [r3, #OFFSETOF__Thread__m_pTransitionFrame]
 
-        PREPARE_EXTERNAL_VAR_INDIRECT RhpTrapThreads, r3
+        PREPARE_EXTERNAL_VAR_INDIRECT TrapThreads, r3
         cbnz    r3, LOCAL_LABEL(ReturnRareTrapThread)  // TrapThreadsFlags_None = 0
 
         bx      lr
 LOCAL_LABEL(ReturnRareTrapThread):
         // passing transition frame pointer in r0
-        b       C_FUNC(RhpWaitForGC2)
-LEAF_END RhpPInvokeReturn, _TEXT
+        b       C_FUNC(WaitForGC2)
+LEAF_END PInvokeReturn, _TEXT

@@ -8,9 +8,9 @@
 #if defined(__APPLE__)
     // Currently the build is failing without this due to an issue if the first method in the assembly file has an alternate entry at the start of the file.
     // Fix, but adding an empty, unused method
-    LEAF_ENTRY RhpStubDispatchDoNotFailToBuild, _TEXT
+    LEAF_ENTRY StubDispatchDoNotFailToBuild, _TEXT
        ret
-    LEAF_END RhpStubDispatchDoNotFailToBuild, _TEXT
+    LEAF_END StubDispatchDoNotFailToBuild, _TEXT
 #endif
 
     // Macro that generates code to check a single cache entry.
@@ -33,7 +33,7 @@
 //
     .macro DEFINE_INTERFACE_DISPATCH_STUB entries
 
-    NESTED_ENTRY "RhpInterfaceDispatch\entries", _TEXT, NoHandler
+    NESTED_ENTRY "InterfaceDispatch\entries", _TEXT, NoHandler
 
         // x11 holds the indirection cell address. Load the cache pointer.
         ldr     x9, [x11, #OFFSETOF__InterfaceDispatchCell__m_pCache]
@@ -44,7 +44,7 @@
 // an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
 .cfi_endproc
 #endif
-        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
+        ALTERNATE_ENTRY InterfaceDispatchAVLocation\entries
 #ifdef TARGET_APPLE
 .cfi_startproc
 #endif
@@ -59,9 +59,9 @@
     .endr
 
         // x11 still contains the indirection cell address.
-        b C_FUNC(RhpInterfaceDispatchSlow)
+        b C_FUNC(InterfaceDispatchSlow)
 
-    NESTED_END "RhpInterfaceDispatch\entries", _TEXT
+    NESTED_END "InterfaceDispatch\entries", _TEXT
 
     .endm
 
@@ -83,16 +83,16 @@
 //
 // Initial dispatch on an interface when we don't have a cache yet.
 //
-    LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
-    ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
+    LEAF_ENTRY InitialInterfaceDispatch, _TEXT
+    ALTERNATE_ENTRY InitialDynamicInterfaceDispatch
         // Trigger an AV if we're dispatching on a null this.
         // The exception handling infrastructure is aware of the fact that this is the first
-        // instruction of RhpInitialInterfaceDispatch and uses it to translate an AV here
+        // instruction of InitialInterfaceDispatch and uses it to translate an AV here
         // to a NullReferenceException at the callsite.
         ldr     xzr, [x0]
 
         // Just tail call to the cache miss helper.
-        b C_FUNC(RhpInterfaceDispatchSlow)
-    LEAF_END RhpInitialInterfaceDispatch, _TEXT
+        b C_FUNC(InterfaceDispatchSlow)
+    LEAF_END InitialInterfaceDispatch, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

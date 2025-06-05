@@ -221,7 +221,7 @@ C_FUNC(\Name):
     ldp     x0, lr, [sp],#0x10
 .endm
 
-// Inlined version of RhpGetThread. Target cannot be x0.
+// Inlined version of GetThread. Target cannot be x0.
 .macro INLINE_GETTHREAD target
     INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
 .endm
@@ -236,7 +236,7 @@ C_FUNC(\Name):
     PROLOG_SAVE_REG_PAIR_INDEXED      fp, lr, -0x20
     PROLOG_SAVE_REG_PAIR              x0, x1, 0x10
 
-    bl C_FUNC(RhpGetThread)
+    bl C_FUNC(GetThread)
     mov         \target, x0
 
     .ifc \target, x1
@@ -258,7 +258,7 @@ C_FUNC(\Name):
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -32           // ;; Push down stack pointer and store FP and LR
     str         x0,  [sp, #0x10]
 
-    bl C_FUNC(RhpGetThread)
+    bl C_FUNC(GetThread)
     mov x1, x0
 
     ldr         x0,  [sp, #0x10]
@@ -269,7 +269,7 @@ C_FUNC(\Name):
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -32           // ;; Push down stack pointer and store FP and LR
     stp         x0, x1, [sp, #0x10]
 
-    bl C_FUNC(RhpGetThread)
+    bl C_FUNC(GetThread)
     mov x2, x0
 
     ldp         x0, x1, [sp, #0x10]
@@ -281,7 +281,7 @@ C_FUNC(\Name):
     stp         x0, x1, [sp, #0x10]
     str         x2,  [sp, #0x20]
 
-    bl C_FUNC(RhpGetThread)
+    bl C_FUNC(GetThread)
     mov x3, x0
 
     ldp         x0, x1, [sp, #0x10]
@@ -297,7 +297,7 @@ C_FUNC(\Name):
     stp         x6, x7, [sp, #0x40]
     stp         x8, xip0, [sp, #0x50]
 
-    bl RhpGetThunkData
+    bl GetThunkData
     mov x9, x0
 
     ldp         x0, x1, [sp, #0x10]

@@ -12,8 +12,8 @@ include AsmMacros_Shared.inc
 
 ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-EXTERN RhpCidResolve : PROC
-EXTERN _RhpUniversalTransition_DebugStepTailCall@0 : PROC
+EXTERN CidResolve : PROC
+EXTERN _UniversalTransition_DebugStepTailCall@0 : PROC
 
 
 ;; Macro that generates code to check a single cache entry.
@@ -30,8 +30,8 @@ endm
 ;; Macro that generates a stub consuming a cache with the given number of entries.
 DEFINE_INTERFACE_DISPATCH_STUB macro entries
 
-StubName textequ @CatStr( _RhpInterfaceDispatch, entries, <@0> )
-StubAVLocation textequ @CatStr( _RhpInterfaceDispatchAVLocation, entries )
+StubName textequ @CatStr( _InterfaceDispatch, entries, <@0> )
+StubAVLocation textequ @CatStr( _InterfaceDispatchAVLocation, entries )
 
     StubName proc public
 
@@ -64,7 +64,7 @@ CurrentEntry = CurrentEntry + 1
         ;; indirection cell using the back pointer in the cache block
         mov     eax, [eax + OFFSETOF__InterfaceDispatchCache__m_pCell]
         pop     ebx
-        jmp     RhpInterfaceDispatchSlow
+        jmp     InterfaceDispatchSlow
 
     StubName endp
 
@@ -81,30 +81,30 @@ DEFINE_INTERFACE_DISPATCH_STUB 32
 DEFINE_INTERFACE_DISPATCH_STUB 64
 
 ;; Shared out of line helper used on cache misses.
-RhpInterfaceDispatchSlow proc
+InterfaceDispatchSlow proc
 ;; eax points at InterfaceDispatchCell
 
         ;; Setup call to Universal Transition thunk
         push        ebp
         mov         ebp, esp
         push        eax   ; First argument (Interface Dispatch Cell)
-        lea         eax, [RhpCidResolve]
-        push        eax ; Second argument (RhpCidResolve)
+        lea         eax, [CidResolve]
+        push        eax ; Second argument (CidResolve)
 
         ;; Jump to Universal Transition
-        jmp         _RhpUniversalTransition_DebugStepTailCall@0
-RhpInterfaceDispatchSlow endp
+        jmp         _UniversalTransition_DebugStepTailCall@0
+InterfaceDispatchSlow endp
 
 ;; Initial dispatch on an interface when we don't have a cache yet.
-FASTCALL_FUNC RhpInitialDynamicInterfaceDispatch, 0
-ALTERNATE_ENTRY _RhpInitialInterfaceDispatch
+FASTCALL_FUNC InitialDynamicInterfaceDispatch, 0
+ALTERNATE_ENTRY _InitialInterfaceDispatch
         ;; Trigger an AV if we're dispatching on a null this.
         ;; The exception handling infrastructure is aware of the fact that this is the first
-        ;; instruction of RhpInitialInterfaceDispatch and uses it to translate an AV here
+        ;; instruction of InitialInterfaceDispatch and uses it to translate an AV here
         ;; to a NullReferenceException at the callsite.
         cmp     dword ptr [ecx], ecx
 
-        jmp RhpInterfaceDispatchSlow
+        jmp InterfaceDispatchSlow
 FASTCALL_ENDFUNC
 
 endif ;; FEATURE_CACHED_INTERFACE_DISPATCH

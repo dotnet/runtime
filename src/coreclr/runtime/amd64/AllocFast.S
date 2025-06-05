@@ -7,7 +7,7 @@
 // Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
 // allocation context then automatically fallback to the slow allocation path.
 //  RDI == MethodTable
-LEAF_ENTRY RhpNewFast, _TEXT
+LEAF_ENTRY NewFast, _TEXT
 
         push_nonvol_reg rbx
         mov         rbx, rdi
@@ -36,7 +36,7 @@ LEAF_ENTRY RhpNewFast, _TEXT
         // Determine whether the end of the object is too big for the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         cmp         rdx, rdi
-        ja          LOCAL_LABEL(RhpNewFast_RarePath)
+        ja          LOCAL_LABEL(NewFast_RarePath)
 
         // Calculate the new alloc pointer to account for the allocation.
         add         rdx, rsi
@@ -55,27 +55,27 @@ LEAF_ENTRY RhpNewFast, _TEXT
 
         .cfi_restore_state
         .cfi_def_cfa_offset 16          // workaround cfi_restore_state bug
-LOCAL_LABEL(RhpNewFast_RarePath):
+LOCAL_LABEL(NewFast_RarePath):
         mov         rdi, rbx            // restore MethodTable
         xor         esi, esi
         pop_nonvol_reg rbx
-        jmp         C_FUNC(RhpNewObject)
+        jmp         C_FUNC(NewObject)
 
-LEAF_END RhpNewFast, _TEXT
+LEAF_END NewFast, _TEXT
 
 
 // Allocate non-array object with finalizer
 //  RDI == MethodTable
-LEAF_ENTRY RhpNewFinalizable, _TEXT
+LEAF_ENTRY NewFinalizable, _TEXT
         mov         esi, GC_ALLOC_FINALIZE
-        jmp         C_FUNC(RhpNewObject)
-LEAF_END RhpNewFinalizable, _TEXT
+        jmp         C_FUNC(NewObject)
+LEAF_END NewFinalizable, _TEXT
 
 
 // Allocate non-array object
 //  RDI == MethodTable
 //  ESI == alloc flags
-NESTED_ENTRY RhpNewObject, _TEXT, NoHandler
+NESTED_ENTRY NewObject, _TEXT, NoHandler
 
         PUSH_COOP_PINVOKE_FRAME rcx
         END_PROLOGUE
@@ -88,8 +88,8 @@ NESTED_ENTRY RhpNewObject, _TEXT, NoHandler
         xor         edx, edx    // numElements
 
         // Call the rest of the allocation helper.
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
-        call        C_FUNC(RhpGcAlloc)
+        // void* GcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        call        C_FUNC(GcAlloc)
 
         test        rax, rax
         jz          LOCAL_LABEL(NewOutOfMemory)
@@ -111,10 +111,10 @@ LOCAL_LABEL(NewOutOfMemory):
 
         jmp         EXTERNAL_C_FUNC(RhExceptionHandling_FailedAllocation)
 
-NESTED_END RhpNewObject, _TEXT
+NESTED_END NewObject, _TEXT
 
 
-// Shared code for RhNewString, RhpNewArrayFast and RhpNewPtrArrayFast
+// Shared code for RhNewString, NewArrayFast and NewPtrArrayFast
 //  RAX == string/array size
 //  RDI == MethodTable
 //  ESI == character/element count
@@ -167,7 +167,7 @@ NESTED_END RhpNewObject, _TEXT
         pop_nonvol_reg r13
         pop_nonvol_reg r12
         pop_nonvol_reg rbx
-        jmp C_FUNC(RhpNewVariableSizeObject)
+        jmp C_FUNC(NewVariableSizeObject)
 
 .endm // NEW_ARRAY_FAST
 
@@ -202,7 +202,7 @@ LEAF_END RhNewString, _TEXT
 // Allocate one dimensional, zero based array (SZARRAY).
 //  RDI == MethodTable
 //  ESI == element count
-LEAF_ENTRY RhpNewArrayFast, _TEXT
+LEAF_ENTRY NewArrayFast, _TEXT
 
         // we want to limit the element count to the non-negative 32-bit int range
         cmp         rsi, 0x07fffffff
@@ -225,18 +225,18 @@ LOCAL_LABEL(ArraySizeOverflow):
         mov         esi, 1              // Indicate that we should throw OverflowException
         jmp         EXTERNAL_C_FUNC(RhExceptionHandling_FailedAllocation)
 
-LEAF_END RhpNewArrayFast, _TEXT
+LEAF_END NewArrayFast, _TEXT
 
 
 // Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements.
 //  RDI == MethodTable
 //  ESI == element count
-LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
+LEAF_ENTRY NewPtrArrayFast, _TEXT
 
         // Delegate overflow handling to the generic helper conservatively
 
         cmp         rsi, (0x40000000 / 8) // sizeof(void*)
-        jae         C_FUNC(RhpNewVariableSizeObject)
+        jae         C_FUNC(NewVariableSizeObject)
 
         // In this case we know the element size is sizeof(void *), or 8 for x64
         // This helps us in two ways - we can shift instead of multiplying, and
@@ -249,10 +249,10 @@ LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
 
         NEW_ARRAY_FAST
 
-LEAF_END RhpNewPtrArrayFast, _TEXT
+LEAF_END NewPtrArrayFast, _TEXT
 
 
-NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
+NESTED_ENTRY NewVariableSizeObject, _TEXT, NoHandler
 
         // rdi == MethodTable
         // rsi == element count
@@ -272,11 +272,11 @@ NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
         // passing pTransitionFrame in rcx
 
         // Call the rest of the allocation helper.
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
-        call        C_FUNC(RhpGcAlloc)
+        // void* GcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        call        C_FUNC(GcAlloc)
 
         test        rax, rax
-        jz          LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory)
+        jz          LOCAL_LABEL(NewVariableSizeObject_OutOfMemory)
 
         .cfi_remember_state
         POP_COOP_PINVOKE_FRAME
@@ -284,7 +284,7 @@ NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
 
         .cfi_restore_state
         .cfi_def_cfa_offset 96          // workaround cfi_restore_state bug
-LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory):
+LOCAL_LABEL(NewVariableSizeObject_OutOfMemory):
         // This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
@@ -295,4 +295,4 @@ LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory):
 
         jmp         EXTERNAL_C_FUNC(RhExceptionHandling_FailedAllocation)
 
-NESTED_END RhpNewVariableSizeObject, _TEXT
+NESTED_END NewVariableSizeObject, _TEXT

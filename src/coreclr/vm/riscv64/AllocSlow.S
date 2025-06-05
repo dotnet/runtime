@@ -5,49 +5,49 @@
 #include "unixasmmacros.inc"
 
 //
-// Object* RhpNew(MethodTable *pMT)
+// Object* New(MethodTable *pMT)
 //
 // Allocate non-array object, slow path.
 //
-LEAF_ENTRY RhpNew, _TEXT
+LEAF_ENTRY New, _TEXT
 
     li          a1, 0
-    tail        C_FUNC(RhpNewObject)
+    tail        C_FUNC(NewObject)
 
-LEAF_END RhpNew, _TEXT
+LEAF_END New, _TEXT
 
 //
-// Object* RhpNewMaybeFrozen(MethodTable *pMT)
+// Object* NewMaybeFrozen(MethodTable *pMT)
 //
 // Allocate non-array object, may be on frozen heap.
 //
-NESTED_ENTRY RhpNewMaybeFrozen, _TEXT, NoHandler
+NESTED_ENTRY NewMaybeFrozen, _TEXT, NoHandler
 
     PUSH_COOP_PINVOKE_FRAME a2
 
     li          a1, 0
-    call        C_FUNC(RhpGcAllocMaybeFrozen)
+    call        C_FUNC(GcAllocMaybeFrozen)
 
     POP_COOP_PINVOKE_FRAME
     EPILOG_RETURN
 
-NESTED_END RhpNewMaybeFrozen, _TEXT
+NESTED_END NewMaybeFrozen, _TEXT
 
 //
-// Object* RhpNewMaybeFrozen(MethodTable *pMT, INT_PTR size)
+// Object* NewMaybeFrozen(MethodTable *pMT, INT_PTR size)
 //
 // Allocate array object, may be on frozen heap.
 //
-NESTED_ENTRY RhpNewArrayMaybeFrozen, _TEXT, NoHandler
+NESTED_ENTRY NewArrayMaybeFrozen, _TEXT, NoHandler
 
     PUSH_COOP_PINVOKE_FRAME a2
 
-    call        C_FUNC(RhpGcAllocMaybeFrozen)
+    call        C_FUNC(GcAllocMaybeFrozen)
 
     POP_COOP_PINVOKE_FRAME
     EPILOG_RETURN
 
-NESTED_END RhpNewArrayMaybeFrozen, _TEXT
+NESTED_END NewArrayMaybeFrozen, _TEXT
 
 //
 // void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)

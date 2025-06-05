@@ -95,27 +95,27 @@ endm
 ;;
 ;; GC Probe Hijack target
 ;;
-NESTED_ENTRY RhpGcProbeHijack, _TEXT
+NESTED_ENTRY GcProbeHijack, _TEXT
         END_PROLOGUE
         FixupHijackedCallstack
 
-        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        test        [TrapThreads], TrapThreadsFlags_TrapThreads
         jnz         @f
         ret
 @@:
         mov         ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_THREAD_HIJACK
-        jmp         RhpWaitForGC
-NESTED_END RhpGcProbeHijack, _TEXT
+        jmp         InternalWaitForGC
+NESTED_END GcProbeHijack, _TEXT
 
-EXTERN RhpThrowHwEx : PROC
+EXTERN ThrowHwEx : PROC
 
-NESTED_ENTRY RhpWaitForGC, _TEXT
+NESTED_ENTRY InternalWaitForGC, _TEXT
         PUSH_PROBE_FRAME rdx, rax, rcx
         END_PROLOGUE
 
         mov         rbx, rdx
         mov         rcx, [rbx + OFFSETOF__Thread__m_pDeferredTransitionFrame]
-        call        RhpWaitForGC2
+        call        WaitForGC2
 
         mov         rax, [rbx + OFFSETOF__Thread__m_pDeferredTransitionFrame]
         test        dword ptr [rax + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_THREAD_ABORT
@@ -126,25 +126,25 @@ Abort:
         POP_PROBE_FRAME
         mov         rcx, STATUS_NATIVEAOT_THREAD_ABORT
         pop         rdx         ;; return address as exception RIP
-        jmp         RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
+        jmp         ThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
 
-NESTED_END RhpWaitForGC, _TEXT
+NESTED_END InternalWaitForGC, _TEXT
 
-LEAF_ENTRY RhpGcPoll, _TEXT
-        cmp         [RhpTrapThreads], TrapThreadsFlags_None
+LEAF_ENTRY GcPoll, _TEXT
+        cmp         [TrapThreads], TrapThreadsFlags_None
         jne         @F                  ; forward branch - predicted not taken
         ret
 @@:
-        jmp         RhpGcPollRare
-LEAF_END RhpGcPoll, _TEXT
+        jmp         GcPollRare
+LEAF_END GcPoll, _TEXT
 
-NESTED_ENTRY RhpGcPollRare, _TEXT
+NESTED_ENTRY GcPollRare, _TEXT
         PUSH_COOP_PINVOKE_FRAME rcx
         END_PROLOGUE
-        call        RhpGcPoll2
+        call        GcPoll2
         POP_COOP_PINVOKE_FRAME
         ret
-NESTED_END RhpGcPollRare, _TEXT
+NESTED_END GcPollRare, _TEXT
 
 
 
@@ -153,15 +153,15 @@ ifdef FEATURE_GC_STRESS
 ;;
 ;; GC Stress Hijack targets
 ;;
-LEAF_ENTRY RhpGcStressHijack, _TEXT
+LEAF_ENTRY GcStressHijack, _TEXT
         FixupHijackedCallstack
         or          ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX
-        jmp         RhpGcStressProbe
-LEAF_END RhpGcStressHijack, _TEXT
+        jmp         GcStressProbe
+LEAF_END GcStressHijack, _TEXT
 
 ;;
 ;; Worker for our GC stress probes.  Do not call directly!!
-;; Instead, go through RhpGcStressHijack{Scalar|Object|Byref}.
+;; Instead, go through GcStressHijack{Scalar|Object|Byref}.
 ;; This worker performs the GC Stress work and returns to the original return address.
 ;;
 ;; Register state on entry:
@@ -172,21 +172,21 @@ LEAF_END RhpGcStressHijack, _TEXT
 ;;  Scratch registers, except for RAX, have been trashed
 ;;  All other registers restored as they were when the hijack was first reached.
 ;;
-NESTED_ENTRY RhpGcStressProbe, _TEXT
+NESTED_ENTRY GcStressProbe, _TEXT
         PUSH_PROBE_FRAME rdx, rax, rcx
         END_PROLOGUE
 
-        call        RhpStressGc
+        call        StressGc
 
         POP_PROBE_FRAME
         ret
-NESTED_END RhpGcStressProbe, _TEXT
+NESTED_END GcStressProbe, _TEXT
 
 ;; PAL_LIMITED_CONTEXT, 6 xmm regs to save, 2 scratch regs to save, plus 20h bytes for scratch space
-RhpHijackForGcStress_FrameSize equ SIZEOF__PAL_LIMITED_CONTEXT + 6*10h + 2*8h + 20h
+HijackForGcStress_FrameSize equ SIZEOF__PAL_LIMITED_CONTEXT + 6*10h + 2*8h + 20h
 
 ; -----------------------------------------------------------------------------------------------------------
-; RhpHijackForGcStress
+; HijackForGcStress
 ;
 ; Called at the beginning of the epilog when a method is bound with /gcstress
 ;
@@ -196,7 +196,7 @@ RhpHijackForGcStress_FrameSize equ SIZEOF__PAL_LIMITED_CONTEXT + 6*10h + 2*8h + 
 ; N.B. #2 -- The "EH jump epilog" codegen depends on rcx/rdx being preserved across this call.  We currently
 ;            will trash R8-R11, but we can do better, if necessary.
 ;
-NESTED_ENTRY RhpHijackForGcStress, _TEXT
+NESTED_ENTRY HijackForGcStress, _TEXT
 
         lea         r10, [rsp+8]        ;; save the original RSP (prior to call)
         mov         r11, [rsp]          ;; get the return address
@@ -217,7 +217,7 @@ NESTED_ENTRY RhpHijackForGcStress, _TEXT
         ; Tell the unwinder that the frame is there now
         .pushframe
 
-        alloc_stack     RhpHijackForGcStress_FrameSize
+        alloc_stack     HijackForGcStress_FrameSize
         END_PROLOGUE
 
         ;; Save xmm scratch regs -- this is probably overkill, only the return value reg is
@@ -273,7 +273,7 @@ NESTED_ENTRY RhpHijackForGcStress, _TEXT
         mov         r10, [rsp + 20h + 6*10h + 2*8h + OFFSETOF__PAL_LIMITED_CONTEXT__Rsp]
         lea         rsp, [r10 - 8]              ;; adjust RSP to point back at the return address
         ret
-NESTED_END RhpHijackForGcStress, _TEXT
+NESTED_END HijackForGcStress, _TEXT
 
 g_pTheRuntimeInstance equ ?g_pTheRuntimeInstance@@3PEAVRuntimeInstance@@EA
 EXTERN g_pTheRuntimeInstance : QWORD
@@ -285,13 +285,13 @@ EXTERN g_fGcStressStarted : DWORD
 ;;
 ;; INVARIANT: Don't trash the argument registers, the binder codegen depends on this.
 ;;
-LEAF_ENTRY RhpSuppressGcStress, _TEXT
+LEAF_ENTRY SuppressGcStress, _TEXT
 
         INLINE_GETTHREAD    rax, r10
    lock or          dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_SuppressGcStress
         ret
 
-LEAF_END RhpSuppressGcStress, _TEXT
+LEAF_END SuppressGcStress, _TEXT
 
 endif ;; FEATURE_GC_STRESS
 

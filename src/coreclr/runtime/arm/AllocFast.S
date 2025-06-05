@@ -6,7 +6,7 @@
 
 #include "AsmMacros_Shared.h"
 
-// Shared code for RhpNewFast, RhpNewFastAlign8 and RhpNewFastMisalign
+// Shared code for NewFast, NewFastAlign8 and NewFastMisalign
 //  r0 == MethodTable
 .macro NEW_FAST Variation
         PROLOG_PUSH "{r4,lr}"
@@ -104,53 +104,53 @@
 .endif
 .endif
         EPILOG_POP  "{r4,lr}"
-        b           C_FUNC(RhpNewObject)
+        b           C_FUNC(NewObject)
 .endm
 
 
 // Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
 // allocation context then automatically fallback to the slow allocation path.
 //  r0 == MethodTable
-LEAF_ENTRY RhpNewFast, _TEXT
+LEAF_ENTRY NewFast, _TEXT
         NEW_FAST
-LEAF_END RhpNewFast, _TEXT
+LEAF_END NewFast, _TEXT
 
 
 // Allocate simple object (not finalizable, array or value type) on an 8 byte boundary.
 //  r0 == MethodTable
-LEAF_ENTRY RhpNewFastAlign8, _TEXT
+LEAF_ENTRY NewFastAlign8, _TEXT
         NEW_FAST Align8
-LEAF_END RhpNewFastAlign8, _TEXT
+LEAF_END NewFastAlign8, _TEXT
 
 
 // Allocate a value type object (i.e. box it) on an 8 byte boundary + 4 (so that the value type payload
 // itself is 8 byte aligned).
 //  r0 == MethodTable
-LEAF_ENTRY RhpNewFastMisalign, _TEXT
+LEAF_ENTRY NewFastMisalign, _TEXT
         NEW_FAST Misalign
-LEAF_END RhpNewFastMisalign, _TEXT
+LEAF_END NewFastMisalign, _TEXT
 
 
 // Allocate non-array object with finalizer.
 //  r0 == MethodTable
-LEAF_ENTRY RhpNewFinalizable, _TEXT
+LEAF_ENTRY NewFinalizable, _TEXT
         mov         r1, #GC_ALLOC_FINALIZE
-        b           C_FUNC(RhpNewObject)
-LEAF_END RhpNewFinalizable, _TEXT
+        b           C_FUNC(NewObject)
+LEAF_END NewFinalizable, _TEXT
 
 
 // Allocate a finalizable object (by definition not an array or value type) on an 8 byte boundary.
 //  r0 == MethodTable
-LEAF_ENTRY RhpNewFinalizableAlign8, _TEXT
+LEAF_ENTRY NewFinalizableAlign8, _TEXT
         mov         r1, #(GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8)
-        b           C_FUNC(RhpNewObject)
-LEAF_END RhpNewFinalizableAlign8, _TEXT
+        b           C_FUNC(NewObject)
+LEAF_END NewFinalizableAlign8, _TEXT
 
 
 // Allocate non-array object.
 //  r0 == MethodTable
 //  r1 == alloc flags
-NESTED_ENTRY RhpNewObject, _TEXT, NoHandler
+NESTED_ENTRY NewObject, _TEXT, NoHandler
         PUSH_COOP_PINVOKE_FRAME r3
 
         // r0: MethodTable
@@ -162,8 +162,8 @@ NESTED_ENTRY RhpNewObject, _TEXT, NoHandler
 
         mov         r2, #0              // numElements
 
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
-        blx         C_FUNC(RhpGcAlloc)
+        // void* GcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        blx         C_FUNC(GcAlloc)
 
         cbz         r0, LOCAL_LABEL(NewOutOfMemory)
 
@@ -180,9 +180,9 @@ LOCAL_LABEL(NewOutOfMemory):
         POP_COOP_PINVOKE_FRAME
 
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
-NESTED_END RhpNewObject, _TEXT
+NESTED_END NewObject, _TEXT
 
-// Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArray
+// Shared code for RhNewString, NewArrayFast and NewObjectArray
 //  r0 == MethodTable
 //  r1 == character/element count
 //  r2 == string/array size
@@ -239,7 +239,7 @@ NESTED_END RhpNewObject, _TEXT
         // r0 == MethodTable
         // r1 == element count
         NEW_ARRAY_FAST_TAIL_EPILOG
-        b           C_FUNC(RhpNewVariableSizeObject)
+        b           C_FUNC(NewVariableSizeObject)
 .endm
 
 
@@ -280,7 +280,7 @@ LEAF_END RhNewString, _TEXT
 // Allocate one dimensional, zero based array (SZARRAY).
 //  r0 == MethodTable
 //  r1 == element count
-LEAF_ENTRY RhpNewArrayFast, _TEXT
+LEAF_ENTRY NewArrayFast, _TEXT
         NEW_ARRAY_FAST_PROLOG
 
         // Compute overall allocation size (align(base size + (element size * elements), 4)).
@@ -331,36 +331,36 @@ LOCAL_LABEL(ArraySizeOverflow):
         mov         r1, #1                  // Indicate that we should throw OverflowException
         NEW_ARRAY_FAST_TAIL_EPILOG
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
-LEAF_END RhpNewArrayFast, _TEXT
+LEAF_END NewArrayFast, _TEXT
 
 
 // Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements.
 //  r0 == MethodTable
 //  r1 == element count
-LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
+LEAF_ENTRY NewPtrArrayFast, _TEXT
         NEW_ARRAY_FAST_PROLOG
 
         // Delegate overflow handling to the generic helper conservatively
 
         mov         r2, #1 << 28 // 0x40000000 / sizeof(void*)
         cmp         r1, r2
-        bhs         LOCAL_LABEL(RhpNewPtrArrayFast_RarePath)
+        bhs         LOCAL_LABEL(NewPtrArrayFast_RarePath)
 
         mov         r2, #SZARRAY_BASE_SIZE
         add         r2, r2, r1, lsl #2
 
         NEW_ARRAY_FAST
 
-LOCAL_LABEL(RhpNewPtrArrayFast_RarePath):
+LOCAL_LABEL(NewPtrArrayFast_RarePath):
         NEW_ARRAY_FAST_TAIL_EPILOG
-        b           C_FUNC(RhpNewVariableSizeObject)
-LEAF_END RhpNewPtrArrayFast, _TEXT
+        b           C_FUNC(NewVariableSizeObject)
+LEAF_END NewPtrArrayFast, _TEXT
 
 
 // Allocate variable sized object (eg. array, string) using the slow path that calls a runtime helper.
 //  r0 == MethodTable
 //  r1 == element count
-NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
+NESTED_ENTRY NewVariableSizeObject, _TEXT, NoHandler
         PUSH_COOP_PINVOKE_FRAME r3
 
         // Preserve the MethodTable in r5.
@@ -369,16 +369,16 @@ NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
         mov         r2, r1          // numElements
         mov         r1, #0          // uFlags
 
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
-        blx         C_FUNC(RhpGcAlloc)
+        // void* GcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        blx         C_FUNC(GcAlloc)
 
         // Test for failure (NULL return).
-        cbz         r0, LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory)
+        cbz         r0, LOCAL_LABEL(NewVariableSizeObject_OutOfMemory)
 
         POP_COOP_PINVOKE_FRAME
         bx          lr
 
-LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory):
+LOCAL_LABEL(NewVariableSizeObject_OutOfMemory):
 
         mov         r0, r5       // MethodTable
         mov         r1, #0       // Indicate that we should throw OOM.
@@ -387,13 +387,13 @@ LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory):
 
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
 
-NESTED_END RhpNewVariableSizeObject, _TEXT
+NESTED_END NewVariableSizeObject, _TEXT
 
 
 // Allocate an array on an 8 byte boundary.
 //  r0 == MethodTable
 //  r1 == element count
-NESTED_ENTRY RhpNewArrayFastAlign8, _TEXT, NoHandler
+NESTED_ENTRY NewArrayFastAlign8, _TEXT, NoHandler
 
         PUSH_COOP_PINVOKE_FRAME r3
 
@@ -414,8 +414,8 @@ NESTED_ENTRY RhpNewArrayFastAlign8, _TEXT, NoHandler
         mov         r2, r1                  // numElements
         mov         r1, #GC_ALLOC_ALIGN8    // uFlags
 
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
-        blx         C_FUNC(RhpGcAlloc)
+        // void* GcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        blx         C_FUNC(GcAlloc)
 
         // Test for failure (NULL return).
         cbz         r0, LOCAL_LABEL(Array8OutOfMemory)
@@ -452,4 +452,4 @@ LOCAL_LABEL(Array8OutOfMemory1):
         POP_COOP_PINVOKE_FRAME
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
 
-NESTED_END RhpNewArrayFastAlign8, _TEXT
+NESTED_END NewArrayFastAlign8, _TEXT

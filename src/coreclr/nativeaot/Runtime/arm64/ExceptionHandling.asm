@@ -11,7 +11,7 @@
 #define SOFTWARE_EXCEPTION 0
 
 ;; -----------------------------------------------------------------------------
-;; Macro used to create frame of exception throwing helpers (RhpThrowEx, RhpThrowHwEx)
+;; Macro used to create frame of exception throwing helpers (ThrowEx, ThrowHwEx)
     MACRO
         ALLOC_THROW_FRAME $exceptionType
 
@@ -43,7 +43,7 @@
     MEND
 
 ;; -----------------------------------------------------------------------------
-;; Macro used to create frame of funclet calling helpers (RhpCallXXXXFunclet)
+;; Macro used to create frame of funclet calling helpers (CallXXXXFunclet)
 ;; $extraStackSize - extra stack space that the user of the macro can use to
 ;;                   store additional registers
     MACRO
@@ -68,7 +68,7 @@
     MEND
 
 ;; -----------------------------------------------------------------------------
-;; Macro used to free frame of funclet calling helpers (RhpCallXXXXFunclet)
+;; Macro used to free frame of funclet calling helpers (CallXXXXFunclet)
 ;; $extraStackSize - extra stack space that the user of the macro can use to
 ;;                   store additional registers.
 ;;                   It needs to match the value passed to the corresponding
@@ -203,7 +203,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpThrowHwEx
+;; ThrowHwEx
 ;;
 ;; INPUT:  W0:  exception code of fault
 ;;         X1:  faulting IP
@@ -211,7 +211,7 @@
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    NESTED_ENTRY RhpThrowHwEx
+    NESTED_ENTRY ThrowHwEx
 
 #define rsp_offsetof_ExInfo  0
 #define rsp_offsetof_Context STACKSIZEOF_ExInfo
@@ -243,30 +243,30 @@
         ;; x1: ExInfo*
         bl          RhThrowHwEx
 
-    ALTERNATE_ENTRY RhpThrowHwEx2
+    ALTERNATE_ENTRY ThrowHwEx2
 
         ;; no return
         EMIT_BREAKPOINT
 
-    NESTED_END RhpThrowHwEx
+    NESTED_END ThrowHwEx
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpThrowEx
+;; ThrowEx
 ;;
 ;; INPUT:  X0:  exception object
 ;;
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    NESTED_ENTRY RhpThrowEx
+    NESTED_ENTRY ThrowEx
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
         ;; x2 = GetThread(), TRASHES x1
         INLINE_GETTHREAD x2, x1
 
-        ;; There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic.  So the return
+        ;; There is runtime C# code that can tail call to ThrowEx using a binder intrinsic.  So the return
         ;; address could have been hijacked when we were in that C# code and we must remove the hijack and
         ;; reflect the correct return address in our exception context record.  The other throw helpers don't
         ;; need this because they cannot be tail-called from C#.
@@ -333,24 +333,24 @@ NotHijacked
         ;; x1: ExInfo*
         bl          RhThrowEx
 
-    ALTERNATE_ENTRY RhpThrowEx2
+    ALTERNATE_ENTRY ThrowEx2
 
         ;; no return
         EMIT_BREAKPOINT
-    NESTED_END RhpThrowEx
+    NESTED_END ThrowEx
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; void FASTCALL RhpRethrow()
+;; void FASTCALL Rethrow()
 ;;
-;; SUMMARY:  Similar to RhpThrowEx, except that it passes along the currently active ExInfo
+;; SUMMARY:  Similar to ThrowEx, except that it passes along the currently active ExInfo
 ;;
 ;; INPUT:
 ;;
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    NESTED_ENTRY RhpRethrow
+    NESTED_ENTRY Rethrow
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
@@ -379,15 +379,15 @@ NotHijacked
         ;; x1 contains the address of the new ExInfo
         bl          RhRethrow
 
-    ALTERNATE_ENTRY RhpRethrow2
+    ALTERNATE_ENTRY Rethrow2
 
         ;; no return
         EMIT_BREAKPOINT
-    NESTED_END RhpRethrow
+    NESTED_END Rethrow
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; void* FASTCALL RhpCallCatchFunclet(OBJECTREF exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
+;; void* FASTCALL CallCatchFunclet(OBJECTREF exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
 ;;                                    ExInfo* pExInfo)
 ;;
 ;; INPUT:  X0:  exception object
@@ -398,7 +398,7 @@ NotHijacked
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    NESTED_ENTRY RhpCallCatchFunclet
+    NESTED_ENTRY CallCatchFunclet
 
         ALLOC_CALL_FUNCLET_FRAME 0x70 // Size needs to be equal with ExceptionHandling.S variant of this function
         stp d8, d9,   [sp, #0x00]
@@ -446,7 +446,7 @@ ClearSuccess_Catch
         ;; x0 still contains the exception object
         blr         x1
 
-    ALTERNATE_ENTRY RhpCallCatchFunclet2
+    ALTERNATE_ENTRY CallCatchFunclet2
 
         ;; x0 contains resume IP
 
@@ -472,7 +472,7 @@ PopExInfoLoop
 DonePopping
         str         x3, [x1, #OFFSETOF__Thread__m_pExInfoStackHead]     ;; store the new head on the Thread
 
-        ldr         x3, =RhpTrapThreads
+        ldr         x3, =TrapThreads
         ldr         w3, [x3]
         tbz         x3, #TrapThreadsFlags_AbortInProgress_Bit, NoAbort
 
@@ -484,18 +484,18 @@ DonePopping
         mov         x1, x0                                     ;; x1 <- continuation address as exception PC
         mov         w0, #STATUS_NATIVEAOT_THREAD_ABORT
         mov         sp, x2
-        b           RhpThrowHwEx
+        b           ThrowHwEx
 
 NoAbort
         ;; reset SP and jump to continuation address
         mov         sp, x2
         br          x0
 
-    NESTED_END RhpCallCatchFunclet
+    NESTED_END CallCatchFunclet
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; void FASTCALL RhpCallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
+;; void FASTCALL CallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
 ;;
 ;; INPUT:  X0:  handler funclet address
 ;;         X1:  REGDISPLAY*
@@ -503,7 +503,7 @@ NoAbort
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    NESTED_ENTRY RhpCallFinallyFunclet
+    NESTED_ENTRY CallFinallyFunclet
 
         ALLOC_CALL_FUNCLET_FRAME 0x60 // Size needs to be equal with ExceptionHandling.S variant of this function
         stp d8, d9,   [sp, #0x00]
@@ -551,7 +551,7 @@ ClearSuccess
         ;;
         blr         x0
 
-    ALTERNATE_ENTRY RhpCallFinallyFunclet2
+    ALTERNATE_ENTRY CallFinallyFunclet2
 
         ldr         x1, [sp, #rsp_offset_x1]        ;; reload REGDISPLAY pointer
 
@@ -582,12 +582,12 @@ SetSuccess
         FREE_CALL_FUNCLET_FRAME 0x60
         EPILOG_RETURN
 
-    NESTED_END RhpCallFinallyFunclet
+    NESTED_END CallFinallyFunclet
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
+;; void* FASTCALL CallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
 ;;
 ;; INPUT:  X0:  exception object
 ;;         X1:  filter funclet address
@@ -596,7 +596,7 @@ SetSuccess
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    NESTED_ENTRY RhpCallFilterFunclet
+    NESTED_ENTRY CallFilterFunclet
         ALLOC_CALL_FUNCLET_FRAME 0x40
         stp d8, d9,   [sp, #0x00]
         stp d10, d11, [sp, #0x10]
@@ -612,7 +612,7 @@ SetSuccess
         ;; x0 still contains the exception object
         blr         x1
 
-    ALTERNATE_ENTRY RhpCallFilterFunclet2
+    ALTERNATE_ENTRY CallFilterFunclet2
 
         ldp         d8, d9,   [sp, #0x00]
         ldp         d10, d11, [sp, #0x10]
@@ -622,6 +622,6 @@ SetSuccess
         FREE_CALL_FUNCLET_FRAME 0x40
         EPILOG_RETURN
 
-    NESTED_END RhpCallFilterFunclet
+    NESTED_END CallFilterFunclet
 
     end

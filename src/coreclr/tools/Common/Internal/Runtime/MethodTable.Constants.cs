@@ -218,7 +218,7 @@ namespace Internal.Runtime
         FunctionPointer = 0x1B,
     }
 
-    // Keep this synchronized with GenericVarianceType in rhbinder.h.
+    // Keep this synchronized with GenericVarianceType in binder.h.
     internal enum GenericVariance : byte
     {
         NonVariant = 0,

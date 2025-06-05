@@ -17,7 +17,7 @@ include AsmMacros.inc
 ; NOTE: this helper will modify a value of esp and must establish the frame pointer.
 PROBE_STEP equ 1000h
 
-RhpStackProbe PROC public
+StackProbe PROC public
     ; On entry:
     ;   eax - the lowest address of the stack frame being allocated (i.e. [InitialSp - FrameSize])
     ;
@@ -37,7 +37,7 @@ ProbeLoop:
     pop     ebp
     ret
 
-RhpStackProbe ENDP
+StackProbe ENDP
 
 ;; *********************************************************************/
 ;; LLsh - long shift left
@@ -55,7 +55,7 @@ RhpStackProbe ENDP
 ;;
 ;; NOTE: Adapted from JIT_LLsh in CoreCLR
 ;;
-RhpLLsh PROC public
+LLsh PROC public
     ;; Reduce shift amount mod 64
     and     ecx, 63
 
@@ -74,7 +74,7 @@ LLshMORE32:
     xor     eax, eax
     shl     edx, cl
     ret
-RhpLLsh ENDP
+LLsh ENDP
 
 ;; *********************************************************************/
 ;; LRsh - long shift right
@@ -92,7 +92,7 @@ RhpLLsh ENDP
 ;;
 ;; NOTE: Adapted from JIT_LRsh in CoreCLR
 ;;
-RhpLRsh PROC public
+LRsh PROC public
     ;; Reduce shift amount mod 64
     and     ecx, 63
 
@@ -111,7 +111,7 @@ LRshMORE32:
     sar     edx, 31
     sar     eax, cl
     ret
-RhpLRsh ENDP
+LRsh ENDP
 
 ;; *********************************************************************/
 ;; LRsz
@@ -129,7 +129,7 @@ RhpLRsh ENDP
 ;;
 ;; NOTE: Adapted from JIT_LRsz in CoreCLR
 ;;
-RhpLRsz PROC public
+LRsz PROC public
     ;; Reduce shift amount mod 64
     and     ecx, 63
 
@@ -148,7 +148,7 @@ LRszMORE32:
     xor     edx, edx
     shr     eax, cl
     ret
-RhpLRsz ENDP
+LRsz ENDP
 
 ;; *********************************************************************/
 ;; LMul
@@ -166,7 +166,7 @@ RhpLRsz ENDP
 ;;
 ;; NOTE: Adapted from JIT_LMul in CoreCLR
 ;;
-RhpLMul PROC public
+LMul PROC public
     mov     eax, dword ptr [esp + 8]   ; AHI
     mov     ecx, dword ptr [esp + 16]  ; BHI
     or      ecx, eax                   ; test for both hiwords zero.
@@ -189,6 +189,6 @@ LMul_hard:
     add     edx, ebx                   ; now edx has all the LO*HI stuff
     pop     ebx
     ret     16
-RhpLMul ENDP
+LMul ENDP
 
 end

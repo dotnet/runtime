@@ -8,7 +8,7 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "rhassert.h"
+#include "debugmacros.h"
 #include "PalLimitedContext.h"
 #include "Pal.h"
 #include "TargetPtrs.h"

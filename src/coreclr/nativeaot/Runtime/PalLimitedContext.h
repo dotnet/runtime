@@ -5,7 +5,7 @@
 #ifndef PAL_LIMITED_CONTEXT_INCLUDED
 #define PAL_LIMITED_CONTEXT_INCLUDED
 
-#include "rhassert.h"
+#include "debugmacros.h"
 
 #ifndef DECLSPEC_ALIGN
 #ifdef _MSC_VER

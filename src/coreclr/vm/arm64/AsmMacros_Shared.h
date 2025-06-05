@@ -22,7 +22,7 @@
     IMPORT g_write_watch_table
 #endif
 
-    IMPORT RhpGcAlloc
+    IMPORT GcAlloc
     IMPORT RhExceptionHandling_FailedAllocation
 
 ;;-----------------------------------------------------------------------------

@@ -23,7 +23,7 @@
 #define PROBE_STEP      4096
 #define PROBE_STEP_LOG2 12
 
-LEAF_ENTRY RhpStackProbe, _TEXT
+LEAF_ENTRY StackProbe, _TEXT
     PROLOG_PUSH "{r7}"
     PROLOG_STACK_SAVE r7
 
@@ -41,4 +41,4 @@ ProbeLoop:
     EPILOG_STACK_RESTORE r7
     EPILOG_POP "{r7}"
     EPILOG_BRANCH_REG lr
-LEAF_END RhpStackProbe, _TEXT
+LEAF_END StackProbe, _TEXT

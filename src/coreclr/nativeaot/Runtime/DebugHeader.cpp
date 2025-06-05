@@ -5,7 +5,7 @@
 #include "gcenv.h"
 #include "gcheaputilities.h"
 #include "gcinterface.dac.h"
-#include "rhassert.h"
+#include "debugmacros.h"
 #include "TargetPtrs.h"
 #include "PalLimitedContext.h"
 #include "Pal.h"

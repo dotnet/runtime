@@ -7,7 +7,7 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// RhpThrowHwEx
+// ThrowHwEx
 //
 // INPUT:  RDI:  exception code of fault
 //         RSI:  faulting RIP
@@ -15,7 +15,7 @@
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
+NESTED_ENTRY ThrowHwEx, _TEXT, NoHandler
 
         STACKSIZEOF_ExInfo      = ((SIZEOF__ExInfo + 15) & (~15))
         rsp_offsetof_Context    = STACKSIZEOF_ExInfo
@@ -70,24 +70,24 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
         // rsi contains the address of the ExInfo
         call    EXTERNAL_C_FUNC(RhThrowHwEx)
 
-ALTERNATE_ENTRY RhpThrowHwEx2
+ALTERNATE_ENTRY ThrowHwEx2
 
         // no return
         int 3
 
-NESTED_END RhpThrowHwEx, _TEXT
+NESTED_END ThrowHwEx, _TEXT
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// RhpThrowEx
+// ThrowEx
 //
 // INPUT:  RDI:  exception object
 //
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
+NESTED_ENTRY ThrowEx, _TEXT, NoHandler
 
         STACKSIZEOF_ExInfo      = ((SIZEOF__ExInfo + 15) & (~ 15))
         rsp_offsetof_Context    = STACKSIZEOF_ExInfo
@@ -123,7 +123,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
 
         lea                     rbx, [rsp + rsp_offsetof_Context + SIZEOF__PAL_LIMITED_CONTEXT + 0x8]    // rbx <- addr of return address
 
-        // There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic.  So the return
+        // There is runtime C# code that can tail call to ThrowEx using a binder intrinsic.  So the return
         // address could have been hijacked when we were in that C# code and we must remove the hijack and
         // reflect the correct return address in our exception context record.  The other throw helpers don't
         // need this because they cannot be tail-called from C#.
@@ -151,25 +151,25 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
         // rsi contains the address of the ExInfo
         call    EXTERNAL_C_FUNC(RhThrowEx)
 
-ALTERNATE_ENTRY RhpThrowEx2
+ALTERNATE_ENTRY ThrowEx2
 
         // no return
         int 3
 
-NESTED_END RhpThrowEx, _TEXT
+NESTED_END ThrowEx, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// void FASTCALL RhpRethrow()
+// void FASTCALL Rethrow()
 //
-// SUMMARY:  Similar to RhpThrowEx, except that it passes along the currently active ExInfo
+// SUMMARY:  Similar to ThrowEx, except that it passes along the currently active ExInfo
 //
 // INPUT:
 //
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
+NESTED_ENTRY Rethrow, _TEXT, NoHandler
 
         STACKSIZEOF_ExInfo      = ((SIZEOF__ExInfo + 15) & (~ 15))
         rsp_offsetof_Context    = STACKSIZEOF_ExInfo
@@ -222,15 +222,15 @@ NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
         // rsi contains the address of the new ExInfo
         call    EXTERNAL_C_FUNC(RhRethrow)
 
-ALTERNATE_ENTRY RhpRethrow2
+ALTERNATE_ENTRY Rethrow2
 
         // no return
         int 3
 
-NESTED_END RhpRethrow, _TEXT
+NESTED_END Rethrow, _TEXT
 
 //
-// Prologue of all funclet calling helpers (RhpCallXXXXFunclet)
+// Prologue of all funclet calling helpers (CallXXXXFunclet)
 //
 .macro FUNCLET_CALL_PROLOGUE localsCount, alignStack
 
@@ -249,7 +249,7 @@ NESTED_END RhpRethrow, _TEXT
 .endm
 
 //
-// Epilogue of all funclet calling helpers (RhpCallXXXXFunclet)
+// Epilogue of all funclet calling helpers (CallXXXXFunclet)
 //
 .macro FUNCLET_CALL_EPILOGUE
     free_stack      stack_alloc_size
@@ -264,7 +264,7 @@ NESTED_END RhpRethrow, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// void* FASTCALL RhpCallCatchFunclet(OBJECTREF exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
+// void* FASTCALL CallCatchFunclet(OBJECTREF exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
 //                                    ExInfo* pExInfo)
 //
 // INPUT:  RDI:  exception object
@@ -275,7 +275,7 @@ NESTED_END RhpRethrow, _TEXT
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
+NESTED_ENTRY CallCatchFunclet, _TEXT, NoHandler
 
         FUNCLET_CALL_PROLOGUE 6, 1
 
@@ -316,7 +316,7 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
         mov     rdi, [rsp + locArg0]                                // rsi <- exception object
         call    qword ptr [rsp + locArg1]                           // call handler funclet
 
-ALTERNATE_ENTRY RhpCallCatchFunclet2
+ALTERNATE_ENTRY CallCatchFunclet2
 
         mov     rdx, [rsp + locArg2]                                // rdx <- dispatch context
 
@@ -342,7 +342,7 @@ ALTERNATE_ENTRY RhpCallCatchFunclet2
         mov     rdi, [rsp]                                          // rdi <- Thread*
         mov     rsi, [rsp + locArg3]                                // rsi <- current ExInfo *
         mov     rdx, [rdx + OFFSETOF__REGDISPLAY__SP]               // rdx  <- resume SP value
-        call    C_FUNC(RhpValidateExInfoPop)
+        call    C_FUNC(ValidateExInfoPop)
 
         mov     rdx, [rsp + locArg2]          // rdx <- dispatch context
         mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
@@ -384,11 +384,11 @@ LOCAL_LABEL(ExInfoLoopDone):
         mov     rsp, rdx                                            // reset the SP
         jmp     rax
 
-NESTED_END RhpCallCatchFunclet, _TEXT
+NESTED_END CallCatchFunclet, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// void FASTCALL RhpCallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
+// void FASTCALL CallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
 //
 // INPUT:  RDI:  handler funclet address
 //         RSI:  REGDISPLAY*
@@ -396,7 +396,7 @@ NESTED_END RhpCallCatchFunclet, _TEXT
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
+NESTED_ENTRY CallFinallyFunclet, _TEXT, NoHandler
 
         FUNCLET_CALL_PROLOGUE 3, 0
 
@@ -437,7 +437,7 @@ NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
 
         call    qword ptr [rsp + locArg0]                            // handler funclet address
 
-ALTERNATE_ENTRY RhpCallFinallyFunclet2
+ALTERNATE_ENTRY CallFinallyFunclet2
 
         mov     rax, [rsp + locThread]                               // rax <- Thread*
    lock or      dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
@@ -446,12 +446,12 @@ ALTERNATE_ENTRY RhpCallFinallyFunclet2
 
         ret
 
-NESTED_END RhpCallFinallyFunclet, _TEXT
+NESTED_END CallFinallyFunclet, _TEXT
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
+// void* FASTCALL CallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
 //
 // INPUT:  RDI:  exception object
 //         RSI:  filter funclet address
@@ -460,7 +460,7 @@ NESTED_END RhpCallFinallyFunclet, _TEXT
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
+NESTED_ENTRY CallFilterFunclet, _TEXT, NoHandler
 
         FUNCLET_CALL_PROLOGUE 0, 1
 
@@ -469,7 +469,7 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
 
         call    rsi
 
-ALTERNATE_ENTRY RhpCallFilterFunclet2
+ALTERNATE_ENTRY CallFilterFunclet2
 
         // RAX contains the result of the filter execution
 
@@ -477,14 +477,14 @@ ALTERNATE_ENTRY RhpCallFilterFunclet2
 
         ret
 
-NESTED_END RhpCallFilterFunclet, _TEXT
+NESTED_END CallFilterFunclet, _TEXT
 
 
 #ifdef FEATURE_OBJCMARSHAL
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// void* FASTCALL RhpCallPropagateExceptionCallback(void* pCallbackContext, void* pCallback, REGDISPLAY* pRegDisplay,
+// void* FASTCALL CallPropagateExceptionCallback(void* pCallbackContext, void* pCallback, REGDISPLAY* pRegDisplay,
 //                                    ExInfo* pExInfo, PInvokeTransitionFrame* pPreviousTransitionFrame)
 //
 // INPUT:  RDI:  callback context
@@ -496,7 +496,7 @@ NESTED_END RhpCallFilterFunclet, _TEXT
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpCallPropagateExceptionCallback, _TEXT, NoHandler
+NESTED_ENTRY CallPropagateExceptionCallback, _TEXT, NoHandler
 
         // We could use a simpler prolog, as we don't have to be unwindable by StackFrameIterator::UnwindFuncletInvokeThunk()
         FUNCLET_CALL_PROLOGUE 6, 1
@@ -556,7 +556,7 @@ NESTED_ENTRY RhpCallPropagateExceptionCallback, _TEXT, NoHandler
         mov     rdi, [rsp]                                          // rdi <- Thread*
         mov     rsi, [rsp + locArg3]                                // rsi <- current ExInfo *
         mov     rdx, [rdx + OFFSETOF__REGDISPLAY__SP]               // rdx  <- resume SP value
-        call    C_FUNC(RhpValidateExInfoPop)
+        call    C_FUNC(ValidateExInfoPop)
 
         mov     rdx, [rsp + locArg2]          // rdx <- dispatch context
         mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
@@ -607,6 +607,6 @@ LOCAL_LABEL(Propagate_ExInfoLoopDone):
         sub     rsp, 8
         jmp     rax
 
-NESTED_END RhpCallPropagateExceptionCallback, _TEXT
+NESTED_END CallPropagateExceptionCallback, _TEXT
 
 #endif // FEATURE_OBJCMARSHAL

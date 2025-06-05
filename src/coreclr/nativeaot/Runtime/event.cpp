@@ -8,7 +8,7 @@
 #include "event.h"
 #include "PalLimitedContext.h"
 #include "Pal.h"
-#include "rhassert.h"
+#include "debugmacros.h"
 #include "slist.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"

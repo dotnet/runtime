@@ -145,28 +145,28 @@ EXTERN_C FCDECL1(void*, JIT_GetDynamicGCStaticBaseNoCtor_Portable, DynamicStatic
 EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor, DynamicStaticsInfo* pStaticsInfo);
 EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pStaticsInfo);
 
-EXTERN_C FCDECL1(Object*, RhpNewFast, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL2(Object*, RhpNewArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL1(Object*, NewFast, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL2(Object*, NewArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL2(Object*, NewPtrArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, DWORD stringLength);
 
 #if defined(FEATURE_64BIT_ALIGNMENT)
-EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL1(Object*, NewFastAlign8, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL1(Object*, NewFastMisalign, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL2(Object*, NewArrayFastAlign8, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 #endif
 
 #if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86))
-EXTERN_C FCDECL1(Object*, RhpNewFast_UP, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL2(Object*, RhpNewArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL1(Object*, NewFast_UP, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL2(Object*, NewArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL2(Object*, NewPtrArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhNewString_UP, CORINFO_CLASS_HANDLE typeHnd_, DWORD stringLength);
 #endif
 
-EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL1(Object*, New, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL2(Object*, NewVariableSizeObject, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL1(Object*, NewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL2(Object*, NewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 
 EXTERN_C FCDECL1(Object*, AllocateStringFast, DWORD stringLength);
 EXTERN_C FCDECL1(Object*, AllocateStringSlow, DWORD stringLength);
@@ -191,20 +191,20 @@ extern "C" FCDECL3(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref, Che
 extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 
 #ifdef TARGET_ARM64
-#define RhpCheckedAssignRef RhpCheckedAssignRefArm64
-#define RhpByRefAssignRef RhpByRefAssignRefArm64
-#define RhpAssignRef RhpAssignRefArm64
+#define CheckedAssignRef CheckedAssignRefArm64
+#define ByRefAssignRef ByRefAssignRefArm64
+#define AssignRef AssignRefArm64
 #elif defined (TARGET_LOONGARCH64)
-#define RhpAssignRef RhpAssignRefLoongArch64
+#define AssignRef AssignRefLoongArch64
 #elif defined (TARGET_RISCV64)
-#define RhpAssignRef RhpAssignRefRiscV64
+#define AssignRef AssignRefRiscV64
 #endif // TARGET_*
 
 #endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
 
-extern "C" FCDECL2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
-extern "C" FCDECL2(VOID, RhpByRefAssignRef, Object **dst, Object *ref);
-extern "C" FCDECL2(VOID, RhpAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2(VOID, CheckedAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2(VOID, ByRefAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2(VOID, AssignRef, Object **dst, Object *ref);
 
 extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
@@ -247,8 +247,8 @@ extern "C"
 #define X86_WRITE_BARRIER_REGISTER(reg) \
     void STDCALL JIT_DebugWriteBarrier##reg(); \
     void STDCALL JIT_WriteBarrier##reg(); \
-    void FASTCALL RhpAssignRef##reg(Object**, Object*); \
-    void FASTCALL RhpCheckedAssignRef##reg(Object**, Object*);
+    void FASTCALL AssignRef##reg(Object**, Object*); \
+    void FASTCALL CheckedAssignRef##reg(Object**, Object*);
 
     ENUM_X86_WRITE_BARRIER_REGISTERS()
 #undef X86_WRITE_BARRIER_REGISTER

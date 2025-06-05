@@ -6,11 +6,11 @@
 #include "unixasmmacros.inc"
 
 //
-// Object* __fastcall RhpNew(MethodTable *pMT)
+// Object* __fastcall New(MethodTable *pMT)
 //
 // Allocate non-array object, slow path.
 //
-LEAF_ENTRY RhpNew, _TEXT
+LEAF_ENTRY New, _TEXT
 
     PUSH_COOP_PINVOKE_FRAME eax
 
@@ -20,21 +20,21 @@ LEAF_ENTRY RhpNew, _TEXT
     push        ecx
 
     CHECK_STACK_ALIGNMENT
-    call        C_FUNC(RhpGcAlloc)
+    call        C_FUNC(GcAlloc)
 
     add         esp, 16
 
     POP_COOP_PINVOKE_FRAME
     ret
 
-LEAF_END RhpNew, _TEXT
+LEAF_END New, _TEXT
 
 //
-// Object* __fastcall RhpNewMaybeFrozen(MethodTable *pMT)
+// Object* __fastcall NewMaybeFrozen(MethodTable *pMT)
 //
 // Allocate non-array object, may be on frozen heap.
 //
-NESTED_ENTRY RhpNewMaybeFrozen, _TEXT, NoHandler
+NESTED_ENTRY NewMaybeFrozen, _TEXT, NoHandler
 
     PUSH_COOP_PINVOKE_FRAME eax
 
@@ -44,21 +44,21 @@ NESTED_ENTRY RhpNewMaybeFrozen, _TEXT, NoHandler
     push        ecx
 
     CHECK_STACK_ALIGNMENT
-    call        C_FUNC(RhpGcAllocMaybeFrozen)
+    call        C_FUNC(GcAllocMaybeFrozen)
 
     add         esp, 16
 
     POP_COOP_PINVOKE_FRAME
     ret
 
-NESTED_END RhpNewMaybeFrozen, _TEXT
+NESTED_END NewMaybeFrozen, _TEXT
 
 //
-// Object* __fastcall RhpNewMaybeFrozen(MethodTable *pMT, INT_PTR size)
+// Object* __fastcall NewMaybeFrozen(MethodTable *pMT, INT_PTR size)
 //
 // Allocate array object, may be on frozen heap.
 //
-NESTED_ENTRY RhpNewArrayMaybeFrozen, _TEXT, NoHandler
+NESTED_ENTRY NewArrayMaybeFrozen, _TEXT, NoHandler
 
     PUSH_COOP_PINVOKE_FRAME eax
 
@@ -68,14 +68,14 @@ NESTED_ENTRY RhpNewArrayMaybeFrozen, _TEXT, NoHandler
     push        ecx
 
     CHECK_STACK_ALIGNMENT
-    call        C_FUNC(RhpGcAllocMaybeFrozen)
+    call        C_FUNC(GcAllocMaybeFrozen)
 
     add         esp, 16
 
     POP_COOP_PINVOKE_FRAME
     ret
 
-NESTED_END RhpNewArrayMaybeFrozen, _TEXT
+NESTED_END NewArrayMaybeFrozen, _TEXT
 
 //
 // void __fastcall RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)

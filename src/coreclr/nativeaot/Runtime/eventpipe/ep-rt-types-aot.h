@@ -8,7 +8,7 @@
 #include <eventpipe/ep-rt-config.h>
 
 #include <inttypes.h>
-#include "rhassert.h"
+#include "debugmacros.h"
 
 #ifdef ENABLE_PERFTRACING
 

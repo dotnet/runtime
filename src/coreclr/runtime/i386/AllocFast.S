@@ -7,15 +7,15 @@
 // Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
 // allocation context then automatically fallback to the slow allocation path.
 //  ECX == MethodTable
-LEAF_ENTRY RhpNewFast, _TEXT
+LEAF_ENTRY NewFast, _TEXT
         // edx = ee_alloc_context pointer, TRASHES eax
         INLINE_GET_ALLOC_CONTEXT_BASE
 
         mov         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
         add         eax, [edx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
-        jc          LOCAL_LABEL(RhpNewFast_AllocFailed)
+        jc          LOCAL_LABEL(NewFast_AllocFailed)
         cmp         eax, [edx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
-        ja          LOCAL_LABEL(RhpNewFast_AllocFailed)
+        ja          LOCAL_LABEL(NewFast_AllocFailed)
         mov         [edx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], eax
 
         // calc the new object pointer and initialize it
@@ -24,22 +24,22 @@ LEAF_ENTRY RhpNewFast, _TEXT
 
         ret
 
-LOCAL_LABEL(RhpNewFast_AllocFailed):
+LOCAL_LABEL(NewFast_AllocFailed):
         xor         edx, edx
-        jmp         RhpNewObject
-LEAF_END RhpNewFast, _TEXT
+        jmp         NewObject
+LEAF_END NewFast, _TEXT
 
 // Allocate non-array object with finalizer.
 //  ECX == MethodTable
-LEAF_ENTRY RhpNewFinalizable, _TEXT
+LEAF_ENTRY NewFinalizable, _TEXT
         mov         edx, GC_ALLOC_FINALIZE                          // Flags
-        jmp         RhpNewObject
-LEAF_END RhpNewFinalizable, _TEXT
+        jmp         NewObject
+LEAF_END NewFinalizable, _TEXT
 
 // Allocate non-array object
 //  ECX == MethodTable
 //  EDX == alloc flags
-LEAF_ENTRY RhpNewObject, _TEXT
+LEAF_ENTRY NewObject, _TEXT
         PUSH_COOP_PINVOKE_FRAME eax
 
         // Preserve MethodTable in ESI.
@@ -51,8 +51,8 @@ LEAF_ENTRY RhpNewObject, _TEXT
         push        ecx
 
         // Call the rest of the allocation helper.
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
-        call        RhpGcAlloc
+        // void* GcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        call        GcAlloc
 
         add         esp, 16
 
@@ -73,9 +73,9 @@ LOCAL_LABEL(NewOutOfMemory):
         POP_COOP_PINVOKE_FRAME
 
         jmp         RhExceptionHandling_FailedAllocation
-LEAF_END RhpNewObject, _TEXT
+LEAF_END NewObject, _TEXT
 
-// Shared code for RhNewString, RhpNewArrayFast and RhpNewPtrArrayFast
+// Shared code for RhNewString, NewArrayFast and NewPtrArrayFast
 //  EAX == string/array size
 //  ECX == MethodTable
 //  EDX == character/element count
@@ -130,7 +130,7 @@ LEAF_END RhpNewObject, _TEXT
         ESP_EPILOG_POP ecx
         ESP_EPILOG_END
 
-        jmp         RhpNewVariableSizeObject
+        jmp         NewVariableSizeObject
 .endm
 
 // Allocate a new string.
@@ -162,7 +162,7 @@ LEAF_END RhNewString, _TEXT
 // Allocate one dimensional, zero based array (SZARRAY).
 //  ECX == MethodTable
 //  EDX == element count
-LEAF_ENTRY RhpNewArrayFast, _TEXT
+LEAF_ENTRY NewArrayFast, _TEXT
         NEW_ARRAY_FAST_PROLOG
 
         // Compute overall allocation size (align(base size + (element size * elements), 4)).
@@ -171,35 +171,35 @@ LEAF_ENTRY RhpNewArrayFast, _TEXT
         // (32 dimensional MdArray) is less than 0xffff.
         movzx       eax, word ptr [ecx + OFFSETOF__MethodTable__m_usComponentSize]
         cmp         edx, 0x010000
-        ja          LOCAL_LABEL(RhpNewArrayFast_ArraySizeBig)
+        ja          LOCAL_LABEL(NewArrayFast_ArraySizeBig)
         mul         edx
         lea         eax, [eax + SZARRAY_BASE_SIZE + 3]
-LOCAL_LABEL(RhpNewArrayFast_ArrayAlignSize):
+LOCAL_LABEL(NewArrayFast_ArrayAlignSize):
         and         eax, -4
 
         NEW_ARRAY_FAST
 
-LOCAL_LABEL(RhpNewArrayFast_ArraySizeBig):
+LOCAL_LABEL(NewArrayFast_ArraySizeBig):
         // Compute overall allocation size (align(base size + (element size * elements), 4)).
         // if the element count is negative, it's an overflow, otherwise it's out of memory
         cmp         edx, 0
-        jl          LOCAL_LABEL(RhpNewArrayFast_ArraySizeOverflow)
+        jl          LOCAL_LABEL(NewArrayFast_ArraySizeOverflow)
         mul         edx
-        jc          LOCAL_LABEL(RhpNewArrayFast_ArrayOutOfMemoryNoFrame)
+        jc          LOCAL_LABEL(NewArrayFast_ArrayOutOfMemoryNoFrame)
         add         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
-        jc          LOCAL_LABEL(RhpNewArrayFast_ArrayOutOfMemoryNoFrame)
+        jc          LOCAL_LABEL(NewArrayFast_ArrayOutOfMemoryNoFrame)
         add         eax, 3
-        jc          LOCAL_LABEL(RhpNewArrayFast_ArrayOutOfMemoryNoFrame)
-        jmp         LOCAL_LABEL(RhpNewArrayFast_ArrayAlignSize)
+        jc          LOCAL_LABEL(NewArrayFast_ArrayOutOfMemoryNoFrame)
+        jmp         LOCAL_LABEL(NewArrayFast_ArrayAlignSize)
 
-LOCAL_LABEL(RhpNewArrayFast_ArrayOutOfMemoryNoFrame):
+LOCAL_LABEL(NewArrayFast_ArrayOutOfMemoryNoFrame):
         ESP_EPILOG_FREE 8
 
         // ecx holds MethodTable pointer already
         xor         edx, edx        // Indicate that we should throw OOM.
         jmp         RhExceptionHandling_FailedAllocation
 
-LOCAL_LABEL(RhpNewArrayFast_ArraySizeOverflow):
+LOCAL_LABEL(NewArrayFast_ArraySizeOverflow):
         ESP_EPILOG_FREE 8
 
         // We get here if the size of the final array object can't be represented as an unsigned
@@ -209,17 +209,17 @@ LOCAL_LABEL(RhpNewArrayFast_ArraySizeOverflow):
         // ecx holds MethodTable pointer already
         mov         edx, 1          // Indicate that we should throw OverflowException
         jmp         RhExceptionHandling_FailedAllocation
-LEAF_END RhpNewArrayFast, _TEXT
+LEAF_END NewArrayFast, _TEXT
 
 
 // Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements.
 //  ECX == MethodTable
 //  EDX == element count
-LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
+LEAF_ENTRY NewPtrArrayFast, _TEXT
         // Delegate overflow handling to the generic helper conservatively
 
         cmp         edx, (0x40000000 / 4) // sizeof(void*)
-        jae         RhpNewVariableSizeObject
+        jae         NewVariableSizeObject
 
         // In this case we know the element size is sizeof(void *), or 4 for x86
         // This helps us in two ways - we can shift instead of multiplying, and
@@ -229,15 +229,15 @@ LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
 
         NEW_ARRAY_FAST_PROLOG
         NEW_ARRAY_FAST
-LEAF_END RhpNewPtrArrayFast, _TEXT
+LEAF_END NewPtrArrayFast, _TEXT
 
 //
-// Object* RhpNewVariableSizeObject(MethodTable *pMT, INT_PTR size)
+// Object* NewVariableSizeObject(MethodTable *pMT, INT_PTR size)
 //
 // ecx == MethodTable
 // edx == element count
 //
-NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
+NESTED_ENTRY NewVariableSizeObject, _TEXT, NoHandler
         PUSH_COOP_PINVOKE_FRAME eax
 
         // Preserve MethodTable in ESI.
@@ -249,19 +249,19 @@ NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
         push        0                                               // Flags
         push        ecx                                             // MethodTable
 
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
-        call        RhpGcAlloc
+        // void* GcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        call        GcAlloc
 
         add         esp, 16
 
         test        eax, eax
-        jz          LOCAL_LABEL(RhpNewVariableSizeObject_AllocFailed)
+        jz          LOCAL_LABEL(NewVariableSizeObject_AllocFailed)
 
         POP_COOP_PINVOKE_FRAME
 
         ret
 
-LOCAL_LABEL(RhpNewVariableSizeObject_AllocFailed):
+LOCAL_LABEL(NewVariableSizeObject_AllocFailed):
         // This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
@@ -271,4 +271,4 @@ LOCAL_LABEL(RhpNewVariableSizeObject_AllocFailed):
         POP_COOP_PINVOKE_FRAME
 
         jmp         RhExceptionHandling_FailedAllocation
-NESTED_END RhpNewVariableSizeObject, _TEXT
+NESTED_END NewVariableSizeObject, _TEXT

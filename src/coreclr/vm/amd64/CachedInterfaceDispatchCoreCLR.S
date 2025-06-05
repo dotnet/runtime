@@ -8,7 +8,7 @@
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
 // Stub dispatch routine for dispatch to a vtable slot
-LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
+LEAF_ENTRY VTableOffsetDispatch, _TEXT
 
         // r11 currently contains the indirection cell address.
         // load r11 to point to the vtable offset (which is stored in the m_pCache field).
@@ -26,7 +26,7 @@ LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
 // an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
 .cfi_endproc
 #endif
-    ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
+    ALTERNATE_ENTRY VTableOffsetDispatchAVLocation
 #ifdef TARGET_APPLE
 .cfi_startproc
 #endif
@@ -42,12 +42,12 @@ LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
         mov     rax, [rax + r11]
 
         TAILJMP_RAX
-LEAF_END RhpVTableOffsetDispatch, _TEXT
+LEAF_END VTableOffsetDispatch, _TEXT
 
 // On Input:
 //    r11                    contains the address of the indirection cell
 //  [rsp+0] m_ReturnAddress: contains the return address of caller to stub
-NESTED_ENTRY RhpInterfaceDispatchSlow, _TEXT, NoHandler
+NESTED_ENTRY InterfaceDispatchSlow, _TEXT, NoHandler
 
         PROLOG_WITH_TRANSITION_BLOCK
 
@@ -59,7 +59,7 @@ NESTED_ENTRY RhpInterfaceDispatchSlow, _TEXT, NoHandler
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         TAILJMP_RAX
 
-NESTED_END RhpInterfaceDispatchSlow, _TEXT
+NESTED_END InterfaceDispatchSlow, _TEXT
 
 // On Input:
 //    r11                    contains the address of the indirection cell (which is the MethodPtrAux field of the delegate)

@@ -16,7 +16,7 @@
 #include "Pal.h"
 #include <winternl.h>
 #include "CommonMacros.h"
-#include "rhassert.h"
+#include "debugmacros.h"
 
 // Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
 void PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound)

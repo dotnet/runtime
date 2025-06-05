@@ -269,9 +269,9 @@ C_FUNC(\Name):
 
 .macro INLINE_GETTHREAD
 #ifdef FEATURE_EMULATED_TLS
-        bl C_FUNC(RhpGetThread)
+        bl C_FUNC(GetThread)
 #else
-        // Inlined version of call C_FUNC(RhpGetThread)
+        // Inlined version of call C_FUNC(GetThread)
         INLINE_GET_TLS_VAR tls_CurrentThread
 #endif
 .endm

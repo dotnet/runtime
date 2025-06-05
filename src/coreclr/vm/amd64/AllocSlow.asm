@@ -4,58 +4,58 @@
 include AsmMacros.inc
 include asmconstants.inc
 
-EXTERN RhpNewObject : PROC
-EXTERN RhpNewVariableSizeObject : PROC
-EXTERN RhpGcAllocMaybeFrozen : PROC
+EXTERN NewObject : PROC
+EXTERN NewVariableSizeObject : PROC
+EXTERN GcAllocMaybeFrozen : PROC
 EXTERN RhExceptionHandling_FailedAllocation_Helper : PROC
 
 EXTERN g_global_alloc_lock : DWORD
 EXTERN g_global_alloc_context : QWORD
 
 ;
-; Object* RhpNew(MethodTable *pMT)
+; Object* New(MethodTable *pMT)
 ;
 ; Allocate non-array object, slow path.
 ;
-LEAF_ENTRY RhpNew, _TEXT
+LEAF_ENTRY New, _TEXT
 
         mov         rdx, 0
-        jmp         RhpNewObject
+        jmp         NewObject
 
-LEAF_END RhpNew, _TEXT
+LEAF_END New, _TEXT
 
 ;
-; Object* RhpNewMaybeFrozen(MethodTable *pMT)
+; Object* NewMaybeFrozen(MethodTable *pMT)
 ;
 ; Allocate non-array object, may be on frozen heap.
 ;
-NESTED_ENTRY RhpNewMaybeFrozen, _TEXT
+NESTED_ENTRY NewMaybeFrozen, _TEXT
 
         PUSH_COOP_PINVOKE_FRAME r8
 
         mov         rdx, 0
-        call        RhpGcAllocMaybeFrozen
+        call        GcAllocMaybeFrozen
 
         POP_COOP_PINVOKE_FRAME
         ret
 
-NESTED_END RhpNewMaybeFrozen, _TEXT
+NESTED_END NewMaybeFrozen, _TEXT
 
 ;
-; Object* RhpNewArrayMaybeFrozen(MethodTable *pMT, INT_PTR size)
+; Object* NewArrayMaybeFrozen(MethodTable *pMT, INT_PTR size)
 ;
 ; Allocate array object, may be on frozen heap.
 ;
-NESTED_ENTRY RhpNewArrayMaybeFrozen, _TEXT
+NESTED_ENTRY NewArrayMaybeFrozen, _TEXT
 
         PUSH_COOP_PINVOKE_FRAME r8
 
-        call        RhpGcAllocMaybeFrozen
+        call        GcAllocMaybeFrozen
 
         POP_COOP_PINVOKE_FRAME
         ret
 
-NESTED_END RhpNewArrayMaybeFrozen, _TEXT
+NESTED_END NewArrayMaybeFrozen, _TEXT
 
 ;
 ; void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)
@@ -72,14 +72,14 @@ NESTED_ENTRY RhExceptionHandling_FailedAllocation, _TEXT
 NESTED_END RhExceptionHandling_FailedAllocation, _TEXT
 
 ;
-; void RhpNewFast_UP(MethodTable *pMT)
+; void NewFast_UP(MethodTable *pMT)
 ;
 ; Allocate non-array object, uniprocessor version
 ;
-LEAF_ENTRY RhpNewFast_UP, _TEXT
+LEAF_ENTRY NewFast_UP, _TEXT
 
         inc         [g_global_alloc_lock]
-        jnz         RhpNewFast_UP_RarePath
+        jnz         NewFast_UP_RarePath
 
         ;;
         ;; rcx contains MethodTable pointer
@@ -95,7 +95,7 @@ LEAF_ENTRY RhpNewFast_UP, _TEXT
         mov         rax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
         add         r8, rax
         cmp         r8, [g_global_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
-        ja          RhpNewFast_UP_RarePath_Unlock
+        ja          NewFast_UP_RarePath_Unlock
 
         ;; set the new alloc pointer
         mov         [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], r8
@@ -105,17 +105,17 @@ LEAF_ENTRY RhpNewFast_UP, _TEXT
         mov         [g_global_alloc_lock], -1
         ret
 
-RhpNewFast_UP_RarePath_Unlock:
+NewFast_UP_RarePath_Unlock:
         mov         [g_global_alloc_lock], -1
 
-RhpNewFast_UP_RarePath:
+NewFast_UP_RarePath:
         xor         edx, edx
-        jmp         RhpNewObject
+        jmp         NewObject
 
-LEAF_END RhpNewFast_UP, _TEXT
+LEAF_END NewFast_UP, _TEXT
 
 ;
-; Shared code for RhNewString_UP, RhpNewArrayFast_UP and RhpNewPtrArrayFast_UP
+; Shared code for RhNewString_UP, NewArrayFast_UP and NewPtrArrayFast_UP
 ;  RAX == string/array size
 ;  RCX == MethodTable
 ;  RDX == character/element count
@@ -123,7 +123,7 @@ LEAF_END RhpNewFast_UP, _TEXT
 NEW_ARRAY_FAST_UP MACRO
 
         inc         [g_global_alloc_lock]
-        jnz         RhpNewVariableSizeObject
+        jnz         NewVariableSizeObject
 
         mov         r8, rax
         add         rax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
@@ -148,7 +148,7 @@ NEW_ARRAY_FAST_UP MACRO
 
 NewArrayFast_RarePath:
         mov         [g_global_alloc_lock], -1
-        jmp         RhpNewVariableSizeObject
+        jmp         NewVariableSizeObject
 
 ENDM
 
@@ -181,12 +181,12 @@ StringSizeOverflow:
 LEAF_END RhNewString_UP, _TEXT
 
 ;
-; Object* RhpNewArrayFast_UP(MethodTable *pMT, INT_PTR elementCount)
-; Object* RhpNewArrayFast_UP_OBJ(MethodTable *pMT, INT_PTR elementCount)
+; Object* NewArrayFast_UP(MethodTable *pMT, INT_PTR elementCount)
+; Object* NewArrayFast_UP_OBJ(MethodTable *pMT, INT_PTR elementCount)
 ; 
 ; Allocate one dimensional, zero based array (SZARRAY), uniprocessor version
 ;
-LEAF_ENTRY RhpNewArrayFast_UP, _TEXT
+LEAF_ENTRY NewArrayFast_UP, _TEXT
 
         ; we want to limit the element count to the non-negative 32-bit int range
         cmp         rdx, 07fffffffh
@@ -214,20 +214,20 @@ ArraySizeOverflow:
         mov         edx, 1              ; Indicate that we should throw OverflowException
         jmp         RhExceptionHandling_FailedAllocation
 
-LEAF_END RhpNewArrayFast_UP, _TEXT
+LEAF_END NewArrayFast_UP, _TEXT
 
 ;
-; Object* RhpNewPtrArrayFast_UP(MethodTable *pMT, INT_PTR elementCount)
+; Object* NewPtrArrayFast_UP(MethodTable *pMT, INT_PTR elementCount)
 ; 
 ; Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements,
 ; uniprocessor version
 ;
-LEAF_ENTRY RhpNewPtrArrayFast_UP, _TEXT
+LEAF_ENTRY NewPtrArrayFast_UP, _TEXT
 
         ; Delegate overflow handling to the generic helper conservatively
 
         cmp         rdx, (40000000h / 8) ; sizeof(void*)
-        jae         RhpNewVariableSizeObject
+        jae         NewVariableSizeObject
 
         ; In this case we know the element size is sizeof(void *), or 8 for x64
         ; This helps us in two ways - we can shift instead of multiplying, and
@@ -240,6 +240,6 @@ LEAF_ENTRY RhpNewPtrArrayFast_UP, _TEXT
 
         NEW_ARRAY_FAST_UP
 
-LEAF_END RhpNewPtrArrayFast_UP, _TEXT
+LEAF_END NewPtrArrayFast_UP, _TEXT
 
     end

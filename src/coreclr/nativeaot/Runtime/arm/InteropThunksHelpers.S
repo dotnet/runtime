@@ -23,7 +23,7 @@ NESTED_ENTRY RhCommonStub, _TEXT, NoHandler
           mov          r4, r12
 
 #ifdef FEATURE_EMULATED_TLS
-          bl           C_FUNC(RhpGetThunkData)
+          bl           C_FUNC(GetThunkData)
 #else
           INLINE_GET_TLS_VAR  tls_thunkData
 #endif

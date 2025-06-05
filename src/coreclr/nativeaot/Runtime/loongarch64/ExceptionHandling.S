@@ -9,10 +9,10 @@
 #define HARDWARE_EXCEPTION 1
 #define SOFTWARE_EXCEPTION 0
 
-.global RhpTrapThreads
+.global TrapThreads
 
 // -----------------------------------------------------------------------------
-// Macro used to create frame of exception throwing helpers (RhpThrowEx, RhpThrowHwEx)
+// Macro used to create frame of exception throwing helpers (ThrowEx, ThrowHwEx)
     .macro ALLOC_THROW_FRAME exceptionType
 
         ori  $a3, $sp, 0
@@ -54,7 +54,7 @@
     .endm
 
 // -----------------------------------------------------------------------------
-// Macro used to create frame of funclet calling helpers (RhpCallXXXXFunclet)
+// Macro used to create frame of funclet calling helpers (CallXXXXFunclet)
 // extraStackSize - extra stack space that the user of the macro can use to
 //                   store additional registers
     .macro ALLOC_CALL_FUNCLET_FRAME extraStackSize
@@ -79,7 +79,7 @@
     .endm
 
 // -----------------------------------------------------------------------------
-// Macro used to free frame of funclet calling helpers (RhpCallXXXXFunclet)
+// Macro used to free frame of funclet calling helpers (CallXXXXFunclet)
 // extraStackSize - extra stack space that the user of the macro can use to
 //                   store additional registers.
 //                   It needs to match the value passed to the corresponding
@@ -215,7 +215,7 @@
     addi.d  $sp, $sp, -16
     st.d  $a0, $sp, 0
     st.d  $a1, $sp, 8
-    bl  C_FUNC(RhpGetThread)
+    bl  C_FUNC(GetThread)
     ori  $a2, $a0, 0
     ld.d  $a0, $sp, 0
     ld.d  $a1, $sp, 8
@@ -226,14 +226,14 @@
 #define rsp_offsetof_Context STACKSIZEOF_ExInfo
 
 //
-// RhpThrowHwEx
+// ThrowHwEx
 //
 // INPUT:  a0[31:0]:  exception code of fault
 //         a1:  faulting IP
 //
 // OUTPUT:
 //
-    NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
+    NESTED_ENTRY ThrowHwEx, _TEXT, NoHandler
 
         ALLOC_THROW_FRAME HARDWARE_EXCEPTION
 
@@ -261,28 +261,28 @@
         // a1: ExInfo*
         bl  C_FUNC(RhThrowHwEx)
 
-    ALTERNATE_ENTRY RhpThrowHwEx2
+    ALTERNATE_ENTRY ThrowHwEx2
 
         // no return
         EMIT_BREAKPOINT
 
-    NESTED_END RhpThrowHwEx, _TEXT
+    NESTED_END ThrowHwEx, _TEXT
 
 //
-// RhpThrowEx
+// ThrowEx
 //
 // INPUT:  a0:  exception object
 //
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
+    NESTED_ENTRY ThrowEx, _TEXT, NoHandler
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
         GetThreadA2
 
-        // There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic.  So the return
+        // There is runtime C# code that can tail call to ThrowEx using a binder intrinsic.  So the return
         // address could have been hijacked when we were in that C# code and we must remove the hijack and
         // reflect the correct return address in our exception context record.  The other throw helpers don't
         // need this because they cannot be tail-called from C#.
@@ -347,24 +347,24 @@ LOCAL_LABEL(NotHijacked):
         // a1: ExInfo*
         bl  C_FUNC(RhThrowEx)
 
-    ALTERNATE_ENTRY RhpThrowEx2
+    ALTERNATE_ENTRY ThrowEx2
 
         // no return
         EMIT_BREAKPOINT
-    NESTED_END RhpThrowEx, _TEXT
+    NESTED_END ThrowEx, _TEXT
 
 
 //
-// void FASTCALL RhpRethrow()
+// void FASTCALL Rethrow()
 //
-// SUMMARY:  Similar to RhpThrowEx, except that it passes along the currently active ExInfo
+// SUMMARY:  Similar to ThrowEx, except that it passes along the currently active ExInfo
 //
 // INPUT:
 //
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
+    NESTED_ENTRY Rethrow, _TEXT, NoHandler
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
@@ -392,14 +392,14 @@ LOCAL_LABEL(NotHijacked):
         // a1 contains the address of the new ExInfo
         bl  C_FUNC(RhRethrow)
 
-    ALTERNATE_ENTRY RhpRethrow2
+    ALTERNATE_ENTRY Rethrow2
 
         // no return
         EMIT_BREAKPOINT
-    NESTED_END RhpRethrow, _TEXT
+    NESTED_END Rethrow, _TEXT
 
 //
-// void* FASTCALL RhpCallCatchFunclet(OBJECTREF exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
+// void* FASTCALL CallCatchFunclet(OBJECTREF exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
 //                                    ExInfo* pExInfo)
 //
 // INPUT:  a0:  exception object
@@ -410,7 +410,7 @@ LOCAL_LABEL(NotHijacked):
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
+    NESTED_ENTRY CallCatchFunclet, _TEXT, NoHandler
 
         ALLOC_CALL_FUNCLET_FRAME 0x70
         fst.d  $f24, $sp, 0x00
@@ -438,7 +438,7 @@ LOCAL_LABEL(NotHijacked):
         // clear the DoNotTriggerGc flag, trashes a4-a6
         //
 
-        bl  C_FUNC(RhpGetThread)
+        bl  C_FUNC(GetThread)
         st.d  $a0, $sp, rsp_CatchFunclet_offset_thread
         ori  $a5, $a0, 0
         ld.d  $a0, $sp, 0x40
@@ -470,7 +470,7 @@ LOCAL_LABEL(NotHijacked):
         // a0 still contains the exception object
         jirl  $ra, $a1, 0
 
-    ALTERNATE_ENTRY RhpCallCatchFunclet2
+    ALTERNATE_ENTRY CallCatchFunclet2
 
         // $a0 contains resume IP
 
@@ -487,7 +487,7 @@ LOCAL_LABEL(NotHijacked):
         ld.d  $a0, $sp, rsp_CatchFunclet_offset_thread    // a0 <- Thread*
         ld.d  $a1, $sp, rsp_offset_a3                     // a1 <- current ExInfo*
         ld.d  $a2, $a2, OFFSETOF__REGDISPLAY__SP          // a2 <- resume SP value
-        bl  C_FUNC(RhpValidateExInfoPop)
+        bl  C_FUNC(ValidateExInfoPop)
 
         ld.d  $a2, $sp, rsp_offset_a2                     // a2 <- REGDISPLAY*
 
@@ -513,7 +513,7 @@ LOCAL_LABEL(PopExInfoLoop):
 LOCAL_LABEL(DonePopping):
         st.d  $a3, $a1, OFFSETOF__Thread__m_pExInfoStackHead    // store the new head on the Thread
 
-        PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, $a3
+        PREPARE_EXTERNAL_VAR_INDIRECT_W TrapThreads, $a3
 
         bstrpick.d  $t7, $a3, TrapThreadsFlags_AbortInProgress_Bit, TrapThreadsFlags_AbortInProgress_Bit
         beqz  $t7, LOCAL_LABEL(NoAbort)
@@ -526,7 +526,7 @@ LOCAL_LABEL(DonePopping):
         ori  $a1, $a0, 0                                        // a1 <- continuation address as exception PC
         addi.w  $a0, $zero, STATUS_NATIVEAOT_THREAD_ABORT
         ori  $sp, $a2, 0
-        b  C_FUNC(RhpThrowHwEx)
+        b  C_FUNC(ThrowHwEx)
 
 LOCAL_LABEL(NoAbort):
         // reset SP and jump to continuation address
@@ -540,10 +540,10 @@ LOCAL_LABEL(NoAbort):
 #undef rsp_offset_a3
 #undef rsp_CatchFunclet_offset_thread
 
-    NESTED_END RhpCallCatchFunclet, _Text
+    NESTED_END CallCatchFunclet, _Text
 
 //
-// void FASTCALL RhpCallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
+// void FASTCALL CallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
 //
 // INPUT:  a0:  handler funclet address
 //         a1:  REGDISPLAY*
@@ -551,7 +551,7 @@ LOCAL_LABEL(NoAbort):
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
+    NESTED_ENTRY CallFinallyFunclet, _TEXT, NoHandler
 
         ALLOC_CALL_FUNCLET_FRAME 0x60
         fst.d  $f24, $sp, 0x00
@@ -580,7 +580,7 @@ LOCAL_LABEL(NoAbort):
         // clear the DoNotTriggerGc flag, trashes a2-a4
         //
 
-        bl  C_FUNC(RhpGetThread)
+        bl  C_FUNC(GetThread)
         st.d  $a0, $sp, rsp_FinallyFunclet_offset_thread
         ori  $a2, $a0, 0
         ld.d  $a0, $sp, 0x40
@@ -605,7 +605,7 @@ LOCAL_LABEL(NoAbort):
         //
         jirl  $ra, $a0, 0
 
-    ALTERNATE_ENTRY RhpCallFinallyFunclet2
+    ALTERNATE_ENTRY CallFinallyFunclet2
 
         ld.d  $a1, $sp, rsp_offset_a1 // reload REGDISPLAY pointer
 
@@ -639,11 +639,11 @@ LOCAL_LABEL(NoAbort):
 #undef rsp_offset_a1
 #undef rsp_FinallyFunclet_offset_thread
 
-    NESTED_END RhpCallFinallyFunclet, _Text
+    NESTED_END CallFinallyFunclet, _Text
 
 
 //
-// void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
+// void* FASTCALL CallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
 //
 // INPUT:  a0:  exception object
 //         a1:  filter funclet address
@@ -652,7 +652,7 @@ LOCAL_LABEL(NoAbort):
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
+    NESTED_ENTRY CallFilterFunclet, _TEXT, NoHandler
         ALLOC_CALL_FUNCLET_FRAME 0x40
         fst.d  $f24, $sp, 0x00
         fst.d  $f25, $sp, 0x08
@@ -672,7 +672,7 @@ LOCAL_LABEL(NoAbort):
         // $a0 still contains the exception object
         jirl  $ra, $a1, 0
 
-    ALTERNATE_ENTRY RhpCallFilterFunclet2
+    ALTERNATE_ENTRY CallFilterFunclet2
 
         fld.d  $f24, $sp, 0x00
         fld.d  $f25, $sp, 0x08
@@ -686,12 +686,12 @@ LOCAL_LABEL(NoAbort):
         FREE_CALL_FUNCLET_FRAME 0x40
         EPILOG_RETURN
 
-    NESTED_END RhpCallFilterFunclet, Text
+    NESTED_END CallFilterFunclet, Text
 
 #ifdef FEATURE_OBJCMARSHAL
 
 //
-// void* FASTCALL RhpCallPropagateExceptionCallback(void* pCallbackContext, void* pCallback, REGDISPLAY* pRegDisplay,
+// void* FASTCALL CallPropagateExceptionCallback(void* pCallbackContext, void* pCallback, REGDISPLAY* pRegDisplay,
 //                                    ExInfo* pExInfo, PInvokeTransitionFrame* pPreviousTransitionFrame)
 //
 // INPUT:  a0:  callback context
@@ -703,7 +703,7 @@ LOCAL_LABEL(NoAbort):
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpCallPropagateExceptionCallback, _TEXT, NoHandler
+    NESTED_ENTRY CallPropagateExceptionCallback, _TEXT, NoHandler
 
 #define rsp_offset_a0 0x10
 #define rsp_offset_a1 0x18
@@ -727,7 +727,7 @@ LOCAL_LABEL(NoAbort):
         // clear the DoNotTriggerGc flag, trashes a4-a6
         //
 
-        bl  C_FUNC(RhpGetThread)
+        bl  C_FUNC(GetThread)
         st.d  $a0, $sp, rsp_CallPropagationCallback_offset_thread
         ori  $a5, $a0, 0
         ld.d  $a0, $sp, rsp_offset_a0
@@ -758,7 +758,7 @@ LOCAL_LABEL(NoAbort):
         ld.d  $a0, $sp, rsp_CallPropagationCallback_offset_thread  // a0 <- Thread*
         ld.d  $a1, $sp, rsp_offset_a3                              // a1 <- current ExInfo*
         ld.d  $a2, $a2, OFFSETOF__REGDISPLAY__SP                   // a2 <- resume SP value
-        bl  C_FUNC(RhpValidateExInfoPop)
+        bl  C_FUNC(ValidateExInfoPop)
 
         ld.d  $a2, $sp, rsp_offset_a2                              // a2 <- REGDISPLAY*
 
@@ -802,6 +802,6 @@ LOCAL_LABEL(Propagate_DonePopping):
 #undef rsp_offset_a3
 #undef rsp_CallPropagationCallback_offset_thread
 
-    NESTED_END RhpCallPropagateExceptionCallback, _Text
+    NESTED_END CallPropagateExceptionCallback, _Text
 
 #endif // FEATURE_OBJCMARSHAL

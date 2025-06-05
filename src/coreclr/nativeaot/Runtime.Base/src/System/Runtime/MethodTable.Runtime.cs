@@ -15,7 +15,7 @@ namespace Internal.Runtime
         internal MethodTable* GetArrayEEType()
         {
             MethodTable* pThis = (MethodTable*)Unsafe.Pointer(ref this);
-            void* pGetArrayEEType = InternalCalls.RhpGetClasslibFunctionFromEEType(pThis, ClassLibFunctionId.GetSystemArrayEEType);
+            void* pGetArrayEEType = InternalCalls.GetClasslibFunctionFromEEType(pThis, ClassLibFunctionId.GetSystemArrayEEType);
             return ((delegate* <MethodTable*>)pGetArrayEEType)();
         }
 
@@ -32,7 +32,7 @@ namespace Internal.Runtime
 
         internal IntPtr GetClasslibFunction(ClassLibFunctionId id)
         {
-            return (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType((MethodTable*)Unsafe.AsPointer(ref this), id);
+            return (IntPtr)InternalCalls.GetClasslibFunctionFromEEType((MethodTable*)Unsafe.AsPointer(ref this), id);
         }
     }
 

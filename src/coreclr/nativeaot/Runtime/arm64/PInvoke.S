@@ -5,10 +5,10 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-.global RhpTrapThreads
+.global TrapThreads
 
 //
-// RhpPInvoke
+// PInvoke
 //
 // IN:  X0: address of pinvoke frame
 //
@@ -17,7 +17,7 @@
 // Also, the codegenerator must ensure that there are no live GC references in callee saved registers.
 //
 
-NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
+NESTED_ENTRY PInvoke, _TEXT, NoHandler
         str     fp, [x0, #OFFSETOF__PInvokeTransitionFrame__m_FramePointer]
         str     lr, [x0, #OFFSETOF__PInvokeTransitionFrame__m_RIP]
         mov     x9, SP
@@ -36,20 +36,20 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         str     x1, [x0, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
         str     x0, [x1, #OFFSETOF__Thread__m_pTransitionFrame]
         ret
-NESTED_END RhpPInvoke, _TEXT
+NESTED_END PInvoke, _TEXT
 
 
-LEAF_ENTRY RhpPInvokeReturn, _TEXT
+LEAF_ENTRY PInvokeReturn, _TEXT
         ldr         x9, [x0, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
         mov         x10, 0
         str         x10, [x9, #OFFSETOF__Thread__m_pTransitionFrame]
 
-        PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 9
+        PREPARE_EXTERNAL_VAR_INDIRECT_W TrapThreads, 9
 
         cbnz    w9, 0f  // TrapThreadsFlags_None = 0
         ret
 0:
         // passing transition frame pointer in x0
-        b         C_FUNC(RhpWaitForGC2)
-LEAF_END RhpPInvokeReturn, _TEXT
+        b         C_FUNC(WaitForGC2)
+LEAF_END PInvokeReturn, _TEXT
 

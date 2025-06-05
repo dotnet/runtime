@@ -3,7 +3,7 @@ set(RUNTIME_DIR ../../runtime)
 
 set(COMMON_RUNTIME_SOURCES
     allocheap.cpp
-    rhassert.cpp
+    assert.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatch_Aot.cpp
     Crst.cpp

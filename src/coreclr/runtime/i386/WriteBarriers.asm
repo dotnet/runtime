@@ -96,26 +96,26 @@ endif ; WRITE_BARRIER_CHECK
 ;; object reference (this should be in upper case as it's used in the definition of the name of the helper).
 DEFINE_WRITE_BARRIER macro DESTREG, REFREG
 
-;; Define a helper with a name of the form RhpAssignRefEAX etc. (along with suitable calling standard
+;; Define a helper with a name of the form AssignRefEAX etc. (along with suitable calling standard
 ;; decoration). The location to be updated is in DESTREG. The object reference that will be assigned into that
 ;; location is in one of the other general registers determined by the value of REFREG.
-FASTCALL_FUNC RhpAssignRef&REFREG&, 8
+FASTCALL_FUNC AssignRef&REFREG&, 8
 
     ;; Export the canonical write barrier under unqualified name as well
     ifidni <REFREG>, <EDX>
-    ALTERNATE_ENTRY RhpAssignRef
-    ALTERNATE_ENTRY @RhpAssignRef@8
-    ALTERNATE_ENTRY _RhpAssignRefAVLocation
+    ALTERNATE_ENTRY AssignRef
+    ALTERNATE_ENTRY @AssignRef@8
+    ALTERNATE_ENTRY _AssignRefAVLocation
     endif
 
-    ALTERNATE_ENTRY _RhpAssignRef&REFREG&AVLocation
+    ALTERNATE_ENTRY _AssignRef&REFREG&AVLocation
 
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
     ;; and the card table update we may perform below.
     mov     dword ptr [DESTREG], REFREG
 
     ;; Update the shadow copy of the heap with the same value (if enabled).
-    UPDATE_GC_SHADOW RhpAssignRef, DESTREG, REFREG
+    UPDATE_GC_SHADOW AssignRef, DESTREG, REFREG
 
     ;; If the reference is to an object that's not in an ephemeral generation we have no need to track it
     ;; (since the object won't be collected or moved by an ephemeral collection).
@@ -191,29 +191,29 @@ endm
 ;; checks whether the destination is actually somewhere within the GC heap.
 DEFINE_CHECKED_WRITE_BARRIER macro DESTREG, REFREG
 
-;; Define a helper with a name of the form RhpCheckedAssignRefEAX etc. (along with suitable calling standard
+;; Define a helper with a name of the form CheckedAssignRefEAX etc. (along with suitable calling standard
 ;; decoration). The location to be updated is in DESTREG. The object reference that will be assigned into
 ;; that location is in one of the other general registers determined by the value of REFREG.
 
 ;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 ;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen on the first instruction
 ;; - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
-FASTCALL_FUNC RhpCheckedAssignRef&REFREG&, 8
+FASTCALL_FUNC CheckedAssignRef&REFREG&, 8
 
     ;; Export the canonical write barrier under unqualified name as well
     ifidni <REFREG>, <EDX>
-    ALTERNATE_ENTRY RhpCheckedAssignRef
-    ALTERNATE_ENTRY @RhpCheckedAssignRef@8
-    ALTERNATE_ENTRY _RhpCheckedAssignRefAVLocation
+    ALTERNATE_ENTRY CheckedAssignRef
+    ALTERNATE_ENTRY @CheckedAssignRef@8
+    ALTERNATE_ENTRY _CheckedAssignRefAVLocation
     endif
 
-    ALTERNATE_ENTRY _RhpCheckedAssignRef&REFREG&AVLocation
+    ALTERNATE_ENTRY _CheckedAssignRef&REFREG&AVLocation
 
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
     ;; and the card table update we may perform below.
     mov     dword ptr [DESTREG], REFREG
 
-    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedAssignRef, DESTREG, REFREG, ret
+    DEFINE_CHECKED_WRITE_BARRIER_CORE CheckedAssignRef, DESTREG, REFREG, ret
 
 FASTCALL_ENDFUNC
 
@@ -238,28 +238,28 @@ DEFINE_CHECKED_WRITE_BARRIER EDX, ESI
 DEFINE_CHECKED_WRITE_BARRIER EDX, EDI
 DEFINE_CHECKED_WRITE_BARRIER EDX, EBP
 
-FASTCALL_FUNC RhpCheckedLockCmpXchg, 12
+FASTCALL_FUNC CheckedLockCmpXchg, 12
     mov             eax, [esp+4]
     lock cmpxchg    [ecx], edx
-    jne             RhpCheckedLockCmpXchg_NoBarrierRequired_ECX_EDX
+    jne             CheckedLockCmpXchg_NoBarrierRequired_ECX_EDX
 
-    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, ECX, EDX, ret 4
+    DEFINE_CHECKED_WRITE_BARRIER_CORE CheckedLockCmpXchg, ECX, EDX, ret 4
 
 FASTCALL_ENDFUNC
 
-FASTCALL_FUNC RhpCheckedXchg, 8
+FASTCALL_FUNC CheckedXchg, 8
 
     ;; Setup eax with the new object for the exchange, that way it will automatically hold the correct result
     ;; afterwards and we can leave edx unaltered ready for the GC write barrier below.
     mov             eax, edx
     xchg            [ecx], eax
 
-    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, ECX, EDX, ret
+    DEFINE_CHECKED_WRITE_BARRIER_CORE CheckedXchg, ECX, EDX, ret
 
 FASTCALL_ENDFUNC
 
 ;;
-;; RhpByRefAssignRef simulates movs instruction for object references.
+;; ByRefAssignRef simulates movs instruction for object references.
 ;;
 ;; On entry:
 ;;      edi: address of ref-field (assigned to)
@@ -269,36 +269,36 @@ FASTCALL_ENDFUNC
 ;;      edi, esi are incremented by 4,
 ;;      ecx: trashed
 ;;
-FASTCALL_FUNC RhpByRefAssignRef, 8
-ALTERNATE_ENTRY _RhpByRefAssignRefAVLocation1
+FASTCALL_FUNC ByRefAssignRef, 8
+ALTERNATE_ENTRY _ByRefAssignRefAVLocation1
     mov     ecx, [esi]
-ALTERNATE_ENTRY _RhpByRefAssignRefAVLocation2
+ALTERNATE_ENTRY _ByRefAssignRefAVLocation2
     mov     [edi], ecx
 
     ;; Check whether the writes were even into the heap. If not there's no card update required.
     cmp     edi, [G_LOWEST_ADDRESS]
-    jb      RhpByRefAssignRef_NoBarrierRequired
+    jb      ByRefAssignRef_NoBarrierRequired
     cmp     edi, [G_HIGHEST_ADDRESS]
-    jae     RhpByRefAssignRef_NoBarrierRequired
+    jae     ByRefAssignRef_NoBarrierRequired
 
     UPDATE_GC_SHADOW BASENAME, ecx, edi
 
     ;; If the reference is to an object that's not in an ephemeral generation we have no need to track it
     ;; (since the object won't be collected or moved by an ephemeral collection).
     cmp     ecx, [G_EPHEMERAL_LOW]
-    jb      RhpByRefAssignRef_NoBarrierRequired
+    jb      ByRefAssignRef_NoBarrierRequired
     cmp     ecx, [G_EPHEMERAL_HIGH]
-    jae     RhpByRefAssignRef_NoBarrierRequired
+    jae     ByRefAssignRef_NoBarrierRequired
 
     mov     ecx, edi
     shr     ecx, 10
     add     ecx, [G_CARD_TABLE]
     cmp     byte ptr [ecx], 0FFh
-    je      RhpByRefAssignRef_NoBarrierRequired
+    je      ByRefAssignRef_NoBarrierRequired
 
     mov     byte ptr [ecx], 0FFh
 
-RhpByRefAssignRef_NoBarrierRequired:
+ByRefAssignRef_NoBarrierRequired:
     ;; Increment the pointers before leaving
     add     esi,4
     add     edi,4

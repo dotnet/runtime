@@ -62,65 +62,65 @@ PATCH_LABEL ThunkPool
 //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; General Helpers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 //
-// IntPtr RhpGetThunksBase()
+// IntPtr GetThunksBase()
 //
-LEAF_ENTRY RhpGetThunksBase
+LEAF_ENTRY GetThunksBase
     // Return the address of the first thunk pool to the caller (this is really the base address)
     adrp     x0, C_FUNC(ThunkPool)@PAGE
     add      x0, x0, C_FUNC(ThunkPool)@PAGEOFF
     ret
-LEAF_END RhpGetThunksBase
+LEAF_END GetThunksBase
 
 //
-// int RhpGetNumThunksPerBlock()
+// int GetNumThunksPerBlock()
 //
-LEAF_ENTRY RhpGetNumThunksPerBlock
+LEAF_ENTRY GetNumThunksPerBlock
     mov     x0, THUNK_POOL_NUM_THUNKS_PER_PAGE
     ret
-LEAF_END RhpGetNumThunksPerBlock
+LEAF_END GetNumThunksPerBlock
 
 //
-// int RhpGetThunkSize()
+// int GetThunkSize()
 //
-LEAF_ENTRY RhpGetThunkSize
+LEAF_ENTRY GetThunkSize
     mov     x0, THUNK_CODESIZE
     ret
-LEAF_END RhpGetThunkSize
+LEAF_END GetThunkSize
 
 //
-// int RhpGetNumThunkBlocksPerMapping()
+// int GetNumThunkBlocksPerMapping()
 //
-LEAF_ENTRY RhpGetNumThunkBlocksPerMapping
+LEAF_ENTRY GetNumThunkBlocksPerMapping
     mov     x0, (THUNKS_MAP_SIZE / PAGE_SIZE)
     ret
-LEAF_END RhpGetNumThunkBlocksPerMapping
+LEAF_END GetNumThunkBlocksPerMapping
 
 //
-// int RhpGetThunkBlockSize
+// int GetThunkBlockSize
 //
-LEAF_ENTRY RhpGetThunkBlockSize
+LEAF_ENTRY GetThunkBlockSize
     mov     x0, PAGE_SIZE
     ret
-LEAF_END RhpGetThunkBlockSize
+LEAF_END GetThunkBlockSize
 
 //
-// IntPtr RhpGetThunkDataBlockAddress(IntPtr thunkStubAddress)
+// IntPtr GetThunkDataBlockAddress(IntPtr thunkStubAddress)
 //
-LEAF_ENTRY RhpGetThunkDataBlockAddress
+LEAF_ENTRY GetThunkDataBlockAddress
     mov     x12, PAGE_SIZE - 1
     bic     x0, x0, x12
     mov     x12, THUNKS_MAP_SIZE
     add     x0, x0, x12
     ret
-LEAF_END RhpGetThunkDataBlockAddress
+LEAF_END GetThunkDataBlockAddress
 
 //
-// IntPtr RhpGetThunkStubsBlockAddress(IntPtr thunkDataAddress)
+// IntPtr GetThunkStubsBlockAddress(IntPtr thunkDataAddress)
 //
-LEAF_ENTRY RhpGetThunkStubsBlockAddress
+LEAF_ENTRY GetThunkStubsBlockAddress
     mov     x12, PAGE_SIZE - 1
     bic     x0, x0, x12
     mov     x12, THUNKS_MAP_SIZE
     sub     x0, x0, x12
     ret
-LEAF_END RhpGetThunkStubsBlockAddress
+LEAF_END GetThunkStubsBlockAddress

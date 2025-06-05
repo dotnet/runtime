@@ -41,15 +41,15 @@ namespace System.Runtime
         internal static extern unsafe byte* RhGetRuntimeVersion(out int cbLength);
 
         [LibraryImport(RuntimeLibrary)]
-        internal static partial IntPtr RhpGetCurrentThread();
+        internal static partial IntPtr GetCurrentThread();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpInitiateThreadAbort")]
-        internal static extern void RhpInitiateThreadAbort(IntPtr thread, Exception exception, bool doRudeAbort);
+        [RuntimeImport(RuntimeLibrary, "InitiateThreadAbort")]
+        internal static extern void InitiateThreadAbort(IntPtr thread, Exception exception, bool doRudeAbort);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpCancelThreadAbort")]
-        internal static extern void RhpCancelThreadAbort(IntPtr thread);
+        [RuntimeImport(RuntimeLibrary, "CancelThreadAbort")]
+        internal static extern void CancelThreadAbort(IntPtr thread);
 
         //
         // calls to GC
@@ -58,8 +58,8 @@ namespace System.Runtime
 
         // Force a garbage collection.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhCollect")]
-        internal static extern void RhCollect(int generation, InternalGCCollectionMode mode, bool lowMemoryP = false);
+        [RuntimeImport(RuntimeLibrary, "GCCollect")]
+        internal static extern void GCCollect(int generation, InternalGCCollectionMode mode, bool lowMemoryP = false);
 
         // Mark an object instance as already finalized.
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -264,12 +264,12 @@ namespace System.Runtime
 
         // Allocate handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpHandleAlloc")]
-        private static extern IntPtr RhpHandleAlloc(object value, GCHandleType type);
+        [RuntimeImport(RuntimeLibrary, "HandleAlloc")]
+        private static extern IntPtr HandleAlloc(object value, GCHandleType type);
 
         internal static IntPtr RhHandleAlloc(object value, GCHandleType type)
         {
-            IntPtr h = RhpHandleAlloc(value, type);
+            IntPtr h = HandleAlloc(value, type);
             if (h == IntPtr.Zero)
                 throw new OutOfMemoryException();
             return h;
@@ -283,12 +283,12 @@ namespace System.Runtime
 
         // Allocate handle for dependent handle case where a secondary can be set at the same time.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpHandleAllocDependent")]
-        internal static extern IntPtr RhpHandleAllocDependent(object primary, object secondary);
+        [RuntimeImport(RuntimeLibrary, "HandleAllocDependent")]
+        internal static extern IntPtr HandleAllocDependent(object primary, object secondary);
 
         internal static IntPtr RhHandleAllocDependent(object primary, object secondary)
         {
-            IntPtr h = RhpHandleAllocDependent(primary, secondary);
+            IntPtr h = HandleAllocDependent(primary, secondary);
             if (h == IntPtr.Zero)
                 throw new OutOfMemoryException();
             return h;
@@ -333,29 +333,29 @@ namespace System.Runtime
         // calls to runtime for thunk pool
         //
 
-        [RuntimeImport(RuntimeLibrary, "RhpGetNumThunkBlocksPerMapping")]
+        [RuntimeImport(RuntimeLibrary, "GetNumThunkBlocksPerMapping")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int RhpGetNumThunkBlocksPerMapping();
+        internal static extern int GetNumThunkBlocksPerMapping();
 
-        [RuntimeImport(RuntimeLibrary, "RhpGetNumThunksPerBlock")]
+        [RuntimeImport(RuntimeLibrary, "GetNumThunksPerBlock")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int RhpGetNumThunksPerBlock();
+        internal static extern int GetNumThunksPerBlock();
 
-        [RuntimeImport(RuntimeLibrary, "RhpGetThunkSize")]
+        [RuntimeImport(RuntimeLibrary, "GetThunkSize")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int RhpGetThunkSize();
+        internal static extern int GetThunkSize();
 
-        [RuntimeImport(RuntimeLibrary, "RhpGetThunkDataBlockAddress")]
+        [RuntimeImport(RuntimeLibrary, "GetThunkDataBlockAddress")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr RhpGetThunkDataBlockAddress(IntPtr thunkStubAddress);
+        internal static extern IntPtr GetThunkDataBlockAddress(IntPtr thunkStubAddress);
 
-        [RuntimeImport(RuntimeLibrary, "RhpGetThunkStubsBlockAddress")]
+        [RuntimeImport(RuntimeLibrary, "GetThunkStubsBlockAddress")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr RhpGetThunkStubsBlockAddress(IntPtr thunkDataAddress);
+        internal static extern IntPtr GetThunkStubsBlockAddress(IntPtr thunkDataAddress);
 
-        [RuntimeImport(RuntimeLibrary, "RhpGetThunkBlockSize")]
+        [RuntimeImport(RuntimeLibrary, "GetThunkBlockSize")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int RhpGetThunkBlockSize();
+        internal static extern int GetThunkBlockSize();
 
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhAllocateThunksMapping")]
         internal static unsafe partial int RhAllocateThunksMapping(IntPtr* ppMapping);
@@ -453,8 +453,8 @@ namespace System.Runtime
         internal static extern unsafe IntPtr RhResolveDispatch(object pObject, MethodTable* pInterfaceType, ushort slot);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpResolveInterfaceMethod")]
-        internal static extern IntPtr RhpResolveInterfaceMethod(object pObject, IntPtr pCell);
+        [RuntimeImport(RuntimeLibrary, "ResolveInterfaceMethod")]
+        internal static extern IntPtr ResolveInterfaceMethod(object pObject, IntPtr pCell);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhResolveDispatchOnType")]
@@ -539,14 +539,14 @@ namespace System.Runtime
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpCreateTypeManager")]
-        internal static extern unsafe TypeManagerHandle RhpCreateTypeManager(IntPtr osModule, IntPtr moduleHeader, IntPtr* pClasslibFunctions, int nClasslibFunctions);
+        [RuntimeImport(RuntimeLibrary, "CreateTypeManager")]
+        internal static extern unsafe TypeManagerHandle CreateTypeManager(IntPtr osModule, IntPtr moduleHeader, IntPtr* pClasslibFunctions, int nClasslibFunctions);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpRegisterOsModule")]
-        internal static extern unsafe IntPtr RhpRegisterOsModule(IntPtr osModule);
+        [RuntimeImport(RuntimeLibrary, "RegisterOsModule")]
+        internal static extern unsafe IntPtr RegisterOsModule(IntPtr osModule);
 
-        [RuntimeImport(RuntimeLibrary, "RhpGetModuleSection")]
+        [RuntimeImport(RuntimeLibrary, "GetModuleSection")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern IntPtr RhGetModuleSection(ref TypeManagerHandle module, ReadyToRunSectionType section, out int length);
 
@@ -658,23 +658,23 @@ namespace System.Runtime
         // Interlocked helpers
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg32")]
+        [RuntimeImport(RuntimeLibrary, "LockCmpXchg32")]
         internal static extern int InterlockedCompareExchange(ref int location1, int value, int comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg32")]
+        [RuntimeImport(RuntimeLibrary, "LockCmpXchg32")]
         internal static extern unsafe int InterlockedCompareExchange(int* location1, int value, int comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg64")]
+        [RuntimeImport(RuntimeLibrary, "LockCmpXchg64")]
         internal static extern long InterlockedCompareExchange(ref long location1, long value, long comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpCheckedLockCmpXchg")]
+        [RuntimeImport(RuntimeLibrary, "CheckedLockCmpXchg")]
         internal static extern object InterlockedCompareExchange(ref object? location1, object? value, object? comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpCheckedXchg")]
+        [RuntimeImport(RuntimeLibrary, "CheckedXchg")]
         internal static extern object InterlockedExchange([NotNullIfNotNull(nameof(value))] ref object? location1, object? value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

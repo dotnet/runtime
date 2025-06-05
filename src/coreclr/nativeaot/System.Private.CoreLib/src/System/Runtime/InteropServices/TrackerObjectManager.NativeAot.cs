@@ -307,7 +307,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                _pHandles[_freeIndex] = RuntimeImports.RhpHandleAllocDependent(target, dependent);
+                _pHandles[_freeIndex] = RuntimeImports.HandleAllocDependent(target, dependent);
                 if (_pHandles[_freeIndex] == default)
                 {
                     return false;

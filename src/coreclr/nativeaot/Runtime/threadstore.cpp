@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 #include "gcenv.h"
 #include "gcheaputilities.h"
@@ -8,13 +9,13 @@
 #include "daccess.h"
 #include "PalLimitedContext.h"
 #include "Pal.h"
-#include "rhassert.h"
+#include "debugmacros.h"
 #include "slist.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "holder.h"
-#include "rhbinder.h"
+#include "binder.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "thread.inl"
@@ -25,10 +26,10 @@
 
 #include "slist.inl"
 
-EXTERN_C volatile uint32_t RhpTrapThreads;
-volatile uint32_t RhpTrapThreads = (uint32_t)TrapThreadsFlags::None;
+EXTERN_C volatile uint32_t TrapThreads;
+volatile uint32_t TrapThreads = (uint32_t)TrapThreadsFlags::None;
 
-GVAL_IMPL_INIT(PTR_Thread, RhpSuspendingThread, 0);
+GVAL_IMPL_INIT(PTR_Thread, SuspendingThread, 0);
 
 ThreadStore * GetThreadStore()
 {
@@ -60,7 +61,7 @@ PTR_Thread ThreadStore::Iterator::GetNext()
 //static
 PTR_Thread ThreadStore::GetSuspendingThread()
 {
-    return (RhpSuspendingThread);
+    return (SuspendingThread);
 }
 
 #ifndef DACCESS_COMPILE
@@ -225,7 +226,7 @@ void ThreadStore::UnlockThreadStore()
 void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
 {
     Thread * pThisThread = GetCurrentThreadIfAvailable();
-    RhpSuspendingThread = pThisThread;
+    SuspendingThread = pThisThread;
 
     if (waitForGCEvent)
     {
@@ -233,7 +234,7 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
     }
 
     // set the global trap for pinvoke leave and return
-    RhpTrapThreads |= (uint32_t)TrapThreadsFlags::TrapThreads;
+    TrapThreads |= (uint32_t)TrapThreadsFlags::TrapThreads;
 
     // Our lock-free algorithm depends on flushing write buffers of all processors running RH code.  The
     // reason for this is that we essentially implement Dekker's algorithm, which requires write ordering.
@@ -332,9 +333,9 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
         PalFlushProcessWriteBuffers();
 #endif //TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
-    RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::TrapThreads;
+    TrapThreads &= ~(uint32_t)TrapThreadsFlags::TrapThreads;
 
-    RhpSuspendingThread = NULL;
+    SuspendingThread = NULL;
     if (waitForGCEvent)
     {
         GCHeapUtilities::GetGCHeap()->SetWaitForGCEvent();
@@ -345,8 +346,8 @@ void ThreadStore::InitiateThreadAbort(Thread* targetThread, Object * threadAbort
 {
     SuspendAllThreads(/* waitForGCEvent = */ false);
     // TODO: consider enabling multiple thread aborts running in parallel on different threads
-    ASSERT((RhpTrapThreads & (uint32_t)TrapThreadsFlags::AbortInProgress) == 0);
-    RhpTrapThreads |= (uint32_t)TrapThreadsFlags::AbortInProgress;
+    ASSERT((TrapThreads & (uint32_t)TrapThreadsFlags::AbortInProgress) == 0);
+    TrapThreads |= (uint32_t)TrapThreadsFlags::AbortInProgress;
 
     targetThread->SetThreadAbortException(threadAbortException);
 
@@ -384,8 +385,8 @@ void ThreadStore::CancelThreadAbort(Thread* targetThread)
 {
     SuspendAllThreads(/* waitForGCEvent = */ false);
 
-    ASSERT((RhpTrapThreads & (uint32_t)TrapThreadsFlags::AbortInProgress) != 0);
-    RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::AbortInProgress;
+    ASSERT((TrapThreads & (uint32_t)TrapThreadsFlags::AbortInProgress) != 0);
+    TrapThreads &= ~(uint32_t)TrapThreadsFlags::AbortInProgress;
 
     PInvokeTransitionFrame* transitionFrame = reinterpret_cast<PInvokeTransitionFrame*>(targetThread->GetTransitionFrame());
     if (transitionFrame != nullptr)
@@ -398,18 +399,13 @@ void ThreadStore::CancelThreadAbort(Thread* targetThread)
     ResumeAllThreads(/* waitForGCEvent = */ false);
 }
 
-EXTERN_C void* QCALLTYPE RhpGetCurrentThread()
-{
-    return ThreadStore::GetCurrentThread();
-}
-
-FCIMPL3(void, RhpInitiateThreadAbort, void* thread, Object * threadAbortException, FC_BOOL_ARG doRudeAbort)
+FCIMPL3(void, InitiateThreadAbort, void* thread, Object * threadAbortException, FC_BOOL_ARG doRudeAbort)
 {
     GetThreadStore()->InitiateThreadAbort((Thread*)thread, threadAbortException, FC_ACCESS_BOOL(doRudeAbort));
 }
 FCIMPLEND
 
-FCIMPL1(void, RhpCancelThreadAbort, void* thread)
+FCIMPL1(void, CancelThreadAbort, void* thread)
 {
     GetThreadStore()->CancelThreadAbort((Thread*)thread);
 }
@@ -421,7 +417,7 @@ C_ASSERT(sizeof(Thread) == sizeof(RuntimeThreadLocals));
 __thread RuntimeThreadLocals tls_CurrentThread;
 #endif
 
-EXTERN_C RuntimeThreadLocals* RhpGetThread()
+EXTERN_C RuntimeThreadLocals* GetThread()
 {
     return &tls_CurrentThread;
 }

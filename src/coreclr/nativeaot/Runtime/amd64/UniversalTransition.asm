@@ -12,8 +12,8 @@ TRASH_SAVED_ARGUMENT_REGISTERS equ 0
 endif
 
 if TRASH_SAVED_ARGUMENT_REGISTERS ne 0
-EXTERN RhpIntegerTrashValues    : QWORD
-EXTERN RhpFpTrashValues         : QWORD
+EXTERN IntegerTrashValues    : QWORD
+EXTERN FpTrashValues         : QWORD
 endif ;; TRASH_SAVED_ARGUMENT_REGISTERS
 
 SIZEOF_RETADDR                  equ 8h
@@ -86,7 +86,7 @@ DISTANCE_FROM_CHILDSP_TO_CALLERSP               equ DISTANCE_FROM_CHILDSP_TO_RET
 
 UNIVERSAL_TRANSITION macro FunctionName
 
-NESTED_ENTRY Rhp&FunctionName, _TEXT
+NESTED_ENTRY &FunctionName, _TEXT
 
         alloc_stack DISTANCE_FROM_CHILDSP_TO_RETADDR
 
@@ -109,13 +109,13 @@ if TRASH_SAVED_ARGUMENT_REGISTERS ne 0
         ; frame, and the code at the call target is required to use only the transition frame
         ; copies when dispatching this call to the eventual callee.
 
-        movsd           xmm0, mmword ptr [RhpFpTrashValues + 0h]
-        movsd           xmm1, mmword ptr [RhpFpTrashValues + 8h]
-        movsd           xmm2, mmword ptr [RhpFpTrashValues + 10h]
-        movsd           xmm3, mmword ptr [RhpFpTrashValues + 18h]
+        movsd           xmm0, mmword ptr [FpTrashValues + 0h]
+        movsd           xmm1, mmword ptr [FpTrashValues + 8h]
+        movsd           xmm2, mmword ptr [FpTrashValues + 10h]
+        movsd           xmm3, mmword ptr [FpTrashValues + 18h]
 
-        mov             r8, qword ptr [RhpIntegerTrashValues + 10h]
-        mov             r9, qword ptr [RhpIntegerTrashValues + 18h]
+        mov             r8, qword ptr [IntegerTrashValues + 10h]
+        mov             r9, qword ptr [IntegerTrashValues + 18h]
 
 endif ; TRASH_SAVED_ARGUMENT_REGISTERS
 
@@ -148,7 +148,7 @@ ALTERNATE_ENTRY ReturnFrom&FunctionName
 
         TAILJMP_RAX
 
-NESTED_END Rhp&FunctionName, _TEXT
+NESTED_END &FunctionName, _TEXT
 
         endm
 

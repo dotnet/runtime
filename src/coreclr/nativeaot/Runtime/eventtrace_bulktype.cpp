@@ -5,7 +5,7 @@
 #include "gcenv.h"
 #include "eventtrace.h"
 #include "eventtrace_etw.h"
-#include "rhbinder.h"
+#include "binder.h"
 #include "slist.h"
 #include "runtimeinstance.h"
 #include "shash.h"

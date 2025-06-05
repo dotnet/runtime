@@ -6,9 +6,9 @@
 #if defined(__APPLE__)
     // Currently the build is failing without this due to an issue if the first method in the assembly file has an alternate entry at the start of the file.
     // Fix, but adding an empty, unused method
-    LEAF_ENTRY RhpWriteBarriersDoNotFailToBuild, _TEXT
+    LEAF_ENTRY WriteBarriersDoNotFailToBuild, _TEXT
        ret
-    LEAF_END RhpWriteBarriersDoNotFailToBuild, _TEXT
+    LEAF_END WriteBarriersDoNotFailToBuild, _TEXT
 #endif
 
 // Macro used to copy contents of newly updated GC heap locations to a shadow copy of the heap. This is used
@@ -202,15 +202,15 @@
 //         if you add more trashed registers.
 //
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1
+// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at ByRefAssignRefAVLocation1
 // - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
-LEAF_ENTRY RhpByRefAssignRefArm64, _TEXT
+LEAF_ENTRY ByRefAssignRefArm64, _TEXT
 
-    ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
+    ALTERNATE_ENTRY ByRefAssignRefAVLocation1
         ldr     x15, [x13], 8
-        b       C_FUNC(RhpCheckedAssignRefArm64)
+        b       C_FUNC(CheckedAssignRefArm64)
 
-LEAF_END RhpByRefAssignRefArm64, _TEXT
+LEAF_END ByRefAssignRefArm64, _TEXT
 
 // JIT_CheckedWriteBarrier(Object** dst, Object* src)
 //
@@ -225,7 +225,7 @@ LEAF_END RhpByRefAssignRefArm64, _TEXT
 // On exit:
 //   x12, x17 : trashed
 //   x14      : incremented by 8
- LEAF_ENTRY RhpCheckedAssignRefArm64, _TEXT
+ LEAF_ENTRY CheckedAssignRefArm64, _TEXT
 
         // is destReg within the heap?
         PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address,  x12
@@ -234,7 +234,7 @@ LEAF_END RhpByRefAssignRefArm64, _TEXT
         ccmp    x14, x17, #0x2, hs
         bhs     LOCAL_LABEL(NotInHeap)
 
-        b       C_FUNC(RhpAssignRefArm64)
+        b       C_FUNC(AssignRefArm64)
 
 LOCAL_LABEL(NotInHeap):
 #ifdef TARGET_APPLE
@@ -242,13 +242,13 @@ LOCAL_LABEL(NotInHeap):
 // an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
 .cfi_endproc
 #endif
-    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
+    ALTERNATE_ENTRY CheckedAssignRefAVLocation
 #ifdef TARGET_APPLE
 .cfi_startproc
 #endif
         str     x15, [x14], 8
         ret
-LEAF_END RhpCheckedAssignRefArm64, _TEXT
+LEAF_END CheckedAssignRefArm64, _TEXT
 
 // JIT_WriteBarrier(Object** dst, Object* src)
 //
@@ -262,9 +262,9 @@ LEAF_END RhpCheckedAssignRefArm64, _TEXT
 // On exit:
 //  x12, x17 : trashed
 //  x14 : incremented by 8
-LEAF_ENTRY RhpAssignRefArm64, _TEXT
+LEAF_ENTRY AssignRefArm64, _TEXT
 
-    ALTERNATE_ENTRY RhpAssignRefAVLocation
+    ALTERNATE_ENTRY AssignRefAVLocation
         stlr    x15, [x14]
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE x14, x15
@@ -272,14 +272,14 @@ LEAF_ENTRY RhpAssignRefArm64, _TEXT
         add     x14, x14, 8
         ret
 
-LEAF_END RhpAssignRefArm64, _TEXT
+LEAF_END AssignRefArm64, _TEXT
 
-// Same as RhpAssignRefArm64, but with standard ABI.
-LEAF_ENTRY RhpAssignRef, _TEXT
+// Same as AssignRefArm64, but with standard ABI.
+LEAF_ENTRY AssignRef, _TEXT
         mov     x14, x0                     ; x14 = dst
         mov     x15, x1                     ; x15 = val
-        b       C_FUNC(RhpAssignRefArm64)
-LEAF_END RhpAssignRef, _TEXT
+        b       C_FUNC(AssignRefArm64)
+LEAF_END AssignRef, _TEXT
 
 #ifdef FEATURE_NATIVEAOT
 
@@ -287,14 +287,14 @@ LEAF_END RhpAssignRef, _TEXT
 // successful updates.
 
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpCheckedLockCmpXchgAVLocation
+// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at CheckedLockCmpXchgAVLocation
 // - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
 .arch_extension lse
 #endif
 
-// RhpCheckedLockCmpXchg(Object** dest, Object* value, Object* comparand)
+// CheckedLockCmpXchg(Object** dest, Object* value, Object* comparand)
 //
 // Interlocked compare exchange on objectref.
 //
@@ -307,7 +307,7 @@ LEAF_END RhpAssignRef, _TEXT
 //  x0: original value of objectref
 //  x10, x12, x16, x17: trashed
 //
-    LEAF_ENTRY RhpCheckedLockCmpXchg
+    LEAF_ENTRY CheckedLockCmpXchg
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
         PREPARE_EXTERNAL_VAR_INDIRECT_W g_cpuFeatures, 16
@@ -350,13 +350,13 @@ LOCAL_LABEL(NoBarrierCmpXchg):
 #endif
         ret     lr
 
-    LEAF_END RhpCheckedLockCmpXchg, _TEXT
+    LEAF_END CheckedLockCmpXchg, _TEXT
 
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen within at RhpCheckedXchgAVLocation
+// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen within at CheckedXchgAVLocation
 // - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
 
-// RhpCheckedXchg(Object** destination, Object* value)
+// CheckedXchg(Object** destination, Object* value)
 //
 // Interlocked exchange on objectref.
 //
@@ -369,7 +369,7 @@ LOCAL_LABEL(NoBarrierCmpXchg):
 //  x10: trashed
 //  x12, x16, x17: trashed
 //
-    LEAF_ENTRY RhpCheckedXchg, _TEXT
+    LEAF_ENTRY CheckedXchg, _TEXT
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
         PREPARE_EXTERNAL_VAR_INDIRECT_W g_cpuFeatures, 16
@@ -406,7 +406,7 @@ LOCAL_LABEL(NoBarrierXchg):
 #endif
         ret
 
-    LEAF_END RhpCheckedXchg, _TEXT
+    LEAF_END CheckedXchg, _TEXT
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
 .arch_extension nolse

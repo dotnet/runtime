@@ -805,7 +805,7 @@ namespace System.Runtime
                 goto notExactMatch;
 
         doWrite:
-            InternalCalls.RhpAssignRef(ref element, obj);
+            InternalCalls.AssignRef(ref element, obj);
             return;
 
         assigningNull:
@@ -828,7 +828,7 @@ namespace System.Runtime
             CastResult result = s_castCache.TryGet((nuint)obj.GetMethodTable() + (int)AssignmentVariation.BoxedSource, (nuint)elementType);
             if (result == CastResult.CanCast)
             {
-                InternalCalls.RhpAssignRef(ref element, obj);
+                InternalCalls.AssignRef(ref element, obj);
                 return;
             }
 
@@ -845,7 +845,7 @@ namespace System.Runtime
                 throw elementType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
             }
 
-            InternalCalls.RhpAssignRef(ref element, obj);
+            InternalCalls.AssignRef(ref element, obj);
         }
 
         private static unsafe object IsInstanceOfArray(MethodTable* pTargetType, object obj)

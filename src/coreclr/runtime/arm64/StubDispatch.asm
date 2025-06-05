@@ -7,7 +7,7 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-    EXTERN RhpInterfaceDispatchSlow
+    EXTERN InterfaceDispatchSlow
 
     ;; Macro that generates code to check a single cache entry.
     MACRO
@@ -32,13 +32,13 @@
     MACRO
         DEFINE_INTERFACE_DISPATCH_STUB $entries
 
-    NESTED_ENTRY RhpInterfaceDispatch$entries
+    NESTED_ENTRY InterfaceDispatch$entries
 
         ;; x11 holds the indirection cell address. Load the cache pointer.
         ldr     x9, [x11, #OFFSETOF__InterfaceDispatchCell__m_pCache]
 
         ;; Load the MethodTable from the object instance in x0.
-        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation$entries
+        ALTERNATE_ENTRY InterfaceDispatchAVLocation$entries
         ldr     x10, [x0]
 
     GBLA CurrentEntry
@@ -50,9 +50,9 @@ CurrentEntry SETA CurrentEntry + 1
     WEND
 
         ;; x11 still contains the indirection cell address.
-        b RhpInterfaceDispatchSlow
+        b InterfaceDispatchSlow
 
-    NESTED_END RhpInterfaceDispatch$entries
+    NESTED_END InterfaceDispatch$entries
 
     MEND
 
@@ -75,17 +75,17 @@ CurrentEntry SETA CurrentEntry + 1
 ;;
 ;; Initial dispatch on an interface when we don't have a cache yet.
 ;;
-    LEAF_ENTRY RhpInitialInterfaceDispatch
-    ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
+    LEAF_ENTRY InitialInterfaceDispatch
+    ALTERNATE_ENTRY InitialDynamicInterfaceDispatch
         ;; Trigger an AV if we're dispatching on a null this.
         ;; The exception handling infrastructure is aware of the fact that this is the first
-        ;; instruction of RhpInitialInterfaceDispatch and uses it to translate an AV here
+        ;; instruction of InitialInterfaceDispatch and uses it to translate an AV here
         ;; to a NullReferenceException at the callsite.
         ldr     xzr, [x0]
 
         ;; Just tail call to the cache miss helper.
-        b RhpInterfaceDispatchSlow
-    LEAF_END RhpInitialInterfaceDispatch
+        b InterfaceDispatchSlow
+    LEAF_END InitialInterfaceDispatch
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 

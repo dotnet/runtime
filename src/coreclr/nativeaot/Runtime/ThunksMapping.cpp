@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 
 #include "CommonTypes.h"
@@ -9,7 +10,7 @@
 #include "CommonMacros.inl"
 #include "volatile.h"
 #include "Pal.h"
-#include "rhassert.h"
+#include "debugmacros.h"
 
 
 #ifdef FEATURE_RX_THUNKS
@@ -27,7 +28,7 @@
 #elif TARGET_RISCV64
 #define THUNK_SIZE  20
 #else
-#define THUNK_SIZE  (2 * OS_PAGE_SIZE) // This will cause RhpGetNumThunksPerBlock to return 0
+#define THUNK_SIZE  (2 * OS_PAGE_SIZE) // This will cause GetNumThunksPerBlock to return 0
 #endif
 
 static_assert((THUNK_SIZE % 4) == 0, "Thunk stubs size not aligned correctly. This will cause runtime failures.");
@@ -59,7 +60,7 @@ void EncodeThumb2Mov32(uint16_t * pCode, uint32_t value, uint8_t rDestination)
 }
 #endif
 
-FCIMPL0(int, RhpGetNumThunkBlocksPerMapping)
+FCIMPL0(int, GetNumThunkBlocksPerMapping)
 {
     ASSERT_MSG((THUNKS_MAP_SIZE % OS_PAGE_SIZE) == 0, "Thunks map size should be in multiples of pages");
 
@@ -67,7 +68,7 @@ FCIMPL0(int, RhpGetNumThunkBlocksPerMapping)
 }
 FCIMPLEND
 
-FCIMPL0(int, RhpGetNumThunksPerBlock)
+FCIMPL0(int, GetNumThunksPerBlock)
 {
     return min(
         OS_PAGE_SIZE / THUNK_SIZE,                              // Number of thunks that can fit in a page
@@ -76,25 +77,25 @@ FCIMPL0(int, RhpGetNumThunksPerBlock)
 }
 FCIMPLEND
 
-FCIMPL0(int, RhpGetThunkSize)
+FCIMPL0(int, GetThunkSize)
 {
     return THUNK_SIZE;
 }
 FCIMPLEND
 
-FCIMPL1(void*, RhpGetThunkDataBlockAddress, void* pThunkStubAddress)
+FCIMPL1(void*, GetThunkDataBlockAddress, void* pThunkStubAddress)
 {
     return (void*)(((uintptr_t)pThunkStubAddress & ~(OS_PAGE_SIZE - 1)) + THUNKS_MAP_SIZE);
 }
 FCIMPLEND
 
-FCIMPL1(void*, RhpGetThunkStubsBlockAddress, void* pThunkDataAddress)
+FCIMPL1(void*, GetThunkStubsBlockAddress, void* pThunkDataAddress)
 {
     return (void*)(((uintptr_t)pThunkDataAddress & ~(OS_PAGE_SIZE - 1)) - THUNKS_MAP_SIZE);
 }
 FCIMPLEND
 
-FCIMPL0(int, RhpGetThunkBlockSize)
+FCIMPL0(int, GetThunkBlockSize)
 {
     return OS_PAGE_SIZE;
 }
@@ -147,8 +148,8 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 #endif
 #endif
 
-    int numBlocksPerMap = RhpGetNumThunkBlocksPerMapping();
-    int numThunksPerBlock = RhpGetNumThunksPerBlock();
+    int numBlocksPerMap = GetNumThunkBlocksPerMapping();
+    int numThunksPerBlock = GetNumThunksPerBlock();
 
     for (int m = 0; m < numBlocksPerMap; m++)
     {
@@ -326,19 +327,19 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 extern "C" uintptr_t g_pThunkStubData;
 uintptr_t g_pThunkStubData = NULL;
 
-FCDECL0(int, RhpGetThunkBlockCount);
-FCDECL0(int, RhpGetNumThunkBlocksPerMapping);
-FCDECL0(int, RhpGetThunkBlockSize);
-FCDECL1(void*, RhpGetThunkDataBlockAddress, void* addr);
-FCDECL1(void*, RhpGetThunkStubsBlockAddress, void* addr);
+FCDECL0(int, GetThunkBlockCount);
+FCDECL0(int, GetNumThunkBlocksPerMapping);
+FCDECL0(int, GetThunkBlockSize);
+FCDECL1(void*, GetThunkDataBlockAddress, void* addr);
+FCDECL1(void*, GetThunkStubsBlockAddress, void* addr);
 
 EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 {
     static int nextThunkDataMapping = 0;
 
-    int thunkBlocksPerMapping = RhpGetNumThunkBlocksPerMapping();
-    int thunkBlockSize = RhpGetThunkBlockSize();
-    int blockCount = RhpGetThunkBlockCount();
+    int thunkBlocksPerMapping = GetNumThunkBlocksPerMapping();
+    int thunkBlockSize = GetThunkBlockSize();
+    int blockCount = GetThunkBlockCount();
 
     ASSERT(blockCount % thunkBlocksPerMapping == 0)
 
@@ -371,8 +372,8 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 
     nextThunkDataMapping++;
 
-    void* pThunks = RhpGetThunkStubsBlockAddress(pThunkDataBlock);
-    ASSERT(RhpGetThunkDataBlockAddress(pThunks) == pThunkDataBlock);
+    void* pThunks = GetThunkStubsBlockAddress(pThunkDataBlock);
+    ASSERT(GetThunkDataBlockAddress(pThunks) == pThunkDataBlock);
 
     *ppThunksSection = pThunks;
     return S_OK;
@@ -380,11 +381,11 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 
 #else // FEATURE_FIXED_POOL_THUNKS
 
-FCDECL0(void*, RhpGetThunksBase);
-FCDECL0(int, RhpGetNumThunkBlocksPerMapping);
-FCDECL0(int, RhpGetNumThunksPerBlock);
-FCDECL0(int, RhpGetThunkSize);
-FCDECL0(int, RhpGetThunkBlockSize);
+FCDECL0(void*, GetThunksBase);
+FCDECL0(int, GetNumThunkBlocksPerMapping);
+FCDECL0(int, GetNumThunksPerBlock);
+FCDECL0(int, GetThunkSize);
+FCDECL0(int, GetThunkBlockSize);
 
 EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 {
@@ -392,8 +393,8 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 
     void *pThunkMap = NULL;
 
-    int thunkBlocksPerMapping = RhpGetNumThunkBlocksPerMapping();
-    int thunkBlockSize = RhpGetThunkBlockSize();
+    int thunkBlocksPerMapping = GetNumThunkBlocksPerMapping();
+    int thunkBlockSize = GetThunkBlockSize();
     int templateSize = thunkBlocksPerMapping * thunkBlockSize;
 
 #ifndef TARGET_APPLE // Apple platforms cannot use the initial template
@@ -401,7 +402,7 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
     {
         // First, we use the thunks directly from the thunks template sections in the module until all
         // thunks in that template are used up.
-        pThunksTemplateAddress = RhpGetThunksBase();
+        pThunksTemplateAddress = GetThunksBase();
         pThunkMap = pThunksTemplateAddress;
     }
     else
@@ -411,8 +412,8 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
         // cannot reuse it here. Now we need to create a new mapping of the thunks section in order to have
         // more thunks
 
-        uint8_t* pModuleBase = (uint8_t*)PalGetModuleHandleFromPointer(RhpGetThunksBase());
-        int templateRva = (int)((uint8_t*)RhpGetThunksBase() - pModuleBase);
+        uint8_t* pModuleBase = (uint8_t*)PalGetModuleHandleFromPointer(GetThunksBase());
+        int templateRva = (int)((uint8_t*)GetThunksBase() - pModuleBase);
 
         if (!PalAllocateThunksFromTemplate((HANDLE)pModuleBase, templateRva, templateSize, &pThunkMap))
             return E_OUTOFMEMORY;
@@ -420,8 +421,8 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 
     if (!PalMarkThunksAsValidCallTargets(
         pThunkMap,
-        RhpGetThunkSize(),
-        RhpGetNumThunksPerBlock(),
+        GetThunkSize(),
+        GetNumThunksPerBlock(),
         thunkBlockSize,
         thunkBlocksPerMapping))
     {

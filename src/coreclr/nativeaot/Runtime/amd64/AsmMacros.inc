@@ -382,21 +382,21 @@ endif ;; FEATURE_GC_STRESS
 ;; IMPORTS
 ;;
 
-EXTERN RhpGcAlloc                               : PROC
-EXTERN RhpValidateExInfoPop                     : PROC
+EXTERN GcAlloc                               : PROC
+EXTERN ValidateExInfoPop                     : PROC
 EXTERN RhDebugBreak                             : PROC
-EXTERN RhpWaitForGC2                            : PROC
+EXTERN WaitForGC2                            : PROC
 EXTERN RhExceptionHandling_FailedAllocation     : PROC
 EXTERN RhThrowHwEx                              : PROC
 EXTERN RhThrowEx                                : PROC
 EXTERN RhRethrow                                : PROC
-EXTERN RhpGcPoll2                               : PROC
+EXTERN GcPoll2                               : PROC
 ifdef FEATURE_GC_STRESS
-EXTERN RhpStressGc                              : PROC
+EXTERN StressGc                              : PROC
 EXTERN THREAD__HIJACKFORGCSTRESS                : PROC
 endif ;; FEATURE_GC_STRESS
 
-EXTERN RhpTrapThreads       : DWORD
+EXTERN TrapThreads       : DWORD
 EXTERN g_lowest_address     : QWORD
 EXTERN g_highest_address    : QWORD
 EXTERN g_ephemeral_low      : QWORD

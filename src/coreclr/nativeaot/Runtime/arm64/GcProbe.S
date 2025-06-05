@@ -118,26 +118,26 @@
 //
 // GC Probe Hijack target
 //
-NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
+NESTED_ENTRY GcProbeHijack, _TEXT, NoHandler
     FixupHijackedCallstack
 
-    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 3
+    PREPARE_EXTERNAL_VAR_INDIRECT_W TrapThreads, 3
     tbnz        x3, #TrapThreadsFlags_TrapThreads_Bit, LOCAL_LABEL(WaitForGC)
     ret
 
 LOCAL_LABEL(WaitForGC):
     mov         x12, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1
     movk        x12, PTFF_THREAD_HIJACK_HI, lsl #32
-    b           C_FUNC(RhpWaitForGC)
-NESTED_END RhpGcProbeHijack
+    b           C_FUNC(InternalWaitForGC)
+NESTED_END GcProbeHijack
 
-.global C_FUNC(RhpThrowHwEx)
+.global C_FUNC(ThrowHwEx)
 
-NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
+NESTED_ENTRY InternalWaitForGC, _TEXT, NoHandler
     PUSH_PROBE_FRAME x2, x3, x12
 
     ldr         x0, [x2, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
-    bl          C_FUNC(RhpWaitForGC2)
+    bl          C_FUNC(WaitForGC2)
 
     ldr         x2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
     tbnz        x2, #PTFF_THREAD_ABORT_BIT, LOCAL_LABEL(ThrowThreadAbort)
@@ -151,25 +151,25 @@ LOCAL_LABEL(ThrowThreadAbort):
     POP_PROBE_FRAME
     mov w0, #STATUS_NATIVEAOT_THREAD_ABORT
     mov x1, lr // return address as exception PC
-    b C_FUNC(RhpThrowHwEx)
-NESTED_END RhpWaitForGC
+    b C_FUNC(ThrowHwEx)
+NESTED_END InternalWaitForGC
 
-.global C_FUNC(RhpGcPoll2)
+.global C_FUNC(GcPoll2)
 
-LEAF_ENTRY RhpGcPoll
-    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 0
-    cbnz    w0, LOCAL_LABEL(RhpGcPoll_Rare) // TrapThreadsFlags_None = 0
+LEAF_ENTRY GcPoll
+    PREPARE_EXTERNAL_VAR_INDIRECT_W TrapThreads, 0
+    cbnz    w0, LOCAL_LABEL(GcPoll_Rare) // TrapThreadsFlags_None = 0
     ret
-LOCAL_LABEL(RhpGcPoll_Rare):
-    b C_FUNC(RhpGcPollRare)
-LEAF_END RhpGcPoll
+LOCAL_LABEL(GcPoll_Rare):
+    b C_FUNC(GcPollRare)
+LEAF_END GcPoll
 
-NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
+NESTED_ENTRY GcPollRare, _TEXT, NoHandler
     PUSH_COOP_PINVOKE_FRAME x0
-    bl C_FUNC(RhpGcPoll2)
+    bl C_FUNC(GcPoll2)
     POP_COOP_PINVOKE_FRAME
     ret
-NESTED_END RhpGcPollRare
+NESTED_END GcPollRare
 
 
 #ifdef FEATURE_GC_STRESS
@@ -177,9 +177,9 @@ NESTED_END RhpGcPollRare
 //
 // GC Stress Hijack targets
 //
-LEAF_ENTRY RhpGcStressHijack, _TEXT
+LEAF_ENTRY GcStressHijack, _TEXT
     // NYI
     EMIT_BREAKPOINT
-LEAF_END RhpGcStressHijack, _TEXT
+LEAF_END GcStressHijack, _TEXT
 
 #endif  // FEATURE_GC_STRESS

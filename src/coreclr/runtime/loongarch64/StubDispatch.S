@@ -5,8 +5,8 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-    .extern RhpCidResolve
-    .extern RhpUniversalTransition_DebugStepTailCall
+    .extern CidResolve
+    .extern UniversalTransition_DebugStepTailCall
 
     // Macro that generates code to check a single cache entry.
     .macro CHECK_CACHE_ENTRY entry
@@ -27,13 +27,13 @@
 //
     .macro DEFINE_INTERFACE_DISPATCH_STUB entries
 
-    NESTED_ENTRY "RhpInterfaceDispatch\entries", _TEXT, NoHandler
+    NESTED_ENTRY "InterfaceDispatch\entries", _TEXT, NoHandler
 
         // t8 holds the indirection cell address. Load the cache pointer.
         ld.d  $t0, $t8, OFFSETOF__InterfaceDispatchCell__m_pCache
 
         // Load the MethodTable from the object instance in a0.
-        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
+        ALTERNATE_ENTRY InterfaceDispatchAVLocation\entries
         ld.d  $t1, $a0, 0
 
     .global CurrentEntry
@@ -45,9 +45,9 @@
     .endr
 
         // t8 still contains the indirection cell address.
-        b  C_FUNC(RhpInterfaceDispatchSlow)
+        b  C_FUNC(InterfaceDispatchSlow)
 
-    NESTED_END "RhpInterfaceDispatch\entries", _TEXT
+    NESTED_END "InterfaceDispatch\entries", _TEXT
 
     .endm
 
@@ -69,29 +69,29 @@
 //
 // Initial dispatch on an interface when we don't have a cache yet.
 //
-    LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
-    ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
+    LEAF_ENTRY InitialInterfaceDispatch, _TEXT
+    ALTERNATE_ENTRY InitialDynamicInterfaceDispatch
         // Trigger an AV if we're dispatching on a null this.
         // The exception handling infrastructure is aware of the fact that this is the first
-        // instruction of RhpInitialInterfaceDispatch and uses it to translate an AV here
+        // instruction of InitialInterfaceDispatch and uses it to translate an AV here
         // to a NullReferenceException at the callsite.
         ld.d  $zero, $a0, 0
 
         // Just tail call to the cache miss helper.
-        b  C_FUNC(RhpInterfaceDispatchSlow)
-    LEAF_END RhpInitialInterfaceDispatch, _TEXT
+        b  C_FUNC(InterfaceDispatchSlow)
+    LEAF_END InitialInterfaceDispatch, _TEXT
 
 //
 // Cache miss case, call the runtime to resolve the target and update the cache.
 // Use universal transition helper to allow an exception to flow out of resolution.
 //
-    LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
+    LEAF_ENTRY InterfaceDispatchSlow, _TEXT
         // t8 contains the interface dispatch cell address.
         // Calling convention of the universal thunk is:
         // t7: target address for the thunk to call
         // t8: parameter of the thunk's target
-        PREPARE_EXTERNAL_VAR RhpCidResolve, $t7
-        b  C_FUNC(RhpUniversalTransition_DebugStepTailCall)
-    LEAF_END RhpInterfaceDispatchSlow, _TEXT
+        PREPARE_EXTERNAL_VAR CidResolve, $t7
+        b  C_FUNC(UniversalTransition_DebugStepTailCall)
+    LEAF_END InterfaceDispatchSlow, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

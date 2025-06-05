@@ -10,7 +10,7 @@
 #include "daccess.h"
 #include "PalLimitedContext.h"
 #include "Pal.h"
-#include "rhassert.h"
+#include "debugmacros.h"
 #include "slist.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -22,7 +22,7 @@
 #include "thread.inl"
 #include "RuntimeInstance.h"
 #include "shash.h"
-#include "rhbinder.h"
+#include "binder.h"
 #include "stressLog.h"
 #include "RhConfig.h"
 #include "GcEnum.h"
@@ -579,16 +579,16 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
 
 #ifdef FEATURE_HIJACK
 
-EXTERN_C void RhpGcProbeHijack();
-EXTERN_C void RhpGcStressHijack();
+EXTERN_C void GcProbeHijack();
+EXTERN_C void GcStressHijack();
 
 // static
 bool Thread::IsHijackTarget(void* address)
 {
-    if (PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack) == address)
+    if (PalGetHijackTarget(/*defaultHijackTarget*/&GcProbeHijack) == address)
         return true;
 #ifdef FEATURE_GC_STRESS
-    if (&RhpGcStressHijack == address)
+    if (&GcStressHijack == address)
         return true;
 #endif // FEATURE_GC_STRESS
     return false;
@@ -706,11 +706,11 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHij
 
     pThread->HijackReturnAddress(
         pThreadContext,
-        PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack));
+        PalGetHijackTarget(/*defaultHijackTarget*/&GcProbeHijack));
 }
 
 #ifdef FEATURE_GC_STRESS
-// This is a helper called from RhpHijackForGcStress which will place a GC Stress
+// This is a helper called from HijackForGcStress which will place a GC Stress
 // hijack on this thread's call stack. This is never called from another thread.
 // static
 void Thread::HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx)
@@ -747,7 +747,7 @@ void Thread::HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx)
     }
     if (bForceGC || pInstance->ShouldHijackCallsiteForGcStress(ip))
     {
-        pCurrentThread->HijackReturnAddress(pSuspendCtx, &RhpGcStressHijack);
+        pCurrentThread->HijackReturnAddress(pSuspendCtx, &GcStressHijack);
     }
 }
 #endif // FEATURE_GC_STRESS
@@ -840,7 +840,7 @@ NATIVE_CONTEXT* Thread::EnsureRedirectionContext()
     return m_interruptedContext;
 }
 
-EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
+EXTERN_C NOINLINE void FASTCALL SuspendRedirected()
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
     pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
@@ -862,7 +862,7 @@ bool Thread::Redirect()
         return false;
 
     uintptr_t origIP = redirectionContext->GetIp();
-    redirectionContext->SetIp((uintptr_t)RhpSuspendRedirected);
+    redirectionContext->SetIp((uintptr_t)SuspendRedirected);
     if (!PalSetThreadContext(m_hOSThread, redirectionContext))
         return false;
 
@@ -1001,27 +1001,27 @@ void Thread::ClearSuppressGcStress()
 #ifndef DACCESS_COMPILE
 #ifdef FEATURE_GC_STRESS
 #ifdef HOST_X86 // the others are implemented in assembly code to avoid trashing the argument registers
-EXTERN_C void FASTCALL RhpSuppressGcStress()
+EXTERN_C void FASTCALL SuppressGcStress()
 {
     ThreadStore::GetCurrentThread()->SetSuppressGcStress();
 }
 #endif // HOST_X86
 
-EXTERN_C void FASTCALL RhpUnsuppressGcStress()
+EXTERN_C void FASTCALL UnsuppressGcStress()
 {
     ThreadStore::GetCurrentThread()->ClearSuppressGcStress();
 }
 #else
-EXTERN_C void FASTCALL RhpSuppressGcStress()
+EXTERN_C void FASTCALL SuppressGcStress()
 {
 }
-EXTERN_C void FASTCALL RhpUnsuppressGcStress()
+EXTERN_C void FASTCALL UnsuppressGcStress()
 {
 }
 #endif // FEATURE_GC_STRESS
 
-// Standard calling convention variant and actual implementation for RhpWaitForGC
-EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
+// Standard calling convention variant and actual implementation for InternalWaitForGC
+EXTERN_C NOINLINE void FASTCALL WaitForGC2(PInvokeTransitionFrame * pFrame)
 {
     Thread * pThread = pFrame->m_pThread;
     if (pThread->IsDoNotTriggerGcSet())
@@ -1030,15 +1030,15 @@ EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
     pThread->WaitForGC(pFrame);
 }
 
-// Standard calling convention variant and actual implementation for RhpGcPoll
-EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
+// Standard calling convention variant and actual implementation for GcPoll
+EXTERN_C NOINLINE void FASTCALL GcPoll2(PInvokeTransitionFrame* pFrame)
 {
     ASSERT(!Thread::IsHijackTarget(pFrame->m_RIP));
 
     Thread* pThread = ThreadStore::GetCurrentThread();
     pFrame->m_pThread = pThread;
 
-    RhpWaitForGC2(pFrame);
+    WaitForGC2(pFrame);
 }
 
 void Thread::PushExInfo(ExInfo * pExInfo)
@@ -1067,7 +1067,7 @@ void Thread::ValidateExInfoPop(ExInfo * pExInfo, void * limitSP)
 #endif // _DEBUG
 }
 
-FCIMPL3(void, RhpValidateExInfoPop, Thread * pThread, ExInfo * pExInfo, void * limitSP)
+FCIMPL3(void, ValidateExInfoPop, Thread * pThread, ExInfo * pExInfo, void * limitSP)
 {
     pThread->ValidateExInfoPop(pExInfo, limitSP);
 }
@@ -1253,7 +1253,7 @@ void Thread::SetThreadAbortException(Object *exception)
     m_threadAbortException = exception;
 }
 
-FCIMPL0(Object *, RhpGetThreadAbortException)
+FCIMPL0(Object *, GetThreadAbortException)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     return pCurThread->GetThreadAbortException();
@@ -1311,8 +1311,8 @@ FCIMPL0(uint64_t, RhCurrentOSThreadId)
 }
 FCIMPLEND
 
-// Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
-EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame* pFrame)
+// Standard calling convention variant and actual implementation for ReversePInvokeAttachOrTrapThread
+EXTERN_C NOINLINE void FASTCALL ReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame* pFrame)
 {
     ASSERT(pFrame->m_savedThread == ThreadStore::RawGetCurrentThread());
     pFrame->m_savedThread->ReversePInvokeAttachOrTrapThread(pFrame);
@@ -1322,18 +1322,18 @@ EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInv
 // PInvoke
 //
 
-FCIMPL1(void, RhpReversePInvoke, ReversePInvokeFrame * pFrame)
+FCIMPL1(void, ReversePInvoke, ReversePInvokeFrame * pFrame)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     pFrame->m_savedThread = pCurThread;
     if (pCurThread->InlineTryFastReversePInvoke(pFrame))
         return;
 
-    RhpReversePInvokeAttachOrTrapThread2(pFrame);
+    ReversePInvokeAttachOrTrapThread2(pFrame);
 }
 FCIMPLEND
 
-FCIMPL1(void, RhpReversePInvokeReturn, ReversePInvokeFrame * pFrame)
+FCIMPL1(void, ReversePInvokeReturn, ReversePInvokeFrame * pFrame)
 {
     pFrame->m_savedThread->InlineReversePInvokeReturn(pFrame);
 }
@@ -1341,14 +1341,14 @@ FCIMPLEND
 
 #ifdef USE_PORTABLE_HELPERS
 
-FCIMPL1(void, RhpPInvoke2, PInvokeTransitionFrame* pFrame)
+FCIMPL1(void, PInvoke2, PInvokeTransitionFrame* pFrame)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     pCurThread->InlinePInvoke(pFrame);
 }
 FCIMPLEND
 
-FCIMPL1(void, RhpPInvokeReturn2, PInvokeTransitionFrame* pFrame)
+FCIMPL1(void, PInvokeReturn2, PInvokeTransitionFrame* pFrame)
 {
     //reenter cooperative mode
     pFrame->m_pThread->InlinePInvokeReturn(pFrame);

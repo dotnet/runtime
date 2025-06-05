@@ -68,7 +68,7 @@ public:
     bool HasStackRangeToReportConservatively();
     void GetStackRangeToReportConservatively(PTR_OBJECTREF * ppLowerBound, PTR_OBJECTREF * ppUpperBound);
 
-    // Implementations of RhpSfiInit and RhpSfiNext called from managed code
+    // Implementations of SfiInit and SfiNext called from managed code
     bool             Init(PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault);
     bool             Next(uint32_t* puExCollideClauseIdx, bool* pfUnwoundReversePInvoke);
 

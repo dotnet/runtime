@@ -7,7 +7,7 @@ namespace Internal.Runtime
     // The low 2 bits of the interface dispatch cell's cache pointer are treated specially so that we can avoid the
     // need for extra fields on the type.
     //
-    // Keep these in sync with the native copy in src\Native\Runtime\inc\rhbinder.h
+    // Keep these in sync with the native copy in src\Native\Runtime\inc\binder.h
     //
     public enum InterfaceDispatchCellCachePointerFlags
     {

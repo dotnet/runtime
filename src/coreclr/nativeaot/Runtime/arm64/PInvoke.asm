@@ -7,7 +7,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpPInvoke
+;; PInvoke
 ;;
 ;; IN: x0: address of pinvoke frame
 ;;
@@ -18,7 +18,7 @@
 ;; Also, the codegenerator must ensure that there are no live GC references in callee saved registers.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    NESTED_ENTRY RhpPInvoke, _TEXT
+    NESTED_ENTRY PInvoke, _TEXT
 
         str     fp, [x0, #OFFSETOF__PInvokeTransitionFrame__m_FramePointer]
         str     lr, [x0, #OFFSETOF__PInvokeTransitionFrame__m_RIP]
@@ -32,30 +32,30 @@
         str     x1, [x0, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
         str     x0, [x1, #OFFSETOF__Thread__m_pTransitionFrame]
         ret
-    NESTED_END RhpPInvoke
+    NESTED_END PInvoke
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpPInvokeReturn
+;; PInvokeReturn
 ;;
 ;; IN: x0: address of pinvoke frame
 ;;
 ;; TRASHES: x9, x10
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    LEAF_ENTRY RhpPInvokeReturn, _TEXT
+    LEAF_ENTRY PInvokeReturn, _TEXT
         ldr     x9, [x0, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
         mov     x10, 0
         str     x10, [x9, #OFFSETOF__Thread__m_pTransitionFrame]
 
-        ldr     x9, =RhpTrapThreads
+        ldr     x9, =TrapThreads
         ldr     w9, [x9]
         cbnz    w9, %ft0 ;; TrapThreadsFlags_None = 0
         ret
 0
         ;; passing transition frame pointer in x0
-        b       RhpWaitForGC2
-    LEAF_END RhpPInvokeReturn
+        b       WaitForGC2
+    LEAF_END PInvokeReturn
 
     end

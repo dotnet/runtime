@@ -7,8 +7,8 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-.global RhpGcPoll2
-.global RhpThrowHwEx
+.global GcPoll2
+.global ThrowHwEx
 
 // See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves return registers
 // and accepts the register bitmask
@@ -82,11 +82,11 @@
     str         r3, [r2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 .endm
 
-NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
+NESTED_ENTRY InternalWaitForGC, _TEXT, NoHandler
     PUSH_PROBE_FRAME r2, r3, r12
 
     ldr         r0, [r2, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
-    bl          RhpWaitForGC2
+    bl          WaitForGC2
 
     ldr         r2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
     tst         r2, #PTFF_THREAD_ABORT
@@ -99,39 +99,39 @@ LOCAL_LABEL(ThrowThreadAbort):
     POP_PROBE_FRAME
     mov         r0, #STATUS_NATIVEAOT_THREAD_ABORT
     mov         r1, lr // return address as exception PC
-    b           C_FUNC(RhpThrowHwEx)
-NESTED_END RhpWaitForGC
+    b           C_FUNC(ThrowHwEx)
+NESTED_END InternalWaitForGC
 
-LEAF_ENTRY RhpGcPoll
-    PREPARE_EXTERNAL_VAR_INDIRECT RhpTrapThreads, r0
+LEAF_ENTRY GcPoll
+    PREPARE_EXTERNAL_VAR_INDIRECT TrapThreads, r0
     cmp         r0, #TrapThreadsFlags_None
-    bne         RhpGcPollRare
+    bne         GcPollRare
     bx          lr
-LEAF_END RhpGcPoll
+LEAF_END GcPoll
 
-NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
+NESTED_ENTRY GcPollRare, _TEXT, NoHandler
     PUSH_COOP_PINVOKE_FRAME r0
-    bl RhpGcPoll2
+    bl GcPoll2
     POP_COOP_PINVOKE_FRAME
     bx           lr
-NESTED_END RhpGcPollRare
+NESTED_END GcPollRare
 
-NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
+NESTED_ENTRY GcProbeHijack, _TEXT, NoHandler
     FixupHijackedCallstack
 
-    PREPARE_EXTERNAL_VAR_INDIRECT RhpTrapThreads, r3
+    PREPARE_EXTERNAL_VAR_INDIRECT TrapThreads, r3
     tst         r3, #TrapThreadsFlags_TrapThreads
     bne         LOCAL_LABEL(WaitForGC)
     bx          lr
 LOCAL_LABEL(WaitForGC):
     mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0)
     orr         r12, r12, #PTFF_THREAD_HIJACK
-    b           RhpWaitForGC
-NESTED_END RhpGcProbeHijack
+    b           InternalWaitForGC
+NESTED_END GcProbeHijack
 
 #ifdef FEATURE_GC_STRESS
-LEAF_ENTRY RhpGcStressHijack
+LEAF_ENTRY GcStressHijack
     // Not implemented
     EMIT_BREAKPOINT
-LEAF_END RhpGcStressHijack
+LEAF_END GcStressHijack
 #endif

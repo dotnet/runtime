@@ -9,9 +9,9 @@
 #if defined(__APPLE__)
     // Currently the build is failing without this due to an issue if the first method in the assembly file has an alternate entry at the start of the file.
     // Fix, but adding an empty, unused method
-    LEAF_ENTRY RhpStubDispatchDoNotFailToBuild, _TEXT
+    LEAF_ENTRY StubDispatchDoNotFailToBuild, _TEXT
        ret
-    LEAF_END RhpStubDispatchDoNotFailToBuild, _TEXT
+    LEAF_END StubDispatchDoNotFailToBuild, _TEXT
 #endif
 
 
@@ -22,7 +22,7 @@
 // Macro that generates a stub consuming a cache with the given number of entries.
 .macro DEFINE_INTERFACE_DISPATCH_STUB entries
 
-LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
+LEAF_ENTRY InterfaceDispatch\entries, _TEXT
 
         // r11 currently contains the indirection cell address.
         // load r10 to point to the cache block.
@@ -34,7 +34,7 @@ LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
 // an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
 .cfi_endproc
 #endif
-        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
+        ALTERNATE_ENTRY InterfaceDispatchAVLocation\entries
 #ifdef TARGET_APPLE
 .cfi_startproc
 #endif
@@ -54,8 +54,8 @@ LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
 
         // r11 still contains the indirection cell address.
 
-        jmp     C_FUNC(RhpInterfaceDispatchSlow)
-LEAF_END RhpInterfaceDispatch\entries, _TEXT
+        jmp     C_FUNC(InterfaceDispatchSlow)
+LEAF_END InterfaceDispatch\entries, _TEXT
 
 .endm // DEFINE_INTERFACE_DISPATCH_STUB
 
@@ -79,18 +79,18 @@ DEFINE_INTERFACE_DISPATCH_STUB 32
 DEFINE_INTERFACE_DISPATCH_STUB 64
 
 // Initial dispatch on an interface when we don't have a cache yet.
-LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
-ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
+LEAF_ENTRY InitialInterfaceDispatch, _TEXT
+ALTERNATE_ENTRY InitialDynamicInterfaceDispatch
         // Trigger an AV if we're dispatching on a null this.
         // The exception handling infrastructure is aware of the fact that this is the first
-        // instruction of RhpInitialInterfaceDispatch and uses it to translate an AV here
+        // instruction of InitialInterfaceDispatch and uses it to translate an AV here
         // to a NullReferenceException at the callsite.
         cmp     byte ptr [rdi], 0
 
         // Just tail call to the cache miss helper.
-        jmp     C_FUNC(RhpInterfaceDispatchSlow)
+        jmp     C_FUNC(InterfaceDispatchSlow)
 
-LEAF_END RhpInitialInterfaceDispatch, _TEXT
+LEAF_END InitialInterfaceDispatch, _TEXT
 
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

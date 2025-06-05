@@ -382,22 +382,22 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
-static uint32_t g_RhPageSize;
+static uint32_t g_PageSize;
 
 void InitializeOsPageSize()
 {
-    g_RhPageSize = (uint32_t)sysconf(_SC_PAGE_SIZE);
+    g_PageSize = (uint32_t)sysconf(_SC_PAGE_SIZE);
 
 #if defined(HOST_AMD64)
-    ASSERT(g_RhPageSize == 0x1000);
+    ASSERT(g_PageSize == 0x1000);
 #elif defined(HOST_APPLE)
-    ASSERT(g_RhPageSize == 0x4000);
+    ASSERT(g_PageSize == 0x4000);
 #endif
 }
 
 uint32_t PalGetOsPageSize()
 {
-    return g_RhPageSize;
+    return g_PageSize;
 }
 
 #if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
@@ -484,7 +484,7 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 DECLSPEC_THREAD intptr_t tls_thunkData;
 
 #ifdef FEATURE_EMULATED_TLS
-EXTERN_C intptr_t* RhpGetThunkData()
+EXTERN_C intptr_t* GetThunkData()
 {
     return &tls_thunkData;
 }

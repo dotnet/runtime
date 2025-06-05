@@ -5,35 +5,35 @@
 #include "asmconstants.h"
 #include "asmmacros.h"
 
-    IMPORT RhpNewObject
-    IMPORT RhpGcAllocMaybeFrozen
+    IMPORT NewObject
+    IMPORT GcAllocMaybeFrozen
     IMPORT RhExceptionHandling_FailedAllocation_Helper
 
     TEXTAREA
 
 ;
-; Object* RhpNew(MethodTable *pMT)
+; Object* New(MethodTable *pMT)
 ;
 ; Allocate non-array object, slow path.
 ;
-    LEAF_ENTRY RhpNew
+    LEAF_ENTRY New
 
         mov         x1, #0
-        b           RhpNewObject
+        b           NewObject
 
     LEAF_END
 
 ;
-; Object* RhpNewMaybeFrozen(MethodTable *pMT)
+; Object* NewMaybeFrozen(MethodTable *pMT)
 ;
 ; Allocate non-array object, may be on frozen heap.
 ;
-    NESTED_ENTRY RhpNewMaybeFrozen
+    NESTED_ENTRY NewMaybeFrozen
 
         PUSH_COOP_PINVOKE_FRAME x2
 
         mov         x1, 0
-        bl          RhpGcAllocMaybeFrozen
+        bl          GcAllocMaybeFrozen
 
         POP_COOP_PINVOKE_FRAME
         EPILOG_RETURN
@@ -41,15 +41,15 @@
     NESTED_END
 
 ;
-; Object* RhpNewMaybeFrozen(MethodTable *pMT, INT_PTR size)
+; Object* NewMaybeFrozen(MethodTable *pMT, INT_PTR size)
 ;
 ; Allocate array object, may be on frozen heap.
 ;
-    NESTED_ENTRY RhpNewArrayMaybeFrozen
+    NESTED_ENTRY NewArrayMaybeFrozen
 
         PUSH_COOP_PINVOKE_FRAME x2
 
-        bl          RhpGcAllocMaybeFrozen
+        bl          GcAllocMaybeFrozen
 
         POP_COOP_PINVOKE_FRAME
         EPILOG_RETURN

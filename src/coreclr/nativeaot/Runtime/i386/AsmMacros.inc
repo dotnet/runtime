@@ -152,20 +152,20 @@ OFFSETOF__ee_alloc_context                   equ OFFSETOF__Thread__m_eeAllocCont
 ;;
 
 RhDebugBreak                                equ @RhDebugBreak@0
-RhpGcAlloc                                  equ _RhpGcAlloc@16
+GcAlloc                                  equ _GcAlloc@16
 G_LOWEST_ADDRESS                            equ _g_lowest_address
 G_HIGHEST_ADDRESS                           equ _g_highest_address
 G_EPHEMERAL_LOW                             equ _g_ephemeral_low
 G_EPHEMERAL_HIGH                            equ _g_ephemeral_high
 G_CARD_TABLE                                equ _g_card_table
-RhpWaitForGC2                               equ @RhpWaitForGC2@4
-RhpTrapThreads                              equ _RhpTrapThreads
-RhpStressGc                                 equ @RhpStressGc@0
-RhpGcPoll2                                  equ @RhpGcPoll2@4
+WaitForGC2                               equ @WaitForGC2@4
+TrapThreads                              equ _TrapThreads
+StressGc                                 equ @StressGc@0
+GcPoll2                                  equ @GcPoll2@4
 RhHandleGet                                 equ @RhHandleGet@4
 DivInt64Internal                            equ @DivInt64Internal_FCall@16
-RhpGcSafeZeroMemory                         equ @RhpGcSafeZeroMemory@8
-RhpGetNumThunkBlocksPerMapping              equ @RhpGetNumThunkBlocksPerMapping@0
+GcSafeZeroMemory                         equ @GcSafeZeroMemory@8
+GetNumThunkBlocksPerMapping              equ @GetNumThunkBlocksPerMapping@0
 
 ifdef FEATURE_GC_STRESS
 THREAD__HIJACKFORGCSTRESS                   equ ?HijackForGcStress@Thread@@SGXPAUPAL_LIMITED_CONTEXT@@@Z
@@ -174,14 +174,14 @@ endif ;; FEATURE_GC_STRESS
 ;;
 ;; IMPORTS
 ;;
-EXTERN RhpGcAlloc                               : PROC
+EXTERN GcAlloc                               : PROC
 EXTERN RhDebugBreak                             : PROC
-EXTERN RhpWaitForGC2                            : PROC
+EXTERN WaitForGC2                            : PROC
 EXTERN RhExceptionHandling_FailedAllocation     : PROC
 EXTERN RhThrowHwEx                              : PROC
 EXTERN RhThrowEx                                : PROC
 EXTERN RhRethrow                                : PROC
-EXTERN RhpGcPoll2                               : PROC
+EXTERN GcPoll2                               : PROC
 
 ;; The following imports are not used in the assembly helpers. Due to the
 ;; way the FCall mangling is handled in the C sources through linker directives
@@ -190,13 +190,13 @@ EXTERN RhpGcPoll2                               : PROC
 ;; GCMemoryHelpers, ThunkMapping) to get the linker to see the #pragma
 ;; comment(linker, ...) directives embedded in those files.
 EXTERN RhHandleGet                              : PROC
-EXTERN RhpGcSafeZeroMemory                      : PROC
-EXTERN RhpGetNumThunkBlocksPerMapping           : PROC
+EXTERN GcSafeZeroMemory                      : PROC
+EXTERN GetNumThunkBlocksPerMapping           : PROC
 EXTERN DivInt64Internal                         : PROC
 
 ifdef FEATURE_GC_STRESS
 EXTERN THREAD__HIJACKFORGCSTRESS                : PROC
-EXTERN RhpStressGc                              : PROC
+EXTERN StressGc                              : PROC
 endif ;; FEATURE_GC_STRESS
 
 EXTERN G_LOWEST_ADDRESS : DWORD
@@ -204,4 +204,4 @@ EXTERN G_HIGHEST_ADDRESS : DWORD
 EXTERN G_EPHEMERAL_LOW : DWORD
 EXTERN G_EPHEMERAL_HIGH : DWORD
 EXTERN G_CARD_TABLE : DWORD
-EXTERN RhpTrapThreads : DWORD
+EXTERN TrapThreads : DWORD

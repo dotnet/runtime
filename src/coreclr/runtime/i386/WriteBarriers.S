@@ -74,18 +74,18 @@ LOCAL_LABEL(\BASENAME\()UpdateShadowHeap_Done_\DESTREG\()_\REFREG):
 // object reference (this should be in upper case as it's used in the definition of the name of the helper).
 .macro DEFINE_WRITE_BARRIER DESTREG, REFREG, TEMPREG
 
-// Define a helper with a name of the form RhpAssignRefEAX etc. (along with suitable calling standard
+// Define a helper with a name of the form AssignRefEAX etc. (along with suitable calling standard
 // decoration). The location to be updated is in DESTREG. The object reference that will be assigned into that
 // location is in one of the other general registers determined by the value of REFREG.
-LEAF_ENTRY RhpAssignRef\REFREG, _TEXT
+LEAF_ENTRY AssignRef\REFREG, _TEXT
 
     // Export the canonical write barrier under unqualified name as well
     .ifc \REFREG, EDX
-    ALTERNATE_ENTRY RhpAssignRef
-    ALTERNATE_ENTRY RhpAssignRefAVLocation
+    ALTERNATE_ENTRY AssignRef
+    ALTERNATE_ENTRY AssignRefAVLocation
     .endif
 
-    ALTERNATE_ENTRY RhpAssignRef\REFREG\()AVLocation
+    ALTERNATE_ENTRY AssignRef\REFREG\()AVLocation
 
     // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
     // and the card table update we may perform below.
@@ -95,7 +95,7 @@ LEAF_ENTRY RhpAssignRef\REFREG, _TEXT
     push \TEMPREG
 
     // Update the shadow copy of the heap with the same value (if enabled).
-    UPDATE_GC_SHADOW RhpAssignRef, \DESTREG, \REFREG, \TEMPREG
+    UPDATE_GC_SHADOW AssignRef, \DESTREG, \REFREG, \TEMPREG
 
     // If the reference is to an object that's not in an ephemeral generation we have no need to track it
     // (since the object won't be collected or moved by an ephemeral collection).
@@ -125,7 +125,7 @@ LOCAL_LABEL(WriteBarrier_UpdateCardTable_\DESTREG\()_\REFREG):
     pop \TEMPREG
     mov     byte ptr [\DESTREG], 0xFF
     ret
-LEAF_END RhpAssignRef\REFREG, _TEXT
+LEAF_END AssignRef\REFREG, _TEXT
 .endm
 
 .macro DEFINE_CHECKED_WRITE_BARRIER_CORE BASENAME, DESTREG, REFREG, TEMPREG
@@ -170,22 +170,22 @@ LOCAL_LABEL(\BASENAME\()CheckedWriteBarrier_NoBarrierRequired_\DESTREG\()_\REFRE
 // checks whether the destination is actually somewhere within the GC heap.
 .macro DEFINE_CHECKED_WRITE_BARRIER DESTREG, REFREG, TEMPREG
 
-// Define a helper with a name of the form RhpCheckedAssignRefEAX etc. (along with suitable calling standard
+// Define a helper with a name of the form CheckedAssignRefEAX etc. (along with suitable calling standard
 // decoration). The location to be updated is in DESTREG. The object reference that will be assigned into
 // that location is in one of the other general registers determined by the value of REFREG.
 
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 // - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen on the first instruction
 // - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
-LEAF_ENTRY RhpCheckedAssignRef\REFREG, _TEXT
+LEAF_ENTRY CheckedAssignRef\REFREG, _TEXT
 
     // Export the canonical write barrier under unqualified name as well
     .ifc \REFREG, EDX
-    ALTERNATE_ENTRY RhpCheckedAssignRef
-    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
+    ALTERNATE_ENTRY CheckedAssignRef
+    ALTERNATE_ENTRY CheckedAssignRefAVLocation
     .endif
 
-    ALTERNATE_ENTRY RhpCheckedAssignRef\REFREG\()AVLocation
+    ALTERNATE_ENTRY CheckedAssignRef\REFREG\()AVLocation
 
     // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
     // and the card table update we may perform below.
@@ -194,11 +194,11 @@ LEAF_ENTRY RhpCheckedAssignRef\REFREG, _TEXT
     // Save a register so that we have an available register as a temporary for PREPARE_EXTERNAL_VAR
     push \TEMPREG
 
-    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedAssignRef, \DESTREG, \REFREG, \TEMPREG
+    DEFINE_CHECKED_WRITE_BARRIER_CORE CheckedAssignRef, \DESTREG, \REFREG, \TEMPREG
     pop \TEMPREG
     ret
 
-LEAF_END RhpCheckedAssignRef\REFREG, _TEXT
+LEAF_END CheckedAssignRef\REFREG, _TEXT
 
 .endm
 
@@ -221,19 +221,19 @@ DEFINE_CHECKED_WRITE_BARRIER EDX, ESI, EAX
 DEFINE_CHECKED_WRITE_BARRIER EDX, EDI, EAX
 DEFINE_CHECKED_WRITE_BARRIER EDX, EBP, EAX
 
-LEAF_ENTRY RhpCheckedLockCmpXchg, _TEXT
+LEAF_ENTRY CheckedLockCmpXchg, _TEXT
     mov             eax, [esp+4]
     lock cmpxchg    [ecx], edx
-    jne             LOCAL_LABEL(RhpCheckedLockCmpXchg_NoWrite)
+    jne             LOCAL_LABEL(CheckedLockCmpXchg_NoWrite)
     push eax
 
-    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, ECX, EDX, EAX
+    DEFINE_CHECKED_WRITE_BARRIER_CORE CheckedLockCmpXchg, ECX, EDX, EAX
     pop eax
-LOCAL_LABEL(RhpCheckedLockCmpXchg_NoWrite):
+LOCAL_LABEL(CheckedLockCmpXchg_NoWrite):
     ret 4
-LEAF_END RhpCheckedLockCmpXchg, _TEXT
+LEAF_END CheckedLockCmpXchg, _TEXT
 
-LEAF_ENTRY RhpCheckedXchg, _TEXT
+LEAF_ENTRY CheckedXchg, _TEXT
 
     // Setup eax with the new object for the exchange, that way it will automatically hold the correct result
     // afterwards and we can leave edx unaltered ready for the GC write barrier below.
@@ -241,13 +241,13 @@ LEAF_ENTRY RhpCheckedXchg, _TEXT
     xchg            [ecx], eax
     push eax
 
-    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, ECX, EDX, EAX
+    DEFINE_CHECKED_WRITE_BARRIER_CORE CheckedXchg, ECX, EDX, EAX
     pop eax
     ret
-LEAF_END RhpCheckedXchg, _TEXT
+LEAF_END CheckedXchg, _TEXT
 
 //
-// RhpByRefAssignRef simulates movs instruction for object references.
+// ByRefAssignRef simulates movs instruction for object references.
 //
 // On entry:
 //      edi: address of ref-field (assigned to)
@@ -257,10 +257,10 @@ LEAF_END RhpCheckedXchg, _TEXT
 //      edi, esi are incremented by 4,
 //      ecx: trashed
 //
-LEAF_ENTRY RhpByRefAssignRef, _TEXT
-ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
+LEAF_ENTRY ByRefAssignRef, _TEXT
+ALTERNATE_ENTRY ByRefAssignRefAVLocation1
     mov     ecx, [esi]
-ALTERNATE_ENTRY RhpByRefAssignRefAVLocation2
+ALTERNATE_ENTRY ByRefAssignRefAVLocation2
     mov     [edi], ecx
 
     push eax
@@ -268,35 +268,35 @@ ALTERNATE_ENTRY RhpByRefAssignRefAVLocation2
     // Check whether the writes were even into the heap. If not there's no card update required.
     PREPARE_EXTERNAL_VAR g_lowest_address, eax
     cmp     edi, [eax]
-    jb      LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired)
+    jb      LOCAL_LABEL(ByRefAssignRef_NoBarrierRequired)
     PREPARE_EXTERNAL_VAR g_highest_address, eax
     cmp     edi, [eax]
-    jae     LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired)
+    jae     LOCAL_LABEL(ByRefAssignRef_NoBarrierRequired)
 
-    UPDATE_GC_SHADOW RhpByRefAssignRef, ecx, edi, eax
+    UPDATE_GC_SHADOW ByRefAssignRef, ecx, edi, eax
 
     // If the reference is to an object that's not in an ephemeral generation we have no need to track it
     // (since the object won't be collected or moved by an ephemeral collection).
     PREPARE_EXTERNAL_VAR g_ephemeral_low, eax
     cmp     ecx, [eax]
-    jb      LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired)
+    jb      LOCAL_LABEL(ByRefAssignRef_NoBarrierRequired)
     PREPARE_EXTERNAL_VAR g_ephemeral_high, eax
     cmp     ecx, [eax]
-    jae     LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired)
+    jae     LOCAL_LABEL(ByRefAssignRef_NoBarrierRequired)
 
     mov     ecx, edi
     shr     ecx, 10
     PREPARE_EXTERNAL_VAR g_card_table, eax
     add     ecx, [eax]
     cmp     byte ptr [ecx], 0xFF
-    je      LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired)
+    je      LOCAL_LABEL(ByRefAssignRef_NoBarrierRequired)
 
     mov     byte ptr [ecx], 0xFF
 
-LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired):
+LOCAL_LABEL(ByRefAssignRef_NoBarrierRequired):
     // Increment the pointers before leaving
     add     esi,4
     add     edi,4
     pop     eax
     ret
-LEAF_END RhpByRefAssignRef, _TEXT
+LEAF_END ByRefAssignRef, _TEXT
