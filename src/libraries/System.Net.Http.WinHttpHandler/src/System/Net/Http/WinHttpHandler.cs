@@ -709,11 +709,12 @@ namespace System.Net.Http
             return chunkedMode;
         }
 
-#if NETFRAMEWORK
         private static bool ContainsOnlyValidLatin1(string headerString)
         {
             foreach (char c in headerString)
             {
+                // See https://www.rfc-editor.org/rfc/rfc9110.html#section-5.5-5:
+                // "Field values containing CR, LF, or NUL characters are invalid and dangerous"
                 if (c <= 0 || c > 255 || c == '\r' || c == '\n')
                 {
                     return false;
@@ -721,7 +722,6 @@ namespace System.Net.Http
             }
             return true;
         }
-#endif
 
         private static void AddRequestHeaders(
             SafeWinHttpHandle requestHandle,
@@ -754,11 +754,7 @@ namespace System.Net.Http
 
             // Serialize general request headers.
             string requestHeaders = requestMessage.Headers.ToString();
-#if NETFRAMEWORK
             if (!ContainsOnlyValidLatin1(requestHeaders))
-#else
-            if (requestHeaders.ContainsAnyExceptInRange((char)1, (char)255))
-#endif
             {
                 throw new FormatException(SR.Format(SR.net_http_invalid_header_value, nameof(HttpRequestMessage)));
             }
@@ -778,11 +774,7 @@ namespace System.Net.Http
                 }
 
                 string contentHeaders = requestMessage.Content.Headers.ToString();
-#if NETFRAMEWORK
-            if (!ContainsOnlyValidLatin1(requestHeaders))
-#else
-            if (requestHeaders.ContainsAnyExceptInRange((char)1, (char)255))
-#endif
+                if (!ContainsOnlyValidLatin1(contentHeaders))
                 {
                     throw new FormatException(SR.Format(SR.net_http_invalid_header_value, nameof(HttpContent)));
                 }

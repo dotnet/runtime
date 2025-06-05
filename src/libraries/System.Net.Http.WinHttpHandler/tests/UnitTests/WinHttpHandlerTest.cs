@@ -121,7 +121,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 
             SendRequestHelper.Send(
                 handler,
-                () => handler.TcpKeepAliveEnabled = false );
+                () => handler.TcpKeepAliveEnabled = false);
             Assert.Null(APICallHistory.WinHttpOptionTcpKeepAlive);
         }
 
@@ -835,6 +835,94 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 {
                 }
             }
+        }
+
+        [Theory]
+        [InlineData('\r', HeaderType.Request)]
+        [InlineData('\n', HeaderType.Request)]
+        [InlineData('\0', HeaderType.Request)]
+        [InlineData('\r', HeaderType.Content)]
+        [InlineData('\n', HeaderType.Content)]
+        [InlineData('\0', HeaderType.Content)]
+        [InlineData('\r', HeaderType.Cookie)]
+        [InlineData('\n', HeaderType.Cookie)]
+        [InlineData('\0', HeaderType.Cookie)]
+        public async Task SendAsync_RequestWithDangerousControlHeaderValue_ThrowsHttpRequestException(char dangerousChar, HeaderType headerType)
+        {
+            var handler = new WinHttpHandler();
+            using (var client = new HttpClient(handler))
+            {
+                TestServer.SetResponse(DecompressionMethods.None, TestServer.ExpectedResponseBody);
+
+                var request = new HttpRequestMessage(HttpMethod.Get, TestServer.FakeServerEndpoint);
+                switch (headerType)
+                {
+                    case HeaderType.Request:
+                        request.Headers.Add("Custom-Header", $"HeaderValue{dangerousChar}WithControlChar");
+                        break;
+                    case HeaderType.Content:
+                        request.Content = new StringContent("test content");
+                        request.Content.Headers.Add("Custom-Content-Header", $"ContentValue{dangerousChar}WithControlChar");
+                        break;
+                    case HeaderType.Cookie:
+                        handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
+                        handler.CookieContainer = new CookieContainer();
+                        handler.CookieContainer.Add(new Uri(TestServer.FakeServerEndpoint), new Cookie("CustomCookie", $"Value{dangerousChar}WithControlChar"));
+                        break;
+                }
+
+                var ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
+                var fex = Assert.IsType<FormatException>(ex.InnerException);
+                Assert.Contains("Latin-1", fex.Message);
+            }
+        }
+
+        [Theory]
+        [InlineData('\u00A9', HeaderType.Request)]
+        [InlineData('\u00FF', HeaderType.Request)]
+        [InlineData('\u0001', HeaderType.Request)]
+        [InlineData('\u00A9', HeaderType.Content)]
+        [InlineData('\u00FF', HeaderType.Content)]
+        [InlineData('\u0001', HeaderType.Content)]
+        [InlineData('\u00A9', HeaderType.Cookie)]
+        [InlineData('\u00FF', HeaderType.Cookie)]
+        [InlineData('\u0001', HeaderType.Cookie)]
+        public async Task SendAsync_RequestWithLatin1HeaderValue_Succeeds(char safeChar, HeaderType headerType)
+        {
+            var handler = new WinHttpHandler();
+            using (var client = new HttpClient(handler))
+            {
+                TestServer.SetResponse(DecompressionMethods.None, TestServer.ExpectedResponseBody);
+
+                var request = new HttpRequestMessage(HttpMethod.Get, TestServer.FakeServerEndpoint);
+                switch (headerType)
+                {
+                    case HeaderType.Request:
+                        request.Headers.Add("Custom-Header", $"HeaderValue{safeChar}WithSafeChar");
+                        break;
+                    case HeaderType.Content:
+                        request.Content = new StringContent("test content");
+                        request.Content.Headers.Add("Custom-Content-Header", $"ContentValue{safeChar}WithSafeChar");
+                        break;
+                    case HeaderType.Cookie:
+                        handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
+                        handler.CookieContainer = new CookieContainer();
+                        handler.CookieContainer.Add(new Uri(TestServer.FakeServerEndpoint), new Cookie("CustomCookie", $"Value{safeChar}WithSafeChar"));
+                        break;
+                }
+
+                using (HttpResponseMessage response = await client.SendAsync(request))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            }
+        }
+
+        public enum HeaderType
+        {
+            Request,
+            Content,
+            Cookie
         }
 
         // Commented out as the test relies on finalizer for cleanup and only has value as written
