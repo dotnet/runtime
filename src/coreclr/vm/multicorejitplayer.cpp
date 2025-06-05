@@ -1125,7 +1125,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
     const BYTE * pBuffer = m_pFileBuffer;
 
-    unsigned nSize = m_nFileSize;
+    size_t nSize = (size_t)m_nFileSize;
 
     MulticoreJitTrace(("PlayProfile %d bytes in (%s)",
         nSize,
@@ -1135,7 +1135,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
     {
         unsigned data1 = * (const unsigned *) pBuffer;
         unsigned rcdTyp = data1 >> RECORD_TYPE_OFFSET;
-        unsigned rcdLen = 0;
+        size_t rcdLen = 0;
 
         if (rcdTyp == MULTICOREJIT_MODULE_RECORD_ID)
         {
@@ -1157,8 +1157,8 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
                 break;
             }
 
-            unsigned signatureLength = * (const unsigned short *) (((const unsigned *) pBuffer) + 1);
-            DWORD dataSize = signatureLength + sizeof(DWORD) + sizeof(unsigned short);
+            size_t signatureLength = * (const unsigned short *) (((const unsigned *) pBuffer) + 1);
+            size_t dataSize = signatureLength + sizeof(DWORD) + sizeof(unsigned short);
             dataSize = AlignUp(dataSize, sizeof(DWORD));
             rcdLen = dataSize;
         }
@@ -1203,19 +1203,19 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
             bool isMethod = true;
             bool isGenericMethod = rcdTyp == MULTICOREJIT_GENERICMETHOD_RECORD_ID;
             const BYTE * pCurBuf = pBuffer;
-            unsigned curSize = nSize;
+            size_t curSize = nSize;
 
-            unsigned sizes[MAX_WALKBACK] = {0};
+            size_t sizes[MAX_WALKBACK] = {0};
             int count = 0;
 
             do
             {
-                unsigned currcdLen = 0;
+                size_t currcdLen = 0;
 
                 if (isGenericMethod)
                 {
-                    unsigned cursignatureLength = * (const unsigned short *) (((const unsigned *) pCurBuf) + 1);
-                    DWORD dataSize = cursignatureLength + sizeof(DWORD) + sizeof(unsigned short);
+                    size_t cursignatureLength = * (const unsigned short *) (((const unsigned *) pCurBuf) + 1);
+                    size_t dataSize = cursignatureLength + sizeof(DWORD) + sizeof(unsigned short);
                     dataSize = AlignUp(dataSize, sizeof(DWORD));
                     currcdLen = dataSize;
                 }
