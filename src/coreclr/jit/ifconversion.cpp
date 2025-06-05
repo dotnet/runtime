@@ -259,7 +259,7 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                     GenTree* op1 = tree->AsLclVar()->Data();
 
 #ifdef TARGET_RISCV64
-                    if (!m_doElseConversion || !op1->IsIntegralConst())
+                    if (!m_doElseConversion)
                     {
                         return false;
                     }
@@ -324,12 +324,6 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                     }
 #endif
 
-#ifdef TARGET_RISCV64
-                    if (!retVal->IsIntegralConst())
-                    {
-                        return false;
-                    }
-#endif
                     // Ensure it won't cause any additional side effects.
                     if ((retVal->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
                     {
@@ -909,6 +903,43 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
         return m_comp->gtNewOperNode(oper, opType, left, right);
 #endif // TARGET_RISCV64
     }
+#ifdef TARGET_RISCV64
+    else
+    {
+        bool isTrueLclVar  = trueInput->OperIs(GT_LCL_VAR);
+        bool isFalseLclVar = falseInput->OperIs(GT_LCL_VAR);
+        if (isTrueLclVar != isFalseLclVar)
+        {
+            GenTreeLclVarCommon* lclVar = (isTrueLclVar ? trueInput : falseInput)->AsLclVarCommon();
+
+            unsigned  lclNum     = lclVar->GetLclNum();
+            var_types lclVarType = m_comp->lvaGetDesc(lclNum)->TypeGet();
+
+            GenTree* op = isTrueLclVar ? falseInput : trueInput;
+            if (op->OperIs(GT_CAST))
+            {
+                // TODO: check if casts to variable type
+                // if (op->AsCast()->gtCastType == ???)
+            }
+            if (op->OperIs(GT_ADD, GT_OR, GT_XOR))
+            {
+                GenTree*& op1 = op->AsOp()->gtOp1;
+                GenTree*& op2 = op->AsOp()->gtOp2;
+                if (op1->IsIntegralConst(1) || op2->IsIntegralConst(1))
+                {
+                    GenTree* otherOp = op1->IsIntegralConst(1) ? op2 : op1;
+                    if (otherOp->OperIs(GT_LCL_VAR) && otherOp->AsLclVar()->GetLclNum() == lclNum)
+                    {
+                        GenTree*& constOp = op1->IsIntegralConst(1) ? op1 : op2;
+
+                        constOp = m_cond;
+                        return op;
+                    }
+                }
+            }
+        }
+    }
+#endif // TARGET_RISCV64
     return nullptr;
 }
 

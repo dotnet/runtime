@@ -20,6 +20,40 @@ public class ConditionalSimpleOpTest
     }
 
     [Theory]
+    [InlineData(11, 12)]
+    [InlineData(12, 13)]
+    [InlineData(45, 45)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void add_variable(int op1, int expected)
+    {
+        op1 = op1 < 42 ? op1 + 1 : op1;
+        Assert.Equal(expected, op1);
+    }
+
+
+    [Theory]
+    [InlineData(12, 13)]
+    [InlineData(13, 13)]
+    [InlineData(45, 45)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void or_variable(int op1, int expected)
+    {
+        op1 = op1 < 42 ? op1 | 1 : op1;
+        Assert.Equal(expected, op1);
+    }
+
+    [Theory]
+    [InlineData(12, 13)]
+    [InlineData(13, 12)]
+    [InlineData(45, 45)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void xor_variable(int op1, int expected)
+    {
+        op1 = op1 < 42 ? op1 ^ 1 : op1;
+        Assert.Equal(expected, op1);
+    }
+
+    [Theory]
     [InlineData(12, -13)]
     [InlineData(45, -25)]
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -58,7 +92,7 @@ public class ConditionalSimpleOpTest
         long result = op1 > 42 ? 0xFFFF_FFE7 : 0x7FFF_FFF3;
         Assert.Equal(expected, result);
     }
-    
+
     [Theory]
     [InlineData(12, 64)]
     [InlineData(45, 0)]
@@ -68,7 +102,7 @@ public class ConditionalSimpleOpTest
         int result = op1 < 42 ? 64 : 0;
         Assert.Equal(expected, result);
     }
-    
+
     [Theory]
     [InlineData(12, long.MinValue)]
     [InlineData(45, 0)]
@@ -78,7 +112,7 @@ public class ConditionalSimpleOpTest
         long result = op1 >= 42 ? 0 : long.MinValue;
         Assert.Equal(expected, result);
     }
-    
+
     [Theory]
     [InlineData(12, 0xFFFF_FFFF_8000_0000ul)]
     [InlineData(45, 0ul)]
