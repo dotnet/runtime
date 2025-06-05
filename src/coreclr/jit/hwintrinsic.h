@@ -562,7 +562,8 @@ struct HWIntrinsicInfo
     // genIsTableDrivenHWIntrinsic:
     //
     // Arguments:
-    //    category - category of a HW intrinsic
+    //    intrinsicId - The identifier for the hwintrinsic to check
+    //    category  - The category of intrinsicId
     //
     // Return Value:
     //    returns true if this category can be table-driven in CodeGen
