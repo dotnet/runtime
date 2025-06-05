@@ -1195,8 +1195,17 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     m_methodInfo = methodInfo;
 
 #ifdef DEBUG
-    m_methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, nullptr, nullptr, nullptr, 0);
-    if (m_methodName && InterpConfig.InterpDump() && !strcmp(m_methodName, InterpConfig.InterpDump()))
+
+    m_classHnd   = compHnd->getMethodClass(m_methodHnd);
+
+    m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
+                            /* includeClassInstantiation */ true,
+                            /* includeMethodInstantiation */ true,
+                            /* includeSignature */ true,
+                            /* includeReturnType */ false,
+                            /* includeThis */ false);
+
+    if (InterpConfig.InterpDump().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args))
         m_verbose = true;
 #endif
 }
@@ -1204,11 +1213,9 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 InterpMethod* InterpCompiler::CompileMethod()
 {
 #ifdef DEBUG
-    if (m_verbose)
+    if (m_verbose || InterpConfig.InterpList())
     {
-        printf("Interpreter compile method ");
-        PrintMethodName(m_methodHnd);
-        printf("\n");
+        printf("Interpreter compile method %s\n", m_methodName.GetUnderlyingArray());
     }
 #endif
 
@@ -2731,6 +2738,17 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             break;
         }
+        case CORINFO_FIELD_INTRINSIC_EMPTY_STRING:
+        {
+            void *emptyString;
+            InfoAccessType iat = m_compHnd->emptyStringLiteral(&emptyString);
+            assert(iat == IAT_VALUE);
+            AddIns(INTOP_LDPTR);
+            PushInterpType(InterpTypeO, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            m_pLastNewIns->data[0] = GetDataItemIndex(emptyString);
+            break;
+        }
         default:
             // TODO
             assert(0);
@@ -2827,7 +2845,7 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     m_currentILOffset = -1;
 
 #if DEBUG
-    if (m_methodName && InterpConfig.InterpHalt() && !strcmp(m_methodName, InterpConfig.InterpHalt()))
+    if (InterpConfig.InterpHalt().contains(m_compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args))
         AddIns(INTOP_BREAKPOINT);
 #endif
 
@@ -4527,17 +4545,17 @@ retry_emit:
                 
                 // see jit/importer.cpp CEE_LDTOKEN
                 CorInfoHelpFunc helper;
-                if (resolvedToken.hClass)
+                if (resolvedToken.hField)
                 {
-                    helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
+                    helper = CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD;
                 }
                 else if (resolvedToken.hMethod)
                 {
                     helper = CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD;
                 }
-                else if (resolvedToken.hField)
+                else if (resolvedToken.hClass)
                 {
-                    helper = CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD;
+                    helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
                 }
                 else
                 {
@@ -4663,13 +4681,20 @@ void InterpCompiler::PrintClassName(CORINFO_CLASS_HANDLE cls)
 
 void InterpCompiler::PrintMethodName(CORINFO_METHOD_HANDLE method)
 {
-    char methodName[100];
-
     CORINFO_CLASS_HANDLE cls = m_compHnd->getMethodClass(method);
-    PrintClassName(cls);
 
-    m_compHnd->printMethodName(method, methodName, 100);
-    printf(".%s", methodName);
+    CORINFO_SIG_INFO sig;
+    m_compHnd->getMethodSig(method, &sig, cls);
+
+    TArray<char> methodName = ::PrintMethodName(m_compHnd, cls, method, &sig,
+                            /* includeClassInstantiation */ true,
+                            /* includeMethodInstantiation */ true,
+                            /* includeSignature */ true,
+                            /* includeReturnType */ false,
+                            /* includeThis */ false);
+
+
+    printf(".%s", methodName.GetUnderlyingArray());
 }
 
 void InterpCompiler::PrintCode()

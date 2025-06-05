@@ -3909,18 +3909,6 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     _ASSERTE(*castto(table, unsigned short *)++ == 0xBABE);
 #endif
 
-#ifdef FEATURE_EH_FUNCLETS   // funclets
-    //
-    // If we're in a funclet, we do not want to report the incoming varargs.  This is
-    // taken care of by the parent method and the funclet should access those arguments
-    // by way of the parent method's stack frame.
-    //
-    if (isFunclet)
-    {
-        return true;
-    }
-#endif // FEATURE_EH_FUNCLETS
-
     /* Are we a varargs function, if so we have to report all args
        except 'this' (note that the GC tables created by the x86 jit
        do not contain ANY arguments except 'this' (even if they

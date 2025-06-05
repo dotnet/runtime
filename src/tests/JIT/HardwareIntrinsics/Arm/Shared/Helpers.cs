@@ -635,7 +635,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 if ((val & (cst_one << i)) != 0)
                 {
-                    result |= (byte)(cst_one << (bitsize  - 1 - i));
+                    result |= (byte)(cst_one << (bitsize - 1 - i));
                 }
             }
 
@@ -653,7 +653,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 if ((val & (cst_one << i)) != 0)
                 {
-                    result |= (short)(cst_one << (bitsize  - 1 - i));
+                    result |= (short)(cst_one << (bitsize - 1 - i));
                 }
             }
 
@@ -671,7 +671,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 if ((val & (cst_one << i)) != 0)
                 {
-                    result |= (uint)(cst_one << (bitsize  - 1 - i));
+                    result |= (uint)(cst_one << (bitsize - 1 - i));
                 }
             }
 
@@ -689,7 +689,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 if ((val & (cst_one << i)) != 0)
                 {
-                    result |= (ulong)(cst_one << (bitsize  - 1 - i));
+                    result |= (ulong)(cst_one << (bitsize - 1 - i));
                 }
             }
 
@@ -707,7 +707,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 if ((val & (cst_one << i)) != 0)
                 {
-                    result |= (byte)(cst_one << (bitsize  - 1 - i));
+                    result |= (byte)(cst_one << (bitsize - 1 - i));
                 }
             }
 
@@ -725,7 +725,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 if ((val & (cst_one << i)) != 0)
                 {
-                    result |= (ushort)(cst_one << (bitsize  - 1 - i));
+                    result |= (ushort)(cst_one << (bitsize - 1 - i));
                 }
             }
 
@@ -743,7 +743,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 if ((val & (cst_one << i)) != 0)
                 {
-                    result |= (uint)(cst_one << (bitsize  - 1 - i));
+                    result |= (uint)(cst_one << (bitsize - 1 - i));
                 }
             }
 
@@ -761,7 +761,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 if ((val & (cst_one << i)) != 0)
                 {
-                    result |= (ulong)(cst_one << (bitsize  - 1 - i));
+                    result |= (ulong)(cst_one << (bitsize - 1 - i));
                 }
             }
 
@@ -1881,7 +1881,7 @@ namespace JIT.HardwareIntrinsics.Arm
         public static uint SveCompareNotEqual(uint left, uint right) => (uint)((left != right) ? 1 : 0);
         public static long SveCompareNotEqual(long left, long right) => (long)((left != right) ? 1 : 0);
         public static ulong SveCompareNotEqual(ulong left, ulong right) => (ulong)((left != right) ? 1 : 0);
-        
+
         public static double SveCompareGreaterThan(double left, double right) => BitConverter.Int64BitsToDouble((left > right) ? 1 : 0);
         public static float SveCompareGreaterThan(float left, float right) => BitConverter.Int32BitsToSingle((left > right) ? 1 : 0);
         public static sbyte SveCompareGreaterThan(sbyte left, sbyte right) => (sbyte)((left > right) ? 1 : 0);
@@ -1892,7 +1892,7 @@ namespace JIT.HardwareIntrinsics.Arm
         public static uint SveCompareGreaterThan(uint left, uint right) => (uint)((left > right) ? 1 : 0);
         public static long SveCompareGreaterThan(long left, long right) => (long)((left > right) ? 1 : 0);
         public static ulong SveCompareGreaterThan(ulong left, ulong right) => (ulong)((left > right) ? 1 : 0);
-        
+
         public static double SveCompareGreaterThanOrEqual(double left, double right) => BitConverter.Int64BitsToDouble((left >= right) ? 1 : 0);
         public static float SveCompareGreaterThanOrEqual(float left, float right) => BitConverter.Int32BitsToSingle((left >= right) ? 1 : 0);
         public static sbyte SveCompareGreaterThanOrEqual(sbyte left, sbyte right) => (sbyte)((left >= right) ? 1 : 0);
@@ -1913,7 +1913,7 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int SveCompareLessThan(int left, int right) => (int)((left < right) ? 1 : 0);
         public static uint SveCompareLessThan(uint left, uint right) => (uint)((left < right) ? 1 : 0);
         public static long SveCompareLessThan(long left, long right) => (long)((left < right) ? 1 : 0);
-        public static ulong SveCompareLessThan(ulong left, ulong right) => (ulong)((left < right) ? 1 : 0);      
+        public static ulong SveCompareLessThan(ulong left, ulong right) => (ulong)((left < right) ? 1 : 0);
 
         public static double SveCompareLessThanOrEqual(double left, double right) => BitConverter.Int64BitsToDouble((left <= right) ? 1 : 0);
         public static float SveCompareLessThanOrEqual(float left, float right) => BitConverter.Int32BitsToSingle((left <= right) ? 1 : 0);
@@ -2091,13 +2091,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float Scale(float op1, int op2) => op1 * MathF.Pow((float)2.0, op2);
 
-        public static double Scale(double op1, long op2) =>  op1 * Math.Pow(2.0, op2);
+        public static double Scale(double op1, long op2) => op1 * Math.Pow(2.0, op2);
 
         public static float Sqrt(float value) => MathF.Sqrt(value);
 
         public static double Sqrt(double value) => Math.Sqrt(value);
 
         public static long AbsoluteDifference(long op1, long op2) => op1 < op2 ? (long)(op2 - op1) : (long)(op1 - op2);
+
+        public static long AbsoluteDifferenceAdd(long op1, long op2, long op3) => (long)(op1 + AbsoluteDifference(op2, op3));
 
         public static byte AbsoluteDifference(sbyte op1, sbyte op2) => op1 < op2 ? (byte)(op2 - op1) : (byte)(op1 - op2);
 
@@ -2119,6 +2121,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ulong AbsoluteDifference(ulong op1, ulong op2) => op1 < op2 ? (ulong)(op2 - op1) : (ulong)(op1 - op2);
 
+        public static ulong AbsoluteDifferenceAdd(ulong op1, ulong op2, ulong op3) => (ulong)(op1 + AbsoluteDifference(op2, op3));
+
         public static ushort AbsoluteDifferenceAdd(ushort op1, ushort op2, ushort op3) => (ushort)(op1 + AbsoluteDifference(op2, op3));
 
         public static uint AbsoluteDifference(uint op1, uint op2) => op1 < op2 ? (uint)(op2 - op1) : (uint)(op1 - op2);
@@ -2132,6 +2136,10 @@ namespace JIT.HardwareIntrinsics.Arm
         public static short AbsoluteDifferenceWideningAndAdd(short op1, sbyte op2, sbyte op3) => (short)(op1 + (short)AbsoluteDifferenceWidening(op2, op3));
 
         public static short AbsoluteDifferenceWideningUpperAndAdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static short AbsoluteDifferenceWideningLowerAndAddEven(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+
+        public static short AbsoluteDifferenceWideningLowerAndAddOdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
 
         public static short AddAcrossWidening(sbyte[] op1) => Reduce(AddWidening, op1);
 
@@ -2265,6 +2273,10 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int AbsoluteDifferenceWideningUpperAndAdd(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
+        public static int AbsoluteDifferenceWideningLowerAndAddEven(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+
+        public static int AbsoluteDifferenceWideningLowerAndAddOdd(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
+
         public static int AddAcrossWidening(short[] op1) => Reduce(AddWidening, op1);
 
         public static long AddAcrossWideningLong(short[] op1) => Reduce(AddWidening, op1);
@@ -2380,6 +2392,10 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long AbsoluteDifferenceWideningAndAdd(long op1, int op2, int op3) => (long)(op1 + (long)AbsoluteDifferenceWidening(op2, op3));
 
         public static long AbsoluteDifferenceWideningUpperAndAdd(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static long AbsoluteDifferenceWideningLowerAndAddEven(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+
+        public static long AbsoluteDifferenceWideningLowerAndAddOdd(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
 
         public static long AddAcrossWidening(int[] op1) => Reduce(AddWidening, op1);
 
@@ -2526,6 +2542,10 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort AbsoluteDifferenceWideningUpperAndAdd(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
+        public static ushort AbsoluteDifferenceWideningLowerAndAddEven(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+
+        public static ushort AbsoluteDifferenceWideningLowerAndAddOdd(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
+
         public static ushort AddAcrossWidening(byte[] op1) => Reduce(AddWidening, op1);
 
         public static ulong AddAcrossWideningULong(byte[] op1) => Reduce(AddWidening, op1);
@@ -2642,6 +2662,10 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint AbsoluteDifferenceWideningUpperAndAdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
+        public static uint AbsoluteDifferenceWideningLowerAndAddEven(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+
+        public static uint AbsoluteDifferenceWideningLowerAndAddOdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
+
         public static uint AddAcrossWidening(ushort[] op1) => Reduce(AddWidening, op1);
 
         public static ulong AddAcrossWideningULong(ushort[] op1) => Reduce(AddWidening, op1);
@@ -2757,6 +2781,10 @@ namespace JIT.HardwareIntrinsics.Arm
         public static ulong AbsoluteDifferenceWideningAndAdd(ulong op1, uint op2, uint op3) => (ulong)(op1 + (ulong)AbsoluteDifferenceWidening(op2, op3));
 
         public static ulong AbsoluteDifferenceWideningUpperAndAdd(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static ulong AbsoluteDifferenceWideningLowerAndAddEven(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+
+        public static ulong AbsoluteDifferenceWideningLowerAndAddOdd(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
 
         public static ulong AddAcrossWidening(uint[] op1) => Reduce(AddWidening, op1);
 
@@ -3862,6 +3890,35 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        private static long GetShift(long shift, long size, bool shiftSat)
+        {
+            if (shiftSat)
+            {
+                // SVE shifts are saturated to element size
+                shift = (int)ShiftSat(shift, size);
+            }
+            else
+            {
+                // NEON shifts are truncated to bottom byte
+                shift = (sbyte)shift;
+            }
+            return shift;
+        }
+
+        public static long ShiftSat(long shift, long size)
+        {
+            if (shift > size + 1)
+            {
+                return size + 1;
+            }
+            else if (shift < -(size + 1))
+            {
+                return -(size + 1);
+            }
+
+            return shift;
+        }
+
         public static int ShiftRightLogicalNarrowingSaturateUpper(int[] op1, long[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (int)ShiftRightLogicalNarrowingSaturate(op2[i - op1.Length], op3);
 
         public static uint ShiftRightLogicalNarrowingSaturateUpper(uint[] op1, ulong[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (uint)ShiftRightLogicalNarrowingSaturate(op2[i - op1.Length], op3);
@@ -3878,9 +3935,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte ShiftArithmeticRoundedSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, saturating: true);
 
-        private static sbyte SignedShift(sbyte op1, sbyte op2, bool rounding = false, bool saturating = false)
+        private static sbyte SignedShift(sbyte op1, sbyte op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 8, shiftSat);
 
             sbyte rndCns = 0;
 
@@ -3888,7 +3945,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 bool ovf;
 
-                (rndCns, ovf) = ShiftOvf((sbyte)1, -shift-1);
+                (rndCns, ovf) = ShiftOvf((sbyte)1, -shift - 1);
 
                 if (ovf)
                 {
@@ -3916,7 +3973,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = sbyte.MaxValue;
+                        result = op2 < 0 ? sbyte.MinValue : sbyte.MaxValue;
                     }
                 }
             }
@@ -3964,11 +4021,11 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte ShiftRightArithmetic(sbyte op1, byte op2) => SignedShift(op1, (sbyte)(-op2));
 
-        public static sbyte ShiftRightArithmeticAdd(sbyte op1, sbyte op2, byte op3) =>  (sbyte)(op1 + ShiftRightArithmetic(op2, op3));
+        public static sbyte ShiftRightArithmeticAdd(sbyte op1, sbyte op2, byte op3) => (sbyte)(op1 + ShiftRightArithmetic(op2, op3));
 
         public static sbyte ShiftRightArithmeticRounded(sbyte op1, byte op2) => SignedShift(op1, (sbyte)(-op2), rounding: true);
 
-        public static sbyte ShiftRightArithmeticRoundedAdd(sbyte op1, sbyte op2, byte op3) =>  (sbyte)(op1 + ShiftRightArithmeticRounded(op2, op3));
+        public static sbyte ShiftRightArithmeticRoundedAdd(sbyte op1, sbyte op2, byte op3) => (sbyte)(op1 + ShiftRightArithmeticRounded(op2, op3));
 
         public static sbyte ShiftRightLogical(sbyte op1, byte op2) => UnsignedShift(op1, (sbyte)(-op2));
 
@@ -3996,7 +4053,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 bool ovf;
 
-                (rndCns, ovf) = ShiftOvf((byte)1, -shift-1);
+                (rndCns, ovf) = ShiftOvf((byte)1, -shift - 1);
 
                 if (ovf)
                 {
@@ -4192,9 +4249,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short ShiftArithmeticRoundedSaturate(short op1, short op2) => SignedShift(op1, op2, rounding: true, saturating: true);
 
-        private static short SignedShift(short op1, short op2, bool rounding = false, bool saturating = false)
+        private static short SignedShift(short op1, short op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 16, shiftSat);
 
             short rndCns = 0;
 
@@ -4202,7 +4259,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 bool ovf;
 
-                (rndCns, ovf) = ShiftOvf((short)1, -shift-1);
+                (rndCns, ovf) = ShiftOvf((short)1, -shift - 1);
 
                 if (ovf)
                 {
@@ -4230,7 +4287,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = short.MaxValue;
+                        result = op1 < 0 ? short.MinValue : short.MaxValue;
                     }
                 }
             }
@@ -4266,11 +4323,11 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short ShiftRightArithmetic(short op1, byte op2) => SignedShift(op1, (short)(-op2));
 
-        public static short ShiftRightArithmeticAdd(short op1, short op2, byte op3) =>  (short)(op1 + ShiftRightArithmetic(op2, op3));
+        public static short ShiftRightArithmeticAdd(short op1, short op2, byte op3) => (short)(op1 + ShiftRightArithmetic(op2, op3));
 
         public static short ShiftRightArithmeticRounded(short op1, byte op2) => SignedShift(op1, (short)(-op2), rounding: true);
 
-        public static short ShiftRightArithmeticRoundedAdd(short op1, short op2, byte op3) =>  (short)(op1 + ShiftRightArithmeticRounded(op2, op3));
+        public static short ShiftRightArithmeticRoundedAdd(short op1, short op2, byte op3) => (short)(op1 + ShiftRightArithmeticRounded(op2, op3));
 
         public static short ShiftRightLogical(short op1, byte op2) => UnsignedShift(op1, (short)(-op2));
 
@@ -4298,7 +4355,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 bool ovf;
 
-                (rndCns, ovf) = ShiftOvf((ushort)1, -shift-1);
+                (rndCns, ovf) = ShiftOvf((ushort)1, -shift - 1);
 
                 if (ovf)
                 {
@@ -4460,9 +4517,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int ShiftArithmeticRoundedSaturate(int op1, int op2) => SignedShift(op1, op2, rounding: true, saturating: true);
 
-        private static int SignedShift(int op1, int op2, bool rounding = false, bool saturating = false)
+        private static int SignedShift(int op1, int op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 32, shiftSat);
 
             int rndCns = 0;
 
@@ -4470,7 +4527,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 bool ovf;
 
-                (rndCns, ovf) = ShiftOvf((int)1, -shift-1);
+                (rndCns, ovf) = ShiftOvf((int)1, -shift - 1);
 
                 if (ovf)
                 {
@@ -4498,7 +4555,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = int.MaxValue;
+                        result = op1 < 0 ? int.MinValue : int.MaxValue;
                     }
                 }
             }
@@ -4534,11 +4591,11 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int ShiftRightArithmetic(int op1, byte op2) => SignedShift(op1, (int)(-op2));
 
-        public static int ShiftRightArithmeticAdd(int op1, int op2, byte op3) =>  (int)(op1 + ShiftRightArithmetic(op2, op3));
+        public static int ShiftRightArithmeticAdd(int op1, int op2, byte op3) => (int)(op1 + ShiftRightArithmetic(op2, op3));
 
         public static int ShiftRightArithmeticRounded(int op1, byte op2) => SignedShift(op1, (int)(-op2), rounding: true);
 
-        public static int ShiftRightArithmeticRoundedAdd(int op1, int op2, byte op3) =>  (int)(op1 + ShiftRightArithmeticRounded(op2, op3));
+        public static int ShiftRightArithmeticRoundedAdd(int op1, int op2, byte op3) => (int)(op1 + ShiftRightArithmeticRounded(op2, op3));
 
         public static int ShiftRightLogical(int op1, byte op2) => UnsignedShift(op1, (int)(-op2));
 
@@ -4566,7 +4623,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 bool ovf;
 
-                (rndCns, ovf) = ShiftOvf((uint)1, -shift-1);
+                (rndCns, ovf) = ShiftOvf((uint)1, -shift - 1);
 
                 if (ovf)
                 {
@@ -4728,9 +4785,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long ShiftArithmeticRoundedSaturate(long op1, long op2) => SignedShift(op1, op2, rounding: true, saturating: true);
 
-        private static long SignedShift(long op1, long op2, bool rounding = false, bool saturating = false)
+        private static long SignedShift(long op1, long op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 64, shiftSat);
 
             long rndCns = 0;
 
@@ -4738,7 +4795,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 bool ovf;
 
-                (rndCns, ovf) = ShiftOvf((long)1, -shift-1);
+                (rndCns, ovf) = ShiftOvf((long)1, -shift - 1);
 
                 if (ovf)
                 {
@@ -4766,7 +4823,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = long.MaxValue;
+                        result = op1 < 0 ? long.MinValue : long.MaxValue;
                     }
                 }
             }
@@ -4802,11 +4859,11 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long ShiftRightArithmetic(long op1, byte op2) => SignedShift(op1, (long)(-op2));
 
-        public static long ShiftRightArithmeticAdd(long op1, long op2, byte op3) =>  (long)(op1 + ShiftRightArithmetic(op2, op3));
+        public static long ShiftRightArithmeticAdd(long op1, long op2, byte op3) => (long)(op1 + ShiftRightArithmetic(op2, op3));
 
         public static long ShiftRightArithmeticRounded(long op1, byte op2) => SignedShift(op1, (long)(-op2), rounding: true);
 
-        public static long ShiftRightArithmeticRoundedAdd(long op1, long op2, byte op3) =>  (long)(op1 + ShiftRightArithmeticRounded(op2, op3));
+        public static long ShiftRightArithmeticRoundedAdd(long op1, long op2, byte op3) => (long)(op1 + ShiftRightArithmeticRounded(op2, op3));
 
         public static long ShiftRightLogical(long op1, byte op2) => UnsignedShift(op1, (long)(-op2));
 
@@ -4834,7 +4891,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 bool ovf;
 
-                (rndCns, ovf) = ShiftOvf((ulong)1, -shift-1);
+                (rndCns, ovf) = ShiftOvf((ulong)1, -shift - 1);
 
                 if (ovf)
                 {
@@ -5302,23 +5359,23 @@ namespace JIT.HardwareIntrinsics.Arm
             int index = (op2 < 0) ? (imm + 8) : imm;
             uint coeff = index switch
             {
-                 0 => 0x3f800000,
-                 1 => 0xbe2aaaab,
-                 2 => 0x3c088886,
-                 3 => 0xb95008b9,
-                 4 => 0x36369d6d,
-                 5 => 0x00000000,
-                 6 => 0x00000000,
-                 7 => 0x00000000,
-                 8 => 0x3f800000,
-                 9 => 0xbf000000,
+                0 => 0x3f800000,
+                1 => 0xbe2aaaab,
+                2 => 0x3c088886,
+                3 => 0xb95008b9,
+                4 => 0x36369d6d,
+                5 => 0x00000000,
+                6 => 0x00000000,
+                7 => 0x00000000,
+                8 => 0x3f800000,
+                9 => 0xbf000000,
                 10 => 0x3d2aaaa6,
                 11 => 0xbab60705,
                 12 => 0x37cd37cc,
                 13 => 0x00000000,
                 14 => 0x00000000,
                 15 => 0x00000000,
-                 _ => 0x00000000
+                _ => 0x00000000
             };
 
             return MathF.FusedMultiplyAdd(op1, Math.Abs(op2), BitConverter.UInt32BitsToSingle(coeff));
@@ -5328,7 +5385,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             float result = ((op2 % 2) == 0) ? op1 : (float)1.0;
             bool isNegative = (op2 & 0b10) == 0b10;
-            
+
             if (isNegative != (result < 0))
             {
                 result *= -1;
@@ -5359,16 +5416,16 @@ namespace JIT.HardwareIntrinsics.Arm
             uint index = op1 & 0b111111;
             uint coeff = index switch
             {
-                 0 => 0x000000,
-                 1 => 0x0164d2,
-                 2 => 0x02cd87,
-                 3 => 0x043a29,
-                 4 => 0x05aac3,
-                 5 => 0x071f62,
-                 6 => 0x08980f,
-                 7 => 0x0a14d5,
-                 8 => 0x0b95c2,
-                 9 => 0x0d1adf,
+                0 => 0x000000,
+                1 => 0x0164d2,
+                2 => 0x02cd87,
+                3 => 0x043a29,
+                4 => 0x05aac3,
+                5 => 0x071f62,
+                6 => 0x08980f,
+                7 => 0x0a14d5,
+                8 => 0x0b95c2,
+                9 => 0x0d1adf,
                 10 => 0x0ea43a,
                 11 => 0x1031dc,
                 12 => 0x11c3d3,
@@ -5423,7 +5480,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 61 => 0x77d0df,
                 62 => 0x7a83b3,
                 63 => 0x7d3e0c,
-                 _ => 0x000000
+                _ => 0x000000
             };
 
             uint result = ((op1 & 0b11111111000000) << 17) | coeff;
@@ -5501,23 +5558,23 @@ namespace JIT.HardwareIntrinsics.Arm
             int index = (op2 < 0) ? (imm + 8) : imm;
             ulong coeff = index switch
             {
-                 0 => 0x3ff0000000000000,
-                 1 => 0xbfc5555555555543,
-                 2 => 0x3f8111111110f30c,
-                 3 => 0xbf2a01a019b92fc6,
-                 4 => 0x3ec71de351f3d22b,
-                 5 => 0xbe5ae5e2b60f7b91,
-                 6 => 0x3de5d8408868552f,
-                 7 => 0x0000000000000000,
-                 8 => 0x3ff0000000000000,
-                 9 => 0xbfe0000000000000,
+                0 => 0x3ff0000000000000,
+                1 => 0xbfc5555555555543,
+                2 => 0x3f8111111110f30c,
+                3 => 0xbf2a01a019b92fc6,
+                4 => 0x3ec71de351f3d22b,
+                5 => 0xbe5ae5e2b60f7b91,
+                6 => 0x3de5d8408868552f,
+                7 => 0x0000000000000000,
+                8 => 0x3ff0000000000000,
+                9 => 0xbfe0000000000000,
                 10 => 0x3fa5555555555536,
                 11 => 0xbf56c16c16c13a0b,
                 12 => 0x3efa01a019b1e8d8,
                 13 => 0xbe927e4f7282f468,
                 14 => 0x3e21ee96d2641b13,
                 15 => 0xbda8f76380fbb401,
-                 _ => 0x0000000000000000
+                _ => 0x0000000000000000
             };
 
             return Math.FusedMultiplyAdd(op1, Math.Abs(op2), BitConverter.UInt64BitsToDouble(coeff));
@@ -5527,7 +5584,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             double result = ((op2 % 2) == 0) ? op1 : 1.0;
             bool isNegative = (op2 & 0b10) == 0b10;
-            
+
             if (isNegative != (result < 0))
             {
                 result *= -1;
@@ -5552,22 +5609,22 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return result;
         }
-        
+
         public static double FPExponentialAccelerator(ulong op1)
         {
             ulong index = op1 & 0b111111;
             ulong coeff = index switch
             {
-                 0 => 0x0000000000000,
-                 1 => 0x02C9A3E778061,
-                 2 => 0x059B0D3158574,
-                 3 => 0x0874518759BC8,
-                 4 => 0x0B5586CF9890F,
-                 5 => 0x0E3EC32D3D1A2,
-                 6 => 0x11301D0125B51,
-                 7 => 0x1429AAEA92DE0,
-                 8 => 0x172B83C7D517B,
-                 9 => 0x1A35BEB6FCB75,
+                0 => 0x0000000000000,
+                1 => 0x02C9A3E778061,
+                2 => 0x059B0D3158574,
+                3 => 0x0874518759BC8,
+                4 => 0x0B5586CF9890F,
+                5 => 0x0E3EC32D3D1A2,
+                6 => 0x11301D0125B51,
+                7 => 0x1429AAEA92DE0,
+                8 => 0x172B83C7D517B,
+                9 => 0x1A35BEB6FCB75,
                 10 => 0x1D4873168B9AA,
                 11 => 0x2063B88628CD6,
                 12 => 0x2387A6E756238,
@@ -5622,7 +5679,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 61 => 0xEFA1BEE615A27,
                 62 => 0xF50765B6E4540,
                 63 => 0xFA7C1819E90D8,
-                 _ => 0x0000000000000
+                _ => 0x0000000000000
             };
 
             ulong result = ((op1 & 0b11111111111000000) << 46) | coeff;
@@ -5668,7 +5725,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static double ReciprocalEstimate(double op1) => Math.ReciprocalEstimate(op1);
-        
+
         public static float ReciprocalEstimate(float op1) => MathF.ReciprocalEstimate(op1);
 
         public static double ReciprocalExponent(double op1)
@@ -5696,7 +5753,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static double ReciprocalSqrtEstimate(double op1) => Math.ReciprocalSqrtEstimate(op1);
-        
+
         public static float ReciprocalSqrtEstimate(float op1) => MathF.ReciprocalSqrtEstimate(op1);
 
         private static uint ExtractBits(uint val, byte msbPos, byte lsbPos)
@@ -6604,7 +6661,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
                     if ((val.lo & 0x8000000000000000U) != 0)
                     {
-                       val.hi |= 1;
+                        val.hi |= 1;
                     }
 
                     val.lo <<= 1;
@@ -6701,7 +6758,7 @@ namespace JIT.HardwareIntrinsics.Arm
             v0 = (ulong)op2 & 0xFFFFFFFF;
             v1 = op2 >> 32;
             w0 = u0 * v0;
-            t  = u1 * (long)v0 + (long)(w0 >> 32);
+            t = u1 * (long)v0 + (long)(w0 >> 32);
             w1 = t & 0xFFFFFFFF;
             w2 = t >> 32;
             w1 = (long)u0 * v1 + w1;
@@ -6717,7 +6774,7 @@ namespace JIT.HardwareIntrinsics.Arm
             v0 = (ulong)op2 & 0xFFFFFFFF;
             v1 = op2 >> 32;
             w0 = u0 * v0;
-            t  = u1 * (ulong)v0 + (ulong)(w0 >> 32);
+            t = u1 * (ulong)v0 + (ulong)(w0 >> 32);
             w1 = t & 0xFFFFFFFF;
             w2 = t >> 32;
             w1 = (ulong)u0 * v1 + w1;
@@ -6916,7 +6973,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int index = indices[i];
 
             if (index < 0 || index >= fullTable.Length)
-              return defaultValues[i];
+                return defaultValues[i];
 
             return fullTable[index];
         }
@@ -6935,7 +6992,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int index = indices[i];
 
             if (index < 0 || index >= fullTable.Length)
-              return defaultValues[i];
+                return defaultValues[i];
 
             return fullTable[index];
         }
@@ -7127,7 +7184,7 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int[] ConvertToInt32(float[] op1) => Array.ConvertAll(op1, num => ConvertToInt32(num));
 
         private static long ConvertToInt64(double op1) => (long)Math.Clamp(op1, long.MinValue, long.MaxValue);
-        
+
         public static long[] ConvertToInt64(double[] op1) => Array.ConvertAll(op1, num => ConvertToInt64(num));
 
         public static long[] ConvertToInt64(float[] op1)
@@ -7607,7 +7664,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7617,7 +7674,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7627,7 +7684,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7637,7 +7694,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7647,7 +7704,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7657,7 +7714,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7667,7 +7724,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7677,7 +7734,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7755,7 +7812,7 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int MaskNumberOfElementsVector(int elems, SveMaskPattern pattern)
         {
 
-            switch(pattern)
+            switch (pattern)
             {
                 // Returns elems, as this is always a power of 2.
                 case SveMaskPattern.LargestPowerOf2:
@@ -7807,7 +7864,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<byte>>() / sizeof(byte), pattern);
         }
-        
+
         public static int NumberOfElementsInVectorInt16(SveMaskPattern pattern)
         {
             return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<short>>() / sizeof(short), pattern);
@@ -8010,7 +8067,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int ret = 0;
             for (int i = 1; i >= 0; i--)
             {
-                ret = (ret << 8) + (int)array[offset+i];
+                ret = (ret << 8) + (int)array[offset + i];
             }
             return ret;
         }
@@ -8020,7 +8077,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int ret = 0;
             for (int i = 1; i >= 0; i--)
             {
-                ret = (ret << 8) + (int)array[offset+i];
+                ret = (ret << 8) + (int)array[offset + i];
             }
             return ret;
         }
@@ -8029,7 +8086,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int ret = 0;
             for (int i = 3; i >= 0; i--)
             {
-                ret = (ret << 8) + (int)array[offset+i];
+                ret = (ret << 8) + (int)array[offset + i];
             }
             return ret;
         }
@@ -8039,7 +8096,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int ret = 0;
             for (int i = 3; i >= 0; i--)
             {
-                ret = (ret << 8) + (int)array[offset+i];
+                ret = (ret << 8) + (int)array[offset + i];
             }
             return ret;
         }
@@ -8049,7 +8106,7 @@ namespace JIT.HardwareIntrinsics.Arm
             long ret = 0;
             for (long i = 7; i >= 0; i--)
             {
-                ret = (ret << 8) + (long)array[offset+i];
+                ret = (ret << 8) + (long)array[offset + i];
             }
             return ret;
         }
@@ -8059,7 +8116,7 @@ namespace JIT.HardwareIntrinsics.Arm
             long ret = 0;
             for (long i = 7; i >= 0; i--)
             {
-                ret = (ret << 8) + (long)array[offset+(ulong)i];
+                ret = (ret << 8) + (long)array[offset + (ulong)i];
             }
             return ret;
         }
@@ -8069,7 +8126,7 @@ namespace JIT.HardwareIntrinsics.Arm
             uint ret = 0;
             for (int i = 1; i >= 0; i--)
             {
-                ret = (ret << 8) + (uint)array[offset+i];
+                ret = (ret << 8) + (uint)array[offset + i];
             }
             return ret;
         }
@@ -8079,7 +8136,7 @@ namespace JIT.HardwareIntrinsics.Arm
             uint ret = 0;
             for (int i = 1; i >= 0; i--)
             {
-                ret = (ret << 8) + (uint)array[offset+i];
+                ret = (ret << 8) + (uint)array[offset + i];
             }
             return ret;
         }
@@ -8089,7 +8146,7 @@ namespace JIT.HardwareIntrinsics.Arm
             uint ret = 0;
             for (int i = 3; i >= 0; i--)
             {
-                ret = (ret << 8) + (uint)array[offset+i];
+                ret = (ret << 8) + (uint)array[offset + i];
             }
             return ret;
         }
@@ -8099,7 +8156,7 @@ namespace JIT.HardwareIntrinsics.Arm
             uint ret = 0;
             for (int i = 3; i >= 0; i--)
             {
-                ret = (ret << 8) + (uint)array[offset+i];
+                ret = (ret << 8) + (uint)array[offset + i];
             }
             return ret;
         }
@@ -8109,7 +8166,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong ret = 0;
             for (long i = 7; i >= 0; i--)
             {
-                ret = (ret << 8) + (ulong)array[offset+i];
+                ret = (ret << 8) + (ulong)array[offset + i];
             }
             return ret;
         }
@@ -8119,7 +8176,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong ret = 0;
             for (long i = 7; i >= 0; i--)
             {
-                ret = (ret << 8) + (ulong)array[offset+(ulong)i];
+                ret = (ret << 8) + (ulong)array[offset + (ulong)i];
             }
             return ret;
         }
@@ -8129,7 +8186,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int ret = 0;
             for (int i = 3; i >= 0; i--)
             {
-                ret = (ret << 8) + (int)array[offset+i];
+                ret = (ret << 8) + (int)array[offset + i];
             }
             return BitConverter.Int32BitsToSingle(ret);
         }
@@ -8139,7 +8196,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int ret = 0;
             for (int i = 3; i >= 0; i--)
             {
-                ret = (ret << 8) + (int)array[offset+i];
+                ret = (ret << 8) + (int)array[offset + i];
             }
             return BitConverter.Int32BitsToSingle(ret);
         }
@@ -8149,7 +8206,7 @@ namespace JIT.HardwareIntrinsics.Arm
             long ret = 0;
             for (long i = 7; i >= 0; i--)
             {
-                ret = (ret << 8) + (long)array[offset+i];
+                ret = (ret << 8) + (long)array[offset + i];
             }
             return BitConverter.Int64BitsToDouble(ret);
         }
@@ -8159,7 +8216,7 @@ namespace JIT.HardwareIntrinsics.Arm
             long ret = 0;
             for (long i = 7; i >= 0; i--)
             {
-                ret = (ret << 8) + (long)array[offset+(ulong)i];
+                ret = (ret << 8) + (long)array[offset + (ulong)i];
             }
             return BitConverter.Int64BitsToDouble(ret);
         }
@@ -8167,9 +8224,9 @@ namespace JIT.HardwareIntrinsics.Arm
         public static Byte Splice(Byte[] first, Byte[] second, Byte[] maskArray, Int32 index)
         {
             int start = -1;
-            int end   = -1;
+            int end = -1;
 
-            for(var i = 0; i < maskArray.Length; i++)
+            for (var i = 0; i < maskArray.Length; i++)
             {
                 if (maskArray[i] != 0)
                 {
@@ -8193,9 +8250,9 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double Splice(double[] first, double[] second, double[] maskArray, Int32 index)
         {
             int start = -1;
-            int end   = -1;
+            int end = -1;
 
-            for(var i = 0; i < maskArray.Length; i++)
+            for (var i = 0; i < maskArray.Length; i++)
             {
                 if (Double.IsNaN(maskArray[i]) || maskArray[i] > 0.0d)
                 {
@@ -8219,9 +8276,9 @@ namespace JIT.HardwareIntrinsics.Arm
         public static float Splice(float[] first, float[] second, float[] maskArray, Int32 index)
         {
             int start = -1;
-            int end   = -1;
+            int end = -1;
 
-            for(var i = 0; i < maskArray.Length; i++)
+            for (var i = 0; i < maskArray.Length; i++)
             {
                 if (maskArray[i] != 0.0f)
                 {
@@ -8245,9 +8302,9 @@ namespace JIT.HardwareIntrinsics.Arm
         public static Int16 Splice(Int16[] first, Int16[] second, Int16[] maskArray, Int32 index)
         {
             int start = -1;
-            int end   = -1;
+            int end = -1;
 
-            for(var i = 0; i < maskArray.Length; i++)
+            for (var i = 0; i < maskArray.Length; i++)
             {
                 if (maskArray[i] != 0)
                 {
@@ -8271,9 +8328,9 @@ namespace JIT.HardwareIntrinsics.Arm
         public static Int32 Splice(Int32[] first, Int32[] second, Int32[] maskArray, Int32 index)
         {
             int start = -1;
-            int end   = -1;
+            int end = -1;
 
-            for(var i = 0; i < maskArray.Length; i++)
+            for (var i = 0; i < maskArray.Length; i++)
             {
                 if (maskArray[i] != 0)
                 {
@@ -8297,9 +8354,9 @@ namespace JIT.HardwareIntrinsics.Arm
         public static Int64 Splice(Int64[] first, Int64[] second, Int64[] maskArray, Int32 index)
         {
             int start = -1;
-            int end   = -1;
+            int end = -1;
 
-            for(var i = 0; i < maskArray.Length; i++)
+            for (var i = 0; i < maskArray.Length; i++)
             {
                 if (maskArray[i] != 0)
                 {
@@ -8323,9 +8380,9 @@ namespace JIT.HardwareIntrinsics.Arm
         public static SByte Splice(SByte[] first, SByte[] second, SByte[] maskArray, Int32 index)
         {
             int start = -1;
-            int end   = -1;
+            int end = -1;
 
-            for(var i = 0; i < maskArray.Length; i++)
+            for (var i = 0; i < maskArray.Length; i++)
             {
                 if (maskArray[i] != 0)
                 {
@@ -8349,9 +8406,9 @@ namespace JIT.HardwareIntrinsics.Arm
         public static UInt16 Splice(UInt16[] first, UInt16[] second, UInt16[] maskArray, Int32 index)
         {
             int start = -1;
-            int end   = -1;
+            int end = -1;
 
-            for(var i = 0; i < maskArray.Length; i++)
+            for (var i = 0; i < maskArray.Length; i++)
             {
                 if (maskArray[i] != 0)
                 {
@@ -8375,9 +8432,9 @@ namespace JIT.HardwareIntrinsics.Arm
         public static UInt32 Splice(UInt32[] first, UInt32[] second, UInt32[] maskArray, Int32 index)
         {
             int start = -1;
-            int end   = -1;
+            int end = -1;
 
-            for(var i = 0; i < maskArray.Length; i++)
+            for (var i = 0; i < maskArray.Length; i++)
             {
                 if (maskArray[i] != 0)
                 {
@@ -8401,9 +8458,9 @@ namespace JIT.HardwareIntrinsics.Arm
         public static ulong Splice(ulong[] first, ulong[] second, ulong[] maskArray, int index)
         {
             int start = -1;
-            int end   = -1;
+            int end = -1;
 
-            for(var i = 0; i < maskArray.Length; i++)
+            for (var i = 0; i < maskArray.Length; i++)
             {
                 if (maskArray[i] != 0)
                 {
@@ -8558,14 +8615,14 @@ namespace JIT.HardwareIntrinsics.Arm
 
 
         private static TElem GetLoadVectorExpectedResultByIndex<TMem, TElem>(int index, TElem[] mask, TMem[] data, TElem[] result)
-            where TMem  : INumberBase<TMem>
+            where TMem : INumberBase<TMem>
             where TElem : INumberBase<TElem>
         {
             return (mask[index] == TElem.Zero) ? TElem.Zero : TElem.CreateTruncating(data[index]);
         }
 
         private static TElem GetLoadVectorExpectedResultByIndex<TMem, TElem>(int index, TMem[] data, TElem[] result)
-            where TMem  : INumberBase<TMem>
+            where TMem : INumberBase<TMem>
             where TElem : INumberBase<TElem>
         {
             TElem[] mask = new TElem[result.Length];
@@ -8575,7 +8632,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TElem[] mask, TMem[] data, TElem[] result, Func<int, TElem, TElem> map)
-            where TMem  : INumberBase<TMem>
+            where TMem : INumberBase<TMem>
             where TElem : INumberBase<TElem>
         {
             for (var i = 0; i < data.Length; i++)
@@ -8591,7 +8648,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TMem[] data, TElem[] result, Func<int, TElem, TElem> map)
-            where TMem  : INumberBase<TMem>
+            where TMem : INumberBase<TMem>
             where TElem : INumberBase<TElem>
         {
             for (var i = 0; i < data.Length; i++)
@@ -8607,36 +8664,36 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static bool CheckLoadVectorBehavior<TMem, TElem>(TElem[] mask, TMem[] data, TElem[] result)
-            where TMem  : INumberBase<TMem>, IConvertible
+            where TMem : INumberBase<TMem>, IConvertible
             where TElem : INumberBase<TElem>
         {
             return CheckLoadVectorBehaviorCore(mask, data, result, (_, loadResult) => loadResult);
         }
 
         public static bool CheckLoadVectorBehavior<TMem, TElem>(TMem[] data, TElem[] result)
-            where TMem  : INumberBase<TMem>, IConvertible
+            where TMem : INumberBase<TMem>, IConvertible
             where TElem : INumberBase<TElem>
         {
             return CheckLoadVectorBehaviorCore(data, result, (_, loadResult) => loadResult);
         }
 
         public static bool CheckLoadVectorBehavior<TMem, TElem>(TElem[] maskOp, TMem[] data, TElem[] result, TElem[] falseOp)
-            where TMem  : INumberBase<TMem>, IConvertible
+            where TMem : INumberBase<TMem>, IConvertible
             where TElem : INumberBase<TElem>
         {
             return CheckLoadVectorBehaviorCore(data, result, (i, loadResult) => ConditionalSelectResult(maskOp[i], loadResult, falseOp[i]));
         }
 
         private static T GetGatherVectorResultByIndex<T, ExtendedElementT, Index>(int index, T[] mask, ExtendedElementT[] data, Index[] indices)
-                where T : INumberBase<T> 
-                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Index : IBinaryInteger<Index>
         {
             return (mask[index] == T.Zero) ? T.Zero : T.CreateTruncating(data[int.CreateChecked(indices[index])]);
         }
 
         private static unsafe T GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(int index, T[] mask, AddressT[] data)
-                where T : INumberBase<T> 
+                where T : INumberBase<T>
                 where AddressT : unmanaged, INumberBase<AddressT>
                 where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
         {
@@ -8693,9 +8750,9 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private static bool CheckGatherVectorBehaviorCore<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Func<int, T, T> map) 
+        private static bool CheckGatherVectorBehaviorCore<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Func<int, T, T> map)
                 where T : INumberBase<T>
-                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Index : IBinaryInteger<Index>
         {
             for (var i = 0; i < mask.Length; i++)
@@ -8710,8 +8767,8 @@ namespace JIT.HardwareIntrinsics.Arm
             return true;
         }
 
-        private static bool CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result, Func<int, T, T> map) 
-                where T : INumberBase<T> 
+        private static bool CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result, Func<int, T, T> map)
+                where T : INumberBase<T>
                 where AddressT : unmanaged, INumberBase<AddressT>
                 where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
         {
@@ -8727,56 +8784,56 @@ namespace JIT.HardwareIntrinsics.Arm
             return true;
         }
 
-        public static bool CheckGatherVectorBehavior<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result) 
-                where T : INumberBase<T> 
-                where ExtendedElementT : INumberBase<ExtendedElementT> 
+        public static bool CheckGatherVectorBehavior<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result)
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Index : IBinaryInteger<Index>
         {
             return CheckGatherVectorBehaviorCore(mask, data, indices, result, (_, gatherResult) => gatherResult);
         }
 
-        public static bool CheckGatherVectorConditionalSelectBehavior<T, ExtendedElementT, Index>(T[] cndSelMask, T[] mask, ExtendedElementT[] data, Index[] indices, T[] cndSelFalse, T[] result) 
-                where T : INumberBase<T> 
-                where ExtendedElementT : INumberBase<ExtendedElementT> 
+        public static bool CheckGatherVectorConditionalSelectBehavior<T, ExtendedElementT, Index>(T[] cndSelMask, T[] mask, ExtendedElementT[] data, Index[] indices, T[] cndSelFalse, T[] result)
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Index : IBinaryInteger<Index>
         {
             return CheckGatherVectorBehaviorCore(mask, data, indices, result, (i, gatherResult) => ConditionalSelectResult(cndSelMask[i], gatherResult, cndSelFalse[i]));
         }
 
-        public static bool CheckGatherVectorConditionalSelectTrueBehavior<T, ExtendedElementT, Index>(T[] cndSelMask, T[] mask, ExtendedElementT[] data, Index[] indices, T[] cndSelTrue, T[] result) 
-                where T : INumberBase<T> 
-                where ExtendedElementT : INumberBase<ExtendedElementT> 
+        public static bool CheckGatherVectorConditionalSelectTrueBehavior<T, ExtendedElementT, Index>(T[] cndSelMask, T[] mask, ExtendedElementT[] data, Index[] indices, T[] cndSelTrue, T[] result)
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Index : IBinaryInteger<Index>
         {
             return CheckGatherVectorBehaviorCore(mask, data, indices, result, (i, gatherResult) => ConditionalSelectTrueResult(cndSelMask[i], gatherResult, cndSelTrue[i]));
         }
 
 
-        public static bool CheckGatherVectorBasesBehavior<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result) 
-                where T : INumberBase<T> 
+        public static bool CheckGatherVectorBasesBehavior<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result)
+                where T : INumberBase<T>
                 where AddressT : unmanaged, INumberBase<AddressT>
-                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT> 
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
         {
             return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (_, gatherResult) => gatherResult);
         }
 
-        public static bool CheckGatherVectorBasesConditionalSelectBehavior<T, AddressT, ExtendedElementT>(T[] cndSelMask, T[] mask, AddressT[] data, T[] cndSelFalse, T[] result) 
-                where T : INumberBase<T> 
+        public static bool CheckGatherVectorBasesConditionalSelectBehavior<T, AddressT, ExtendedElementT>(T[] cndSelMask, T[] mask, AddressT[] data, T[] cndSelFalse, T[] result)
+                where T : INumberBase<T>
                 where AddressT : unmanaged, INumberBase<AddressT>
                 where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
         {
             return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (i, gatherResult) => ConditionalSelectResult(cndSelMask[i], gatherResult, cndSelFalse[i]));
         }
 
-        public static bool CheckGatherVectorBasesConditionalSelectTrueBehavior<T, AddressT, ExtendedElementT>(T[] cndSelMask, T[] mask, AddressT[] data, T[] cndSelTrue, T[] result) 
-                where T : INumberBase<T> 
+        public static bool CheckGatherVectorBasesConditionalSelectTrueBehavior<T, AddressT, ExtendedElementT>(T[] cndSelMask, T[] mask, AddressT[] data, T[] cndSelTrue, T[] result)
+                where T : INumberBase<T>
                 where AddressT : unmanaged, INumberBase<AddressT>
                 where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
         {
             return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (i, gatherResult) => ConditionalSelectTrueResult(cndSelMask[i], gatherResult, cndSelTrue[i]));
         }
 
-        private static bool CheckFirstFaultingBehaviorCore<T, TFault>(T[] result, Vector<TFault> faultResult, Func<int, bool> checkIter) 
+        private static bool CheckFirstFaultingBehaviorCore<T, TFault>(T[] result, Vector<TFault> faultResult, Func<int, bool> checkIter)
                 where T : INumberBase<T>
                 where TFault : INumberBase<TFault>
         {
@@ -8828,7 +8885,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static bool CheckLoadVectorFirstFaultingBehavior<TMem, TElem, TFault>(TElem[] mask, TMem[] data, TElem[] result, Vector<TFault> faultResult)
-                where TMem  : INumberBase<TMem>, IConvertible
+                where TMem : INumberBase<TMem>, IConvertible
                 where TElem : INumberBase<TElem>
                 where TFault : INumberBase<TFault>
         {
@@ -8841,7 +8898,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var validElementCount = data.Length;
             var hasFaulted = false;
-            var expectedFaultResult = 
+            var expectedFaultResult =
                 InitVector<TFault>(i =>
                 {
                     if (hasFaulted)
@@ -8872,8 +8929,8 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static bool CheckGatherVectorFirstFaultingBehavior<T, ExtendedElementT, Index, TFault>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Vector<TFault> faultResult)
-                where T : INumberBase<T> 
-                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Index : IBinaryInteger<Index>
                 where TFault : INumberBase<TFault>
         {
@@ -8885,7 +8942,7 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             var hasFaulted = false;
-            var expectedFaultResult = 
+            var expectedFaultResult =
                 InitVector<TFault>(i =>
                 {
                     if (hasFaulted)
@@ -8916,9 +8973,9 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static bool CheckGatherVectorBasesFirstFaultingBehavior<T, AddressT, ExtendedElementT, TFault>(T[] mask, AddressT[] data, T[] result, Vector<TFault> faultResult)
-                where T : INumberBase<T> 
+                where T : INumberBase<T>
                 where AddressT : unmanaged, INumberBase<AddressT>
-                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT> 
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
                 where TFault : INumberBase<TFault>
         {
             // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
@@ -8929,14 +8986,14 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             var hasFaulted = false;
-            var expectedFaultResult = 
+            var expectedFaultResult =
                 InitVector<TFault>(i =>
                 {
                     if (hasFaulted)
                     {
                         return TFault.Zero;
                     }
-                    
+
                     if (mask[i] == T.Zero)
                     {
                         return TFault.One;
@@ -8957,7 +9014,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(i, mask, data) == result[i]);
         }
-        
+
         public static bool CheckGatherVectorWithByteOffsetFirstFaultingBehavior<T, ExtendedElementT, Offset, TFault>(T[] mask, byte[] data, Offset[] offsets, T[] result, Vector<TFault> faultResult)
                 where T : INumberBase<T>
                 where ExtendedElementT : INumberBase<ExtendedElementT>
@@ -9035,8 +9092,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9056,8 +9114,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9068,7 +9127,7 @@ namespace JIT.HardwareIntrinsics.Arm
             else
             {
                 Array.Fill<byte>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
+                result[0] = op3[pos];
             }
 
             return result;
@@ -9116,8 +9175,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9137,8 +9197,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9149,7 +9210,7 @@ namespace JIT.HardwareIntrinsics.Arm
             else
             {
                 Array.Fill<sbyte>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
+                result[0] = op3[pos];
             }
 
             return result;
@@ -9197,8 +9258,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9218,8 +9280,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9230,7 +9293,7 @@ namespace JIT.HardwareIntrinsics.Arm
             else
             {
                 Array.Fill<short>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
+                result[0] = op3[pos];
             }
 
             return result;
@@ -9278,8 +9341,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9299,8 +9363,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9311,7 +9376,7 @@ namespace JIT.HardwareIntrinsics.Arm
             else
             {
                 Array.Fill<ushort>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
+                result[0] = op3[pos];
             }
 
             return result;
@@ -9359,8 +9424,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9380,8 +9446,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9392,7 +9459,7 @@ namespace JIT.HardwareIntrinsics.Arm
             else
             {
                 Array.Fill<int>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
+                result[0] = op3[pos];
             }
 
             return result;
@@ -9440,8 +9507,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9461,8 +9529,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9473,7 +9542,7 @@ namespace JIT.HardwareIntrinsics.Arm
             else
             {
                 Array.Fill<uint>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
+                result[0] = op3[pos];
             }
 
             return result;
@@ -9521,8 +9590,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9542,8 +9612,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9554,7 +9625,7 @@ namespace JIT.HardwareIntrinsics.Arm
             else
             {
                 Array.Fill<long>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
+                result[0] = op3[pos];
             }
 
             return result;
@@ -9607,8 +9678,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9628,8 +9700,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9640,7 +9713,7 @@ namespace JIT.HardwareIntrinsics.Arm
             else
             {
                 Array.Fill<ulong>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
+                result[0] = op3[pos];
             }
 
             return result;
@@ -9683,8 +9756,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9704,8 +9778,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9716,7 +9791,7 @@ namespace JIT.HardwareIntrinsics.Arm
             else
             {
                 Array.Fill<float>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
+                result[0] = op3[pos];
             }
 
             return result;
@@ -9764,8 +9839,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9785,8 +9861,9 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9797,7 +9874,7 @@ namespace JIT.HardwareIntrinsics.Arm
             else
             {
                 Array.Fill<double>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
+                result[0] = op3[pos];
             }
 
             return result;
@@ -9852,5 +9929,44 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             return (left & select) | (~right & ~select);
         }
+
+        public static T Xor<T>(params T[] ops) where T : IBitwiseOperators<T, T, T>
+        {
+            T result = ops[0];
+            for (int i = 1; i < ops.Length; i++)
+            {
+                result ^= ops[i];
+            }
+            return result;
+        }
+
+        public static T XorRotateRight<T>(T op1, T op2, int shift) where T : IBinaryInteger<T>
+        {
+            return T.RotateRight(Xor(op1, op2), shift);
+        }
+
+        public static sbyte SveShiftArithmeticRounded(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static sbyte SveShiftArithmeticSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static sbyte SveShiftArithmeticRoundedSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static short SveShiftArithmeticRounded(short op1, short op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static short SveShiftArithmeticSaturate(short op1, short op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static short SveShiftArithmeticRoundedSaturate(short op1, short op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static int SveShiftArithmeticRounded(int op1, int op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static int SveShiftArithmeticSaturate(int op1, int op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static int SveShiftArithmeticRoundedSaturate(int op1, int op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static long SveShiftArithmeticRounded(long op1, long op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static long SveShiftArithmeticSaturate(long op1, long op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static long SveShiftArithmeticRoundedSaturate(long op1, long op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
     }
 }

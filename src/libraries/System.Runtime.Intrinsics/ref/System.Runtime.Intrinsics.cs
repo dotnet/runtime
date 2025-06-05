@@ -6039,6 +6039,29 @@ namespace System.Runtime.Intrinsics.Arm
             public static new bool IsSupported { get { throw null; } }
         }
 
+        public static System.Numerics.Vector<byte> AbsoluteDifferenceAdd(System.Numerics.Vector<byte> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> AbsoluteDifferenceAdd(System.Numerics.Vector<short> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceAdd(System.Numerics.Vector<int> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceAdd(System.Numerics.Vector<long> addend, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> AbsoluteDifferenceAdd(System.Numerics.Vector<sbyte> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceAdd(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceAdd(System.Numerics.Vector<uint> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceAdd(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
+        public static System.Numerics.Vector<short> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<short> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<uint> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+
+        public static System.Numerics.Vector<short> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<short> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<uint> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+
         public static System.Numerics.Vector<byte> BitwiseClearXor(System.Numerics.Vector<byte> xor, System.Numerics.Vector<byte> value, System.Numerics.Vector<byte> mask) { throw null; }
         public static System.Numerics.Vector<short> BitwiseClearXor(System.Numerics.Vector<short> xor, System.Numerics.Vector<short> value, System.Numerics.Vector<short> mask) { throw null; }
         public static System.Numerics.Vector<int> BitwiseClearXor(System.Numerics.Vector<int> xor, System.Numerics.Vector<int> value, System.Numerics.Vector<int> mask) { throw null; }
@@ -6071,6 +6094,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> BitwiseSelectRightInverted(System.Numerics.Vector<ushort> select, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> BitwiseSelectRightInverted(System.Numerics.Vector<uint> select, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> BitwiseSelectRightInverted(System.Numerics.Vector<ulong> select, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<short> ShiftArithmeticRounded(System.Numerics.Vector<short> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftArithmeticRounded(System.Numerics.Vector<int> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftArithmeticRounded(System.Numerics.Vector<long> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftArithmeticRounded(System.Numerics.Vector<sbyte> value, System.Numerics.Vector<sbyte> count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftArithmeticRoundedSaturate(System.Numerics.Vector<short> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftArithmeticRoundedSaturate(System.Numerics.Vector<int> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftArithmeticRoundedSaturate(System.Numerics.Vector<long> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftArithmeticRoundedSaturate(System.Numerics.Vector<sbyte> value, System.Numerics.Vector<sbyte> count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftArithmeticSaturate(System.Numerics.Vector<short> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftArithmeticSaturate(System.Numerics.Vector<int> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftArithmeticSaturate(System.Numerics.Vector<long> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftArithmeticSaturate(System.Numerics.Vector<sbyte> value, System.Numerics.Vector<sbyte> count) { throw null; }
         public static System.Numerics.Vector<byte> ShiftLeftAndInsert(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right, [ConstantExpected] byte shift) { throw null; }
         public static System.Numerics.Vector<short> ShiftLeftAndInsert(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte shift) { throw null; }
         public static System.Numerics.Vector<int> ShiftLeftAndInsert(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte shift) { throw null; }
@@ -6079,6 +6114,22 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> ShiftLeftAndInsert(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte shift) { throw null; }
         public static System.Numerics.Vector<uint> ShiftLeftAndInsert(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte shift) { throw null; }
         public static System.Numerics.Vector<ulong> ShiftLeftAndInsert(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<byte> Xor(System.Numerics.Vector<byte> value1, System.Numerics.Vector<byte> value2, System.Numerics.Vector<byte> value3) { throw null; }
+        public static System.Numerics.Vector<short> Xor(System.Numerics.Vector<short> value1, System.Numerics.Vector<short> value2, System.Numerics.Vector<short> value3) { throw null; }
+        public static System.Numerics.Vector<int> Xor(System.Numerics.Vector<int> value1, System.Numerics.Vector<int> value2, System.Numerics.Vector<int> value3) { throw null; }
+        public static System.Numerics.Vector<long> Xor(System.Numerics.Vector<long> value1, System.Numerics.Vector<long> value2, System.Numerics.Vector<long> value3) { throw null; }
+        public static System.Numerics.Vector<sbyte> Xor(System.Numerics.Vector<sbyte> value1, System.Numerics.Vector<sbyte> value2, System.Numerics.Vector<sbyte> value3) { throw null; }
+        public static System.Numerics.Vector<ushort> Xor(System.Numerics.Vector<ushort> value1, System.Numerics.Vector<ushort> value2, System.Numerics.Vector<ushort> value3) { throw null; }
+        public static System.Numerics.Vector<uint> Xor(System.Numerics.Vector<uint> value1, System.Numerics.Vector<uint> value2, System.Numerics.Vector<uint> value3) { throw null; }
+        public static System.Numerics.Vector<ulong> Xor(System.Numerics.Vector<ulong> value1, System.Numerics.Vector<ulong> value2, System.Numerics.Vector<ulong> value3) { throw null; }
+        public static System.Numerics.Vector<byte> XorRotateRight(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> XorRotateRight(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> XorRotateRight(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<long> XorRotateRight(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<sbyte> XorRotateRight(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> XorRotateRight(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> XorRotateRight(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ulong> XorRotateRight(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right, [ConstantExpected] byte count) { throw null; }
     }
 
     public enum SveMaskPattern : byte
