@@ -289,6 +289,16 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
     return result->func;
 }
 
+#ifndef ICALL_EXPORT
+#define ICALL_EXPORT
+#endif
+#define TEST_ICALL_SYMBOL_MAP
+#ifdef TEST_ICALL_SYMBOL_MAP
+const char*
+mono_lookup_icall_symbol_internal (gpointer func);
+ICALL_EXPORT int ves_icall_System_Environment_get_ProcessorCount ();
+#endif
+
 MonoDomain *
 mono_wasm_load_runtime_common (int debug_level, MonoLogCallback log_callback, const char *interp_opts)
 {
@@ -298,7 +308,7 @@ mono_wasm_load_runtime_common (int debug_level, MonoLogCallback log_callback, co
 
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
-
+    
 #ifdef GEN_PINVOKE
 	mono_wasm_install_interp_to_native_callback (mono_wasm_interp_to_native_callback);
 #endif
@@ -329,9 +339,17 @@ mono_wasm_load_runtime_common (int debug_level, MonoLogCallback log_callback, co
 		mono_wasm_enable_debugging (debug_level);
 	}
 #endif
-
+    printf("about to init_icall_table\n");
 	init_icall_table ();
 
+    {
+        printf("Checking mono_lookup_icall_symbol_internal\n");
+        const char *p  = mono_lookup_icall_symbol_internal (mono_lookup_icall_symbol_internal);
+	    printf ("%s\n", p ? p : "null");
+        printf("Checking ves_icall_System_Environment_get_ProcessorCount: ");
+	    p  = mono_lookup_icall_symbol_internal (ves_icall_System_Environment_get_ProcessorCount);
+	    printf ("%s\n", p ? p : "null");
+    }
 	mono_ee_interp_init (interp_opts);
 	mono_marshal_ilgen_init();
 	mono_method_builder_ilgen_init ();
@@ -341,7 +359,7 @@ mono_wasm_load_runtime_common (int debug_level, MonoLogCallback log_callback, co
 	mono_trace_set_log_handler (log_callback, NULL);
 	domain = mono_jit_init_version ("mono", NULL);
 	mono_thread_set_main (mono_thread_current ());
-
+    printf("returning");
 	return domain;
 }
 
