@@ -30,6 +30,7 @@ struct CodeBlockHandle
     // Gets the base address the UnwindInfo of codeInfoHandle is relative to
     TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle);
     // Gets the GCInfo associated with the code block and its version
+    // **Currently GetGCInfo only supports X86**
     void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion);
     // Gets the offset of the codeInfoHandle inside of the code block
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle);
@@ -70,6 +71,7 @@ Data descriptors used:
 | `RealCodeHeader` | `UnwindInfos` | Start address of Unwind Infos |
 | `RealCodeHeader` | `GCInfo` | Pointer to the GCInfo encoding |
 | `Module` | `ReadyToRunInfo` | Pointer to the `ReadyToRunInfo` for the module |
+| `ReadyToRunInfo` | `ReadyToRunHeader` | Pointer to the ReadyToRunHeader |
 | `ReadyToRunInfo` | `CompositeInfo` | Pointer to composite R2R info - or itself for non-composite |
 | `ReadyToRunInfo` | `NumRuntimeFunctions` | Number of `RuntimeFunctions` |
 | `ReadyToRunInfo` | `RuntimeFunctions` | Pointer to an array of `RuntimeFunctions` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontyperuntimefunctions)|
@@ -77,6 +79,8 @@ Data descriptors used:
 | `ReadyToRunInfo` | `HotColdMap` | Pointer to an array of 32-bit integers - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
 | `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | Pointer to an `ImageDataDirectory` for the delay load method call thunks |
 | `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
+| `ReadyToRunHeader` | `MajorVersion` | ReadyToRun major version |
+| `ReadyToRunHeader` | `MinorVersion` | ReadyToRun minor version |
 | `ImageDataDirectory` | `VirtualAddress` | Virtual address of the image data directory |
 | `ImageDataDirectory` | `Size` | Size of the data |
 | `RuntimeFunction` | `BeginAddress` | Begin address of the function |
@@ -95,6 +99,7 @@ Global variables used:
 | `HashMapSlotsPerBucket` | uint32 | Number of slots in each bucket of a `HashMap` |
 | `HashMapValueMask` | uint64 | Bitmask used when storing values in a `HashMap` |
 | `FeatureEHFunclets` | uint8 | 1 if EH funclets are enabled, 0 otherwise |
+| `GCInfoVersion` | uint32 | JITted code GCInfo version |
 
 Contracts used:
 | Contract Name |
@@ -263,10 +268,12 @@ Unwind info (`RUNTIME_FUNCTION`) use relative addressing. For managed code, thes
 
 `IExecutionManager.GetGCInfo` gets a pointer to the relevant GCInfo for a `CodeBlockHandle`. The ExecutionManager delegates to the JitManager implementations as the GCInfo is stored differently on jitted and R2R code.
 
-* For jitted code (`EEJitManager`) a pointer to the `GCInfo` is stored on the `RealCodeHeader` which is accessed in the same was as `GetMethodInfo` described above. This can simply be returned as is.
+* For jitted code (`EEJitManager`) a pointer to the `GCInfo` is stored on the `RealCodeHeader` which is accessed in the same was as `GetMethodInfo` described above. This can simply be returned as is. The `GCInfoVersion` is defined by the runtime global `GCInfoVersion`.
 
-* For R2R code (`ReadyToRunJitManager`), the `GCInfo` is stored directly after the `UnwindData`. This in turn is found by looking up the `UnwindInfo` (`RUNTIME_FUNCTION`) and reading the `UnwindData` offset. We find the `UnwindInfo` as described above in `IExecutionManager.GetUnwindInfo`. Once we have the relevant unwind data, we calculate the size of the unwind data and return a pointer to the following byte (first byte of the GCInfo).
-// TODO(cdacX86): Add information on finding the size of the unwind info.
+* For R2R code (`ReadyToRunJitManager`), the `GCInfo` is stored directly after the `UnwindData`. This in turn is found by looking up the `UnwindInfo` (`RUNTIME_FUNCTION`) and reading the `UnwindData` offset. We find the `UnwindInfo` as described above in `IExecutionManager.GetUnwindInfo`. Once we have the relevant unwind data, we calculate the size of the unwind data and return a pointer to the following byte (first byte of the GCInfo). The size of the unwind data is a platform specific. Currently only X86 is supported with a constant unwind data size of 32-bits.
+    * The `GCInfoVersion` of R2R code is mapped from the R2R MajorVersion and MinorVersion which is read from the ReadyToRunHeader which itself is read from the ReadyToRunInfo (can be found as in GetMethodInfo). The current GCInfoVersion mapping is:
+        * MajorVersion >= 11 and MajorVersion < 15 => 4
+
 
 `IExecutionManager.GetFuncletStartAddress` finds the start of the code blocks funclet. This will be different than the methods start address `GetStartAddress` if the current code block is inside of a funclet. To find the funclet start address, we get the unwind info corresponding to the code block using `IExecutionManager.GetUnwindInfo`. We then parse the unwind info to find the begin address (relative to the unwind info base address) and return the unwind info base address + unwind info begin address.
 

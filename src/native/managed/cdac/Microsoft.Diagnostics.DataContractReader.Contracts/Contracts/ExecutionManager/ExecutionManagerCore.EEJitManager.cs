@@ -12,8 +12,6 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 {
     private sealed class EEJitManager : JitManager
     {
-        private const uint GCINFO_VERSION = 4;
-
         private readonly INibbleMap _nibbleMap;
         private readonly RuntimeFunctionLookup _runtimeFunctions;
         public EEJitManager(Target target, INibbleMap nibbleMap) : base(target)
@@ -107,7 +105,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
                 return;
 
-            gcVersion = GCINFO_VERSION;
+            gcVersion = Target.ReadGlobal<uint>(Constants.Globals.GCInfoVersion);
             gcInfo = realCodeHeader.GCInfo;
         }
 

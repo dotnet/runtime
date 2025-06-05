@@ -12,17 +12,12 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 {
     private sealed class ReadyToRunJitManager : JitManager
     {
-        // TODO(cdacx86): How to handle different GCINFO versions?
-        private const uint GCINFO_VERSION = 4;
-
-        private readonly uint _runtimeFunctionSize;
         private readonly PtrHashMapLookup _hashMap;
         private readonly HotColdLookup _hotCold;
         private readonly RuntimeFunctionLookup _runtimeFunctions;
 
         public ReadyToRunJitManager(Target target) : base(target)
         {
-            _runtimeFunctionSize = Target.GetTypeInfo(DataType.RuntimeFunction).Size!.Value;
             _hashMap = PtrHashMapLookup.Create(target);
             _hotCold = HotColdLookup.Create(target);
             _runtimeFunctions = RuntimeFunctionLookup.Create(target);
@@ -93,18 +88,31 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             TargetPointer unwindInfo = runtimeFunction.UnwindData + imageBase;
             uint unwindDataSize = GetUnwindDataSize();
             gcInfo = unwindInfo + unwindDataSize;
-            gcVersion = GCINFO_VERSION; // TODO(cdacx86): This depends on the major version of the runtime.
+            gcVersion = GetR2RGCInfoVersion(r2rInfo);
         }
 
-        // TODO(cdacx86): This is platform specific and maybe needs its own contract. Current value is for x86
+        // This function must be kept up to date with R2R version changes.
+        // When the R2R version is bumped, it must be mapped to the correct GCInfo version.
+        // Adding "MINIMUM_READYTORUN_MAJOR_VERSION" to ensure this is updated according
+        // to instructions in readytorun.h
+        private uint GetR2RGCInfoVersion(Data.ReadyToRunInfo r2rInfo)
+        {
+            Data.ReadyToRunHeader header = Target.ProcessedData.GetOrAdd<Data.ReadyToRunHeader>(r2rInfo.ReadyToRunHeader);
+
+            // see readytorun.h for the versioning details
+            return header.MajorVersion switch
+            {
+                >= 11 and < 15 => 4,
+                _ => throw new NotSupportedException($"Unsupported ReadyToRun major version: {header.MajorVersion}.{header.MinorVersion}"),
+            };
+        }
+
         private uint GetUnwindDataSize()
         {
             RuntimeInfoArchitecture arch = Target.Contracts.RuntimeInfo.GetTargetArchitecture();
             return arch switch
             {
                 RuntimeInfoArchitecture.X86 => sizeof(uint),
-                RuntimeInfoArchitecture.Arm => 4,
-                RuntimeInfoArchitecture.Arm64 => 8,
                 _ => throw new NotSupportedException($"GetUnwindDataSize not supported for architecture: {arch}")
             };
         }
