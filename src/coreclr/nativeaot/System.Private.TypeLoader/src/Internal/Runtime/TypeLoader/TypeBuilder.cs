@@ -464,13 +464,13 @@ namespace Internal.Runtime.TypeLoader
             }
 
             /// <summary>
-            /// Writes this layout to the given bitfield.
+            /// Gets this layout in bitfield array.
             /// </summary>
             /// <returns>The layout in bitfield.</returns>
-            public bool[] WriteToBitfield()
+            public bool[] AsBitfield()
             {
-                if (IsNone)
-                    return TypeBuilderState.s_emptyLayout;
+                // This method should only be called when not none.
+                Debug.Assert(!IsNone);
 
                 // Ensure exactly one of these two are set.
                 Debug.Assert(_gcdesc != null ^ _bitfield != null);

@@ -306,7 +306,7 @@ namespace Internal.Runtime.TypeLoader
 
         // Sentinel static to allow us to initialize _instanceLayout to something
         // and then detect that InstanceGCLayout should return null
-        internal static readonly bool[] s_emptyLayout = [];
+        private static readonly bool[] s_emptyLayout = [];
 
         private bool[] _instanceGCLayout;
 
@@ -338,7 +338,7 @@ namespace Internal.Runtime.TypeLoader
                             TypeBuilder.GCLayout elementGcLayout = GetFieldGCLayout(arrayType.ElementType);
                             if (!elementGcLayout.IsNone)
                             {
-                                _instanceGCLayout = elementGcLayout.WriteToBitfield();
+                                _instanceGCLayout = elementGcLayout.AsBitfield();
                             }
                         }
                         else
