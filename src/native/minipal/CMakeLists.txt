@@ -38,10 +38,6 @@ endif()
 add_library(minipal STATIC)
 target_link_libraries(minipal PRIVATE minipal_objects)
 
-if(UNIX AND NOT APPLE)
-    target_compile_definitions(minipal PRIVATE _POSIX_C_SOURCE=200112L)
-endif()
-
 if(CLR_CMAKE_HOST_ANDROID)
   target_link_libraries(minipal PRIVATE log)
 endif(CLR_CMAKE_HOST_ANDROID)
