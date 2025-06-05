@@ -14,7 +14,6 @@ set(UTILCODE_COMMON_SOURCES
   configuration.cpp
   collections.cpp
   posterror.cpp
-  fstream.cpp
   clrhelpers.cpp
   stgpool.cpp
   stgpooli.cpp
