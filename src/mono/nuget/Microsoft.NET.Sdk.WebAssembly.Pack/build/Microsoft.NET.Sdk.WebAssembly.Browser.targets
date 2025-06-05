@@ -177,6 +177,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
       <_BlazorCacheBootResources>$(BlazorCacheBootResources)</_BlazorCacheBootResources>
       <_BlazorCacheBootResources Condition="'$(_BlazorCacheBootResources)' == '' and '$(_TargetingNET100OrLater)' != 'true'">true</_BlazorCacheBootResources>
+      <_BlazorCacheBootResources Condition="'$(_BlazorCacheBootResources)' == ''">false</_BlazorCacheBootResources>
       <_BlazorEnableTimeZoneSupport>$(BlazorEnableTimeZoneSupport)</_BlazorEnableTimeZoneSupport>
       <_BlazorEnableTimeZoneSupport Condition="'$(_BlazorEnableTimeZoneSupport)' == ''">true</_BlazorEnableTimeZoneSupport>
       <_WasmInvariantGlobalization>$(InvariantGlobalization)</_WasmInvariantGlobalization>
