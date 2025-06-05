@@ -24,6 +24,7 @@ namespace ILCompiler
         void RootStructMarshallingData(DefType type, string reason);
         void RootExternalTypeMapRequest(TypeDesc typeMapGroup, string reason);
         void RootProxyTypeMapRequest(TypeDesc typeMapGroup, string reason);
+        void RootPossibleCastTarget(TypeDesc type, string reason);
         void AddCompilationRoot(object o, string reason);
     }
 }

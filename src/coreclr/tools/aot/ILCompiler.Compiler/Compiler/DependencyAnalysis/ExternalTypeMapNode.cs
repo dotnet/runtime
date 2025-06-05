@@ -27,16 +27,22 @@ namespace ILCompiler.DependencyAnalysis
             {
                 var targetType = entry.Value.targetType;
                 var trimmingTargetType = entry.Value.trimmingTargetType;
+                ExternalTypeMapEntryNode node = new(typeMapGroup, entry.Key, targetType);
                 entries.Add(new CombinedDependencyListEntry(
-                    new ExternalTypeMapEntryNode(typeMapGroup, entry.Key, targetType),
+                    node,
                     context.NecessaryTypeSymbol(trimmingTargetType),
                     "Type in external type map is cast target"));
+                entries.Add(new CombinedDependencyListEntry(
+                    node,
+                    context.ScannedCastTarget(trimmingTargetType),
+                    "Type in external type map is cast target for cast that may have been optimized away"));
             }
 
             return entries;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => Array.Empty<DependencyListEntry>();
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => [];
+
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
         protected override string GetName(NodeFactory context) => "External type map";
     }

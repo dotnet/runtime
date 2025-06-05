@@ -33,6 +33,7 @@ namespace ILCompiler
         private readonly HashSet<ReflectableParameter> _reflectableParameters = new HashSet<ReflectableParameter>();
         private readonly List<TypeDesc> _externalTypeMapGroupRequests;
         private readonly List<TypeDesc> _proxyTypeMapGroupRequests;
+        private readonly List<TypeDesc> _possiblyOptimizedOutCastTargets;
 
         public AnalysisBasedMetadataManager(CompilerTypeSystemContext typeSystemContext)
             : this(typeSystemContext, new FullyBlockedMetadataBlockingPolicy(),
@@ -41,6 +42,7 @@ namespace ILCompiler
                 Array.Empty<ReflectableEntity<TypeDesc>>(), Array.Empty<ReflectableEntity<MethodDesc>>(),
                 Array.Empty<ReflectableEntity<FieldDesc>>(), Array.Empty<ReflectableCustomAttribute>(),
                 Array.Empty<ReflectableParameter>(), Array.Empty<TypeDesc>(), Array.Empty<TypeDesc>(),
+                Array.Empty<TypeDesc>(),
                 default)
         {
         }
@@ -62,6 +64,7 @@ namespace ILCompiler
             IEnumerable<ReflectableParameter> reflectableParameters,
             IEnumerable<TypeDesc> externalTypeMapGroupRequests,
             IEnumerable<TypeDesc> proxyTypeMapGroupRequests,
+            IEnumerable<TypeDesc> possiblyOptimizedOutCastTargets,
             MetadataManagerOptions options)
             : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options, flowAnnotations)
         {
@@ -105,6 +108,10 @@ namespace ILCompiler
                 _reflectableParameters.Add(refParameter);
             }
 
+            _externalTypeMapGroupRequests = [.. externalTypeMapGroupRequests];
+            _proxyTypeMapGroupRequests = [.. proxyTypeMapGroupRequests];
+            _possiblyOptimizedOutCastTargets = [.. possiblyOptimizedOutCastTargets];
+
 #if DEBUG
             HashSet<ModuleDesc> moduleHash = new HashSet<ModuleDesc>(_modulesWithMetadata);
             foreach (var refType in reflectableTypes)
@@ -136,9 +143,6 @@ namespace ILCompiler
                 Debug.Assert((GetMetadataCategory(refField.Entity.GetTypicalFieldDefinition()) & MetadataCategory.Description)
                     == (GetMetadataCategory(refField.Entity) & MetadataCategory.Description));
             }
-
-            _externalTypeMapGroupRequests = [..externalTypeMapGroupRequests];
-            _proxyTypeMapGroupRequests = [..proxyTypeMapGroupRequests];
 #endif
         }
 
@@ -234,6 +238,11 @@ namespace ILCompiler
             foreach (var typeMapGroup in _proxyTypeMapGroupRequests)
             {
                 rootProvider.RootProxyTypeMapRequest(typeMapGroup, "TypeMapRequest");
+            }
+
+            foreach (var castTarget in _possiblyOptimizedOutCastTargets)
+            {
+                rootProvider.RootPossibleCastTarget(castTarget, "Possibly optimized out cast target");
             }
         }
 

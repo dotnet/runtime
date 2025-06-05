@@ -413,6 +413,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ExternalTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AssociatedTypeMapObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternalTypeMapObjectNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ScannedCastTargetNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />

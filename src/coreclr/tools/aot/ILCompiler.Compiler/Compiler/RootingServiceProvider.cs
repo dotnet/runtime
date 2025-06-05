@@ -167,5 +167,10 @@ namespace ILCompiler
         {
             _rootAdder(_factory.ProxyTypeMapRequest(typeMapGroup), reason);
         }
+
+        public void RootPossibleCastTarget(TypeDesc type, string reason)
+        {
+            _rootAdder(_factory.ScannedCastTarget(type), reason);
+        }
     }
 }

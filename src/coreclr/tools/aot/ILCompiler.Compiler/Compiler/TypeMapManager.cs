@@ -142,15 +142,15 @@ namespace ILCompiler
 
         public TypeMapManager(ModuleDesc entryModule)
         {
-            _typeMapAssemblyTargetType = entryModule.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAssemblyTargetAttribute`1");
-            _typeMapType = entryModule.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAttribute`1");
-            _typeMapAssociationType = entryModule.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAssociationAttribute`1");
-
             if (entryModule is not { Assembly: EcmaAssembly assembly })
             {
                 // We can only process EcmaAssembly-based modules as we can only read custom attributes from them.
                 return;
             }
+
+            _typeMapAssemblyTargetType = entryModule.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAssemblyTargetAttribute`1");
+            _typeMapType = entryModule.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAttribute`1");
+            _typeMapAssociationType = entryModule.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAssociationAttribute`1");
 
             HashSet<EcmaAssembly> scannedAssemblies = [];
 
@@ -264,7 +264,7 @@ namespace ILCompiler
                             {
                                 _typeMapStates[typeMapGroup] = typeMapState = new TypeMapState();
                             }
-                            typeMapState.AddExternalTypeMapEntry(typeName, targetType, targetType);
+                            typeMapState.AddExternalTypeMapEntry(typeName, targetType, trimTargetType);
                             break;
                         }
 
