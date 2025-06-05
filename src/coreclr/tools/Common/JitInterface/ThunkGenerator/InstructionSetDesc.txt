@@ -170,8 +170,8 @@ implication        ,X86   ,AVX2                 ,AVX
 implication        ,X86   ,BMI1                 ,AVX2
 implication        ,X86   ,BMI2                 ,AVX2
 implication        ,X86   ,FMA                  ,AVX2
-implication        ,X86   ,LZCNT                ,AVX2
-implication        ,X86   ,MOVBE                ,AVX2
+implication        ,X86   ,LZCNT                ,SSE42
+implication        ,X86   ,MOVBE                ,SSE42
 
 implication        ,X86   ,AVX512               ,AVX2
 implication        ,X86   ,AVX512               ,BMI1
