@@ -4,6 +4,7 @@
 #ifdef FEATURE_INTERPRETER
 
 #include "callstubgenerator.h"
+#include "ecall.h"
 
 extern "C" void Load_Stack();
 
@@ -544,6 +545,15 @@ extern "C" void CallJittedMethodRet4Float(PCODE *routines, int8_t*pArgs, int8_t*
 CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTracker *pamTracker)
 {
     STANDARD_VM_CONTRACT;
+
+    // String constructors are special cases, and have a special calling convention that is associated with the actual function executed (which is a static function with no this parameter)
+    if (pMD->GetMethodTable()->IsString() && pMD->IsCtor())
+    {
+        _ASSERTE(pMD->IsFCall());
+        MethodDesc *pMDActualImplementation = NonVirtualEntry2MethodDesc(ECall::GetFCallImpl(pMD));
+        _ASSERTE(pMDActualImplementation != pMD);
+        pMD = pMDActualImplementation;
+    }
 
     _ASSERTE(pMD != NULL);
 

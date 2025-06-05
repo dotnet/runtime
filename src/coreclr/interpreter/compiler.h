@@ -356,7 +356,7 @@ private:
     CORINFO_CLASS_HANDLE    ResolveClassToken(uint32_t token);
     CORINFO_CLASS_HANDLE    getClassFromContext(CORINFO_CONTEXT_HANDLE context);
     int                     getParamArgIndex(); // Get the index into the m_pVars array of the Parameter argument. This is either the this pointer, a methoddesc or a class handle
-    int                     FillTempVarWithToken(CORINFO_RESOLVED_TOKEN* resolvedToken, bool embedParent, int existingVar = -1);
+    int                     FillTempVarWithToken(CORINFO_RESOLVED_TOKEN* resolvedToken, bool embedParent, bool onlyIfNeedsRuntimeLookup, int existingVar = -1);
 
     void* AllocMethodData(size_t numBytes);
 public:
@@ -453,7 +453,7 @@ private:
     void    EmitUnaryArithmeticOp(int32_t opBase);
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
-    void    EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall);
+    void    EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall, bool newObj);
     bool    EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);

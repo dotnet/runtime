@@ -2124,8 +2124,7 @@ void* InterpCompiler::GetDataItemAtIndex(int32_t index)
 
 int32_t InterpCompiler::GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle)
 {
-    size_t data = (size_t)mHandle | INTERP_METHOD_HANDLE_TAG;
-    return GetDataItemIndex((void*)data);
+    return GetDataItemIndex((void*)mHandle);
 }
 
 int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
@@ -2231,13 +2230,13 @@ int InterpCompiler::getParamArgIndex()
     return m_paramArgIndex;
 }
 
-int InterpCompiler::FillTempVarWithToken(CORINFO_RESOLVED_TOKEN* resolvedToken, bool embedParent, int existingTemp)
+int InterpCompiler::FillTempVarWithToken(CORINFO_RESOLVED_TOKEN* resolvedToken, bool embedParent, bool onlyIfNeedsRuntimeLookup, int existingTemp)
 {
     CORINFO_GENERICHANDLE_RESULT embedInfo;
-    m_compHnd->embedGenericHandle(resolvedToken, false, m_methodInfo->ftn, &embedInfo);
+    m_compHnd->embedGenericHandle(resolvedToken, embedParent, m_methodInfo->ftn, &embedInfo);
 
     int resultVar = existingTemp;
-    if (resultVar == -1)
+    if ((resultVar == -1) && (!onlyIfNeedsRuntimeLookup || (embedInfo.lookup.lookupKind.needsRuntimeLookup)))
     {
         PushStackType(StackTypeI, NULL);
         resultVar = m_pStackPointer[-1].var;
@@ -2266,7 +2265,7 @@ int InterpCompiler::FillTempVarWithToken(CORINFO_RESOLVED_TOKEN* resolvedToken, 
         m_pLastNewIns->SetSVar(getParamArgIndex());
         m_pLastNewIns->SetDVar(resultVar);
     }
-    else
+    else if (!onlyIfNeedsRuntimeLookup)
     {
         AddIns(INTOP_LDPTR);
         m_pLastNewIns->SetDVar(resultVar);
@@ -2277,13 +2276,15 @@ int InterpCompiler::FillTempVarWithToken(CORINFO_RESOLVED_TOKEN* resolvedToken, 
     return resultVar;
 }
 
-void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall)
+void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall, bool newObj)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
     bool isVirtual = (*m_ip == CEE_CALLVIRT);
 
     CORINFO_RESOLVED_TOKEN resolvedCallToken;
-    ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedCallToken);
+    bool doCallInsteadOfNew = false;
+
+    ResolveToken(token, newObj ? CORINFO_TOKENKIND_Method : CORINFO_TOKENKIND_NewObj, &resolvedCallToken);
 
     CORINFO_CALL_INFO callInfo;
     CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
@@ -2298,9 +2299,17 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
         return;
     }
 
+    if (callInfo.classFlags & CORINFO_FLG_VAROBJSIZE)
+    {
+        // This is a variable size object which means "System.String".
+        // For these, we just call the resolved method directly, but don't actually pass a this pointer to it.
+        doCallInsteadOfNew = true;
+    }
+
     // Process sVars
-    int numArgsFromStack = callInfo.sig.numArgs + callInfo.sig.hasThis();
-    int numArgs = numArgsFromStack;
+    int numArgsFromStack = callInfo.sig.numArgs + (newObj ? 0 : callInfo.sig.hasThis());
+    int newObjThisArgLocation = newObj && !doCallInsteadOfNew ? 0 : INT_MAX;
+    int numArgs = numArgsFromStack + (newObjThisArgLocation == 0);
     m_pStackPointer -= numArgsFromStack;
 
     int extraParamArgLocation = INT_MAX;
@@ -2318,12 +2327,50 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
             // This is the extra type argument, which is not on the logical IL stack
             // Skip it for now. We will fill it in later.
         }
+        else if (iActualArg == newObjThisArgLocation)
+        {
+            // This is the newObj arg type argument, which is not on the logical IL stack
+            // Skip it for now. We will fill it in later.
+        }
         else
         {
             callArgs[iActualArg] = m_pStackPointer [iLogicalArg].var;
+            iLogicalArg++;
         }
     }
     callArgs[numArgs] = -1;
+
+    int32_t newObjTypeVar = -1;
+    int32_t newObjThisVar = -1;
+    int32_t newObjDVar = -1;
+    InterpType ctorType = InterpTypeO;
+    int32_t vtsize = 0;
+
+    if (newObjThisArgLocation != INT_MAX)
+    {
+        ctorType = GetInterpType(m_compHnd->asCorInfoType(resolvedCallToken.hClass));
+        if (ctorType == InterpTypeVT)
+        {
+            vtsize = m_compHnd->getClassSize(resolvedCallToken.hClass);
+            PushTypeVT(resolvedCallToken.hClass, vtsize);
+            PushInterpType(InterpTypeByRef, NULL);
+        }
+        else
+        {
+            PushInterpType(ctorType, resolvedCallToken.hClass);
+            PushInterpType(ctorType, resolvedCallToken.hClass);
+
+            newObjTypeVar = FillTempVarWithToken(&resolvedCallToken, true/*embedParent*/, true /*onlyIfNeedsRuntimeLookup*/);
+        }
+        newObjDVar = m_pStackPointer[-2].var;
+        newObjThisVar = m_pStackPointer[-1].var;
+        m_pStackPointer--;
+        // Consider this arg as being defined, although newobj defines it
+        AddIns(INTOP_DEF);
+        m_pLastNewIns->SetDVar(newObjThisVar);
+
+        callArgs[newObjThisArgLocation] = newObjThisVar;
+    }
 
     if (extraParamArgLocation != INT_MAX)
     {
@@ -2383,7 +2430,16 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
 
     // Process dVar
     int32_t dVar;
-    if (callInfo.sig.retType != CORINFO_TYPE_VOID)
+    if (newObjDVar != -1)
+    {
+        dVar = newObjDVar;
+    }
+    else if (doCallInsteadOfNew)
+    {
+        PushInterpType(InterpTypeO, NULL);
+        dVar = m_pStackPointer[-1].var;
+    }
+    else if (callInfo.sig.retType != CORINFO_TYPE_VOID)
     {
         InterpType interpType = GetInterpType(callInfo.sig.retType);
 
@@ -2412,15 +2468,43 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
     switch (callInfo.kind)
     {
         case CORINFO_CALL:
-            // Normal call
-            if (callInfo.nullInstanceCheck)
+            if (newObj && !doCallInsteadOfNew)
             {
-                // If the call is a normal call, we need to check for null instance
-                // before the call.
-                // TODO: Add null checking behavior somewhere here!
+                if (ctorType == InterpTypeVT)
+                {
+                    // If this is a newobj for a value type, we need to call the constructor
+                    // and then copy the value type to the stack.
+                    AddIns(INTOP_NEWOBJ_VT);
+                    m_pLastNewIns->data[1] = (int32_t)ALIGN_UP_TO(vtsize, INTERP_STACK_SLOT_SIZE);
+                }
+                else
+                {
+                    if (newObjTypeVar != -1)
+                    {
+                        // newobj of type known only through a generic dictionary lookup.
+                        assert(!"newobj of type known only through a generic dictionary lookup. NYI"); // This isn't implemented yet
+                    }
+                    else
+                    {
+                        // Normal newobj call
+                        AddIns(INTOP_NEWOBJ);
+                        m_pLastNewIns->data[1] = GetDataItemIndex(resolvedCallToken.hClass);
+                    }
+                }
+                m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
             }
-            AddIns(INTOP_CALL);
-            m_pLastNewIns->data[0] = GetMethodDataItemIndex(callInfo.hMethod);
+            else
+            {
+                // Normal call
+                if (callInfo.nullInstanceCheck)
+                {
+                    // If the call is a normal call, we need to check for null instance
+                    // before the call.
+                    // TODO: Add null checking behavior somewhere here!
+                }
+                AddIns(INTOP_CALL);
+                m_pLastNewIns->data[0] = GetMethodDataItemIndex(callInfo.hMethod);
+            }
             break;
 
         case CORINFO_CALL_CODE_POINTER:
@@ -3617,13 +3701,19 @@ retry_emit:
                 break;
             case CEE_CALLVIRT:
             case CEE_CALL:
-                EmitCall(constrainedClass, readonly, tailcall);
+                EmitCall(constrainedClass, readonly, tailcall, false /*newObj*/);
                 constrainedClass = NULL;
                 readonly = false;
                 tailcall = false;
                 break;
             case CEE_NEWOBJ:
             {
+                EmitCall(NULL /*constrainedClass*/, false /* readonly*/, false /* tailcall*/, true /*newObj*/);
+                constrainedClass = NULL;
+                readonly = false;
+                tailcall = false;
+                break;
+                /*
                 CORINFO_METHOD_HANDLE ctorMethod;
                 CORINFO_SIG_INFO ctorSignature;
                 CORINFO_CLASS_HANDLE ctorClass;
@@ -3685,7 +3775,7 @@ retry_emit:
 
                 // Pop this, the result of the newobj still remains on the stack
                 m_pStackPointer--;
-                break;
+                break;*/
             }
             case CEE_DUP:
             {
@@ -4417,7 +4507,7 @@ retry_emit:
 
                 if (embedInfo.lookup.lookupKind.needsRuntimeLookup)
                 {
-                    int runtimeLookupVar = FillTempVarWithToken(&resolvedToken, false);
+                    int runtimeLookupVar = FillTempVarWithToken(&resolvedToken, false, true);
                     m_pLastNewIns->SetSVar(getParamArgIndex());
                     m_pLastNewIns->SetDVar(runtimeLookupVar);
 
@@ -4748,7 +4838,7 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
         }
         case InterpOpMethodHandle:
         {
-            CORINFO_METHOD_HANDLE mh = (CORINFO_METHOD_HANDLE)((size_t)m_dataItems.Get(*pData) & ~INTERP_METHOD_HANDLE_TAG);
+            CORINFO_METHOD_HANDLE mh = (CORINFO_METHOD_HANDLE)((size_t)m_dataItems.Get(*pData));
             printf(" ");
             PrintMethodName(mh);
             break;

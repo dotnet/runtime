@@ -41,7 +41,7 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
         }
     }
 
-    pHeader->SetTarget(pMD->GetNativeCode()); // The method to call
+    pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode()); // The method to call
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
@@ -104,7 +104,7 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     const int32_t *ip;
     int8_t *stack;
 
-    InterpMethod *pMethod = *(InterpMethod**)pFrame->startIp;
+    InterpMethod *pMethod = pFrame->startIp->InterpMethod;
     assert(pMethod->CheckIntegrity());
 
     pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
@@ -113,7 +113,7 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     if (pExceptionClauseArgs == NULL)
     {
         // Start executing at the beginning of the method
-        ip = pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t);
+        ip = pFrame->startIp->GetByteCodes();
     }
     else
     {
@@ -135,7 +135,8 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     }
 
     int32_t returnOffset, callArgsOffset, methodSlot;
-    const int32_t *targetIp;
+    PTR_InterpByteCodeStart targetIp;
+    MethodDesc* targetMethod;
 
 MAIN_LOOP:
     try
@@ -1143,20 +1144,9 @@ MAIN_LOOP:
                     // Interpreter-TODO
                     // This needs to be optimized, not operating at MethodDesc level, rather with ftnptr
                     // slots containing the interpreter IR pointer
-                    pMD = pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
-
-                    PCODE code = pMD->GetNativeCode();
-                    if (!code)
-                    {
-                        pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
-                        GCX_PREEMP();
-                        pMD->PrepareInitialCode(CallerGCMode::Coop);
-                        code = pMD->GetNativeCode();
-                    }
-                    targetIp = (const int32_t*)code;
+                    targetMethod = pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
                     ip += 4;
-                    // Interpreter-TODO unbox if target method class is valuetype
-                    goto CALL_TARGET_IP;
+                    goto CALL_INTERP_METHOD;
                 }
 
                 case INTOP_CALL:
@@ -1167,15 +1157,12 @@ MAIN_LOOP:
 
                     ip += 4;
 CALL_INTERP_SLOT:
+                    targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
+CALL_INTERP_METHOD:
+                    targetIp = targetMethod->GetInterpreterCode();
+                    if (targetIp == NULL)
                     {
-                    size_t targetMethod = (size_t)pMethod->pDataItems[methodSlot];
-                    if (targetMethod & INTERP_METHOD_HANDLE_TAG)
-                    {
-                        // First execution of this call. Ensure target method is compiled and
-                        // patch the data item slot with the actual method code.
-                        MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_HANDLE_TAG);
-                        PCODE code = pMD->GetNativeCode();
-                        if (!code) {
+                        {
                             // This is an optimization to ensure that the stack walk will not have to search
                             // for the topmost frame in the current InterpExecMethod. It is not required
                             // for correctness, as the stack walk will find the topmost frame anyway. But it
@@ -1185,30 +1172,19 @@ CALL_INTERP_SLOT:
                             // small subset of frames high.
                             pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
                             GCX_PREEMP();
-                            pMD->PrepareInitialCode(CallerGCMode::Coop);
-                            code = pMD->GetNativeCode();
+                            // Attempt to setup the interpreter code for the target method.
+                            if (!(targetMethod->IsFCall() || (targetMethod->IsCtor() && targetMethod->GetMethodTable()->IsString())))
+                            {
+                                targetMethod->PrepareInitialCode(CallerGCMode::Coop);
+                            }
+                            targetIp = targetMethod->GetInterpreterCode();
                         }
-                        pMethod->pDataItems[methodSlot] = (void*)code;
-                        targetIp = (const int32_t*)code;
-                    }
-                    else
-                    {
-                        targetIp = (const int32_t*)targetMethod;
-                    }
-                    }
-CALL_TARGET_IP:
-                    // Interpreter-TODO: we need a fast way to check of the targetIp is an interpreter code or not.
-                    // Probably use a tagged pointer for interpreter code and a normal pointer for JIT/R2R code.
-                    EECodeInfo codeInfo((PCODE)targetIp);
-                    if (!codeInfo.IsValid())
-                    {
-                        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Attempted to execute native code from interpreter"));
-                    }
-                    else if (codeInfo.GetCodeManager() != ExecutionManager::GetInterpreterCodeManager())
-                    {
-                        MethodDesc *pMD = codeInfo.GetMethodDesc();
-                        InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset);
-                        break;
+                        if (targetIp == NULL)
+                        {
+                            // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
+                            InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset);
+                            break;
+                        }
                     }
 
                     // Save current execution state for when we return from called method
@@ -1229,10 +1205,10 @@ CALL_TARGET_IP:
                     assert (((size_t)pFrame->pStack % INTERP_STACK_ALIGNMENT) == 0);
 
                     // Set execution state for the new frame
-                    pMethod = *(InterpMethod**)pFrame->startIp;
+                    pMethod = pFrame->startIp->InterpMethod;
                     assert(pMethod->CheckIntegrity());
                     stack = pFrame->pStack;
-                    ip = pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t);
+                    ip = pFrame->startIp->GetByteCodes();
                     pThreadContext->pStackPointer = stack + pMethod->allocaSize;
                     break;
                 }
@@ -1653,7 +1629,7 @@ do {                                                                           \
         ip = (int32_t*)resumeIP;
 
         stack = pFrame->pStack;
-        pMethod = *(InterpMethod**)pFrame->startIp;
+        pMethod = pFrame->startIp->InterpMethod;
         assert(pMethod->CheckIntegrity());
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
         goto MAIN_LOOP;
@@ -1670,7 +1646,7 @@ EXIT_FRAME:
         pFrame = pFrame->pParent;
         ip = pFrame->ip;
         stack = pFrame->pStack;
-        pMethod = *(InterpMethod**)pFrame->startIp;
+        pMethod = pFrame->startIp->InterpMethod;
         assert(pMethod->CheckIntegrity());
         pFrame->ip = NULL;
 
