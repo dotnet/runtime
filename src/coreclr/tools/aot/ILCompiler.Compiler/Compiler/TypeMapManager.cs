@@ -65,7 +65,7 @@ namespace ILCompiler
                 _associatedTypeMapExceptionStub ??= stub;
             }
 
-            public object GetExternalTypeMapNode(TypeDesc group)
+            public IExternalTypeMapNode GetExternalTypeMapNode(TypeDesc group)
             {
                 if (_externalTypeMapExceptionStub is not null)
                 {
@@ -74,7 +74,7 @@ namespace ILCompiler
                 return new ExternalTypeMapNode(group, _externalTypeMap);
             }
 
-            public object GetProxyTypeMapNode(TypeDesc group)
+            public IProxyTypeMapNode GetProxyTypeMapNode(TypeDesc group)
             {
                 if (_associatedTypeMapExceptionStub is not null)
                 {
@@ -297,46 +297,13 @@ namespace ILCompiler
             return new TypeMapStates(typeMapStates);
         }
 
-        public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
+        public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
-            graph.NewMarkedNode += Graph_NewMarkedNode;
         }
 
-        private readonly SortedSet<ExternalTypeMapNode> _externalTypeMaps = new SortedSet<ExternalTypeMapNode>(CompilerComparer.Instance);
-        private readonly SortedSet<InvalidExternalTypeMapNode> _invalidExternalTypeMaps = new SortedSet<InvalidExternalTypeMapNode>(CompilerComparer.Instance);
-        private readonly SortedSet<ProxyTypeMapNode> _proxyTypeMaps = new SortedSet<ProxyTypeMapNode>(CompilerComparer.Instance);
-        private readonly SortedSet<InvalidProxyTypeMapNode> _invalidProxyTypeMaps = new SortedSet<InvalidProxyTypeMapNode>(CompilerComparer.Instance);
+        internal abstract IEnumerable<IExternalTypeMapNode> GetExternalTypeMaps();
 
-        protected virtual void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
-        {
-            if (obj is ExternalTypeMapNode externalTypeMapNode)
-            {
-                _externalTypeMaps.Add(externalTypeMapNode);
-            }
-
-            if (obj is InvalidExternalTypeMapNode invalidExternalTypeMapNode)
-            {
-                _invalidExternalTypeMaps.Add(invalidExternalTypeMapNode);
-            }
-
-            if (obj is ProxyTypeMapNode proxyTypeMapNode)
-            {
-                _proxyTypeMaps.Add(proxyTypeMapNode);
-            }
-
-            if (obj is InvalidProxyTypeMapNode invalidProxyTypeMapNode)
-            {
-                _invalidProxyTypeMaps.Add(invalidProxyTypeMapNode);
-            }
-        }
-
-        internal abstract IEnumerable<ExternalTypeMapNode> GetExternalTypeMaps();
-
-        internal abstract IEnumerable<InvalidExternalTypeMapNode> GetInvalidExternalTypeMaps();
-
-        internal abstract IEnumerable<ProxyTypeMapNode> GetProxyTypeMaps();
-
-        internal abstract IEnumerable<InvalidProxyTypeMapNode> GetInvalidProxyTypeMaps();
+        internal abstract IEnumerable<IProxyTypeMapNode> GetProxyTypeMaps();
 
         public abstract void AddCompilationRoots(IRootingServiceProvider rootProvider);
 

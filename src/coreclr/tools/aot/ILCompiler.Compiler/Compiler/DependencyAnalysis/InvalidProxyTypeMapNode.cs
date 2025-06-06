@@ -9,7 +9,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class InvalidProxyTypeMapNode(TypeDesc typeMapGroup, MethodDesc throwingMethodStub) : DependencyNodeCore<NodeFactory>, ISortableNode
+    internal sealed class InvalidProxyTypeMapNode(TypeDesc typeMapGroup, MethodDesc throwingMethodStub) : DependencyNodeCore<NodeFactory>, IProxyTypeMapNode
     {
         public TypeDesc TypeMapGroup { get; } = typeMapGroup;
         public MethodDesc ThrowingMethodStub { get; } = throwingMethodStub;

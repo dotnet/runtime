@@ -39,44 +39,39 @@ namespace ILCompiler.DependencyAnalysis
             var writer = new NativeWriter();
             var typeMapGroupHashTable = new VertexHashtable();
 
-            Dictionary<TypeDesc, VertexHashtable> typeMapHashTables = new();
-
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapGroupHashTable);
 
-            foreach (ExternalTypeMapNode externalTypeMap in factory.TypeMapManager.GetExternalTypeMaps())
+            foreach (IExternalTypeMapNode externalTypeMap in factory.TypeMapManager.GetExternalTypeMaps())
             {
-                if (!typeMapHashTables.TryGetValue(externalTypeMap.TypeMapGroup, out VertexHashtable typeMapHashTable))
+                TypeDesc typeMapGroup = externalTypeMap.TypeMapGroup;
+
+                if (externalTypeMap is InvalidExternalTypeMapNode invalidNode)
                 {
-                    TypeDesc typeMapGroup = externalTypeMap.TypeMapGroup;
-                    typeMapHashTable = typeMapHashTables[typeMapGroup] = new VertexHashtable();
+                    Vertex typeMapStateVertex = writer.GetUnsignedConstant(0); // Invalid type map state
+                    Vertex typeMapGroupVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.NecessaryTypeSymbol(typeMapGroup)));
+                    Vertex throwingMethodStubVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MethodEntrypoint(invalidNode.ThrowingMethodStub)));
+                    Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, throwingMethodStubVertex);
+                    typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), hashTableSection.Place(tuple));
                 }
-
-                foreach ((string key, IEETypeNode valueNode) in externalTypeMap.GetMarkedEntries(factory))
+                else
                 {
-                    Vertex keyVertex = writer.GetStringConstant(key);
-                    Vertex valueVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(valueNode));
-                    Vertex entry = writer.GetTuple(keyVertex, valueVertex);
-                    typeMapHashTable.Append((uint)TypeHashingAlgorithms.ComputeNameHashCode(key), hashTableSection.Place(entry));
+                    ExternalTypeMapNode validNode = (ExternalTypeMapNode)externalTypeMap;
+                    VertexHashtable typeMapHashTable = new();
+
+                    foreach ((string key, IEETypeNode valueNode) in validNode.GetMarkedEntries(factory))
+                    {
+                        Vertex keyVertex = writer.GetStringConstant(key);
+                        Vertex valueVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(valueNode));
+                        Vertex entry = writer.GetTuple(keyVertex, valueVertex);
+                        typeMapHashTable.Append((uint)TypeHashingAlgorithms.ComputeNameHashCode(key), hashTableSection.Place(entry));
+                    }
+
+                    Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
+                    Vertex typeMapGroupVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.NecessaryTypeSymbol(typeMapGroup)));
+                    Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapHashTable);
+                    typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), hashTableSection.Place(tuple));
                 }
-            }
-
-            foreach ((TypeDesc typeMapGroup, VertexHashtable typeMapHashTable) in typeMapHashTables)
-            {
-                Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
-                Vertex typeMapGroupVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.NecessaryTypeSymbol(typeMapGroup)));
-                Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapHashTable);
-                typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), hashTableSection.Place(tuple));
-            }
-
-            foreach (InvalidExternalTypeMapNode invalidNode in factory.TypeMapManager.GetInvalidExternalTypeMaps())
-            {
-                TypeDesc typeMapGroup = invalidNode.TypeMapGroup;
-                Vertex typeMapStateVertex = writer.GetUnsignedConstant(0); // Invalid type map state
-                Vertex typeMapGroupVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.NecessaryTypeSymbol(typeMapGroup)));
-                Vertex throwingMethodStubVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MethodEntrypoint(invalidNode.ThrowingMethodStub)));
-                Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, throwingMethodStubVertex);
-                typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), hashTableSection.Place(tuple));
             }
 
             byte[] hashTableBytes = writer.Save();

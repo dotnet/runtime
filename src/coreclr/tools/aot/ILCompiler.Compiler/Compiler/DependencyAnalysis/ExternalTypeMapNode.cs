@@ -11,7 +11,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ExternalTypeMapNode : DependencyNodeCore<NodeFactory>, ISortableNode
+    internal sealed class ExternalTypeMapNode : DependencyNodeCore<NodeFactory>, ISortableNode, IExternalTypeMapNode
     {
         private readonly IEnumerable<KeyValuePair<string, (TypeDesc targetType, TypeDesc trimmingTargetType)>> _mapEntries;
 

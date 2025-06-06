@@ -137,7 +137,7 @@ namespace ILCompiler
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, new ObjectNode.ObjectNodeComparer(CompilerComparer.Instance));
             return new RyuJitCompilation(graph,
                 factory,
-                _compilationRoots,
+                [.._compilationRoots, _typeMapManager],
                 _ilProvider,
                 _debugInformationProvider,
                 _logger,

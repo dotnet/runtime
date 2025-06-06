@@ -201,7 +201,7 @@ namespace ILCompiler
                 compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
                 if (singleMethod.OwningType is MetadataType { Module.Assembly: EcmaAssembly assembly })
                 {
-                    compilationRoots.Add(typeMapManager = new UsageBasedTypeMapManager(TypeMapManager.CreateTypeMapStateRootedAtAssembly(assembly)));
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapManager.CreateTypeMapStateRootedAtAssembly(assembly));
                 }
             }
             else
@@ -315,7 +315,7 @@ namespace ILCompiler
 
                 if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
                 {
-                    compilationRoots.Add(typeMapManager = new UsageBasedTypeMapManager(TypeMapManager.CreateTypeMapStateRootedAtAssembly(entryAssembly)));
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapManager.CreateTypeMapStateRootedAtAssembly(entryAssembly));
                 }
             }
 
@@ -598,7 +598,6 @@ namespace ILCompiler
 
             compilationRoots.Add(metadataManager);
             compilationRoots.Add(interopStubManager);
-            compilationRoots.Add(typeMapManager);
 
             builder
                 .UseInstructionSetSupport(instructionSetSupport)

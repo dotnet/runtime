@@ -11,7 +11,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ProxyTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> mapEntries) : DependencyNodeCore<NodeFactory>, ISortableNode
+    internal sealed class ProxyTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> mapEntries) : DependencyNodeCore<NodeFactory>, IProxyTypeMapNode
     {
         public TypeDesc TypeMapGroup { get; } = typeMapGroup;
 

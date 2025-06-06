@@ -40,44 +40,39 @@ namespace ILCompiler.DependencyAnalysis
             var writer = new NativeWriter();
             var typeMapGroupHashTable = new VertexHashtable();
 
-            Dictionary<TypeDesc, VertexHashtable> typeMapHashTables = new();
-
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapGroupHashTable);
 
-            foreach (ProxyTypeMapNode proxyTypeMap in factory.TypeMapManager.GetProxyTypeMaps())
+            foreach (IProxyTypeMapNode proxyTypeMap in factory.TypeMapManager.GetProxyTypeMaps())
             {
-                if (!typeMapHashTables.TryGetValue(proxyTypeMap.TypeMapGroup, out VertexHashtable typeMapHashTable))
+                TypeDesc typeMapGroup = proxyTypeMap.TypeMapGroup;
+
+                if (proxyTypeMap is InvalidProxyTypeMapNode invalidNode)
                 {
-                    TypeDesc typeMapGroup = proxyTypeMap.TypeMapGroup;
-                    typeMapHashTable = typeMapHashTables[typeMapGroup] = new VertexHashtable();
+                    Vertex typeMapStateVertex = writer.GetUnsignedConstant(0); // Invalid type map state
+                    Vertex typeMapGroupVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.NecessaryTypeSymbol(typeMapGroup)));
+                    Vertex throwingMethodStubVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MethodEntrypoint(invalidNode.ThrowingMethodStub)));
+                    Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, throwingMethodStubVertex);
+                    typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), hashTableSection.Place(tuple));
                 }
-
-                foreach ((IEETypeNode keyNode, IEETypeNode valueNode) in proxyTypeMap.GetMarkedEntries(factory))
+                else
                 {
-                    Vertex keyVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(keyNode));
-                    Vertex valueVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(valueNode));
-                    Vertex entry = writer.GetTuple(keyVertex, valueVertex);
-                    typeMapHashTable.Append((uint)keyNode.Type.GetHashCode(), hashTableSection.Place(entry));
+                    ProxyTypeMapNode validNode = (ProxyTypeMapNode)proxyTypeMap;
+                    VertexHashtable typeMapHashTable = new VertexHashtable();
+
+                    foreach ((IEETypeNode keyNode, IEETypeNode valueNode) in validNode.GetMarkedEntries(factory))
+                    {
+                        Vertex keyVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(keyNode));
+                        Vertex valueVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(valueNode));
+                        Vertex entry = writer.GetTuple(keyVertex, valueVertex);
+                        typeMapHashTable.Append((uint)keyNode.Type.GetHashCode(), hashTableSection.Place(entry));
+                    }
+
+                    Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
+                    Vertex typeMapGroupVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.NecessaryTypeSymbol(typeMapGroup)));
+                    Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapHashTable);
+                    typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), hashTableSection.Place(tuple));
                 }
-            }
-
-            foreach ((TypeDesc typeMapGroup, VertexHashtable typeMapHashTable) in typeMapHashTables)
-            {
-                Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
-                Vertex typeMapGroupVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.NecessaryTypeSymbol(typeMapGroup)));
-                Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapHashTable);
-                typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), hashTableSection.Place(tuple));
-            }
-
-            foreach (InvalidProxyTypeMapNode invalidNode in factory.TypeMapManager.GetInvalidProxyTypeMaps())
-            {
-                TypeDesc typeMapGroup = invalidNode.TypeMapGroup;
-                Vertex typeMapStateVertex = writer.GetUnsignedConstant(0); // Invalid type map state
-                Vertex typeMapGroupVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.NecessaryTypeSymbol(typeMapGroup)));
-                Vertex throwingMethodStubVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MethodEntrypoint(invalidNode.ThrowingMethodStub)));
-                Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, throwingMethodStubVertex);
-                typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), hashTableSection.Place(tuple));
             }
 
             byte[] hashTableBytes = writer.Save();

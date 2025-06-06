@@ -9,7 +9,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class InvalidExternalTypeMapNode(TypeDesc typeMapGroup, MethodDesc throwingMethodStub) : DependencyNodeCore<NodeFactory>, ISortableNode
+    internal sealed class InvalidExternalTypeMapNode(TypeDesc typeMapGroup, MethodDesc throwingMethodStub) : DependencyNodeCore<NodeFactory>, ISortableNode, IExternalTypeMapNode
     {
         public override bool InterestingForDynamicDependencyAnalysis => false;
 
@@ -34,6 +34,8 @@ namespace ILCompiler.DependencyAnalysis
         public MethodDesc ThrowingMethodStub { get; } = throwingMethodStub;
 
         public int ClassCode => 36910224;
+
+        bool IExternalTypeMapNode.IsValid => false;
 
         public int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {

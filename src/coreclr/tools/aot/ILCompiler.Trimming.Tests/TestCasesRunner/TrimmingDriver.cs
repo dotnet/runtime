@@ -145,8 +145,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 typeMapManager = new UsageBasedTypeMapManager (TypeMapManager.CreateTypeMapStateRootedAtAssembly (entryAssembly));
             }
 
-            compilationRoots.Add(typeMapManager);
-
             CompilationBuilder builder = new RyuJitCompilationBuilder (typeSystemContext, compilationGroup)
 				.UseILProvider (ilProvider)
 				.UseCompilationUnitPrefix("");
