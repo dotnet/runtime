@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             var ct = new CancellationToken(true);
             var service = new WaitForCancelledTokenService();
 
-            await Assert.ThrowsAsync<TaskCanceledException>(() => service.StartAsync(ct));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.StartAsync(ct));
         }
 
         [Fact]
@@ -231,10 +231,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             protected override async Task ExecuteAsync(CancellationToken stoppingToken)
             {
                 _waitForExecuteTask.TrySetResult(null);
-                while (!stoppingToken.IsCancellationRequested)
-                {
-                    Thread.Sleep(100); // never await, just block the thread
-                }
+                stoppingToken.WaitHandle.WaitOne();
                 _waitForEndExecuteTask.TrySetResult(null);
             }
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
