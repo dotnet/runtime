@@ -69,6 +69,8 @@ else()
   target_include_directories(cdac_data_descriptor BEFORE PRIVATE ${VM_DIR})
   target_include_directories(cdac_data_descriptor BEFORE PRIVATE ${VM_DIR}/${ARCH_SOURCES_DIR})
   target_include_directories(cdac_data_descriptor PRIVATE ${CLR_DIR}/interop/inc)
+  # LTO not supported for cdac, so disable it
+  set_target_properties(cdac_data_descriptor  PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
   set(GENERATED_CDAC_DESCRIPTOR_DIR "${CMAKE_CURRENT_BINARY_DIR}/cdac")
   set(CONTRACT_DESCRIPTOR_OUTPUT "${GENERATED_CDAC_DESCRIPTOR_DIR}/contract-descriptor.c")
