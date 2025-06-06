@@ -402,7 +402,7 @@ bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
         return true;
     }
 
-    if (ins == INS_crc32_apx)
+    if (ins == INS_crc32_apx || ins == INS_movbe_apx)
     {
         // With the new opcode, CRC32 is promoted to EVEX with APX.
         return true;
@@ -1102,6 +1102,22 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
         case INS_imul_13:
         case INS_imul_14:
         case INS_imul_15:
+        case INS_imul_16:
+        case INS_imul_17:
+        case INS_imul_18:
+        case INS_imul_19:
+        case INS_imul_20:
+        case INS_imul_21:
+        case INS_imul_22:
+        case INS_imul_23:
+        case INS_imul_24:
+        case INS_imul_25:
+        case INS_imul_26:
+        case INS_imul_27:
+        case INS_imul_28:
+        case INS_imul_29:
+        case INS_imul_30:
+        case INS_imul_31:
 #endif // TARGET_AMD64
             if (reg == inst3opImulReg(ins))
             {
@@ -1879,6 +1895,12 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
         return true;
     }
 
+    if (ins >= INS_imul_16 && ins <= INS_imul_31)
+    {
+        // The instructions have implicit use of EGPRs.
+        return true;
+    }
+
 #if defined(DEBUG)
     if (emitComp->DoJitStressRex2Encoding())
     {
@@ -1931,7 +1953,7 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
         return true;
     }
 
-    if (ins == INS_crc32_apx)
+    if (ins == INS_crc32_apx || ins == INS_movbe_apx)
     {
         return true;
     }
@@ -2183,11 +2205,6 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             if (aaaContext != 0)
             {
                 maskReg = static_cast<regNumber>(aaaContext + KBASE);
-
-                if (id->idIsEvexZContextSet())
-                {
-                    code |= ZBIT_IN_BYTE_EVEX_PREFIX;
-                }
             }
             break;
         }
@@ -2196,6 +2213,11 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     if (isMaskReg(maskReg))
     {
         code |= (static_cast<code_t>(maskReg - KBASE) << 32);
+
+        if (id->idIsEvexZContextSet())
+        {
+            code |= ZBIT_IN_BYTE_EVEX_PREFIX;
+        }
     }
     return code;
 }
@@ -6085,7 +6107,11 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
 
     if (data->OperIs(GT_BSWAP, GT_BSWAP16) && data->isContained())
     {
+#ifdef TARGET_AMD64
+        assert(ins == INS_movbe || ins == INS_movbe_apx);
+#else
         assert(ins == INS_movbe);
+#endif
         data = data->gtGetOp1();
     }
 
@@ -14701,7 +14727,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 break;
         }
 #ifdef TARGET_AMD64
-        if (ins == INS_crc32_apx)
+        if (ins == INS_crc32_apx || ins == INS_movbe_apx)
         {
             code |= (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
         }
@@ -15586,7 +15612,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 break;
         }
 #ifdef TARGET_AMD64
-        if (ins == INS_crc32_apx)
+        if (ins == INS_crc32_apx || ins == INS_movbe_apx)
         {
             // The promoted CRC32 is in 1-byte opcode, unlike other instructions on this path, the register encoding for
             // CRC32 need to be done here.
@@ -20427,6 +20453,22 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_imul_13:
         case INS_imul_14:
         case INS_imul_15:
+        case INS_imul_16:
+        case INS_imul_17:
+        case INS_imul_18:
+        case INS_imul_19:
+        case INS_imul_20:
+        case INS_imul_21:
+        case INS_imul_22:
+        case INS_imul_23:
+        case INS_imul_24:
+        case INS_imul_25:
+        case INS_imul_26:
+        case INS_imul_27:
+        case INS_imul_28:
+        case INS_imul_29:
+        case INS_imul_30:
+        case INS_imul_31:
 #endif // TARGET_AMD64
         case INS_imul:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
@@ -21941,6 +21983,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         }
 
         case INS_movbe:
+#ifdef TARGET_AMD64
+        case INS_movbe_apx:
+#endif
             if (memAccessKind == PERFSCORE_MEMORY_READ)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;

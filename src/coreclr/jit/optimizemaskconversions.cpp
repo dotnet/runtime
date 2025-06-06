@@ -383,7 +383,7 @@ public:
         weight->DumpTotalWeight();
 
         // Fix up the type of the lcl and the lclvar.
-        assert(lclOp->gtType != TYP_MASK);
+        assert(!lclOp->TypeIs(TYP_MASK));
         var_types lclOrigType = lclOp->gtType;
         lclOp->gtType         = TYP_MASK;
 

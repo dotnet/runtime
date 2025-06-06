@@ -437,9 +437,9 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                     return CORINFO_TYPE_UNDEF;
                 }
 
-                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
                 {
-                    // We must treat as a regular struct if AVX512F isn't supported
+                    // We must treat as a regular struct if AVX512 isn't supported
                     return CORINFO_TYPE_UNDEF;
                 }
 
@@ -632,7 +632,7 @@ bool Compiler::areArrayElementsContiguous(GenTree* op1, GenTree* op2)
     GenTree*          op1IndexNode = op1IndexAddr->Index();
     GenTree*          op2IndexNode = op2IndexAddr->Index();
 
-    if ((op1IndexNode->OperGet() == GT_CNS_INT && op2IndexNode->OperGet() == GT_CNS_INT) &&
+    if ((op1IndexNode->OperIs(GT_CNS_INT) && op2IndexNode->OperIs(GT_CNS_INT)) &&
         (op1IndexNode->AsIntCon()->gtIconVal + 1 == op2IndexNode->AsIntCon()->gtIconVal))
     {
         if (op1ArrayRef->OperIs(GT_IND) && op2ArrayRef->OperIs(GT_IND))

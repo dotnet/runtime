@@ -784,6 +784,14 @@ namespace System.Net.Http.Functional.Tests
                     ActivityAssert.HasTag(conn, "error.type", "name_resolution_error");
                     ActivityAssert.HasTag(wait, "error.type", "name_resolution_error");
 
+                    ActivityEvent evt = req.Events.Single(e => e.Name == "exception");
+                    Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
+                    Assert.Contains("exception.type", tags.Keys);
+                    Assert.Contains("exception.message", tags.Keys);
+                    Assert.Contains("exception.stacktrace", tags.Keys);
+                    Assert.Equal(typeof(HttpRequestException).FullName, tags["exception.type"]);
+                    Assert.InRange(evt.Timestamp - req.StartTimeUtc, new TimeSpan(1), req.Duration);
+
                     // Whether System.Net.Quic uses System.Net.Dns is an implementation detail.
                     if (version != HttpVersion30)
                     {
@@ -802,6 +810,14 @@ namespace System.Net.Http.Functional.Tests
 
                     ActivityAssert.HasTag(conn, "error.type", "connection_error");
                     ActivityAssert.HasTag(wait, "error.type", "connection_error");
+
+                    ActivityEvent evt = req.Events.Single(e => e.Name == "exception");
+                    Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
+                    Assert.Contains("exception.type", tags.Keys);
+                    Assert.Contains("exception.message", tags.Keys);
+                    Assert.Contains("exception.stacktrace", tags.Keys);
+                    Assert.Equal(typeof(HttpRequestException).FullName, tags["exception.type"]);
+                    Assert.InRange(evt.Timestamp - req.StartTimeUtc, new TimeSpan(1), req.Duration);
 
                     if (version != HttpVersion30)
                     {
