@@ -258,6 +258,44 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> AddCarryWideningUpper(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) => AddCarryWideningUpper(op1, op2, op3);
 
+        // Add narrow high part (bottom)
+
+        /// <summary>
+        /// svuint8_t svaddhnb[_u16](svuint16_t op1, svuint16_t op2)
+        ///   ADDHNB Zresult.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<byte> AddHighNarrowingLower(Vector<ushort> left, Vector<ushort> right) => AddHighNarrowingLower(left, right);
+
+        /// <summary>
+        /// svint16_t svaddhnb[_s32](svint32_t op1, svint32_t op2)
+        ///   ADDHNB Zresult.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<short> AddHighNarrowingLower(Vector<int> left, Vector<int> right) => AddHighNarrowingLower(left, right);
+
+        /// <summary>
+        /// svint32_t svaddhnb[_s64](svint64_t op1, svint64_t op2)
+        ///   ADDHNB Zresult.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<int> AddHighNarrowingLower(Vector<long> left, Vector<long> right) => AddHighNarrowingLower(left, right);
+
+        /// <summary>
+        /// svint8_t svaddhnb[_s16](svint16_t op1, svint16_t op2)
+        ///   ADDHNB Zresult.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<sbyte> AddHighNarrowingLower(Vector<short> left, Vector<short> right) => AddHighNarrowingLower(left, right);
+
+        /// <summary>
+        /// svuint16_t svaddhnb[_u32](svuint32_t op1, svuint32_t op2)
+        ///   ADDHNB Zresult.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ushort> AddHighNarrowingLower(Vector<uint> left, Vector<uint> right) => AddHighNarrowingLower(left, right);
+
+        /// <summary>
+        /// svuint32_t svaddhnb[_u64](svuint64_t op1, svuint64_t op2)
+        ///   ADDHNB Zresult.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<uint> AddHighNarrowingLower(Vector<ulong> left, Vector<ulong> right) => AddHighNarrowingLower(left, right);
+
         // Bitwise clear and exclusive OR
 
         /// <summary>
