@@ -37,14 +37,13 @@ internal class AMD64Unwinder(Target target)
 
     public bool Unwind(ref AMD64Context context)
     {
-        ulong branchTarget = 0;
+        ulong branchTarget;
         uint epilogueOffset = 0;
-        TargetPointer establisherFrame = TargetPointer.Null;
-        uint frameOffset = 0;
+        TargetPointer establisherFrame;
+        uint frameOffset;
         uint frameRegister = 0;
-        uint index = 0;
+        uint index;
         bool inEpilogue = false;
-        TargetPointer integerRegister = TargetPointer.Null;
         Data.RuntimeFunction? primaryFunctionEntry;
         UnwindCode unwindOp;
 
@@ -600,6 +599,7 @@ internal class AMD64Unwinder(Target target)
                     return UnwindEpilogue(
                         ref context,
                         controlPC,
+                        imageBase,
                         functionEntry,
                         epilogueOffset);
                 }
@@ -629,10 +629,183 @@ internal class AMD64Unwinder(Target target)
     private bool UnwindEpilogue(
         ref AMD64Context context,
         TargetPointer controlPC,
+        TargetPointer imageBase,
         Data.RuntimeFunction functionEntry,
         uint epilogueOffset)
     {
-        throw new NotImplementedException("UnwindEpilogue is not implemented yet.");
+        //
+        // A canonical epilogue sequence consists of the following operations:
+        //
+        // 1. Optional cleanup of fixed and dynamic stack allocations, which is
+        //    considered to be outside of the epilogue region.
+        //
+        //    add rsp, imm
+        //        or
+        //    lea rsp, disp[fp]
+        //
+        // 2. Zero or more pop nonvolatile-integer-register[0..15] instructions,
+        //    which are unwound using the corresponding UWOP_PUSH_NONVOL opcodes.
+        //
+        //    pop r64
+        //        or
+        //    REX.R pop r64
+        //
+        // 3. An optional one-byte pop r64 to a volatile register to clean up an
+        //    RFLAGS register pushed with pushfq. This is marked with a
+        //    UWOP_ALLOC_SMALL 8 opcode.
+        //
+        //    pop rcx
+        //
+        // 4. A control transfer instruction (ret or jump). In both cases, there
+        //    will be no prologue unwind codes remaining after the previous set of
+        //    recognized operations are emulated.
+        //
+        //    ret 0
+        //        or
+        //    jmp imm
+        //        or
+        //    jmp [target]
+        //        or
+        //    iretq
+        //
+        // N.B. The correctness of these assumptions is based on the ordering
+        //      of unwind codes and the mirroring of epilogue and prologue
+        //      regions.
+        //
+        // Find the function's primary entry, which contains the relevant frame
+        // adjustment unwind codes.
+        //
+        // Locate the first push unwind code. This code requires that all pushes
+        // occur within a single function entry, though not necessarily within the
+        // root function entry of a chained function.
+        //
+
+        uint relativePC = (uint)(controlPC - imageBase);
+        uint offsetIntoEpilogue = relativePC - epilogueOffset;
+
+        UnwindInfoHeader? unwindInfo;
+        uint chainCount = 0;
+        uint firstPushIndex;
+        UnwindCode unwindOp = default;
+        while (true)
+        {
+            unwindInfo = GetUnwindInfoHeader(functionEntry.UnwindData + imageBase);
+            if (unwindInfo is null)
+                return false;
+
+            firstPushIndex = 0;
+            while (firstPushIndex < unwindInfo.Value.CountOfUnwindCodes)
+            {
+                unwindOp = GetUnwindCode(unwindInfo.Value, firstPushIndex);
+                if (unwindOp.UnwindOp == UnwindCode.OpCodes.UWOP_PUSH_NONVOL ||
+                    unwindOp.UnwindOp == UnwindCode.OpCodes.UWOP_PUSH_MACHFRAME)
+                {
+                    break;
+                }
+
+                firstPushIndex += unwindOp.UnwindOpSlots();
+            }
+
+            if (firstPushIndex < unwindInfo.Value.CountOfUnwindCodes)
+            {
+                break;
+            }
+
+            //
+            // If a chained parent function entry exists, continue looking for
+            // push opcodes in the parent.
+            //
+
+            if (!unwindInfo.Value.Flags.HasFlag(UnwindInfoHeader.Flag.UNW_FLAG_CHAININFO))
+            {
+                break;
+            }
+
+            chainCount++;
+            if (chainCount > UNWIND_CHAIN_LIMIT)
+            {
+                // Too many chained unwind entries, stop unwinding.
+                return false;
+            }
+
+            functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(unwindInfo.Value.GetChainedEntryAddress());
+        }
+
+        //
+        // Unwind any push codes that have not already been reversed by the
+        // epilogue.
+        //
+
+        uint currentOffset = 0;
+        uint index;
+        for (index = firstPushIndex; index < unwindInfo.Value.CountOfUnwindCodes; index++)
+        {
+            unwindOp = GetUnwindCode(unwindInfo.Value, index);
+            if (unwindOp.UnwindOp != UnwindCode.OpCodes.UWOP_PUSH_NONVOL)
+            {
+                break;
+            }
+
+            if (currentOffset >= offsetIntoEpilogue)
+            {
+                SetRegister(ref context, unwindOp.OpInfo, _target.Read<ulong>(context.Rsp));
+                context.Rsp += 8;
+            }
+
+            //
+            // POP r64 is encoded as (58h + r64) for the lower 8 general-purpose
+            // registers and REX.R, (58h + r64) for r8 - r15.
+            //
+
+            currentOffset += 1;
+            if (unwindOp.OpInfo >= 8)
+            {
+                currentOffset += 1;
+            }
+        }
+
+        //
+        // Check for an UWOP_ALLOC_SMALL 8 directive, which corresponds to a push
+        // of the FLAGS register.
+        //
+
+        if ((index < unwindInfo.Value.CountOfUnwindCodes) &&
+            (unwindOp.UnwindOp == UnwindCode.OpCodes.UWOP_ALLOC_SMALL) && (unwindOp.OpInfo == 0))
+        {
+
+            if (currentOffset >= offsetIntoEpilogue)
+            {
+                context.Rsp += 8;
+            }
+
+            // currentOffset += 1;
+            index += 1;
+        }
+
+        //
+        // Check for a machine frame.
+        //
+
+        if (index < unwindInfo.Value.CountOfUnwindCodes)
+        {
+            unwindOp = GetUnwindCode(unwindInfo.Value, index);
+            if (unwindOp.UnwindOp == UnwindCode.OpCodes.UWOP_PUSH_MACHFRAME)
+            {
+                context.Rip = _target.ReadPointer(context.Rsp);
+                context.Rsp = _target.ReadPointer(context.Rsp + (3 * 8));
+                return true;
+            }
+
+            Debug.Fail("Any remaining operation must be a machine frame");
+        }
+
+        //
+        // Emulate a return operation.
+        //
+
+        context.Rip = _target.ReadPointer(context.Rsp);
+        context.Rsp += 8;
+        return true;
     }
 
     private bool UnwindPrologue(
@@ -669,13 +842,26 @@ internal class AMD64Unwinder(Target target)
         public byte FrameRegister = (byte)((header >> 24) & 0xF);       // bits 24-27 (4 bits)
         public byte FrameOffset = (byte)((header >> 28) & 0xF);         // bits 28-31 (4 bits)
 
-        public TargetPointer GetUnwindCode(uint index)
+        public TargetPointer GetUnwindCodeAddress(uint index)
         {
             if (index >= CountOfUnwindCodes)
                 throw new ArgumentOutOfRangeException(nameof(index), "Index is out of range for unwind codes.");
 
             TargetPointer unwindCodeAddress = _address + sizeof(uint) /* size of header */ + (index * sizeof(ushort) /* size of unwind code */);
             return unwindCodeAddress;
+        }
+
+        public TargetPointer GetChainedEntryAddress()
+        {
+            if (!Flags.HasFlag(Flag.UNW_FLAG_CHAININFO))
+                throw new InvalidOperationException("This unwind info does not contain a chained entry.");
+
+            uint index = CountOfUnwindCodes;
+            if ((index & 0x1) != 0)
+                index++;
+
+            TargetPointer chainedEntryAddress = _address + sizeof(uint) /* size of header */ + (index * sizeof(ushort) /* size of unwind code */);
+            return chainedEntryAddress;
         }
     }
 
@@ -770,7 +956,7 @@ internal class AMD64Unwinder(Target target)
     }
 
     private UnwindCode GetUnwindCode(UnwindInfoHeader unwindInfo, uint index) =>
-        new UnwindCode(_target.Read<ushort>(unwindInfo.GetUnwindCode(index)));
+        new UnwindCode(_target.Read<ushort>(unwindInfo.GetUnwindCodeAddress(index)));
 
     private Data.RuntimeFunction LookupPrimaryFunctionEntry(Data.RuntimeFunction functionEntry, TargetPointer imageBase)
     {
@@ -785,12 +971,7 @@ internal class AMD64Unwinder(Target target)
                 break;
             }
 
-            uint index = unwindInfo.Value.CountOfUnwindCodes;
-            if ((index & 0x1) != 0)
-                index++;
-
-            TargetPointer nextFunctionEntryAddress = unwindInfo.Value.GetUnwindCode(index);
-            functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(nextFunctionEntryAddress);
+            functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(unwindInfo.Value.GetChainedEntryAddress());
 
             //
             // Limit the number of iterations possible for chained function table
