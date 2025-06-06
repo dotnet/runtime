@@ -771,6 +771,23 @@ bool OptIfConversionDsc::optIfConvert()
     return true;
 }
 
+//-----------------------------------------------------------------------------
+// TryTransformSelectToOrdinaryOps: Try transforming the identified if-else expressions to a single expression
+//
+// This is meant mostly for RISC-V where the condition (1 or 0) is stored to a regular general-purpose register
+// which can be fed as an argument to standard operations, e.g.
+//     * (cond ? 6 : 5) becomes (5 + cond)
+//     * (cond ? -25 : -13) becomes (-25 >> cond)
+//     * (cond ? a + 1 : a) becomes (a + cond)
+//     * (cond ? 1 << a : 0) becomes (cond << a)
+//
+// Arguments:
+//     trueInput  - expression to be evaluated if m_cond is true
+//     falseInput - expression to be evaluated if m_cond is false
+//
+// Return Value:
+//     The transformed single expression equivalent to the if-else expressions, or null if no transformation took place
+//
 GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput, GenTree* falseInput)
 {
     if (trueInput->IsIntegralConst() && falseInput->IsIntegralConst())
