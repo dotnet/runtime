@@ -303,6 +303,7 @@ extern bool g_libSslUses32BitTime;
 #define FOR_ALL_OPENSSL_FUNCTIONS \
     REQUIRED_FUNCTION(a2d_ASN1_OBJECT) \
     REQUIRED_FUNCTION(ASN1_d2i_bio) \
+    REQUIRED_FUNCTION(ASYNC_pause_job) \
     REQUIRED_FUNCTION(ASN1_i2d_bio) \
     REQUIRED_FUNCTION(ASN1_GENERALIZEDTIME_free) \
     REQUIRED_FUNCTION(ASN1_INTEGER_get) \
@@ -323,6 +324,8 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(BIO_gets) \
     REQUIRED_FUNCTION(BIO_new) \
     REQUIRED_FUNCTION(BIO_new_file) \
+    REQUIRED_FUNCTION(BIO_new_fp) \
+    REQUIRED_FUNCTION(BIO_printf) \
     REQUIRED_FUNCTION(BIO_read) \
     FALLBACK_FUNCTION(BIO_up_ref) \
     REQUIRED_FUNCTION(BIO_s_mem) \
@@ -689,6 +692,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_ctrl) \
     REQUIRED_FUNCTION(SSL_add_client_CA) \
     REQUIRED_FUNCTION(SSL_set_alpn_protos) \
+    REQUIRED_FUNCTION(SSL_set_info_callback) \
     REQUIRED_FUNCTION(SSL_set_quiet_shutdown) \
     REQUIRED_FUNCTION(SSL_CTX_callback_ctrl) \
     REQUIRED_FUNCTION(SSL_CTX_check_private_key) \
@@ -713,6 +717,7 @@ extern bool g_libSslUses32BitTime;
     FALLBACK_FUNCTION(SSL_CTX_set_security_level) \
     REQUIRED_FUNCTION(SSL_CTX_set_session_id_context) \
     REQUIRED_FUNCTION(SSL_CTX_set_verify) \
+    REQUIRED_FUNCTION(SSL_CTX_set_cert_verify_callback) \
     REQUIRED_FUNCTION(SSL_CTX_use_certificate) \
     REQUIRED_FUNCTION(SSL_CTX_use_PrivateKey) \
     REQUIRED_FUNCTION(SSL_do_handshake) \
@@ -722,6 +727,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_get_current_cipher) \
     REQUIRED_FUNCTION(SSL_get_error) \
     REQUIRED_FUNCTION(SSL_get_ex_data) \
+    REQUIRED_FUNCTION(SSL_get_ex_data_X509_STORE_CTX_idx) \
     REQUIRED_FUNCTION(SSL_get_finished) \
     REQUIRED_FUNCTION(SSL_get_peer_cert_chain) \
     REQUIRED_FUNCTION(SSL_get_peer_finished) \
@@ -735,6 +741,9 @@ extern bool g_libSslUses32BitTime;
     LEGACY_FUNCTION(SSL_load_error_strings) \
     REQUIRED_FUNCTION(SSL_new) \
     REQUIRED_FUNCTION(SSL_peek) \
+    REQUIRED_FUNCTION(SSL_state_string_long) \
+    REQUIRED_FUNCTION(SSL_alert_desc_string_long) \
+    REQUIRED_FUNCTION(SSL_alert_type_string_long) \
     REQUIRED_FUNCTION(SSL_read) \
     REQUIRED_FUNCTION(SSL_renegotiate) \
     REQUIRED_FUNCTION(SSL_renegotiate_pending) \
@@ -753,6 +762,8 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_set_ex_data) \
     FALLBACK_FUNCTION(SSL_set_options) \
     REQUIRED_FUNCTION(SSL_set_session) \
+    REQUIRED_FUNCTION(SSL_set_verify_result) \
+    REQUIRED_FUNCTION(SSL_get_verify_result) \
     REQUIRED_FUNCTION(SSL_get_session) \
     REQUIRED_FUNCTION(SSL_set_verify) \
     REQUIRED_FUNCTION(SSL_shutdown) \
@@ -765,9 +776,12 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(SSL_verify_client_post_handshake) \
     LIGHTUP_FUNCTION(SSL_set_post_handshake_auth) \
     REQUIRED_FUNCTION(SSL_version) \
+    REQUIRED_FUNCTION(SSL_want) \
+    REQUIRED_FUNCTION(SSL_trace) \
+    REQUIRED_FUNCTION(SSL_set_msg_callback) \
     REQUIRED_FUNCTION(UI_create_method) \
     REQUIRED_FUNCTION(UI_destroy_method) \
-    FALLBACK_FUNCTION(X509_check_host) \
+FALLBACK_FUNCTION(X509_check_host) \
     REQUIRED_FUNCTION(X509_check_purpose) \
     REQUIRED_FUNCTION(X509_cmp_time) \
     REQUIRED_FUNCTION(X509_CRL_free) \
@@ -836,6 +850,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(X509_STORE_CTX_set_verify_cb) \
     REQUIRED_FUNCTION(X509_STORE_CTX_set_ex_data) \
     REQUIRED_FUNCTION(X509_STORE_CTX_get_ex_data) \
+    REQUIRED_FUNCTION(X509_STORE_CTX_set_error) \
     REQUIRED_FUNCTION(X509_STORE_free) \
     FALLBACK_FUNCTION(X509_STORE_get0_param) \
     REQUIRED_FUNCTION(X509_STORE_new) \
@@ -875,6 +890,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define a2d_ASN1_OBJECT a2d_ASN1_OBJECT_ptr
 #define ASN1_GENERALIZEDTIME_free ASN1_GENERALIZEDTIME_free_ptr
 #define ASN1_d2i_bio ASN1_d2i_bio_ptr
+#define ASYNC_pause_job ASYNC_pause_job_ptr
 #define ASN1_i2d_bio ASN1_i2d_bio_ptr
 #define ASN1_INTEGER_get ASN1_INTEGER_get_ptr
 #define ASN1_OBJECT_free ASN1_OBJECT_free_ptr
@@ -894,6 +910,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define BIO_gets BIO_gets_ptr
 #define BIO_new BIO_new_ptr
 #define BIO_new_file BIO_new_file_ptr
+#define BIO_new_fp BIO_new_fp_ptr
+#define BIO_printf BIO_printf_ptr
 #define BIO_read BIO_read_ptr
 #define BIO_up_ref BIO_up_ref_ptr
 #define BIO_s_mem BIO_s_mem_ptr
@@ -1265,6 +1283,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_ctrl SSL_ctrl_ptr
 #define SSL_add_client_CA SSL_add_client_CA_ptr
 #define SSL_set_alpn_protos SSL_set_alpn_protos_ptr
+#define SSL_set_info_callback SSL_set_info_callback_ptr
 #define SSL_set_quiet_shutdown SSL_set_quiet_shutdown_ptr
 #define SSL_CTX_callback_ctrl SSL_CTX_callback_ctrl_ptr
 #define SSL_CTX_check_private_key SSL_CTX_check_private_key_ptr
@@ -1288,6 +1307,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_CTX_set_security_level SSL_CTX_set_security_level_ptr
 #define SSL_CTX_set_session_id_context SSL_CTX_set_session_id_context_ptr
 #define SSL_CTX_set_verify SSL_CTX_set_verify_ptr
+#define SSL_CTX_set_cert_verify_callback SSL_CTX_set_cert_verify_callback_ptr
 #define SSL_CTX_use_certificate SSL_CTX_use_certificate_ptr
 #define SSL_CTX_use_PrivateKey SSL_CTX_use_PrivateKey_ptr
 #define SSL_do_handshake SSL_do_handshake_ptr
@@ -1298,6 +1318,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_get_current_cipher SSL_get_current_cipher_ptr
 #define SSL_get_error SSL_get_error_ptr
 #define SSL_get_ex_data SSL_get_ex_data_ptr
+#define SSL_get_ex_data_X509_STORE_CTX_idx SSL_get_ex_data_X509_STORE_CTX_idx_ptr
 #define SSL_get_finished SSL_get_finished_ptr
 #define SSL_get_peer_cert_chain SSL_get_peer_cert_chain_ptr
 #define SSL_get_peer_finished SSL_get_peer_finished_ptr
@@ -1312,6 +1333,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_new SSL_new_ptr
 #define SSL_peek SSL_peek_ptr
 #define SSL_state_string_long SSL_state_string_long_ptr
+#define SSL_alert_type_string_long SSL_alert_type_string_long_ptr
+#define SSL_alert_desc_string_long SSL_alert_desc_string_long_ptr
 #define SSL_read SSL_read_ptr
 #define SSL_renegotiate SSL_renegotiate_ptr
 #define SSL_renegotiate_pending SSL_renegotiate_pending_ptr
@@ -1330,6 +1353,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_set_ex_data SSL_set_ex_data_ptr
 #define SSL_set_options SSL_set_options_ptr
 #define SSL_set_session SSL_set_session_ptr
+#define SSL_set_verify_result SSL_set_verify_result_ptr
+#define SSL_get_verify_result SSL_get_verify_result_ptr
 #define SSL_get_session SSL_get_session_ptr
 #define SSL_set_verify SSL_set_verify_ptr
 #define SSL_shutdown SSL_shutdown_ptr
@@ -1341,6 +1366,9 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_verify_client_post_handshake SSL_verify_client_post_handshake_ptr
 #define SSL_set_post_handshake_auth SSL_set_post_handshake_auth_ptr
 #define SSL_version SSL_version_ptr
+#define SSL_want SSL_want_ptr
+#define SSL_trace SSL_trace_ptr
+#define SSL_set_msg_callback SSL_set_msg_callback_ptr
 #define TLS_method TLS_method_ptr
 #define UI_create_method UI_create_method_ptr
 #define UI_destroy_method UI_destroy_method_ptr
@@ -1413,6 +1441,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define X509_STORE_CTX_set_verify_cb X509_STORE_CTX_set_verify_cb_ptr
 #define X509_STORE_CTX_set_ex_data X509_STORE_CTX_set_ex_data_ptr
 #define X509_STORE_CTX_get_ex_data X509_STORE_CTX_get_ex_data_ptr
+#define X509_STORE_CTX_set_error X509_STORE_CTX_set_error_ptr
 #define X509_STORE_free X509_STORE_free_ptr
 #define X509_STORE_get0_param X509_STORE_get0_param_ptr
 #define X509_STORE_new X509_STORE_new_ptr
