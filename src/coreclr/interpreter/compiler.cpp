@@ -1278,7 +1278,7 @@ void InterpCompiler::PatchInitLocals(CORINFO_METHOD_INFO* methodInfo)
 }
 
 // Adds a conversion instruction for the value pointed to by sp, also updating the stack information
-InterpInst * InterpCompiler::EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp)
+void InterpCompiler::EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp)
 {
     InterpInst *newInst = AddIns(convOp);
 
@@ -1288,7 +1288,7 @@ InterpInst * InterpCompiler::EmitConv(StackInfo *sp, StackType type, InterpOpcod
     sp->var = var;
     newInst->SetDVar(var);
 
-    return newInst;
+    // NOTE: We rely on m_pLastNewIns == newInst upon return from this function. Make sure you preserve that if you change anything.
 }
 
 static InterpType GetInterpType(CorInfoType corInfoType)
@@ -3217,10 +3217,12 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_R4)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_R4);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_R8)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_R8);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_I4);
@@ -3238,10 +3240,12 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_R4)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_R4);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_R8)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_R8);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_I4);
@@ -3259,10 +3263,12 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_R4)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_R4);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_R8)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_R8);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_I4);
@@ -3280,10 +3286,12 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_R4)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_R4);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_R8)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_R8);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_I4);
@@ -3301,10 +3309,12 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_R4)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_R4);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_R8)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_R8);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
                     break;
                 case StackTypeI4:
                     break;
@@ -3321,10 +3331,12 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R4)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2UINT_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R4);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2UINT_OVF);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R8)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2UINT_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R8);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2UINT_OVF);
                     break;
                 case StackTypeI4:
                     break;
@@ -3341,10 +3353,12 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_R4)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2LNG_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_R4);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2LNG_OVF);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_R8)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2LNG_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_R8);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2LNG_OVF);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
@@ -3361,10 +3375,12 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_R4)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2ULNG_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_R4);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2ULNG_OVF);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_R8)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2ULNG_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_R8);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2ULNG_OVF);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
@@ -3382,16 +3398,20 @@ retry_emit:
                 {
                 case StackTypeR4:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I8_R4)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2LNG_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I8_R4);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2LNG_OVF);
 #else
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_R4)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_R4);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
 #endif
                     break;
                 case StackTypeR8:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I8_R8)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2LNG_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I8_R8);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2LNG_OVF);
 #else
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_R8)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_R8);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
 #endif
                     break;
                 case StackTypeI4:
@@ -3419,16 +3439,20 @@ retry_emit:
                 {
                 case StackTypeR4:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_R4)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2ULNG_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_R4);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2ULNG_OVF);
 #else
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_R4)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2UINT_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_R4);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2UINT_OVF);
 #endif
                     break;
                 case StackTypeR8:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_R8)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2ULNG_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_R8);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2ULNG_OVF);
 #else
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_R8)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2UINT_OVF);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_R8);
+                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2UINT_OVF);
 #endif
                     break;
                 case StackTypeI4:
