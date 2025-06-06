@@ -1133,13 +1133,9 @@ void InterpCompiler::PatchInitLocals(CORINFO_METHOD_INFO* methodInfo)
 }
 
 // Adds a conversion instruction for the value pointed to by sp, also updating the stack information
-void InterpCompiler::EmitConv(StackInfo *sp, InterpInst *prevIns, StackType type, InterpOpcode convOp)
+void InterpCompiler::EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp)
 {
-    InterpInst *newInst;
-    if (prevIns)
-        newInst = InsertIns(prevIns, convOp);
-    else
-        newInst = AddIns(convOp);
+    InterpInst *newInst = AddIns(convOp);
 
     newInst->SetSVar(sp->var);
     new (sp) StackInfo(type);
@@ -1460,21 +1456,21 @@ void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     // emitting the conditional branch
     if (argType1 == StackTypeI4 && argType2 == StackTypeI8)
     {
-        EmitConv(m_pStackPointer - 1, m_pLastNewIns, StackTypeI8, INTOP_CONV_I8_I4);
+        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
         argType1 = StackTypeI8;
     }
     else if (argType1 == StackTypeI8 && argType2 == StackTypeI4)
     {
-        EmitConv(m_pStackPointer - 2, m_pLastNewIns, StackTypeI8, INTOP_CONV_I8_I4);
+        EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
     }
     else if (argType1 == StackTypeR4 && argType2 == StackTypeR8)
     {
-        EmitConv(m_pStackPointer - 1, m_pLastNewIns, StackTypeR8, INTOP_CONV_R8_R4);
+        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
         argType1 = StackTypeR8;
     }
     else if (argType1 == StackTypeR8 && argType2 == StackTypeR4)
     {
-        EmitConv(m_pStackPointer - 2, m_pLastNewIns, StackTypeR8, INTOP_CONV_R8_R4);
+        EmitConv(m_pStackPointer - 2, StackTypeR8, INTOP_CONV_R8_R4);
     }
     else if (argType1 != argType2)
     {
@@ -1524,12 +1520,12 @@ void InterpCompiler::EmitStoreVar(int32_t var)
 #ifdef TARGET_64BIT
     // nint and int32 can be used interchangeably. Add implicit conversions.
     if (m_pStackPointer[-1].type == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
-        EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
 #endif
     if (m_pStackPointer[-1].type == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
-        EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
     else if (m_pStackPointer[-1].type == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
-        EmitConv(m_pStackPointer - 1, NULL, StackTypeR4, INTOP_CONV_R4_R8);
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
 
     m_pStackPointer--;
     AddIns(InterpGetMovForType(interpType, false));
@@ -1556,7 +1552,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
             if (type2 == StackTypeI4)
             {
 #ifdef TARGET_64BIT
-                EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+                EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
                 type2 = StackTypeI8;
 #endif
                 typeRes = StackTypeByRef;
@@ -1576,7 +1572,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
             if (type1 == StackTypeI4)
             {
 #ifdef TARGET_64BIT
-                EmitConv(m_pStackPointer - 2, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+                EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
                 type1 = StackTypeI8;
 #endif
                 typeRes = StackTypeByRef;
@@ -1596,7 +1592,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
         if (type2 == StackTypeI4)
         {
 #ifdef TARGET_64BIT
-            EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
             type2 = StackTypeI8;
 #endif
             typeRes = StackTypeByRef;
@@ -1619,23 +1615,23 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 #if TARGET_64BIT
         if (type1 == StackTypeI8 && type2 == StackTypeI4)
         {
-            EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
             type2 = StackTypeI8;
         }
         else if (type1 == StackTypeI4 && type2 == StackTypeI8)
         {
-            EmitConv(m_pStackPointer - 2, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+            EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
             type1 = StackTypeI8;
         }
 #endif
         if (type1 == StackTypeR8 && type2 == StackTypeR4)
         {
-            EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+            EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
             type2 = StackTypeR8;
         }
         else if (type1 == StackTypeR4 && type2 == StackTypeR8)
         {
-            EmitConv(m_pStackPointer - 2, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+            EmitConv(m_pStackPointer - 2, StackTypeR8, INTOP_CONV_R8_R4);
             type1 = StackTypeR8;
         }
         if (type1 != type2)
@@ -1703,9 +1699,9 @@ void InterpCompiler::EmitCompareOp(int32_t opBase)
     else
     {
         if (m_pStackPointer[-1].type == StackTypeR4 && m_pStackPointer[-2].type == StackTypeR8)
-            EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+            EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
         if (m_pStackPointer[-1].type == StackTypeR8 && m_pStackPointer[-2].type == StackTypeR4)
-            EmitConv(m_pStackPointer - 2, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+            EmitConv(m_pStackPointer - 2, StackTypeR8, INTOP_CONV_R8_R4);
         AddIns(opBase + m_pStackPointer[-1].type - StackTypeI4);
     }
     m_pStackPointer -= 2;
@@ -2479,16 +2475,16 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U1_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U1_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_R8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U1_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_I4);
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U1_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_I8);
                     break;
                 default:
                     assert(0);
@@ -2500,16 +2496,16 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I1_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I1_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_R8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I1_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_I4);
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I1_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_I8);
                     break;
                 default:
                     assert(0);
@@ -2521,16 +2517,16 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U2_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U2_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_R8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U2_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_I4);
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U2_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_I8);
                     break;
                 default:
                     assert(0);
@@ -2542,16 +2538,16 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I2_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I2_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_R8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I2_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_I4);
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I2_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_I8);
                     break;
                 default:
                     assert(0);
@@ -2564,31 +2560,31 @@ retry_emit:
                 {
                 case StackTypeR8:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_U8_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_U8_R8);
 #else
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_U4_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_U4_R8);
 #endif
                     break;
                 case StackTypeR4:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_U8_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_U8_R4);
 #else
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_U4_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_U4_R4);
 #endif
                     break;
                 case StackTypeI4:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_I8_U4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I8_U4);
 #endif
                     break;
                 case StackTypeI8:
 #ifndef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
 #endif
                     break;
                 case StackTypeByRef:
                 case StackTypeO:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
                     break;
                 default:
                     assert(0);
@@ -2601,30 +2597,30 @@ retry_emit:
                 {
                 case StackTypeR8:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_I8_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I8_R8);
 #else
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_I4_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I4_R8);
 #endif
                     break;
                 case StackTypeR4:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_I8_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I8_R4);
 #else
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_I4_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I4_R4);
 #endif
                     break;
                 case StackTypeI4:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_I8_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I8_I4);
 #endif
                     break;
                 case StackTypeO:
                 case StackTypeByRef:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
                     break;
                 case StackTypeI8:
 #ifndef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
 #endif
                     break;
                 default:
@@ -2637,18 +2633,18 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U4_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U4_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U4_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U4_R8);
                     break;
                 case StackTypeI4:
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_8);
                     break;
                 case StackTypeByRef:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_MOV_P);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_P);
                     break;
                 default:
                     assert(0);
@@ -2660,18 +2656,18 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I4_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I4_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I4_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I4_R8);
                     break;
                 case StackTypeI4:
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_8);
                     break;
                 case StackTypeByRef:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_MOV_P);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_P);
                     break;
                 default:
                     assert(0);
@@ -2683,22 +2679,22 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_R8);
                     break;
                 case StackTypeI4: {
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
                     break;
                 }
                 case StackTypeI8:
                     break;
                 case StackTypeByRef:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_MOV_8);
 #else
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
 #endif
                     break;
                 default:
@@ -2711,13 +2707,13 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR4, INTOP_CONV_R4_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR4, INTOP_CONV_R4_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_I8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR4, INTOP_CONV_R4_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_I4);
                     break;
                 case StackTypeR4:
                     break;
@@ -2731,13 +2727,13 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_I4);
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_I8);
                     break;
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
                     break;
                 case StackTypeR8:
                     break;
@@ -2751,21 +2747,21 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_U4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
                     break;
                 case StackTypeI8:
                     break;
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_U8_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_U8_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_U8_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_U8_R8);
                     break;
                 case StackTypeByRef:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_MOV_8);
 #else
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_U4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
 #endif
                     break;
                 default:
@@ -2777,15 +2773,15 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
                     break;
                 case StackTypeR8:
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R_UN_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R_UN_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I4);
                     break;
                 default:
                     assert(0);
@@ -3503,7 +3499,7 @@ retry_emit:
                         // Length is natural unsigned int
                         if (m_pStackPointer[-1].type == StackTypeI4)
                         {
-                            EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_MOV_8);
+                            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_MOV_8);
                             m_pStackPointer[-1].type = StackTypeI8;
                         }
 #endif
