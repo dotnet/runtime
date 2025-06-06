@@ -16,6 +16,7 @@ set(MDCOMPILER_SOURCES
   regmeta_emit.cpp
   regmeta_import.cpp
   regmeta_imetadatatables.cpp
+  regmeta_vm.cpp
 )
 
 set(MDCOMPILER_HEADERS

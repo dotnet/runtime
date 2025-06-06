@@ -15,6 +15,8 @@
 //*****************************************************************************
 #include "stdafx.h"
 
+#ifdef FEATURE_METADATA_IN_VM
+
 #include "classfactory.h"
 #include "disp.h"
 #include "regmeta.h"
@@ -141,3 +143,5 @@ MDClassFactory::LockServer(
     // @FUTURE: Should we return E_NOTIMPL instead of S_OK?
     return S_OK;
 }
+
+#endif //FEATURE_METADATA_IN_VM

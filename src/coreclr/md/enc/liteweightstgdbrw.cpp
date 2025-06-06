@@ -305,6 +305,12 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
     if (!szDatabase)
         szDatabase = pNoFile;
 
+    // Sanity check the name lentgh.
+    if (!IsValidFileNameLength(szDatabase))
+    {
+        IfFailGo(E_INVALIDARG);
+    }
+
     // If we have storage to work with, init it and get type.
     if (*szDatabase || pbData)
     {
@@ -402,6 +408,16 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
 
     // Save off everything.
     IfFailGo(SetFileName(szDatabase));
+
+    // If this was a file...
+    if (pbData == NULL)
+    {
+        WIN32_FILE_ATTRIBUTE_DATA faData;
+        if (!WszGetFileAttributesEx(szDatabase, GetFileExInfoStandard, &faData))
+            IfFailGo(E_FAIL);
+        m_dwDatabaseLFS = faData.nFileSizeLow;
+        m_dwDatabaseLFT = faData.ftLastWriteTime.dwLowDateTime;
+    }
 
 ErrExit:
     if (SUCCEEDED(hr))
@@ -906,6 +922,12 @@ HRESULT CLiteWeightStgdbRW::Save(
         IfFailGo(SetFileName(szDatabase));
     }
 
+    // Sanity check the name.
+    if (!IsValidFileNameLength(m_wszFileName))
+    {
+        IfFailGo(E_INVALIDARG);
+    }
+
     m_eFileType = FILETYPE_CLB;
 
     // Allocate a new storage object.
@@ -1155,3 +1177,15 @@ CLiteWeightStgdbRW::SetFileName(
 ErrExit:
     return hr;
 } // CLiteWeightStgdbRW::SetFileName
+
+//=======================================================================================
+//
+// Returns TRUE if wszFileName has valid path length (MAX_PATH or 32767 if prefixed with \\?\).
+//
+//static
+BOOL
+CLiteWeightStgdbRW::IsValidFileNameLength(
+    const WCHAR * wszFileName)
+{
+    return TRUE;
+} // CLiteWeightStgdbRW::IsValidFileNameLength

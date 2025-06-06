@@ -37,6 +37,10 @@
 #endif
 #include <log.h>
 
+#ifdef _MSC_VER
+#pragma warning(disable: 4102)
+#endif
+
 RegMeta::RegMeta() :
     m_pStgdb(0),
     m_pStgdbFreeList(NULL),
@@ -57,6 +61,9 @@ RegMeta::RegMeta() :
     m_pAppDomain(NULL),
     m_OpenFlags(0),
     m_cRef(0),
+	m_pFreeThreadedMarshaler(NULL),
+    m_bCached(false),
+    m_trLanguageType(0),
     m_SetAPICaller(EXTERNAL_CALLER),
     m_ModuleType(ValidatorModuleTypeInvalid),
     m_ReorderingOptions(NoReordering)
@@ -77,6 +84,8 @@ RegMeta::RegMeta() :
 
 RegMeta::~RegMeta()
 {
+    _ASSERTE(!m_bCached);
+
     HRESULT hr = S_OK;
 
     LOCKWRITENORET();
@@ -101,6 +110,12 @@ RegMeta::~RegMeta()
 #endif //FEATURE_METADATA_INTERNAL_APIS
 
         UNLOCKWRITE();
+    }
+
+    if (m_pFreeThreadedMarshaler)
+    {
+        m_pFreeThreadedMarshaler->Release();
+        m_pFreeThreadedMarshaler = NULL;
     }
 
     if (m_pSemReadWrite && m_fOwnSem)
@@ -513,17 +528,6 @@ ULONG RegMeta::AddRef()
     return InterlockedIncrement(&m_cRef);
 } // ULONG RegMeta::AddRef()
 
-ULONG RegMeta::Release()
-{
-    ULONG cRef = InterlockedDecrement(&m_cRef);
-    // If no references left...
-    if (cRef == 0)
-    {
-        delete this;
-    }
-
-    return cRef;
-} // RegMeta::Release
 
 HRESULT
 RegMeta::QueryInterface(
@@ -628,6 +632,38 @@ RegMeta::QueryInterface(
     }
 #endif //FEATURE_METADATA_EMIT && FEATURE_METADATA_INTERNAL_APIS
 
+#ifdef FEATURE_METADATA_IN_VM
+#ifdef FEATURE_COMINTEROP
+    else if (riid == IID_IMarshal)
+    {
+        // We will only repond to this interface if scope is opened for ReadOnly
+        if (IsOfReadOnly(m_OpenFlags))
+        {
+            if (m_pFreeThreadedMarshaler == NULL)
+            {
+                // Guard ourselves against first time QI on IMarshal from two different threads..
+                LOCKWRITE();
+                if (m_pFreeThreadedMarshaler == NULL)
+                {
+                    // First time! Create the FreeThreadedMarshaler
+                    IfFailGo(CoCreateFreeThreadedMarshaler((IUnknown *)(IMetaDataEmit2 *)this, &m_pFreeThreadedMarshaler));
+                }
+            }
+
+            _ASSERTE(m_pFreeThreadedMarshaler != NULL);
+
+            IfFailGo(m_pFreeThreadedMarshaler->QueryInterface(riid, ppUnk));
+
+            // AddRef has happened in the QueryInterface and thus should just return
+            goto ErrExit;
+        }
+        else
+        {
+            IfFailGo(E_NOINTERFACE);
+        }
+    }
+#endif // FEATURE_COMINTEROP
+#endif //FEATURE_METADATA_IN_VM
     else
     {
         IfFailGo(E_NOINTERFACE);
