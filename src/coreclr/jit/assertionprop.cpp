@@ -4285,6 +4285,11 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
     GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
     assert(node->IsPhiDefn());
 
+    // Keep track of the set of phi-preds
+    //
+    BitVecTraits traits(fgBBNumMax + 1, this);
+    BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
+
     for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
     {
         GenTreePhiArg* phiArg     = use.GetNode()->AsPhiArg();
@@ -4293,6 +4298,22 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
         if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
         {
             // The visitor wants to abort the walk.
+            return AssertVisit::Abort;
+        }
+        BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
+    }
+
+    // Verify the set of phi-preds covers the set of block preds
+    //
+    for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
+    {
+        if (!BitVecOps::IsMember(&traits, visitedBlocks, pred->bbNum))
+        {
+            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": pred " FMT_BB " not a phi-pred\n",
+                    ssaDef->GetBlock()->bbNum, pred->bbNum);
+
+            // We missed examining a block pred. Fail the phi inference.
+            //
             return AssertVisit::Abort;
         }
     }
@@ -4993,8 +5014,6 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
         return true;
     }
 
-    bool foundNonNullAssertion = false;
-
     if (!BitVecOps::MayBeUninit(assertions))
     {
         BitVecOps::Iter iter(apTraits, assertions);
@@ -5004,18 +5023,12 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
             AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
             if (curAssertion->CanPropNonNull() && curAssertion->op1.vn == vn)
             {
-                foundNonNullAssertion = true;
-                continue;
-            }
-
-            if (curAssertion->CanPropNull() && curAssertion->op1.vn == vn)
-            {
-                return false;
+                return true;
             }
         }
     }
 
-    return foundNonNullAssertion;
+    return false;
 }
 
 /*****************************************************************************
