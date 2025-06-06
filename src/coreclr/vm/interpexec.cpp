@@ -96,6 +96,7 @@ template <typename THelper> static THelper GetPossiblyIndirectHelper(void* dataI
 
 template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t *stack, const int32_t *ip, void** pDataItems)
 {
+    static_assert(sizeof(TResult) <= sizeof(TSource));
     static_assert(!std::numeric_limits<TSource>::is_integer);
 
     // First, promote the source value to double - that's what the helpers accept
@@ -138,6 +139,7 @@ template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t
 
 template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, const int32_t *ip)
 {
+    static_assert(sizeof(TResult) <= sizeof(TSource));
     static_assert(std::numeric_limits<TSource>::is_integer);
 
     TSource src = LOCAL_VAR(ip[2], TSource);
