@@ -26,18 +26,10 @@
 
 #include <metamodelrw.h>
 
-#define DEFINE_CUSTOM_NODUPCHECK    1
-#define DEFINE_CUSTOM_DUPCHECK      2
-#define SET_CUSTOM                  3
-
 #if defined(_DEBUG)
 #define LOGGING
 #endif
 #include <log.h>
-
-#ifdef _MSC_VER
-#pragma warning(disable: 4102)
-#endif
 
 //*****************************************************************************
 // Call this after initialization is complete.
@@ -65,61 +57,6 @@ ErrExit:
     return S_OK;
 #endif // FEATURE_METADATA_IN_VM
 } // RegMeta::AddToCache
-
-
-//*****************************************************************************
-// Search the cached RegMetas for a given scope.
-//*****************************************************************************
-HRESULT RegMeta::FindCachedReadOnlyEntry(
-    LPCWSTR     szName,                 // Name of the desired file.
-    DWORD       dwOpenFlags,            // Flags the new file is opened with.
-    RegMeta     **ppMeta)               // Put found RegMeta here.
-{
-#if defined(FEATURE_METADATA_IN_VM)
-    return LOADEDMODULES::FindCachedReadOnlyEntry(szName, dwOpenFlags, ppMeta);
-#else // FEATURE_METADATA_IN_VM
-    // No cache support in standalone version.
-    *ppMeta = NULL;
-    return S_FALSE;
-#endif // FEATURE_METADATA_IN_VM
-} // RegMeta::FindCachedReadOnlyEntry
-
-
-#ifdef FEATURE_METADATA_EMIT_ALL
-
-//*****************************************************************************
-// Helper function to startup the EE
-//
-// Notes:
-//    This is called by code:RegMeta.DefineSecurityAttributeSet.
-//*****************************************************************************
-HRESULT RegMeta::StartupEE()
-{
-    UNREACHABLE_MSG_RET("About to CoCreateInstance!  This code should not be "
-                        "reachable or needs to be reimplemented for CoreCLR!");
-}
-
-#endif //FEATURE_METADATA_EMIT_ALL
-
-#ifdef FEATURE_METADATA_EMIT
-
-//*****************************************************************************
-// Persist a set of security custom attributes into a set of permission set
-// blobs on the same class or method.
-//
-// Notes:
-//    Only in the full version because this is an emit operation.
-//*****************************************************************************
-HRESULT RegMeta::DefineSecurityAttributeSet(// Return code.
-    mdToken     tkObj,                  // [IN] Class or method requiring security attributes.
-    COR_SECATTR rSecAttrs[],            // [IN] Array of security attribute descriptions.
-    ULONG       cSecAttrs,              // [IN] Count of elements in above array.
-    ULONG       *pulErrorAttr)          // [OUT] On error, index of attribute causing problem.
-{
-    return E_NOTIMPL;
-} // RegMeta::DefineSecurityAttributeSet
-
-#endif //FEATURE_METADATA_EMIT
 
 
 //*****************************************************************************

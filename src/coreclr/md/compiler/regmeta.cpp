@@ -37,10 +37,6 @@
 #endif
 #include <log.h>
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4102)
-#endif
-
 RegMeta::RegMeta() :
     m_pStgdb(0),
     m_pStgdbFreeList(NULL),
@@ -63,7 +59,6 @@ RegMeta::RegMeta() :
     m_cRef(0),
 	m_pFreeThreadedMarshaler(NULL),
     m_bCached(false),
-    m_trLanguageType(0),
     m_SetAPICaller(EXTERNAL_CALLER),
     m_ModuleType(ValidatorModuleTypeInvalid),
     m_ReorderingOptions(NoReordering)
