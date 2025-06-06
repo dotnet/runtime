@@ -495,7 +495,9 @@
 
     <Error Condition="'$(WasmProfilers)' != '' and '$(EnableDiagnostics)' != 'false'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(EnableDiagnostics)=$(EnableDiagnostics)"/>
     <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerformanceInstrumentation)' != ''" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation)"/>
+    <Error Condition="'$(WasmProfilers)' != '' and '$(RunAOTCompilation)' != ''" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(RunAOTCompilation)=$(RunAOTCompilation)"/>
     <Error Condition="'$(WasmPerformanceInstrumentation)' != '' and '$(EnableDiagnostics)' != 'true'" Text="%24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation) is only supported together with %24(EnableDiagnostics)=true"/>
+    <Message Condition="('$(WasmProfilers)' != ''  or '$(WasmPerformanceInstrumentation)' != '') and '$(WasmDebugLevel)' != '0'" Text="Set WasmDebugLevel=0 so that debugger doesn't prevent optimizations." Importance="high" />
 
     <PropertyGroup>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(_WasmBuildNativeRequired)' == 'true'">true</WasmBuildNative>
