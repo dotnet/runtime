@@ -96,7 +96,7 @@ template <typename THelper> static THelper GetPossiblyIndirectHelper(void* dataI
 
 template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t *stack, const int32_t *ip, void** pDataItems)
 {
-    static_assert(!std::numeric_limits<TSource>::is_integer);
+    static_assert(!std::numeric_limits<TSource>::is_integer, "ConvOvfFpHelper is only for use on floats and doubles");
 
     // First, promote the source value to double - that's what the helpers accept
     double promoted_src = LOCAL_VAR(ip[2], TSource);
@@ -138,8 +138,8 @@ template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t
 
 template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, const int32_t *ip)
 {
-    static_assert(sizeof(TResult) < sizeof(TSource));
-    static_assert(std::numeric_limits<TSource>::is_integer);
+    static_assert(sizeof(TResult) < sizeof(TSource), "ConvOvfHelper only can convert to results smaller than the source value");
+    static_assert(std::numeric_limits<TSource>::is_integer, "ConvOvfHelper is only for use on integers");
 
     TSource src = LOCAL_VAR(ip[2], TSource);
     bool in_range;
