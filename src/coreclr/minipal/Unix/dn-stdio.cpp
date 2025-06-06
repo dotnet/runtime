@@ -17,12 +17,14 @@ int fopen_u16(FILE** stream, const WCHAR* path, const WCHAR* mode)
     size_t pathLen = u16_strlen(path);
     size_t pathU8Len = minipal_get_length_utf16_to_utf8((CHAR16_T*)path, pathLen, 0);
     char* pathU8 = new char[pathU8Len + 1];
-    minipal_convert_utf16_to_utf8((CHAR16_T*)path, pathLen, pathU8, pathU8Len, 0);
+    size_t ret = minipal_convert_utf16_to_utf8((CHAR16_T*)path, pathLen, pathU8, pathU8Len, 0);
+    pathU8[ret] = '\0';
     
     size_t modeLen = u16_strlen(mode);
     size_t modeU8Len = minipal_get_length_utf16_to_utf8((CHAR16_T*)mode, modeLen, 0);
     char* modeU8 = new char[modeU8Len + 1];
-    minipal_convert_utf16_to_utf8((CHAR16_T*)mode, modeLen, modeU8, modeU8Len, 0);
+    ret = minipal_convert_utf16_to_utf8((CHAR16_T*)mode, modeLen, modeU8, modeU8Len, 0);
+    modeU8[ret] = '\0';
 
     FILE* result = fopen(pathU8, modeU8);
 
