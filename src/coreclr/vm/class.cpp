@@ -2917,7 +2917,10 @@ void EEClass::AddChunk(MethodDescChunk* pNewChunk)
 //*******************************************************************************
 void EEClass::AddChunkIfItHasNotBeenAdded(MethodDescChunk* pNewChunk)
 {
-    STANDARD_VM_CONTRACT;
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_FORBID_FAULT;
+    _ASSERTE(pNewChunk != NULL);
 
     // return if the chunk has been added
     if (pNewChunk->GetNextChunk() != NULL)
