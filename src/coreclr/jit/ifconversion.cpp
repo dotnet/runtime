@@ -921,7 +921,7 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
 #endif // TARGET_RISCV64
     }
 #ifdef TARGET_RISCV64
-    else
+    else if (false)
     {
         bool isTrueLclVar  = trueInput->OperIs(GT_LCL_VAR);
         bool isFalseLclVar = falseInput->OperIs(GT_LCL_VAR);
@@ -935,14 +935,17 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
             GenTree* binOp = isTrueLclVar ? falseInput : trueInput;
             if (binOp->OperIs(GT_CAST))
             {
-                // TODO: check if casts to variable type
+                // TODO: check if casts to variable type; m_comp->lvaGetDesc(lclNum)->TypeGet() returns TYP_INT for
+                // small int locals
+                //
                 // if (op->AsCast()->gtCastType == ???)
+                //     binOp = op->gtGetOp1();
             }
-            if (binOp->OperIs(GT_ADD, GT_OR, GT_XOR))
+            if (binOp->OperIs(GT_ADD, GT_OR, GT_XOR) || binOp->OperIsShift())
             {
                 GenTree*& op1 = binOp->AsOp()->gtOp1;
                 GenTree*& op2 = binOp->AsOp()->gtOp2;
-                if (op1->IsIntegralConst(1) || op2->IsIntegralConst(1))
+                if ((!binOp->OperIsShift() && op1->IsIntegralConst(1)) || op2->IsIntegralConst(1))
                 {
                     GenTree* varOp = op1->IsIntegralConst(1) ? op2 : op1;
                     if (varOp->OperIs(GT_LCL_VAR) && varOp->AsLclVar()->GetLclNum() == lclNum)

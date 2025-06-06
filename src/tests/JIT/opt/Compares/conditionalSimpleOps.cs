@@ -7,7 +7,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-public class ConditionalSimpleOpTest
+public class ConditionalSimpleOpConstantTest
 {
     [Theory]
     [InlineData(12, 10)]
@@ -17,50 +17,6 @@ public class ConditionalSimpleOpTest
     {
         int result = op1 < 42 ? 10 : 5;
         Assert.Equal(expected, result);
-    }
-
-    [Theory]
-    [InlineData(11, 12)]
-    [InlineData(12, 13)]
-    [InlineData(45, 45)]
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void add_variable(int op1, int expected)
-    {
-        op1 = op1 < 42 ? op1 + 1 : op1;
-        Assert.Equal(expected, op1);
-    }
-
-    [Theory]
-    [InlineData(11, 12)]
-    [InlineData(12, 13)]
-    [InlineData(45, 45)]
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void add_variable_reversed(int op1, int expected)
-    {
-        op1 = op1 > 42 ? op1 : ++op1;
-        Assert.Equal(expected, op1);
-    }
-
-    [Theory]
-    [InlineData(12, 13)]
-    [InlineData(13, 13)]
-    [InlineData(45, 45)]
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void or_variable(int op1, int expected)
-    {
-        op1 = op1 < 42 ? op1 | 1 : op1;
-        Assert.Equal(expected, op1);
-    }
-
-    [Theory]
-    [InlineData(12, 13)]
-    [InlineData(13, 12)]
-    [InlineData(45, 45)]
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void xor_variable(int op1, int expected)
-    {
-        op1 = op1 < 42 ? op1 ^ 1 : op1;
-        Assert.Equal(expected, op1);
     }
 
     [Theory]
@@ -130,6 +86,87 @@ public class ConditionalSimpleOpTest
     public static void pow2_or_zero_ulong_32(byte op1, ulong expected)
     {
         ulong result = op1 < 42 ? 0xFFFF_FFFF_8000_0000ul : 0ul;
+        Assert.Equal(expected, result);
+    }
+}
+
+public class ConditionalSimpleOpVariableTest
+{
+    [Theory]
+    [InlineData(11, 12)]
+    [InlineData(12, 13)]
+    [InlineData(45, 45)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void add_var(int a, int expected)
+    {
+        a = a < 42 ? a + 1 : a;
+        Assert.Equal(expected, a);
+    }
+
+    [Theory]
+    [InlineData(11, 12)]
+    [InlineData(12, 13)]
+    [InlineData(45, 45)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void add_var_reversed(int a, int expected)
+    {
+        a = a > 42 ? a : ++a;
+        Assert.Equal(expected, a);
+    }
+
+    [Theory]
+    [InlineData(12, 13)]
+    [InlineData(13, 13)]
+    [InlineData(45, 45)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void or_var(int a, int expected)
+    {
+        a = a < 42 ? a | 1 : a;
+        Assert.Equal(expected, a);
+    }
+
+    [Theory]
+    [InlineData(12, 13)]
+    [InlineData(13, 12)]
+    [InlineData(45, 45)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void xor_var(int a, int expected)
+    {
+        a = a < 42 ? a ^ 1 : a;
+        Assert.Equal(expected, a);
+    }
+
+    [Theory]
+    [InlineData(-12, -24)]
+    [InlineData(12, 24)]
+    [InlineData(43, 43)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void shift_left_var(int a, int expected)
+    {
+        long result = a > 42 ? a : a * 2;
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(12, 6)]
+    [InlineData(-25, -13)]
+    [InlineData(45, 45)]
+    [InlineData(-4000_000_000_000l, -2000_000_000_000l)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void shift_right_arithmetic_var(long a, long expected)
+    {
+        long result = a > 42 ? a : a >> 1;
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(43, 21)]
+    [InlineData(0x8000_0000, 0x4000_0000)]
+    [InlineData(12, 12)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void shift_right_logic_var(uint a, uint expected)
+    {
+        uint result = a > 42 ? a >> 1 : a;
         Assert.Equal(expected, result);
     }
 }
