@@ -99,6 +99,9 @@ public enum DataType
     GCCoverageInfo,
     ArrayListBase,
     ArrayListBlock,
+    EETypeHashTable,
+    InstMethodHashTable,
+    ECHash,
 
     TransitionBlock,
     DebuggerEval,
