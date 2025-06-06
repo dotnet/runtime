@@ -3382,16 +3382,16 @@ retry_emit:
                 {
                 case StackTypeR4:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I8_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I8_R4)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2LNG_OVF);
 #else
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_R4)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
 #endif
                     break;
                 case StackTypeR8:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I8_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I8_R8)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2LNG_OVF);
 #else
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_R8)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2INT_OVF);
 #endif
                     break;
                 case StackTypeI4:
@@ -3419,16 +3419,16 @@ retry_emit:
                 {
                 case StackTypeR4:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_R4)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2ULNG_OVF);
 #else
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_R4)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2UINT_OVF);
 #endif
                     break;
                 case StackTypeR8:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_R8)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2ULNG_OVF);
 #else
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_R8)->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_DBL2UINT_OVF);
 #endif
                     break;
                 case StackTypeI4:
