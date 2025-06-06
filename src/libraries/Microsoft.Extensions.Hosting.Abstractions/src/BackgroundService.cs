@@ -39,19 +39,15 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>A <see cref="Task"/> that represents the asynchronous Start operation.</returns>
         public virtual Task StartAsync(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             // Create linked token to allow cancelling executing task from provided token
             _stoppingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
             // Execute all of ExecuteAsync as a background thread, and store the task we're executing so that we can wait for it later.
             _executeTask = Task.Run(() => ExecuteAsync(_stoppingCts.Token), _stoppingCts.Token);
 
-            // If the task is completed then return it, this will bubble cancellation and failure to the caller
-            if (_executeTask.IsCompleted)
-            {
-                return _executeTask;
-            }
-
-            // Otherwise it's running
+            // Always return a completed task.  Any result from ExecuteAsync will be handled by the Host.
             return Task.CompletedTask;
         }
 
