@@ -3214,16 +3214,16 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_OVF_U1_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_OVF_U1_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_R8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_OVF_U1_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_I4);
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_OVF_U1_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_I8);
                     break;
                 default:
                     assert(0);

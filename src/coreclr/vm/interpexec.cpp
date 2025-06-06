@@ -83,6 +83,21 @@ static void InterpBreakpoint()
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 #define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
 
+template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, const int32_t *ip)
+{
+    TSource src = LOCAL_VAR(ip[2], TSource);
+    // We have to use `>= and <=`, not `< or >`, in order to behave correctly for NaN and infinities
+    if ((src >= std::numeric_limits<TResult>::min()) && (src <= std::numeric_limits<TResult>::max()))
+    {
+        TResult result = (TResult)src;
+        LOCAL_VAR(ip[1], int32_t) = result;
+    }
+    else
+    {
+        COMPlusThrow(kOverflowException);
+    }
+}
+
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
 {
     CONTRACTL
@@ -368,41 +383,21 @@ MAIN_LOOP:
                     break;
 
                 case INTOP_CONV_OVF_U1_I4:
-                {
-                    int32_t temp = (uint8_t)LOCAL_VAR(ip[2], int32_t);
-                    if (temp != LOCAL_VAR(ip[2], int32_t))
-                        COMPlusThrow(kOverflowException);
-                    LOCAL_VAR(ip[1], int32_t) = temp;
+                    ConvOvfHelper<uint8_t, int32_t>(stack, ip);
                     ip += 3;
                     break;
-                }
                 case INTOP_CONV_OVF_U1_I8:
-                {
-                    int32_t temp = (uint8_t)LOCAL_VAR(ip[2], int64_t);
-                    if (temp != LOCAL_VAR(ip[2], int64_t))
-                        COMPlusThrow(kOverflowException);
-                    LOCAL_VAR(ip[1], int32_t) = temp;
+                    ConvOvfHelper<uint8_t, int64_t>(stack, ip);
                     ip += 3;
                     break;
-                }
                 case INTOP_CONV_OVF_U1_R4:
-                {
-                    int32_t temp = (uint8_t)HCCALL1(JIT_Dbl2UInt, (double)LOCAL_VAR(ip[2], float));
-                    if (temp != LOCAL_VAR(ip[2], float))
-                        COMPlusThrow(kOverflowException);
-                    LOCAL_VAR(ip[1], int32_t) = temp;
+                    ConvOvfHelper<uint8_t, float>(stack, ip);
                     ip += 3;
                     break;
-                }
                 case INTOP_CONV_OVF_U1_R8:
-                {
-                    int32_t temp = (uint8_t)HCCALL1(JIT_Dbl2UInt, LOCAL_VAR(ip[2], double));
-                    if (temp != LOCAL_VAR(ip[2], double))
-                        COMPlusThrow(kOverflowException);
-                    LOCAL_VAR(ip[1], int32_t) = temp;
+                    ConvOvfHelper<uint8_t, double>(stack, ip);
                     ip += 3;
                     break;
-                }
 
                 case INTOP_SWITCH:
                 {
