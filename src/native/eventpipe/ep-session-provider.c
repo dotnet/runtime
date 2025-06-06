@@ -57,8 +57,8 @@ ep_session_provider_alloc (
 	uint64_t keywords,
 	EventPipeEventLevel logging_level,
 	const ep_char8_t *filter_data,
-	EventPipeProviderEventFilter *event_filter,
-	EventPipeProviderTracepointConfiguration *tracepoint_config)
+	const EventPipeProviderEventFilter *event_filter,
+	const EventPipeProviderTracepointConfiguration *tracepoint_config)
 {
 	EventPipeSessionProvider *instance = ep_rt_object_alloc (EventPipeSessionProvider);
 	ep_raise_error_if_nok (instance != NULL);
@@ -75,8 +75,18 @@ ep_session_provider_alloc (
 
 	instance->keywords = keywords;
 	instance->logging_level = logging_level;
-	instance->event_filter = event_filter;
-	instance->tracepoint_config = tracepoint_config;
+	instance->event_filter = NULL;
+	instance->tracepoint_config = NULL;
+
+	if (event_filter) {
+		instance->event_filter = ep_provider_event_filter_dup (event_filter);
+		ep_raise_error_if_nok (instance->event_filter != NULL);
+	}
+
+	if (tracepoint_config) {
+		instance->tracepoint_config = ep_provider_tracepoint_config_dup (tracepoint_config);
+		ep_raise_error_if_nok (instance->tracepoint_config != NULL);
+	}
 
 ep_on_exit:
 	return instance;

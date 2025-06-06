@@ -428,6 +428,9 @@ eventpipe_collect_tracing_command_try_parse_provider_config (
 	uint8_t *filter_data_byte_array = NULL;
 	uint32_t filter_data_byte_array_len = 0;
 
+	EventPipeProviderEventFilter *event_filter = NULL;
+	EventPipeProviderTracepointConfiguration *tracepoint_config = NULL;
+
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint64_t (buffer, buffer_len, &provider_config->keywords));
 
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &log_level));
@@ -449,15 +452,19 @@ eventpipe_collect_tracing_command_try_parse_provider_config (
 	}
 
 	if ((optional_field_flags & EP_PROVIDER_OPTFIELD_EVENT_FILTER) != 0) {
-		provider_config->event_filter = ep_rt_object_alloc (EventPipeProviderEventFilter);
-		ep_raise_error_if_nok (provider_config->event_filter != NULL);
-		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_filter (buffer, buffer_len, provider_config->event_filter));
+		event_filter = ep_rt_object_alloc(EventPipeProviderEventFilter);
+		ep_raise_error_if_nok (event_filter != NULL);
+		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_filter (buffer, buffer_len, event_filter));
+		provider_config->event_filter = event_filter;
+		event_filter = NULL; // Ownership transferred to provider_config.
 	}
 
 	if ((optional_field_flags & EP_PROVIDER_OPTFIELD_TRACEPOINT_CONFIG) != 0) {
-		provider_config->tracepoint_config = ep_rt_object_alloc (EventPipeProviderTracepointConfiguration);
-		ep_raise_error_if_nok (provider_config->tracepoint_config != NULL);
-		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_tracepoint_config (buffer, buffer_len, provider_config->tracepoint_config));
+		tracepoint_config = ep_rt_object_alloc (EventPipeProviderTracepointConfiguration);
+		ep_raise_error_if_nok (tracepoint_config != NULL);
+		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_tracepoint_config (buffer, buffer_len, tracepoint_config));
+		provider_config->tracepoint_config = tracepoint_config;
+		tracepoint_config = NULL; // Ownership transferred to provider_config.
 	}
 
 	result = true;
@@ -466,20 +473,18 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	ep_tracepoint_config_free (provider_config->tracepoint_config);
-	provider_config->tracepoint_config = NULL;
+	if (tracepoint_config != NULL) {
+		ep_tracepoint_config_free (tracepoint_config);
+		tracepoint_config = NULL;
+	}
 
-	ep_event_filter_free (provider_config->event_filter);
-	provider_config->event_filter = NULL;
-
-	ep_rt_utf8_string_free ((ep_char8_t *)provider_config->filter_data);
-	provider_config->filter_data = NULL;
+	if (event_filter != NULL) {
+		ep_event_filter_free (event_filter);
+		event_filter = NULL;
+	}
 
 	ep_rt_byte_array_free (filter_data_byte_array);
 	filter_data_byte_array = NULL;
-
-	ep_rt_utf8_string_free ((ep_char8_t *)provider_config->provider_name);
-	provider_config->provider_name = NULL;
 
 	ep_rt_byte_array_free (provider_name_byte_array);
 	provider_name_byte_array = NULL;
@@ -544,18 +549,10 @@ ep_on_error:
 	if (provider_config != NULL) {
 		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (provider_config));
 		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (provider_config));
-		ep_event_filter_free (ep_provider_config_get_event_filter (provider_config));
-		ep_tracepoint_config_free (ep_provider_config_get_tracepoint_config (provider_config));
+		ep_event_filter_free ((EventPipeProviderEventFilter *)ep_provider_config_get_event_filter (provider_config));
+		ep_tracepoint_config_free ((EventPipeProviderTracepointConfiguration *)ep_provider_config_get_tracepoint_config (provider_config));
 		ep_rt_object_free (provider_config);
 		provider_config = NULL;
-	}
-
-	// Until ep_provider_config_fini/free is implemented, we need to manually free the provider_config.
-	if (*result != NULL) {
-		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeProviderConfiguration *, config, *result) {
-			ep_event_filter_free (ep_provider_config_get_event_filter (config));
-			ep_tracepoint_config_free (ep_provider_config_get_tracepoint_config (config));
-		} DN_VECTOR_FOREACH_END;
 	}
 
 	ep_exit_error_handler ();
@@ -576,7 +573,8 @@ ds_eventpipe_collect_tracing_command_payload_free (EventPipeCollectTracingComman
 	DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeProviderConfiguration *, config, payload->provider_configs) {
 		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (config));
 		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (config));
-		// What about the EventPipeProviderConfiguration allocated in eventpipe_collect_tracing_command_try_parse_config
+		ep_event_filter_free ((EventPipeProviderEventFilter *)ep_provider_config_get_event_filter (config));
+		ep_tracepoint_config_free ((EventPipeProviderTracepointConfiguration *)ep_provider_config_get_tracepoint_config (config));
 	} DN_VECTOR_FOREACH_END;
 
 	ep_rt_object_free (payload);

@@ -1755,6 +1755,32 @@ ep_ipc_stream_factory_callback_set (EventPipeIpcStreamFactorySuspendedPortsCallb
 	_ep_ipc_stream_factory_suspended_ports_callback = suspended_ports_callback;
 }
 
+EventPipeProviderEventFilter *
+ep_provider_event_filter_dup (const EventPipeProviderEventFilter *event_filter_src)
+{
+	ep_return_null_if_nok (event_filter_src != NULL);
+
+	EventPipeProviderEventFilter *event_filter = ep_rt_object_alloc (EventPipeProviderEventFilter);
+	ep_return_null_if_nok (event_filter != NULL);
+
+	event_filter->enable = event_filter_src->enable;
+	event_filter->event_ids = dn_umap_alloc ();
+	ep_return_null_if_nok (event_filter->event_ids != NULL);
+
+	DN_UMAP_FOREACH_KEY_BEGIN (uint32_t *, event_id, event_filter_src->event_ids) {
+		dn_umap_result_t insert_result = dn_umap_ptr_uint32_insert (event_filter->event_ids, event_id, 0);
+		ep_raise_error_if_nok (insert_result.result);
+	} DN_UMAP_FOREACH_END;
+
+ep_on_exit:
+	return event_filter;
+
+ep_on_error:
+	ep_event_filter_free (event_filter);
+	event_filter = NULL;
+	ep_exit_error_handler ();
+}
+
 void
 ep_event_filter_fini (EventPipeProviderEventFilter *event_filter)
 {
@@ -1773,6 +1799,61 @@ ep_event_filter_free (EventPipeProviderEventFilter *event_filter)
 
 	ep_event_filter_fini (event_filter);
 	ep_rt_object_free (event_filter);
+}
+
+EventPipeProviderTracepointConfiguration *
+ep_provider_tracepoint_config_dup (const EventPipeProviderTracepointConfiguration *tracepoint_config_src)
+{
+	ep_return_null_if_nok (tracepoint_config_src != NULL);
+
+	EventPipeProviderTracepointConfiguration *tracepoint_config = ep_rt_object_alloc (EventPipeProviderTracepointConfiguration);
+	ep_return_null_if_nok (tracepoint_config != NULL);
+
+	EventPipeTracepoint *tracepoint_copy = NULL;
+	dn_umap_t *tracepoints_seen = NULL;
+	tracepoint_config->default_tracepoint.tracepoint_format[0] = '\0';
+	if (tracepoint_config_src->default_tracepoint.tracepoint_format[0] != '\0')
+		memcpy(&tracepoint_config->default_tracepoint, &tracepoint_config_src->default_tracepoint, sizeof(EventPipeTracepoint));
+
+	tracepoint_config->tracepoints = NULL;
+	if (tracepoint_config_src->tracepoints) {
+		dn_vector_ptr_custom_alloc_params_t tracepoint_set_array_params = {0, };
+		tracepoint_set_array_params.capacity = tracepoint_config_src->tracepoints->size;
+		tracepoint_config->tracepoints = dn_vector_ptr_custom_alloc (&tracepoint_set_array_params);
+		ep_raise_error_if_nok (tracepoint_config->tracepoints != NULL);
+
+		tracepoint_config->event_id_to_tracepoint_map = dn_umap_alloc ();
+		ep_raise_error_if_nok (tracepoint_config->event_id_to_tracepoint_map != NULL);
+
+		tracepoints_seen = dn_umap_alloc ();
+		ep_raise_error_if_nok (tracepoints_seen != NULL);
+
+		DN_UMAP_FOREACH_BEGIN (uint32_t *, event_id, EventPipeTracepoint *, tracepoint, tracepoint_config_src->event_id_to_tracepoint_map) {
+			if (!dn_umap_extract_key (tracepoints_seen, tracepoint, NULL, (void **)&tracepoint_copy)) {
+				tracepoint_copy = ep_rt_object_alloc (EventPipeTracepoint);
+				ep_return_null_if_nok (tracepoint_copy != NULL);
+				memcpy(tracepoint_copy, tracepoint, sizeof(EventPipeTracepoint));
+				dn_umap_result_t insert_result = dn_umap_insert (tracepoints_seen, tracepoint, tracepoint_copy);
+				ep_raise_error_if_nok (insert_result.result);
+				ep_raise_error_if_nok (dn_vector_ptr_push_back (tracepoint_config->tracepoints, tracepoint_copy));
+			}
+			dn_umap_result_t insert_result = dn_umap_insert (tracepoint_config->event_id_to_tracepoint_map, event_id, tracepoint_copy);
+			ep_raise_error_if_nok (insert_result.result);
+		} DN_UMAP_FOREACH_END;
+	}
+
+ep_on_exit:
+	dn_umap_free (tracepoints_seen);
+	return tracepoint_config;
+
+ep_on_error:
+	if (tracepoint_copy != NULL) {
+		ep_rt_object_free (tracepoint_copy);
+		tracepoint_copy = NULL;
+	}
+	ep_tracepoint_config_free (tracepoint_config);
+	tracepoint_config = NULL;
+	ep_exit_error_handler ();
 }
 
 static

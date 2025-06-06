@@ -47,8 +47,8 @@ ep_session_provider_alloc (
 	uint64_t keywords,
 	EventPipeEventLevel logging_level,
 	const ep_char8_t *filter_data,
-	EventPipeProviderEventFilter *event_filter,
-	EventPipeProviderTracepointConfiguration *tracepoint_config);
+	const EventPipeProviderEventFilter *event_filter,
+	const EventPipeProviderTracepointConfiguration *tracepoint_config);
 
 void
 ep_session_provider_free (EventPipeSessionProvider * session_provider);
