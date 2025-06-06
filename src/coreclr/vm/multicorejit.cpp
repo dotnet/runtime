@@ -159,6 +159,7 @@ HRESULT MulticoreJitRecorder::WriteOutput()
         if (fopen_lp(&fp, m_fullFileName.GetUnicode(), W("wb")) == 0)
         {
             hr = WriteOutput(fp);
+            fclose(fp);
         }
     }
     EX_CATCH
