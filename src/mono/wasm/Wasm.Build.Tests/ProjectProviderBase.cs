@@ -384,6 +384,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             AssetsData assets = (AssetsData)bootJson.resources;
             var keysToUpdate = new List<string>();
             var updates = new List<(string oldKey, string newKey, (string fullPath, bool unchanged) value)>();
+            List<GeneralAsset> allAssemblies = [..assets.coreAssembly, ..assets.assembly];
 
             foreach (var expectedItem in dict)
             {
@@ -394,7 +395,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                     "dotnet.native.js" => assets.jsModuleNative?.SingleOrDefault()?.name,
                     "dotnet.native.wasm" => assets.wasmNative?.SingleOrDefault()?.name,
                     _ => filename == $"{projectName}{WasmAssemblyExtension}"
-                        ? assets.assembly?.SingleOrDefault(a => a.virtualPath == $"{projectName}{WasmAssemblyExtension}")?.name
+                        ? allAssemblies?.SingleOrDefault(a => a.virtualPath == $"{projectName}{WasmAssemblyExtension}")?.name
                         : null
                 };
 
