@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
                                 return keyHandle.SignHash(hash, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, &pkcsPaddingInfo, estimatedSize);
 
                             case RSASignaturePaddingMode.Pss:
-                                var pssPaddingInfo = new BCRYPT_PSS_PADDING_INFO() { pszAlgId = namePtr, cbSalt = hash.Length };
+                                var pssPaddingInfo = new BCRYPT_PSS_PADDING_INFO() { pszAlgId = namePtr, cbSalt = padding.CalculatePssSaltLength(KeySize, hashAlgorithm) };
                                 return keyHandle.SignHash(hash, AsymmetricPaddingMode.NCRYPT_PAD_PSS_FLAG, &pssPaddingInfo, estimatedSize);
 
                             default:
