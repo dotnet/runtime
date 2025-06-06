@@ -52,16 +52,10 @@ if /i "%__Arch%" == "wasm" (
 
             set "EMSDK_PATH=%__repoRoot%\src\mono\browser\emsdk"
         )
-        :: replace backslash with forward slash and append last slash
-        set "EMSDK_PATH=!EMSDK_PATH:\=/!"
-        if not "!EMSDK_PATH:~-1!" == "/" set "EMSDK_PATH=!EMSDK_PATH!/"
-
-        set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_TOOLCHAIN_FILE=!EMSDK_PATH!/emscripten/cmake/Modules/Platform/Emscripten.cmake"
-        set __UseEmcmake=1
+        set EMSDK_QUIET=1 && call !EMSDK_PATH!/emsdk_env
+        set __CmakeLauncher=emcmake
     )
     if /i "%__Os%" == "wasi" (
-        set "__repoRoot=!__repoRoot:\=/!"
-        if not "!__repoRoot:~-1!" == "/" set "__repoRoot=!__repoRoot!/"
         if "%WASI_SDK_PATH%" == "" (
             if not exist "%__repoRoot%\src\mono\wasi\wasi-sdk" (
                 echo Error: Should set WASI_SDK_PATH environment variable pointing to WASI SDK root.
@@ -70,11 +64,8 @@ if /i "%__Arch%" == "wasm" (
 
             set "WASI_SDK_PATH=%__repoRoot%\src\mono\wasi\wasi-sdk"
         )
-        :: replace backslash with forward slash and append last slash
-        set "WASI_SDK_PATH=!WASI_SDK_PATH:\=/!"
-        if not "!WASI_SDK_PATH:~-1!" == "/" set "WASI_SDK_PATH=!WASI_SDK_PATH!/"
         set __CmakeGenerator=Ninja
-        set __ExtraCmakeParams=%__ExtraCmakeParams% -DCLR_CMAKE_TARGET_OS=wasi -DCLR_CMAKE_TARGET_ARCH=wasm "-DWASI_SDK_PREFIX=!WASI_SDK_PATH!" "-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk-p2.cmake" "-DCMAKE_SYSROOT=!WASI_SDK_PATH!share/wasi-sysroot" "-DCMAKE_CROSSCOMPILING_EMULATOR=node --experimental-wasm-bigint --experimental-wasi-unstable-preview1"
+        set __ExtraCmakeParams=%__ExtraCmakeParams% -DCLR_CMAKE_TARGET_OS=wasi -DCLR_CMAKE_TARGET_ARCH=wasm "-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk-p2.cmake" "-DCMAKE_CROSSCOMPILING_EMULATOR=node --experimental-wasm-bigint --experimental-wasi-unstable-preview1"
     )
 ) else (
     set __ExtraCmakeParams=%__ExtraCmakeParams%  "-DCMAKE_SYSTEM_VERSION=10.0"
@@ -135,12 +126,8 @@ if not "%__ConfigureOnly%" == "1" (
     )
 )
 
-if /i "%__UseEmcmake%" == "1" (
-    call "!EMSDK_PATH!/emsdk_env.cmd" > nul 2>&1 && emcmake "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
-) else (
-    echo "%CMakePath% %__ExtraCmakeParams% --no-warn-unused-cli -G %__CmakeGenerator% -B %__IntermediatesDir% -S %__SourceDir%"
-    "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
-)
+echo %__CmakeLauncher% "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G %__CmakeGenerator% -B %__IntermediatesDir% -S %__SourceDir%"
+%__CmakeLauncher% "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
 
 if "%errorlevel%" == "0" (
     echo %__ExtraCmakeParams% > %__CmdLineOptionsUpToDateFile%
