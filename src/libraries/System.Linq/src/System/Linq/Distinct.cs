@@ -22,6 +22,13 @@ namespace System.Linq
                 return [];
             }
 
+            if (source is HashSet<TSource> hashSet &&
+                ReferenceEquals(hashSet.Comparer, comparer ?? EqualityComparer<TSource>.Default))
+            {
+                // The collection is already distinct using the same equality comparer
+                return source;
+            }
+
             return new DistinctIterator<TSource>(source, comparer);
         }
 
