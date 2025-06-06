@@ -58,7 +58,6 @@
       <_BuildNativeCompilerArg Condition="'$(BuildNativeCompiler)' != ''"> $(BuildNativeCompiler)</_BuildNativeCompilerArg>
       <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessorCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_KeepNativeSymbolsBuildArg) $(Compiler)</_BuildNativeUnixArgs>
       <_BuildNativeBuildCommand>&quot;$(MSBuildThisFileDirectory)build-native.sh&quot; $(_BuildNativeUnixArgs)</_BuildNativeBuildCommand>
-      <_BuildNativeBuildCommand Condition="'$(TargetsBrowser)' == 'true'">bash -c 'source &quot;$(RepoRoot)src/mono/browser/emsdk/emsdk_env.sh&quot; &amp;&amp; $(_BuildNativeBuildCommand)'</_BuildNativeBuildCommand>
     </PropertyGroup>
 
     <ItemGroup>
@@ -99,7 +98,6 @@
     <PropertyGroup>
         <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) msbuild</_BuildNativeArgs>
         <_BuildNativeBuildCommand>&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)</_BuildNativeBuildCommand>
-        <_BuildNativeBuildCommand Condition="'$(TargetsBrowser)' == 'true'">call &quot;$([MSBuild]::NormalizePath('$(RepoRoot)src/mono/browser/emsdk', 'emsdk_env.cmd'))&quot; &amp;&amp; $(_BuildNativeBuildCommand)</_BuildNativeBuildCommand>
     </PropertyGroup>
     <!-- Run script that uses CMake to generate and build the native files. -->
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to errors in release branches -->
