@@ -6,6 +6,7 @@
 
 #include "intops.h"
 #include "datastructs.h"
+#include "enum_class_flags.h"
 
 TArray<char> PrintMethodName(COMP_HANDLE comp,
                              CORINFO_CLASS_HANDLE  clsHnd,
@@ -366,7 +367,25 @@ private:
     CORINFO_CLASS_HANDLE    ResolveClassToken(uint32_t token);
     CORINFO_CLASS_HANDLE    getClassFromContext(CORINFO_CONTEXT_HANDLE context);
     int                     getParamArgIndex(); // Get the index into the m_pVars array of the Parameter argument. This is either the this pointer, a methoddesc or a class handle
-    int                     FillTempVarWithToken(CORINFO_RESOLVED_TOKEN* resolvedToken, bool embedParent, bool onlyIfNeedsRuntimeLookup, int existingVar = -1);
+
+    struct InterpEmbedGenericResult
+    {
+        // If var is != -1, then the var holds the result of the lookup
+        int var = -1;
+        // If var == -1, then the data item holds the result of the lookup
+        int dataItemIndex = -1;
+    };
+
+    enum class GenericHandleEmbedOptions
+    {
+        support_use_as_flags = -1,
+
+        None = 0,
+        VarOnly = 1,
+        EmbedParent = 2,
+    };
+    InterpEmbedGenericResult EmitGenericHandle(CORINFO_RESOLVED_TOKEN* resolvedToken, GenericHandleEmbedOptions options);
+    int EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo);
 
     void* AllocMethodData(size_t numBytes);
 public:

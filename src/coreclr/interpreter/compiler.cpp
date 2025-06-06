@@ -2237,18 +2237,28 @@ int InterpCompiler::getParamArgIndex()
     return m_paramArgIndex;
 }
 
-int InterpCompiler::FillTempVarWithToken(CORINFO_RESOLVED_TOKEN* resolvedToken, bool embedParent, bool onlyIfNeedsRuntimeLookup, int existingTemp)
+InterpCompiler::InterpEmbedGenericResult InterpCompiler::EmitGenericHandle(CORINFO_RESOLVED_TOKEN* resolvedToken, GenericHandleEmbedOptions options)
 {
     CORINFO_GENERICHANDLE_RESULT embedInfo;
-    m_compHnd->embedGenericHandle(resolvedToken, embedParent, m_methodInfo->ftn, &embedInfo);
-
-    int resultVar = existingTemp;
-    if ((resultVar == -1) && (!onlyIfNeedsRuntimeLookup || (embedInfo.lookup.lookupKind.needsRuntimeLookup)))
+    InterpEmbedGenericResult result;
+    m_compHnd->embedGenericHandle(resolvedToken, HasFlag(options, GenericHandleEmbedOptions::EmbedParent), m_methodInfo->ftn, &embedInfo);
+    if (HasFlag(options, GenericHandleEmbedOptions::VarOnly) || embedInfo.lookup.lookupKind.needsRuntimeLookup)
     {
-        PushStackType(StackTypeI, NULL);
-        resultVar = m_pStackPointer[-1].var;
-        m_pStackPointer--;
+        result.var = EmitGenericHandleAsVar(embedInfo);
     }
+    else
+    {
+        assert(embedInfo.lookup.constLookup.accessType == IAT_VALUE);
+        result.dataItemIndex = GetDataItemIndex(embedInfo.lookup.constLookup.handle);
+    }
+    return result;
+}
+
+int InterpCompiler::EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo)
+{
+    PushStackType(StackTypeI, NULL);
+    int resultVar = m_pStackPointer[-1].var;
+    m_pStackPointer--;
 
     if (embedInfo.lookup.lookupKind.needsRuntimeLookup)
     {
@@ -2272,7 +2282,7 @@ int InterpCompiler::FillTempVarWithToken(CORINFO_RESOLVED_TOKEN* resolvedToken, 
         m_pLastNewIns->SetSVar(getParamArgIndex());
         m_pLastNewIns->SetDVar(resultVar);
     }
-    else if (!onlyIfNeedsRuntimeLookup)
+    else
     {
         AddIns(INTOP_LDPTR);
         m_pLastNewIns->SetDVar(resultVar);
@@ -2347,7 +2357,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
     }
     callArgs[numArgs] = -1;
 
-    int32_t newObjTypeVar = -1;
+    InterpEmbedGenericResult newObjType;
     int32_t newObjThisVar = -1;
     int32_t newObjDVar = -1;
     InterpType ctorType = InterpTypeO;
@@ -2367,7 +2377,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
             PushInterpType(ctorType, resolvedCallToken.hClass);
             PushInterpType(ctorType, resolvedCallToken.hClass);
 
-            newObjTypeVar = FillTempVarWithToken(&resolvedCallToken, true/*embedParent*/, true /*onlyIfNeedsRuntimeLookup*/);
+            newObjType = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::EmbedParent);
         }
         newObjDVar = m_pStackPointer[-2].var;
         newObjThisVar = m_pStackPointer[-1].var;
@@ -2381,41 +2391,44 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
 
     if (extraParamArgLocation != INT_MAX)
     {
-        PushStackType(StackTypeI, NULL);
-        m_pStackPointer--;
-        int contextParamVar = m_pStackPointer[0].var;
-        callArgs[extraParamArgLocation] = contextParamVar;
-
+        int contextParamVar = -1;
+        
         // Instantiated generic method
         CORINFO_CONTEXT_HANDLE exactContextHnd = callInfo.contextHandle;
         if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
         {
             assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
-
+            
             CORINFO_METHOD_HANDLE exactMethodHandle =
-                (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
-
+            (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
+            
             if (!callInfo.exactContextNeedsRuntimeLookup)
             {
+                PushStackType(StackTypeI, NULL);
+                m_pStackPointer--;
+                contextParamVar = m_pStackPointer[0].var;
                 AddIns(INTOP_LDPTR);
                 m_pLastNewIns->SetDVar(contextParamVar);
                 m_pLastNewIns->data[0] = GetDataItemIndex((void*)exactMethodHandle);
             }
             else
             {
-                FillTempVarWithToken(&resolvedCallToken, false, true, contextParamVar);
+                contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly).var;
             }
         }
-
+        
         // otherwise must be an instance method in a generic struct,
         // a static method in a generic type, or a runtime-generated array method
         else
         {
             assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
             CORINFO_CLASS_HANDLE exactClassHandle = getClassFromContext(exactContextHnd);
-
+            
             if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && readonly)
             {
+                PushStackType(StackTypeI, NULL);
+                m_pStackPointer--;
+                contextParamVar = m_pStackPointer[0].var;
                 // We indicate "readonly" to the Address operation by using a null
                 // instParam.
                 AddIns(INTOP_LDPTR);
@@ -2424,15 +2437,19 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
             }
             else if (!callInfo.exactContextNeedsRuntimeLookup)
             {
+                PushStackType(StackTypeI, NULL);
+                m_pStackPointer--;
+                contextParamVar = m_pStackPointer[0].var;
                 AddIns(INTOP_LDPTR);
                 m_pLastNewIns->SetDVar(contextParamVar);
                 m_pLastNewIns->data[0] = GetDataItemIndex((void*)exactClassHandle);
             }
             else
             {
-                FillTempVarWithToken(&resolvedCallToken, true, true, contextParamVar);
+                contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly | GenericHandleEmbedOptions::EmbedParent).var;
             }
         }
+        callArgs[extraParamArgLocation] = contextParamVar;
     }
 
     // Process dVar
@@ -2486,17 +2503,17 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
                 }
                 else
                 {
-                    if (newObjTypeVar != -1)
+                    if (newObjType.var != -1)
                     {
                         // newobj of type known only through a generic dictionary lookup.
                         AddIns(INTOP_NEWOBJ_VAR);
-                        m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, newObjTypeVar);
+                        m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, newObjType.var);
                     }
                     else
                     {
                         // Normal newobj call
                         AddIns(INTOP_NEWOBJ);
-                        m_pLastNewIns->data[1] = GetDataItemIndex(resolvedCallToken.hClass);
+                        m_pLastNewIns->data[1] = newObjType.dataItemIndex;
                     }
                 }
                 m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
@@ -4466,23 +4483,17 @@ retry_emit:
                 CORINFO_RESOLVED_TOKEN resolvedToken;
                 ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Ldtoken, &resolvedToken);
                 
-                CORINFO_GENERICHANDLE_RESULT embedInfo;
-                m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
+                InterpEmbedGenericResult resolvedEmbedResult = EmitGenericHandle(&resolvedToken, GenericHandleEmbedOptions::None);
 
-                if (embedInfo.lookup.lookupKind.needsRuntimeLookup)
+                if (resolvedEmbedResult.var != -1)
                 {
-                    int runtimeLookupVar = FillTempVarWithToken(&resolvedToken, false, true);
-                    m_pLastNewIns->SetSVar(getParamArgIndex());
-                    m_pLastNewIns->SetDVar(runtimeLookupVar);
-
                     AddIns(INTOP_LDTOKEN_VAR);
-                    m_pLastNewIns->SetSVar(runtimeLookupVar);
+                    m_pLastNewIns->SetSVar(resolvedEmbedResult.var);
                 }
                 else
                 {
                     AddIns(INTOP_LDTOKEN);
-                    assert(embedInfo.lookup.constLookup.accessType == IAT_VALUE);
-                    m_pLastNewIns->data[1] = GetDataItemIndex(embedInfo.lookup.constLookup.handle);
+                    m_pLastNewIns->data[1] = resolvedEmbedResult.dataItemIndex;
                 }
                 
                 CORINFO_CLASS_HANDLE clsHnd = m_compHnd->getTokenTypeAsHandle(&resolvedToken);
