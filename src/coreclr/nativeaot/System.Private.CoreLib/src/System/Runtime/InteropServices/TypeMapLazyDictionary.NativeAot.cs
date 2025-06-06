@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices
             RuntimeTypeHandle typeMapGroupHandle = typeMapGroup.TypeHandle;
             foreach (TypeManagerHandle module in RuntimeAugments.GetLoadedModules())
             {
-                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.AssociatedTypeMap, out NativeReader externalTypeMapReader))
+                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.ProxyTypeMap, out NativeReader externalTypeMapReader))
                 {
                     continue;
                 }

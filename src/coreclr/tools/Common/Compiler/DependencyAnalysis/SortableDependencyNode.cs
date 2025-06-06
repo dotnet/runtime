@@ -96,7 +96,7 @@ namespace ILCompiler.DependencyAnalysis
             ReflectionVirtualInvokeMapNode,
             ArrayOfEmbeddedPointersNode,
             ExternalTypeMapObjectNode,
-            AssociatedTypeMapObjectNode,
+            ProxyTypeMapObjectNode,
             ExternalReferencesTableNode,
             StackTraceEmbeddedMetadataNode,
             StackTraceMethodMappingNode,

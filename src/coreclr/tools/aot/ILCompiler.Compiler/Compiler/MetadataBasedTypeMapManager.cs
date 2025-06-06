@@ -77,9 +77,9 @@ namespace ILCompiler
             {
                 if (_associatedTypeMapExceptionStub is not null)
                 {
-                    return new InvalidAssociatedTypeMapNode(group, _associatedTypeMapExceptionStub);
+                    return new InvalidProxyTypeMapNode(group, _associatedTypeMapExceptionStub);
                 }
-                return new AssociatedTypeMapNode(group, _associatedTypeMap);
+                return new ProxyTypeMapNode(group, _associatedTypeMap);
             }
         }
 
@@ -298,7 +298,7 @@ namespace ILCompiler
             }
 
             header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.ExternalTypeMap), new ExternalTypeMapObjectNode(commonFixupsTableNode));
-            header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.AssociatedTypeMap), new AssociatedTypeMapObjectNode(commonFixupsTableNode));
+            header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.ProxyTypeMap), new ProxyTypeMapObjectNode(commonFixupsTableNode));
         }
     }
 }

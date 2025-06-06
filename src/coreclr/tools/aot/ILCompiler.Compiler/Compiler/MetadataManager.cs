@@ -82,10 +82,10 @@ namespace ILCompiler
         private readonly SortedSet<MethodDesc> _genericMethodHashtableEntries = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _exactMethodHashtableEntries = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly HashSet<TypeDesc> _usedInterfaces = new HashSet<TypeDesc>();
-        private readonly SortedSet<ExternalTypeMapEntryNode> _externalTypeMapEntries = new SortedSet<ExternalTypeMapEntryNode>(CompilerComparer.Instance);
+        private readonly SortedSet<ExternalTypeMapNode> _externalTypeMaps = new SortedSet<ExternalTypeMapNode>(CompilerComparer.Instance);
         private readonly SortedSet<InvalidExternalTypeMapNode> _invalidExternalTypeMaps = new SortedSet<InvalidExternalTypeMapNode>(CompilerComparer.Instance);
-        private readonly SortedSet<AssociatedTypeMapEntryNode> _associatedTypeMapEntries = new SortedSet<AssociatedTypeMapEntryNode>(CompilerComparer.Instance);
-        private readonly SortedSet<InvalidAssociatedTypeMapNode> _invalidAssociatedTypeMaps = new SortedSet<InvalidAssociatedTypeMapNode>(CompilerComparer.Instance);
+        private readonly SortedSet<ProxyTypeMapNode> _proxyTypeMaps = new SortedSet<ProxyTypeMapNode>(CompilerComparer.Instance);
+        private readonly SortedSet<InvalidProxyTypeMapNode> _invalidProxyTypeMaps = new SortedSet<InvalidProxyTypeMapNode>(CompilerComparer.Instance);
 
         private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
 
@@ -352,9 +352,9 @@ namespace ILCompiler
                 _usedInterfaces.Add(interfaceUse.Type);
             }
 
-            if (obj is ExternalTypeMapEntryNode externalTypeMapEntryNode)
+            if (obj is ExternalTypeMapNode externalTypeMapNode)
             {
-                _externalTypeMapEntries.Add(externalTypeMapEntryNode);
+                _externalTypeMaps.Add(externalTypeMapNode);
             }
 
             if (obj is InvalidExternalTypeMapNode invalidExternalTypeMapNode)
@@ -363,14 +363,14 @@ namespace ILCompiler
             }
 
 
-            if (obj is AssociatedTypeMapEntryNode associatedTypeMapEntryNode)
+            if (obj is ProxyTypeMapNode proxyTypeMapNode)
             {
-                _associatedTypeMapEntries.Add(associatedTypeMapEntryNode);
+                _proxyTypeMaps.Add(proxyTypeMapNode);
             }
 
-            if (obj is InvalidAssociatedTypeMapNode invalidAssociatedTypeMapNode)
+            if (obj is InvalidProxyTypeMapNode invalidProxyTypeMapNode)
             {
-                _invalidAssociatedTypeMaps.Add(invalidAssociatedTypeMapNode);
+                _invalidProxyTypeMaps.Add(invalidProxyTypeMapNode);
             }
         }
 
@@ -1135,9 +1135,9 @@ namespace ILCompiler
             return _templateMethodEntries;
         }
 
-        internal IEnumerable<ExternalTypeMapEntryNode> GetExternalTypeMapEntries()
+        internal IEnumerable<ExternalTypeMapNode> GetExternalTypeMaps()
         {
-            return _externalTypeMapEntries;
+            return _externalTypeMaps;
         }
 
         internal IEnumerable<InvalidExternalTypeMapNode> GetInvalidExternalTypeMaps()
@@ -1145,14 +1145,14 @@ namespace ILCompiler
             return _invalidExternalTypeMaps;
         }
 
-        internal IEnumerable<AssociatedTypeMapEntryNode> GetAssociatedTypeMapEntries()
+        internal IEnumerable<ProxyTypeMapNode> GetProxyTypeMaps()
         {
-            return _associatedTypeMapEntries;
+            return _proxyTypeMaps;
         }
 
-        internal IEnumerable<InvalidAssociatedTypeMapNode> GetInvalidAssociatedTypeMaps()
+        internal IEnumerable<InvalidProxyTypeMapNode> GetInvalidProxyTypeMaps()
         {
-            return _invalidAssociatedTypeMaps;
+            return _invalidProxyTypeMaps;
         }
 
         public bool IsReflectionBlocked(TypeDesc type)

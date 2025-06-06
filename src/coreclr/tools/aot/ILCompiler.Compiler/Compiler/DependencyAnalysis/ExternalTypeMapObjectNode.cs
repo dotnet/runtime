@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName(NodeFactory context) => "External Type Map";
+        protected override string GetName(NodeFactory context) => "External Type Map Hash Table";
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
@@ -44,19 +44,21 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapGroupHashTable);
 
-            foreach (ExternalTypeMapEntryNode entryNode in factory.MetadataManager.GetExternalTypeMapEntries())
+            foreach (ExternalTypeMapNode externalTypeMap in factory.MetadataManager.GetExternalTypeMaps())
             {
-                if (!typeMapHashTables.TryGetValue(entryNode.TypeMapGroup, out VertexHashtable typeMapHashTable))
+                if (!typeMapHashTables.TryGetValue(externalTypeMap.TypeMapGroup, out VertexHashtable typeMapHashTable))
                 {
-                    TypeDesc typeMapGroup = entryNode.TypeMapGroup;
+                    TypeDesc typeMapGroup = externalTypeMap.TypeMapGroup;
                     typeMapHashTable = typeMapHashTables[typeMapGroup] = new VertexHashtable();
                 }
 
-                Vertex nameVertex = writer.GetStringConstant(entryNode.Key);
-                Vertex targetTypeVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MaximallyConstructableType(entryNode.TargetType)));
-                Vertex entry = writer.GetTuple(nameVertex, targetTypeVertex);
-
-                typeMapHashTable.Append((uint)TypeHashingAlgorithms.ComputeNameHashCode(entryNode.Key), hashTableSection.Place(entry));
+                foreach ((string key, IEETypeNode valueNode) in externalTypeMap.GetMarkedEntries(factory))
+                {
+                    Vertex keyVertex = writer.GetStringConstant(key);
+                    Vertex valueVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(valueNode));
+                    Vertex entry = writer.GetTuple(keyVertex, valueVertex);
+                    typeMapHashTable.Append((uint)TypeHashingAlgorithms.ComputeNameHashCode(key), hashTableSection.Place(entry));
+                }
             }
 
             foreach ((TypeDesc typeMapGroup, VertexHashtable typeMapHashTable) in typeMapHashTables)

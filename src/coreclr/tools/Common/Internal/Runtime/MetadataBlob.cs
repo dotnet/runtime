@@ -45,6 +45,6 @@ namespace Internal.Runtime
 
         // Type map blobs:
         ExternalTypeMap                             = 40,
-        AssociatedTypeMap                           = 41,
+        ProxyTypeMap                                = 41,
     }
 }

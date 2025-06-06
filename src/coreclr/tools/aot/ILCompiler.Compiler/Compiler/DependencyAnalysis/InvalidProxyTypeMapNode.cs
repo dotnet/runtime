@@ -9,8 +9,11 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class InvalidAssociatedTypeMapNode(TypeDesc typeMapGroup, MethodDesc throwingMethodStub) : DependencyNodeCore<NodeFactory>, ISortableNode
+    internal sealed class InvalidProxyTypeMapNode(TypeDesc typeMapGroup, MethodDesc throwingMethodStub) : DependencyNodeCore<NodeFactory>, ISortableNode
     {
+        public TypeDesc TypeMapGroup { get; } = typeMapGroup;
+        public MethodDesc ThrowingMethodStub { get; } = throwingMethodStub;
+
         public override bool InterestingForDynamicDependencyAnalysis => false;
 
         public override bool HasDynamicDependencies => false;
@@ -30,24 +33,14 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
         protected override string GetName(NodeFactory context) => "InvalidAssociatedTypeMapNode";
 
-        public TypeDesc TypeMapGroup { get; } = typeMapGroup;
-        public MethodDesc ThrowingMethodStub { get; } = throwingMethodStub;
-
         public int ClassCode => 36910224;
-
         public int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            if (other is InvalidExternalTypeMapNode otherNode)
-            {
-                int result = comparer.Compare(TypeMapGroup, otherNode.TypeMapGroup);
-                if (result != 0)
-                    return result;
-                return comparer.Compare(ThrowingMethodStub, otherNode.ThrowingMethodStub);
-            }
-            else
-            {
-                return -1; // This node is always less than any other node
-            }
+            var otherNode = (InvalidExternalTypeMapNode)other;
+            int result = comparer.Compare(TypeMapGroup, otherNode.TypeMapGroup);
+            if (result != 0)
+                return result;
+            return comparer.Compare(ThrowingMethodStub, otherNode.ThrowingMethodStub);
         }
     }
 }

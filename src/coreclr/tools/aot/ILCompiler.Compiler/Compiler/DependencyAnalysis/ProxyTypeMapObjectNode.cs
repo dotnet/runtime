@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Tar;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.NativeFormat;
@@ -12,7 +13,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class AssociatedTypeMapObjectNode(ExternalReferencesTableNode externalReferences) : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class ProxyTypeMapObjectNode(ExternalReferencesTableNode externalReferences) : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -25,11 +26,11 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectNodeSection GetSection(NodeFactory factory) => externalReferences.GetSection(factory);
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
 
-        public override int ClassCode => (int)ObjectNodeOrder.AssociatedTypeMapObjectNode;
+        public override int ClassCode => (int)ObjectNodeOrder.ProxyTypeMapObjectNode;
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName(NodeFactory context) => "Associated Type Map";
+        protected override string GetName(NodeFactory context) => "Associated Type Map Hash Table";
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
@@ -44,19 +45,21 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapGroupHashTable);
 
-            foreach (AssociatedTypeMapEntryNode entryNode in factory.MetadataManager.GetAssociatedTypeMapEntries())
+            foreach (ProxyTypeMapNode proxyTypeMap in factory.MetadataManager.GetProxyTypeMaps())
             {
-                if (!typeMapHashTables.TryGetValue(entryNode.TypeMapGroup, out VertexHashtable typeMapHashTable))
+                if (!typeMapHashTables.TryGetValue(proxyTypeMap.TypeMapGroup, out VertexHashtable typeMapHashTable))
                 {
-                    TypeDesc typeMapGroup = entryNode.TypeMapGroup;
+                    TypeDesc typeMapGroup = proxyTypeMap.TypeMapGroup;
                     typeMapHashTable = typeMapHashTables[typeMapGroup] = new VertexHashtable();
                 }
 
-                Vertex nameVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MaximallyConstructableType(entryNode.Key)));
-                Vertex targetTypeVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MaximallyConstructableType(entryNode.TargetType)));
-                Vertex entry = writer.GetTuple(nameVertex, targetTypeVertex);
-
-                typeMapHashTable.Append((uint)entryNode.Key.GetHashCode(), hashTableSection.Place(entry));
+                foreach ((IEETypeNode keyNode, IEETypeNode valueNode) in proxyTypeMap.GetMarkedEntries(factory))
+                {
+                    Vertex keyVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(keyNode));
+                    Vertex valueVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(valueNode));
+                    Vertex entry = writer.GetTuple(keyVertex, valueVertex);
+                    typeMapHashTable.Append((uint)keyNode.Type.GetHashCode(), hashTableSection.Place(entry));
+                }
             }
 
             foreach ((TypeDesc typeMapGroup, VertexHashtable typeMapHashTable) in typeMapHashTables)
@@ -67,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis
                 typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), hashTableSection.Place(tuple));
             }
 
-            foreach (InvalidExternalTypeMapNode invalidNode in factory.MetadataManager.GetInvalidExternalTypeMaps())
+            foreach (InvalidProxyTypeMapNode invalidNode in factory.MetadataManager.GetInvalidProxyTypeMaps())
             {
                 TypeDesc typeMapGroup = invalidNode.TypeMapGroup;
                 Vertex typeMapStateVertex = writer.GetUnsignedConstant(0); // Invalid type map state
