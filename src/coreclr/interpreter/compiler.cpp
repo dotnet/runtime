@@ -4759,6 +4759,15 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
             PrintClassName(ch);
             break;
         }
+        case InterpOpHelperFtn:
+        {
+            size_t helperDirectOrIndirect = (size_t)m_dataItems.Get(*pData);
+            if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
+                printf(" (indirect) %p", (void*)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG));
+            else
+                printf(" (direct) %p", (void*)helperDirectOrIndirect);
+            break;
+        }
         default:
             assert(0);
             break;
