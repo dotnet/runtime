@@ -525,6 +525,7 @@ CodeHeapIterator::CodeHeapIterator(EECodeGenManager* manager, HeapList* heapList
     while (current)
     {
         HeapListState* state = m_Heaps.AppendThrowing();
+        state->Heap = current;
         state->MapBase = (void*)current->mapBase;
         state->HdrMap = current->pHdrMap;
         state->MaxCodeHeapSize = current->maxCodeHeapSize;

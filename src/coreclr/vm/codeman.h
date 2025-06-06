@@ -1806,7 +1806,7 @@ class CodeHeapIterator final
     // Captured state for each heap in the iterator.
     struct HeapListState
     {
-        HeapList* HeapList;
+        HeapList* Heap;
         void* MapBase;
         void* HdrMap;
         size_t MaxCodeHeapSize;
