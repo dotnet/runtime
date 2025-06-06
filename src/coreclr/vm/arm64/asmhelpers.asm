@@ -1069,23 +1069,6 @@ JIT_PollGCRarePath
         mov x19, METHODDESC_REGISTER
         ldr x9, [METHODDESC_REGISTER]
         ldr x9, [x9, #OFFSETOF__InterpMethod__pCallStub]
-        cbnz x9, HaveCallStub
-
-        ldr x0, [METHODDESC_REGISTER]
-        bl  CreateNativeToInterpreterCallStub
-        ; Reload the argument registers, the call to CreateCallStub have likely overwritten them
-        mov x9, x0
-
-        ldp x0, x1, [sp, #__PWTB_ArgumentRegisters + 8]
-        ldp x2, x3, [sp, #__PWTB_ArgumentRegisters + 0x18]
-        ldp x4, x5, [sp, #__PWTB_ArgumentRegisters + 0x28]
-        ldp x6, x7, [sp, #__PWTB_ArgumentRegisters + 0x38]
-        ldp q0, q1, [sp, #__PWTB_FloatArgumentRegisters]
-        ldp q2, q3, [sp, #__PWTB_FloatArgumentRegisters + 0x20]
-        ldp q4, q5, [sp, #__PWTB_FloatArgumentRegisters + 0x40]
-        ldp q6, q7, [sp, #__PWTB_FloatArgumentRegisters + 0x60]
-HaveCallStub
-
         add x10, x9, #OFFSETOF__CallStubHeader__Routines
         ldr x9, [x20, #OFFSETOF__Thread__m_pInterpThreadContext] 
         ldr x9, [x9, #OFFSETOF__InterpThreadContext__pStackPointer]

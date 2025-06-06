@@ -440,20 +440,13 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
         // IR bytecode address
         mov             rbx, METHODDESC_REGISTER
 
-        // This is bad for unix, it calls a helper and thus it can kill the arg vars
-        INLINE_GETTHREAD // thrashes rdi, result in rax
-        mov             r13, rax
+        INLINE_GETTHREAD // result in rax, it can thrash all argument registers as it can call a helper
+        mov             r10, rax
 
         // Load the InterpMethod pointer from the IR bytecode
-        mov             rax, qword ptr [METHODDESC_REGISTER]
+        mov             rax, qword ptr [rbx]
         mov             rax, qword ptr [rax + OFFSETOF__InterpMethod__pCallStub]
-        and             rax, rax
-        jne             LOCAL_LABEL(HaveCallStub)
-        // The call stub was not generated yet, so we need to do it now
-        mov             rdi, qword ptr [METHODDESC_REGISTER]
-        call            C_FUNC(CreateNativeToInterpreterCallStub)
-LOCAL_LABEL(HaveCallStub):
-        // Reload the argument registers, the call to CreateCallStub or the macro to get the thread have likely overwritten them
+        // Reload the argument registers, the macro to get the thread have likely overwritten them
         mov             rdi, qword ptr [rsp + __InterpreterStubArgumentRegistersOffset]
         mov             rsi, qword ptr [rsp + __InterpreterStubArgumentRegistersOffset + 8]
         mov             rdx, qword ptr [rsp + __InterpreterStubArgumentRegistersOffset + 0x10]
@@ -469,7 +462,7 @@ LOCAL_LABEL(HaveCallStub):
         movsd           xmm6, real8 ptr [rsp + __PWTB_FloatArgumentRegisters + 0x60]
         movsd           xmm7, real8 ptr [rsp + __PWTB_FloatArgumentRegisters + 0x70]
         lea             r11, qword ptr [rax + OFFSETOF__CallStubHeader__Routines]
-        mov             r10, qword ptr [r13 + OFFSETOF__Thread__m_pInterpThreadContext]
+        mov             r10, qword ptr [r10 + OFFSETOF__Thread__m_pInterpThreadContext]
         mov             r10, qword ptr [r10 + OFFSETOF__InterpThreadContext__pStackPointer]
         lea             rax, [rsp + __PWTB_TransitionBlock]
         // rbx contains IR bytecode address

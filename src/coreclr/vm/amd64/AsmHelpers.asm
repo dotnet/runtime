@@ -13,7 +13,6 @@ extern OnHijackWorker:proc
 extern JIT_RareDisableHelperWorker:proc
 ifdef FEATURE_INTERPRETER
 extern ExecuteInterpretedMethod:proc
-extern CreateNativeToInterpreterCallStub:proc
 endif
 
 extern g_pPollGC:QWORD
@@ -563,31 +562,13 @@ NESTED_ENTRY InterpreterStub, _TEXT
         ; IR bytecode address
         mov             rbx, METHODDESC_REGISTER
 
-        INLINE_GETTHREAD r13; thrashes rax and r11
+        INLINE_GETTHREAD r10; thrashes rax and r11
 
         ; Load the InterpMethod pointer from the IR bytecode
-        mov             rax, qword ptr [METHODDESC_REGISTER]
+        mov             rax, qword ptr [rbx]
         mov             rax, qword ptr [rax + OFFSETOF__InterpMethod__pCallStub]
-        and             rax, rax
-        jne             HaveCallStub
-        ; The call stub was not generated yet, so we need to do it now
-        mov             rcx, qword ptr [METHODDESC_REGISTER]
-        ; Interpreter-TODO: consider not storing the argument registers in the PROLOG_WITH_TRANSITION_BLOCK and
-        ; store / restore them only around this call. We would still need to save RCX and RDX as they can contain
-        ; the return buffer address.
-        call            CreateNativeToInterpreterCallStub
-        ; Reload the argument registers, the call to CreateCallStub have likely overwritten them
-        mov             rcx, qword ptr [rsp + __PWTB_ArgumentRegisters]
-        mov             rdx, qword ptr [rsp + __PWTB_ArgumentRegisters + 8]
-        mov             r8, qword ptr [rsp + __PWTB_ArgumentRegisters + 10h]
-        mov             r9, qword ptr [rsp + __PWTB_ArgumentRegisters + 18h]
-        movsd           xmm0, real8 ptr [rsp + __PWTB_FloatArgumentRegisters]
-        movsd           xmm1, real8 ptr [rsp + __PWTB_FloatArgumentRegisters + 10h]
-        movsd           xmm2, real8 ptr [rsp + __PWTB_FloatArgumentRegisters + 20h]
-        movsd           xmm3, real8 ptr [rsp + __PWTB_FloatArgumentRegisters + 30h]
-HaveCallStub:
         lea             r11, qword ptr [rax + OFFSETOF__CallStubHeader__Routines]
-        mov             r10, qword ptr [r13 + OFFSETOF__Thread__m_pInterpThreadContext]
+        mov             r10, qword ptr [r10 + OFFSETOF__Thread__m_pInterpThreadContext]
         mov             r10, qword ptr [r10 + OFFSETOF__InterpThreadContext__pStackPointer]
         lea             rax, [rsp + __PWTB_TransitionBlock]
         ; Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value

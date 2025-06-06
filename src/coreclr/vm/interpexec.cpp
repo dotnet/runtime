@@ -56,8 +56,10 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
 }
 
 
-extern "C" CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod *pInterpMethod)
+CallStubHeader *CreateNativeToInterpreterCallStub(PCODE pCode)
 {
+    InterpMethod* pInterpMethod = *(InterpMethod**)pCode;
+
     CallStubGenerator callStubGenerator;
     CallStubHeader *pHeader = VolatileLoadWithoutBarrier(&pInterpMethod->pCallStub);
     GCX_PREEMP();
