@@ -441,7 +441,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         fallbackBb->inheritWeightPercentage(nullcheckBb, 20);
     }
 
-    if (prevBb->HasFlag(BBF_IMPORTED))
+    if (!prevBb->HasFlag(BBF_INTERNAL))
     {
         nullcheckBb->RemoveFlags(BBF_INTERNAL);
         nullcheckBb->SetFlags(BBF_IMPORTED);
@@ -455,7 +455,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
             sizeCheckBb->SetFlags(BBF_IMPORTED);
         }
 
-        assert(block->HasFlag(BBF_IMPORTED));
+        assert(!block->HasFlag(BBF_INTERNAL));
     }
 
     // All blocks are expected to be in the same EH region
@@ -1562,12 +1562,12 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     isInitedBb->inheritWeight(prevBb);
     helperCallBb->inheritWeightPercentage(isInitedBb, 0);
 
-    if (prevBb->HasFlag(BBF_IMPORTED))
+    if (!prevBb->HasFlag(BBF_INTERNAL))
     {
         isInitedBb->RemoveFlags(BBF_INTERNAL);
         isInitedBb->SetFlags(BBF_IMPORTED);
 
-        assert(block->HasFlag(BBF_IMPORTED));
+        assert(!block->HasFlag(BBF_INTERNAL));
     }
 
     // All blocks are expected to be in the same EH region
