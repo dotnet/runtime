@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>corewasmrun</title>
+</head>
+<body>
+    <h1>corewasmrun</h1>
+    <pre id="log"></pre>
+    <script>
+        Module = {
+            preRun: [ function () {
+                ENV.PAL_DBG_CHANNELS="+all.all";
+                // ENV.PAL_DBG_CHANNELS="+all.ERROR";
+            }],
+            onExit: function (code) {
+                console.log("onExit, code: " + code);
+            },
+        };
+
+        const originalConsoleLog = console.log;
+        console.log = function(message) {
+            originalConsoleLog(message);
+            fetch('/log=corewasmrun-log.txt', {
+                method: 'POST',
+                body: ('stdout: ' + message),
+                headers: {
+                    'Content-Type': 'text/plain'
+                }
+            });
+            const elt = document.createElement("span");
+            elt.textContent = message + "\n";
+            document.querySelector("#log").appendChild(elt);
+        };
+        const originalConsoleError = console.error;
+        console.error = function(message) {
+            originalConsoleError(message);
+            fetch('/log=corewasmrun-log.txt', {
+                method: 'POST',
+                body: ('stderr: ' + message),
+                headers: {
+                    'Content-Type': 'text/plain'
+                }
+            });
+            const elt = document.createElement("span");
+            elt.textContent = message + "\n";
+            elt.style.color = "red";
+            document.querySelector("#log").appendChild(elt);
+        };
+    </script>
+    <script src="corewasmrun.js"></script>
+</body>

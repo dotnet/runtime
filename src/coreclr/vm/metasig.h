@@ -201,6 +201,7 @@ DEFINE_METASIG_T(SM(Exception_Obj_RefIntPtr_RetVoidPtr, C(EXCEPTION) j r(I), P(v
 #endif // FEATURE_OBJCMARSHAL
 DEFINE_METASIG(SM(Int_RetVoid, i, v))
 DEFINE_METASIG(SM(Int_RetObj, i, j))
+DEFINE_METASIG(SM(Int_RetInt, i, i))
 DEFINE_METASIG(SM(Int_Int_RetVoid, i i, v))
 DEFINE_METASIG(SM(Str_RetIntPtr, s, I))
 DEFINE_METASIG(SM(Str_RetBool, s, F))

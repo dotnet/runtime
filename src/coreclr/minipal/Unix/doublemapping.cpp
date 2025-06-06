@@ -47,6 +47,9 @@ static const off_t MaxDoubleMappedSize = UINT_MAX;
 
 bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecutableCodeSize)
 {
+#ifdef __wasm__
+    return false;
+#endif
     if (minipal_detect_rosetta())
     {
         // Rosetta doesn't support double mapping correctly

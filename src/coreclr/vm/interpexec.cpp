@@ -6,6 +6,8 @@
 #include "threads.h"
 #include "gcenv.h"
 #include "interpexec.h"
+
+#ifdef FEATURE_JIT
 #include "callstubgenerator.h"
 
 FCDECL1(uint64_t, JIT_Dbl2ULng, double);
@@ -54,6 +56,7 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
+#endif // FEATURE_JIT
 
 typedef void* (*HELPER_FTN_PP)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
@@ -1206,8 +1209,12 @@ CALL_TARGET_IP:
                     }
                     else if (codeInfo.GetCodeManager() != ExecutionManager::GetInterpreterCodeManager())
                     {
+#ifdef FEATURE_JIT
                         MethodDesc *pMD = codeInfo.GetMethodDesc();
                         InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset);
+#else
+                        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Attempted to execute non-interpreter code from interpreter on a non-JIT build"));
+#endif // FEATURE_JIT
                         break;
                     }
 

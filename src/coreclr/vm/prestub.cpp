@@ -1990,7 +1990,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 }
 
 #ifdef FEATURE_INTERPRETER
-extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr)
+extern "C" void STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, int8_t* pArgs, size_t size, int8_t *pReturnValue, size_t returnValueSize)
 {
     // Argument registers are in the TransitionBlock
     // The stack arguments are right after the pTransitionBlock
@@ -2001,6 +2001,12 @@ extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlo
         COMPlusThrow(kOutOfMemoryException);
     }
     int8_t *sp = threadContext->pStackPointer;
+
+    // copy the arguments to the stack
+    if (size > 0 && pArgs != nullptr)
+    {
+        memcpy(sp, pArgs, size);
+    }
 
     // This construct ensures that the InterpreterFrame is always stored at a higher address than the
     // InterpMethodContextFrame. This is important for the stack walking code.
@@ -2024,7 +2030,18 @@ extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlo
 
     InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
 
+    if (pReturnValue != nullptr && returnValueSize > 0)
+    {
+        // Copy the return value from the stack to the returnValue pointer
+        memcpy(pReturnValue, &retVal, returnValueSize);
+    }
+
     frames.interpreterFrame.Pop();
+}
+
+extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr)
+{
+    ExecuteInterpretedMethodWithArgs(pTransitionBlock, byteCodeAddr, nullptr, 0, nullptr, 0);
 }
 #endif // FEATURE_INTERPRETER
 

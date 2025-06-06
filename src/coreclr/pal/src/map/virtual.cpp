@@ -641,7 +641,7 @@ static LPVOID ReserveVirtualMemory(
     }
 #endif  // MMAP_ANON_IGNORES_PROTECTION
 
-#ifdef MADV_DONTDUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_BROWSER)
     // Do not include reserved uncommitted memory in coredump.
     if (!(fAllocationType & MEM_COMMIT))
     {
@@ -730,14 +730,16 @@ VIRTUALCommitMemory(
 
     nProtect = W32toUnixAccessControl(flProtect);
 
+#ifndef TARGET_BROWSER
     // Commit the pages
     if (mprotect((void *) StartBoundary, MemSize, nProtect) != 0)
     {
         ERROR("mprotect() failed! Error(%d)=%s\n", errno, strerror(errno));
         goto error;
     }
+#endif
 
-#ifdef MADV_DODUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_BROWSER)
     // Include committed memory in coredump. Any newly allocated memory included by default.
     if (!IsNewMemory)
     {
@@ -748,7 +750,9 @@ VIRTUALCommitMemory(
     pRetVal = (void *) StartBoundary;
     goto done;
 
+#ifndef TARGET_BROWSER
 error:
+#endif
     if ( flAllocationType & MEM_RESERVE || IsLocallyReserved )
     {
         munmap( pRetVal, MemSize );
@@ -1073,7 +1077,7 @@ VirtualFree(
             }
 #endif  // MMAP_ANON_IGNORES_PROTECTION
 
-#ifdef MADV_DONTDUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_BROWSER)
             // Do not include freed memory in coredump.
             madvise((LPVOID) StartBoundary, MemSize, MADV_DONTDUMP);
 #endif
@@ -1207,9 +1211,11 @@ VirtualProtect(
     }
 
     pEntry = VIRTUALFindRegionInformation( StartBoundary );
+#ifndef TARGET_BROWSER
     if ( 0 == mprotect( (LPVOID)StartBoundary, MemSize,
                    W32toUnixAccessControl( flNewProtect ) ) )
     {
+#endif // !TARGET_BROWSER
         /* Reset the access protection. */
         TRACE( "Number of pages to change %d, starting page %d \n",
                NumberOfPagesToChange, OffSet );
@@ -1220,13 +1226,14 @@ VirtualProtect(
          */
         *lpflOldProtect = PAGE_EXECUTE_READWRITE;
 
-#ifdef MADV_DONTDUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_BROWSER)
         // Include or exclude memory from coredump based on the protection.
         int advise = flNewProtect == PAGE_NOACCESS ? MADV_DONTDUMP : MADV_DODUMP;
         madvise((LPVOID)StartBoundary, MemSize, advise);
 #endif
 
         bRetVal = TRUE;
+#ifndef TARGET_BROWSER
     }
     else
     {
@@ -1240,6 +1247,7 @@ VirtualProtect(
             SetLastError( ERROR_INVALID_ACCESS );
         }
     }
+#endif // !TARGET_BROWSER
 ExitVirtualProtect:
     minipal_mutex_leave(&virtual_critsec);
 

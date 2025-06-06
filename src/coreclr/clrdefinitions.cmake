@@ -35,7 +35,9 @@ if(CLR_CMAKE_TARGET_LINUX_MUSL)
   add_definitions(-DNO_FIXED_STACK_LIMIT)
 endif(CLR_CMAKE_TARGET_LINUX_MUSL)
 
-add_definitions(-DDEBUGGING_SUPPORTED)
+#if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  add_definitions(-DDEBUGGING_SUPPORTED)
+#endif()
 add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>:PROFILING_SUPPORTED>)
 add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>:PROFILING_SUPPORTED_DATA>)
 
@@ -270,4 +272,5 @@ function(set_target_definitions_to_custom_os_and_arch)
   if (TARGETDETAILS_ARCH STREQUAL "armel")
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE ARM_SOFTFP)
   endif()
+
 endfunction()

@@ -39,6 +39,11 @@ if (DEFINED CLR_CMAKE_ICU_DIR)
   include_directories(${CLR_CMAKE_ICU_DIR}/include)
 endif(DEFINED CLR_CMAKE_ICU_DIR)
 
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+    add_compile_options(-fwasm-exceptions)
+    add_link_options(-fwasm-exceptions -sEXIT_RUNTIME=1 -sUSE_OFFSET_CONVERTER=1)
+endif()
+
 #----------------------------------------------------
 # Cross target Component build specific configuration
 #----------------------------------------------------
