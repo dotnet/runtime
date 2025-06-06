@@ -451,7 +451,7 @@ private:
     void PushTypeVT(CORINFO_CLASS_HANDLE clsHnd, int size);
 
     // Code emit
-    void    EmitConv(StackInfo *sp, InterpInst *prevIns, StackType type, InterpOpcode convOp);
+    void    EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp);
     void    EmitLoadVar(int var);
     void    EmitStoreVar(int var);
     void    EmitBinaryArithmeticOp(int32_t opBase);
