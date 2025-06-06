@@ -8,6 +8,12 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class MLDsaImplementation : MLDsa
     {
+        private MLDsaImplementation(MLDsaAlgorithm algorithm)
+            : base(algorithm)
+        {
+            ThrowIfNotSupported();
+        }
+
         internal static partial bool SupportsAny() => false;
 
         // The instance override methods are unreachable, as the constructor will always throw.
@@ -33,9 +39,6 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
 
         internal static partial MLDsaImplementation ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
-            throw new PlatformNotSupportedException();
-
-        internal static partial MLDsaImplementation ImportPkcs8PrivateKeyValue(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
         internal static partial MLDsaImplementation ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>

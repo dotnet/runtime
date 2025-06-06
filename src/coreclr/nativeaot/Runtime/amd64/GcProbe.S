@@ -131,7 +131,7 @@ NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
         ret
 LOCAL_LABEL(Abort):
         POP_PROBE_FRAME
-        mov         rcx, STATUS_REDHAWK_THREAD_ABORT
+        mov         rcx, STATUS_NATIVEAOT_THREAD_ABORT
         pop         rdx         // return address as exception RIP
         jmp         C_FUNC(RhpThrowHwEx) // Throw the ThreadAbortException as a special kind of hardware exception
 

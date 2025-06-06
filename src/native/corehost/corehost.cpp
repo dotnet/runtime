@@ -187,17 +187,17 @@ int exe_start(const int argc, const pal::char_t* argv[])
     if (argc <= 1)
     {
         trace::println();
-        trace::println(_X("Usage: dotnet [options]"));
         trace::println(_X("Usage: dotnet [path-to-application]"));
-        trace::println();
-        trace::println(_X("Options:"));
-        trace::println(_X("  -h|--help         Display help."));
-        trace::println(_X("  --info            Display .NET information."));
-        trace::println(_X("  --list-sdks       Display the installed SDKs."));
-        trace::println(_X("  --list-runtimes   Display the installed runtimes."));
+        trace::println(_X("Usage: dotnet [commands]"));
         trace::println();
         trace::println(_X("path-to-application:"));
         trace::println(_X("  The path to an application .dll file to execute."));
+        trace::println();
+        trace::println(_X("commands:"));
+        trace::println(_X("  -h|--help                         Display help."));
+        trace::println(_X("  --info                            Display .NET information."));
+        trace::println(_X("  --list-runtimes [--arch <arch>]   Display the installed runtimes matching the host or specified architecture. Example architectures: arm64, x64, x86."));
+        trace::println(_X("  --list-sdks [--arch <arch>]       Display the installed SDKs matching the host or specified architecture. Example architectures: arm64, x64, x86."));
         return StatusCode::InvalidArgFailure;
     }
 

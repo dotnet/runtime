@@ -38,6 +38,23 @@
         .equiv \New, \Old
 .endm
 
+// GC type flags
+#define GC_ALLOC_FINALIZE           1
+#define GC_ALLOC_ALIGN8_BIAS        4
+#define GC_ALLOC_ALIGN8             8
+
+#define G_FREE_OBJECT_METHOD_TABLE  g_pFreeObjectMethodTable
+
+// Offset of ee_alloc_context relative to INLINE_GET_ALLOC_CONTEXT_BASE.
+//
+// Since we have a disparity on how thread locals are accessed on various platforms and
+// the current value of OFFSETOF__RuntimeThreadLocals__ee_alloc_context is zero we expect
+// the helpers to add the OFFSETOF__RuntimeThreadLocals__ee_alloc_context constant to the
+// base and set the additional offset to zero.
+// In other words, we treat INLINE_GET_ALLOC_CONTEXT_BASE as returning the same value as
+// GetThreadEEAllocContext.
+#define OFFSETOF__ee_alloc_context            0
+
 #if defined(HOST_X86)
 #include "unixasmmacrosx86.inc"
 #elif defined(HOST_AMD64)
