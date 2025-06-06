@@ -109,7 +109,7 @@ function deepMergeSatelliteResources (target: { [key: string]: AssemblyAsset[] }
     if (target === source) return target;
 
     for (const key in source) {
-        target[key] = [...target[key], ...source[key]];
+        target[key] = [...target[key] || [], ...source[key] || []];
     }
     return target;
 }
