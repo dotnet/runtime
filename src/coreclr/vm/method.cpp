@@ -82,6 +82,7 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
     // This extended part of the table is used for faster MethodDesc size lookup.
     // We index using optional slot flags into it
     METHOD_DESC_SIZES(sizeof(NonVtableSlot)),
+
     METHOD_DESC_SIZES(sizeof(MethodImpl)),
     METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl)),
 
@@ -89,6 +90,15 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
     METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(NativeCodeSlot)),
     METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(NativeCodeSlot)),
     METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(NativeCodeSlot)),
+
+    METHOD_DESC_SIZES(sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(NativeCodeSlot) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(NativeCodeSlot) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(AsyncMethodData)),
 };
 
 #ifndef FEATURE_COMINTEROP
@@ -123,7 +133,8 @@ SIZE_T MethodDesc::SizeOf()
         (mdfClassification
         | mdfHasNonVtableSlot
         | mdfMethodImpl
-        | mdfHasNativeCodeSlot)];
+        | mdfHasNativeCodeSlot
+        | mdfHasAsyncMethodData)];
 
     return size;
 }
@@ -241,6 +252,30 @@ HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState stat
 
     return S_OK;
 }
+
+#ifdef FEATURE_INTERPRETER
+// Set the call stub for the interpreter to JIT/AOT calls
+// Returns true if the current call set the stub, false if it was already set
+bool MethodDesc::SetCallStub(CallStubHeader *pHeader)
+{
+    STANDARD_VM_CONTRACT;
+
+    IfFailThrow(EnsureCodeDataExists(NULL));
+
+    _ASSERTE(m_codeData != NULL);
+    return InterlockedCompareExchangeT(&m_codeData->CallStub, pHeader, NULL) == NULL;
+}
+
+CallStubHeader *MethodDesc::GetCallStub()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
+    if (codeData == NULL)
+        return NULL;
+    return VolatileLoadWithoutBarrier(&codeData->CallStub);
+}
+#endif // FEATURE_INTERPRETER
 
 #endif //!DACCESS_COMPILE
 
@@ -417,14 +452,23 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
         if (pSMD->HasStoredMethodSig() || GetClassification()==mcDynamic)
         {
             *ppSig = pSMD->GetStoredMethodSig(pcSig);
-            PREFIX_ASSUME(*ppSig != NULL);
+            _ASSERTE(*ppSig != NULL);
 
             return;
         }
     }
 
+    // Async variant methods have alternative signatures that do not match metadata.
+    if (IsAsyncVariantMethod())
+    {
+        Signature sig = GetAddrOfAsyncMethodData()->sig;
+        *ppSig = sig.GetRawSig();
+        *pcSig = sig.GetRawSigLen();
+        return;
+    }
+
     GetSigFromMetadata(GetMDImport(), ppSig, pcSig);
-    PREFIX_ASSUME(*ppSig != NULL);
+    _ASSERTE(*ppSig != NULL);
 }
 
 //*******************************************************************************
@@ -450,6 +494,7 @@ void MethodDesc::GetSigFromMetadata(IMDInternalImport * importer,
     }
     CONTRACTL_END
 
+    _ASSERTE(!IsAsyncVariantMethod());
     if (FAILED(importer->GetSigOfMethodDef(GetMemberDef(), pcSig, ppSig)))
     {   // Class loader already asked for signature, so this should always succeed (unless there's a
         // bug or a new code path)
@@ -471,7 +516,7 @@ Signature MethodDesc::GetSignature()
 
     GetSig(&pSig, &cSig);
 
-    PREFIX_ASSUME(pSig != NULL);
+    _ASSERTE(pSig != NULL);
 
     return Signature(pSig, cSig);
 }
@@ -722,7 +767,7 @@ BOOL MethodDesc::HasSameMethodDefAs(MethodDesc * pMD)
     if (this == pMD)
         return TRUE;
 
-    return (GetMemberDef() == pMD->GetMemberDef()) && (GetModule() == pMD->GetModule());
+    return (GetMemberDef() == pMD->GetMemberDef()) && (GetModule() == pMD->GetModule() && pMD->IsAsyncVariantMethod() == IsAsyncVariantMethod());
 }
 
 //*******************************************************************************
@@ -846,11 +891,6 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
     // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_wFlags - (offsetof(MethodDesc, m_wFlags) & 0x3));
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6326) // "Suppress PREFast warning about comparing two constants"
-#endif // _PREFAST_
-
 #if BIGENDIAN
     if ((offsetof(MethodDesc, m_wFlags) & 0x3) == 0) {
 #else // !BIGENDIAN
@@ -859,9 +899,6 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
         static_assert_no_msg(sizeof(m_wFlags) == 2);
         dwMask <<= 16;
     }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
     if (fSet)
         InterlockedOr(pdwFlags, dwMask);
@@ -884,11 +921,6 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
     // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_wFlags3AndTokenRemainder - (offsetof(MethodDesc, m_wFlags3AndTokenRemainder) & 0x3));
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6326) // "Suppress PREFast warning about comparing two constants"
-#endif // _PREFAST_
-
 #if BIGENDIAN
     if ((offsetof(MethodDesc, m_wFlags3AndTokenRemainder) & 0x3) == 0) {
 #else // !BIGENDIAN
@@ -897,9 +929,6 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
         static_assert_no_msg(sizeof(m_wFlags3AndTokenRemainder) == 2);
         dwMask <<= 16;
     }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
     if (fSet)
         InterlockedOr(pdwFlags, dwMask);
@@ -922,11 +951,6 @@ BYTE MethodDesc::InterlockedUpdateFlags4(BYTE bMask, BOOL fSet)
     // only have four possibilities: the field already lies on a dword boundary or it's 1, 2 or 3 bytes out
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_bFlags4 - (offsetof(MethodDesc, m_bFlags4) & 0x3));
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6326) // "Suppress PREFast warning about comparing two constants"
-#endif // _PREFAST_
-
 #if BIGENDIAN
     if ((offsetof(MethodDesc, m_bFlags4) & 0x3) == 0) {
 #else // !BIGENDIAN
@@ -948,9 +972,6 @@ BYTE MethodDesc::InterlockedUpdateFlags4(BYTE bMask, BOOL fSet)
 #endif // !BIGENDIAN
         dwMask <<= 8;
     }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
     if (fSet)
         InterlockedOr(pdwFlags, dwMask);
@@ -973,11 +994,6 @@ WORD MethodDescChunk::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
     // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_flagsAndTokenRange - (offsetof(MethodDescChunk, m_flagsAndTokenRange) & 0x3));
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6326) // "Suppress PREFast warning about comparing two constants"
-#endif // _PREFAST_
-
 #if BIGENDIAN
     if ((offsetof(MethodDescChunk, m_flagsAndTokenRange) & 0x3) == 0) {
 #else // !BIGENDIAN
@@ -986,9 +1002,6 @@ WORD MethodDescChunk::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
         static_assert_no_msg(sizeof(m_flagsAndTokenRange) == 2);
         dwMask <<= 16;
     }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
     if (fSet)
         InterlockedOr(pdwFlags, dwMask);
@@ -1079,6 +1092,18 @@ PTR_PCODE MethodDesc::GetAddrOfNativeCodeSlot()
 }
 
 //*******************************************************************************
+PTR_AsyncMethodData MethodDesc::GetAddrOfAsyncMethodData() const
+{
+    WRAPPER_NO_CONTRACT;
+
+    _ASSERTE(HasAsyncMethodData());
+
+    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdfClassification | mdfHasNonVtableSlot |  mdfMethodImpl | mdfHasNativeCodeSlot)];
+
+    return dac_cast<PTR_AsyncMethodData>(dac_cast<TADDR>(this) + size);
+}
+
+//*******************************************************************************
 BOOL MethodDesc::IsVoid()
 {
     WRAPPER_NO_CONTRACT;
@@ -1122,10 +1147,17 @@ ULONG MethodDesc::GetRVA()
         return 0;
     }
 
+    // Between two Async variants of the same method only one represents the actual IL.
+    // It is the variant that is not a thunk.
+    if (IsAsyncThunkMethod())
+    {
+        return 0;
+    }
+
     if (GetMemberDef() & 0x00FFFFFF)
     {
         Module *pModule = GetModule();
-        PREFIX_ASSUME(pModule != NULL);
+        _ASSERTE(pModule != NULL);
 
         DWORD dwDescrOffset;
         DWORD dwImplFlags;
@@ -1700,7 +1732,7 @@ MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
         }
         CONSISTENCY_CHECK(TypeHandle(pMT).CheckFullyLoaded());
         MethodDesc *resultMD = pMT->GetParallelMethodDesc(this);
-        PREFIX_ASSUME(resultMD != NULL);
+        _ASSERTE(resultMD != NULL);
         resultMD->CheckRestore();
         RETURN (resultMD);
     }
@@ -1809,7 +1841,7 @@ MethodDesc* MethodDesc::StripMethodInstantiation()
 
 //*******************************************************************************
 MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDescCount,
-    DWORD classification, BOOL fNonVtableSlot, BOOL fNativeCodeSlot, MethodTable *pInitialMT, AllocMemTracker *pamTracker, Module *pLoaderModule)
+    DWORD classification, BOOL fNonVtableSlot, BOOL fNativeCodeSlot, BOOL fAsyncMethodData, MethodTable *pInitialMT, AllocMemTracker *pamTracker, Module *pLoaderModule)
 {
     CONTRACT(MethodDescChunk *)
     {
@@ -1832,6 +1864,9 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
 
     if (fNativeCodeSlot)
         oneSize += sizeof(MethodDesc::NativeCodeSlot);
+
+    if (fAsyncMethodData)
+        oneSize += sizeof(AsyncMethodData);
 
     _ASSERTE((oneSize & MethodDesc::ALIGNMENT_MASK) == 0);
 
@@ -1875,6 +1910,8 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
                 pMD->SetHasNonVtableSlot();
             if (fNativeCodeSlot)
                 pMD->SetHasNativeCodeSlot();
+            if (fAsyncMethodData)
+                pMD->SetHasAsyncMethodData();
 
             _ASSERTE(pMD->SizeOf() == oneSize);
 
@@ -2000,6 +2037,39 @@ PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, Type
     return pObjMT->GetRestoredSlot(GetSlot());
 }
 
+MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH)
+{
+    CONTRACT(MethodDesc*)
+    {
+        THROWS;
+        GC_TRIGGERS;
+
+        PRECONDITION(IsVtableMethod());
+        PRECONDITION(!staticTH.IsNull() || !IsInterface()); // If this is a non-interface method, staticTH may be null
+        POSTCONDITION(RETVAL != NULL);
+    }
+    CONTRACT_END;
+    // Method table of target (might be instantiated)
+    MethodTable *pObjMT = (*orThis)->GetMethodTable();
+
+    // This is the static method descriptor describing the call.
+    // It is not the destination of the call, which we must compute.
+    MethodDesc* pStaticMD = this;
+
+    if (pStaticMD->HasMethodInstantiation())
+    {
+        CheckRestore();
+        RETURN(ResolveGenericVirtualMethod(orThis));
+    }
+
+    if (pStaticMD->IsInterface())
+    {
+        RETURN(MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, pStaticMD, orThis));
+    }
+
+    RETURN(pObjMT->GetMethodDescForSlot(pStaticMD->GetSlot()));
+}
+
 //*******************************************************************************
 // The following resolve virtual dispatch for the given method on the given
 // object down to an actual address to call, including any
@@ -2010,47 +2080,12 @@ PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeH
     {
         THROWS;
         GC_TRIGGERS;
-
-        PRECONDITION(IsVtableMethod());
-        PRECONDITION(!staticTH.IsNull() || !IsInterface()); // If this is a non-interface method, staticTH may be null
         POSTCONDITION(RETVAL != NULL);
     }
     CONTRACT_END;
 
-    // Method table of target (might be instantiated)
-    MethodTable *pObjMT = (*orThis)->GetMethodTable();
-
-    // This is the static method descriptor describing the call.
-    // It is not the destination of the call, which we must compute.
-    MethodDesc* pStaticMD = this;
-    MethodDesc *pTargetMD;
-
-    if (pStaticMD->HasMethodInstantiation())
-    {
-        CheckRestore();
-        pTargetMD = ResolveGenericVirtualMethod(orThis);
-
-        // If we're remoting this call we can't call directly on the returned
-        // method desc, we need to go through a stub that guarantees we end up
-        // in the remoting handler. The stub we use below is normally just for
-        // non-virtual calls on virtual methods (that have the same problem
-        // where we could end up bypassing the remoting system), but it serves
-        // our purpose here (basically pushes our correctly instantiated,
-        // resolved method desc on the stack and calls the remoting code).
-
-        RETURN(pTargetMD->GetMultiCallableAddrOfCode());
-    }
-
-    if (pStaticMD->IsInterface())
-    {
-        pTargetMD = MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH,pStaticMD,orThis);
-        RETURN(pTargetMD->GetMultiCallableAddrOfCode());
-    }
-
-
-    pTargetMD = pObjMT->GetMethodDescForSlot(pStaticMD->GetSlot());
-
-    RETURN (pTargetMD->GetMultiCallableAddrOfCode());
+    MethodDesc *pTargetMD = GetMethodDescOfVirtualizedCode(orThis, staticTH);
+    RETURN(pTargetMD->GetMultiCallableAddrOfCode());
 }
 
 //*******************************************************************************
@@ -2287,6 +2322,111 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
         _ASSERTE(!"NonVirtualEntry2MethodDesc failed for RangeSection");
         return NULL;
     }
+}
+
+static void GetNameOfTypeDefOrRef(Module* pModule, mdToken tk, LPCSTR* pName, LPCSTR* pNamespace)
+{
+    *pName = "";
+    *pNamespace = "";
+    if (TypeFromToken(tk) == mdtTypeDef)
+    {
+        IfFailThrow(pModule->GetMDImport()->GetNameOfTypeDef(tk, pName, pNamespace));
+    }
+    else if (TypeFromToken(tk) == mdtTypeRef)
+    {
+        IfFailThrow(pModule->GetMDImport()->GetNameOfTypeRef(tk, pNamespace, pName));
+    }
+}
+
+bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk)
+{
+    if (TypeFromToken(tk) == mdtTypeDef)
+    {
+        if (pModule->IsSystem())
+        {
+            return true;
+        }
+    }
+    else if (TypeFromToken(tk) == mdtTypeRef)
+    {
+        mdToken tkTypeDef;
+        Module* pModuleOfTypeDef;
+
+        ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModuleOfTypeDef, &tkTypeDef);
+        if (pModuleOfTypeDef->IsSystem())
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask)
+{
+    // Without FEATURE_RUNTIME_ASYNC every declared method is classified as a NormalMethod.
+    // Thus code that handles runtime async scenarios becomes unreachable.
+#ifdef FEATURE_RUNTIME_ASYNC
+    PCCOR_SIGNATURE initialSig = sig.GetPtr();
+    uint32_t data;
+    IfFailThrow(sig.GetCallingConvInfo(&data));
+    if (data & IMAGE_CEE_CS_CALLCONV_GENERIC)
+    {
+        // Skip over generic argument count
+        IfFailThrow(sig.GetData(&data));
+    }
+
+    // skip argument count
+    IfFailThrow(sig.GetData(&data));
+
+    // now look at return type
+    // NOTE: this will skip modifiers
+    CorElementType elemType;
+    IfFailThrow(sig.GetElemType(&elemType));
+
+    // can't reason about ELEMENT_TYPE_INTERNAL, but should not see it in metadata
+    if (elemType == ELEMENT_TYPE_INTERNAL)
+        ThrowHR(COR_E_BADIMAGEFORMAT);
+
+    *offsetOfAsyncDetails = (ULONG)(sig.GetPtr() - initialSig) - 1;
+    LPCSTR name, _namespace;
+    mdToken tk;
+    if (elemType == ELEMENT_TYPE_GENERICINST)
+    {
+        IfFailThrow(sig.GetElemType(&elemType));
+        // can't reason about ELEMENT_TYPE_INTERNAL, but should not see it in metadata
+        if (elemType == ELEMENT_TYPE_INTERNAL)
+            ThrowHR(COR_E_BADIMAGEFORMAT);
+
+        *isValueTask = (elemType == ELEMENT_TYPE_VALUETYPE);
+        IfFailThrow(sig.GetToken(&tk));
+        IfFailThrow(sig.GetData(&data));
+        if (data == 1)
+        {
+            // This might be System.Threading.Tasks.Task`1
+            GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
+            if ((strcmp(name, *isValueTask ? "ValueTask`1" : "Task`1") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
+            {
+                if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
+                    return MethodReturnKind::GenericTaskReturningMethod;
+            }
+        }
+    }
+    else if ((elemType == ELEMENT_TYPE_CLASS) || (elemType == ELEMENT_TYPE_VALUETYPE))
+    {
+        IfFailThrow(sig.GetToken(&tk));
+        *isValueTask = (elemType == ELEMENT_TYPE_VALUETYPE);
+        // This might be System.Threading.Tasks.Task or ValueTask
+        GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
+        if ((strcmp(name, *isValueTask ? "ValueTask" : "Task") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
+        {
+            if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
+                return MethodReturnKind::NonGenericTaskReturningMethod;
+        }
+    }
+#endif // FEATURE_RUNTIME_ASYNC
+
+    return MethodReturnKind::NormalMethod;
 }
 
 //*******************************************************************************
@@ -2576,7 +2716,7 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
     // Otherwise this must be some kind of precode
     //
     PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
-    PREFIX_ASSUME(fSpeculative || (pPrecode != NULL));
+    _ASSERTE(fSpeculative || (pPrecode != NULL));
     if (pPrecode != NULL)
     {
         pMD = pPrecode->GetMethodDesc(fSpeculative);
@@ -2845,7 +2985,11 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         !IsWrapperStub() &&
 
         // Functions with NoOptimization or AggressiveOptimization don't participate in tiering
-        !IsJitOptimizationLevelRequested())
+        !IsJitOptimizationLevelRequested() &&
+
+        // Tiering the async thunk methods doesn't make sense
+        !IsAsyncThunkMethod()
+        )
     {
         InterlockedUpdateFlags3(enum_flag3_IsEligibleForTieredCompilation, TRUE);
         return true;
@@ -2888,7 +3032,7 @@ bool MethodDesc::IsJitOptimizationDisabledForAllMethodsInChunk()
     return
         g_pConfig->JitMinOpts() ||
         g_pConfig->GenDebuggableCode() ||
-        CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits());
+        GetModule()->AreJITOptimizationsDisabled();
 }
 
 #ifndef DACCESS_COMPILE
@@ -3075,6 +3219,17 @@ void MethodDesc::ResetCodeEntryPointForEnC()
     _ASSERTE(!IsVersionable());
     _ASSERTE(!IsVersionableWithPrecode());
     _ASSERTE(!MayHaveEntryPointSlotsToBackpatch());
+
+    // Updates are expressed via metadata diff and a methoddef of a runtime async method
+    // would be resolved to the thunk.
+    // If we see a thunk here, fetch the other variant that owns the IL and reset that.
+    if (IsAsyncThunkMethod())
+    {
+        MethodDesc *otherVariant = GetAsyncOtherVariantNoCreate();
+        _ASSERTE(otherVariant != NULL);
+        otherVariant->ResetCodeEntryPointForEnC();
+        return;
+    }
 
     LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s - HasPrecode():%s, HasNativeCodeSlot():%s\n",
         this, m_pszDebugClassName, m_pszDebugMethodName, (HasPrecode() ? "true" : "false"), (HasNativeCodeSlot() ? "true" : "false")));
@@ -3553,7 +3708,24 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     }
 
     // Need to save the Debug-Info for this method so that we can see it in a debugger later.
-    DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, this);
+#ifdef FEATURE_CODE_VERSIONING
+    {
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+
+        CodeVersionManager* pCodeVersionManager = GetCodeVersionManager();
+        NativeCodeVersionCollection nativeCodeVersions = pCodeVersionManager->GetNativeCodeVersions(dac_cast<PTR_MethodDesc>(this));
+        for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
+        {
+            PCODE addrCode = iter->GetNativeCode();
+            EECodeInfo codeInfo(addrCode);
+            DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, &codeInfo);
+        }
+    }
+#else
+    PCODE entryPoint = GetNativeCode();
+    EECodeInfo codeInfo(entryPoint);
+    DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, &codeInfo);
+#endif // FEATURE_CODE_VERSIONING
 
     if (!IsNoMetadata() ||IsILStub())
     {
@@ -3595,10 +3767,14 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(dac_cast<PTR_MethodDesc>(this));
     if (!ilVersion.IsNull())
     {
-        ilVersion.GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
-        ilVersion.GetVersionId();
-        ilVersion.GetRejitState();
-        ilVersion.GetIL();
+        EX_TRY
+        {
+            ilVersion.GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
+            ilVersion.GetVersionId();
+            ilVersion.GetRejitState();
+            ilVersion.GetIL();
+        }
+        EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
     }
 #endif
 
@@ -3811,26 +3987,6 @@ PrecodeType MethodDesc::GetPrecodeType()
 }
 
 #endif // !DACCESS_COMPILE
-
-#ifdef FEATURE_COMINTEROP
-#ifndef DACCESS_COMPILE
-void CLRToCOMCallMethodDesc::InitRetThunk()
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef TARGET_X86
-    if (m_pCLRToCOMCallInfo->m_pRetThunk != NULL)
-        return;
-
-    UINT numStackBytes = CbStackPop();
-
-    LPVOID pRetThunk = CLRToCOMCall::GetRetThunk(numStackBytes);
-
-    InterlockedCompareExchangeT<void *>(&m_pCLRToCOMCallInfo->m_pRetThunk, pRetThunk, NULL);
-#endif // TARGET_X86
-}
-#endif //!DACCESS_COMPILE
-#endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
 void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()

@@ -12,6 +12,9 @@
 #include "cdacplatformmetadata.hpp"
 #include "methodtable.h"
 #include "threads.h"
+#include "exinfo.h"
+
+#include "configure.h"
 
 #include "../debug/ee/debugger.h"
 
@@ -51,6 +54,12 @@ struct GlobalPointerSpec
     uint32_t PointerDataIndex;
 };
 
+struct GlobalStringSpec
+{
+    uint32_t Name;
+    uint32_t StringValue;
+};
+
 #define CONCAT(token1,token2) token1 ## token2
 #define CONCAT4(token1, token2, token3, token4) token1 ## token2 ## token3 ## token4
 
@@ -59,6 +68,10 @@ struct GlobalPointerSpec
 #define MAKE_FIELDTYPELEN_NAME(tyname,membername) CONCAT4(cdac_string_pool_membertypename__, tyname, __, membername)
 #define MAKE_GLOBALLEN_NAME(globalname) CONCAT(cdac_string_pool_globalname__, globalname)
 #define MAKE_GLOBALTYPELEN_NAME(globalname) CONCAT(cdac_string_pool_globaltypename__, globalname)
+#define MAKE_GLOBALVALUELEN_NAME(globalname) CONCAT(cdac_string_pool_globalvalue__, globalname)
+
+// used to stringify the result of a macros expansion
+#define STRINGIFY(x) #x
 
 // define a struct where the size of each field is the length of some string.  we will use offsetof to get
 // the offset of each struct element, which will be equal to the offset of the beginning of that string in the
@@ -71,6 +84,8 @@ struct CDacStringPoolSizes
 #define CDAC_TYPE_BEGIN(name) DECL_LEN(MAKE_TYPELEN_NAME(name), sizeof(#name))
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) DECL_LEN(MAKE_FIELDLEN_NAME(tyname,membername), sizeof(#membername)) \
     DECL_LEN(MAKE_FIELDTYPELEN_NAME(tyname,membername), sizeof(#membertyname))
+#define CDAC_GLOBAL_STRING(name, stringval) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name)) \
+    DECL_LEN(MAKE_GLOBALVALUELEN_NAME(name), sizeof(STRINGIFY(stringval)))
 #define CDAC_GLOBAL_POINTER(name,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name))
 #define CDAC_GLOBAL(name,tyname,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name)) \
     DECL_LEN(MAKE_GLOBALTYPELEN_NAME(name), sizeof(#tyname))
@@ -84,6 +99,7 @@ struct CDacStringPoolSizes
 #define GET_FIELDTYPE_NAME(tyname,membername) offsetof(struct CDacStringPoolSizes, MAKE_FIELDTYPELEN_NAME(tyname,membername))
 #define GET_GLOBAL_NAME(globalname) offsetof(struct CDacStringPoolSizes, MAKE_GLOBALLEN_NAME(globalname))
 #define GET_GLOBALTYPE_NAME(globalname) offsetof(struct CDacStringPoolSizes, MAKE_GLOBALTYPELEN_NAME(globalname))
+#define GET_GLOBALSTRING_VALUE(globalname) offsetof(struct CDacStringPoolSizes, MAKE_GLOBALVALUELEN_NAME(globalname))
 
 // count the types
 enum
@@ -120,6 +136,15 @@ enum
     CDacBlobGlobalPointersCount =
 #define CDAC_GLOBALS_BEGIN() 0
 #define CDAC_GLOBAL_POINTER(name,value) + 1
+#include "datadescriptor.h"
+};
+
+// count the global strings
+enum
+{
+    CDacBlobGlobalStringsCount =
+#define CDAC_GLOBALS_BEGIN() 0
+#define CDAC_GLOBAL_STRING(name,value) + 1
 #include "datadescriptor.h"
 };
 
@@ -197,6 +222,7 @@ struct BinaryBlobDataDescriptor
         uint32_t GlobalLiteralValuesStart;
 
         uint32_t GlobalPointersStart;
+        uint32_t GlobalStringValuesStart;
         uint32_t NamesPoolStart;
 
         uint32_t TypeCount;
@@ -204,6 +230,7 @@ struct BinaryBlobDataDescriptor
 
         uint32_t GlobalLiteralValuesCount;
         uint32_t GlobalPointerValuesCount;
+        uint32_t GlobalStringValuesCount;
 
         uint32_t NamesPoolCount;
 
@@ -211,6 +238,7 @@ struct BinaryBlobDataDescriptor
         uint8_t FieldSpecSize;
         uint8_t GlobalLiteralSpecSize;
         uint8_t GlobalPointerSpecSize;
+        uint8_t GlobalStringSpecSize;
     } Directory;
     uint32_t PlatformFlags;
     uint32_t BaselineName;
@@ -218,6 +246,7 @@ struct BinaryBlobDataDescriptor
     struct FieldSpec FieldsPool[CDacBlobFieldsPoolCount];
     struct GlobalLiteralSpec GlobalLiteralValues[CDacBlobGlobalLiteralsCount];
     struct GlobalPointerSpec GlobalPointerValues[CDacBlobGlobalPointersCount];
+    struct GlobalStringSpec GlobalStringValues[CDacBlobGlobalStringsCount];
     uint8_t NamesPool[sizeof(struct CDacStringPoolSizes)];
     uint8_t EndMagic[4];
 };
@@ -242,16 +271,19 @@ struct MagicAndBlob BlobDataDescriptor = {
             /* .FieldsPoolStart = */ offsetof(struct BinaryBlobDataDescriptor, FieldsPool),
             /* .GlobalLiteralValuesStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalLiteralValues),
             /* .GlobalPointersStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalPointerValues),
+            /* .GlobalStringValuesStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalStringValues),
             /* .NamesPoolStart = */ offsetof(struct BinaryBlobDataDescriptor, NamesPool),
             /* .TypeCount = */ CDacBlobTypesCount,
             /* .FieldsPoolCount = */ CDacBlobFieldsPoolCount,
             /* .GlobalLiteralValuesCount = */ CDacBlobGlobalLiteralsCount,
             /* .GlobalPointerValuesCount = */ CDacBlobGlobalPointersCount,
+            /* .GlobalStringValuesCount = */ CDacBlobGlobalStringsCount,
             /* .NamesPoolCount = */ sizeof(struct CDacStringPoolSizes),
             /* .TypeSpecSize = */ sizeof(struct TypeSpec),
             /* .FieldSpecSize = */ sizeof(struct FieldSpec),
             /* .GlobalLiteralSpecSize = */ sizeof(struct GlobalLiteralSpec),
             /* .GlobalPointerSpecSize = */ sizeof(struct GlobalPointerSpec),
+            /* .GlobalStringSpecSize = */  sizeof(struct GlobalStringSpec)
         },
         /* .PlatformFlags = */ (sizeof(void*) == 4 ? 0x02 : 0) | 0x01,
         /* .BaselineName = */ offsetof(struct CDacStringPoolSizes, cdac_string_pool_baseline_),
@@ -287,10 +319,16 @@ struct MagicAndBlob BlobDataDescriptor = {
 #include "datadescriptor.h"
         },
 
+        /* .GlobalStringValues = */ {
+#define CDAC_GLOBAL_STRING(name,value) { /* .Name = */ GET_GLOBAL_NAME(name), /* .Value = */ GET_GLOBALSTRING_VALUE(name) },
+#include "datadescriptor.h"
+        },
+
         /* .NamesPool = */ ("\0" // starts with a nul
 #define CDAC_BASELINE(name) name "\0"
 #define CDAC_TYPE_BEGIN(name) #name "\0"
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) #membername "\0" #membertyname "\0"
+#define CDAC_GLOBAL_STRING(name,value) #name "\0" STRINGIFY(value) "\0"
 #define CDAC_GLOBAL_POINTER(name,value) #name "\0"
 #define CDAC_GLOBAL(name,tyname,value) #name "\0" #tyname "\0"
 #include "datadescriptor.h"

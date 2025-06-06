@@ -28,8 +28,8 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, bool> predicate)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return
                 source.IsKnownEmpty() ? Empty<TSource>() :
@@ -77,8 +77,8 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<bool>> predicate)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return
                 source.IsKnownEmpty() ? Empty<TSource>() :
@@ -130,8 +130,8 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, bool> predicate)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return
                 source.IsKnownEmpty() ? Empty<TSource>() :
@@ -184,8 +184,8 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, CancellationToken, ValueTask<bool>> predicate)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return
                 source.IsKnownEmpty() ? Empty<TSource>() :

@@ -57,7 +57,7 @@ namespace Internal.ReadyToRunConstants
         Sve=43,
         Avx10v1=44,
         Avx10v1_V512=46,
-        EVEX=47,
+        Evex=47,
         Apx=48,
         Pclmulqdq_V256=49,
         Pclmulqdq_V512=50,
@@ -69,6 +69,7 @@ namespace Internal.ReadyToRunConstants
         RiscV64Base=56,
         Zba=57,
         Zbb=58,
+        Sve2=59,
 
     }
 }

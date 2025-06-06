@@ -130,8 +130,6 @@ namespace System.Threading.Tasks
         internal volatile int m_stateFlags; // SOS DumpAsync command depends on this name
 
         private Task? ParentForDebugger => m_contingentProperties?.m_parent; // Private property used by a debugger to access this Task's parent
-        private int StateFlagsForDebugger => m_stateFlags; // Private property used by a debugger to access this Task's state flags
-        private TaskStateFlags StateFlags => (TaskStateFlags)(m_stateFlags & ~(int)TaskStateFlags.OptionsMask); // Private property used to help with debugging
 
         [Flags]
         internal enum TaskStateFlags
@@ -1084,7 +1082,8 @@ namespace System.Threading.Tasks
                     // to the guideline that an exception implies that no state change took place),
                     // so it is safe to catch the exception and move the task to a final state.  The
                     // same cannot be said for Wait()/WaitAll()/FastWaitAll().
-                    if (!scheduler.TryRunInline(this, false))
+                    taskQueued = scheduler.TryRunInline(this, false);
+                    if (!taskQueued)
                     {
                         scheduler.InternalQueueTask(this);
                         taskQueued = true; // only mark this after successfully queuing the task.
@@ -2448,6 +2447,7 @@ namespace System.Threading.Tasks
         /// true to attempt to marshal the continuation back to the original context captured; otherwise, false.
         /// </param>
         /// <returns>An object used to await this task.</returns>
+        [Intrinsic]
         public ConfiguredTaskAwaitable ConfigureAwait(bool continueOnCapturedContext)
         {
             return new ConfiguredTaskAwaitable(this, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
@@ -2457,6 +2457,7 @@ namespace System.Threading.Tasks
         /// <param name="options">Options used to configure how awaits on this task are performed.</param>
         /// <returns>An object used to await this task.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The <paramref name="options"/> argument specifies an invalid value.</exception>
+        [Intrinsic]
         public ConfiguredTaskAwaitable ConfigureAwait(ConfigureAwaitOptions options)
         {
             if ((options & ~(ConfigureAwaitOptions.ContinueOnCapturedContext |
@@ -5933,7 +5934,7 @@ namespace System.Threading.Tasks
             }
 
             int? count = null;
-            if (tasks is ICollection<Task> taskCollection)
+            if (tasks is IReadOnlyCollection<Task> taskCollection)
             {
                 if (tasks is Task[] taskArray)
                 {

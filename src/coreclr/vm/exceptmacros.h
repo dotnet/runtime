@@ -118,10 +118,6 @@ class Frame;
 class Exception;
 struct REGDISPLAY;
 
-#ifdef FEATURE_EH_FUNCLETS
-struct ExInfo;
-#endif
-
 VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
 
 #include <excepcpu.h>
@@ -274,6 +270,10 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException);
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow);
 
+#ifdef FEATURE_INTERPRETER
+VOID DECLSPEC_NORETURN UnwindAndContinueResumeAfterCatch(TADDR resumeSP, TADDR resumeIP);
+#endif // FEATURE_INTERPRETER
+
 #ifdef TARGET_UNIX
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);
 
@@ -322,6 +322,41 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
             UNREACHABLE();                                                                          \
         }
 
+#elif defined(TARGET_X86) && defined(TARGET_WINDOWS) && defined(FEATURE_EH_FUNCLETS)
+
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+
+#define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
+#define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
+
+// We use [UN]INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX to backpatch the SEH record installed
+// in CallDescrWorkerInternal from ProcessCLRException to CallDescrWorkerUnwindFrameChainHandler
+// when throwing an exception. This ensures that class loading exceptions are propagated through
+// unmanaged code before being forwarded to the managed one.
+
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX \
+        try \
+        {
+
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
+        } \
+        catch (...) \
+        { \
+            if (nativeRethrow) \
+            { \
+                PEXCEPTION_REGISTRATION_RECORD pExceptionRecord = GetCurrentSEHRecord(); \
+                _ASSERTE(pExceptionRecord != EXCEPTION_CHAIN_END); \
+                while (pExceptionRecord->Handler != (PEXCEPTION_ROUTINE)ProcessCLRException) \
+                { \
+                    pExceptionRecord = pExceptionRecord->Next; \
+                    _ASSERTE(pExceptionRecord != EXCEPTION_CHAIN_END); \
+                } \
+                pExceptionRecord->Handler = (PEXCEPTION_ROUTINE)CallDescrWorkerUnwindFrameChainHandler; \
+            } \
+            throw; \
+        }
+
 #else // TARGET_UNIX
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER
@@ -342,27 +377,14 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         bool       __fExceptionCaught = false;                                             \
         SCAN_EHMARKER();                                                                    \
         if (true) PAL_CPP_TRY {                                                             \
-            SCAN_EHMARKER_TRY();                                                            \
-            DEBUG_ASSURE_NO_RETURN_BEGIN(IUACH)
+            SCAN_EHMARKER_TRY();
 
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER                                                 \
     INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX                                            \
     /* The purpose of the INSTALL_UNWIND_AND_CONTINUE_HANDLER is to translate an exception to a managed */ \
     /* exception before it hits managed code. */
 
-// Optimized version for helper method frame. Avoids redundant GetThread() calls.
-#define INSTALL_UNWIND_AND_CONTINUE_HANDLER_FOR_HMF(pHelperFrame)                           \
-    {                                                                                       \
-        Exception* __pUnCException  = NULL;                                                 \
-        Frame*     __pUnCEntryFrame = (pHelperFrame);                                       \
-        bool       __fExceptionCaught = false;                                             \
-        SCAN_EHMARKER();                                                                    \
-        if (true) PAL_CPP_TRY {                                                             \
-            SCAN_EHMARKER_TRY();                                                            \
-            DEBUG_ASSURE_NO_RETURN_BEGIN(IUACH);
-
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(nativeRethrow)                      \
-            DEBUG_ASSURE_NO_RETURN_END(IUACH)                                               \
             SCAN_EHMARKER_END_TRY();                                                        \
         }                                                                                   \
         PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
@@ -500,12 +522,12 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame);
   {                                                 \
     MAKE_CURRENT_THREAD_AVAILABLE();                \
     BEGIN_GCX_ASSERT_PREEMP;                        \
-    CoopTransitionHolder __CoopTransition(CURRENT_THREAD); \
-    DEBUG_ASSURE_NO_RETURN_BEGIN(COOP_TRANSITION)
+    {                                               \
+        CoopTransitionHolder __CoopTransition(CURRENT_THREAD);
 
 #define COOPERATIVE_TRANSITION_END()                \
-    DEBUG_ASSURE_NO_RETURN_END(COOP_TRANSITION)     \
-    __CoopTransition.SuppressRelease();             \
+        __CoopTransition.SuppressRelease();         \
+    }                                               \
     END_GCX_ASSERT_PREEMP;                          \
   }
 

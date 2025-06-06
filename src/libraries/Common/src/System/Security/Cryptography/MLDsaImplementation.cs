@@ -6,21 +6,45 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
 {
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     internal sealed partial class MLDsaImplementation : MLDsa
     {
-        private MLDsaImplementation(MLDsaAlgorithm algorithm)
-            : base(algorithm)
-        {
-            ThrowIfNotSupported();
-        }
-
         internal static partial bool SupportsAny();
 
-        internal static partial MLDsa GenerateKey(MLDsaAlgorithm algorithm);
-        internal static partial MLDsa ImportPublicKey(ParameterSetInfo info, ReadOnlySpan<byte> source);
-        internal static partial MLDsa ImportPkcs8PrivateKeyValue(ParameterSetInfo info, ReadOnlySpan<byte> source);
-        internal static partial MLDsa ImportSecretKey(ParameterSetInfo info, ReadOnlySpan<byte> source);
-        internal static partial MLDsa ImportSeed(ParameterSetInfo info, ReadOnlySpan<byte> source);
+        internal static partial MLDsaImplementation GenerateKeyImpl(MLDsaAlgorithm algorithm);
+        internal static partial MLDsaImplementation ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
+        internal static partial MLDsaImplementation ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
+        internal static partial MLDsaImplementation ImportSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
+
+        /// <summary>
+        ///   Duplicates an ML-DSA private key by export/import.
+        ///   Only intended to be used when the key type is unknown.
+        /// </summary>
+        internal static MLDsaImplementation DuplicatePrivateKey(MLDsa key)
+        {
+            // The implementation type and any platform types (e.g. MLDsaOpenSsl)
+            // should inherently know how to clone themselves without the crudeness
+            // of export/import.
+            Debug.Assert(key is not MLDsaImplementation);
+
+            MLDsaAlgorithm alg = key.Algorithm;
+            byte[] rented = CryptoPool.Rent(alg.SecretKeySizeInBytes);
+            int written = 0;
+
+            try
+            {
+                written = key.ExportMLDsaPrivateSeed(rented);
+                return ImportSeed(alg, new ReadOnlySpan<byte>(rented, 0, written));
+            }
+            catch (CryptographicException)
+            {
+                written = key.ExportMLDsaSecretKey(rented);
+                return ImportSecretKey(alg, new ReadOnlySpan<byte>(rented, 0, written));
+            }
+            finally
+            {
+                CryptoPool.Return(rented, written);
+            }
+        }
     }
 }

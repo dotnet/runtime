@@ -20,7 +20,6 @@
 #pragma warning(disable:4663)
 
 #include "eeconfig.h"
-#include "gms.h"
 #include "utsem.h"
 #include "gccover.h"
 #include "virtualcallstub.h"
@@ -752,19 +751,15 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         pThread->Thread::InitRegDisplay(&regDisp, &copyRegs, true);
         pThread->UnhijackThread();
 
-        CodeManState codeManState;
-        codeManState.dwIsSet = 0;
-
         // unwind out of the prolog or epilog
-        gcCover->codeMan->UnwindStackFrame(&regDisp,
-                &codeInfo, UpdateAllRegs, &codeManState);
+        gcCover->codeMan->UnwindStackFrame(&regDisp, &codeInfo, UpdateAllRegs);
 
         // Note we always doing the unwind, since that at does some checking (that we
         // unwind to a valid return address), but we only do the precise checking when
         // we are certain we have a good caller state
         if (gcCover->doingEpilogChecks) {
             // Confirm that we recovered our register state properly
-            _ASSERTE(regDisp.PCTAddr == TADDR(gcCover->callerRegs.Esp));
+            _ASSERTE(GetRegdisplayPCTAddr(&regDisp) == TADDR(gcCover->callerRegs.Esp));
 
             // If a GC happened in this function, then the registers will not match
             // precisely.  However there is still checks we can do.  Also we can update
@@ -1335,7 +1330,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
         RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
         return TRUE;
     }
-    
+
     // The thread is in preemptive mode. Normally, it should not be able to trigger GC.
     // Besides the GC may be already happening and scanning our stack.
     if (!pThread->PreemptiveGCDisabled())

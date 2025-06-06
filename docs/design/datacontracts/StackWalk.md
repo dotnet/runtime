@@ -16,6 +16,9 @@ IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData);
 byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 // Gets the Frame address at the given stack dataframe. Returns TargetPointer.Null if the current dataframe does not have a valid Frame.
 TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
+
+// Gets the Frame name associated with the given Frame identifier. If no matching Frame name found returns an empty string.
+string GetFrameName(TargetPointer frameIdentifier);
 ```
 
 ## Version 1
@@ -290,10 +293,6 @@ HijackFrames carry a IP (ReturnAddress) and a pointer to `HijackArgs`. All platf
 
 TailCallFrames are only used on Windows x86 which is not yet supported in the cDAC and therefore not implemented.
 
-#### HelperMethodFrame
-
-HelperMethodFrames are on the way to being removed. They are not currently supported in the cDAC.
-
 ### APIs
 
 The majority of the contract's complexity is the stack walking algorithm (detailed above) implemented as part of `CreateStackWalk`.
@@ -323,3 +322,8 @@ If the Frame is not valid, returns `TargetPointer.Null`.
 TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
 ```
 
+
+`GetFrameName` gets the name associated with a FrameIdentifier (pointer sized value) from the Globals stored in the contract descriptor. If no associated Frame name is found, it returns an empty string.
+```csharp
+string GetFrameName(TargetPointer frameIdentifier);
+```

@@ -35,7 +35,12 @@ namespace System.Text.Json.Nodes
         /// <param name="options">Options to control the behavior.</param>
         public JsonObject(IEnumerable<KeyValuePair<string, JsonNode?>> properties, JsonNodeOptions? options = null) : this(options)
         {
-            int capacity = properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection ? propertiesCollection.Count : 0;
+            int capacity =
+#if NET10_0_OR_GREATER // ICollection<T> : IReadOnlyCollection<T> on .NET 10+
+                properties is IReadOnlyCollection<KeyValuePair<string, JsonNode?>> propertiesCollection ? propertiesCollection.Count : 0;
+#else
+                properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection ? propertiesCollection.Count : 0;
+#endif
             OrderedDictionary<string, JsonNode?> dictionary = CreateDictionary(options, capacity);
 
             foreach (KeyValuePair<string, JsonNode?> node in properties)
@@ -120,10 +125,7 @@ namespace System.Text.Json.Nodes
         /// </returns>
         public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             return Dictionary.TryGetValue(propertyName, out jsonNode);
         }
@@ -131,10 +133,7 @@ namespace System.Text.Json.Nodes
         /// <inheritdoc/>
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
-            if (writer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             GetUnderlyingRepresentation(out OrderedDictionary<string, JsonNode?>? dictionary, out JsonElement? jsonElement);
 
@@ -202,10 +201,7 @@ namespace System.Text.Json.Nodes
 
         internal JsonNode? GetItem(string propertyName)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             if (TryGetPropertyValue(propertyName, out JsonNode? value))
             {
@@ -239,10 +235,7 @@ namespace System.Text.Json.Nodes
 
         internal void SetItem(string propertyName, JsonNode? value)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             OrderedDictionary<string, JsonNode?> dict = Dictionary;
 

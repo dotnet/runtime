@@ -38,5 +38,13 @@ namespace System.Runtime.InteropServices.Marshalling
         /// or must be set to <see cref="StringMarshalling.Custom" />.
         /// </remarks>
         public Type? StringMarshallingCustomType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="Type"/> used to control how exceptions are marshalled for all methods on the interface.
+        /// </summary>
+        /// <remarks>
+        /// If this field is not specified, <see cref="ExceptionAsHResultMarshaller{T}"/> is used to marshal exceptions.
+        /// </remarks>
+        public Type? ExceptionToUnmanagedMarshaller { get; set; }
     }
 }

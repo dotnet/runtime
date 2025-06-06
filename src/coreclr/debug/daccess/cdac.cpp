@@ -7,13 +7,13 @@
 #include "dbgutil.h"
 #include <cdac_reader.h>
 
-#define CDAC_LIB_NAME MAKEDLLNAME_W(W("cdacreader"))
+#define CDAC_LIB_NAME MAKEDLLNAME_W(W("mscordaccore_universal"))
 
 namespace
 {
     bool TryLoadCDACLibrary(HMODULE *phCDAC)
     {
-        // Load cdacreader from next to current module (DAC binary)
+        // Load cdac from next to current module (DAC binary)
         PathString path;
         if (WszGetModuleFileName((HMODULE)GetCurrentModuleBase(), path) == 0)
             return false;
@@ -52,16 +52,6 @@ namespace
 
         return S_OK;
     }
-
-    int GetPlatform(uint32_t* platform, void* context)
-    {
-        ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
-        HRESULT hr = target->GetPlatform((CorDebugPlatform*)platform);
-        if (FAILED(hr))
-            return hr;
-
-        return S_OK;
-    }
 }
 
 CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown* legacyImpl)
@@ -74,7 +64,7 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown
     _ASSERTE(init != nullptr);
 
     intptr_t handle;
-    if (init(descriptorAddr, &ReadFromTargetCallback, &ReadThreadContext, &GetPlatform, target, &handle) != 0)
+    if (init(descriptorAddr, &ReadFromTargetCallback, &ReadThreadContext, target, &handle) != 0)
     {
         ::FreeLibrary(cdacLib);
         return {};

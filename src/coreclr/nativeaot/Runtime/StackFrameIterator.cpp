@@ -2,16 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-#ifdef HOST_WINDOWS
-#include <windows.h>
-#endif
 #include "gcenv.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
-#include "RedhawkWarnings.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "regdisplay.h"
@@ -495,7 +491,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pRA = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, RA);
 
     //
-    // preserved vfp regs
+    // preserved fp regs
     //
     for (int32_t i = 0; i < 16 - 8; i++)
     {
@@ -1282,6 +1278,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pR29 = SP++;
     m_RegDisplay.pR30 = SP++;
     m_RegDisplay.pR31 = SP++;
+    SP++; // for alignment padding
 
 #elif defined(TARGET_RISCV64)
     PTR_uint64_t f = (PTR_uint64_t)(m_RegDisplay.SP);
@@ -1476,12 +1473,12 @@ public:
     // Conservative GC reporting must be applied to everything between the base of the
     // ReturnBlock and the top of the StackPassedArgs.
 private:
-    uintptr_t m_pushedFP;                  // ChildSP+000     CallerSP-0F0 (0x08 bytes)    (fp)
-    uintptr_t m_pushedRA;                  // ChildSP+008     CallerSP-0E8 (0x08 bytes)    (ra)
-    Fp128   m_fpArgRegs[8];                // ChildSP+010     CallerSP-0E0 (0x80 bytes)    (fa0-fa7)
-    uintptr_t m_returnBlock[4];            // ChildSP+090     CallerSP-060 (0x20 bytes)
-    uintptr_t m_intArgRegs[8];             // ChildSP+0B0     CallerSP-040 (0x40 bytes)    (a0-a7)
-    uintptr_t m_stackPassedArgs[1];        // ChildSP+0F0     CallerSP+000 (unknown size)
+    uintptr_t m_pushedFP;                  // ChildSP+000     CallerSP-0A0 (0x08 bytes)    (fp)
+    uintptr_t m_pushedRA;                  // ChildSP+008     CallerSP-098 (0x08 bytes)    (ra)
+    uint64_t  m_fpArgRegs[8];              // ChildSP+010     CallerSP-090 (0x40 bytes)    (fa0-fa7)
+    uintptr_t m_returnBlock[2];            // ChildSP+050     CallerSP-050 (0x10 bytes)
+    uintptr_t m_intArgRegs[8];             // ChildSP+060     CallerSP-040 (0x40 bytes)    (a0-a7)
+    uintptr_t m_stackPassedArgs[1];        // ChildSP+0A0     CallerSP+000 (unknown size)
 
 public:
     PTR_uintptr_t get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }

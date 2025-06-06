@@ -22,6 +22,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         internal bool IsChecked => _binder.Context.Checked;
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public RuntimeBinder(Type contextType, bool isChecked = false)
         {
             AggregateSymbol context;
@@ -41,6 +42,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public Expression Bind(ICSharpBinder payload, Expression[] parameters, DynamicMetaObject[] args, out DynamicMetaObject deferredBinding)
         {
             // The lock is here to protect this instance of the binder from itself
@@ -67,6 +69,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression BindCore(
             ICSharpBinder payload,
             Expression[] parameters,
@@ -130,6 +133,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool DeferBinding(
             ICSharpBinder payload,
             ArgumentObject[] arguments,
@@ -186,6 +190,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static Expression CreateExpressionTreeFromResult(Expression[] parameters, Scope pScope, Expr pResult)
         {
             // (3) - Place the result in a return statement and create the ExprBoundLambda.
@@ -200,6 +205,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Type GetArgumentType(ICSharpBinder p, CSharpArgumentInfo argInfo, Expression param, DynamicMetaObject arg, int index)
         {
             Type t = argInfo.UseCompileTimeType ? param.Type : arg.LimitType;
@@ -240,6 +246,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private ArgumentObject[] CreateArgumentArray(
                 ICSharpBinder payload,
                 Expression[] parameters,
@@ -263,6 +270,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal static void PopulateSymbolTableWithPayloadInformation(
             ICSharpInvokeOrInvokeMemberBinder callOrInvoke, Type callingType, ArgumentObject[] arguments)
         {
@@ -302,6 +310,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static void AddConversionsForArguments(ArgumentObject[] arguments)
         {
             foreach (ArgumentObject arg in arguments)
@@ -313,6 +322,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal ExprWithArgs DispatchPayload(ICSharpInvokeOrInvokeMemberBinder payload, ArgumentObject[] arguments, LocalVariableSymbol[] locals) =>
             BindCall(payload, CreateCallingObjectForCall(payload, arguments, locals), arguments, locals);
 
@@ -324,6 +334,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         // local as a ref type.
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static LocalVariableSymbol[] PopulateLocalScope(
             ICSharpBinder payload,
             Scope pScope,
@@ -368,6 +379,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static ExprBoundLambda GenerateBoundLambda(Scope pScope, Expr call)
         {
             // We don't actually need the real delegate type here - we just need SOME delegate type.
@@ -381,6 +393,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr CreateLocal(Type type, bool isOut, LocalVariableSymbol local)
         {
             CType ctype;
@@ -408,6 +421,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal Expr CreateArgumentListEXPR(
             ArgumentObject[] arguments,
             LocalVariableSymbol[] locals,
@@ -442,6 +456,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr CreateArgumentEXPR(ArgumentObject argument, LocalVariableSymbol local)
         {
             Expr arg;
@@ -512,6 +527,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static ExprMemberGroup CreateMemberGroupExpr(
             string Name,
             Type[] typeArguments,
@@ -615,6 +631,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr CreateProperty(
             SymWithType swt,
             Expr callingObject,
@@ -635,6 +652,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private ExprWithArgs CreateIndexer(SymWithType swt, Expr callingObject, Expr arguments, BindingFlag bindFlags)
         {
             IndexerSymbol index = swt.Sym as IndexerSymbol;
@@ -647,6 +665,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr CreateArray(Expr callingObject, Expr optionalIndexerArguments)
         {
             return _binder.BindArrayIndexCore(callingObject, optionalIndexerArguments);
@@ -655,6 +674,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr CreateField(
             SymWithType swt,
             Expr callingObject)
@@ -679,6 +699,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr CreateCallingObjectForCall(
             ICSharpInvokeOrInvokeMemberBinder payload,
             ArgumentObject[] arguments,
@@ -718,6 +739,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private ExprWithArgs BindCall(
             ICSharpInvokeOrInvokeMemberBinder payload,
             Expr callingObject,
@@ -836,6 +858,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private void ReorderArgumentsForNamedAndOptional(Expr callingObject, ExprWithArgs result)
         {
             Expr arguments = result.OptionalArguments;
@@ -937,6 +960,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal Expr BindUnaryOperation(
             CSharpUnaryOperationBinder payload,
             ArgumentObject[] arguments,
@@ -977,6 +1001,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal Expr BindBinaryOperation(
                 CSharpBinaryOperationBinder payload,
                 ArgumentObject[] arguments,
@@ -1100,6 +1125,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal Expr BindProperty(
             ICSharpBinder payload,
             ArgumentObject argument,
@@ -1184,6 +1210,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal Expr BindImplicitConversion(
             ArgumentObject[] arguments,
             Type returnType,
@@ -1223,6 +1250,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal Expr BindExplicitConversion(ArgumentObject[] arguments, Type returnType, LocalVariableSymbol[] locals)
         {
             Debug.Assert(arguments.Length == 1);
@@ -1243,6 +1271,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal Expr BindAssignment(
             ICSharpBinder payload,
             ArgumentObject[] arguments,
@@ -1283,6 +1312,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal Expr BindIsEvent(
             CSharpIsEventBinder binder,
             ArgumentObject[] arguments,

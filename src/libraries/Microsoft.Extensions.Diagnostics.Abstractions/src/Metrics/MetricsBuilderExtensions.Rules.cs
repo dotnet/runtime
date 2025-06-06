@@ -102,7 +102,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
         private static IMetricsBuilder ConfigureRule(this IMetricsBuilder builder, Action<MetricsOptions> configureOptions)
         {
-            ThrowHelper.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(builder);
             builder.Services.Configure(configureOptions);
             return builder;
         }
@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         private static MetricsOptions AddRule(this MetricsOptions options, string? meterName, string? instrumentName, string? listenerName,
             MeterScope scopes, bool enable)
         {
-            ThrowHelper.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(options);
             options.Rules.Add(new InstrumentRule(meterName, instrumentName, listenerName, scopes, enable));
             return options;
         }

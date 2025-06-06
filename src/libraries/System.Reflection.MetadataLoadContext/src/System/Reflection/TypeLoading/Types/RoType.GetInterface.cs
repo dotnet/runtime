@@ -10,10 +10,7 @@ namespace System.Reflection.TypeLoading
     {
         public sealed override Type? GetInterface(string name, bool ignoreCase)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             name.SplitTypeName(out string ns, out string simpleName);
 
