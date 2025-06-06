@@ -403,8 +403,13 @@ public class InterpreterTest
             Environment.FailFast(null);
         if (!TestFloat())
             Environment.FailFast(null);
-        if (!TestConvOvf(1, 2, 3, 4, 1.0 / 0.0, -32, 1234567890))
-            Environment.FailFast(null);
+
+        // Unchecked to ensure that the divide-by-zero here doesn't throw since we're using it to generate a NaN
+        unchecked
+        {
+            if (!TestConvOvf(1, 2, 3, 4, 1.0 / 0.0, -32, 1234567890))
+                Environment.FailFast(null);
+        }
 
         if (!TestLocalloc())
             Environment.FailFast(null);
