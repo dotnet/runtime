@@ -192,7 +192,7 @@ namespace ILCompiler
 
             CompilationModuleGroup compilationGroup;
             List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
-            TypeMapManager typeMapManager = new UsageBasedTypeMapManager(TypeMapManager.TypeMapStates.Empty);
+            TypeMapManager typeMapManager = new UsageBasedTypeMapManager(TypeMapStates.Empty);
             bool multiFile = Get(_command.MultiFile);
             if (singleMethod != null)
             {
@@ -201,7 +201,7 @@ namespace ILCompiler
                 compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
                 if (singleMethod.OwningType is MetadataType { Module.Assembly: EcmaAssembly assembly })
                 {
-                    typeMapManager = new UsageBasedTypeMapManager(TypeMapManager.CreateTypeMapStateRootedAtAssembly(assembly));
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapStates.CreateFromAssembly(assembly));
                 }
             }
             else
@@ -315,7 +315,7 @@ namespace ILCompiler
 
                 if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
                 {
-                    typeMapManager = new UsageBasedTypeMapManager(TypeMapManager.CreateTypeMapStateRootedAtAssembly(entryAssembly));
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapStates.CreateFromAssembly(entryAssembly));
                 }
             }
 

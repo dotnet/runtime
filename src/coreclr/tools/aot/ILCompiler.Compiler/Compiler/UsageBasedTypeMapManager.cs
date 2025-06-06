@@ -11,7 +11,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
-    public sealed class UsageBasedTypeMapManager(TypeMapManager.TypeMapStates state) : TypeMapManager(state)
+    public sealed class UsageBasedTypeMapManager(TypeMapStates state) : TypeMapManager(state)
     {
         private sealed class TypeMapsNode(TypeMapStates typeMapState) : DependencyNodeCore<NodeFactory>
         {
