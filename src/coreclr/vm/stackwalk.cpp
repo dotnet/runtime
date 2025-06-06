@@ -1684,29 +1684,15 @@ StackWalkAction StackFrameIterator::Filter(void)
 ProcessFuncletsForGCReporting:
                 do
                 {
-                    // When enumerating GC references for "liveness" reporting, depending upon the architecture,
-                    // the responsibility of who reports what varies:
+                    // The funclet reports all references belonging to itself and its parent method.
                     //
-                    // 1) On ARM, ARM64, and X64 (using RyuJIT), the funclet reports all references belonging
-                    //    to itself and its parent method. This is indicated by the WantsReportOnlyLeaf flag being
-                    //    set in the GC information for a function.
-                    //
-                    // 2) X64 (using JIT64) has the reporting distributed between the funclets and the parent method.
-                    //    If some reference(s) get double reported, JIT64 can handle that by playing conservative.
-                    //    JIT64 does NOT set the WantsReportOnlyLeaf flag in the function GC information.
-                    //
-                    // 3) On ARM, the reporting is done by funclets (if present). Otherwise, the primary method
-                    //    does it.
-                    //
-                    // 4) x86 behaves like (1)
-                    //
-                    // For non-x86, the GcStackCrawlCallBack is invoked with a new flag indicating that
-                    // the stackwalk is being done for GC reporting purposes - this flag is GC_FUNCLET_REFERENCE_REPORTING.
+                    // The GcStackCrawlCallBack is invoked with a new flag indicating that the stackwalk is being done
+                    // for GC reporting purposes - this flag is GC_FUNCLET_REFERENCE_REPORTING.
                     // The presence of this flag influences how the stackwalker will enumerate frames; which frames will
                     // result in the callback being invoked; etc. The idea is that we want to report only the
                     // relevant frames via the callback that are active on the callstack. This removes the need to
-                    // double report (even though JIT64 does it), reporting of dead frames, and makes the
-                    // design of reference reporting more consistent (and easier to understand) across architectures.
+                    // double report, reporting of dead frames, and makes the design of reference reporting more
+                    // consistent (and easier to understand) across architectures.
                     //
                     // The algorithm is as follows (at a conceptual level):
                     //
@@ -1726,7 +1712,6 @@ ProcessFuncletsForGCReporting:
                     //
                     // Note: When a flag is passed to the callback indicating that the funclet for a parent frame has already
                     //       reported the references, RyuJIT will simply do nothing and return from the callback.
-                    //       JIT64, on the other hand, will ignore the flag and perform reporting (again).
                     //
                     // Note: For non-filter funclets there is a small window during unwind where we have conceptually unwound past a
                     //       funclet but have not yet reached the parent/handling frame.  In this case we might need the parent to
@@ -3153,9 +3138,19 @@ void StackFrameIterator::PostProcessingForManagedFrames(void)
 #endif // ELIMINATE_FEF
 
 #ifdef TARGET_X86
+#ifdef FEATURE_EH_FUNCLETS
+    bool hasReversePInvoke = false;
+    if (!m_crawl.codeInfo.IsFunclet())
+    {
+        hdrInfo *gcHdrInfo;
+        m_crawl.codeInfo.DecodeGCHdrInfo(&gcHdrInfo);
+        hasReversePInvoke = gcHdrInfo->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
+    }
+#else
     hdrInfo *gcHdrInfo;
     m_crawl.codeInfo.DecodeGCHdrInfo(&gcHdrInfo);
     bool hasReversePInvoke = gcHdrInfo->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
+#endif // FEATURE_EH_FUNCLETS
 #endif // TARGET_X86
 
     ProcessIp(GetControlPC(m_crawl.pRD));

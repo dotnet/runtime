@@ -111,9 +111,9 @@ struct CloneInfo : public GuardInfo
 
 struct StoreInfo
 {
-    StoreInfo(unsigned index)
+    StoreInfo(unsigned index, bool connected = false)
         : m_index(index)
-        , m_connected(false)
+        , m_connected(connected)
     {
     }
     unsigned m_index;

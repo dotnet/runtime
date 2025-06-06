@@ -727,7 +727,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                 assert(tree == m_ancestors.Top());
                 m_allocator->AnalyzeParentStack(&m_ancestors, lclIndex, m_block);
             }
-            else if (tree->OperIs(GT_LCL_ADDR) && (lclDsc->TypeGet() == TYP_STRUCT))
+            else if (tree->OperIs(GT_LCL_ADDR) && lclDsc->TypeIs(TYP_STRUCT))
             {
                 assert(tree == m_ancestors.Top());
                 m_allocator->AnalyzeParentStack(&m_ancestors, lclIndex, m_block);
@@ -741,7 +741,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             }
             else
             {
-                assert((tree->OperIs(GT_LCL_ADDR) && (lclDsc->TypeGet() != TYP_STRUCT)));
+                assert((tree->OperIs(GT_LCL_ADDR) && !lclDsc->TypeIs(TYP_STRUCT)));
                 JITDUMP("V%02u address taken at [%06u]\n", lclNum, m_compiler->dspTreeID(tree));
                 m_allocator->MarkLclVarAsEscaping(lclNum);
             }
@@ -759,13 +759,18 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
         {
             GenTree* const tree = *use;
+
             if (tree->OperIsLocalStore())
             {
                 GenTreeLclVarCommon* const lclTree = tree->AsLclVarCommon();
                 unsigned const             lclNum  = lclTree->GetLclNum();
                 if (m_allocator->IsTrackedLocal(lclNum) && !m_allocator->CanLclVarEscape(lclNum))
                 {
-                    if ((lclTree->gtFlags & GTF_VAR_CONNECTED) == 0)
+                    // See if we connected it to a source.
+                    //
+                    StoreInfo* const info = m_allocator->m_StoreAddressToIndexMap.LookupPointer(tree);
+
+                    if ((info == nullptr) || !info->m_connected)
                     {
                         // This store was not modelled in the connection graph.
                         //
@@ -773,9 +778,12 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                         // add an edge to unknown source. This will ensure this local does
                         // not get retyped as TYP_I_IMPL.
                         //
-                        GenTree* const       data = lclTree->Data();
-                        ObjectAllocationType oat  = m_allocator->AllocationKind(data);
-                        if ((oat == OAT_NEWOBJ_HEAP) || ((oat == OAT_NONE) && !data->IsIntegralConst(0)))
+                        GenTree* const             data = lclTree->Data();
+                        ObjectAllocationType const oat  = m_allocator->AllocationKind(data);
+                        bool const                 valueIsUnknown =
+                            (oat == OAT_NEWOBJ_HEAP) || ((oat == OAT_NONE) && !data->IsIntegralConst(0));
+
+                        if (valueIsUnknown)
                         {
                             // Add a connection to the unknown source.
                             //
@@ -796,8 +804,82 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                             }
                         }
                     }
+                    else
+                    {
+                        JITDUMP(" ... Already connected at [%06u]\n", m_compiler->dspTreeID(tree));
+                    }
                 }
-                tree->gtFlags &= ~GTF_VAR_CONNECTED;
+                else
+                {
+                    JITDUMP(" ... Not a GC store at [%06u]\n", m_compiler->dspTreeID(tree));
+                }
+            }
+            else if (tree->OperIs(GT_STOREIND, GT_STORE_BLK))
+            {
+                // Is this a GC store?
+                //
+                bool isGCStore = true;
+
+                if (!m_allocator->IsTrackedType(tree->TypeGet()))
+                {
+                    isGCStore = false;
+                }
+                else if (tree->OperIs(GT_STORE_BLK))
+                {
+                    isGCStore = tree->AsBlk()->GetLayout()->HasGCPtr();
+                }
+
+                // If so, did we model it yet?
+                //
+                if (isGCStore)
+                {
+                    // See if we have an index for the destination, and if we connected it to a source.
+                    //
+                    StoreInfo* const info = m_allocator->m_StoreAddressToIndexMap.LookupPointer(tree);
+
+                    // Note here, unlike the local case above, we do not implicitly know the destination
+                    // of the store. So if we have no info, we assume the store is to some place we don't track.
+                    //
+                    if ((info != nullptr) && !info->m_connected)
+                    {
+                        assert(info->m_index != BAD_VAR_NUM);
+                        const unsigned dstIndex = info->m_index;
+
+                        JITDUMP(" ... Unmodelled GC store to");
+                        JITDUMPEXEC(m_allocator->DumpIndex(dstIndex));
+                        JITDUMP(" at [%06u]\n", m_compiler->dspTreeID(tree));
+
+                        // Look for stores of nullptrs; these do not need to create a connection.
+                        //
+                        GenTree* const data           = tree->AsIndir()->Data();
+                        bool const     valueIsUnknown = !data->IsIntegralConst(0);
+
+                        if (valueIsUnknown)
+                        {
+                            m_allocator->AddConnGraphEdgeIndex(dstIndex, m_allocator->m_unknownSourceIndex);
+                            JITDUMPEXEC(m_allocator->DumpIndex(dstIndex))
+                            JITDUMP(" ... value unknown at [%06u]\n", m_compiler->dspTreeID(tree));
+                        }
+                        else
+                        {
+                            JITDUMP(" ... Store of nullptr(s) at [%06u]\n", m_compiler->dspTreeID(tree));
+                        }
+
+                        info->m_connected = true;
+                    }
+                    else if (info == nullptr)
+                    {
+                        JITDUMP(" ... No store info for [%06u]\n", m_compiler->dspTreeID(tree));
+                    }
+                    else
+                    {
+                        JITDUMP(" ... Already connected at [%06u]\n", m_compiler->dspTreeID(tree));
+                    }
+                }
+                else
+                {
+                    JITDUMP(" ... Not a GC store at [%06u]\n", m_compiler->dspTreeID(tree));
+                }
             }
             else if (tree->OperIs(GT_STOREIND, GT_STORE_BLK))
             {
@@ -1262,7 +1344,7 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
 ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* tree)
 {
     ObjectAllocationType allocType = OAT_NONE;
-    if (tree->OperGet() == GT_ALLOCOBJ)
+    if (tree->OperIs(GT_ALLOCOBJ))
     {
         GenTreeAllocObj* const allocObj = tree->AsAllocObj();
         CORINFO_CLASS_HANDLE   clsHnd   = allocObj->gtAllocObjClsHnd;
@@ -1277,7 +1359,7 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
         switch (call->GetHelperNum())
         {
             case CORINFO_HELP_NEWARR_1_VC:
-            case CORINFO_HELP_NEWARR_1_OBJ:
+            case CORINFO_HELP_NEWARR_1_PTR:
             case CORINFO_HELP_NEWARR_1_DIRECT:
             case CORINFO_HELP_NEWARR_1_ALIGN8:
             {
@@ -2004,7 +2086,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
 
                 // Note that we modelled this store in the connection graph
                 //
-                parent->gtFlags |= GTF_VAR_CONNECTED;
+                m_StoreAddressToIndexMap.Set(parent, StoreInfo(dstIndex, /* connected */ true));
             }
             break;
 
@@ -2127,6 +2209,14 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                     assert(!dstInfo->m_connected);
                     JITDUMP("... local.field store\n");
 
+                    // Note that we will model this store
+                    //
+                    dstInfo->m_connected = true;
+
+                    JITDUMP(" ... Modelled GC store to");
+                    JITDUMPEXEC(DumpIndex(dstInfo->m_index));
+                    JITDUMP(" at [%06u]\n", comp->dspTreeID(parent));
+
                     if (isAddress)
                     {
                         AddConnGraphEdgeIndex(dstInfo->m_index, m_unknownSourceIndex);
@@ -2164,6 +2254,10 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                     const unsigned dstIndex = LocalToIndex(dstLclNum);
                     AddConnGraphEdgeIndex(dstIndex, lclIndex);
                     canLclVarEscapeViaParentStack = false;
+
+                    // Note that we modelled this store in the connection graph
+                    //
+                    m_StoreAddressToIndexMap.Set(parent, StoreInfo(dstIndex, /* connected */ true));
                 }
 
                 // Else we're storing the value somewhere unknown.
@@ -2386,6 +2480,7 @@ void ObjectAllocator::UpdateAncestorTypes(
     assert(parentStack != nullptr);
     int  parentIndex  = 1;
     bool keepChecking = true;
+    bool sawIndir     = false;
 
     while (keepChecking && (parentStack->Height() > parentIndex))
     {
@@ -2403,7 +2498,7 @@ void ObjectAllocator::UpdateAncestorTypes(
                     //
                     GenTreeLclVarCommon* const lclParent = parent->AsLclVarCommon();
                     LclVarDsc* const           lclDsc    = comp->lvaGetDesc(lclParent);
-                    if ((parent->TypeGet() == TYP_REF) || (lclDsc->TypeGet() == newType))
+                    if (parent->TypeIs(TYP_REF) || (lclDsc->TypeGet() == newType))
                     {
                         parent->ChangeType(newType);
                     }
@@ -2492,7 +2587,7 @@ void ObjectAllocator::UpdateAncestorTypes(
                     assert(parentType == TYP_BYREF);
                     parent->ChangeType(newType);
 
-                    // Propgate that upwards.
+                    // Propagate that upwards.
                     //
                     ++parentIndex;
                     keepChecking = true;
@@ -2545,12 +2640,11 @@ void ObjectAllocator::UpdateAncestorTypes(
                 else
                 {
                     assert(tree == parent->AsIndir()->Data());
-                    GenTree* const addr = parent->AsIndir()->Addr();
 
                     // If we are storing to a GC struct field, we may need to retype the store
                     // (note for stores we retype fields based on the data's type).
                     //
-                    if (parent->OperIs(GT_STOREIND) && varTypeIsGC(parent->TypeGet()))
+                    if (varTypeIsGC(parent->TypeGet()))
                     {
                         parent->ChangeType(newType);
                     }
@@ -2559,7 +2653,31 @@ void ObjectAllocator::UpdateAncestorTypes(
                     //
                     if ((newFieldType != TYP_UNDEF) && parent->OperIs(GT_STORE_BLK))
                     {
-                        parent->AsBlk()->SetLayout(newLayout);
+                        GenTreeBlk* const  block     = parent->AsBlk();
+                        ClassLayout* const oldLayout = block->GetLayout();
+
+                        if (oldLayout->HasGCPtr())
+                        {
+                            if (newLayout->GetSize() == oldLayout->GetSize())
+                            {
+                                block->SetLayout(newLayout);
+                            }
+                            else
+                            {
+                                // We must be storing just a portion of the original local
+                                //
+                                assert(newLayout->GetSize() > oldLayout->GetSize());
+
+                                if (newLayout->HasGCPtr())
+                                {
+                                    block->SetLayout(GetByrefLayout(oldLayout));
+                                }
+                                else
+                                {
+                                    block->SetLayout(GetNonGCLayout(oldLayout));
+                                }
+                            }
+                        }
                     }
                 }
                 break;
@@ -2570,19 +2688,54 @@ void ObjectAllocator::UpdateAncestorTypes(
             {
                 // If we are loading from a GC struct field, we may need to retype the load
                 //
-                if ((newFieldType != TYP_UNDEF) && varTypeIsGC(parent->TypeGet()))
+                if ((newFieldType != TYP_UNDEF) && && !sawIndir)
                 {
-                    parent->ChangeType(newType);
+                    bool didRetype = false;
 
-                    if (parent->OperIs(GT_BLK))
+                    if (varTypeIsGC(parent->TypeGet()))
                     {
-                        parent->AsBlk()->SetLayout(newLayout);
+                        parent->ChangeType(newType);
+                        didRetype = true;
+                    }
+                    else if (parent->OperIs(GT_BLK))
+                    {
+                        GenTreeBlk* const  block     = parent->AsBlk();
+                        ClassLayout* const oldLayout = block->GetLayout();
+
+                        if (oldLayout->HasGCPtr())
+                        {
+                            if (newLayout->GetSize() == oldLayout->GetSize())
+                            {
+                                block->SetLayout(newLayout);
+                            }
+                            else
+                            {
+                                // We must be loading just a portion of the original local
+                                //
+                                assert(newLayout->GetSize() > oldLayout->GetSize());
+
+                                if (newLayout->HasGCPtr())
+                                {
+                                    block->SetLayout(GetByrefLayout(oldLayout));
+                                }
+                                else
+                                {
+                                    block->SetLayout(GetNonGCLayout(oldLayout));
+                                }
+                            }
+
+                            didRetype = true;
+                        }
                     }
 
-                    ++parentIndex;
-                    keepChecking = true;
-                    newType      = newFieldType;
-                    newFieldType = TYP_UNDEF;
+                    if (didRetype)
+                    {
+                        ++parentIndex;
+                        keepChecking = true;
+                        sawIndir     = true;
+                        newType      = newFieldType;
+                        newFieldType = TYP_UNDEF;
+                    }
                 }
 
                 break;
@@ -2770,25 +2923,28 @@ void ObjectAllocator::RewriteUses()
                     CallArg* const thisArg      = call->gtArgs.GetThisArg();
                     GenTree* const delegateThis = thisArg->GetNode();
 
-                    if (delegateThis->OperIs(GT_LCL_VAR))
+                    if (delegateThis->OperIs(GT_LCL_VAR, GT_LCL_ADDR))
                     {
                         GenTreeLclVarCommon* const lcl = delegateThis->AsLclVarCommon();
+                        bool const                 isStackAllocatedDelegate =
+                            delegateThis->OperIs(GT_LCL_ADDR) || m_allocator->DoesLclVarPointToStack(lcl->GetLclNum());
 
-                        if (m_allocator->DoesLclVarPointToStack(lcl->GetLclNum()))
+                        if (isStackAllocatedDelegate)
                         {
                             JITDUMP("Expanding delegate invoke [%06u]\n", m_compiler->dspTreeID(call));
+
                             // Expand the delgate invoke early, so that physical promotion has
                             // a chance to promote the delegate fields.
                             //
                             // Note the instance field may also be stack allocatable (someday)
                             //
-                            GenTree* const cloneThis      = m_compiler->gtClone(lcl);
+                            GenTree* const cloneThis      = m_compiler->gtClone(lcl, /* complexOk */ true);
                             unsigned const instanceOffset = m_compiler->eeGetEEInfo()->offsetOfDelegateInstance;
                             GenTree* const newThisAddr =
                                 m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, cloneThis,
                                                           m_compiler->gtNewIconNode(instanceOffset, TYP_I_IMPL));
 
-                            // For now assume the instance is heap...
+                            // For now assume the instance field is on the heap...
                             //
                             GenTree* const newThis = m_compiler->gtNewIndir(TYP_REF, newThisAddr);
                             thisArg->SetEarlyNode(newThis);
@@ -2865,11 +3021,16 @@ void ObjectAllocator::RewriteUses()
             continue;
         }
 
-        var_types newType     = TYP_UNDEF;
-        unsigned  stackLclNum = BAD_VAR_NUM;
-        if (m_HeapLocalToStackObjLocalMap.TryGetValue(lclNum, &stackLclNum))
+        var_types newType = TYP_UNDEF;
+        if (m_HeapLocalToStackObjLocalMap.Contains(lclNum))
         {
-            // Appearances of lclNum will be replaced. We still need to retype.
+            // Appearances of lclNum will be replaced. We need to retype.
+            //
+            newType = TYP_I_IMPL;
+        }
+        else if (m_HeapLocalToStackArrLocalMap.Contains(lclNum))
+        {
+            // Appearances of lclNum will be NOT be replaced. We need to retype.
             //
             newType = TYP_I_IMPL;
 
@@ -2984,6 +3145,11 @@ void ObjectAllocator::RewriteUses()
                 JITDUMP("Changing the type of V%02u from %s to %s\n", lclNum, varTypeName(lclVarDsc->lvType),
                         varTypeName(newType));
                 lclVarDsc->lvType = newType;
+            }
+            else
+            {
+                JITDUMP("V%02u already properly typed\n", lclNum);
+                lclVarDsc->lvTracked = 0;
             }
         }
     }
