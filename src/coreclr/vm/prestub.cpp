@@ -432,6 +432,8 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 #ifdef FEATURE_INTERPRETER
         if (pConfig->IsInterpreterCode())
         {
+            CreateNativeToInterpreterCallStub(pCode);
+
             AllocMemTracker amt;
             InterpreterPrecode* pPrecode = Precode::AllocateInterpreterPrecode(pCode, GetLoaderAllocator(), &amt);
             amt.SuppressRelease();

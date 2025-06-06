@@ -694,52 +694,25 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
     mov x21, x0
 #endif
     INLINE_GETTHREAD x20 // thrashes x0 on Apple OSes (and possibly other arg registers on other Unixes)
-#ifdef TARGET_APPLE
-    // Restore the thrashed x0
-    mov x0, x21
-#endif
-
-    ldr x9, [x19] // InterpMethod*
-    ldr x9, [x9, #OFFSETOF__InterpMethod__pCallStub]
-    cbnz x9, LOCAL_LABEL(HaveCallStub)
-
-#ifdef TARGET_APPLE
-    // On Apple, we don't save the argument registers in the PROLOG_WITH_TRANSITION_BLOCK, but only
-    // on the slow path here
-    stp x0, x1, [sp, #__PWTB_ArgumentRegisters + 8]
-    stp x2, x3, [sp, #__PWTB_ArgumentRegisters + 0x18]
-    stp x4, x5, [sp, #__PWTB_ArgumentRegisters + 0x28]
-    stp x6, x7, [sp, #__PWTB_ArgumentRegisters + 0x38]
-    stp q0, q1, [sp]
-    stp q2, q3, [sp, 0x20]
-    stp q4, q5, [sp, 0x40]
-    stp q6, q7, [sp, 0x60]
-    __FloatArgumentsOffset = 0
-#else // TARGET_APPLE
-    __FloatArgumentsOffset = __PWTB_FloatArgumentRegisters
-#endif // TARGET_APPLE
-
-    ldr x0, [x19] // InterpMethod*
-    bl  C_FUNC(CreateNativeToInterpreterCallStub)
-    mov x9, x0
 
     // On Apple, the INLINE_GETTHREAD is guaranteed to not to thrash argument registers other than x0
-    // So we can restore the other argument registers only on the slow path.
-    // On other Unixes, there is no such guarantee, so we need to always restore them here
+    // On other Unixes, there is no such guarantee, so we need to always restore the argument registers
 #ifndef TARGET_APPLE
-LOCAL_LABEL(HaveCallStub):
-#endif
     ldp x0, x1, [sp, #__PWTB_ArgumentRegisters + 8]
     ldp x2, x3, [sp, #__PWTB_ArgumentRegisters + 0x18]
     ldp x4, x5, [sp, #__PWTB_ArgumentRegisters + 0x28]
     ldp x6, x7, [sp, #__PWTB_ArgumentRegisters + 0x38]
-    ldp q0, q1, [sp, #__FloatArgumentsOffset]
-    ldp q2, q3, [sp, #__FloatArgumentsOffset + 0x20]
-    ldp q4, q5, [sp, #__FloatArgumentsOffset + 0x40]
-    ldp q6, q7, [sp, #__FloatArgumentsOffset + 0x60]
-#ifdef TARGET_APPLE
-LOCAL_LABEL(HaveCallStub):
-#endif
+    ldp q0, q1, [sp, #__PWTB_FloatArgumentRegisters]
+    ldp q2, q3, [sp, #__PWTB_FloatArgumentRegisters + 0x20]
+    ldp q4, q5, [sp, #__PWTB_FloatArgumentRegisters + 0x40]
+    ldp q6, q7, [sp, #__PWTB_FloatArgumentRegisters + 0x60]
+#else // !TARGET_APPLE
+    // Restore the thrashed x0
+    mov x0, x21
+#endif // !TARGET_APPLE
+
+    ldr x9, [x19] // InterpMethod*
+    ldr x9, [x9, #OFFSETOF__InterpMethod__pCallStub]
     add x10, x9, #OFFSETOF__CallStubHeader__Routines
     ldr x9, [x20, #OFFSETOF__Thread__m_pInterpThreadContext] 
     ldr x9, [x9, #OFFSETOF__InterpThreadContext__pStackPointer]
