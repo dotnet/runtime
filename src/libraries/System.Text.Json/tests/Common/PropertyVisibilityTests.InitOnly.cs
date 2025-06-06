@@ -64,6 +64,29 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj));
         }
 
+        [Theory]
+        [InlineData(typeof(Class_WithIgnoredInitOnlyProperty_WithDefaultValue))]
+        [InlineData(typeof(Record_WithIgnoredPropertyInCtor_WithDefaultValue))]
+        public async Task InitOnlySetter_With_JsonIgnoreAlways_AndWith_DefaultValue(Type type)
+        {
+            object obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
+            Assert.Equal(42, (int)type.GetProperty("MyInt").GetValue(obj));
+        }
+
+        [Fact]
+        public async Task JsonIgnoreOnInitOnlyProperty()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/101877
+
+            RecordWithIgnoredNestedInitOnlyProperty.InnerRecord inner = new(42, "Baz");
+            RecordWithIgnoredNestedInitOnlyProperty value = new RecordWithIgnoredNestedInitOnlyProperty(inner);
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("""{"foo":42}""", json);
+
+            RecordWithIgnoredNestedInitOnlyProperty? deserializedValue = await Serializer.DeserializeWrapper<RecordWithIgnoredNestedInitOnlyProperty>(json);
+            Assert.Equal(value, deserializedValue);
+        }
+
         [Fact]
         public async Task NullableStructWithInitOnlyProperty()
         {
@@ -131,6 +154,29 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonInclude]
             public int MyInt { get; protected init; }
+        }
+
+        public class Class_WithIgnoredInitOnlyProperty_WithDefaultValue
+        {
+            [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+            public int MyInt { get; init; } = 42;
+        }
+
+        public record Record_WithIgnoredPropertyInCtor_WithDefaultValue(
+            [property: JsonIgnore] int MyInt = 42);
+
+        public record RecordWithIgnoredNestedInitOnlyProperty(
+            [property: JsonIgnore] RecordWithIgnoredNestedInitOnlyProperty.InnerRecord Other)
+        {
+            [JsonConstructor]
+            public RecordWithIgnoredNestedInitOnlyProperty(int foo)
+                : this(new InnerRecord(foo, "Baz"))
+            {
+            }
+
+            [JsonPropertyName("foo")] public int Foo => Other.Foo;
+
+            public record InnerRecord(int Foo, string Bar);
         }
     }
 }
