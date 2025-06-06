@@ -4112,8 +4112,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 
     if (op2->OperIsHWIntrinsic(NI_Sve_ConditionalSelect))
     {
-        // Handle cases where there is a nested ConditionalSelect for
-        // `trueValue`
+        // Handle cases where there is a nested ConditionalSelect for `trueValue`
         GenTreeHWIntrinsic* nestedCndSel = op2->AsHWIntrinsic();
         GenTree*            nestedOp1    = nestedCndSel->Op(1);
         GenTree*            nestedOp2    = nestedCndSel->Op(2);
@@ -4133,55 +4132,58 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 GenTree* nestedOp2 = nestedCndSel->Op(2);
                 GenTree* nestedOp3 = nestedCndSel->Op(3);
 
-                LABELEDDISPTREERANGE("Lowered nested embeddedmask (before):", BlockRange(), cndSelNode);
+                LABELEDDISPTREERANGE("Removed nested conditionalselect (before):", BlockRange(), cndSelNode);
 
                 // Transform:
                 //
-                // CndSel(mask, CndSel(AllTrue, embeddedMask(trueValOp2), trueValOp3), op3) to
-                // CndSel(mask, embedded(trueValOp2), op3)
+                // CndSel1(mask, CndSel2(AllTrue, embedded() trueValOp3), op3) to
+                // CndSel1(mask, embedded() op3)
                 //
                 cndSelNode->Op(2) = nestedCndSel->Op(2);
                 nestedOp3->SetUnusedValue();
 
+                // Ensure the embedding op flag is carried across
+                if (nestedCndSel->IsEmbeddingMaskOp())
+                {
+                    cndSelNode->MakeEmbeddingMaskOp();
+                }
+
                 BlockRange().Remove(nestedOp1);
                 BlockRange().Remove(nestedCndSel);
 
-                LABELEDDISPTREERANGE("Lowered nested embeddedmask (after)", BlockRange(), cndSelNode);
+                LABELEDDISPTREERANGE("Removed nested conditionalselect (after)", BlockRange(), cndSelNode);
                 return cndSelNode;
             }
         }
     }
-    else if (op1->IsMaskAllBitsSet())
+    else if (op1->IsMaskAllBitsSet() && !cndSelNode->IsEmbeddingMaskOp())
     {
-        // Any case where op2 is not an embedded HWIntrinsic
-        if (!op2->OperIsHWIntrinsic() ||
-            !HWIntrinsicInfo::IsEmbeddedMaskedOperation(op2->AsHWIntrinsic()->GetHWIntrinsicId()))
+        LABELEDDISPTREERANGE("Lowered ConditionalSelect(True, op2, op3) to op2 (before)", BlockRange(), cndSelNode);
+
+        assert(!op2->OperIsHWIntrinsic() || !HWIntrinsicInfo::IsEmbeddedMaskedOperation(op2->AsHWIntrinsic()->GetHWIntrinsicId()));
+
+        // Transform
+        // CndSel(AllTrue, op2, op3) to
+        // op2
+
+        LIR::Use use;
+        if (BlockRange().TryGetUse(cndSelNode, &use))
         {
-            LABELEDDISPTREERANGE("Lowered ConditionalSelect(True, op2, op3) to op2 (before)", BlockRange(), cndSelNode);
-
-            // Transform
-            // CndSel(AllTrue, op2, op3) to
-            // op2
-
-            LIR::Use use;
-            if (BlockRange().TryGetUse(cndSelNode, &use))
-            {
-                use.ReplaceWith(op2);
-            }
-            else
-            {
-                op2->SetUnusedValue();
-            }
-
-            op3->SetUnusedValue();
-            op1->SetUnusedValue();
-
-            GenTree* next = cndSelNode->gtNext;
-            BlockRange().Remove(cndSelNode);
-
-            LABELEDDISPTREERANGE("Lowered ConditionalSelect(True, op2, op3) to op2 (after)", BlockRange(), op2);
-            return next;
+            use.ReplaceWith(op2);
         }
+        else
+        {
+            op2->SetUnusedValue();
+        }
+
+        op3->SetUnusedValue();
+        op1->SetUnusedValue();
+
+        GenTree* next = cndSelNode->gtNext;
+        BlockRange().Remove(cndSelNode);
+
+        LABELEDDISPTREERANGE("Lowered ConditionalSelect(True, op2, op3) to op2 (after)", BlockRange(), op2);
+        return next;
     }
 
     ContainCheckHWIntrinsic(cndSelNode);
