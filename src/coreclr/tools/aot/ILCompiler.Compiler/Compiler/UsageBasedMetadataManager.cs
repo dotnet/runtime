@@ -39,6 +39,7 @@ namespace ILCompiler
         private readonly CompilationModuleGroup _compilationModuleGroup;
 
         internal readonly UsageBasedMetadataGenerationOptions _generationOptions;
+
         private readonly LinkAttributesHashTable _linkAttributesHashTable;
 
         private static (string AttributeName, DiagnosticId Id)[] _requiresAttributeMismatchNameAndId = new[]
@@ -88,6 +89,7 @@ namespace ILCompiler
         {
             _compilationModuleGroup = group;
             _generationOptions = generationOptions;
+
             Logger = logger;
 
             _linkAttributesHashTable = new LinkAttributesHashTable(Logger, featureSwitchValues);
@@ -816,10 +818,6 @@ namespace ILCompiler
 
         public bool GeneratesAttributeMetadata(TypeDesc attributeType)
         {
-            if (TypeMapManager.LookupTypeMapType(attributeType) != TypeMapManager.TypeMapAttributeKind.None)
-            {
-                return false;
-            }
             var ecmaType = attributeType.GetTypeDefinition() as EcmaType;
             if (ecmaType != null)
             {
