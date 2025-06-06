@@ -33,7 +33,7 @@ namespace System.Net.Http.Functional.Tests
         public X509Certificate2 ServerCert => _pkiHolder.EndEntity;
         public X509Certificate2Collection ServerChain => _pkiHolder.IssuerChain;
 
-        Configuration.Certificates.PkiHolder _pkiHolder;
+        private readonly Configuration.Certificates.PkiHolder _pkiHolder;
 
         public CertificateSetup()
         {
