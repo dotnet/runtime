@@ -5,7 +5,7 @@
     <IsRoslynComponent>true</IsRoslynComponent>
   </PropertyGroup>
   <PropertyGroup>
-    <DefineConstants Condition="'$(StabilizePackageVersion)' == 'true'">$(DefineConstants);STABILIZE_PACKAGE_VERSION</DefineConstants>
+    <DefineConstants Condition="'$(DotNetFinalVersionKind)' != ''">$(DefineConstants);STABILIZE_PACKAGE_VERSION</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

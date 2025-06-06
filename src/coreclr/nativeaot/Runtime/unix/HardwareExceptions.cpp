@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "CommonTypes.h"
-#include "PalRedhawkCommon.h"
+#include "Pal.h"
+#include "PalLimitedContext.h"
 #include "CommonMacros.h"
 #include "config.h"
 #include "daccess.h"
@@ -22,9 +23,6 @@
 #if !HAVE_SIGINFO_T
 #error Cannot handle hardware exceptions on this platform
 #endif
-
-#define REDHAWK_PALEXPORT extern "C"
-#define REDHAWK_PALAPI
 
 #define EXCEPTION_ACCESS_VIOLATION          0xC0000005u
 #define EXCEPTION_DATATYPE_MISALIGNMENT     0x80000002u
@@ -626,7 +624,7 @@ bool InitializeHardwareExceptionHandling()
 }
 
 // Set hardware exception handler
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler)
+void PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler)
 {
     ASSERT_MSG(g_hardwareExceptionHandler == NULL, "Hardware exception handler already set")
     g_hardwareExceptionHandler = handler;

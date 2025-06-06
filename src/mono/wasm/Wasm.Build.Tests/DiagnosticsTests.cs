@@ -27,7 +27,7 @@ public class DiagnosticsTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "LogProfilerTest");
 
         string extraArgs = $"-p:WasmProfilers=\"log\"";
-        BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraArgs, AssertAppBundle: false, WasmPerfTracing: true), isNativeBuild: true);
+        BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraArgs, AssertAppBundle: false, EnableDiagnostics: true), isNativeBuild: true);
 
         var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(Configuration: config, TestScenario: "LogProfilerTest"));
         Regex regex = new Regex(@"Profile data of size (\d+) bytes");
@@ -50,7 +50,7 @@ public class DiagnosticsTests : WasmTemplateTestsBase
         string extraProperties = "<WasmProfilers>browser:callspec=all,interval=0</WasmProfilers>";
         ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "BrowserProfilerTest", extraProperties: extraProperties);
 
-        BuildProject(info, config, new BuildOptions(AssertAppBundle: false, WasmPerfTracing: true), isNativeBuild: true);
+        BuildProject(info, config, new BuildOptions(AssertAppBundle: false, EnableDiagnostics: true), isNativeBuild: true);
 
         await RunForBuildWithDotnetRun(new BrowserRunOptions(Configuration: config, TestScenario: "BrowserProfilerTest"));
     }

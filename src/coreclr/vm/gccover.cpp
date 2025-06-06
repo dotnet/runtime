@@ -20,7 +20,6 @@
 #pragma warning(disable:4663)
 
 #include "eeconfig.h"
-#include "gms.h"
 #include "utsem.h"
 #include "gccover.h"
 #include "virtualcallstub.h"
@@ -1331,7 +1330,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
         RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
         return TRUE;
     }
-    
+
     // The thread is in preemptive mode. Normally, it should not be able to trigger GC.
     // Besides the GC may be already happening and scanning our stack.
     if (!pThread->PreemptiveGCDisabled())
