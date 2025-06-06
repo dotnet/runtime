@@ -3133,7 +3133,7 @@ public:
 
 #if defined(TARGET_ARM64)
     GenTree* gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize);
-    GenTree* gtNewSimdFalseMaskByteNode(unsigned simdSize);
+    GenTree* gtNewSimdFalseMaskByteNode();
 #endif
 
     GenTree* gtNewSimdBinOpNode(genTreeOps  op,

@@ -3444,13 +3444,10 @@ GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigne
 //------------------------------------------------------------------------
 // gtNewSimdFalseMaskByteNode: Create a mask with all bits set to false
 //
-// Arguments:
-//    simdSize        -- the simd size of the nodes being masked
-//
 // Return Value:
 //    The mask
 //
-GenTree* Compiler::gtNewSimdFalseMaskByteNode(unsigned simdSize)
+GenTree* Compiler::gtNewSimdFalseMaskByteNode()
 {
     // Import as a constant mask 0
     GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);

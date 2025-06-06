@@ -498,7 +498,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             // Shared code for setting up embedded mask arg for intrinsics with 3+ operands
 
             auto emitEmbeddedMaskSetupInstrs = [&] {
-                if (intrin.op3->IsVectorZero() || (targetReg != falseReg) || (targetReg != embMaskOp1Reg))
+                if (intrin.op3->IsFalseMask() || (targetReg != falseReg) || (targetReg != embMaskOp1Reg))
                 {
                     return 1;
                 }
@@ -506,7 +506,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             };
 
             auto emitEmbeddedMaskSetup = [&] {
-                if (intrin.op3->IsVectorZero())
+                if (intrin.op3->IsFalseMask())
                 {
                     // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
                     // destination using /Z.
@@ -608,7 +608,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         if (intrin.op3->isContained())
                         {
-                            assert(intrin.op3->IsVectorZero());
+                            assert(intrin.op3->IsFalseMask());
 
                             if (intrin.op1->isContained() || intrin.op1->IsTrueMask(node))
                             {
@@ -750,7 +750,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             // Predicate functionality is currently not exposed for this API,
                             // but the FADDA instruction only has a predicated variant.
                             // Thus, we expect the JIT to wrap this with CndSel.
-                            assert(intrin.op3->IsVectorZero());
+                            assert(intrin.op3->IsFalseMask());
                             break;
 
                         default:
@@ -791,9 +791,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                     };
 
-                    if (intrin.op3->IsVectorZero())
+                    if (intrin.op3->IsFalseMask())
                     {
-                        // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
+                        // If `falseReg` is a false mask, then move the first operand of `intrinEmbMask` in the
                         // destination using /Z.
 
                         switch (intrinEmbMask.id)
