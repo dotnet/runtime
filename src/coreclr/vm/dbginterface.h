@@ -414,9 +414,6 @@ public:
 #ifndef DACCESS_COMPILE
     virtual HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef) = 0;
     virtual HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult) = 0;
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-    virtual void SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext) = 0;
-#endif // FEATURE_SPECIAL_USER_MODE_APC     
 #endif //DACCESS_COMPILE
 };
 
