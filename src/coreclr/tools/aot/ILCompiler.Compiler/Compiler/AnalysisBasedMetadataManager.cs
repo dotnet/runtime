@@ -31,7 +31,6 @@ namespace ILCompiler
         private readonly Dictionary<FieldDesc, MetadataCategory> _reflectableFields = new Dictionary<FieldDesc, MetadataCategory>();
         private readonly HashSet<ReflectableCustomAttribute> _reflectableAttributes = new HashSet<ReflectableCustomAttribute>();
         private readonly HashSet<ReflectableParameter> _reflectableParameters = new HashSet<ReflectableParameter>();
-        private readonly List<TypeDesc> _possiblyOptimizedOutCastTargets;
 
         public AnalysisBasedMetadataManager(CompilerTypeSystemContext typeSystemContext)
             : this(typeSystemContext, new FullyBlockedMetadataBlockingPolicy(),
@@ -39,7 +38,7 @@ namespace ILCompiler
                 new NoDynamicInvokeThunkGenerationPolicy(), null, Array.Empty<ModuleDesc>(), Array.Empty<TypeDesc>(),
                 Array.Empty<ReflectableEntity<TypeDesc>>(), Array.Empty<ReflectableEntity<MethodDesc>>(),
                 Array.Empty<ReflectableEntity<FieldDesc>>(), Array.Empty<ReflectableCustomAttribute>(),
-                Array.Empty<ReflectableParameter>(), Array.Empty<TypeDesc>(),
+                Array.Empty<ReflectableParameter>(),
                 default)
         {
         }
@@ -59,7 +58,6 @@ namespace ILCompiler
             IEnumerable<ReflectableEntity<FieldDesc>> reflectableFields,
             IEnumerable<ReflectableCustomAttribute> reflectableAttributes,
             IEnumerable<ReflectableParameter> reflectableParameters,
-            IEnumerable<TypeDesc> possiblyOptimizedOutCastTargets,
             MetadataManagerOptions options)
             : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options, flowAnnotations)
         {
@@ -102,8 +100,6 @@ namespace ILCompiler
             {
                 _reflectableParameters.Add(refParameter);
             }
-
-            _possiblyOptimizedOutCastTargets = [.. possiblyOptimizedOutCastTargets];
 
 #if DEBUG
             HashSet<ModuleDesc> moduleHash = new HashSet<ModuleDesc>(_modulesWithMetadata);
@@ -221,11 +217,6 @@ namespace ILCompiler
                     FieldDesc field = pair.Key;
                     rootProvider.AddReflectionRoot(field, reason);
                 }
-            }
-
-            foreach (var castTarget in _possiblyOptimizedOutCastTargets)
-            {
-                rootProvider.RootPossibleCastTarget(castTarget, "Possibly optimized out cast target");
             }
         }
 

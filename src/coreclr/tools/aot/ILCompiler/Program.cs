@@ -558,6 +558,9 @@ namespace ILCompiler
                 // have answers for because we didn't scan the entire method.
                 builder.UseMethodImportationErrorProvider(scanResults.GetMethodImportationErrorProvider());
 
+                // Root any observations that we may optimize out from whole program analysis
+                compilationRoots.Add(scanResults.GetOptimizedAwayObservationsProvider(devirtualizationManager));
+
                 // If we're doing preinitialization, use a new preinitialization manager that
                 // has the whole program view.
                 if (preinitStatics)

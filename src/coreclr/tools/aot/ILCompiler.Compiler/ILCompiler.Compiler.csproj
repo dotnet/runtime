@@ -408,6 +408,8 @@
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributesOnEntityNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExactMethodInstantiationsEntryNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\IProxyTypeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\IExternalTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ProxyTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternalTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ProxyTypeMapObjectNode.cs" />

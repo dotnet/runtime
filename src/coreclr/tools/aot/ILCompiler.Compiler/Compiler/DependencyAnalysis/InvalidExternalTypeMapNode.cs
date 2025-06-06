@@ -35,8 +35,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public int ClassCode => 36910224;
 
-        bool IExternalTypeMapNode.IsValid => false;
-
         public int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             if (other is InvalidExternalTypeMapNode otherNode)
