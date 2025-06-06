@@ -57,7 +57,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_NEW_MDARR_RARE, // rare multi-dim array helper (Rank == 1)
         CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
         CORINFO_HELP_NEWARR_1_MAYBEFROZEN, // allocator for arrays that *might* allocate them on a frozen segment
-        CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
+        CORINFO_HELP_NEWARR_1_PTR,      // optimized arrays of pointer sized elements
         CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
         CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 

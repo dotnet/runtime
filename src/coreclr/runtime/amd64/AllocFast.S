@@ -114,7 +114,7 @@ LOCAL_LABEL(NewOutOfMemory):
 NESTED_END RhpNewObject, _TEXT
 
 
-// Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArrayFast
+// Shared code for RhNewString, RhpNewArrayFast and RhpNewPtrArrayFast
 //  RAX == string/array size
 //  RDI == MethodTable
 //  ESI == character/element count
@@ -228,16 +228,15 @@ LOCAL_LABEL(ArraySizeOverflow):
 LEAF_END RhpNewArrayFast, _TEXT
 
 
-#ifndef FEATURE_NATIVEAOT
-// Allocate one dimensional, zero based array (SZARRAY) of objects (pointer sized elements).
+// Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements.
 //  RDI == MethodTable
 //  ESI == element count
-LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
+LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
 
         // Delegate overflow handling to the generic helper conservatively
 
         cmp         rsi, (0x40000000 / 8) // sizeof(void*)
-        jae         C_FUNC(RhpNewVariableSizeObject)
+        jae         C_FUNC(RhpNewArrayFast)
 
         // In this case we know the element size is sizeof(void *), or 8 for x64
         // This helps us in two ways - we can shift instead of multiplying, and
@@ -250,8 +249,7 @@ LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
 
         NEW_ARRAY_FAST
 
-LEAF_END RhpNewObjectArrayFast, _TEXT
-#endif
+LEAF_END RhpNewPtrArrayFast, _TEXT
 
 
 NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler

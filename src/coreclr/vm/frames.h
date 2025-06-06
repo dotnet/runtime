@@ -74,8 +74,6 @@
 //    |   |                           call count threshold is reached
 //    |   |
 //    |   +-ExternalMethodFrame  - represents a call from an ExternalMethodThunk
-//    |   |
-//    |   +-TPMethodFrame       - for calls on transparent proxy
 //    |
 #ifdef FEATURE_COMINTEROP
 //    +-UnmanagedToManagedFrame - this frame represents a transition from
@@ -1228,7 +1226,7 @@ public:
     {
 #ifdef TARGET_AMD64
         // Floating point spill area is between return value and transition block for frames that need it
-        // (code:TPMethodFrame and code:CLRToCOMMethodFrame)
+        // (see code:CLRToCOMMethodFrame)
         return -(4 * 0x10 /* floating point args */ + 0x8 /* alignment pad */ + TransitionBlock::GetNegSpaceSize()) + (iArg * 0x10);
 #endif
     }
@@ -1254,7 +1252,7 @@ public:
         TADDR p = GetTransitionBlock() - TransitionBlock::GetNegSpaceSize();
 #endif
         // Return value is right before the transition block (or floating point spill area on AMD64) for frames that need it
-        // (code:TPMethodFrame and code:CLRToCOMMethodFrame)
+        // (see code:CLRToCOMMethodFrame)
 #ifdef ENREGISTERED_RETURNTYPE_MAXSIZE
         p -= ENREGISTERED_RETURNTYPE_MAXSIZE;
 #else

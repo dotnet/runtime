@@ -3890,6 +3890,35 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        private static long GetShift(long shift, long size, bool shiftSat)
+        {
+            if (shiftSat)
+            {
+                // SVE shifts are saturated to element size
+                shift = (int)ShiftSat(shift, size);
+            }
+            else
+            {
+                // NEON shifts are truncated to bottom byte
+                shift = (sbyte)shift;
+            }
+            return shift;
+        }
+
+        public static long ShiftSat(long shift, long size)
+        {
+            if (shift > size + 1)
+            {
+                return size + 1;
+            }
+            else if (shift < -(size + 1))
+            {
+                return -(size + 1);
+            }
+
+            return shift;
+        }
+
         public static int ShiftRightLogicalNarrowingSaturateUpper(int[] op1, long[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (int)ShiftRightLogicalNarrowingSaturate(op2[i - op1.Length], op3);
 
         public static uint ShiftRightLogicalNarrowingSaturateUpper(uint[] op1, ulong[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (uint)ShiftRightLogicalNarrowingSaturate(op2[i - op1.Length], op3);
@@ -3906,9 +3935,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte ShiftArithmeticRoundedSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, saturating: true);
 
-        private static sbyte SignedShift(sbyte op1, sbyte op2, bool rounding = false, bool saturating = false)
+        private static sbyte SignedShift(sbyte op1, sbyte op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 8, shiftSat);
 
             sbyte rndCns = 0;
 
@@ -3944,7 +3973,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = sbyte.MaxValue;
+                        result = op2 < 0 ? sbyte.MinValue : sbyte.MaxValue;
                     }
                 }
             }
@@ -4220,9 +4249,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short ShiftArithmeticRoundedSaturate(short op1, short op2) => SignedShift(op1, op2, rounding: true, saturating: true);
 
-        private static short SignedShift(short op1, short op2, bool rounding = false, bool saturating = false)
+        private static short SignedShift(short op1, short op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 16, shiftSat);
 
             short rndCns = 0;
 
@@ -4258,7 +4287,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = short.MaxValue;
+                        result = op1 < 0 ? short.MinValue : short.MaxValue;
                     }
                 }
             }
@@ -4488,9 +4517,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int ShiftArithmeticRoundedSaturate(int op1, int op2) => SignedShift(op1, op2, rounding: true, saturating: true);
 
-        private static int SignedShift(int op1, int op2, bool rounding = false, bool saturating = false)
+        private static int SignedShift(int op1, int op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 32, shiftSat);
 
             int rndCns = 0;
 
@@ -4526,7 +4555,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = int.MaxValue;
+                        result = op1 < 0 ? int.MinValue : int.MaxValue;
                     }
                 }
             }
@@ -4756,9 +4785,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long ShiftArithmeticRoundedSaturate(long op1, long op2) => SignedShift(op1, op2, rounding: true, saturating: true);
 
-        private static long SignedShift(long op1, long op2, bool rounding = false, bool saturating = false)
+        private static long SignedShift(long op1, long op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 64, shiftSat);
 
             long rndCns = 0;
 
@@ -4794,7 +4823,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = long.MaxValue;
+                        result = op1 < 0 ? long.MinValue : long.MaxValue;
                     }
                 }
             }
@@ -9915,5 +9944,29 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             return T.RotateRight(Xor(op1, op2), shift);
         }
+
+        public static sbyte SveShiftArithmeticRounded(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static sbyte SveShiftArithmeticSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static sbyte SveShiftArithmeticRoundedSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static short SveShiftArithmeticRounded(short op1, short op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static short SveShiftArithmeticSaturate(short op1, short op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static short SveShiftArithmeticRoundedSaturate(short op1, short op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static int SveShiftArithmeticRounded(int op1, int op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static int SveShiftArithmeticSaturate(int op1, int op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static int SveShiftArithmeticRoundedSaturate(int op1, int op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static long SveShiftArithmeticRounded(long op1, long op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static long SveShiftArithmeticSaturate(long op1, long op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static long SveShiftArithmeticRoundedSaturate(long op1, long op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
     }
 }
