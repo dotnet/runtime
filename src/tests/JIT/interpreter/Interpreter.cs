@@ -403,6 +403,8 @@ public class InterpreterTest
             Environment.FailFast(null);
         if (!TestFloat())
             Environment.FailFast(null);
+        if (!TestConvOvf(1, 2, 3, 4))
+            Environment.FailFast(null);
 
         if (!TestLocalloc())
             Environment.FailFast(null);
@@ -1045,6 +1047,28 @@ public class InterpreterTest
         for (int i = 0; i < n; i++)
             ret *= nr;
         return (int)ret == expected;
+    }
+
+    public static bool TestConvOvf(float r4, double r8, int i4, long i8)
+    {
+        checked
+        {
+            byte a = (byte)r4,
+                b = (byte)r8,
+                c = (byte)i4,
+                d = (byte)i8;
+
+            if (a != r4)
+                return false;
+            if (b != r8)
+                return false;
+            if (c != i4)
+                return false;
+            if (d != i8)
+                return false;
+        }
+
+        return true;
     }
 
     public static int jitField1;

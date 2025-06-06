@@ -869,7 +869,7 @@ void InterpCompiler::EmitCode()
     // Emit all the code in waves. First emit all blocks that are not inside any EH clauses.
     // Then emit blocks that are inside of a single EH clause, then ones that are inside of
     // two EH clauses, etc.
-    // The goal is to move all clauses to the end of the method code recursively so that 
+    // The goal is to move all clauses to the end of the method code recursively so that
     // no handler is inside of a try block.
     int32_t *ip = m_pMethodCode;
     bool emittedBlock;
@@ -1714,7 +1714,7 @@ bool InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
             // Initialize finally handler stack state to empty.
             pFinallyBB->stackHeight = 0;
         }
-        
+
         if (clause.Flags == CORINFO_EH_CLAUSE_NONE || clause.Flags == CORINFO_EH_CLAUSE_FILTER)
         {
             InterpBasicBlock* pCatchBB = GetBB(clause.HandlerOffset);
@@ -2572,7 +2572,7 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
     linkBBlocks = true;
     needsRetryEmit = false;
-    
+
 retry_emit:
     emittedBBlocks = false;
     while (m_ip < codeEnd)
@@ -3203,6 +3203,27 @@ retry_emit:
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I4);
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_U1:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_OVF_U1_R4);
+                    break;
+                case StackTypeR8:
+                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_OVF_U1_R8);
+                    break;
+                case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_OVF_U1_I4);
+                    break;
+                case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_OVF_U1_I8);
                     break;
                 default:
                     assert(0);

@@ -367,6 +367,43 @@ MAIN_LOOP:
                     ip += 3;
                     break;
 
+                case INTOP_CONV_OVF_U1_I4:
+                {
+                    int32_t temp = (uint8_t)LOCAL_VAR(ip[2], int32_t);
+                    if (temp != LOCAL_VAR(ip[2], int32_t))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], int32_t) = temp;
+                    ip += 3;
+                    break;
+                }
+                case INTOP_CONV_OVF_U1_I8:
+                {
+                    int32_t temp = (uint8_t)LOCAL_VAR(ip[2], int64_t);
+                    if (temp != LOCAL_VAR(ip[2], int64_t))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], int32_t) = temp;
+                    ip += 3;
+                    break;
+                }
+                case INTOP_CONV_OVF_U1_R4:
+                {
+                    int32_t temp = (uint8_t)HCCALL1(JIT_Dbl2UInt, (double)LOCAL_VAR(ip[2], float));
+                    if (temp != LOCAL_VAR(ip[2], float))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], int32_t) = temp;
+                    ip += 3;
+                    break;
+                }
+                case INTOP_CONV_OVF_U1_R8:
+                {
+                    int32_t temp = (uint8_t)HCCALL1(JIT_Dbl2UInt, LOCAL_VAR(ip[2], double));
+                    if (temp != LOCAL_VAR(ip[2], double))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], int32_t) = temp;
+                    ip += 3;
+                    break;
+                }
+
                 case INTOP_SWITCH:
                 {
                     uint32_t val = LOCAL_VAR(ip[1], uint32_t);
