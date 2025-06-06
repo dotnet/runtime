@@ -225,31 +225,8 @@ VOID StubLinkerCPU::X86EmitPushImmPtr(LPVOID value BIT64_ARG(X86Reg tmpReg /*=kR
 
     X86EmitPushImm32((UINT_PTR) value);
 }
-#endif // TARGET_X86
-
-//---------------------------------------------------------------
-// Emits:
-//    XOR <reg32>,<reg32>
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitZeroOutReg(X86Reg reg)
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef TARGET_AMD64
-    // 32-bit results are zero-extended, so we only need the REX byte if
-    // it's an extended register.
-    if (reg >= kR8)
-    {
-        Emit8(REX_PREFIX_BASE | REX_MODRM_REG_EXT | REX_MODRM_RM_EXT);
-        reg = X86RegFromAMD64Reg(reg);
-    }
-#endif
-    Emit8(0x33);
-    Emit8(static_cast<UINT8>(0xc0 | (reg << 3) | reg));
-}
 
 
-#ifdef TARGET_X86
 //---------------------------------------------------------------
 // Emits:
 //    JMP <ofs8>   or
@@ -619,12 +596,6 @@ VOID StubLinkerCPU::X86EmitOffsetModRM(BYTE opcode, X86Reg opcodereg, X86Reg ind
 VOID StubLinkerCPU::X86EmitRegLoad(X86Reg reg, UINT_PTR imm)
 {
     STANDARD_VM_CONTRACT;
-
-    if (!imm)
-    {
-        X86EmitZeroOutReg(reg);
-        return;
-    }
 
     UINT cbimm = sizeof(void*);
 

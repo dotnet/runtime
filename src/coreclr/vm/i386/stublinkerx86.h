@@ -127,8 +127,6 @@ class StubLinkerCPU : public StubLinker
         VOID X64EmitMovqWorker(BYTE opcode, X86Reg Xmmreg, X86Reg reg);
 #endif
 
-        VOID X86EmitZeroOutReg(X86Reg reg);
-
         VOID X86EmitOffsetModRM(BYTE opcode, X86Reg altreg, X86Reg indexreg, int32_t ofs);
 
 #ifdef TARGET_X86
@@ -138,10 +136,10 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitIndexRegLoad(X86Reg dstreg, X86Reg srcreg, int32_t ofs = 0);
         VOID X86EmitIndexRegStore(X86Reg dstreg, int32_t ofs, X86Reg srcreg);
 
+#ifdef TARGET_X86
         VOID X86EmitIndexPush(X86Reg srcreg, int32_t ofs);
 
         VOID X86EmitAddEsp(INT32 imm32);
-#ifdef TARGET_X86
         VOID X86EmitEspOffset(BYTE opcode,
                               X86Reg altreg,
                               int32_t ofs);
