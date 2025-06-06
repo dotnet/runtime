@@ -192,7 +192,7 @@ namespace ILCompiler
 
             CompilationModuleGroup compilationGroup;
             List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
-            TypeMapManager typeMapManager = new EmptyTypeMapManager();
+            TypeMapManager typeMapManager = new UsageBasedTypeMapManager(TypeMapManager.TypeMapStates.Empty);
             bool multiFile = Get(_command.MultiFile);
             if (singleMethod != null)
             {
@@ -201,7 +201,7 @@ namespace ILCompiler
                 compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
                 if (singleMethod.OwningType is MetadataType { Module.Assembly: EcmaAssembly assembly })
                 {
-                    compilationRoots.Add(typeMapManager = new MetadataBasedTypeMapManager(assembly));
+                    compilationRoots.Add(typeMapManager = new UsageBasedTypeMapManager(TypeMapManager.CreateTypeMapStateRootedAtAssembly(assembly)));
                 }
             }
             else
@@ -315,7 +315,7 @@ namespace ILCompiler
 
                 if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
                 {
-                    compilationRoots.Add(typeMapManager = new MetadataBasedTypeMapManager(entryAssembly));
+                    compilationRoots.Add(typeMapManager = new UsageBasedTypeMapManager(TypeMapManager.CreateTypeMapStateRootedAtAssembly(entryAssembly)));
                 }
             }
 
@@ -525,6 +525,8 @@ namespace ILCompiler
 
                 metadataManager = ((UsageBasedMetadataManager)metadataManager).ToAnalysisBasedMetadataManager();
 
+                typeMapManager = ((UsageBasedTypeMapManager)typeMapManager).ToAnalysisBasedTypeMapManager();
+
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
 
                 ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager, metadataManager);
@@ -596,6 +598,7 @@ namespace ILCompiler
 
             compilationRoots.Add(metadataManager);
             compilationRoots.Add(interopStubManager);
+            compilationRoots.Add(typeMapManager);
 
             builder
                 .UseInstructionSetSupport(instructionSetSupport)

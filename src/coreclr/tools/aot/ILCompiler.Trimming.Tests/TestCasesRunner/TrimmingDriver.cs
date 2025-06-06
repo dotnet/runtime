@@ -139,10 +139,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			InteropStateManager interopStateManager = new InteropStateManager (typeSystemContext.GeneratedAssembly);
 			InteropStubManager interopStubManager = new UsageBasedInteropStubManager (interopStateManager, pinvokePolicy, logger);
 
-            TypeMapManager typeMapManager = new EmptyTypeMapManager();
+            TypeMapManager typeMapManager = new UsageBasedTypeMapManager (TypeMapManager.TypeMapStates.Empty);
             if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
             {
-                typeMapManager = new MetadataBasedTypeMapManager (entryAssembly);
+                typeMapManager = new UsageBasedTypeMapManager (TypeMapManager.CreateTypeMapStateRootedAtAssembly (entryAssembly));
             }
 
             compilationRoots.Add(typeMapManager);

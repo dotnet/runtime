@@ -17,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__associated_type_map__"u8);
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__proxy_type_map__"u8);
         }
 
         public int Size { get; private set; }
@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName(NodeFactory context) => "Associated Type Map Hash Table";
+        protected override string GetName(NodeFactory context) => "Proxy Type Map Hash Table";
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapGroupHashTable);
 
-            foreach (ProxyTypeMapNode proxyTypeMap in factory.MetadataManager.GetProxyTypeMaps())
+            foreach (ProxyTypeMapNode proxyTypeMap in factory.TypeMapManager.GetProxyTypeMaps())
             {
                 if (!typeMapHashTables.TryGetValue(proxyTypeMap.TypeMapGroup, out VertexHashtable typeMapHashTable))
                 {
@@ -70,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis
                 typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), hashTableSection.Place(tuple));
             }
 
-            foreach (InvalidProxyTypeMapNode invalidNode in factory.MetadataManager.GetInvalidProxyTypeMaps())
+            foreach (InvalidProxyTypeMapNode invalidNode in factory.TypeMapManager.GetInvalidProxyTypeMaps())
             {
                 TypeDesc typeMapGroup = invalidNode.TypeMapGroup;
                 Vertex typeMapStateVertex = writer.GetUnsignedConstant(0); // Invalid type map state

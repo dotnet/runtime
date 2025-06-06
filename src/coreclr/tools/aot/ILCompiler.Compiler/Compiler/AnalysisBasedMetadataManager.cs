@@ -31,8 +31,6 @@ namespace ILCompiler
         private readonly Dictionary<FieldDesc, MetadataCategory> _reflectableFields = new Dictionary<FieldDesc, MetadataCategory>();
         private readonly HashSet<ReflectableCustomAttribute> _reflectableAttributes = new HashSet<ReflectableCustomAttribute>();
         private readonly HashSet<ReflectableParameter> _reflectableParameters = new HashSet<ReflectableParameter>();
-        private readonly List<TypeDesc> _externalTypeMapGroupRequests;
-        private readonly List<TypeDesc> _proxyTypeMapGroupRequests;
         private readonly List<TypeDesc> _possiblyOptimizedOutCastTargets;
 
         public AnalysisBasedMetadataManager(CompilerTypeSystemContext typeSystemContext)
@@ -41,8 +39,7 @@ namespace ILCompiler
                 new NoDynamicInvokeThunkGenerationPolicy(), null, Array.Empty<ModuleDesc>(), Array.Empty<TypeDesc>(),
                 Array.Empty<ReflectableEntity<TypeDesc>>(), Array.Empty<ReflectableEntity<MethodDesc>>(),
                 Array.Empty<ReflectableEntity<FieldDesc>>(), Array.Empty<ReflectableCustomAttribute>(),
-                Array.Empty<ReflectableParameter>(), Array.Empty<TypeDesc>(), Array.Empty<TypeDesc>(),
-                Array.Empty<TypeDesc>(),
+                Array.Empty<ReflectableParameter>(), Array.Empty<TypeDesc>(),
                 default)
         {
         }
@@ -62,8 +59,6 @@ namespace ILCompiler
             IEnumerable<ReflectableEntity<FieldDesc>> reflectableFields,
             IEnumerable<ReflectableCustomAttribute> reflectableAttributes,
             IEnumerable<ReflectableParameter> reflectableParameters,
-            IEnumerable<TypeDesc> externalTypeMapGroupRequests,
-            IEnumerable<TypeDesc> proxyTypeMapGroupRequests,
             IEnumerable<TypeDesc> possiblyOptimizedOutCastTargets,
             MetadataManagerOptions options)
             : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options, flowAnnotations)
@@ -108,8 +103,6 @@ namespace ILCompiler
                 _reflectableParameters.Add(refParameter);
             }
 
-            _externalTypeMapGroupRequests = [.. externalTypeMapGroupRequests];
-            _proxyTypeMapGroupRequests = [.. proxyTypeMapGroupRequests];
             _possiblyOptimizedOutCastTargets = [.. possiblyOptimizedOutCastTargets];
 
 #if DEBUG
@@ -228,16 +221,6 @@ namespace ILCompiler
                     FieldDesc field = pair.Key;
                     rootProvider.AddReflectionRoot(field, reason);
                 }
-            }
-
-            foreach (var typeMapGroup in _externalTypeMapGroupRequests)
-            {
-                rootProvider.RootExternalTypeMapRequest(typeMapGroup, "TypeMapRequest");
-            }
-
-            foreach (var typeMapGroup in _proxyTypeMapGroupRequests)
-            {
-                rootProvider.RootProxyTypeMapRequest(typeMapGroup, "TypeMapRequest");
             }
 
             foreach (var castTarget in _possiblyOptimizedOutCastTargets)

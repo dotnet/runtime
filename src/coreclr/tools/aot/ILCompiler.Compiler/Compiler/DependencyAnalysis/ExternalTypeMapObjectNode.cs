@@ -44,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapGroupHashTable);
 
-            foreach (ExternalTypeMapNode externalTypeMap in factory.MetadataManager.GetExternalTypeMaps())
+            foreach (ExternalTypeMapNode externalTypeMap in factory.TypeMapManager.GetExternalTypeMaps())
             {
                 if (!typeMapHashTables.TryGetValue(externalTypeMap.TypeMapGroup, out VertexHashtable typeMapHashTable))
                 {
@@ -69,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis
                 typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), hashTableSection.Place(tuple));
             }
 
-            foreach (InvalidExternalTypeMapNode invalidNode in factory.MetadataManager.GetInvalidExternalTypeMaps())
+            foreach (InvalidExternalTypeMapNode invalidNode in factory.TypeMapManager.GetInvalidExternalTypeMaps())
             {
                 TypeDesc typeMapGroup = invalidNode.TypeMapGroup;
                 Vertex typeMapStateVertex = writer.GetUnsignedConstant(0); // Invalid type map state

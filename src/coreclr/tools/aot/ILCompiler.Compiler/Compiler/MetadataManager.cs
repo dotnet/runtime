@@ -82,10 +82,6 @@ namespace ILCompiler
         private readonly SortedSet<MethodDesc> _genericMethodHashtableEntries = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _exactMethodHashtableEntries = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly HashSet<TypeDesc> _usedInterfaces = new HashSet<TypeDesc>();
-        private readonly SortedSet<ExternalTypeMapNode> _externalTypeMaps = new SortedSet<ExternalTypeMapNode>(CompilerComparer.Instance);
-        private readonly SortedSet<InvalidExternalTypeMapNode> _invalidExternalTypeMaps = new SortedSet<InvalidExternalTypeMapNode>(CompilerComparer.Instance);
-        private readonly SortedSet<ProxyTypeMapNode> _proxyTypeMaps = new SortedSet<ProxyTypeMapNode>(CompilerComparer.Instance);
-        private readonly SortedSet<InvalidProxyTypeMapNode> _invalidProxyTypeMaps = new SortedSet<InvalidProxyTypeMapNode>(CompilerComparer.Instance);
 
         private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
 
@@ -350,27 +346,6 @@ namespace ILCompiler
             if (obj is InterfaceUseNode interfaceUse)
             {
                 _usedInterfaces.Add(interfaceUse.Type);
-            }
-
-            if (obj is ExternalTypeMapNode externalTypeMapNode)
-            {
-                _externalTypeMaps.Add(externalTypeMapNode);
-            }
-
-            if (obj is InvalidExternalTypeMapNode invalidExternalTypeMapNode)
-            {
-                _invalidExternalTypeMaps.Add(invalidExternalTypeMapNode);
-            }
-
-
-            if (obj is ProxyTypeMapNode proxyTypeMapNode)
-            {
-                _proxyTypeMaps.Add(proxyTypeMapNode);
-            }
-
-            if (obj is InvalidProxyTypeMapNode invalidProxyTypeMapNode)
-            {
-                _invalidProxyTypeMaps.Add(invalidProxyTypeMapNode);
             }
         }
 
@@ -1133,26 +1108,6 @@ namespace ILCompiler
         internal IEnumerable<NativeLayoutTemplateMethodSignatureVertexNode> GetTemplateMethodEntries()
         {
             return _templateMethodEntries;
-        }
-
-        internal IEnumerable<ExternalTypeMapNode> GetExternalTypeMaps()
-        {
-            return _externalTypeMaps;
-        }
-
-        internal IEnumerable<InvalidExternalTypeMapNode> GetInvalidExternalTypeMaps()
-        {
-            return _invalidExternalTypeMaps;
-        }
-
-        internal IEnumerable<ProxyTypeMapNode> GetProxyTypeMaps()
-        {
-            return _proxyTypeMaps;
-        }
-
-        internal IEnumerable<InvalidProxyTypeMapNode> GetInvalidProxyTypeMaps()
-        {
-            return _invalidProxyTypeMaps;
         }
 
         public bool IsReflectionBlocked(TypeDesc type)
