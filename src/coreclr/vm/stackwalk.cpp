@@ -3132,22 +3132,6 @@ void StackFrameIterator::PostProcessingForManagedFrames(void)
     m_exInfoWalk.WalkToPosition(GetRegdisplaySP(m_crawl.pRD), (m_flags & POPFRAMES));
 #endif // ELIMINATE_FEF
 
-#ifdef TARGET_X86
-#ifdef FEATURE_EH_FUNCLETS
-    bool hasReversePInvoke = false;
-    if (!m_crawl.codeInfo.IsFunclet())
-    {
-        hdrInfo *gcHdrInfo;
-        m_crawl.codeInfo.DecodeGCHdrInfo(&gcHdrInfo);
-        hasReversePInvoke = gcHdrInfo->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
-    }
-#else
-    hdrInfo *gcHdrInfo;
-    m_crawl.codeInfo.DecodeGCHdrInfo(&gcHdrInfo);
-    bool hasReversePInvoke = gcHdrInfo->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
-#endif // FEATURE_EH_FUNCLETS
-#endif // TARGET_X86
-
     ProcessIp(GetControlPC(m_crawl.pRD));
 
     // if we have unwound to a native stack frame, stop and set the frame state accordingly
