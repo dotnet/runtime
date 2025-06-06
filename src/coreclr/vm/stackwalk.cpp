@@ -2992,12 +2992,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
             m_crawl.pFunc->IsILStub() &&
             m_crawl.pFunc->AsDynamicMethodDesc()->HasMDContextArg();
 
-        if (fHandleSkippedFrames
-#ifdef TARGET_X86
-            || // On x86 we have already reported the InlinedCallFrame, don't report it again.
-            (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame) && !fReportInteropMD)
-#endif // TARGET_X86
-            )
+        if (fHandleSkippedFrames)
         {
             m_crawl.GotoNextFrame();
 #ifdef STACKWALKER_MAY_POP_FRAMES
@@ -3161,18 +3156,6 @@ void StackFrameIterator::PostProcessingForManagedFrames(void)
         m_frameState = SFITER_NATIVE_MARKER_FRAME;
         m_crawl.isNativeMarker = true;
     }
-#ifdef TARGET_X86
-    else if (hasReversePInvoke)
-    {
-        // The managed frame we've unwound from had reverse PInvoke frame. Since we are on a frameless
-        // frame, that means that the method was called from managed code without any native frames in between.
-        // On x86, the InlinedCallFrame of the pinvoke would get skipped as we've just unwound to the pinvoke IL stub and
-        // for this architecture, the inlined call frames are supposed to be processed before the managed frame they are stored in.
-        // So we force the stack frame iterator to process the InlinedCallFrame before the IL stub.
-        _ASSERTE(InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame));
-        m_crawl.isFrameless = false;
-    }
-#endif
 } // StackFrameIterator::PostProcessingForManagedFrames()
 
 //---------------------------------------------------------------------------------------
