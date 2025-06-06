@@ -560,7 +560,7 @@ bool CodeHeapIterator::Next()
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
@@ -595,7 +595,7 @@ bool CodeHeapIterator::NextMethodSectionIterator()
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
