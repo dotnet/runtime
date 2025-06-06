@@ -921,7 +921,7 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
 #endif // TARGET_RISCV64
     }
 #ifdef TARGET_RISCV64
-    else if (false)
+    else
     {
         bool isTrueLclVar  = trueInput->OperIs(GT_LCL_VAR);
         bool isFalseLclVar = falseInput->OperIs(GT_LCL_VAR);
@@ -945,19 +945,30 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
             {
                 GenTree*& op1 = binOp->AsOp()->gtOp1;
                 GenTree*& op2 = binOp->AsOp()->gtOp2;
-                if ((!binOp->OperIsShift() && op1->IsIntegralConst(1)) || op2->IsIntegralConst(1))
+
+                bool isDecrement = binOp->OperIs(GT_ADD) && (op1->IsIntegralConst(-1) || op2->IsIntegralConst(-1));
+                if ((!binOp->OperIsShift() && op1->IsIntegralConst(1)) || op2->IsIntegralConst(1) || isDecrement)
                 {
-                    GenTree* varOp = op1->IsIntegralConst(1) ? op2 : op1;
+                    GenTree* varOp = op1->IsIntegralConst() ? op2 : op1;
                     if (varOp->OperIs(GT_LCL_VAR) && varOp->AsLclVar()->GetLclNum() == lclNum)
                     {
-                        GenTree*& constOp = op1->IsIntegralConst(1) ? op1 : op2;
+                        GenTree*& constOp = op1->IsIntegralConst() ? op1 : op2;
 
                         constOp = isTrueLclVar ? m_comp->gtReverseCond(m_cond) : m_cond;
+                        if (isDecrement)
+                            binOp->ChangeOper(GT_SUB);
+
                         return binOp;
                     }
                 }
             }
         }
+        // else if (trueInput->IsIntegralConst(0) != falseInput->IsIntegralConst(0))
+        // {
+        //     bool isTrueZero = trueInput->IsIntegralConst(0);
+        //     GenTree* binOp = isTrueZero ? falseInput : trueInput;
+        //     if (binOp->OperIs())
+        // }
     }
 #endif // TARGET_RISCV64
     return nullptr;

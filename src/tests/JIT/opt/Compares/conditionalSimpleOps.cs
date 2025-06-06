@@ -126,6 +126,17 @@ public class ConditionalSimpleOpVariableTest
     }
 
     [Theory]
+    [InlineData(11, 10)]
+    [InlineData(12, 11)]
+    [InlineData(45, 45)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void sub_var(int a, int expected)
+    {
+        a = a < 42 ? a - 1 : a;
+        Assert.Equal(expected, a);
+    }
+
+    [Theory]
     [InlineData(12, 13)]
     [InlineData(13, 12)]
     [InlineData(45, 45)]
