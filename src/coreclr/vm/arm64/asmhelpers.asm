@@ -25,7 +25,6 @@
     IMPORT ThrowControlForThread
 #ifdef FEATURE_INTERPRETER
     IMPORT ExecuteInterpretedMethod
-    IMPORT CreateNativeToInterpreterCallStub
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP

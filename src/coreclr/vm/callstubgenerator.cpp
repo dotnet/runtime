@@ -1169,7 +1169,7 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
 #endif // TARGET_ARM64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
-            return NULL; // This should never happen, but just in case.
+            return 0; // This should never happen, but just in case.
     }
 }
 
