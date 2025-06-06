@@ -177,7 +177,7 @@ namespace pal
     inline bool mkdir(const char_t* dir, int mode, int& error_code)
     {
         BOOL result = ::CreateDirectoryW(dir, NULL);
-        if (result != 0)
+        if (result != FALSE)
             return true;
 
         error_code = ::GetLastError();
