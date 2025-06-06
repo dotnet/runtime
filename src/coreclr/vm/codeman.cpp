@@ -350,10 +350,12 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 /*****************************************************************************/
 /* static */ void UnwindInfoTable::RemoveFromUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, TADDR baseAddress, TADDR entryPoint)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
     _ASSERTE(unwindInfoPtr != NULL);
 
     if (!s_publishingActive)
@@ -406,10 +408,13 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 /*****************************************************************************/
 /* static */ void UnwindInfoTable::UnpublishUnwindInfoForMethod(TADDR entryPoint)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
     if (!s_publishingActive)
         return;
 
@@ -3392,7 +3397,7 @@ void EECodeGenManager::RemoveJitData(RemoveJitDataArg const& arg)
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -3423,9 +3428,10 @@ void EECodeGenManager::RemoveJitDataWorker(RemoveJitDataArg const& arg)
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         PRECONDITION(m_CodeHeapLock.OwnedByCurrentThread());
-    } CONTRACTL_END;
+    }
+    CONTRACTL_END;
 
     MethodDesc* pMD = arg.GetMethodDesc();
     TADDR codeStart = arg.GetCodeStartAddress();

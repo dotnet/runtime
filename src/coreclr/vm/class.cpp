@@ -2894,11 +2894,14 @@ WORD SparseVTableMap::GetNumVTableSlots()
 //*******************************************************************************
 void EEClass::AddChunk(MethodDescChunk* pNewChunk)
 {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    _ASSERTE(pNewChunk != NULL);
-    _ASSERTE(pNewChunk->GetNextChunk() == NULL);
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(pNewChunk != NULL);
+        PRECONDITION(pNewChunk->GetNextChunk() == NULL);
+    }
+    CONTRACTL_END;
 
     if (GetChunks() == NULL)
     {
@@ -2917,10 +2920,13 @@ void EEClass::AddChunk(MethodDescChunk* pNewChunk)
 //*******************************************************************************
 void EEClass::AddChunkIfItHasNotBeenAdded(MethodDescChunk* pNewChunk)
 {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    _ASSERTE(pNewChunk != NULL);
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(pNewChunk != NULL);
+    }
+    CONTRACTL_END;
 
     // return if the chunk has been added
     if (pNewChunk->GetNextChunk() != NULL)
