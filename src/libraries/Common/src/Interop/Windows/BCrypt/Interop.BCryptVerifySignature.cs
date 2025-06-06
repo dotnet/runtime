@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 
+using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -15,6 +16,7 @@ internal static partial class Interop
         {
             BCRYPT_PAD_PKCS1 = 2,
             BCRYPT_PAD_PSS = 8,
+            BCRYPT_PAD_PQDSA = 32,
         }
 
         [LibraryImport(Libraries.BCrypt)]
@@ -80,6 +82,35 @@ internal static partial class Interop
                     pSignature,
                     signature.Length,
                     BCryptSignVerifyFlags.BCRYPT_PAD_PSS);
+            }
+
+            return status == NTSTATUS.STATUS_SUCCESS;
+        }
+
+        internal static unsafe bool BCryptVerifySignaturePqcPure(
+            SafeBCryptKeyHandle key,
+            ReadOnlySpan<byte> data,
+            ReadOnlySpan<byte> context,
+            ReadOnlySpan<byte> signature)
+        {
+            NTSTATUS status;
+
+            fixed (byte* pData = &Helpers.GetNonNullPinnableReference(data))
+            fixed (byte* pSignature = &MemoryMarshal.GetReference(signature))
+            fixed (byte* pContext = &MemoryMarshal.GetReference(context))
+            {
+                BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
+                paddingInfo.pbCtx = (IntPtr)pContext;
+                paddingInfo.cbCtx = context.Length;
+
+                status = BCryptVerifySignature(
+                    key,
+                    &paddingInfo,
+                    pData,
+                    data.Length,
+                    pSignature,
+                    signature.Length,
+                    BCryptSignVerifyFlags.BCRYPT_PAD_PQDSA);
             }
 
             return status == NTSTATUS.STATUS_SUCCESS;

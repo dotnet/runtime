@@ -641,7 +641,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
 #ifdef FEATURE_SIMD
             // Need an additional register to read upper 4 bytes of Vector3.
-            if (tree->TypeGet() == TYP_SIMD12)
+            if (tree->TypeIs(TYP_SIMD12))
             {
                 // We need an internal register different from targetReg in which 'tree' produces its result
                 // because both targetReg and internal reg will be in use at the same time.
@@ -796,13 +796,13 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_RETFILT:
             assert(dstCount == 0);
-            if (tree->TypeGet() == TYP_VOID)
+            if (tree->TypeIs(TYP_VOID))
             {
                 srcCount = 0;
             }
             else
             {
-                assert(tree->TypeGet() == TYP_INT);
+                assert(tree->TypeIs(TYP_INT));
                 srcCount = 1;
                 BuildUse(tree->gtGetOp1(), RBM_INTRET.GetIntRegSet());
             }
@@ -1059,7 +1059,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // GT_XCHG requires a single internal register; the others require two.
                 buildInternalIntRegisterDefForNode(tree);
-                if (tree->OperGet() != GT_XCHG)
+                if (!tree->OperIs(GT_XCHG))
                 {
                     buildInternalIntRegisterDefForNode(tree);
                 }
@@ -1107,13 +1107,6 @@ int LinearScan::BuildNode(GenTree* tree)
             }
         }
         break;
-
-#if FEATURE_ARG_SPLIT
-        case GT_PUTARG_SPLIT:
-            srcCount = BuildPutArgSplit(tree->AsPutArgSplit());
-            dstCount = tree->AsPutArgSplit()->gtNumRegs;
-            break;
-#endif // FEATURE_ARG_SPLIT
 
         case GT_PUTARG_STK:
             srcCount = BuildPutArgStk(tree->AsPutArgStk());
@@ -1867,7 +1860,7 @@ int LinearScan::BuildContainedCselUses(GenTreeHWIntrinsic* containedCselOpNode,
     for (size_t opNum = 1; opNum <= containedCselOpNode->GetOperandCount(); opNum++)
     {
         GenTree* currentOp = containedCselOpNode->Op(opNum);
-        if (currentOp->TypeGet() == TYP_MASK)
+        if (currentOp->TypeIs(TYP_MASK))
         {
             srcCount += BuildOperandUses(currentOp, candidates);
         }
@@ -2265,7 +2258,7 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
             break;
 
         case NI_AdvSimd_Arm64_DuplicateToVector64:
-            if (intrinsicTree->Op(1)->TypeGet() == TYP_DOUBLE)
+            if (intrinsicTree->Op(1)->TypeIs(TYP_DOUBLE))
             {
                 delayFreeOp = intrinsicTree->Op(1);
                 assert(delayFreeOp != nullptr);
@@ -2420,7 +2413,7 @@ GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bo
 
         case NI_AdvSimd_StoreSelectedScalar:
         case NI_AdvSimd_Arm64_StoreSelectedScalar:
-            if (intrin.op2->gtType == TYP_STRUCT)
+            if (intrin.op2->TypeIs(TYP_STRUCT))
             {
                 consecutiveOp = intrin.op2;
                 assert(consecutiveOp != nullptr);
@@ -2509,7 +2502,7 @@ GenTreeHWIntrinsic* LinearScan::getContainedCselOperand(GenTreeHWIntrinsic* intr
     {
         GenTree* currentOp = intrinsicTree->Op(opNum);
 
-        if ((currentOp->OperGet() == GT_HWINTRINSIC) &&
+        if (currentOp->OperIs(GT_HWINTRINSIC) &&
             (currentOp->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect) && currentOp->isContained())
         {
             return currentOp->AsHWIntrinsic();

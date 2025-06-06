@@ -255,9 +255,9 @@ This is the "fcall", "jit helper", and so forth. The typical way that the runtim
 
 On the other hand, if an fcall function can do anything that might throw a CLR internal exception (one of the C++ exceptions), that exception must not be allowed to leak back out to managed code. To handle this case, the CLR has the UnwindAndContinueHandler (UACH), which is a set of code to catch the C++ EH exceptions, and re-raise them as managed exceptions.
 
-Any runtime function that is called from managed code, and might throw a C++ EH exception, must wrap the throwing code in INSTALL_UNWIND_AND_CONTINUE_HANDLER / UNINSTALL_UNWIND_AND_CONTINUE_HANDLER.  Installing a HELPER_METHOD_FRAME will automatically install the UACH. There is a non-trivial amount of overhead to installing a UACH, so they shouldn't be used everywhere. One technique that is used in performance critical code is to run without a UACH, and install one just before throwing an exception.
+Any runtime function that is called from managed code, and might throw a C++ EH exception, must wrap the throwing code in INSTALL_UNWIND_AND_CONTINUE_HANDLER / UNINSTALL_UNWIND_AND_CONTINUE_HANDLER. There is a non-trivial amount of overhead to installing a UACH, so they shouldn't be used everywhere. One technique that is used in performance critical code is to run without a UACH, and install one just before throwing an exception.
 
-When a C++ exception is thrown, and there is a missing UACH, the typical failure will be a Contract Violation of "GC_TRIGGERS called in a GC_NOTRIGGER region" in CPFH_RealFirstPassHandler. To fix these, look for managed to runtime transitions, and check for INSTALL_UNWIND_AND_CONTINUE_HANDLER or HELPER_METHOD_FRAME_BEGIN_XXX.
+When a C++ exception is thrown, and there is a missing UACH, the typical failure will be a Contract Violation of "GC_TRIGGERS called in a GC_NOTRIGGER region" in CPFH_RealFirstPassHandler. To fix these, look for managed to runtime transitions, and check for INSTALL_UNWIND_AND_CONTINUE_HANDLER.
 
 Runtime code into managed code
 ------------------------------

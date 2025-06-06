@@ -6079,7 +6079,7 @@ FieldSeq* ValueNumStore::FieldSeqVNToFieldSeq(ValueNum vn)
 
 ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, GenTree* opB)
 {
-    if (opB->OperGet() == GT_CNS_INT)
+    if (opB->OperIs(GT_CNS_INT))
     {
         return ExtendPtrVN(opA, opB->AsIntCon()->gtFieldSeq, opB->AsIntCon()->IconValue());
     }
@@ -7986,10 +7986,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 #endif // TARGET_ARM64
 
 #if defined(TARGET_XARCH)
-            case NI_AVX512CD_LeadingZeroCount:
-            case NI_AVX512CD_VL_LeadingZeroCount:
-            case NI_AVX10v1_V512_LeadingZeroCount:
-            case NI_AVX10v1_LeadingZeroCount:
+            case NI_AVX512_LeadingZeroCount:
             {
                 return EvaluateUnarySimd(this, GT_LZCNT, /* scalar */ false, type, baseType, arg0VN);
             }
@@ -11952,7 +11949,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
 
             valueVNPair.SetBoth(initObjVN);
         }
-        else if (value->TypeGet() == TYP_REF)
+        else if (value->TypeIs(TYP_REF))
         {
             // If we have an unsafe IL store of a TYP_REF to a non-ref (typically a TYP_BYREF)
             // then don't propagate this ValueNumber to the lhs, instead create a new unique VN.
@@ -12071,13 +12068,13 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
     {
         if (genTypeSize(varDsc) != genTypeSize(lcl))
         {
-            assert((varDsc->TypeGet() == TYP_LONG) && lcl->TypeIs(TYP_INT));
+            assert(varDsc->TypeIs(TYP_LONG) && lcl->TypeIs(TYP_INT));
             lcl->gtVNPair = vnStore->VNPairForCast(wholeLclVarVNP, lcl->TypeGet(), varDsc->TypeGet());
         }
         else
         {
-            assert(((varDsc->TypeGet() == TYP_I_IMPL) && lcl->TypeIs(TYP_BYREF)) ||
-                   ((varDsc->TypeGet() == TYP_BYREF) && lcl->TypeIs(TYP_I_IMPL)));
+            assert((varDsc->TypeIs(TYP_I_IMPL) && lcl->TypeIs(TYP_BYREF)) ||
+                   (varDsc->TypeIs(TYP_BYREF) && lcl->TypeIs(TYP_I_IMPL)));
             lcl->gtVNPair = wholeLclVarVNP;
         }
     }
@@ -12684,11 +12681,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
             }
         }
-        else if (tree->OperGet() == GT_CAST)
+        else if (tree->OperIs(GT_CAST))
         {
             fgValueNumberCastTree(tree);
         }
-        else if (tree->OperGet() == GT_INTRINSIC)
+        else if (tree->OperIs(GT_INTRINSIC))
         {
             fgValueNumberIntrinsic(tree);
         }
@@ -13049,7 +13046,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
 void Compiler::fgValueNumberIntrinsic(GenTree* tree)
 {
-    assert(tree->OperGet() == GT_INTRINSIC);
+    assert(tree->OperIs(GT_INTRINSIC));
     GenTreeIntrinsic* intrinsic = tree->AsIntrinsic();
     ValueNumPair      arg0VNP, arg1VNP;
     ValueNumPair      arg0VNPx = ValueNumStore::VNPForEmptyExcSet();
@@ -13306,7 +13303,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
         switch (intrinsicId)
         {
 #ifdef TARGET_XARCH
-            case NI_SSE2_MaskMove:
+            case NI_X86Base_MaskMove:
             case NI_AVX_MaskStore:
             case NI_AVX2_MaskStore:
             case NI_AVX_MaskLoad:
@@ -13335,7 +13332,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
 
 void Compiler::fgValueNumberCastTree(GenTree* tree)
 {
-    assert(tree->OperGet() == GT_CAST);
+    assert(tree->OperIs(GT_CAST));
 
     ValueNumPair srcVNPair        = tree->AsOp()->gtOp1->gtVNPair;
     var_types    castToType       = tree->CastToType();
@@ -14051,7 +14048,7 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
 
         case CORINFO_HELP_NEWARR_1_DIRECT:
-        case CORINFO_HELP_NEWARR_1_OBJ:
+        case CORINFO_HELP_NEWARR_1_PTR:
         case CORINFO_HELP_NEWARR_1_VC:
         case CORINFO_HELP_NEWARR_1_ALIGN8:
             vnf = VNF_JitNewArr;
@@ -14437,7 +14434,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
     ValueNumPair vnpNorm;
 
-    if (call->TypeGet() == TYP_VOID)
+    if (call->TypeIs(TYP_VOID))
     {
         vnpNorm = ValueNumStore::VNPForVoid();
     }
@@ -14885,7 +14882,7 @@ void Compiler::fgValueNumberAddExceptionSetForBoundsCheck(GenTree* tree)
 void Compiler::fgValueNumberAddExceptionSetForCkFinite(GenTree* tree)
 {
     // We should only be dealing with an check finite operation.
-    assert(tree->OperGet() == GT_CKFINITE);
+    assert(tree->OperIs(GT_CKFINITE));
 
     // Unpack, Norm,Exc for the tree's VN
     //

@@ -98,7 +98,7 @@ namespace System.Collections.Generic
         public Dictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection) : this(collection, null) { }
 
         public Dictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer) :
-            this((collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0, comparer)
+            this((collection as IReadOnlyCollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0, comparer)
         {
             if (collection == null)
             {

@@ -251,13 +251,8 @@ add_executable_clr(paltests
   file_io/CreateFileA/test1/CreateFileA.cpp
   file_io/CreateFileW/test1/CreateFileW.cpp
   file_io/errorpathnotfound/test1/test1.cpp
-  file_io/errorpathnotfound/test2/test2.cpp
   file_io/FILECanonicalizePath/FILECanonicalizePath.cpp
   file_io/FlushFileBuffers/test1/FlushFileBuffers.cpp
-  file_io/GetFileAttributesA/test1/GetFileAttributesA.cpp
-  file_io/GetFileAttributesExW/test1/test1.cpp
-  file_io/GetFileAttributesExW/test2/test2.cpp
-  file_io/GetFileAttributesW/test1/GetFileAttributesW.cpp
   file_io/GetFileSize/test1/GetFileSize.cpp
   file_io/GetFileSizeEx/test1/GetFileSizeEx.cpp
   file_io/GetFullPathNameA/test1/GetFullPathNameA.cpp

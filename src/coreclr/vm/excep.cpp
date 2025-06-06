@@ -6192,7 +6192,7 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
     {
         if (pExceptionRecord->ExceptionInformation[1] < NULL_AREA_SIZE)
         {
-            exceptionCode = 0; //STATUS_REDHAWK_NULL_REFERENCE;
+            exceptionCode = 0; //STATUS_NATIVEAOT_NULL_REFERENCE;
         }
     }
 
@@ -11433,7 +11433,7 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_Context.SegCs = 0;
     m_Context.SegSs = 0;
     m_Context.EFlags = 0;
-    m_Context.Eax = 0;    
+    m_Context.Eax = 0;
     m_Context.Ecx = pTransitionBlock->m_argumentRegisters.ECX;
     m_Context.Edx = pTransitionBlock->m_argumentRegisters.EDX;
 #ifdef FEATURE_EH_FUNCLETS
