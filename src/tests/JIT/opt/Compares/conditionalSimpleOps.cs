@@ -30,6 +30,16 @@ public class ConditionalSimpleOpTest
         Assert.Equal(expected, op1);
     }
 
+    [Theory]
+    [InlineData(11, 12)]
+    [InlineData(12, 13)]
+    [InlineData(45, 45)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void add_variable_reversed(int op1, int expected)
+    {
+        op1 = op1 > 42 ? op1 : ++op1;
+        Assert.Equal(expected, op1);
+    }
 
     [Theory]
     [InlineData(12, 13)]

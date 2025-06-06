@@ -774,11 +774,11 @@ bool OptIfConversionDsc::optIfConvert()
 //-----------------------------------------------------------------------------
 // TryTransformSelectToOrdinaryOps: Try transforming the identified if-else expressions to a single expression
 //
-// This is meant mostly for RISC-V where the condition (1 or 0) is stored to a regular general-purpose register
+// This is meant mostly for RISC-V where the condition (1 or 0) is stored in a regular general-purpose register
 // which can be fed as an argument to standard operations, e.g.
 //     * (cond ? 6 : 5) becomes (5 + cond)
 //     * (cond ? -25 : -13) becomes (-25 >> cond)
-//     * (cond ? a + 1 : a) becomes (a + cond)
+//     * (cond ? a : ++a) becomes (a + !cond)
 //     * (cond ? 1 << a : 0) becomes (cond << a)
 //
 // Arguments:
@@ -932,25 +932,25 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
             unsigned  lclNum     = lclVar->GetLclNum();
             var_types lclVarType = m_comp->lvaGetDesc(lclNum)->TypeGet();
 
-            GenTree* op = isTrueLclVar ? falseInput : trueInput;
-            if (op->OperIs(GT_CAST))
+            GenTree* binOp = isTrueLclVar ? falseInput : trueInput;
+            if (binOp->OperIs(GT_CAST))
             {
                 // TODO: check if casts to variable type
                 // if (op->AsCast()->gtCastType == ???)
             }
-            if (op->OperIs(GT_ADD, GT_OR, GT_XOR))
+            if (binOp->OperIs(GT_ADD, GT_OR, GT_XOR))
             {
-                GenTree*& op1 = op->AsOp()->gtOp1;
-                GenTree*& op2 = op->AsOp()->gtOp2;
+                GenTree*& op1 = binOp->AsOp()->gtOp1;
+                GenTree*& op2 = binOp->AsOp()->gtOp2;
                 if (op1->IsIntegralConst(1) || op2->IsIntegralConst(1))
                 {
-                    GenTree* otherOp = op1->IsIntegralConst(1) ? op2 : op1;
-                    if (otherOp->OperIs(GT_LCL_VAR) && otherOp->AsLclVar()->GetLclNum() == lclNum)
+                    GenTree* varOp = op1->IsIntegralConst(1) ? op2 : op1;
+                    if (varOp->OperIs(GT_LCL_VAR) && varOp->AsLclVar()->GetLclNum() == lclNum)
                     {
                         GenTree*& constOp = op1->IsIntegralConst(1) ? op1 : op2;
 
-                        constOp = m_cond;
-                        return op;
+                        constOp = isTrueLclVar ? m_comp->gtReverseCond(m_cond) : m_cond;
+                        return binOp;
                     }
                 }
             }
