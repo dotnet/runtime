@@ -326,6 +326,8 @@ void EtwCallback(
     }
 }
 
+#endif // FEATURE_ETW
+
 /**************************************************************************************/
 /* Called when ETW is turned OFF on an existing process .Will be used by the controller for end rundown*/
 /**************************************************************************************/
@@ -363,8 +365,6 @@ VOID ETW::EnumerationLog::EndRundown()
             );
     }
 }
-
-#endif // FEATURE_ETW
 
 void EventPipeEtwCallbackDotNETRuntime(
     _In_ GUID * SourceId,
