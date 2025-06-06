@@ -1362,13 +1362,12 @@ int32_t InterpCompiler::GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, Inte
     return size;
 }
 
-
 void InterpCompiler::CreateILVars()
 {
     bool hasThis = m_methodInfo->args.hasThis();
     bool hasParamArg = m_methodInfo->args.hasTypeArg();
     int paramArgIndex = hasParamArg ? hasThis ? 1 : 0 : INT_MAX;
-    int32_t offset, size, align;
+    int32_t offset;
     int numArgs = hasThis + m_methodInfo->args.numArgs;
     int numILLocals = m_methodInfo->locals.numArgs;
     m_numILVars = numArgs + numILLocals;
@@ -1391,50 +1390,30 @@ void InterpCompiler::CreateILVars()
     // the param arg to be localized to this function, and the small set of helper functions that directly use it.
 
     CORINFO_ARG_LIST_HANDLE sigArg = m_methodInfo->args.args;
-    for (int i = 0; i < (numArgs + hasParamArg); i++) {
-        InterpType interpType;
-        CORINFO_CLASS_HANDLE argClass;
-        int iArgToSet = i;
-        if (iArgToSet > paramArgIndex)
-        {
-            iArgToSet--; // The param arg is stored after the IL locals in the m_pVars array
-        }
-        if (hasThis && i == 0)
-        {
-            argClass = m_compHnd->getMethodClass(m_methodInfo->ftn);
-            if (m_compHnd->isValueClass(argClass))
-                interpType = InterpTypeByRef;
-            else
-                interpType = InterpTypeO;
-        }
-        else if (i == paramArgIndex)
-        {
-            iArgToSet = m_varsSize - 1; // The param arg is stored after the IL locals in the m_pVars array
-            m_paramArgIndex = iArgToSet;
-            INTERP_DUMP("Param arg at index m_pVars[%d]\n", iArgToSet);
-            interpType = InterpTypeI;
-            argClass = NULL; // No class for the param arg
-        }
-        else
-        {
-            CorInfoType argCorType;
-            argCorType = strip(m_compHnd->getArgType(&m_methodInfo->args, sigArg, &argClass));
-            interpType = GetInterpType(argCorType);
-            sigArg = m_compHnd->getArgNext(sigArg);
-        }
-        size = GetInterpTypeStackSize(argClass, interpType, &align);
 
-        new (&m_pVars[iArgToSet]) InterpVar(interpType, argClass, size);
-
-        m_pVars[iArgToSet].global = true;
-        m_pVars[iArgToSet].ILGlobal = true;
-        m_pVars[iArgToSet].size = size;
-        offset = ALIGN_UP_TO(offset, align);
-        m_pVars[iArgToSet].offset = offset;
-        INTERP_DUMP("alloc arg var %d to offset %d in m_pVars[%d]\n", i, offset, iArgToSet);
-        offset += size;
+    int argIndexOffset = 0;
+    if (hasThis)
+    {
+        CORINFO_CLASS_HANDLE argClass = m_compHnd->getMethodClass(m_methodInfo->ftn);
+        InterpType interpType = m_compHnd->isValueClass(argClass) ? InterpTypeByRef : InterpTypeO;
+        CreateNextLocalVar(0, argClass, interpType, &offset);
+        argIndexOffset++;
     }
 
+    if (hasParamArg)
+    {
+        m_paramArgIndex = m_varsSize - 1; // The param arg is stored after the IL locals in the m_pVars array
+        CreateNextLocalVar(m_paramArgIndex, NULL, InterpTypeI, &offset);
+    }
+
+    for (int i = argIndexOffset; i < numArgs; i++)
+    {
+        CORINFO_CLASS_HANDLE argClass;
+        CorInfoType argCorType = strip(m_compHnd->getArgType(&m_methodInfo->args, sigArg, &argClass));
+        InterpType interpType = GetInterpType(argCorType);
+        sigArg = m_compHnd->getArgNext(sigArg);
+        CreateNextLocalVar(i, argClass, interpType, &offset);
+    }
     offset = ALIGN_UP_TO(offset, INTERP_STACK_ALIGNMENT);
 
     sigArg = m_methodInfo->locals.args;
@@ -1442,21 +1421,10 @@ void InterpCompiler::CreateILVars()
     int index = numArgs;
 
     for (int i = 0; i < numILLocals; i++) {
-        InterpType interpType;
         CORINFO_CLASS_HANDLE argClass;
-
         CorInfoType argCorType = strip(m_compHnd->getArgType(&m_methodInfo->locals, sigArg, &argClass));
-        interpType = GetInterpType(argCorType);
-        size = GetInterpTypeStackSize(argClass, interpType, &align);
-
-        new (&m_pVars[index]) InterpVar(interpType, argClass, size);
-
-        m_pVars[index].global = true;
-        m_pVars[index].ILGlobal = true;
-        offset = ALIGN_UP_TO(offset, align);
-        m_pVars[index].offset = offset;
-        INTERP_DUMP("alloc local var %d to offset %d\n", index, offset);
-        offset += size;
+        InterpType interpType = GetInterpType(argCorType);
+        CreateNextLocalVar(index, argClass, interpType, &offset);
         sigArg = m_compHnd->getArgNext(sigArg);
         index++;
     }
@@ -1464,6 +1432,7 @@ void InterpCompiler::CreateILVars()
     if (hasParamArg)
     {
         // The param arg is stored after the IL locals in the m_pVars array
+        assert(index == m_paramArgIndex);
         index++;
     }
 
@@ -1476,16 +1445,27 @@ void InterpCompiler::CreateILVars()
 
     for (unsigned int i = 0; i < m_methodInfo->EHcount; i++)
     {
-        new (&m_pVars[index]) InterpVar(InterpTypeO, NULL, INTERP_STACK_SLOT_SIZE);
-        m_pVars[index].global = true;
-        m_pVars[index].ILGlobal = true;
-        m_pVars[index].offset = offset;
-        INTERP_DUMP("alloc clause var %d to offset %d\n", index, offset);
-        offset += INTERP_STACK_SLOT_SIZE;
+        CreateNextLocalVar(index, NULL, InterpTypeO, &offset);
         index++;
     }
 
     m_totalVarsStackSize = offset;
+}
+
+void InterpCompiler::CreateNextLocalVar(int iArgToSet, CORINFO_CLASS_HANDLE argClass, InterpType interpType, int32_t *pOffset)
+{
+    int32_t align;
+    int32_t size = GetInterpTypeStackSize(argClass, interpType, &align);
+
+    new (&m_pVars[iArgToSet]) InterpVar(interpType, argClass, size);
+
+    m_pVars[iArgToSet].global = true;
+    m_pVars[iArgToSet].ILGlobal = true;
+    m_pVars[iArgToSet].size = size;
+    *pOffset = ALIGN_UP_TO(*pOffset, align);
+    m_pVars[iArgToSet].offset = *pOffset;
+    INTERP_DUMP("alloc arg var %d to offset %d\n", iArgToSet, *pOffset);
+    *pOffset += size;
 }
 
 // Create finally call island basic blocks for all try regions with finally clauses that the leave exits.
@@ -4731,6 +4711,7 @@ static const char* s_jitHelperNames[CORINFO_HELP_COUNT] = {
 #define JITHELPER(code, pfnHelper, binderId)        #code,
 #define DYNAMICJITHELPER(code, pfnHelper, binderId) #code,
 #include "jithelpers.h"
+#include "compiler.h"
 };
 
 const char* CorInfoHelperToName(CorInfoHelpFunc helper)
