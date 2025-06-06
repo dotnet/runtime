@@ -2688,7 +2688,7 @@ void ObjectAllocator::UpdateAncestorTypes(
             {
                 // If we are loading from a GC struct field, we may need to retype the load
                 //
-                if ((newFieldType != TYP_UNDEF) && && !sawIndir)
+                if ((newFieldType != TYP_UNDEF) && !sawIndir)
                 {
                     bool didRetype = false;
 
@@ -3021,16 +3021,11 @@ void ObjectAllocator::RewriteUses()
             continue;
         }
 
-        var_types newType = TYP_UNDEF;
-        if (m_HeapLocalToStackObjLocalMap.Contains(lclNum))
+        var_types newType     = TYP_UNDEF;
+        unsigned  stackLclNum = BAD_VAR_NUM;
+        if (m_HeapLocalToStackObjLocalMap.TryGetValue(lclNum, &stackLclNum))
         {
             // Appearances of lclNum will be replaced. We need to retype.
-            //
-            newType = TYP_I_IMPL;
-        }
-        else if (m_HeapLocalToStackArrLocalMap.Contains(lclNum))
-        {
-            // Appearances of lclNum will be NOT be replaced. We need to retype.
             //
             newType = TYP_I_IMPL;
 
@@ -3077,7 +3072,7 @@ void ObjectAllocator::RewriteUses()
                     bool const         retypeAsNonGC = DoesIndexPointToStack(fieldIndex);
                     ClassLayout* const newLayout =
                         retypeAsNonGC ? GetNonGCLayout(stackLayout) : GetByrefLayout(stackLayout);
-                    JITDUMP("Changing layout of stack allocated object V%02u to %s\n", stackLclNum,
+                    JITDUMP("Changing layout of stack allocated array V%02u to %s\n", stackLclNum,
                             retypeAsNonGC ? "nongc" : "byref");
                     stackLclDsc->ChangeLayout(newLayout);
                 }
