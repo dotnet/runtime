@@ -24,6 +24,9 @@ struct StackVal
     } data;
 };
 
+typedef DPTR(struct InterpMethodContextFrame) PTR_InterpMethodContextFrame;
+class InterpreterFrame;
+
 struct InterpMethodContextFrame
 {
     PTR_InterpMethodContextFrame pParent;
