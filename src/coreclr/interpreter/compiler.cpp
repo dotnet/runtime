@@ -2403,7 +2403,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
             }
             else
             {
-                FillTempVarWithToken(&resolvedCallToken, false, contextParamVar);
+                FillTempVarWithToken(&resolvedCallToken, false, true, contextParamVar);
             }
         }
 
@@ -2430,7 +2430,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
             }
             else
             {
-                FillTempVarWithToken(&resolvedCallToken, true, contextParamVar);
+                FillTempVarWithToken(&resolvedCallToken, true, true, contextParamVar);
             }
         }
     }
@@ -2489,7 +2489,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
                     if (newObjTypeVar != -1)
                     {
                         // newobj of type known only through a generic dictionary lookup.
-                        assert(!"newobj of type known only through a generic dictionary lookup. NYI"); // This isn't implemented yet
+                        AddIns(INTOP_NEWOBJ_VAR);
+                        m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, newObjTypeVar);
                     }
                     else
                     {
@@ -2525,14 +2526,22 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
             break;
 
         case CORINFO_VIRTUALCALL_VTABLE:
-            // Traditional virtual call.
+            // Traditional virtual call. In theory we could optimize this to using the vtable
             AddIns(INTOP_CALLVIRT);
             m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
             break;
 
         case CORINFO_VIRTUALCALL_LDVIRTFTN:
-            // Resolve a virtual call using the helper function to a function pointer, and then call through that
-            assert("!Need to support ldvirtftn");
+            if (callInfo.exactContextNeedsRuntimeLookup)
+            {
+                // Resolve a virtual call using the helper function to a function pointer, and then call through that
+                assert(!"Need to support ldvirtftn path");
+            }
+            else
+            {
+                AddIns(INTOP_CALLVIRT);
+                m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
+            }
             break;
         
         case CORINFO_VIRTUALCALL_STUB:
@@ -3731,69 +3740,6 @@ retry_emit:
                 readonly = false;
                 tailcall = false;
                 break;
-                /*
-                CORINFO_METHOD_HANDLE ctorMethod;
-                CORINFO_SIG_INFO ctorSignature;
-                CORINFO_CLASS_HANDLE ctorClass;
-                m_ip++;
-                ctorMethod = ResolveMethodToken(getU4LittleEndian(m_ip));
-                m_ip += 4;
-
-                m_compHnd->getMethodSig(ctorMethod, &ctorSignature);
-                ctorClass = m_compHnd->getMethodClass(ctorMethod);
-                int32_t numArgs = ctorSignature.numArgs;
-
-                // TODO Special case array ctor / string ctor
-                m_pStackPointer -= numArgs;
-
-                // Allocate callArgs for the call, this + numArgs + terminator
-                int32_t *callArgs = (int32_t*) AllocMemPool((numArgs + 2) * sizeof(int32_t));
-                for (int i = 0; i < numArgs; i++)
-                    callArgs[i + 1] = m_pStackPointer[i].var;
-                callArgs[numArgs + 1] = -1;
-
-                // Push the return value and `this` argument to the ctor
-                InterpType retType = GetInterpType(m_compHnd->asCorInfoType(ctorClass));
-                int32_t vtsize = 0;
-                if (retType == InterpTypeVT)
-                {
-                    vtsize = m_compHnd->getClassSize(ctorClass);
-                    PushTypeVT(ctorClass, vtsize);
-                    PushInterpType(InterpTypeByRef, NULL);
-                }
-                else
-                {
-                    PushInterpType(retType, ctorClass);
-                    PushInterpType(retType, ctorClass);
-                }
-                int32_t dVar = m_pStackPointer[-2].var;
-                int32_t thisVar = m_pStackPointer[-1].var;
-                // Consider this arg as being defined, although newobj defines it
-                AddIns(INTOP_DEF);
-                m_pLastNewIns->SetDVar(thisVar);
-                callArgs[0] = thisVar;
-
-                if (retType == InterpTypeVT)
-                {
-                    AddIns(INTOP_NEWOBJ_VT);
-                    m_pLastNewIns->data[1] = (int32_t)ALIGN_UP_TO(vtsize, INTERP_STACK_SLOT_SIZE);
-                }
-                else
-                {
-                    AddIns(INTOP_NEWOBJ);
-                    m_pLastNewIns->data[1] = GetDataItemIndex(ctorClass);
-                }
-                m_pLastNewIns->data[0] = GetMethodDataItemIndex(ctorMethod);
-                m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
-                m_pLastNewIns->SetDVar(dVar);
-
-                m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
-                m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof(InterpCallInfo));
-                m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
-
-                // Pop this, the result of the newobj still remains on the stack
-                m_pStackPointer--;
-                break;*/
             }
             case CEE_DUP:
             {

@@ -1226,6 +1226,22 @@ CALL_INTERP_METHOD:
                     pThreadContext->pStackPointer = stack + pMethod->allocaSize;
                     break;
                 }
+                case INTOP_NEWOBJ_VAR:
+                {
+                    returnOffset = ip[1];
+                    callArgsOffset = ip[2];
+                    methodSlot = ip[4];
+
+                    OBJECTREF objRef = AllocateObject(LOCAL_VAR(ip[3], MethodTable*));
+
+                    // This is return value
+                    LOCAL_VAR(returnOffset, OBJECTREF) = objRef;
+                    // Set `this` arg for ctor call
+                    LOCAL_VAR (callArgsOffset, OBJECTREF) = objRef;
+                    ip += 5;
+
+                    goto CALL_INTERP_SLOT;
+                }
                 case INTOP_NEWOBJ:
                 {
                     returnOffset = ip[1];
