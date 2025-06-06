@@ -37,17 +37,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            if (other is InvalidExternalTypeMapNode otherNode)
-            {
-                int result = comparer.Compare(TypeMapGroup, otherNode.TypeMapGroup);
-                if (result != 0)
-                    return result;
-                return comparer.Compare(ThrowingMethodStub, otherNode.ThrowingMethodStub);
-            }
-            else
-            {
-                return -1; // This node is always less than any other node
-            }
+            var otherNode = (InvalidExternalTypeMapNode)other;
+
+            int result = comparer.Compare(TypeMapGroup, otherNode.TypeMapGroup);
+            if (result != 0)
+                return result;
+            return comparer.Compare(ThrowingMethodStub, otherNode.ThrowingMethodStub);
         }
     }
 }
