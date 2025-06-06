@@ -2937,8 +2937,10 @@ GenTree* Compiler::impInlineUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenT
     CORINFO_FIELD_HANDLE valueFldHnd    = info.compCompHnd->getFieldInClass(nullableCls, 1);
     CORINFO_CLASS_HANDLE valueStructCls = NO_CLASS_HANDLE;
     ClassLayout*         layout         = nullptr;
-    var_types            valueType =
-        TypeHandleToVarType(info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls), valueStructCls, &layout);
+
+    CorInfoType corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+    var_types   valueType  = TypeHandleToVarType(corFldType, valueStructCls, &layout);
+
     static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
     unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
     unsigned valueOffset  = info.compCompHnd->getFieldOffset(valueFldHnd);
