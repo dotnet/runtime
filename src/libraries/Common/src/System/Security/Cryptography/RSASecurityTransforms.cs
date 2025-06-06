@@ -397,6 +397,12 @@ namespace System.Security.Cryptography
                 ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
                 ArgumentNullException.ThrowIfNull(padding);
 
+                // Apple does not support custom salt length for the PSS padding
+                if (padding.Mode == RSASignaturePaddingMode.Pss && (padding.PssSaltLength != RSASignaturePadding.PssSaltLengthIsHashLength || padding.PssSaltLength != RsaPaddingProcessor.HashLength(hashAlgorithm)))
+                {
+                    throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
+                }
+
                 ThrowIfDisposed();
 
                 Interop.AppleCrypto.PAL_SignatureAlgorithm signatureAlgorithm = padding.Mode switch
@@ -454,7 +460,7 @@ namespace System.Security.Cryptography
 
                 byte[] rented = CryptoPool.Rent(rsaSize);
                 Span<byte> buf = new Span<byte>(rented, 0, rsaSize);
-                RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, buf, keySize, padding.CalculatePssSaltLength(KeySize, hashAlgorithm));
+                RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, buf, keySize, hash.Length);
 
                 try
                 {
