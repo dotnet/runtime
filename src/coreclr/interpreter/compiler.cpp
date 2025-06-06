@@ -869,7 +869,7 @@ void InterpCompiler::EmitCode()
     // Emit all the code in waves. First emit all blocks that are not inside any EH clauses.
     // Then emit blocks that are inside of a single EH clause, then ones that are inside of
     // two EH clauses, etc.
-    // The goal is to move all clauses to the end of the method code recursively so that 
+    // The goal is to move all clauses to the end of the method code recursively so that
     // no handler is inside of a try block.
     int32_t *ip = m_pMethodCode;
     bool emittedBlock;
@@ -1711,7 +1711,7 @@ bool InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
             // Initialize finally handler stack state to empty.
             pFinallyBB->stackHeight = 0;
         }
-        
+
         if (clause.Flags == CORINFO_EH_CLAUSE_NONE || clause.Flags == CORINFO_EH_CLAUSE_FILTER)
         {
             InterpBasicBlock* pCatchBB = GetBB(clause.HandlerOffset);
@@ -2146,6 +2146,7 @@ bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SI
                 return true;
             }
         }
+        // TODO: Add multi-dimensional array getters and setters
     }
 
     return false;
@@ -2310,6 +2311,7 @@ static int32_t GetStelemForType(InterpType interpType)
         case InterpTypeI8: return INTOP_STELEM_I8;
         case InterpTypeR4: return INTOP_STELEM_R4;
         case InterpTypeR8: return INTOP_STELEM_R8;
+        case InterpTypeO: return INTOP_STELEM_REF;
         default:
             assert(0);
     }
@@ -2569,7 +2571,7 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
     linkBBlocks = true;
     needsRetryEmit = false;
-    
+
 retry_emit:
     emittedBBlocks = false;
     while (m_ip < codeEnd)
@@ -3441,6 +3443,37 @@ retry_emit:
                 ctorClass = m_compHnd->getMethodClass(ctorMethod);
                 int32_t numArgs = ctorSignature.numArgs;
 
+                uint32_t attribs = m_compHnd->getClassAttribs(ctorClass);
+                if ((attribs & CORINFO_FLG_ARRAY) != 0)
+                {
+                    if (numArgs > 1)
+                    {
+                        m_pStackPointer -= numArgs;
+
+                        int32_t *callArgs = (int32_t*) AllocMemPool((numArgs + 1) * sizeof(int32_t));
+                        for (int i = 0; i < numArgs; i++)
+                            callArgs[i] = m_pStackPointer[i].var;
+                        callArgs[numArgs] = -1;
+
+                        AddIns(INTOP_NEWOBJ_ARR);
+                        m_pLastNewIns->data[0] = GetDataItemIndex(ctorClass);
+                        m_pLastNewIns->data[1] = numArgs;
+
+                        PushInterpType(InterpTypeO, ctorClass);
+
+                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                        m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
+
+                        m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
+                        m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof(InterpCallInfo));
+                        m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
+
+                        break;
+                    }
+
+                    assert(!"Array constructor with <= 1 args is not allowed");
+                }
+
                 // TODO Special case array ctor / string ctor
                 m_pStackPointer -= numArgs;
 
@@ -4163,6 +4196,98 @@ retry_emit:
                 m_ip++;
                 break;
             }
+            case CEE_LDELEM_REF:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_REF, InterpTypeO);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM:
+            {
+                CHECK_STACK(2);
+
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
+
+                CORINFO_CLASS_HANDLE elemClsHnd = resolvedToken.hClass;
+                CorInfoType elemCorType = m_compHnd->asCorInfoType(elemClsHnd);
+                InterpType elemInterpType = GetInterpType(elemCorType);
+
+                switch (elemInterpType)
+                {
+                    case InterpTypeI1:
+                        EmitLdelem(INTOP_LDELEM_I1, InterpTypeI4);
+                        break;
+                    case InterpTypeU1:
+                        EmitLdelem(INTOP_LDELEM_U1, InterpTypeI4);
+                        break;
+                    case InterpTypeI2:
+                        EmitLdelem(INTOP_LDELEM_I2, InterpTypeI4);
+                        break;
+                    case InterpTypeU2:
+                        EmitLdelem(INTOP_LDELEM_U2, InterpTypeI4);
+                        break;
+                    case InterpTypeI4:
+                        EmitLdelem(INTOP_LDELEM_I4, InterpTypeI4);
+                        break;
+                    case InterpTypeI8:
+                        EmitLdelem(INTOP_LDELEM_I8, InterpTypeI8);
+                        break;
+                    case InterpTypeR4:
+                        EmitLdelem(INTOP_LDELEM_R4, InterpTypeR4);
+                        break;
+                    case InterpTypeR8:
+                        EmitLdelem(INTOP_LDELEM_R8, InterpTypeR8);
+                        break;
+                    case InterpTypeO:
+                        EmitLdelem(INTOP_LDELEM_REF, InterpTypeO);
+                        break;
+                    case InterpTypeVT:
+                    {
+                        int size = m_compHnd->getClassSize(elemClsHnd);
+                        m_pStackPointer -= 2;
+                        AddIns(INTOP_LDELEM_VT);
+                        m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+                        PushTypeVT(elemClsHnd, size);
+                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                        m_pLastNewIns->data[0] = size;
+                        break;
+                    }
+                    default:
+                        assert(!"Unsupported element type for LDELEM");
+                        m_hasInvalidCode = true;
+                        goto exit_bad_code;
+                }
+
+                m_ip += 5;
+                break;
+            }
+            case CEE_LDELEMA:
+            {
+                // TODO: Support multi-dimensional arrays
+                CHECK_STACK(2);
+
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
+
+                CORINFO_CLASS_HANDLE elemClsHnd = resolvedToken.hClass;
+
+                m_pStackPointer -= 2;
+                AddIns(INTOP_LDELEMA1);
+                m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+
+                PushInterpType(InterpTypeByRef, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+                int elemSize = m_compHnd->getClassSize(elemClsHnd);
+                m_pLastNewIns->data[0] = elemSize;
+
+                m_ip += 5;
+                break;
+            }
             case CEE_STELEM_I:
             {
                 CHECK_STACK(3);
@@ -4212,7 +4337,83 @@ retry_emit:
                 m_ip++;
                 break;
             }
+            case CEE_STELEM_REF:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeO);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM:
+            {
+                CHECK_STACK(3);
 
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
+
+                CORINFO_CLASS_HANDLE elemClsHnd = resolvedToken.hClass;
+                CorInfoType elemCorType = m_compHnd->asCorInfoType(elemClsHnd);
+                InterpType elemInterpType = GetInterpType(elemCorType);
+
+                switch (elemInterpType)
+                {
+                    case InterpTypeI1:
+                        EmitStelem(InterpTypeI1);
+                        break;
+                    case InterpTypeU1:
+                        EmitStelem(InterpTypeU1);
+                        break;
+                    case InterpTypeU2:
+                        EmitStelem(InterpTypeU2);
+                        break;
+                    case InterpTypeI2:
+                        EmitStelem(InterpTypeI2);
+                        break;
+                    case InterpTypeI4:
+                        EmitStelem(InterpTypeI4);
+                        break;
+                    case InterpTypeI8:
+                        EmitStelem(InterpTypeI8);
+                        break;
+                    case InterpTypeR4:
+                        EmitStelem(InterpTypeR4);
+                        break;
+                    case InterpTypeR8:
+                        EmitStelem(InterpTypeR8);
+                        break;
+                    case InterpTypeO:
+                        EmitStelem(InterpTypeO);
+                        break;
+                    case InterpTypeVT:
+                    {
+                        int size = m_compHnd->getClassSize(elemClsHnd);
+                        bool hasRefs = (m_compHnd->getClassAttribs(elemClsHnd) & CORINFO_FLG_CONTAINS_GC_PTR) != 0;
+                        m_pStackPointer -= 3;
+                        if (hasRefs)
+                        {
+                            AddIns(INTOP_STELEM_VT);
+                            m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
+                            m_pLastNewIns->data[0] = size;
+                            m_pLastNewIns->data[1] = GetDataItemIndex(elemClsHnd);
+                        }
+                        else
+                        {
+                            AddIns(INTOP_STELEM_VT_NOREF);
+                            m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
+                            m_pLastNewIns->data[0] = size;
+                        }
+                        break;
+                    }
+                    default:
+                        assert(!"Unsupported element type for STELEM");
+                        m_hasInvalidCode = true;
+                        goto exit_bad_code;
+                }
+
+                m_ip += 5;
+                break;
+            }
             case CEE_LDTOKEN:
             {
                 AddIns(INTOP_LDTOKEN);

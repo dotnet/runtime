@@ -1252,6 +1252,31 @@ CALL_TARGET_IP:
 
                     goto CALL_INTERP_SLOT;
                 }
+                case INTOP_NEWOBJ_ARR:
+                {
+                    const int32_t dVar = ip[1];
+                    const int32_t callArgsOffset = ip[2];
+                    const int32_t clsIdx = ip[3];
+                    const int32_t rank = ip[4];
+
+                    MethodTable* arrayClass = (MethodTable*)pMethod->pDataItems[clsIdx];
+
+                    // TODO: Stack slot is 8 bytes aligned and
+                    // AllocateArrayEx expects the dimensions to be in int32_t array
+                    // so we need to convert the stack slots to int32_t
+                    int32_t* dims = (int32_t*)alloca(rank * sizeof(int32_t));
+                    for (int i = 0; i < rank; i++)
+                    {
+                        dims[i] = *(int32_t*)(stack + callArgsOffset + i * 8);
+                    }
+
+                    OBJECTREF arr = AllocateArrayEx(arrayClass, dims, rank);
+
+                    LOCAL_VAR(dVar, OBJECTREF) = arr;
+
+                    ip += 5;
+                    break;
+                }
                 case INTOP_NEWOBJ_VT:
                 {
                     returnOffset = ip[1];
@@ -1445,6 +1470,44 @@ do {                                                                           \
                     LDELEM(double, double);
                     break;
                 }
+                case INTOP_LDELEM_REF:
+                {
+                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
+                    if (arrayRef == NULL)
+                        COMPlusThrow(kNullReferenceException);
+
+                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    uint32_t len = arr->GetNumComponents();
+                    uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
+                    if (idx >= len)
+                        COMPlusThrow(kIndexOutOfRangeException);
+
+                    uint8_t* pData = arr->GetDataPtr();
+                    OBJECTREF elemRef = *(OBJECTREF*)(pData + idx * sizeof(OBJECTREF));
+                    LOCAL_VAR(ip[1], OBJECTREF) = elemRef;
+                    ip += 4;
+                    break;
+                }
+                case INTOP_LDELEM_VT:
+                {
+                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
+                    if (arrayRef == NULL)
+                        COMPlusThrow(kNullReferenceException);
+
+                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    uint32_t len = arr->GetNumComponents();
+                    uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
+                    if (idx >= len)
+                        COMPlusThrow(kIndexOutOfRangeException);
+
+                    uint8_t* pData = arr->GetDataPtr();
+                    size_t componentSize = arr->GetMethodTable()->GetComponentSize();
+                    void* elemAddr = pData + idx * componentSize;
+                    MethodTable* pElemMT = arr->GetArrayElementTypeHandle().AsMethodTable();
+                    CopyValueClassUnchecked(stack + ip[1], elemAddr, pElemMT);
+                    ip += 5;
+                    break;
+                }
 #define STELEM(dtype,etype)                                                    \
 do {                                                                           \
     BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);                    \
@@ -1491,6 +1554,87 @@ do {                                                                           \
                 case INTOP_STELEM_R8:
                 {
                     STELEM(double, double);
+                    break;
+                }
+                case INTOP_STELEM_REF:
+                {
+                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);
+                    if (arrayRef == NULL)
+                        COMPlusThrow(kNullReferenceException);
+
+                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    uint32_t len = arr->GetNumComponents();
+                    uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);
+                    if (idx >= len)
+                        COMPlusThrow(kIndexOutOfRangeException);
+
+                    OBJECTREF elemRef = LOCAL_VAR(ip[3], OBJECTREF);
+                    uint8_t* pData = arr->GetDataPtr();
+                    SetObjectReferenceUnchecked((OBJECTREF*)(pData + idx * sizeof(OBJECTREF)), elemRef);
+                    ip += 4;
+                    break;
+                }
+                case INTOP_STELEM_VT:
+                {
+                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);
+                    if (arrayRef == NULL)
+                        COMPlusThrow(kNullReferenceException);
+
+                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    uint32_t len = arr->GetNumComponents();
+                    uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);
+                    if (idx >= len)
+                        COMPlusThrow(kIndexOutOfRangeException);
+
+                    uint8_t* pData = arr->GetDataPtr();
+                    size_t structSize = ip[4];
+                    MethodTable* pMT = (MethodTable*)pMethod->pDataItems[ip[5]];
+                    size_t componentSize = arr->GetMethodTable()->GetComponentSize();
+                    void* elemAddr = pData + idx * componentSize;
+
+                    CopyValueClassUnchecked(elemAddr, stack + ip[3], pMT);
+                    ip += 6;
+                    break;
+                }
+                case INTOP_STELEM_VT_NOREF:
+                {
+                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);
+                    if (arrayRef == NULL)
+                        COMPlusThrow(kNullReferenceException);
+
+                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    uint32_t len = arr->GetNumComponents();
+                    uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);
+                    if (idx >= len)
+                        COMPlusThrow(kIndexOutOfRangeException);
+
+                    uint8_t* pData = arr->GetDataPtr();
+
+                    size_t structSize = ip[4];
+                    size_t componentSize = arr->GetMethodTable()->GetComponentSize();
+                    void* elemAddr = pData + idx * componentSize;
+
+                    memcpyNoGCRefs(elemAddr, stack + ip[3], structSize);
+                    ip += 5;
+                    break;
+                }
+                case INTOP_LDELEMA1:
+                {
+                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
+                    if (arrayRef == NULL)
+                        COMPlusThrow(kNullReferenceException);
+
+                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    uint32_t len = arr->GetNumComponents();
+                    uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
+                    if (idx >= len)
+                        COMPlusThrow(kIndexOutOfRangeException);
+
+                    uint8_t* pData = arr->GetDataPtr();
+                    uint32_t elemSize = ip[4];
+                    void* elemAddr = pData + idx * elemSize;
+                    LOCAL_VAR(ip[1], void*) = elemAddr;
+                    ip += 5;
                     break;
                 }
                 case INTOP_LDTOKEN:
