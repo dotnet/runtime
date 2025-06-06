@@ -331,7 +331,7 @@ void EtwCallback(
 /**************************************************************************************/
 /* Called when ETW is turned OFF on an existing process .Will be used by the controller for end rundown*/
 /**************************************************************************************/
-VOID ETW::EnumerationLog::EndRundown()
+void ETW::EnumerationLog::EndRundown()
 {
     if (IsRuntimeRundownProviderEnabled(TRACE_LEVEL_INFORMATION, CLR_RUNDOWNLOADER_KEYWORD))
     {
@@ -345,7 +345,7 @@ VOID ETW::EnumerationLog::EndRundown()
         GUID nativeGuid;
         uint32_t dwAge;
         TCHAR wszPath[1024];
-        PalGetPDBInfo(pModule, &nativeGuid, &dwAge, wszPath, _countof(wszPath));
+        PalGetPDBInfo(pModule, &nativeGuid, &dwAge, wszPath, ARRAY_SIZE(wszPath));
 
         GUID zeroGuid = { 0 };
         FireEtwModuleDCEnd_V2(
