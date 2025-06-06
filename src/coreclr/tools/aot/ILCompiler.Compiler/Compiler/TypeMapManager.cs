@@ -111,7 +111,7 @@ namespace ILCompiler
                 return TypeSystemThrowingILEmitter.EmitIL(this, Exception);
             }
 
-            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer) => other is ThrowingMethodStub otherStub ? Name.CompareTo(otherStub.Name) : -1;
+            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer) => other is ThrowingMethodStub otherStub ? Name.CompareTo(otherStub.Name, StringComparison.Ordinal) : -1;
 
             public override bool IsPInvoke => false;
 
@@ -128,15 +128,11 @@ namespace ILCompiler
 
         protected readonly TypeMapStates _typeMaps;
 
-        private readonly SortedSet<ExternalTypeMapNode> _externalTypeMaps = new SortedSet<ExternalTypeMapNode>(CompilerComparer.Instance);
-        private readonly SortedSet<InvalidExternalTypeMapNode> _invalidExternalTypeMaps = new SortedSet<InvalidExternalTypeMapNode>(CompilerComparer.Instance);
-        private readonly SortedSet<ProxyTypeMapNode> _proxyTypeMaps = new SortedSet<ProxyTypeMapNode>(CompilerComparer.Instance);
-        private readonly SortedSet<InvalidProxyTypeMapNode> _invalidProxyTypeMaps = new SortedSet<InvalidProxyTypeMapNode>(CompilerComparer.Instance);
-
         protected TypeMapManager(TypeMapStates typeMapStates)
         {
             _typeMaps = typeMapStates;
         }
+
         public enum TypeMapAttributeKind
         {
             None,
@@ -301,10 +297,15 @@ namespace ILCompiler
             return new TypeMapStates(typeMapStates);
         }
 
-        public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
+        public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
             graph.NewMarkedNode += Graph_NewMarkedNode;
         }
+
+        private readonly SortedSet<ExternalTypeMapNode> _externalTypeMaps = new SortedSet<ExternalTypeMapNode>(CompilerComparer.Instance);
+        private readonly SortedSet<InvalidExternalTypeMapNode> _invalidExternalTypeMaps = new SortedSet<InvalidExternalTypeMapNode>(CompilerComparer.Instance);
+        private readonly SortedSet<ProxyTypeMapNode> _proxyTypeMaps = new SortedSet<ProxyTypeMapNode>(CompilerComparer.Instance);
+        private readonly SortedSet<InvalidProxyTypeMapNode> _invalidProxyTypeMaps = new SortedSet<InvalidProxyTypeMapNode>(CompilerComparer.Instance);
 
         protected virtual void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
         {
@@ -329,6 +330,16 @@ namespace ILCompiler
             }
         }
 
+        internal abstract IEnumerable<ExternalTypeMapNode> GetExternalTypeMaps();
+
+        internal abstract IEnumerable<InvalidExternalTypeMapNode> GetInvalidExternalTypeMaps();
+
+        internal abstract IEnumerable<ProxyTypeMapNode> GetProxyTypeMaps();
+
+        internal abstract IEnumerable<InvalidProxyTypeMapNode> GetInvalidProxyTypeMaps();
+
+        public abstract void AddCompilationRoots(IRootingServiceProvider rootProvider);
+
         public void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
         {
             if (_typeMaps.IsEmpty)
@@ -339,27 +350,5 @@ namespace ILCompiler
             header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.ExternalTypeMap), new ExternalTypeMapObjectNode(commonFixupsTableNode));
             header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.ProxyTypeMap), new ProxyTypeMapObjectNode(commonFixupsTableNode));
         }
-
-        internal IEnumerable<ExternalTypeMapNode> GetExternalTypeMaps()
-        {
-            return _externalTypeMaps;
-        }
-
-        internal IEnumerable<InvalidExternalTypeMapNode> GetInvalidExternalTypeMaps()
-        {
-            return _invalidExternalTypeMaps;
-        }
-
-        internal IEnumerable<ProxyTypeMapNode> GetProxyTypeMaps()
-        {
-            return _proxyTypeMaps;
-        }
-
-        internal IEnumerable<InvalidProxyTypeMapNode> GetInvalidProxyTypeMaps()
-        {
-            return _invalidProxyTypeMaps;
-        }
-
-        public abstract void AddCompilationRoots(IRootingServiceProvider rootProvider);
     }
 }

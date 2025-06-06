@@ -11,7 +11,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
-    public sealed class UsageBasedTypeMapManager : TypeMapManager
+    public sealed class UsageBasedTypeMapManager(TypeMapManager.TypeMapStates state) : TypeMapManager(state)
     {
         private sealed class TypeMapsNode(TypeMapStates typeMapState) : DependencyNodeCore<NodeFactory>
         {
@@ -43,7 +43,10 @@ namespace ILCompiler
         private readonly List<TypeDesc> _usedExternalTypeMap = new List<TypeDesc>();
         private readonly List<TypeDesc> _usedProxyTypeMap = new List<TypeDesc>();
 
-        public UsageBasedTypeMapManager(TypeMapStates state) : base(state) { }
+        private readonly SortedSet<ExternalTypeMapNode> _externalTypeMaps = new SortedSet<ExternalTypeMapNode>(CompilerComparer.Instance);
+        private readonly SortedSet<InvalidExternalTypeMapNode> _invalidExternalTypeMaps = new SortedSet<InvalidExternalTypeMapNode>(CompilerComparer.Instance);
+        private readonly SortedSet<ProxyTypeMapNode> _proxyTypeMaps = new SortedSet<ProxyTypeMapNode>(CompilerComparer.Instance);
+        private readonly SortedSet<InvalidProxyTypeMapNode> _invalidProxyTypeMaps = new SortedSet<InvalidProxyTypeMapNode>(CompilerComparer.Instance);
 
         protected override void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
         {
@@ -58,6 +61,45 @@ namespace ILCompiler
             {
                 _usedProxyTypeMap.Add(proxyTypeMapRequestNode.TypeMapGroup);
             }
+
+            if (obj is ExternalTypeMapNode externalTypeMapNode)
+            {
+                _externalTypeMaps.Add(externalTypeMapNode);
+            }
+
+            if (obj is InvalidExternalTypeMapNode invalidExternalTypeMapNode)
+            {
+                _invalidExternalTypeMaps.Add(invalidExternalTypeMapNode);
+            }
+
+            if (obj is ProxyTypeMapNode proxyTypeMapNode)
+            {
+                _proxyTypeMaps.Add(proxyTypeMapNode);
+            }
+
+            if (obj is InvalidProxyTypeMapNode invalidProxyTypeMapNode)
+            {
+                _invalidProxyTypeMaps.Add(invalidProxyTypeMapNode);
+            }
+        }
+        internal override IEnumerable<ExternalTypeMapNode> GetExternalTypeMaps()
+        {
+            return _externalTypeMaps;
+        }
+
+        internal override IEnumerable<InvalidExternalTypeMapNode> GetInvalidExternalTypeMaps()
+        {
+            return _invalidExternalTypeMaps;
+        }
+
+        internal override IEnumerable<ProxyTypeMapNode> GetProxyTypeMaps()
+        {
+            return _proxyTypeMaps;
+        }
+
+        internal override IEnumerable<InvalidProxyTypeMapNode> GetInvalidProxyTypeMaps()
+        {
+            return _invalidProxyTypeMaps;
         }
 
         public override void AddCompilationRoots(IRootingServiceProvider rootProvider)
