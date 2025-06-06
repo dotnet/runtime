@@ -4229,7 +4229,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         return false;
     }
 
-#ifdef TARGET_AMD64
+#ifdef TARGET_XARCH
     // Needed for Jit64 compat.
     // In future, enabling fast tail calls from methods that need GS cookie
     // check would require codegen side work to emit GS cookie check before a
@@ -4259,6 +4259,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         }
     }
 
+#ifndef TARGET_X86
     // For a fast tail call the caller will use its incoming arg stack space to place
     // arguments, so if the callee requires more arg stack space than is available here
     // the fast tail call cannot be performed. This is common to all platforms.
@@ -4269,6 +4270,47 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         reportFastTailCallDecision("Not enough incoming arg space");
         return false;
     }
+#else
+    // Managed calling convention on x86 uses callee cleanup convention with
+    // "ret n" so bail out on any stack size mismatch.
+    if (calleeArgStackSize != callerArgStackSize)
+    {
+        reportFastTailCallDecision("Mismatch in incoming arg space");
+        return false;
+    }
+
+    // Allow only one fast tailcall per method since we have limited number of
+    // epilogs that we can encoded into GC info. This is conservative but we
+    // don't currently track the number of used epilogs in this phase.
+    if (compFastTailCallUsed)
+    {
+        reportFastTailCallDecision("Fast tailcall already used");
+        return false;
+    }
+
+    if (fgReturnCount >= SET_EPILOGCNT_MAX)
+    {
+        reportFastTailCallDecision("Too many epilogs");
+        return false;
+    }
+
+    // VM uses special convention for VSD that looks at the call site.
+    if (callee->IsVirtualStubRelativeIndir())
+    {
+        reportFastTailCallDecision("Indirect VSD call");
+        return false;
+    }
+
+    // We need to avoid the call address expression order problem on x86
+    // and it's just easier to bail out. See fgMorphTailCallViaJitHelper,
+    // Lowering::LowerDelegateInvoke and Lowering::LowerVirtualVtableCall
+    // for details. Covered by GitHub_20625 and Runtime_70259 CLR tests.
+    if (callee->IsDelegateInvoke() || callee->IsVirtualVtable())
+    {
+        reportFastTailCallDecision("Delegate or virtual invocation");
+        return false;
+    }
+#endif
 
     // For Windows some struct parameters are copied on the local frame
     // and then passed by reference. We cannot fast tail call in these situation
@@ -4751,8 +4793,17 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     call->gtCallMoreFlags |= GTF_CALL_M_TAILCALL;
     if (tailCallViaJitHelper)
     {
+#ifdef TARGET_X86
+        compTailCallViaJitHelperUsed = true;
+#endif
         call->gtCallMoreFlags |= GTF_CALL_M_TAILCALL_VIA_JIT_HELPER;
     }
+#ifdef TARGET_X86
+    else
+    {
+        compFastTailCallUsed = true;
+    }
+#endif
 
 #if FEATURE_TAILCALL_OPT
     if (fastTailCallToLoop)
@@ -4944,11 +4995,11 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // etc.) for the JIT helper case.
         if (tailCallViaJitHelper)
         {
-            fgMorphTailCallViaJitHelper(call);
-
             // Force re-evaluating the argInfo. fgMorphTailCallViaJitHelper will modify the
             // argument list, invalidating the argInfo.
             call->gtArgs.ResetFinalArgsAndABIInfo();
+
+            fgMorphTailCallViaJitHelper(call);
         }
 
         // Tail call via JIT helper: The VM can't use return address hijacking
@@ -6394,7 +6445,13 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         if (call->gtCallType == CT_INDIRECT)
         {
             optCallCount++;
-            optIndirectCallCount++;
+            // Do not count the tailcall morphed from fgMorphCall ->
+            // fgMorphPotentialTailCall -> fgMorphCall as indirect call
+            // to prevent forcing EBP frame later.
+            if ((call->gtCallMoreFlags & GTF_CALL_M_TAILCALL) == 0)
+            {
+                optIndirectCallCount++;
+            }
         }
         else if (call->gtCallType == CT_USER_FUNC)
         {
@@ -13569,8 +13626,10 @@ void Compiler::fgSetOptions()
 
 #ifdef TARGET_X86
 
-    if (compTailCallUsed)
+    if (compTailCallViaJitHelperUsed)
+    {
         codeGen->setFramePointerRequired(true);
+    }
 
 #endif // TARGET_X86
 

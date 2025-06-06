@@ -37,6 +37,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     break;
 
+                case Kind.DelayLoadHelperWithExistingIndirectionCell:
+                    // Indirection cell is already in eax which will be first arg. Used for fast tailcalls.
+
+                    if (!relocsOnly)
+                    {
+                        // push table index
+                        instructionEncoder.EmitPUSH((sbyte)_containingImportSection.IndexFromBeginningOfArray);
+                    }
+
+                    // push [module]
+                    instructionEncoder.EmitPUSH(factory.ModuleImport);
+
+                    break;
+
                 case Kind.Lazy:
                     // mov edx, [module]
                     instructionEncoder.EmitMOV(Register.EDX, factory.ModuleImport);

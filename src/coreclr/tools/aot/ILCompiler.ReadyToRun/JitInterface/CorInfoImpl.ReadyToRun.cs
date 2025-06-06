@@ -3255,9 +3255,10 @@ namespace Internal.JitInterface
 
         private void updateEntryPointForTailCall(ref CORINFO_CONST_LOOKUP entryPoint)
         {
-            // In x64 we normally use a return address to find the indirection cell for delay load.
+            // In x86/x64 we normally use a return address to find the indirection cell for delay load.
             // For tailcalls we instead expect the JIT to leave the indirection in rax.
-            if (_compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.X64)
+            if (_compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.X64 &&
+                _compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.X86)
                 return;
 
             object node = HandleToObject(entryPoint.addr);

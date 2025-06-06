@@ -638,53 +638,56 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     if (src->OperIs(GT_FIELD_LIST))
     {
 #ifdef TARGET_X86
-        GenTreeFieldList* fieldList = src->AsFieldList();
-
-        // The code generator will push these fields in reverse order by offset. Reorder the list here s.t. the order
-        // of uses is visible to LSRA.
-        assert(fieldList->Uses().IsSorted());
-        fieldList->Uses().Reverse();
-
-        // Containment checks.
-        for (GenTreeFieldList::Use& use : fieldList->Uses())
+        if (!putArgStk->putInIncomingArgArea())
         {
-            GenTree* const  fieldNode = use.GetNode();
-            const var_types fieldType = use.GetType();
-            assert(!fieldNode->TypeIs(TYP_LONG));
+            GenTreeFieldList* fieldList = src->AsFieldList();
 
-            // For x86 we must mark all integral fields as contained or reg-optional, and handle them
-            // accordingly in code generation, since we may have up to 8 fields, which cannot all be in
-            // registers to be consumed atomically by the call.
-            if (varTypeIsIntegralOrI(fieldNode))
+            // The code generator will push these fields in reverse order by offset. Reorder the list here s.t. the
+            // order of uses is visible to LSRA.
+            assert(fieldList->Uses().IsSorted());
+            fieldList->Uses().Reverse();
+
+            // Containment checks.
+            for (GenTreeFieldList::Use& use : fieldList->Uses())
             {
-                if (IsContainableImmed(putArgStk, fieldNode))
-                {
-                    MakeSrcContained(putArgStk, fieldNode);
-                }
-                else if (IsContainableMemoryOp(fieldNode) && IsSafeToContainMem(putArgStk, fieldNode))
-                {
-                    MakeSrcContained(putArgStk, fieldNode);
-                }
-                else
-                {
-                    // For the case where we cannot directly push the value, if we run out of registers,
-                    // it would be better to defer computation until we are pushing the arguments rather
-                    // than spilling, but this situation is not all that common, as most cases of FIELD_LIST
-                    // are promoted structs, which do not not have a large number of fields, and of those
-                    // most are lclVars or copy-propagated constants.
+                GenTree* const  fieldNode = use.GetNode();
+                const var_types fieldType = use.GetType();
+                assert(!fieldNode->TypeIs(TYP_LONG));
 
-                    fieldNode->SetRegOptional();
+                // For x86 we must mark all integral fields as contained or reg-optional, and handle them
+                // accordingly in code generation, since we may have up to 8 fields, which cannot all be in
+                // registers to be consumed atomically by the call.
+                if (varTypeIsIntegralOrI(fieldNode))
+                {
+                    if (IsContainableImmed(putArgStk, fieldNode))
+                    {
+                        MakeSrcContained(putArgStk, fieldNode);
+                    }
+                    else if (IsContainableMemoryOp(fieldNode) && IsSafeToContainMem(putArgStk, fieldNode))
+                    {
+                        MakeSrcContained(putArgStk, fieldNode);
+                    }
+                    else
+                    {
+                        // For the case where we cannot directly push the value, if we run out of registers,
+                        // it would be better to defer computation until we are pushing the arguments rather
+                        // than spilling, but this situation is not all that common, as most cases of FIELD_LIST
+                        // are promoted structs, which do not not have a large number of fields, and of those
+                        // most are lclVars or copy-propagated constants.
+
+                        fieldNode->SetRegOptional();
+                    }
                 }
             }
-        }
 
-        // Set the copy kind.
-        // TODO-X86-CQ: Even if we are using push, if there are contiguous floating point fields, we should
-        // adjust the stack once for those fields. The latter is really best done in code generation, but
-        // this tuning should probably be undertaken as a whole.
-        // Also, if there are  floating point fields, it may be better to use the "Unroll" mode
-        // of copying the struct as a whole, if the fields are not register candidates.
-        putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
+            // Set the copy kind.
+            // TODO-X86-CQ: Even if we are using push, if there are contiguous floating point fields, we should
+            // adjust the stack once for those fields. The latter is really best done in code generation, but
+            // this tuning should probably be undertaken as a whole.
+            // Also, if there are  floating point fields, it may be better to use the "Unroll" mode
+            // of copying the struct as a whole, if the fields are not register candidates.
+            putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
+        }
 #endif // TARGET_X86
         return;
     }
@@ -717,7 +720,8 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
                 // chunks. As such, we'll only use this path for correctly-sized sources.
                 if ((loadSize < XMM_REGSIZE_BYTES) && ((loadSize % TARGET_POINTER_SIZE) == 0))
                 {
-                    putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
+                    putArgStk->gtPutArgStkKind = putArgStk->putInIncomingArgArea() ? GenTreePutArgStk::Kind::Unroll
+                                                                                   : GenTreePutArgStk::Kind::Push;
                 }
                 else
 #endif // TARGET_X86
@@ -736,7 +740,8 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
                 // On x86, we must use `push` to store GC references to the stack in order for the emitter to
                 // properly update the function's GC info. These `putargstk` nodes will generate a sequence of
                 // `push` instructions.
-                putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
+                putArgStk->gtPutArgStkKind = putArgStk->putInIncomingArgArea() ? GenTreePutArgStk::Kind::PartialRepInstr
+                                                                               : GenTreePutArgStk::Kind::Push;
 #else  // !TARGET_X86
                 putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::PartialRepInstr;
 #endif // !TARGET_X86
@@ -803,7 +808,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         MakeSrcContained(putArgStk, src);
     }
 #ifdef TARGET_X86
-    else if (genTypeSize(src) == TARGET_POINTER_SIZE)
+    else if ((genTypeSize(src) == TARGET_POINTER_SIZE) && !putArgStk->putInIncomingArgArea())
     {
         // We can use "src" directly from memory with "push [mem]".
         TryMakeSrcContainedOrRegOptional(putArgStk, src);
@@ -7565,7 +7570,7 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         }
         else
 #endif // TARGET_X86
-            if (ctrlExpr->isIndir())
+            if (ctrlExpr->isIndir() && IsSafeToContainMem(call, ctrlExpr))
             {
                 // We may have cases where we have set a register target on the ctrlExpr, but if it
                 // contained we must clear it.

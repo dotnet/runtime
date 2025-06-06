@@ -1729,9 +1729,21 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
             assert(abiInfo.NumSegments == 1);
             const ABIPassingSegment& stackSeg             = abiInfo.Segment(0);
             const bool               putInIncomingArgArea = call->IsFastTailCall();
+            unsigned                 argOffset            = stackSeg.GetStackOffset();
+
+#ifdef TARGET_X86
+            if (putInIncomingArgArea)
+            {
+                // On x86 GetStackOffset returns the offset to subtract from
+                // the top of the stack to get the argument's address. Since
+                // we reuse the x86 code paths for fast tailcall transform
+                // the stack offset into the format that they expect.
+                argOffset = call->gtArgs.OutgoingArgsStackSize() - argOffset;
+            }
+#endif
 
             GenTree* putArg =
-                new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, stackSeg.GetStackOffset(),
+                new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, argOffset,
                                                            stackSeg.GetStackSize(), call, putInIncomingArgArea);
 
             BlockRange().InsertAfter(arg, putArg);
@@ -2291,7 +2303,7 @@ void Lowering::LegalizeArgPlacement(GenTreeCall* call)
             cur->gtLIRFlags &= ~LIR::Flags::Mark;
 
 #if defined(DEBUG) && !FEATURE_FIXED_OUT_ARGS
-            if (cur->OperIs(GT_PUTARG_STK))
+            if (cur->OperIs(GT_PUTARG_STK) && !cur->AsPutArgStk()->putInIncomingArgArea())
             {
                 // For !FEATURE_FIXED_OUT_ARGS (only x86) byte offsets are
                 // subtracted from the top of the stack frame; so last pushed
@@ -3503,7 +3515,7 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
 #endif // DEBUG
 
             GenTree* value;
-#ifdef TARGET_ARM
+#ifndef TARGET_64BIT
             if (tmpTyp == TYP_LONG)
             {
                 GenTree* loResult = comp->gtNewLclFldNode(lclNum, TYP_INT, 0);
@@ -3511,7 +3523,7 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
                 value             = new (comp, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loResult, hiResult);
             }
             else
-#endif // TARGET_ARM
+#endif // TARGET_64BIT
             {
                 value = comp->gtNewLclvNode(lclNum, tmpTyp);
             }

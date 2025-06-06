@@ -9877,11 +9877,15 @@ public:
 
     InlineResult* compInlineResult; // The result of importing the inlinee method.
 
-    bool compDoAggressiveInlining     = false; // If true, mark every method as CORINFO_FLG_FORCEINLINE
-    bool compJmpOpUsed                = false; // Does the method do a JMP
-    bool compLongUsed                 = false; // Does the method use TYP_LONG
-    bool compFloatingPointUsed        = false; // Does the method use TYP_FLOAT or TYP_DOUBLE
-    bool compTailCallUsed             = false; // Does the method do a tailcall
+    bool compDoAggressiveInlining = false; // If true, mark every method as CORINFO_FLG_FORCEINLINE
+    bool compJmpOpUsed            = false; // Does the method do a JMP
+    bool compLongUsed             = false; // Does the method use TYP_LONG
+    bool compFloatingPointUsed    = false; // Does the method use TYP_FLOAT or TYP_DOUBLE
+    bool compTailCallUsed         = false; // Does the method do a tailcall
+#ifdef TARGET_X86
+    bool compTailCallViaJitHelperUsed = false;
+    bool compFastTailCallUsed         = false;
+#endif
     bool compTailPrefixSeen           = false; // Does the method IL have tail. prefix
     bool compLocallocSeen             = false; // Does the method IL have localloc opcode
     bool compLocallocUsed             = false; // Does the method use localloc.

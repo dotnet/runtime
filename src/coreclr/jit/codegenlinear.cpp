@@ -1793,7 +1793,14 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
 
 #ifdef TARGET_X86
     assert(dstReg != REG_SPBASE);
-    inst_Mov(TYP_I_IMPL, dstReg, REG_SPBASE, /* canSkip */ false);
+    if (m_stkArgVarNum == BAD_VAR_NUM)
+    {
+        inst_Mov(TYP_I_IMPL, dstReg, REG_SPBASE, /* canSkip */ false);
+    }
+    else
+    {
+        GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, dstReg, m_stkArgVarNum, putArgNode->getArgOffset());
+    }
 #else  // !TARGET_X86
     GenTree* dstAddr = putArgNode;
     if (dstAddr->GetRegNum() != dstReg)
@@ -1834,10 +1841,9 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
 //    outArgVarNum - The lclVar num for the argument
 //
 // Notes:
-//    The x86 version of this is in codegenxarch.cpp, and doesn't take an
-//    outArgVarNum, as it pushes its args onto the stack.
+//    The primary x86 version of this is genPutArgStkPushFieldList in
+//    codegenxarch.cpp. This version is only used for fast tailcalls on x86.
 //
-#ifndef TARGET_X86
 void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArgVarNum)
 {
     assert(putArgStk->gtOp1->OperIs(GT_FIELD_LIST));
@@ -1884,7 +1890,6 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 #endif
     }
 }
-#endif // !TARGET_X86
 
 //------------------------------------------------------------------------
 // genSetBlockSize: Ensure that the block size is in the given register

@@ -11266,12 +11266,14 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         id->idAddr()->iiaAddrMode.amScale   = params.xmul ? emitEncodeScale(params.xmul) : emitter::OPSZ1;
 
         code_t code = insCodeMR(ins);
+#ifndef TARGET_X86
         if (ins == INS_tail_i_jmp)
         {
             // Tailcall with addressing mode/register needs to be rex.w
             // prefixed to be recognized as part of epilog by unwinder.
             code = AddRexWPrefix(id, code);
         }
+#endif
 
         sz = emitInsSizeAM(id, code);
 
@@ -14386,12 +14388,14 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     if ((ins == INS_call) || (ins == INS_tail_i_jmp))
     {
         code = AddX86PrefixIfNeeded(id, code, size);
+#ifndef TARGET_X86
         if (ins == INS_tail_i_jmp)
         {
             // tail call with addressing mode (or through register) needs rex.w
             // prefix to be recognized by unwinder as part of epilog.
             code = AddRexWPrefix(id, code);
         }
+#endif
 
         // Special case: call via a register
         if (id->idIsCallRegPtr())
