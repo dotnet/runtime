@@ -572,8 +572,8 @@ NESTED_ENTRY InterpreterStubRetBuff, _TEXT, NoHandler
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
         mov             rsi, rbx // the IR bytecode pointer
-        ; Load the return buffer address
-        ; The 8 + 8 is for the push and the return address slot
+        // Load the return buffer address
+        // The 8 + 8 is for the push and the return address slot
         mov             rdx, qword ptr [rsp + 8 + 8 + __InterpreterStubArgumentRegistersOffset]
         call            C_FUNC(ExecuteInterpretedMethod)
         pop_register    rax
