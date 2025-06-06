@@ -76,11 +76,11 @@ ErrExit:
 // This resolve (type-ref, this cope) --> (type-def=*ptd, other scope=*ppIScope)
 //
 // However, this resolution requires knowing what modules have been loaded, which is not decided
-// until runtime via loader / fusion policy. Thus this interface can't possibly be correct since
-// it doesn't have that knowledge. Furthermore, when inspecting metadata from another process
-// (such as a debugger inspecting the debuggee's metadata), this API can be truly misleading.
+// until runtime via loader. Thus this interface can't possibly be correct since it doesn't have
+// that knowledge. Furthermore, when inspecting metadata from another process (such as a debugger
+// inspecting the debuggee's metadata), this API can be truly misleading.
 //
-// This API usage should be avoided.
+// This API usage should be avoided. It is kept to avoid breaking profilers.
 //
 //*****************************************************************************
 STDMETHODIMP
@@ -143,9 +143,6 @@ RegMeta::ResolveTypeRef(
         wzNameSpace[STRING_LENGTH(wzNameSpace)] = 0;
     }
 
-    //***********************
-    // before we go off to CORPATH, check the loaded modules!
-    //***********************
     if (LOADEDMODULES::ResolveTypeRefWithLoadedModules(
         tr,
         this,

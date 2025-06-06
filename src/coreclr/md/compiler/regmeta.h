@@ -728,7 +728,6 @@ public:
     STDMETHODIMP GetAssemblyFromScope(      // S_OK or error
         mdAssembly  *ptkAssembly);          // [OUT] Put token here.
 
-    // This uses Fusion to lookup, so it's E_NOTIMPL in the standalone versions.
     STDMETHODIMP FindAssembliesByName(      // S_OK or error
          LPCWSTR  szAppBase,                // [IN] optional - can be NULL
          LPCWSTR  szPrivateBin,             // [IN] optional - can be NULL
@@ -1610,7 +1609,6 @@ public:
         return (m_OptionValue.m_ThreadSafetyOptions & MDThreadSafetyOn) == MDThreadSafetyOn;
     }
 
-    LPCWSTR GetNameOfDBFile() { return (m_pStgdb->m_wszFileName == NULL) ? W("") : m_pStgdb->m_wszFileName; }
 protected:
     // Helper functions used for implementation of MetaData APIs.
     HRESULT RefToDefOptimization();
@@ -2046,23 +2044,6 @@ private:
                               // TRUE in order to delete safely.
 #endif
 
-private:
-    // Returns pointer to zeros of size (cbSize).
-    // Used by public APIs to return compatible values with previous releases.
-    static const BYTE *GetPublicApiCompatibilityZerosOfSize(UINT32 cbSize);
-    // Returns pointer to zeros typed as type T.
-    // Used by public APIs to return compatible values with previous releases.
-    template<class T>
-    T *GetPublicApiCompatibilityZeros()
-    {
-        static_assert_no_msg(sizeof(T) <= sizeof(s_rgMetaDataPublicApiCompatibilityZeros));
-        return reinterpret_cast<T *>(s_rgMetaDataPublicApiCompatibilityZeros);
-    }
-    // Zeros used by public APIs as return value (or pointer to this memory) for invalid input.
-    // It is used by methods:
-    //  * code:RegMeta::GetPublicApiCompatibilityZeros, and
-    //  * code:RegMeta::GetPublicApiCompatibilityZerosOfSize.
-    static const BYTE s_rgMetaDataPublicApiCompatibilityZeros[64];
 
 };  // class RegMeta
 

@@ -824,7 +824,7 @@ ErrExit:
 //
 // Notes:
 //    This could be merged with the class factory support.
-HRESULT InternalCreateMetaDataDispenser(REFIID riid, void ** pMetaDataDispenserOut)
+HRESULT CreateMetaDataDispenser(REFIID riid, void ** pMetaDataDispenserOut)
 {
     _ASSERTE(pMetaDataDispenserOut != NULL);
     return Disp::CreateObject(riid, pMetaDataDispenserOut);

@@ -25,12 +25,7 @@
 
 #include "mdinternalrw.h"
 
-
 #include <metamodelrw.h>
-
-#define DEFINE_CUSTOM_NODUPCHECK    1
-#define DEFINE_CUSTOM_DUPCHECK      2
-#define SET_CUSTOM                  3
 
 #if defined(_DEBUG)
 #define LOGGING
@@ -1444,44 +1439,6 @@ STDAPI MDReOpenMetaDataWithMemory(
 {
     return MDReOpenMetaDataWithMemoryEx(pImport, pData, cbData, 0);
 }
-
-// --------------------------------------------------------------------------------------
-//
-// Zeros used by public APIs as return value (or pointer to this memory) for invalid input.
-// It is used by methods:
-//  * code:RegMeta::GetPublicApiCompatibilityZeros, and
-//  * code:RegMeta::GetPublicApiCompatibilityZerosOfSize.
-//
-const BYTE
-RegMeta::s_rgMetaDataPublicApiCompatibilityZeros[64] =
-{
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-};
-
-// --------------------------------------------------------------------------------------
-//
-// Returns pointer to zeros of size (cbSize).
-// Used by public APIs to return compatible values with previous releases.
-//
-const BYTE *
-RegMeta::GetPublicApiCompatibilityZerosOfSize(UINT32 cbSize)
-{
-    if (cbSize <= sizeof(s_rgMetaDataPublicApiCompatibilityZeros))
-    {
-        return s_rgMetaDataPublicApiCompatibilityZeros;
-    }
-    _ASSERTE(!"Dangerous call to this method! Reconsider fixing the caller.");
-    return NULL;
-} // RegMeta::GetPublicApiCompatibilityZerosOfSize
-
-
 
 
 //
