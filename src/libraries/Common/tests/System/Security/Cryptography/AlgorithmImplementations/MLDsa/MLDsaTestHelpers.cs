@@ -14,8 +14,8 @@ namespace System.Security.Cryptography.Tests
     {
         internal static bool MLDsaIsNotSupported => !MLDsa.IsSupported;
 
-        // TODO: Windows certificates for ML-DSA are not implemented yet. Remove this and use MLDsa.IsSupported (or remove condition) when they are.
-        internal static bool CertificatesAreSupported => MLDsa.IsSupported && !PlatformDetection.IsWindows;
+        // TODO: Windows does not support draft 10 PKCS#8 format yet. Remove this and use MLDsa.IsSupported (or remove condition) when it does.
+        internal static bool SupportsDraft10Pkcs8 => MLDsa.IsSupported && !PlatformDetection.IsWindows;
 
         // TODO: Windows does not support signing empty data. Remove this and use MLDsa.IsSupported (or remove condition) when it does.
         internal static bool SigningEmptyDataIsSupported => MLDsa.IsSupported && !PlatformDetection.IsWindows;
@@ -276,10 +276,35 @@ namespace System.Security.Cryptography.Tests
 
             AssertExportPkcs8PrivateKey(exportPkcs8 =>
                 indirectCallback(mldsa =>
-                    MLDsaPrivateKeyAsn.Decode(
+                    DecodeExpandedKey(
+#if WINDOWS // TODO remove this when windows supports draft 10 PKCS#8 format
+                        mldsa,
+#endif
                         PrivateKeyInfoAsn.Decode(
                             exportPkcs8(mldsa), AsnEncodingRules.DER).PrivateKey, AsnEncodingRules.DER).ExpandedKey?.ToArray()));
         }
+
+#if WINDOWS // TODO remove this when windows supports draft 10 PKCS#8 format
+        internal static MLDsaPrivateKeyAsn DecodeExpandedKey(MLDsa mldsa, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        {
+            try
+            {
+                return MLDsaPrivateKeyAsn.Decode(encoded, ruleSet);
+            }
+            catch (CryptographicException)
+            {
+                return new MLDsaPrivateKeyAsn
+                {
+                    ExpandedKey = (mldsa.Algorithm.SecretKeySizeInBytes == encoded.Length) ? encoded : default(ReadOnlyMemory<byte>?),
+                };
+            }
+        }
+#else
+        internal static MLDsaPrivateKeyAsn DecodeExpandedKey(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        {
+            return MLDsaPrivateKeyAsn.Decode(encoded, ruleSet);
+        }
+#endif
 
         internal static void AssertExportMLDsaPrivateSeed(Action<Func<MLDsa, byte[]>> callback) =>
             AssertExportMLDsaPrivateSeed(callback, callback);
@@ -295,10 +320,35 @@ namespace System.Security.Cryptography.Tests
 
             AssertExportPkcs8PrivateKey(exportPkcs8 =>
                 indirectCallback(mldsa =>
-                    MLDsaPrivateKeyAsn.Decode(
+                    DecodePrivateSeed(
+#if WINDOWS // TODO remove this when windows supports draft 10 PKCS#8 format
+                        mldsa,
+#endif
                         PrivateKeyInfoAsn.Decode(
                             exportPkcs8(mldsa), AsnEncodingRules.DER).PrivateKey, AsnEncodingRules.DER).Seed?.ToArray()));
         }
+
+#if WINDOWS // TODO remove this when windows supports draft 10 PKCS#8 format
+        internal static MLDsaPrivateKeyAsn DecodePrivateSeed(MLDsa mldsa, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        {
+            try
+            {
+                return MLDsaPrivateKeyAsn.Decode(encoded, ruleSet);
+            }
+            catch (CryptographicException)
+            {
+                return new MLDsaPrivateKeyAsn
+                {
+                    Seed = (mldsa.Algorithm.PrivateSeedSizeInBytes == encoded.Length) ? encoded : default(ReadOnlyMemory<byte>?),
+                };
+            }
+        }
+#else
+        internal static MLDsaPrivateKeyAsn DecodePrivateSeed(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        {
+            return MLDsaPrivateKeyAsn.Decode(encoded, ruleSet);
+        }
+#endif
 
         internal static void AssertExportPkcs8PrivateKey(MLDsa mldsa, Action<byte[]> callback) =>
             AssertExportPkcs8PrivateKey(export => callback(export(mldsa)));

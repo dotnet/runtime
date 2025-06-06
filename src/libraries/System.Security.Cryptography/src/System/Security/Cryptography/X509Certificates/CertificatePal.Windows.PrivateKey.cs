@@ -82,8 +82,11 @@ namespace System.Security.Cryptography.X509Certificates
 
         public MLDsa? GetMLDsaPrivateKey()
         {
-            // MLDsa is not supported on Windows.
-            return null;
+            return GetPrivateKey<MLDsa>(
+                // TODO resx
+                _ => throw new NotSupportedException(),
+                cngKey => new MLDsaCng(cngKey, transferOwnership: true)
+            );
         }
 
         public MLKem? GetMLKemPrivateKey()
@@ -188,8 +191,50 @@ namespace System.Security.Cryptography.X509Certificates
 
         public ICertificatePal CopyWithPrivateKey(MLDsa privateKey)
         {
-            throw new PlatformNotSupportedException(
-                SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLDsa)));
+            if (privateKey is MLDsaCng mldsaCng)
+            {
+                CngKey key = mldsaCng.GetCngKey();
+
+                ICertificatePal? clone = CopyWithPersistedCngKey(key);
+
+                if (clone != null)
+                {
+                    return clone;
+                }
+
+                // TODO why are the other keys (ECDsa, Dsa, etc.) copying via export/import
+                // instead of doing the following? Maybe this fails if key isn't exportable
+                // (the export/import method can handle it by exporting encrypted pkcs#8)?
+                using (MLDsaCng clonedKey = new MLDsaCng(key))
+                {
+                    return CopyWithEphemeralKey(clonedKey.GetCngKey());
+                }
+            }
+
+            if (privateKey is MLDsaImplementation mldsaImplementation)
+            {
+                using (CngKey clonedKey = mldsaImplementation.CreateEphemeralCng())
+                {
+                    return CopyWithEphemeralKey(clonedKey);
+                }
+            }
+
+            // MLDsa other: either export pkcs#8 or do the dance with export seed -> export secret key
+            // Note for pkcs#8, implementors may give us only a private key even when there's a seed, but
+            // we don't care.
+            byte[] exportedPkcs8 = privateKey.ExportPkcs8PrivateKey();
+
+            using (MLDsaCng clonedKey = MLDsaCng.ImportPkcs8PrivateKey(exportedPkcs8, out _))
+            {
+                CngKey clonedCngKey = clonedKey.GetCngKey();
+                if (clonedCngKey.AlgorithmGroup != CngAlgorithmGroup.MLDsa)
+                {
+                    // TODO resx
+                    throw new CryptographicException();
+                }
+
+                return CopyWithEphemeralKey(clonedCngKey);
+            }
         }
 
         public ICertificatePal CopyWithPrivateKey(MLKem privateKey)
@@ -245,7 +290,8 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private T? GetPrivateKey<T>(Func<CspParameters, T> createCsp, Func<CngKey, T?> createCng) where T : AsymmetricAlgorithm
+        private T? GetPrivateKey<T>(Func<CspParameters, T> createCsp, Func<CngKey, T?> createCng)
+            where T : class, IDisposable
         {
             using (SafeCertContextHandle certContext = GetCertContext())
             {

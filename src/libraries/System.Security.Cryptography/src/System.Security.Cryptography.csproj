@@ -602,6 +602,7 @@
     <Compile Include="System\Security\Cryptography\MaskGenerationMethod.cs" />
     <Compile Include="System\Security\Cryptography\MD5.cs" />
     <Compile Include="System\Security\Cryptography\MD5CryptoServiceProvider.cs" />
+    <Compile Include="System\Security\Cryptography\MLDsaCng.cs" />
     <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\MLKemOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\Oid.cs" />
@@ -1991,6 +1992,7 @@
     <Compile Include="System\Security\Cryptography\ICngSymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\KeyPropertyName.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Windows.cs" />
+    <Compile Include="System\Security\Cryptography\MLDsaCng.Windows.cs" />
     <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\MLKemOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.Windows.cs" />

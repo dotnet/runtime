@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.Tests;
 using Test.Cryptography;
@@ -444,7 +443,7 @@ MII
             }
         }
 
-        [ConditionalFact(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.CertificatesAreSupported))]
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         public static void CreateFromPem_MLDsa_Pkcs8_Success()
         {
             (string CertificatePem, string PrivateKeyPem, string Thumbprint)[] cases =
@@ -506,7 +505,7 @@ MII
             }
         }
 
-        [ConditionalFact(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.CertificatesAreSupported))]
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         public static void CreateFromEncryptedPem_MLDsa_Pkcs8_Success()
         {
             (string CertificatePem, string EncryptedPrivateKeyPem, string Thumbprint)[] cases =

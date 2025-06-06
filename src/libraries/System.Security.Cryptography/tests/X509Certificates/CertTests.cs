@@ -2,14 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.Tests;
 using System.Security.Cryptography.Dsa.Tests;
 using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.X509Certificates.Tests.CertificateCreation;
 using System.Threading;
-using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 using Xunit.Abstractions;
@@ -145,7 +142,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.CertificatesAreSupported))]
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         public static void PrivateKey_FromCertificate_CanExportPrivate_MLDsa()
         {
             string pem = PemEncoding.WriteString("CERTIFICATE", MLDsaTestsData.IetfMLDsa44.Certificate);
