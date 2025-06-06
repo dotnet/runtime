@@ -1382,6 +1382,14 @@ void InterpCompiler::CreateILVars()
 
     INTERP_DUMP("\nCreate IL Vars:\n");
 
+    // NOTE: There is special handling for the param arg, which is stored after the IL locals in the m_pVars array.
+    // The param arg is not part of the set of arguments defined by the IL method signature, but instead is needed
+    // to support shared generics codegen, and to be able to determine which exact intantiation of a method is in use.
+    // The param arg is stashed into the m_pVars array at an unnatural index relative to its position in the physical stack
+    // so that when parsing the MSIL byte stream it is simple to determine the index of the normal argumentes
+    // and IL locals, by just knowing the number of IL defined arguments. This allows all of the special handling for
+    // the param arg to be localized to this function, and the small set of helper functions that directly use it.
+
     CORINFO_ARG_LIST_HANDLE sigArg = m_methodInfo->args.args;
     for (int i = 0; i < (numArgs + hasParamArg); i++) {
         InterpType interpType;

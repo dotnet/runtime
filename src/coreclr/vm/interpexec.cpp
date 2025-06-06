@@ -113,7 +113,7 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     const int32_t *ip;
     int8_t *stack;
 
-    InterpMethod *pMethod = pFrame->startIp->InterpMethod;
+    InterpMethod *pMethod = pFrame->startIp->Method;
     assert(pMethod->CheckIntegrity());
 
     pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
@@ -144,7 +144,6 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     }
 
     int32_t returnOffset, callArgsOffset, methodSlot;
-    PTR_InterpByteCodeStart targetIp;
     MethodDesc* targetMethod;
 
 MAIN_LOOP:
@@ -1173,7 +1172,7 @@ MAIN_LOOP:
 CALL_INTERP_SLOT:
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
 CALL_INTERP_METHOD:
-                    targetIp = targetMethod->GetInterpreterCode();
+                    InterpByteCodeStart* targetIp = targetMethod->GetInterpreterCode();
                     if (targetIp == NULL)
                     {
                         {
@@ -1219,7 +1218,7 @@ CALL_INTERP_METHOD:
                     assert (((size_t)pFrame->pStack % INTERP_STACK_ALIGNMENT) == 0);
 
                     // Set execution state for the new frame
-                    pMethod = pFrame->startIp->InterpMethod;
+                    pMethod = pFrame->startIp->Method;
                     assert(pMethod->CheckIntegrity());
                     stack = pFrame->pStack;
                     ip = pFrame->startIp->GetByteCodes();
@@ -1659,7 +1658,7 @@ do {                                                                           \
         ip = (int32_t*)resumeIP;
 
         stack = pFrame->pStack;
-        pMethod = pFrame->startIp->InterpMethod;
+        pMethod = pFrame->startIp->Method;
         assert(pMethod->CheckIntegrity());
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
         goto MAIN_LOOP;
@@ -1676,7 +1675,7 @@ EXIT_FRAME:
         pFrame = pFrame->pParent;
         ip = pFrame->ip;
         stack = pFrame->pStack;
-        pMethod = pFrame->startIp->InterpMethod;
+        pMethod = pFrame->startIp->Method;
         assert(pMethod->CheckIntegrity());
         pFrame->ip = NULL;
 

@@ -437,7 +437,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
             amt.SuppressRelease();
             pCode = PINSTRToPCODE(pPrecode->GetEntryPoint());
             SetNativeCodeInterlocked(pCode);
-            SetInterpreterCode(dac_cast<PTR_InterpByteCodeStart>(pPrecode->GetData()->ByteCodeAddr));
+            SetInterpreterCode(dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr));
         }
 #endif // FEATURE_INTERPRETER
     }

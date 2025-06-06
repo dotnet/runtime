@@ -378,7 +378,7 @@ private:
 
     enum class GenericHandleEmbedOptions
     {
-        support_use_as_flags = -1,
+        support_use_as_flags = -1, // Magic value which in combination with enum_class_flags.h allows the use of bitwise operations and the HasFlag helper method
 
         None = 0,
         VarOnly = 1,

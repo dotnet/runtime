@@ -34,7 +34,7 @@ struct InterpMethodContextFrame
     PTR_InterpMethodContextFrame pNext;
 
 #ifndef DACCESS_COMPILE
-    void ReInit(InterpMethodContextFrame *pParent, PTR_InterpByteCodeStart startIp, int8_t *pRetVal, int8_t *pStack)
+    void ReInit(InterpMethodContextFrame *pParent, InterpByteCodeStart* startIp, int8_t *pRetVal, int8_t *pStack)
     {
         this->pParent = pParent;
         this->startIp = startIp;

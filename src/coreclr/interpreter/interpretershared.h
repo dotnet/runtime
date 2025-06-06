@@ -53,13 +53,13 @@ struct InterpMethod
 struct InterpByteCodeStart
 {
 #ifndef DPTR
-    InterpMethod* const InterpMethod; // Pointer to the InterpMethod structure
+    InterpMethod* const Method; // Pointer to the InterpMethod structure
 #else
-    DPTR(InterpMethod) const InterpMethod; // Pointer to the InterpMethod structure
+    DPTR(InterpMethod) const Method; // Pointer to the InterpMethod structure
 #endif
-    const int* GetByteCodes() const
+    const int32_t* GetByteCodes() const
     {
-        return reinterpret_cast<const int*>(this + 1);
+        return reinterpret_cast<const int32_t*>(this + 1);
     }
 };
 
