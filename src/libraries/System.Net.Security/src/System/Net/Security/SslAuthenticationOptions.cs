@@ -15,8 +15,8 @@ namespace System.Net.Security
 
         internal static readonly X509RevocationMode DefaultRevocationMode =
             AppContextSwitchHelper.GetBooleanConfig(
-                "System.Net.Security.OfflineRevocationByDefault",
-                "DOTNET_SYSTEM_NET_SECURITY_OFFLINEREVOCATIONBYDEFAULT")
+                "System.Net.Security.NoRevocationCheckByDefault",
+                "DOTNET_SYSTEM_NET_SECURITY_NOREVOCATIONCHECKBYDEFAULT")
                 ? X509RevocationMode.NoCheck : X509RevocationMode.Online;
 
         internal SslAuthenticationOptions()
