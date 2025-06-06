@@ -211,6 +211,17 @@ mono_lookup_pinvoke_call_internal (MonoMethod *method, MonoError *error)
 {
 	gpointer result;
 	MonoLookupPInvokeStatus status;
+
+	// Before we do the pinvoke lookup, we need to make sure the class static constructor is run
+	// as it is possible to run managed code to redirect how the pinvoke is resolved. 
+	if (m_class_has_cctor (method->klass) && !mono_class_is_open_constructed_type (m_class_get_byval_arg (method->klass))) {
+		MonoVTable *vtable;
+		vtable = mono_class_vtable_checked (method->klass, error);
+		mono_error_assert_ok (error);
+		if (!mono_runtime_class_init_full (vtable, error))
+			return NULL;
+	}
+
 	memset (&status, 0, sizeof (status));
 	result = lookup_pinvoke_call_impl (method, &status);
 	if (status.err_code)
