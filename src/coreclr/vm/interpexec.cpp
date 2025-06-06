@@ -96,7 +96,6 @@ template <typename THelper> static THelper GetPossiblyIndirectHelper(void* dataI
 
 template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t *stack, const int32_t *ip, void** pDataItems)
 {
-    static_assert(sizeof(TResult) <= sizeof(TSource));
     static_assert(!std::numeric_limits<TSource>::is_integer);
 
     // First, promote the source value to double - that's what the helpers accept
@@ -139,7 +138,7 @@ template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t
 
 template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, const int32_t *ip)
 {
-    static_assert(sizeof(TResult) <= sizeof(TSource));
+    static_assert(sizeof(TResult) < sizeof(TSource));
     static_assert(std::numeric_limits<TSource>::is_integer);
 
     TSource src = LOCAL_VAR(ip[2], TSource);
@@ -155,8 +154,12 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
 
     if (in_range)
     {
+        // conv_ovf with floating point inputs is handled in ConvOvfFpHelper, so all possible conv_ovfs in this function are
+        // from int64 into int32-or-smaller, or int32-or-smaller into int16-or-smaller.
+        // The spec says that conversion results are stored on the evaluation stack as signed, so we always want to convert
+        //  the final truncated result into int32_t before storing it on the stack, even if the truncated result is unsigned.
         TResult result = (TResult)src;
-        LOCAL_VAR(ip[1], TResult) = result;
+        LOCAL_VAR(ip[1], int32_t) = (int32_t)result;
     }
     else
     {
