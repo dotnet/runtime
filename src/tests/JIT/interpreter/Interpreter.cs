@@ -403,7 +403,7 @@ public class InterpreterTest
             Environment.FailFast(null);
         if (!TestFloat())
             Environment.FailFast(null);
-        if (!TestConvOvf(1, 2, 3, 4))
+        if (!TestConvOvf(1, 2, 3, 4, 1.0 / 0.0, -32, 1234567890))
             Environment.FailFast(null);
 
         if (!TestLocalloc())
@@ -1049,7 +1049,7 @@ public class InterpreterTest
         return (int)ret == expected;
     }
 
-    public static bool TestConvOvf(float r4, double r8, int i4, long i8)
+    public static bool TestConvOvf(float r4, double r8, int i4, long i8, double nan, int negativeInt, long hugeInt)
     {
         checked
         {
@@ -1066,6 +1066,24 @@ public class InterpreterTest
                 return false;
             if (d != i8)
                 return false;
+
+            try {
+                a = (byte)nan;
+                return false;
+            } catch (OverflowException) {
+            }
+
+            try {
+                b = (byte)hugeInt;
+                return false;
+            } catch (OverflowException) {
+            }
+
+            try {
+                c = (byte)negativeInt;
+                return false;
+            } catch (OverflowException) {
+            }
         }
 
         return true;

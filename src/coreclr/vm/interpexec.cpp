@@ -59,6 +59,8 @@ typedef void* (*HELPER_FTN_PP)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 typedef Object* (*HELPER_FTN_NEWARR)(CORINFO_CLASS_HANDLE, intptr_t);
 typedef void* (*HELPER_FTN_PP_2)(void*, void*);
+typedef int32_t (*HELPER_FTN_R82I4)(double);
+typedef int64_t (*HELPER_FTN_R82I8)(double);
 
 InterpThreadContext::InterpThreadContext()
 {
@@ -83,14 +85,76 @@ static void InterpBreakpoint()
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 #define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
 
+template <typename THelper> static THelper GetPossiblyIndirectHelper(void* dataItem)
+{
+    size_t helperDirectOrIndirect = (size_t)dataItem;
+    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
+        return *(THelper *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
+    else
+        return (THelper)helperDirectOrIndirect;
+}
+
+template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t *stack, const int32_t *ip, void** pDataItems)
+{
+    static_assert(!std::numeric_limits<TSource>::is_integer);
+
+    // First, promote the source value to double - that's what the helpers accept
+    double promoted_src = LOCAL_VAR(ip[2], TSource);
+    // Next, perform the initial overflow-checked conversion down to the smallest appropriate integer type.
+    // For an I8/U8 destination, we will use Dbl2Lng or Dbl2ULng; for every other destination we use Dbl2Int or Dbl2UInt.
+    switch (sizeof(TResult))
+    {
+        case 8:
+        {
+            // This helper is either DBL2Lng or DBL2ULng, and our result is I8 or U8, so just store the result directly.
+            HELPER_FTN_R82I8 helper = GetPossiblyIndirectHelper<HELPER_FTN_R82I8>(pDataItems[ip[3]]);
+            LOCAL_VAR(ip[1], int64_t) = helper(promoted_src);
+            break;
+        }
+        case 4:
+        {
+            // This helper is either DBL2Int or DBL2UInt, and our result is I4 or U4, so just store the result directly.
+            HELPER_FTN_R82I4 helper = GetPossiblyIndirectHelper<HELPER_FTN_R82I4>(pDataItems[ip[3]]);
+            LOCAL_VAR(ip[1], int32_t) = helper(promoted_src);
+            break;
+        }
+        default:
+        {
+            // This helper is DBL2Int, and our result is smaller so we need a second overflow check at the end.
+            HELPER_FTN_R82I4 helper = GetPossiblyIndirectHelper<HELPER_FTN_R82I4>(pDataItems[ip[3]]);
+            int32_t temp = helper(promoted_src);
+            if ((temp < (int32_t)std::numeric_limits<TResult>::min()) || (temp > (int32_t)std::numeric_limits<TResult>::max()))
+            {
+                COMPlusThrow(kOverflowException);
+            }
+            else
+            {
+                LOCAL_VAR(ip[1], int32_t) = temp;
+            }
+            break;
+        }
+    }
+}
+
 template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, const int32_t *ip)
 {
+    static_assert(std::numeric_limits<TSource>::is_integer);
+
     TSource src = LOCAL_VAR(ip[2], TSource);
-    // We have to use `>= and <=`, not `< or >`, in order to behave correctly for NaN and infinities
-    if ((src >= std::numeric_limits<TResult>::min()) && (src <= std::numeric_limits<TResult>::max()))
+    bool in_range;
+    if (std::numeric_limits<TSource>::is_signed)
+    {
+        in_range = (src >= (TSource)std::numeric_limits<TResult>::min()) && (src <= (TSource)std::numeric_limits<TResult>::max());
+    }
+    else
+    {
+        in_range = (src <= (TSource)std::numeric_limits<TResult>::max());
+    }
+
+    if (in_range)
     {
         TResult result = (TResult)src;
-        LOCAL_VAR(ip[1], int32_t) = result;
+        LOCAL_VAR(ip[1], TResult) = result;
     }
     else
     {
@@ -382,6 +446,23 @@ MAIN_LOOP:
                     ip += 3;
                     break;
 
+                case INTOP_CONV_OVF_I1_I4:
+                    ConvOvfHelper<int8_t, int32_t>(stack, ip);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_OVF_I1_I8:
+                    ConvOvfHelper<int8_t, int64_t>(stack, ip);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_OVF_I1_R4:
+                    ConvOvfFpHelper<int8_t, float>(stack, ip, pMethod->pDataItems);
+                    ip += 4;
+                    break;
+                case INTOP_CONV_OVF_I1_R8:
+                    ConvOvfFpHelper<int8_t, double>(stack, ip, pMethod->pDataItems);
+                    ip += 4;
+                    break;
+
                 case INTOP_CONV_OVF_U1_I4:
                     ConvOvfHelper<uint8_t, int32_t>(stack, ip);
                     ip += 3;
@@ -391,12 +472,90 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_OVF_U1_R4:
-                    ConvOvfHelper<uint8_t, float>(stack, ip);
-                    ip += 3;
+                    ConvOvfFpHelper<uint8_t, float>(stack, ip, pMethod->pDataItems);
+                    ip += 4;
                     break;
                 case INTOP_CONV_OVF_U1_R8:
-                    ConvOvfHelper<uint8_t, double>(stack, ip);
+                    ConvOvfFpHelper<uint8_t, double>(stack, ip, pMethod->pDataItems);
+                    ip += 4;
+                    break;
+
+                case INTOP_CONV_OVF_I2_I4:
+                    ConvOvfHelper<int16_t, int32_t>(stack, ip);
                     ip += 3;
+                    break;
+                case INTOP_CONV_OVF_I2_I8:
+                    ConvOvfHelper<int16_t, int64_t>(stack, ip);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_OVF_I2_R4:
+                    ConvOvfFpHelper<int16_t, float>(stack, ip, pMethod->pDataItems);
+                    ip += 4;
+                    break;
+                case INTOP_CONV_OVF_I2_R8:
+                    ConvOvfFpHelper<int16_t, double>(stack, ip, pMethod->pDataItems);
+                    ip += 4;
+                    break;
+
+                case INTOP_CONV_OVF_U2_I4:
+                    ConvOvfHelper<uint16_t, int32_t>(stack, ip);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_OVF_U2_I8:
+                    ConvOvfHelper<uint16_t, int64_t>(stack, ip);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_OVF_U2_R4:
+                    ConvOvfFpHelper<uint16_t, float>(stack, ip, pMethod->pDataItems);
+                    ip += 4;
+                    break;
+                case INTOP_CONV_OVF_U2_R8:
+                    ConvOvfFpHelper<uint16_t, double>(stack, ip, pMethod->pDataItems);
+                    ip += 4;
+                    break;
+
+                case INTOP_CONV_OVF_I4_I8:
+                    ConvOvfHelper<int32_t, int64_t>(stack, ip);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_OVF_I4_R4:
+                    ConvOvfFpHelper<int32_t, float>(stack, ip, pMethod->pDataItems);
+                    ip += 4;
+                    break;
+                case INTOP_CONV_OVF_I4_R8:
+                    ConvOvfFpHelper<int32_t, double>(stack, ip, pMethod->pDataItems);
+                    ip += 4;
+                    break;
+
+                case INTOP_CONV_OVF_U4_I8:
+                    ConvOvfHelper<uint32_t, int64_t>(stack, ip);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_OVF_U4_R4:
+                    ConvOvfFpHelper<uint32_t, float>(stack, ip, pMethod->pDataItems);
+                    ip += 4;
+                    break;
+                case INTOP_CONV_OVF_U4_R8:
+                    ConvOvfFpHelper<uint32_t, double>(stack, ip, pMethod->pDataItems);
+                    ip += 4;
+                    break;
+
+                case INTOP_CONV_OVF_I8_R4:
+                    ConvOvfFpHelper<int64_t, float>(stack, ip, pMethod->pDataItems);
+                    ip += 4;
+                    break;
+                case INTOP_CONV_OVF_I8_R8:
+                    ConvOvfFpHelper<int64_t, double>(stack, ip, pMethod->pDataItems);
+                    ip += 4;
+                    break;
+
+                case INTOP_CONV_OVF_U8_R4:
+                    ConvOvfFpHelper<uint64_t, float>(stack, ip, pMethod->pDataItems);
+                    ip += 4;
+                    break;
+                case INTOP_CONV_OVF_U8_R8:
+                    ConvOvfFpHelper<uint64_t, double>(stack, ip, pMethod->pDataItems);
+                    ip += 4;
                     break;
 
                 case INTOP_SWITCH:
@@ -1136,13 +1295,7 @@ MAIN_LOOP:
                 {
                     int base = (*ip == INTOP_CALL_HELPER_PP) ? 2 : 3;
 
-                    size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[base]];
-                    HELPER_FTN_PP helperFtn = nullptr;
-                    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
-                        helperFtn = *(HELPER_FTN_PP *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
-                    else
-                        helperFtn = (HELPER_FTN_PP)helperDirectOrIndirect;
-
+                    HELPER_FTN_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_PP>(pMethod->pDataItems[ip[base]]);
                     void* helperArg = pMethod->pDataItems[ip[base + 1]];
 
                     // This can call either native or compiled managed code. For an interpreter
@@ -1375,12 +1528,7 @@ CALL_TARGET_IP:
                     int dreg = ip[1];
                     int sreg = ip[2];
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
-                    size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[4]];
-                    HELPER_FTN_BOX_UNBOX helper = nullptr;
-                    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
-                        helper = *(HELPER_FTN_BOX_UNBOX *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
-                    else
-                        helper = (HELPER_FTN_BOX_UNBOX)helperDirectOrIndirect;
+                    HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod->pDataItems[ip[4]]);
 
                     if (opcode == INTOP_BOX) {
                         // internal static object Box(MethodTable* typeMT, ref byte unboxedData)
@@ -1406,12 +1554,7 @@ CALL_TARGET_IP:
                         COMPlusThrow(kArgumentOutOfRangeException);
 
                     CORINFO_CLASS_HANDLE arrayClsHnd = (CORINFO_CLASS_HANDLE)pMethod->pDataItems[ip[3]];
-                    size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[4]];
-                    HELPER_FTN_NEWARR helper = nullptr;
-                    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
-                        helper = *(HELPER_FTN_NEWARR *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
-                    else
-                        helper = (HELPER_FTN_NEWARR)helperDirectOrIndirect;
+                    HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod->pDataItems[ip[4]]);
 
                     Object* arr = helper(arrayClsHnd, (intptr_t)length);
                     LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
@@ -1529,12 +1672,7 @@ do {                                                                           \
                 {
                     int dreg = ip[1];
                     void *nativeHandle = pMethod->pDataItems[ip[2]];
-                    size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[3]];
-                    HELPER_FTN_PP helper = nullptr;
-                    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
-                        helper = *(HELPER_FTN_PP *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
-                    else
-                        helper = (HELPER_FTN_PP)helperDirectOrIndirect;
+                    HELPER_FTN_PP helper = GetPossiblyIndirectHelper<HELPER_FTN_PP>(pMethod->pDataItems[ip[3]]);
                     void *managedHandle = helper(nativeHandle);
                     LOCAL_VAR(dreg, void*) = managedHandle;
                     ip += 4;
