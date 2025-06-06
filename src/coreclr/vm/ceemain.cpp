@@ -797,6 +797,7 @@ void EEStartupHelper()
         StubLinkerCPU::Init();
         StubPrecode::StaticInitialize();
         FixupPrecode::StaticInitialize();
+        CDacPlatformMetadata::InitPrecodes();
 
         InitializeGarbageCollector();
 
