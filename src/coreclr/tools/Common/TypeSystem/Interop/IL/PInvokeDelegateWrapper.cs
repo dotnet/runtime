@@ -82,6 +82,11 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        public override bool IsExtendedLayout
+        {
+            get => false;
+        }
+
         public override bool IsBeforeFieldInit
         {
             get
@@ -229,12 +234,6 @@ namespace Internal.TypeSystem.Interop
             flags |= TypeFlags.AttributeCacheComputed;
 
             return flags;
-        }
-
-        public override int GetInlineArrayLength()
-        {
-            Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
-            throw new InvalidOperationException();
         }
 
         private MethodDesc[] _methods;

@@ -23,6 +23,7 @@ namespace System.Reflection
         AutoLayout = 0x00000000,     // Class fields are auto-laid out
         SequentialLayout = 0x00000008,     // Class fields are laid out sequentially
         ExplicitLayout = 0x00000010,     // Layout is supplied explicitly
+        ExtendedLayout = 0x00000018,     // Layout is supplied via the System.Runtime.InteropServices.ExtendedLayoutAttribute
                                          // end layout mask
 
         // Use this mask to distinguish whether a type declaration is an interface.  (Class vs. ValueType done based on whether it subclasses S.ValueType)

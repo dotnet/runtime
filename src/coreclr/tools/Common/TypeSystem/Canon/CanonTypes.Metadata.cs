@@ -29,6 +29,8 @@ namespace Internal.TypeSystem
 
         public override bool IsExplicitLayout => false;
 
+        public override bool IsExtendedLayout => false;
+
         public override ModuleDesc Module => _context.SystemModule;
 
         public override bool IsModuleType => false;
@@ -56,12 +58,6 @@ namespace Internal.TypeSystem
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return false;
-        }
-
-        public override int GetInlineArrayLength()
-        {
-            Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
-            throw new InvalidOperationException();
         }
     }
 
