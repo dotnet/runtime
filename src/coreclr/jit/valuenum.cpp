@@ -13939,11 +13939,6 @@ void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
             srcIsUnsigned = true;
             break;
 
-        case CORINFO_HELP_DBL2INT:
-            castToType   = TYP_INT;
-            castFromType = TYP_DOUBLE;
-            break;
-
         case CORINFO_HELP_DBL2INT_OVF:
             castToType       = TYP_INT;
             castFromType     = TYP_DOUBLE;
@@ -13959,11 +13954,6 @@ void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
             castToType       = TYP_LONG;
             castFromType     = TYP_DOUBLE;
             hasOverflowCheck = true;
-            break;
-
-        case CORINFO_HELP_DBL2UINT:
-            castToType   = TYP_UINT;
-            castFromType = TYP_DOUBLE;
             break;
 
         case CORINFO_HELP_DBL2UINT_OVF:
@@ -14284,11 +14274,9 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         case CORINFO_HELP_LNG2DBL:
         case CORINFO_HELP_ULNG2FLT:
         case CORINFO_HELP_ULNG2DBL:
-        case CORINFO_HELP_DBL2INT:
         case CORINFO_HELP_DBL2INT_OVF:
         case CORINFO_HELP_DBL2LNG:
         case CORINFO_HELP_DBL2LNG_OVF:
-        case CORINFO_HELP_DBL2UINT:
         case CORINFO_HELP_DBL2UINT_OVF:
         case CORINFO_HELP_DBL2ULNG:
         case CORINFO_HELP_DBL2ULNG_OVF:
