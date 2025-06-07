@@ -365,6 +365,8 @@ public:
 
 private:
     static size_t gcRecordEpilog(void* pCallBackData, unsigned offset);
+
+    ReturnKind getReturnKind();
 #else // JIT32_GCENCODER
     void gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSize, unsigned prologSize);
 
@@ -398,9 +400,6 @@ private:
 public:
     // This method updates the appropriate reg masks when a variable is moved.
     void gcUpdateForRegVarMove(regMaskTP srcMask, regMaskTP dstMask, LclVarDsc* varDsc);
-
-private:
-    ReturnKind getReturnKind();
 };
 
 inline unsigned char encodeUnsigned(BYTE* dest, unsigned value)
