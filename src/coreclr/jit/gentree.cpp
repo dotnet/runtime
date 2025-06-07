@@ -20541,7 +20541,7 @@ bool GenTree::isEvexCompatibleHWIntrinsic(Compiler* comp) const
 // Return Value:
 //   true if the intrinsic node lowering instruction has a EVEX embedded broadcast support
 //
-bool GenTree::isEmbeddedBroadcastCompatibleHWIntrinsic() const
+bool GenTree::isEmbeddedBroadcastCompatibleHWIntrinsic(Compiler* comp) const
 {
     if (OperIsHWIntrinsic())
     {
@@ -20549,7 +20549,7 @@ bool GenTree::isEmbeddedBroadcastCompatibleHWIntrinsic() const
         var_types      simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
         instruction    ins          = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType, nullptr);
 
-        if (CodeGenInterface::instIsEmbeddedBroadcastCompatible(ins))
+        if (comp->codeGen->instIsEmbeddedBroadcastCompatible(ins))
         {
             insTupleType tupleType = emitter::insTupleTypeInfo(ins);
 
@@ -20705,8 +20705,6 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types              ty
 
 GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -20811,8 +20809,6 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
 GenTree* Compiler::gtNewSimdBinOpNode(
     genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -21445,8 +21441,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
 GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -21539,8 +21533,6 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
     var_types simdTargetBaseType = JitType2PreciseVarType(simdTargetBaseJitType);
     assert(varTypeIsFloating(simdSourceBaseType));
     assert(varTypeIsIntegral(simdTargetBaseType));
-
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
 
 #if defined(TARGET_XARCH)
     assert(compIsaSupportedDebugOnly(InstructionSet_AVX512) ||
@@ -21679,8 +21671,6 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(var_types   type,
     var_types simdTargetBaseType = JitType2PreciseVarType(simdTargetBaseJitType);
     assert(varTypeIsFloating(simdSourceBaseType));
     assert(varTypeIsIntegral(simdTargetBaseType));
-
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
 
     // Generate intrinsic needed for conversion
     NamedIntrinsic hwIntrinsicID = NI_Illegal;
@@ -21926,8 +21916,6 @@ GenTree* Compiler::gtNewSimdCvtVectorToMaskNode(var_types   type,
 GenTree* Compiler::gtNewSimdCmpOpNode(
     genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -22223,7 +22211,6 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 GenTree* Compiler::gtNewSimdCmpOpAllNode(
     genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
     assert(type == TYP_INT);
 
     var_types simdType = getSIMDTypeForSize(simdSize);
@@ -22362,7 +22349,6 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
 GenTree* Compiler::gtNewSimdCmpOpAnyNode(
     genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
     assert(type == TYP_INT);
 
     var_types simdType = getSIMDTypeForSize(simdSize);
@@ -22497,8 +22483,6 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
 GenTree* Compiler::gtNewSimdCndSelNode(
     var_types type, GenTree* op1, GenTree* op2, GenTree* op3, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -23097,8 +23081,6 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(
 GenTree* Compiler::gtNewSimdDotProdNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     var_types simdType = getSIMDTypeForSize(simdSize);
     assert(varTypeIsSIMD(simdType));
 
@@ -23141,8 +23123,6 @@ GenTree* Compiler::gtNewSimdDotProdNode(
 
 GenTree* Compiler::gtNewSimdFloorNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -23219,8 +23199,6 @@ GenTree* Compiler::gtNewSimdFmaNode(
         intrinsic = NI_FMA_MultiplyAdd;
     }
 #elif defined(TARGET_ARM64)
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     if (simdBaseType == TYP_DOUBLE)
     {
         intrinsic = (simdSize == 8) ? NI_AdvSimd_FusedMultiplyAddScalar : NI_AdvSimd_Arm64_FusedMultiplyAdd;
@@ -23275,7 +23253,7 @@ GenTree* Compiler::gtNewSimdGetElementNode(
         case TYP_SHORT:
         case TYP_USHORT:
         {
-            assert(compIsaSupportedDebugOnly(InstructionSet_X86Base));
+            // Supported by baseline ISA requirement
             break;
         }
 
@@ -23490,8 +23468,6 @@ GenTree* Compiler::gtNewSimdIsEvenIntegerNode(var_types   type,
                                               CorInfoType simdBaseJitType,
                                               unsigned    simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -23519,8 +23495,6 @@ GenTree* Compiler::gtNewSimdIsEvenIntegerNode(var_types   type,
 //
 GenTree* Compiler::gtNewSimdIsFiniteNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -23572,8 +23546,6 @@ GenTree* Compiler::gtNewSimdIsFiniteNode(var_types type, GenTree* op1, CorInfoTy
 //
 GenTree* Compiler::gtNewSimdIsInfinityNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -23605,8 +23577,6 @@ GenTree* Compiler::gtNewSimdIsInfinityNode(var_types type, GenTree* op1, CorInfo
 //
 GenTree* Compiler::gtNewSimdIsIntegerNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -23647,8 +23617,6 @@ GenTree* Compiler::gtNewSimdIsIntegerNode(var_types type, GenTree* op1, CorInfoT
 //
 GenTree* Compiler::gtNewSimdIsNaNNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -23680,8 +23648,6 @@ GenTree* Compiler::gtNewSimdIsNaNNode(var_types type, GenTree* op1, CorInfoType 
 //
 GenTree* Compiler::gtNewSimdIsNegativeNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -23724,8 +23690,6 @@ GenTree* Compiler::gtNewSimdIsNegativeInfinityNode(var_types   type,
                                                    CorInfoType simdBaseJitType,
                                                    unsigned    simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -23774,8 +23738,6 @@ GenTree* Compiler::gtNewSimdIsNegativeInfinityNode(var_types   type,
 //
 GenTree* Compiler::gtNewSimdIsNormalNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -23839,8 +23801,6 @@ GenTree* Compiler::gtNewSimdIsOddIntegerNode(var_types   type,
                                              CorInfoType simdBaseJitType,
                                              unsigned    simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -23868,8 +23828,6 @@ GenTree* Compiler::gtNewSimdIsOddIntegerNode(var_types   type,
 //
 GenTree* Compiler::gtNewSimdIsPositiveNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -23912,8 +23870,6 @@ GenTree* Compiler::gtNewSimdIsPositiveInfinityNode(var_types   type,
                                                    CorInfoType simdBaseJitType,
                                                    unsigned    simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -23965,8 +23921,6 @@ GenTree* Compiler::gtNewSimdIsSubnormalNode(var_types   type,
                                             CorInfoType simdBaseJitType,
                                             unsigned    simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -24024,8 +23978,6 @@ GenTree* Compiler::gtNewSimdIsSubnormalNode(var_types   type,
 //
 GenTree* Compiler::gtNewSimdIsZeroNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -24081,8 +24033,6 @@ GenTree* Compiler::gtNewSimdLoadAlignedNode(var_types   type,
                                             unsigned    simdSize)
 {
 #if defined(TARGET_XARCH)
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -24140,8 +24090,6 @@ GenTree* Compiler::gtNewSimdLoadNonTemporalNode(var_types   type,
                                                 unsigned    simdSize)
 {
 #if defined(TARGET_XARCH)
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -24217,8 +24165,6 @@ GenTree* Compiler::gtNewSimdLoadNonTemporalNode(var_types   type,
 GenTree* Compiler::gtNewSimdMaxNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -24300,8 +24246,6 @@ GenTree* Compiler::gtNewSimdMaxNode(
 GenTree* Compiler::gtNewSimdMaxNativeNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -24494,8 +24438,6 @@ GenTree* Compiler::gtNewSimdMaxNativeNode(
 GenTree* Compiler::gtNewSimdMinNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -24577,8 +24519,6 @@ GenTree* Compiler::gtNewSimdMinNode(
 GenTree* Compiler::gtNewSimdMinNativeNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -24767,8 +24707,6 @@ GenTree* Compiler::gtNewSimdMinNativeNode(
 GenTree* Compiler::gtNewSimdNarrowNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -25282,8 +25220,6 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 //
 GenTree* Compiler::gtNewSimdRoundNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -25348,8 +25284,6 @@ GenTree* Compiler::gtNewSimdRoundNode(var_types type, GenTree* op1, CorInfoType 
 GenTree* Compiler::gtNewSimdShuffleVariableNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isShuffleNative)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -25965,8 +25899,6 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
 GenTree* Compiler::gtNewSimdShuffleNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isShuffleNative)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -26553,8 +26485,6 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
 GenTree* Compiler::gtNewSimdSqrtNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -26639,8 +26569,6 @@ GenTree* Compiler::gtNewSimdStoreNode(GenTree* op1, GenTree* op2, CorInfoType si
 GenTree* Compiler::gtNewSimdStoreAlignedNode(GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
 #if defined(TARGET_XARCH)
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(op1 != nullptr);
     assert(op2 != nullptr);
 
@@ -26698,8 +26626,6 @@ GenTree* Compiler::gtNewSimdStoreNonTemporalNode(GenTree*    op1,
                                                  unsigned    simdSize)
 {
 #if defined(TARGET_XARCH)
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(op1 != nullptr);
     assert(op2 != nullptr);
 
@@ -26741,8 +26667,6 @@ GenTree* Compiler::gtNewSimdStoreNonTemporalNode(GenTree*    op1,
 
 GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     var_types simdType = getSIMDTypeForSize(simdSize);
     assert(varTypeIsSIMD(simdType));
 
@@ -26811,7 +26735,6 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
     {
         if (simdBaseType == TYP_FLOAT)
         {
-            assert(compIsaSupportedDebugOnly(InstructionSet_X86Base));
             GenTree* op1Shuffled = fgMakeMultiUse(&op1);
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
@@ -26829,7 +26752,6 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
             }
             else
             {
-                assert(compIsaSupportedDebugOnly(InstructionSet_X86Base));
                 // The shuffle below gives us  [0, 1, 2, 3] -> [1, 0, 3, 2]
                 op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op1Shuffled, gtNewIconNode((int)0b10110001, TYP_INT),
                                                NI_X86Base_Shuffle, simdBaseJitType, simdSize);
@@ -26849,7 +26771,6 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
         }
         else
         {
-            assert(compIsaSupportedDebugOnly(InstructionSet_X86Base));
             GenTree* op1Shuffled = fgMakeMultiUse(&op1);
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
@@ -27027,7 +26948,6 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
 //
 GenTree* Compiler::gtNewSimdToScalarNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
     assert(varTypeIsArithmetic(type));
 
     assert(op1 != nullptr);
@@ -27084,8 +27004,6 @@ GenTree* Compiler::gtNewSimdToScalarNode(var_types type, GenTree* op1, CorInfoTy
 //
 GenTree* Compiler::gtNewSimdTruncNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -27134,8 +27052,6 @@ GenTree* Compiler::gtNewSimdTruncNode(var_types type, GenTree* op1, CorInfoType 
 GenTree* Compiler::gtNewSimdUnOpNode(
     genTreeOps op, var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -27231,8 +27147,6 @@ GenTree* Compiler::gtNewSimdUnOpNode(
 
 GenTree* Compiler::gtNewSimdWidenLowerNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -27445,8 +27359,6 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(var_types type, GenTree* op1, CorInfo
 
 GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -27702,7 +27614,7 @@ GenTree* Compiler::gtNewSimdWithElementNode(
         case TYP_FLOAT:
         case TYP_SHORT:
         case TYP_USHORT:
-            assert(compIsaSupportedDebugOnly(InstructionSet_X86Base));
+            // Supported by baseline ISA requirement
             break;
 
         default:
@@ -29313,7 +29225,6 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForUnOp(
 #endif // TARGET_ARM64
 
         assert(!isScalar || varTypeIsFloating(simdBaseType));
-        assert(comp->IsBaselineSimdIsaSupportedDebugOnly());
     }
 
     assert(op1 != nullptr);
@@ -29418,7 +29329,6 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
 #endif // TARGET_ARM64
 
         assert(!isScalar || varTypeIsFloating(simdBaseType));
-        assert(comp->IsBaselineSimdIsaSupportedDebugOnly());
     }
 
     NamedIntrinsic id = NI_Illegal;
@@ -29628,7 +29538,6 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
                     }
                     else
                     {
-                        assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
                         id = NI_X86Base_ShiftLeftLogical;
                     }
                 }
@@ -29646,7 +29555,6 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
                 }
                 else if (varTypeIsInt(op2))
                 {
-                    assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
                     id = NI_X86Base_ShiftLeftLogical;
                 }
                 else if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
@@ -29723,7 +29631,6 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             }
             else if (varTypeIsShort(simdBaseType))
             {
-                assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
                 id = NI_X86Base_MultiplyLow;
             }
 #elif defined(TARGET_ARM64)
@@ -29869,7 +29776,6 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
                     }
                     else
                     {
-                        assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
                         id = NI_X86Base_ShiftRightArithmetic;
                     }
                 }
@@ -29887,7 +29793,6 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
                 }
                 else if (varTypeIsInt(op2))
                 {
-                    assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
                     id = NI_X86Base_ShiftRightArithmetic;
                 }
                 else if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
@@ -29937,7 +29842,6 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
                     }
                     else
                     {
-                        assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
                         id = NI_X86Base_ShiftRightLogical;
                     }
                 }
@@ -29955,7 +29859,6 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
                 }
                 else if (varTypeIsInt(op2))
                 {
-                    assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
                     id = NI_X86Base_ShiftRightLogical;
                 }
                 else if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
@@ -30129,7 +30032,6 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 #endif // TARGET_ARM64
 
         assert(!isScalar || varTypeIsFloating(simdBaseType));
-        assert(comp->IsBaselineSimdIsaSupportedDebugOnly());
     }
 
     NamedIntrinsic id = NI_Illegal;
@@ -30244,7 +30146,6 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
                     }
                     else
                     {
-                        assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
                         id = NI_X86Base_CompareGreaterThan;
                     }
                 }
@@ -30338,7 +30239,6 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
                     }
                     else
                     {
-                        assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
                         id = NI_X86Base_CompareLessThan;
                     }
                 }

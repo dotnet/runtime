@@ -396,27 +396,26 @@ RELEASE_CONFIG_INTEGER(EnableHWIntrinsic,           "EnableHWIntrinsic",        
 #endif // defined(TARGET_LOONGARCH64)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
-RELEASE_CONFIG_INTEGER(EnableAES,                   "EnableAES",                 1) // Allows AES+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX,                   "EnableAVX",                 1) // Allows AVX+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX2,                  "EnableAVX2",                1) // Allows AVX2+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512,                "EnableAVX512",              1) // Allows AVX512+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512VBMI,            "EnableAVX512VBMI",          1) // Allows AVX512VBMI+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX10v1,               "EnableAVX10v1",             1) // Allows AVX10v1+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX10v2,               "EnableAVX10v2",             1) // Allows AVX10v2+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVXVNNI,               "EnableAVXVNNI",             1) // Allows AVXVNNI+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableBMI1,                  "EnableBMI1",                1) // Allows BMI1+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableBMI2,                  "EnableBMI2",                1) // Allows BMI2+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableFMA,                   "EnableFMA",                 1) // Allows FMA+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableGFNI,                  "EnableGFNI",                1) // Allows GFNI+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableLZCNT,                 "EnableLZCNT",               1) // Allows LZCNT+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnablePCLMULQDQ,             "EnablePCLMULQDQ",           1) // Allows PCLMULQDQ+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableVPCLMULQDQ,            "EnableVPCLMULQDQ",          1) // Allows VPCLMULQDQ+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnablePOPCNT,                "EnablePOPCNT",              1) // Allows POPCNT+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableSSE3,                  "EnableSSE3",                1) // Allows SSE3+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableSSE41,                 "EnableSSE41",               1) // Allows SSE4.1+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableSSE42,                 "EnableSSE42",               1) // Allows SSE4.2+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableSSSE3,                 "EnableSSSE3",               1) // Allows SSSE3+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAPX,                   "EnableAPX",                 0) // Allows APX+ features to be disabled
+RELEASE_CONFIG_INTEGER(EnableSSE42,                 "EnableSSE42",               1) // Allows SSE3, SSSE3, SSE4.1, SSE4.2, POPCNT, and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX,                   "EnableAVX",                 1) // Allows AVX and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX2,                  "EnableAVX2",                1) // Allows AVX2, BMI1, BMI2, F16C, FMA, LZCNT, MOVBE and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512,                "EnableAVX512",              1) // Allows AVX512 F+BW+CD+DQ+VL and depdendent hardware intrinsics to be disabled
+
+RELEASE_CONFIG_INTEGER(EnableAVX512v2,              "EnableAVX512v2",            1) // Allows AVX512 IFMA+VBMI and depdendent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512v3,              "EnableAVX512v3",            1) // Allows AVX512 BITALG+VBMI2+VNNI+VPOPCNTDQ and depdendent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX10v1,               "EnableAVX10v1",             1) // Allows AVX10v1 and depdendent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX10v2,               "EnableAVX10v2",             0) // Allows AVX10v2 and depdendent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAPX,                   "EnableAPX",                 0) // Allows APX and dependent features to be disabled
+
+RELEASE_CONFIG_INTEGER(EnableAES,                   "EnableAES",                 1) // Allows AES, PCLMULQDQ, and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512VP2INTERSECT,    "EnableAVX512VP2INTERSECT",  1) // Allows AVX512VP2INTERSECT and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVXIFMA,               "EnableAVXIFMA",             1) // Allows AVXIFMA and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVXVNNI,               "EnableAVXVNNI",             1) // Allows AVXVNNI and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableGFNI,                  "EnableGFNI",                1) // Allows GFNI and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableSHA,                   "EnableSHA",                 1) // Allows SHA and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableVAES,                  "EnableVAES",                1) // Allows VAES, VPCLMULQDQ, and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableWAITPKG,               "EnableWAITPKG",             1) // Allows WAITPKG and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableX86Serialize,          "EnableX86Serialize",        1) // Allows X86Serialize and dependent hardware intrinsics to be disabled
 #elif defined(TARGET_ARM64)
 RELEASE_CONFIG_INTEGER(EnableArm64Aes,              "EnableArm64Aes",            1) // Allows Arm64 Aes+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Atomics,          "EnableArm64Atomics",        1) // Allows Arm64 Atomics+ hardware intrinsics to be disabled
