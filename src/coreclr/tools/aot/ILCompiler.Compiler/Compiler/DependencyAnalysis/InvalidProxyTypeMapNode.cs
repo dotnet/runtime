@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
-        protected override string GetName(NodeFactory context) => "InvalidAssociatedTypeMapNode";
+        protected override string GetName(NodeFactory context) => $"Invalid proxy type map: {TypeMapGroup}";
 
         public int ClassCode => 36910224;
         public int CompareToImpl(ISortableNode other, CompilerComparer comparer)

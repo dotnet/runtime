@@ -28,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
-        protected override string GetName(NodeFactory context) => "InvalidExternalTypeMapNode";
+        protected override string GetName(NodeFactory context) => $"Invalid external type map: {TypeMapGroup}";
 
         public TypeDesc TypeMapGroup { get; } = typeMapGroup;
         public MethodDesc ThrowingMethodStub { get; } = throwingMethodStub;
