@@ -1141,6 +1141,9 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(d);
 
+            if (OperatingSystem.IsWasi() || OperatingSystem.IsBrowser())
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_DynamicEntrypoint);
+
             return GetFunctionPointerForDelegateInternal(d);
         }
 
