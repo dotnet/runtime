@@ -813,9 +813,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             PAL_CPP_TRY                                                                 \
             {                                                                           \
                 CAutoTryCleanup<STATETYPE> __autoCleanupTry(__state);                   \
-                /* prevent annotations from being dropped by optimizations in debug */  \
-                INDEBUG(static bool __alwayszero;)                                      \
-                INDEBUG(VolatileLoad(&__alwayszero);)                                   \
                 {                                                                       \
                     /* Disallow returns to make exception handling work. */             \
                     /* Some work is done after the catch, see EX_ENDTRY. */             \
@@ -864,9 +861,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             PAL_CPP_TRY                                                             \
             {                                                                       \
                 CAutoTryCleanup<STATETYPE> __autoCleanupTry(__state);               \
-                /* prevent annotations from being dropped by optimizations in debug */ \
-                INDEBUG(static bool __alwayszero;)                                  \
-                INDEBUG(VolatileLoad(&__alwayszero);)                               \
                 {                                                                   \
                     /* Disallow returns to make exception handling work. */         \
                    /* Some work is done after the catch, see EX_ENDTRY. */          \

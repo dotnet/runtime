@@ -254,8 +254,6 @@ namespace Loader
 #include "gcenv.interlocked.h"
 #include "gcenv.interlocked.inl"
 
-#include "eecontract.h"
-
 #include "util.hpp"
 #include "eepolicy.h"
 
@@ -266,6 +264,7 @@ namespace Loader
 #include "cgensys.h"
 #include "ceemain.h"
 #include "hash.h"
+#include "eecontract.h"
 #include "pedecoder.h"
 #include "sstring.h"
 #include "slist.h"
