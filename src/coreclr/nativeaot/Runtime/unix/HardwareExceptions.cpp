@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "CommonTypes.h"
-#include "PalRedhawkCommon.h"
+#include "Pal.h"
+#include "PalLimitedContext.h"
 #include "CommonMacros.h"
 #include "config.h"
 #include "daccess.h"

@@ -447,7 +447,7 @@ public class GenerateWasmBootJson : Task
         if (browserProfiler != null)
         {
             result.environmentVariables ??= new();
-            result.environmentVariables["DOTNET_WasmPerfInstrumentation"] = browserProfiler.Substring("browser:".Length);
+            result.environmentVariables["DOTNET_WasmPerformanceInstrumentation"] = browserProfiler.Substring("browser:".Length);
         }
 
         helper.ComputeResourcesHash(result);

@@ -169,8 +169,8 @@ static void printIndent(IndentStack* indentStack)
 
 #endif
 
-#if defined(DEBUG) || CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_MEM_ALLOC ||     \
-    NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS || DUMP_FLOWGRAPHS
+#if defined(DEBUG) || CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_MEM_ALLOC || NODEBASH_STATS ||  \
+    MEASURE_NODE_SIZE || COUNT_AST_OPERS || DUMP_FLOWGRAPHS
 
 static const char* opNames[] = {
 #define GTNODE(en, st, cm, ivn, ok) #en,
@@ -264,9 +264,6 @@ void GenTree::InitNodeSize()
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
     GenTree::s_gtNodeSizes[GT_PUTARG_STK]    = TREE_NODE_SZ_LARGE;
-#if FEATURE_ARG_SPLIT
-    GenTree::s_gtNodeSizes[GT_PUTARG_SPLIT]  = TREE_NODE_SZ_LARGE;
-#endif // FEATURE_ARG_SPLIT
 
     // This list of assertions should come to contain all GenTree subtypes that are declared
     // "small".
@@ -325,9 +322,6 @@ void GenTree::InitNodeSize()
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
     static_assert_no_msg(sizeof(GenTreePutArgStk)       <= TREE_NODE_SZ_LARGE);
-#if FEATURE_ARG_SPLIT
-    static_assert_no_msg(sizeof(GenTreePutArgSplit)     <= TREE_NODE_SZ_LARGE);
-#endif // FEATURE_ARG_SPLIT
 
 #ifdef FEATURE_HW_INTRINSICS
     static_assert_no_msg(sizeof(GenTreeHWIntrinsic)     <= TREE_NODE_SZ_SMALL);
@@ -875,12 +869,6 @@ int GenTree::GetRegisterDstCount(Compiler* compiler) const
     {
         return gtGetOp1()->GetRegisterDstCount(compiler);
     }
-#if FEATURE_ARG_SPLIT
-    else if (OperIsPutArgSplit())
-    {
-        return (const_cast<GenTree*>(this))->AsPutArgSplit()->gtNumRegs;
-    }
-#endif
 #if !defined(TARGET_64BIT)
     else if (OperIsMultiRegOp())
     {
@@ -931,13 +919,6 @@ bool GenTree::IsMultiRegNode() const
         return true;
     }
 
-#if FEATURE_ARG_SPLIT
-    if (OperIsPutArgSplit())
-    {
-        return true;
-    }
-#endif
-
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
     {
@@ -981,13 +962,6 @@ unsigned GenTree::GetMultiRegCount(Compiler* comp) const
     {
         return AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
     }
-
-#if FEATURE_ARG_SPLIT
-    if (OperIsPutArgSplit())
-    {
-        return AsPutArgSplit()->gtNumRegs;
-    }
-#endif
 
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
@@ -1095,21 +1069,6 @@ regMaskTP GenTree::gtGetRegMask() const
             }
         }
     }
-#if FEATURE_ARG_SPLIT
-    else if (compFeatureArgSplit() && OperIsPutArgSplit())
-    {
-        const GenTreePutArgSplit* splitArg = AsPutArgSplit();
-        const unsigned            regCount = splitArg->gtNumRegs;
-
-        resultMask = RBM_NONE;
-        for (unsigned i = 0; i < regCount; ++i)
-        {
-            regNumber reg = splitArg->GetRegNumByIdx(i);
-            assert(reg != REG_NA);
-            resultMask |= genRegMask(reg);
-        }
-    }
-#endif // FEATURE_ARG_SPLIT
     else
     {
         resultMask = genRegMask(GetRegNum());
@@ -1169,13 +1128,13 @@ void NewCallArg::ValidateTypes()
 
     if (varTypeIsStruct(SignatureType))
     {
-        assert(SignatureClsHnd != NO_CLASS_HANDLE);
+        assert(SignatureLayout != nullptr);
         assert(SignatureType == Node->TypeGet());
 
-        if (SignatureType == TYP_STRUCT)
+        if ((SignatureType == TYP_STRUCT) && !Node->OperIsFieldList())
         {
             Compiler* comp = JitTls::GetCompiler();
-            assert(ClassLayout::AreCompatible(comp->typGetObjLayout(SignatureClsHnd), Node->GetLayout(comp)));
+            assert(ClassLayout::AreCompatible(SignatureLayout, Node->GetLayout(comp)));
         }
     }
 }
@@ -2044,7 +2003,7 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
             {
                 case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
                 case CORINFO_HELP_NEWARR_1_DIRECT:
-                case CORINFO_HELP_NEWARR_1_OBJ:
+                case CORINFO_HELP_NEWARR_1_PTR:
                 case CORINFO_HELP_NEWARR_1_VC:
                 case CORINFO_HELP_NEWARR_1_ALIGN8:
                 {
@@ -6680,21 +6639,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             }
             return false;
 
-// Variadic nodes
-#if FEATURE_ARG_SPLIT
-        case GT_PUTARG_SPLIT:
-            if (this->AsUnOp()->gtOp1->OperIs(GT_FIELD_LIST))
-            {
-                return this->AsUnOp()->gtOp1->TryGetUse(operand, pUse);
-            }
-            if (operand == this->AsUnOp()->gtOp1)
-            {
-                *pUse = &this->AsUnOp()->gtOp1;
-                return true;
-            }
-            return false;
-#endif // FEATURE_ARG_SPLIT
-
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
             for (GenTree** opUse : this->AsMultiOp()->UseEdges())
@@ -8346,8 +8290,10 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     // These get updated after call node is built.
     node->gtInlineObservation = InlineObservation::CALLEE_UNUSED_INITIAL;
     node->gtRawILOffset       = BAD_IL_OFFSET;
-    node->gtInlineContext     = compInlineContext;
+
 #endif
+
+    node->gtInlineContext = compInlineContext;
 
     // Spec: Managed Retval sequence points needs to be generated while generating debug info for debuggable code.
     //
@@ -9855,7 +9801,7 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
         CallArg* carg           = new (comp, CMK_CallArgs) CallArg();
         carg->m_earlyNode       = arg.m_earlyNode != nullptr ? copyNode(arg.m_earlyNode) : nullptr;
         carg->m_lateNode        = arg.m_lateNode != nullptr ? copyNode(arg.m_lateNode) : nullptr;
-        carg->m_signatureClsHnd = arg.m_signatureClsHnd;
+        carg->m_signatureLayout = arg.m_signatureLayout;
         carg->m_signatureType   = arg.m_signatureType;
         carg->m_wellKnownArg    = arg.m_wellKnownArg;
         carg->m_needTmp         = arg.m_needTmp;
@@ -9951,8 +9897,9 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
 #if defined(DEBUG)
     copy->gtInlineObservation = tree->gtInlineObservation;
     copy->gtRawILOffset       = tree->gtRawILOffset;
-    copy->gtInlineContext     = tree->gtInlineContext;
 #endif
+
+    copy->gtInlineContext = tree->gtInlineContext;
 
     copy->CopyOtherRegFlags(tree);
 
@@ -10276,9 +10223,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_BSWAP16:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
-#if FEATURE_ARG_SPLIT
-        case GT_PUTARG_SPLIT:
-#endif // FEATURE_ARG_SPLIT
         case GT_RETURNTRAP:
         case GT_RETURN_SUSPEND:
             m_edge = &m_node->AsUnOp()->gtOp1;
@@ -12714,13 +12658,6 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 }
             }
         }
-#if FEATURE_ARG_SPLIT
-        else if (tree->OperIs(GT_PUTARG_SPLIT))
-        {
-            const GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
-            printf(" (%d stackByteSize), (%d numRegs)", putArg->GetStackByteSize(), putArg->gtNumRegs);
-        }
-#endif // FEATURE_ARG_SPLIT
 
         if (tree->OperIs(GT_FIELD_ADDR))
         {
@@ -13009,6 +12946,20 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 if ((inlineInfo != nullptr) && (inlineInfo->exactContextHandle != nullptr))
                 {
                     printf(" (exactContextHandle=0x%p)", dspPtr(inlineInfo->exactContextHandle));
+                }
+            }
+
+            // Dump profile if any
+            if (call->IsHelperCall() && impIsCastHelperMayHaveProfileData(eeGetHelperNum(call->gtCallMethHnd)))
+            {
+                CORINFO_CLASS_HANDLE likelyClasses[MAX_GDV_TYPE_CHECKS]     = {};
+                unsigned             likelyLikelihoods[MAX_GDV_TYPE_CHECKS] = {};
+                int                  likelyClassCount                       = 0;
+                pickGDV(call, call->gtCastHelperILOffset, false, likelyClasses, nullptr, &likelyClassCount,
+                        likelyLikelihoods, false);
+                if (likelyClassCount > 0)
+                {
+                    printf(" (%d%% likely '%s')", likelyLikelihoods[0], eeGetClassName(likelyClasses[0]));
                 }
             }
 
@@ -19442,7 +19393,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
 
         case CORINFO_HELP_NEWARR_1_DIRECT:
         case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
-        case CORINFO_HELP_NEWARR_1_OBJ:
+        case CORINFO_HELP_NEWARR_1_PTR:
         case CORINFO_HELP_NEWARR_1_VC:
         case CORINFO_HELP_NEWARR_1_ALIGN8:
         case CORINFO_HELP_READYTORUN_NEWARR_1:
@@ -24289,6 +24240,39 @@ GenTree* Compiler::gtNewSimdMaxNode(
             return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x05), minMaxIntrinsic, simdBaseJitType,
                                             simdSize);
         }
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+        {
+            // If AVX512 is supported, we can use vrangeps/vrangepd to correctly handle the Vector.Max(-0.0, 0.0) = 0.0
+            // case. We still need to check for NaN as vrangeps/vrangepd does not handle NaN as specified in IEEE 754
+            // 2019.
+            //
+            // This can be represented as the following managed code:
+            //      Vector128<float> range = Avx512DQ.VL.Range(op1, op2, 0x5);
+            //      Vector128<float> fixup1 = Avx512F.VL.Fixup(op1, op2, Vector128<int>.One, 0);
+            //      Vector128<float> fixup2 = Avx512F.VL.Fixup(range, fixup1, Vector128<int>.One, 0);
+            //      return fixup2;
+            //
+            // 0x5 is the control byte for vrangeps/vrangepd:
+            //      Imm8[1:0] = 01b : Select Max value
+            //      Imm8[3:2] = 01b : Select sign(Compare_Result)
+
+            GenTree*       op1Dup     = fgMakeMultiUse(&op1);
+            GenTree*       op2Dup     = fgMakeMultiUse(&op2);
+            GenTree*       rangeOp    = gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x5), NI_AVX512_Range,
+                                                                 simdBaseJitType, simdSize);
+            GenTreeVecCon* tblVecCon1 = gtNewVconNode(type);
+            GenTreeVecCon* tblVecCon2 = gtNewVconNode(type);
+            const int64_t  tblValue   = 0x1;
+            tblVecCon1->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
+            tblVecCon2->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
+            NamedIntrinsic fixupIntrinsic = NI_AVX512_Fixup;
+            GenTree*       fixup1         = gtNewSimdHWIntrinsicNode(type, op1Dup, op2Dup, tblVecCon1, gtNewIconNode(0),
+                                                                     fixupIntrinsic, simdBaseJitType, simdSize);
+            GenTree*       fixup2 = gtNewSimdHWIntrinsicNode(type, rangeOp, fixup1, tblVecCon2, gtNewIconNode(0),
+                                                             fixupIntrinsic, simdBaseJitType, simdSize);
+            return fixup2;
+        }
+
         GenTree* op1Dup1 = fgMakeMultiUse(&op1);
         GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
         GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
@@ -24533,6 +24517,39 @@ GenTree* Compiler::gtNewSimdMinNode(
             return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x04), minMaxIntrinsic, simdBaseJitType,
                                             simdSize);
         }
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+        {
+            // If AVX512 is supported, we can use vrangeps/vrangepd to correctly handle the Vector.Min(-0.0, 0.0) = -0.0
+            // case. We still need to check for NaN as vrangeps/vrangepd does not handle NaN as specified in IEEE 754
+            // 2019.
+            //
+            // This can be represented as the following managed code:
+            //      Vector128<float> range = Avx512DQ.VL.Range(op1, op2, 0x4);
+            //      Vector128<float> fixup1 = Avx512F.VL.Fixup(op1, op2, Vector128<int>.One, 0);
+            //      Vector128<float> fixup2 = Avx512F.VL.Fixup(range, fixup1, Vector128<int>.One, 0);
+            //      return fixup2;
+            //
+            // 0x4 is the control byte for vrangeps/vrangepd:
+            //      Imm8[1:0] = 00b : Select Min value
+            //      Imm8[3:2] = 01b : Select sign(Compare_Result)
+
+            GenTree*       op1Dup     = fgMakeMultiUse(&op1);
+            GenTree*       op2Dup     = fgMakeMultiUse(&op2);
+            GenTree*       rangeOp    = gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x4), NI_AVX512_Range,
+                                                                 simdBaseJitType, simdSize);
+            GenTreeVecCon* tblVecCon1 = gtNewVconNode(type);
+            GenTreeVecCon* tblVecCon2 = gtNewVconNode(type);
+            const int64_t  tblValue   = 0x1;
+            tblVecCon1->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
+            tblVecCon2->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
+            NamedIntrinsic fixupIntrinsic = NI_AVX512_Fixup;
+            GenTree*       fixup1         = gtNewSimdHWIntrinsicNode(type, op1Dup, op2Dup, tblVecCon1, gtNewIconNode(0),
+                                                                     fixupIntrinsic, simdBaseJitType, simdSize);
+            GenTree*       fixup2 = gtNewSimdHWIntrinsicNode(type, rangeOp, fixup1, tblVecCon2, gtNewIconNode(0),
+                                                             fixupIntrinsic, simdBaseJitType, simdSize);
+            return fixup2;
+        }
+
         GenTree* op1Dup1 = fgMakeMultiUse(&op1);
         GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
         GenTree* op1Dup3 = gtCloneExpr(op1Dup2);

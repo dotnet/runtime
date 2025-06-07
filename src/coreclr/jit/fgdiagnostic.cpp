@@ -4733,7 +4733,12 @@ void Compiler::fgDebugCheckLoops()
             loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
                 for (BasicBlock* pred : exit->PredBlocks())
                 {
-                    assert(loop->ContainsBlock(pred));
+                    if (!loop->ContainsBlock(pred))
+                    {
+                        JITDUMP("Loop " FMT_LP " exit " FMT_BB " has non-loop predecessor " FMT_BB "\n",
+                                loop->GetIndex(), exit->bbNum, pred->bbNum);
+                        assert(!"Loop exit has non-loop predecessor");
+                    }
                 }
                 return BasicBlockVisit::Continue;
             });

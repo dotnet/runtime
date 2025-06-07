@@ -2946,8 +2946,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     }
 #endif // TARGET_AMD64
 
-                    srcCount += isRMW ? BuildDelayFreeUses(op3, op1, op3RegCandidates)
-                                      : BuildOperandUses(op3, op3RegCandidates);
+                    if (op3->OperIs(GT_HWINTRINSIC) && op3->AsHWIntrinsic()->OperIsMemoryLoad() && op3->isContained())
+                    {
+                        srcCount += BuildAddrUses(op3->AsHWIntrinsic()->Op(1), op3RegCandidates);
+                    }
+                    else if (isRMW && !op3->isContained())
+                    {
+                        srcCount += BuildDelayFreeUses(op3, op1, op3RegCandidates);
+                    }
+                    else
+                    {
+                        srcCount += BuildOperandUses(op3, op3RegCandidates);
+                    }
 
                     if (op4 != nullptr)
                     {

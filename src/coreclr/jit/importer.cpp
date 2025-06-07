@@ -2934,9 +2934,13 @@ GenTree* Compiler::impInlineUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenT
     //  result._hasValue = true;
     //  result._value = MethodTableLookup(obj);
     //
-    CORINFO_FIELD_HANDLE valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
-    CORINFO_CLASS_HANDLE valueStructCls;
-    var_types            valueType = JITtype2varType(info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls));
+    CORINFO_FIELD_HANDLE valueFldHnd    = info.compCompHnd->getFieldInClass(nullableCls, 1);
+    CORINFO_CLASS_HANDLE valueStructCls = NO_CLASS_HANDLE;
+    ClassLayout*         layout         = nullptr;
+
+    CorInfoType corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+    var_types   valueType  = TypeHandleToVarType(corFldType, valueStructCls, &layout);
+
     static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
     unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
     unsigned valueOffset  = info.compCompHnd->getFieldOffset(valueFldHnd);
@@ -2944,8 +2948,8 @@ GenTree* Compiler::impInlineUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenT
     GenTree* boxedContentAddr =
         gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(objClone), gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL));
     // Load the boxed content from the object (op1):
-    GenTree* boxedContent = valueType == TYP_STRUCT ? gtNewBlkIndir(typGetObjLayout(valueStructCls), boxedContentAddr)
-                                                    : gtNewIndir(valueType, boxedContentAddr);
+    GenTree* boxedContent = gtNewLoadValueNode(valueType, layout, boxedContentAddr);
+
     // Now do two stores via a comma:
     GenTree* setHasValue = gtNewStoreLclFldNode(resultTmp, TYP_UBYTE, hasValOffset, gtNewIconNode(1));
     GenTree* setValue    = gtNewStoreLclFldNode(resultTmp, valueType, valueOffset, boxedContent);
@@ -10225,7 +10229,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Call helper GETREFANY(classHandle, op1);
                 GenTreeCall* helperCall   = gtNewHelperCallNode(CORINFO_HELP_GETREFANY, TYP_BYREF);
                 NewCallArg   clsHandleArg = NewCallArg::Primitive(op2);
-                NewCallArg   typedRefArg  = NewCallArg::Struct(op1, TYP_STRUCT, impGetRefAnyClass());
+                NewCallArg   typedRefArg  = NewCallArg::Struct(op1, TYP_STRUCT, typGetObjLayout(impGetRefAnyClass()));
                 helperCall->gtArgs.PushFront(this, clsHandleArg, typedRefArg);
                 helperCall->gtFlags |= (op1->gtFlags | op2->gtFlags) & GTF_ALL_EFFECT;
                 op1 = helperCall;

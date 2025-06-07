@@ -1087,7 +1087,7 @@ void ConfigDoubleArray::Dump()
 
 #endif // defined(DEBUG)
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
 void Counter::dump(FILE* output)
 {
@@ -1253,7 +1253,7 @@ void DumpOnShutdown::DumpAll()
     }
 }
 
-#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
+#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE
 
 /*****************************************************************************
  * Fixed bit vector class
@@ -1598,7 +1598,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEW_MDARR_RARE:
             case CORINFO_HELP_NEWARR_1_DIRECT:
             case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
-            case CORINFO_HELP_NEWARR_1_OBJ:
+            case CORINFO_HELP_NEWARR_1_PTR:
             case CORINFO_HELP_READYTORUN_NEWARR_1:
 
                 isAllocator   = true;

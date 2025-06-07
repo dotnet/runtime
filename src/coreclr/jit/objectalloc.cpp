@@ -1193,7 +1193,7 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
         switch (call->GetHelperNum())
         {
             case CORINFO_HELP_NEWARR_1_VC:
-            case CORINFO_HELP_NEWARR_1_OBJ:
+            case CORINFO_HELP_NEWARR_1_PTR:
             case CORINFO_HELP_NEWARR_1_DIRECT:
             case CORINFO_HELP_NEWARR_1_ALIGN8:
             {
@@ -2802,6 +2802,11 @@ void ObjectAllocator::RewriteUses()
                 JITDUMP("Changing the type of V%02u from %s to %s\n", lclNum, varTypeName(lclVarDsc->lvType),
                         varTypeName(newType));
                 lclVarDsc->lvType = newType;
+            }
+            else
+            {
+                JITDUMP("V%02u already properly typed\n", lclNum);
+                lclVarDsc->lvTracked = 0;
             }
         }
     }

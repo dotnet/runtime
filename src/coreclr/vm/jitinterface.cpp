@@ -5687,12 +5687,12 @@ CorInfoHelpFunc CEEInfo::getNewHelperStatic(MethodTable * pMT, bool * pHasSideEf
     }
     else
 #ifdef FEATURE_64BIT_ALIGNMENT
-    // @ARMTODO: Force all 8-byte alignment requiring allocations down one slow path. As performance
-    // measurements dictate we can spread these out to faster, more specialized helpers later.
     if (pMT->RequiresAlign8())
     {
-        // Use slow helper
-        _ASSERTE(helper == CORINFO_HELP_NEWFAST);
+        if (pMT->IsValueType())
+            helper = CORINFO_HELP_NEWSFAST_ALIGN8_VC;
+        else
+            helper = CORINFO_HELP_NEWSFAST_ALIGN8;
     }
     else
 #endif
@@ -5757,27 +5757,29 @@ CorInfoHelpFunc CEEInfo::getNewArrHelperStatic(TypeHandle clsHnd)
     // tolerant when asked for non-sensical helpers.
     if (CorTypeInfo::IsGenericVariable(elemType))
     {
-        result = CORINFO_HELP_NEWARR_1_OBJ;
+        result = CORINFO_HELP_NEWARR_1_PTR;
     }
-    else if (CorTypeInfo::IsObjRef(elemType))
+    else if (thElemType.GetSize() == TARGET_POINTER_SIZE)
     {
-        // It is an array of object refs
-        result = CORINFO_HELP_NEWARR_1_OBJ;
+        // It is an array of pointer sized elements
+        result = CORINFO_HELP_NEWARR_1_PTR;
     }
     else
     {
         // These cases always must use the slow helper
-        if (
-#ifdef FEATURE_64BIT_ALIGNMENT
-            thElemType.RequiresAlign8() ||
-#endif
-            (elemType == ELEMENT_TYPE_VOID) ||
+        if ((elemType == ELEMENT_TYPE_VOID) ||
             LoggingOn(LF_GCALLOC, LL_INFO10) ||
             TrackAllocationsEnabled())
         {
             // Use the slow helper
             result = CORINFO_HELP_NEWARR_1_DIRECT;
         }
+#ifdef FEATURE_64BIT_ALIGNMENT
+        else if (thElemType.RequiresAlign8())
+        {
+            result = CORINFO_HELP_NEWARR_1_ALIGN8;
+        }
+#endif
         else
         {
             // Yea, we can do it the fast way!

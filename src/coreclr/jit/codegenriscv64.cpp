@@ -719,7 +719,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     regNumber rAddr;
-    regNumber rCnt = REG_NA; // Invalid
     regMaskTP regMask;
 
     regMaskTP availMask = regSet.rsGetModifiedRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
@@ -748,84 +747,77 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         *pInitRegZeroed = false;
     }
 
-    bool     useLoop   = false;
-    unsigned uCntBytes = untrLclHi - untrLclLo;
-    assert((uCntBytes % sizeof(int)) == 0); // The smallest stack slot is always 4 bytes.
-    unsigned int padding = untrLclLo & 0x7;
+    ssize_t uLclBytes = untrLclHi - untrLclLo;
+    assert((uLclBytes % 4) == 0); // The smallest stack slot is always 4 bytes.
+    ssize_t padding = untrLclLo & 0x7;
 
     if (padding)
     {
         assert(padding == 4);
         GetEmitter()->emitIns_R_R_I(INS_sw, EA_4BYTE, REG_R0, rAddr, 0);
-        uCntBytes -= 4;
+        uLclBytes -= 4;
     }
 
-    unsigned uCntSlots = uCntBytes / REGSIZE_BYTES; // How many register sized stack slots we're going to use.
+    ssize_t uRegSlots = uLclBytes / REGSIZE_BYTES;
+    ssize_t uAddrCurr = 0;
 
-    // When uCntSlots is 9 or less, we will emit a sequence of sd instructions inline.
-    // When it is 10 or greater, we will emit a loop containing a sd instruction.
-    // In both of these cases the sd instruction will write two zeros to memory
-    // and we will use a single str instruction at the end whenever we have an odd count.
-    if (uCntSlots >= 10)
-        useLoop = true;
-
-    if (useLoop)
+    if (uRegSlots >= 12)
     {
-        // We pick the next lowest register number for rCnt
+        regNumber rEndAddr;
         noway_assert(availMask != RBM_NONE);
-        regMask = genFindLowestBit(availMask);
-        rCnt    = genRegNumFromMask(regMask);
+        regMask  = genFindLowestBit(availMask);
+        rEndAddr = genRegNumFromMask(regMask);
         availMask &= ~regMask;
 
-        noway_assert(uCntSlots >= 2);
-        assert((genRegMask(rCnt) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // rCnt is not a live incoming
-                                                                                // argument reg
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 2);
+        // rEndAddr is not a live incoming argument reg
+        assert((genRegMask(rEndAddr) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
 
-        // TODO-RISCV64: maybe optimize further
-        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
-        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
-        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rCnt, rCnt, -1);
+        ssize_t uLoopBytes = (uRegSlots & ~0x3) * REGSIZE_BYTES;
 
-        // bne rCnt, zero, -4 * 4
-        ssize_t imm = -16;
-        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES);
-        GetEmitter()->emitIns_R_R_I(INS_bne, EA_PTRSIZE, rCnt, REG_R0, imm);
-
-        uCntBytes %= REGSIZE_BYTES * 2;
-    }
-    else
-    {
-        while (uCntBytes >= REGSIZE_BYTES * 2)
+        if (uLoopBytes)
         {
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES + padding);
-            uCntBytes -= REGSIZE_BYTES * 2;
-            padding = 0;
-        }
-    }
+            if (emitter::isValidSimm12(uLoopBytes))
+            {
+                GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rEndAddr, rAddr, uLoopBytes);
+            }
+            else
+            {
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, rEndAddr, uLoopBytes);
+                GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, rEndAddr, rEndAddr, rAddr);
+            }
 
-    if (uCntBytes >= REGSIZE_BYTES) // check and zero the last register-sized stack slot (odd number)
-    {
-        if ((uCntBytes - REGSIZE_BYTES) == 0)
-        {
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + REGSIZE_BYTES);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + 2 * REGSIZE_BYTES);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + 3 * REGSIZE_BYTES);
+
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 4 * REGSIZE_BYTES);
+            GetEmitter()->emitIns_R_R_I(INS_bltu, EA_PTRSIZE, rAddr, rEndAddr, -5 << 2);
+
+            uLclBytes -= uLoopBytes;
+            uAddrCurr = 0;
         }
-        else
-        {
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, REGSIZE_BYTES);
-        }
-        uCntBytes -= REGSIZE_BYTES;
     }
-    if (uCntBytes > 0)
+
+    while (uLclBytes >= REGSIZE_BYTES)
     {
-        assert(uCntBytes == sizeof(int));
-        GetEmitter()->emitIns_R_R_I(INS_sw, EA_4BYTE, REG_R0, rAddr, padding);
-        uCntBytes -= sizeof(int);
+        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, uAddrCurr + padding);
+        uLclBytes -= REGSIZE_BYTES;
+        uAddrCurr += REGSIZE_BYTES;
     }
-    noway_assert(uCntBytes == 0);
+
+    if (uAddrCurr != 0)
+    {
+        uAddrCurr -= REGSIZE_BYTES;
+    }
+
+    if (uLclBytes != 0)
+    {
+        assert(uLclBytes == 4);
+        GetEmitter()->emitIns_R_R_I(INS_sw, EA_4BYTE, REG_R0, rAddr, uAddrCurr + padding);
+        uLclBytes -= 4;
+    }
+    noway_assert(uLclBytes == 0);
 }
 
 void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
@@ -4286,10 +4278,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genPutArgReg(treeNode->AsOp());
             break;
 
-        case GT_PUTARG_SPLIT:
-            genPutArgSplit(treeNode->AsPutArgSplit());
-            break;
-
         case GT_CALL:
             genCall(treeNode->AsCall());
             break;
@@ -4859,238 +4847,6 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
     GetEmitter()->emitIns_Mov(ins_Copy(op1->GetRegNum(), targetType), emitActualTypeSize(targetType), targetReg,
                               op1->GetRegNum(), true);
     genProduceReg(tree);
-}
-
-//---------------------------------------------------------------------
-// genPutArgSplit - generate code for a GT_PUTARG_SPLIT node
-//
-// Arguments
-//    tree - the GT_PUTARG_SPLIT node
-//
-// Return value:
-//    None
-//
-void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
-{
-    assert(treeNode->OperIs(GT_PUTARG_SPLIT));
-
-    GenTree* source       = treeNode->gtOp1;
-    emitter* emit         = GetEmitter();
-    unsigned varNumOut    = compiler->lvaOutgoingArgSpaceVar;
-    unsigned argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
-
-    if (source->OperIs(GT_FIELD_LIST))
-    {
-        // Evaluate each of the GT_FIELD_LIST items into their register
-        // and store their register into the outgoing argument area
-        unsigned regIndex         = 0;
-        unsigned firstOnStackOffs = UINT_MAX;
-
-        for (GenTreeFieldList::Use& use : source->AsFieldList()->Uses())
-        {
-            GenTree*  nextArgNode = use.GetNode();
-            regNumber fieldReg    = nextArgNode->GetRegNum();
-            genConsumeReg(nextArgNode);
-
-            if (regIndex >= treeNode->gtNumRegs)
-            {
-                if (firstOnStackOffs == UINT_MAX)
-                {
-                    firstOnStackOffs = use.GetOffset();
-                }
-                var_types type = nextArgNode->TypeGet();
-                emitAttr  attr = emitTypeSize(type);
-
-                unsigned offset = treeNode->getArgOffset() + use.GetOffset() - firstOnStackOffs;
-                // We can't write beyond the outgoing arg area
-                assert(offset + EA_SIZE_IN_BYTES(attr) <= argOffsetMax);
-
-                // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
-                // argument area
-                emit->emitIns_S_R(ins_Store(type), attr, fieldReg, varNumOut, offset);
-            }
-            else
-            {
-                var_types type   = treeNode->GetRegType(regIndex);
-                regNumber argReg = treeNode->GetRegNumByIdx(regIndex);
-
-                // If child node is not already in the register we need, move it
-                inst_Mov(type, argReg, fieldReg, /* canSkip */ true);
-
-                regIndex++;
-            }
-        }
-    }
-    else
-    {
-        var_types targetType = source->TypeGet();
-        assert(source->isContained() && varTypeIsStruct(targetType));
-
-        // We need a register to store intermediate values that we are loading
-        // from the source into. We can usually use one of the target registers
-        // that will be overridden anyway. The exception is when the source is
-        // in a register and that register is the unique target register we are
-        // placing. LSRA will always allocate an internal register when there
-        // is just one target register to handle this situation.
-        //
-        int          firstRegToPlace;
-        regNumber    valueReg     = REG_NA;
-        unsigned     srcLclNum    = BAD_VAR_NUM;
-        unsigned     srcLclOffset = 0;
-        regNumber    addrReg      = REG_NA;
-        var_types    addrType     = TYP_UNDEF;
-        ClassLayout* layout       = nullptr;
-
-        if (source->OperIsLocalRead())
-        {
-            srcLclNum         = source->AsLclVarCommon()->GetLclNum();
-            srcLclOffset      = source->AsLclVarCommon()->GetLclOffs();
-            layout            = source->AsLclVarCommon()->GetLayout(compiler);
-            LclVarDsc* varDsc = compiler->lvaGetDesc(srcLclNum);
-
-            // This struct must live on the stack frame.
-            assert(varDsc->lvOnFrame && !varDsc->lvRegister);
-
-            // No possible conflicts, just use the first register as the value register.
-            firstRegToPlace = 0;
-            valueReg        = treeNode->GetRegNumByIdx(0);
-        }
-        else // we must have a GT_BLK
-        {
-            layout   = source->AsBlk()->GetLayout();
-            addrReg  = genConsumeReg(source->AsBlk()->Addr());
-            addrType = source->AsBlk()->Addr()->TypeGet();
-
-            regNumber allocatedValueReg = REG_NA;
-            if (treeNode->gtNumRegs == 1)
-            {
-                allocatedValueReg = internalRegisters.Extract(treeNode);
-            }
-
-            // Pick a register to store intermediate values in for the to-stack
-            // copy. It must not conflict with addrReg.
-            valueReg = treeNode->GetRegNumByIdx(0);
-            if (valueReg == addrReg)
-            {
-                if (treeNode->gtNumRegs == 1)
-                {
-                    valueReg = allocatedValueReg;
-                }
-                else
-                {
-                    valueReg = treeNode->GetRegNumByIdx(1);
-                }
-            }
-
-            // Find first register to place. If we are placing addrReg, then
-            // make sure we place it last to avoid clobbering its value.
-            //
-            // The loop below will start at firstRegToPlace and place
-            // treeNode->gtNumRegs registers in order, with wraparound. For
-            // example, if the registers to place are r0, r1, r2=addrReg, r3
-            // then we will set firstRegToPlace = 3 (r3) and the loop below
-            // will place r3, r0, r1, r2. The last placement will clobber
-            // addrReg.
-            firstRegToPlace = 0;
-            for (unsigned i = 0; i < treeNode->gtNumRegs; i++)
-            {
-                if (treeNode->GetRegNumByIdx(i) == addrReg)
-                {
-                    firstRegToPlace = i + 1;
-                    break;
-                }
-            }
-        }
-
-        // Put on stack first
-        unsigned structOffset  = treeNode->gtNumRegs * TARGET_POINTER_SIZE;
-        unsigned remainingSize = layout->GetSize() - structOffset;
-        unsigned argOffsetOut  = treeNode->getArgOffset();
-
-        assert((remainingSize > 0) && (roundUp(remainingSize, TARGET_POINTER_SIZE) == treeNode->GetStackByteSize()));
-        while (remainingSize > 0)
-        {
-            var_types type;
-            if (remainingSize >= TARGET_POINTER_SIZE)
-            {
-                type = layout->GetGCPtrType(structOffset / TARGET_POINTER_SIZE);
-            }
-            else if (remainingSize >= 4)
-            {
-                type = TYP_INT;
-            }
-            else if (remainingSize >= 2)
-            {
-                type = TYP_USHORT;
-            }
-            else
-            {
-                assert(remainingSize == 1);
-                type = TYP_UBYTE;
-            }
-
-            emitAttr attr     = emitActualTypeSize(type);
-            unsigned moveSize = genTypeSize(type);
-
-            instruction loadIns = ins_Load(type);
-            if (srcLclNum != BAD_VAR_NUM)
-            {
-                // Load from our local source
-                emit->emitIns_R_S(loadIns, attr, valueReg, srcLclNum, srcLclOffset + structOffset);
-            }
-            else
-            {
-                assert(valueReg != addrReg);
-
-                // Load from our address expression source
-                emit->emitIns_R_R_I(loadIns, attr, valueReg, addrReg, structOffset);
-            }
-
-            // Emit the instruction to store the register into the outgoing argument area
-            emit->emitIns_S_R(ins_Store(type), attr, valueReg, varNumOut, argOffsetOut);
-            argOffsetOut += moveSize;
-            assert(argOffsetOut <= argOffsetMax);
-
-            remainingSize -= moveSize;
-            structOffset += moveSize;
-        }
-
-        // Place registers starting from firstRegToPlace. It should ensure we
-        // place addrReg last (if we place it at all).
-        structOffset         = static_cast<unsigned>(firstRegToPlace) * TARGET_POINTER_SIZE;
-        unsigned curRegIndex = firstRegToPlace;
-
-        for (unsigned regsPlaced = 0; regsPlaced < treeNode->gtNumRegs; regsPlaced++)
-        {
-            if (curRegIndex == treeNode->gtNumRegs)
-            {
-                curRegIndex  = 0;
-                structOffset = 0;
-            }
-
-            regNumber targetReg = treeNode->GetRegNumByIdx(curRegIndex);
-            var_types type      = treeNode->GetRegType(curRegIndex);
-
-            if (srcLclNum != BAD_VAR_NUM)
-            {
-                // Load from our local source
-                emit->emitIns_R_S(ins_Load(type), emitTypeSize(type), targetReg, srcLclNum,
-                                  srcLclOffset + structOffset);
-            }
-            else
-            {
-                assert((addrReg != targetReg) || (regsPlaced == treeNode->gtNumRegs - 1));
-
-                // Load from our address expression source
-                emit->emitIns_R_R_I(ins_Load(type), emitTypeSize(type), targetReg, addrReg, structOffset);
-            }
-
-            curRegIndex++;
-            structOffset += TARGET_POINTER_SIZE;
-        }
-    }
-
-    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
