@@ -608,7 +608,7 @@ namespace HostActivation.Tests
             string globalJsonPath = GlobalJson.CreateWithVersion(SharedState.CurrentWorkingDir, requestedVersion);
 
             // When we fail to resolve SDK version, we print out all available SDKs
-            // Versions shuld be in ascending order.
+            // Versions should be in ascending order.
             string[] versions = ["5.0.2", "6.1.1", "9999.1.0"];
             AddAvailableSdkVersions(versions);
 
