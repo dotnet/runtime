@@ -256,6 +256,12 @@ bool emitter::HasApxNf(instruction ins)
     return (flags & INS_Flags_Has_NF) != 0;
 }
 
+bool emitter::HasApxPpx(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & INS_Flags_Has_PPX) != 0;
+}
+
 bool emitter::IsVexEncodableInstruction(instruction ins) const
 {
     if (!UseVEXEncoding())
@@ -406,6 +412,27 @@ bool emitter::IsApxNFEncodableInstruction(instruction ins) const
     }
 
     return HasApxNf(ins);
+}
+
+//------------------------------------------------------------------------
+// IsApxNFToBeSet: is idIsEvexNfContextSet() true for this instruction and not a PPX instruction.
+//
+// Arguments:
+//    id - The instruction descriptor to check.
+//
+// Returns:
+//    `true` if ins is EVEX.NF flag is to be set.
+//
+bool emitter::IsApxNFToBeSet(const instrDesc* id) const
+{
+#ifdef TARGET_AMD64
+    if (id->idIsEvexNfContextSet() && !HasApxPpx(id->idIns()))
+    {
+        return true;
+    }
+#endif
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -1815,7 +1842,7 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         return true;
     }
 
-    if (id->idIsEvexNfContextSet() && IsBMIInstruction(ins))
+    if (IsApxNFToBeSet(id) && IsBMIInstruction(ins))
     {
         // Only a few BMI instructions shall be promoted to APX-EVEX due to NF feature.
         // TODO-XArch-APX: convert the check into forms like Has* as above.
@@ -1923,6 +1950,12 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
         return true;
     }
 
+    if (id->idIsApxPpxContextSet() && HasApxPpx(id->idIns()))
+    {
+        // The instruction uses PPX hint, and it requires REX2.
+        return true;
+    }
+
 #if defined(DEBUG)
     if (emitComp->DoJitStressRex2Encoding())
     {
@@ -1970,7 +2003,7 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
         return true;
     }
 
-    if (id->idIsEvexNfContextSet())
+    if (IsApxNFToBeSet(id))
     {
         return true;
     }
@@ -2088,7 +2121,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             code |= ND_BIT_IN_BYTE_EVEX_PREFIX;
         }
 
-        if (id->idIsEvexNfContextSet())
+        if (IsApxNFToBeSet(id))
         {
             code |= NF_BIT_IN_BYTE_EVEX_PREFIX;
         }
@@ -3597,6 +3630,10 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
         {
             prefixAdjustedSize = emitGetEvexPrefixSize(id);
             assert(prefixAdjustedSize == 4);
+            /*if (IsApxOnlyInstruction(ins))
+            {
+                return prefixAdjustedSize;
+            }*/
         }
         else
         {
@@ -6858,8 +6895,10 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts i
             break;
 
         case INS_pop:
-        case INS_pop_hide:
         case INS_push:
+            SetAPXPpxIfNeeded(id, instOptions);
+            __fallthrough;
+        case INS_pop_hide:
         case INS_push_hide:
 
             /* We don't currently push/pop small values */
@@ -7920,6 +7959,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     SetEvexNdIfNeeded(id, instOptions);
     SetEvexNfIfNeeded(id, instOptions);
     SetEvexDFVIfNeeded(id, instOptions);
+    SetAPXPpxIfNeeded(id, instOptions);
 
     if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
     {
@@ -12500,7 +12540,7 @@ void emitter::emitDispEmbRounding(instrDesc* id) const
 //
 void emitter::emitDispEmbMasking(instrDesc* id) const
 {
-    if (!IsEvexEncodableInstruction(id->idIns()))
+    if (!IsEvexEncodableInstruction(id->idIns()) /*|| IsApxExtendedEvexInstruction(id->idIns())*/)
     {
         return;
     }
@@ -12654,7 +12694,7 @@ void emitter::emitDispIns(
     /* Display the instruction name */
 
 #ifdef TARGET_AMD64
-    if (IsApxNFEncodableInstruction(id->idIns()) && id->idIsEvexNfContextSet())
+    if (IsApxNFEncodableInstruction(id->idIns()) && IsApxNFToBeSet(id))
     {
         // print the EVEX.NF indication in psudeo prefix style.
         printf("{nf}    ");
@@ -16503,6 +16543,12 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
             if (TakesRex2Prefix(id))
             {
                 code = AddRex2Prefix(ins, code);
+                // Setting EVEX.W = 1 bit indicates a push-pop acceleration (PPX) hint
+                // So, it is used only in Epilog/Prolog code generation
+                if (id->idIsApxPpxContextSet())
+                {
+                    code = AddRexWPrefix(id, code);
+                }
             }
 
             assert(!TakesSimdPrefix(id));
@@ -16790,6 +16836,23 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         }
     }
 #endif // FEATURE_HW_INTRINSICS
+#ifdef TARGET_AMD64
+    else if ((ins == INS_push2) || (ins == INS_pop2))
+    {
+        assert(size == EA_PTRSIZE);
+        assert(TakesApxExtendedEvexPrefix(id));
+        code = insCodeMR(ins);
+        code = AddX86PrefixIfNeeded(id, code, size);
+        code = insEncodeMRreg(id, code);
+        // Setting EVEX.W = 1 bit indicates a push-pop acceleration (PPX) hint
+        // The current recommendation is to use PUSH2/POP2 only with PPX hint
+        // So, it is used only in Epilog/Prolog code generation
+        if (id->idIsApxPpxContextSet())
+        {
+            code = AddRexWPrefix(id, code);
+        }
+    }
+#endif // TARGET_AMD64
     else
     {
         // TODO-XArch-APX:
@@ -20273,6 +20336,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
+        case INS_push2:
+            // TODO-XArch-APX: to be verified.
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            if (insFmt == IF_RRD_RRD) // push2  reg1, reg2
+            {
+                result.insLatency = PERFSCORE_LATENCY_ZERO;
+            }
+            break;
+
         case INS_pop:
         case INS_pop_hide:
             if (insFmt == IF_RWR) // pop   reg
@@ -20284,6 +20356,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             else
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            break;
+
+        case INS_pop2:
+            // TODO-XArch-APX: to be verified.
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            if (insFmt == IF_RRD_RRD) // pop2  reg1, reg2
+            {
+                result.insLatency = PERFSCORE_LATENCY_ZERO;
             }
             break;
 

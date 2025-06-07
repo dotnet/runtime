@@ -52,8 +52,8 @@
 //    id                nm                  um      mr            mi            rm            a4            rr           tt              flags
 INST5(invalid,          "INVALID",          IUM_RD, BAD_CODE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     BAD_CODE,    INS_TT_NONE,    INS_FLAGS_None)
 
-INST5(push,             "push",             IUM_RD, 0x0030FE,     0x000068,     BAD_CODE,     BAD_CODE,     0x000050,    INS_TT_NONE,    Encoding_REX2)
-INST5(pop,              "pop",              IUM_WR, 0x00008E,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000058,    INS_TT_NONE,    Encoding_REX2)
+INST5(push,             "push",             IUM_RD, 0x0030FE,     0x000068,     BAD_CODE,     BAD_CODE,     0x000050,    INS_TT_NONE,    INS_Flags_Has_PPX | Encoding_REX2)
+INST5(pop,              "pop",              IUM_WR, 0x00008E,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000058,    INS_TT_NONE,    INS_Flags_Has_PPX | Encoding_REX2)
 // Does not affect the stack tracking in the emitter
 INST5(push_hide,        "push",             IUM_RD, 0x0030FE,     0x000068,     BAD_CODE,     BAD_CODE,     0x000050,    INS_TT_NONE,    Encoding_REX2)
 INST5(pop_hide,         "pop",              IUM_WR, 0x00008E,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000058,    INS_TT_NONE,    Encoding_REX2)
@@ -1158,6 +1158,9 @@ INST3(LAST_AVX10v2_INSTRUCTION, "LAST_AVX10v2_INSTRUCTION", IUM_WR, BAD_CODE, BA
 //    id                nm                  um      mr            mi            rm            tt              flags
 
 INST3(FIRST_APX_INSTRUCTION, "FIRST_APX_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
+
+INST5(push2,            "push2",             IUM_RD, 0x0030FF,     BAD_CODE,     0x0030FF,     BAD_CODE,     0x0030FF,    INS_TT_NONE,    INS_Flags_Has_PPX | INS_Flags_Has_NDD)
+INST5(pop2,             "pop2",              IUM_WR, 0x00008F,     BAD_CODE,     0x00008F,     BAD_CODE,     0x00008F,    INS_TT_NONE,    INS_Flags_Has_PPX | INS_Flags_Has_NDD)
 
 INST3(FIRST_CCMP_INSTRUCTION, "FIRST_CCMP_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
 
