@@ -222,7 +222,7 @@ LOCAL_LABEL(ArraySizeOverflow):
 #if defined(__APPLE__)
         bhs         1f
 #else
-        bhs         C_FUNC(RhpNewVariableSizeObject)
+        bhs         C_FUNC(RhpNewArrayFast)
 #endif
 
         // In this case we know the element size is sizeof(void *), or 8 for arm64
