@@ -873,7 +873,7 @@ void HostCodeHeap::FreeMemForCode(void * codeStart)
     m_ApproximateLargestBlock += pTracker->size;
 
     m_AllocationCount--;
-    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap released [0x%p, vt(0x%x)] - ref count %d\n", this, *(size_t*)this, m_AllocationCount));
+    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap released [%p, vt(0x%zx)] - ref count %d\n", this, *(size_t*)this, m_AllocationCount));
 
     if (m_AllocationCount == 0)
     {
@@ -896,10 +896,10 @@ void DynamicMethodDesc::Destroy()
 
     _ASSERTE(IsDynamicMethod());
     LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();
-    LOG((LF_BCL, LL_INFO1000, "Level3 - Destroying DynamicMethod {0x%p}\n", this));
+    LOG((LF_BCL, LL_INFO1000, "Level3 - Destroying DynamicMethod {%p}\n", this));
 
     // The m_pSig and m_pszMethodName need to be destroyed after the GetLCGMethodResolver()->Destroy() call
-    // otherwise the EEJitManager::CodeHeapIterator could return DynamicMethodDesc with these members NULLed, but
+    // otherwise the CodeHeapIterator could return DynamicMethodDesc with these members NULLed, but
     // the nibble map for the corresponding code memory indicating that this DynamicMethodDesc is still alive.
     PCODE pSig = m_pSig;
     PTR_CUTF8 pszMethodName = m_pszMethodName;
@@ -1005,7 +1005,7 @@ void LCGMethodResolver::Destroy()
         MODE_ANY;
     } CONTRACTL_END;
 
-    LOG((LF_BCL, LL_INFO100, "Level2 - Resolver - Destroying Resolver {0x%p}\n", this));
+    LOG((LF_BCL, LL_INFO100, "Level2 - Resolver - Destroying Resolver {%p}\n", this));
     if (m_Code)
     {
         delete[] m_Code;
@@ -1045,8 +1045,8 @@ void LCGMethodResolver::Destroy()
 #endif // defined(TARGET_AMD64)
 
         HostCodeHeap *pHeap = HostCodeHeap::GetCodeHeap((TADDR)m_recordCodePointer);
-        LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%x)} \n", this, pHeap, *(size_t*)pHeap));
-        pHeap->m_pJitManager->FreeCodeMemory(pHeap, m_recordCodePointer);
+        LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%zx)} \n", this, pHeap, *(size_t*)pHeap));
+        pHeap->GetJitManager()->FreeHostCodeHeapMemory(pHeap, m_recordCodePointer);
 
         m_recordCodePointer = NULL;
     }
@@ -1059,8 +1059,8 @@ void LCGMethodResolver::Destroy()
             JumpStubBlockHeader* next = current->m_next;
 
             HostCodeHeap *pHeap = current->GetHostCodeHeap();
-            LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%x)} \n", current, pHeap, *(size_t*)pHeap));
-            pHeap->m_pJitManager->FreeCodeMemory(pHeap, current);
+            LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%zx)} \n", current, pHeap, *(size_t*)pHeap));
+            pHeap->GetJitManager()->FreeHostCodeHeapMemory(pHeap, current);
 
             current = next;
         }

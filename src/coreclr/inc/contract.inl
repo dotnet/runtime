@@ -585,7 +585,7 @@ void CONTRACT_ASSERT(const char *szElaboration,
             }
             else
             {
-                strcat_s(Buf,ARRAY_SIZE(Buf), "We can't find the violated contract. Look for an old-style non-holder-based contract.\n");
+                strcat_s(Buf,ARRAY_SIZE(Buf), "Missing tracking information. Look for data structures that manipulate contract state (i.e., CrstHolder).\n");
             }
         }
 
