@@ -216,7 +216,6 @@
     <Compile Include="Internal\Runtime\TypeLoader\EETypeCreator.cs" />
     <Compile Include="Internal\Reflection\Execution\AssemblyBinderImplementation.cs" />
     <Compile Include="$(CompilerCommonPath)\Internal\Metadata\NativeFormat\MetadataTypeHashingAlgorithms.cs" />
-    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeHashingAlgorithms.cs" />
     <Compile Include="$(AotCommonPath)\Internal\Runtime\TypeLoader\ExternalReferencesTable.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ExternalReferencesTable.NativeFormatModuleInfo.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\GenericDictionary.cs" />

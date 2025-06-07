@@ -839,6 +839,8 @@ namespace Internal.IL
                         condition = _factory.TypeMetadata(typeEqualityCheckMetadataType);
                     else
                         condition = _factory.MaximallyConstructableType(typeEqualityCheckType);
+
+                    _dependencies.Add(_factory.ScannedCastTarget(typeEqualityCheckType), "Type equality check that may be optimized out.");
                 }
             }
 
@@ -849,6 +851,7 @@ namespace Internal.IL
                     && !isinstCheckType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
                     condition = _factory.MaximallyConstructableType(isinstCheckType);
+                    _dependencies.Add(_factory.ScannedCastTarget(isinstCheckType), "isinst check that may be optimized out.");
                 }
             }
 

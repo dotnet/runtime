@@ -275,6 +275,11 @@ namespace ILCompiler
             return new ScannedReadOnlyPolicy(MarkedNodes);
         }
 
+        public ICompilationRootProvider GetOptimizedAwayObservationsProvider(DevirtualizationManager devirtualizationManager)
+        {
+            return new OptimizedAwayObservationsRootProvider(MarkedNodes, devirtualizationManager);
+        }
+
         private sealed class ScannedVTableProvider : VTableSliceProvider
         {
             private readonly Dictionary<TypeDesc, MethodDesc[]> _vtableSlices = new Dictionary<TypeDesc, MethodDesc[]>();
@@ -981,6 +986,34 @@ namespace ILCompiler
                 }
 
                 return !_writtenFields.Contains(field);
+            }
+        }
+
+        private sealed class OptimizedAwayObservationsRootProvider : ICompilationRootProvider
+        {
+            private HashSet<TypeDesc> _optimizedAwayCastTargets = new();
+            public OptimizedAwayObservationsRootProvider(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes, DevirtualizationManager devirtualizationManager)
+            {
+                foreach (var node in markedNodes)
+                {
+                    if (node is ScannedCastTargetNode { Type: TypeDesc castTarget }
+                        && !devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(castTarget))
+                    {
+                        // Scanning observed a cast to castTarget, but castTarget can't be constructed.
+                        // We may completely remove the cast. If this is the only reference to castTarget,
+                        // this means that the codegen compilation would never observe castTarget.
+                        // Record it here so we can root the fact that the cast was observed.
+                        _optimizedAwayCastTargets.Add(castTarget);
+                    }
+                }
+            }
+
+            public void AddCompilationRoots(IRootingServiceProvider rootProvider)
+            {
+                foreach (var target in _optimizedAwayCastTargets)
+                {
+                    rootProvider.RootPossibleCastTarget(target, "Observed cast target");
+                }
             }
         }
     }
