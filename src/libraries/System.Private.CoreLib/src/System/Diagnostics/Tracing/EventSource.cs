@@ -3921,20 +3921,12 @@ namespace System.Diagnostics.Tracing
 
         internal static EventSource? GetMetricsEventSource()
         {
-            Type? metricsEventSourceType = Type.GetType(
-                "System.Diagnostics.Metrics.MetricsEventSource, System.Diagnostics.DiagnosticSource",
-                throwOnError: false);
+            return GetInstance(null) as EventSource;
 
-            if (metricsEventSourceType == null)
-            {
-                return null;
-            }
-            MethodInfo? getInstanceMethod = metricsEventSourceType.GetMethod("GetInstance", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null);
-            if (getInstanceMethod == null)
-            {
-                return null;
-            }
-            return getInstanceMethod.Invoke(null, null) as EventSource;
+            [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetInstance")]
+            [return: UnsafeAccessorType("System.Diagnostics.Metrics.MetricsEventSource, System.Diagnostics.DiagnosticSource")]
+            static extern object GetInstance(
+                [UnsafeAccessorType("System.Diagnostics.Metrics.MetricsEventSource, System.Diagnostics.DiagnosticSource")] object? _);
         }
 
         // Pre-registration creates and registers an EventProvider prior to the EventSource being constructed.
