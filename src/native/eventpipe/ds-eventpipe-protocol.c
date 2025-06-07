@@ -69,6 +69,12 @@ eventpipe_collect_tracing_command_try_parse_event_filter (
 
 static
 bool
+tracepoint_format_init (
+    EventPipeTracepoint *tracepoint,
+    const ep_char8_t *tracepoint_name);
+
+static
+bool
 eventpipe_collect_tracing_command_try_parse_tracepoint_config (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
@@ -276,6 +282,24 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
+static
+bool
+tracepoint_format_init (
+    EventPipeTracepoint *tracepoint,
+    const ep_char8_t *tracepoint_name)
+{
+	EP_ASSERT (tracepoint != NULL);
+
+	tracepoint->tracepoint_format[0] = '\0';
+	if (tracepoint_name == NULL || tracepoint_name[0] == '\0')
+		return true;
+
+	size_t default_tracepoint_format_len = strlen(tracepoint_name) + strlen(EP_TRACEPOINT_FORMAT_V1) + 2; // +2 for space and null terminator
+	int32_t res = snprintf(tracepoint->tracepoint_format, sizeof(tracepoint->tracepoint_format), "%s %s", tracepoint_name, EP_TRACEPOINT_FORMAT_V1);
+
+	return (res >= 0 && (size_t)res < sizeof(tracepoint->tracepoint_format));
+}
+
 /*
  *  eventpipe_collect_tracing_command_try_parse_tracepoint_config
  *
@@ -307,31 +331,17 @@ eventpipe_collect_tracing_command_try_parse_tracepoint_config (
 
 	EventPipeTracepoint *tracepoint = NULL;
 	ep_char8_t *tracepoint_name = NULL;
-	size_t default_tracepoint_format_len = 0;
-	uint8_t *tracepoint_name_byte_array = NULL;
-	uint32_t tracepoint_name_byte_array_len = 0;
 
 	uint32_t tracepoint_set_array_len = 0;
 
-	tracepoint_config->default_tracepoint.tracepoint_format[0] = '\0'; // Initialize to empty string.
 	tracepoint_config->tracepoints = NULL;
 	tracepoint_config->event_id_to_tracepoint_map = NULL;
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (buffer, buffer_len, &tracepoint_name_byte_array, &tracepoint_name_byte_array_len));
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &tracepoint_name));
 
-	if (tracepoint_name_byte_array) {
-		// Make Helper
-		tracepoint_name = ep_rt_utf16le_to_utf8_string ((const ep_char16_t *)tracepoint_name_byte_array);
-		ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (tracepoint_name));
-		ep_rt_byte_array_free (tracepoint_name_byte_array);
-		tracepoint_name_byte_array = NULL;
-
-		default_tracepoint_format_len = strlen(tracepoint_name) + strlen(EP_TRACEPOINT_FORMAT_V1) + 2; // +2 for space and null terminator
-		int32_t res = snprintf(tracepoint_config->default_tracepoint.tracepoint_format, sizeof(tracepoint_config->default_tracepoint.tracepoint_format), "%s %s", tracepoint_name, EP_TRACEPOINT_FORMAT_V1);
-		ep_raise_error_if_nok (res >= 0 && (size_t)res < default_tracepoint_format_len);
-		ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_name);
-		tracepoint_name = NULL;
-	}
+	ep_raise_error_if_nok (tracepoint_format_init (&tracepoint_config->default_tracepoint, tracepoint_name));
+	ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_name);
+	tracepoint_name = NULL;
 
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &tracepoint_set_array_len));
 
@@ -348,17 +358,10 @@ eventpipe_collect_tracing_command_try_parse_tracepoint_config (
 			tracepoint = ep_rt_object_alloc (EventPipeTracepoint); // Ownership will be transferred to the tracepoint_config's tracepoint vector.
 			ep_raise_error_if_nok (tracepoint != NULL);
 
-			ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (buffer, buffer_len, &tracepoint_name_byte_array, &tracepoint_name_byte_array_len));
-
-			// Make Helper
-			tracepoint_name = ep_rt_utf16le_to_utf8_string ((const ep_char16_t *)tracepoint_name_byte_array);
+			ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &tracepoint_name));
 			ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (tracepoint_name));
-			ep_rt_byte_array_free (tracepoint_name_byte_array);
-			tracepoint_name_byte_array = NULL;
 
-			default_tracepoint_format_len = strlen(tracepoint_name) + strlen(EP_TRACEPOINT_FORMAT_V1) + 2; // +2 for space and null terminator
-			int32_t res = snprintf(tracepoint->tracepoint_format, sizeof(tracepoint->tracepoint_format), "%s %s", tracepoint_name, EP_TRACEPOINT_FORMAT_V1);
-			ep_raise_error_if_nok (res >= 0 && (size_t)res < default_tracepoint_format_len);
+			ep_raise_error_if_nok (tracepoint_format_init (tracepoint, tracepoint_name));
 			ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_name);
 			tracepoint_name = NULL;
 
@@ -390,9 +393,6 @@ ep_on_error:
 	ep_rt_object_free (tracepoint);
 	tracepoint = NULL;
 
-	ep_rt_byte_array_free (tracepoint_name_byte_array);
-	tracepoint_name_byte_array = NULL;
-
 	ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_name);
 	tracepoint_name = NULL;
 
@@ -422,12 +422,8 @@ eventpipe_collect_tracing_command_try_parse_provider_config (
 
 	uint32_t log_level = 0;
 
-	uint8_t *provider_name_byte_array = NULL;
-	uint32_t provider_name_byte_array_len = 0;
-
-	uint8_t *filter_data_byte_array = NULL;
-	uint32_t filter_data_byte_array_len = 0;
-
+	ep_char8_t *provider_name = NULL;
+	ep_char8_t *filter_data = NULL;
 	EventPipeProviderEventFilter *event_filter = NULL;
 	EventPipeProviderTracepointConfiguration *tracepoint_config = NULL;
 
@@ -437,19 +433,14 @@ eventpipe_collect_tracing_command_try_parse_provider_config (
 	provider_config->logging_level = (EventPipeEventLevel)log_level;
 	ep_raise_error_if_nok (provider_config->logging_level <= EP_EVENT_LEVEL_VERBOSE);
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (buffer, buffer_len, &provider_name_byte_array, &provider_name_byte_array_len));
-	provider_config->provider_name = ep_rt_utf16le_to_utf8_string ((const ep_char16_t *)provider_name_byte_array);
-	ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (provider_config->provider_name));
-	ep_rt_byte_array_free (provider_name_byte_array);
-	provider_name_byte_array = NULL;
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &provider_name));
+	ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (provider_name));
+	provider_config->provider_name = provider_name;
+	provider_name = NULL; // Ownership transferred to provider_config.
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (buffer, buffer_len, &filter_data_byte_array, &filter_data_byte_array_len));
-	if (filter_data_byte_array) {
-		provider_config->filter_data = ep_rt_utf16le_to_utf8_string ((const ep_char16_t *)filter_data_byte_array);
-		ep_raise_error_if_nok (provider_config->filter_data != NULL);
-		ep_rt_byte_array_free (filter_data_byte_array);
-		filter_data_byte_array = NULL;
-	}
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &filter_data));
+	provider_config->filter_data = filter_data;
+	filter_data = NULL; // Ownership transferred to provider_config.
 
 	if ((optional_field_flags & EP_PROVIDER_OPTFIELD_EVENT_FILTER) != 0) {
 		event_filter = ep_rt_object_alloc(EventPipeProviderEventFilter);
@@ -473,21 +464,10 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	if (tracepoint_config != NULL) {
-		ep_tracepoint_config_free (tracepoint_config);
-		tracepoint_config = NULL;
-	}
-
-	if (event_filter != NULL) {
-		ep_event_filter_free (event_filter);
-		event_filter = NULL;
-	}
-
-	ep_rt_byte_array_free (filter_data_byte_array);
-	filter_data_byte_array = NULL;
-
-	ep_rt_byte_array_free (provider_name_byte_array);
-	provider_name_byte_array = NULL;
+	ep_tracepoint_config_free (tracepoint_config);
+	ep_event_filter_free (event_filter);
+	ep_rt_utf8_string_free (filter_data);
+	ep_rt_utf8_string_free (provider_name);
 
 	ep_exit_error_handler ();
 }
