@@ -105,6 +105,7 @@ struct ProfilingScanContext;
 #define CLR_MANAGEDHEAPCOLLECT_KEYWORD 0x800000
 #define CLR_GCHEAPANDTYPENAMES_KEYWORD 0x1000000
 #define CLR_ALLOCATIONSAMPLING_KEYWORD 0x80000000000
+#define CLR_RUNDOWNLOADER_KEYWORD 0x8
 
 //
 // Using KEYWORDZERO means when checking the events category ignore the keyword
@@ -118,13 +119,18 @@ struct ProfilingScanContext;
     (ETW_TRACING_INITIALIZED(Context.RegistrationHandle) && ETW_CATEGORY_ENABLED(Context, Level, Keyword))
 
 bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long keyword);
+bool DotNETRuntimeRundownProvider_IsEnabled(unsigned char level, unsigned long long keyword);
 
 #ifdef FEATURE_ETW
 #define RUNTIME_PROVIDER_CATEGORY_ENABLED(Level, Keyword) \
     (DotNETRuntimeProvider_IsEnabled(Level, Keyword) || ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, Level, Keyword))
+#define RUNTIME_RUNDOWN_PROVIDER_CATEGORY_ENABLED(Level, Keyword) \
+    (DotNETRuntimeRundownProvider_IsEnabled(Level, Keyword) || ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_Context, Level, Keyword))
 #else
 #define RUNTIME_PROVIDER_CATEGORY_ENABLED(Level, Keyword) \
     DotNETRuntimeProvider_IsEnabled(Level, Keyword)
+#define RUNTIME_RUNDOWN_PROVIDER_CATEGORY_ENABLED(Level, Keyword) \
+    DotNETRuntimeRundownProvider_IsEnabled(Level, Keyword)
 #endif // FEATURE_ETW
 
 //
@@ -133,6 +139,61 @@ bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long key
 #define EVENT_CONTROL_CODE_DISABLE_PROVIDER 0
 #define EVENT_CONTROL_CODE_ENABLE_PROVIDER 1
 #define EVENT_CONTROL_CODE_CAPTURE_STATE 2
+
+// All ETW helpers must be a part of this namespace
+// We have auto-generated macros to directly fire the events
+// but in some cases, gathering the event payload information involves some work
+// and it can be done in a relevant helper class like the one's in this namespace
+namespace ETW
+{
+    // Class to wrap all the enumeration logic for ETW
+    class EnumerationLog
+    {
+        public:
+            static void EndRundown();
+    };
+
+    // Class to wrap all Loader logic for ETW
+    class LoaderLog
+    {
+    public:
+        typedef union _LoaderStructs
+        {
+            typedef enum _AppDomainFlags
+            {
+                DefaultDomain=0x1,
+                ExecutableDomain=0x2,
+                SharedDomain=0x4
+            }AppDomainFlags;
+
+            typedef enum _AssemblyFlags
+            {
+                DomainNeutralAssembly=0x1,
+                DynamicAssembly=0x2,
+                NativeAssembly=0x4,
+                CollectibleAssembly=0x8,
+                ReadyToRunAssembly=0x10,
+            }AssemblyFlags;
+
+            typedef enum _ModuleFlags
+            {
+                DomainNeutralModule=0x1,
+                NativeModule=0x2,
+                DynamicModule=0x4,
+                ManifestModule=0x8,
+                IbcOptimized=0x10,
+                ReadyToRunModule=0x20,
+                PartialReadyToRunModule=0x40,
+            }ModuleFlags;
+
+            typedef enum _RangeFlags
+            {
+                HotRange=0x0
+            }RangeFlags;
+
+        }LoaderStructs;
+    };
+}
 
 #else // FEATURE_EVENT_TRACE
 
