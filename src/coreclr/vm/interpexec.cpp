@@ -99,7 +99,34 @@ template <typename THelper> static THelper GetPossiblyIndirectHelper(void* dataI
 
 template <typename TResult, typename TSource> static void ConvFpHelper(int8_t *stack, const int32_t *ip)
 {
-    assert(0);
+    static_assert(!std::numeric_limits<TSource>::is_integer, "ConvFpHelper is only for use on floats and doubles");
+    static_assert(std::numeric_limits<TResult>::is_integer, "ConvFpHelper is only for use on floats and doubles to be converted to integers");
+
+    // First, promote the source value to double
+    double src = LOCAL_VAR(ip[2], TSource),
+        minValue = (double)std::numeric_limits<TResult>::lowest(),
+        maxValue = (double)std::numeric_limits<TResult>::max();
+
+    // (src != src) checks for NaN, then we check whether the min and max values (as represented by their closest double)
+    //  properly bound the source value so that when it is truncated it will be in range
+    // We assume that we are in round-towards-zero mode. For NaN we want to return 0, and for out of range values, saturate.
+    TResult result;
+    if (src != src)
+        result = 0;
+    else if (src >= maxValue)
+        result = std::numeric_limits<TResult>::max();
+    else if (std::numeric_limits<TResult>::is_signed && (src <= -1))
+        result = 0;
+    else if (src < minValue)
+        result = std::numeric_limits<TResult>::lowest();
+    else
+        result = (TResult)src;
+
+    // According to spec, for result types smaller than int32, we store them on the stack as int32
+    if (sizeof(TResult) >= 4)
+        LOCAL_VAR(ip[1], TResult) = result;
+    else
+        LOCAL_VAR(ip[1], int32_t) = (int32_t)result;
 }
 
 template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t *stack, const int32_t *ip)
@@ -117,9 +144,9 @@ template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t
     //  properly bound the source value so that when it is truncated it will be in range
     // We assume that we are in round-towards-zero mode
     if (std::numeric_limits<TResult>::is_signed)
-        outOfRange = (src != src) || (src < minValue) || (src > maxValue);
+        outOfRange = (src != src) || (src < minValue) || (src >= maxValue);
     else
-        outOfRange = (src != src) || (src <= -1) || (src > maxValue);
+        outOfRange = (src != src) || (src <= -1) || (src >= maxValue);
 
     if (outOfRange)
         COMPlusThrow(kOverflowException);
