@@ -26,12 +26,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 bool emitter::IsSSEInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_SSE_INSTRUCTION);
+    return (ins >= FIRST_SSE_INSTRUCTION) && (ins <= LAST_SSE_INSTRUCTION);
 }
 
 bool emitter::IsSSEOrAVXInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
+    return (ins >= FIRST_SSE_INSTRUCTION) && (ins <= LAST_AVX_INSTRUCTION);
 }
 
 //------------------------------------------------------------------------
@@ -68,7 +68,7 @@ bool emitter::IsKInstructionWithLBit(instruction ins)
 
 bool emitter::IsAVXOnlyInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_AVX_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
+    return (ins >= FIRST_AVX_INSTRUCTION) && (ins <= LAST_AVX_INSTRUCTION);
 }
 
 //------------------------------------------------------------------------
@@ -82,12 +82,12 @@ bool emitter::IsAVXOnlyInstruction(instruction ins)
 //
 bool emitter::IsAvx512OnlyInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_AVX512_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION);
+    return (ins >= FIRST_AVX512_INSTRUCTION) && (ins <= LAST_AVX512_INSTRUCTION);
 }
 
 bool emitter::IsApxOnlyInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_APX_INSTRUCTION) && (ins <= INS_LAST_APX_INSTRUCTION);
+    return (ins >= FIRST_APX_INSTRUCTION) && (ins <= LAST_APX_INSTRUCTION);
 }
 
 bool emitter::Is3OpRmwInstruction(instruction ins)
@@ -112,16 +112,16 @@ bool emitter::Is3OpRmwInstruction(instruction ins)
 
         default:
         {
-            return ((ins >= INS_FIRST_FMA_INSTRUCTION) && (ins <= INS_LAST_FMA_INSTRUCTION)) ||
-                   ((ins >= INS_FIRST_AVXVNNI_INSTRUCTION) && (ins <= INS_LAST_AVXVNNI_INSTRUCTION)) ||
-                   ((ins >= INS_FIRST_AVXIFMA_INSTRUCTION) && (ins <= INS_LAST_AVXIFMA_INSTRUCTION));
+            return ((ins >= FIRST_FMA_INSTRUCTION) && (ins <= LAST_FMA_INSTRUCTION)) ||
+                   ((ins >= FIRST_AVXVNNI_INSTRUCTION) && (ins <= LAST_AVXVNNI_INSTRUCTION)) ||
+                   ((ins >= FIRST_AVXIFMA_INSTRUCTION) && (ins <= LAST_AVXIFMA_INSTRUCTION));
         }
     }
 }
 
 bool emitter::IsBMIInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_BMI_INSTRUCTION) && (ins <= INS_LAST_BMI_INSTRUCTION);
+    return (ins >= FIRST_BMI_INSTRUCTION) && (ins <= LAST_BMI_INSTRUCTION);
 }
 
 //------------------------------------------------------------------------
@@ -854,7 +854,7 @@ bool emitter::DoJitUseApxNDD(instruction ins) const
 
 inline bool emitter::IsCCMP(instruction ins)
 {
-    return (ins > INS_FIRST_CCMP_INSTRUCTION && ins < INS_LAST_CCMP_INSTRUCTION);
+    return (ins >= FIRST_CCMP_INSTRUCTION && ins <= LAST_CCMP_INSTRUCTION);
 }
 
 //------------------------------------------------------------------------

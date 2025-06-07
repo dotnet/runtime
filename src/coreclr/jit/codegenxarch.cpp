@@ -9575,7 +9575,7 @@ void CodeGen::genAmd64EmitterUnitTestsCCMP()
     theEmitter->emitIns_R_R(INS_ccmpe, EA_1BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
 
     // Test all CC codes
-    for (uint32_t ins = INS_FIRST_CCMP_INSTRUCTION + 1; ins < INS_LAST_CCMP_INSTRUCTION; ins++)
+    for (uint32_t ins = FIRST_CCMP_INSTRUCTION; ins <= LAST_CCMP_INSTRUCTION; ins++)
     {
         theEmitter->emitIns_R_R((instruction)ins, EA_4BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
     }
@@ -9597,7 +9597,7 @@ void CodeGen::genAmd64EmitterUnitTestsCCMP()
     theEmitter->emitIns_R_S(INS_ccmpe, EA_1BYTE, REG_RAX, 0, 0, INS_OPTS_EVEX_dfv_cf);
 
     // Test all CC codes
-    for (uint32_t ins = INS_FIRST_CCMP_INSTRUCTION + 1; ins < INS_LAST_CCMP_INSTRUCTION; ins++)
+    for (uint32_t ins = FIRST_CCMP_INSTRUCTION; ins <= LAST_CCMP_INSTRUCTION; ins++)
     {
         theEmitter->emitIns_R_S((instruction)ins, EA_4BYTE, REG_RAX, 0, 0, INS_OPTS_EVEX_dfv_cf);
     }
