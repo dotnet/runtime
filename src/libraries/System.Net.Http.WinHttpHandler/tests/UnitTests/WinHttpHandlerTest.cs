@@ -45,7 +45,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.Equal(CookieUsePolicy.UseInternalCookieStoreOnly, handler.CookieUsePolicy);
             Assert.Null(handler.CookieContainer);
             Assert.Null(handler.ServerCertificateValidationCallback);
-            Assert.False(handler.CheckCertificateRevocationList);
+            Assert.True(handler.CheckCertificateRevocationList);
             Assert.Equal(ClientCertificateOption.Manual, handler.ClientCertificateOption);
             X509Certificate2Collection certs = handler.ClientCertificates;
             Assert.True(certs.Count == 0);
