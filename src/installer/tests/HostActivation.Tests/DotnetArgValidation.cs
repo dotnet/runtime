@@ -3,10 +3,11 @@
 
 using System;
 using System.IO;
+using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.TestUtils;
 using Xunit;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
+namespace HostActivation.Tests
 {
     public class DotnetArgValidation : IClassFixture<DotnetArgValidation.SharedTestState>
     {
