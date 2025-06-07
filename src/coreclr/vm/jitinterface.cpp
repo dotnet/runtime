@@ -5279,6 +5279,11 @@ void CEEInfo::getCallInfo(
         pResult->kind = CORINFO_VIRTUALCALL_VTABLE;
         pResult->nullInstanceCheck = TRUE;
     }
+    else if (!fIsStaticVirtualMethod && (flags & CORINFO_CALLINFO_DISALLOW_STUB))
+    {
+        pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;  // Use the ldvirtftn code path if we are not allowed to use a stub
+        pResult->nullInstanceCheck = TRUE;
+    }
     else
     {
         // No need to null check - the dispatch code will deal with null this.

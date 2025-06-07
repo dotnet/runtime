@@ -594,13 +594,11 @@ extern "C" void QCALLTYPE ThrowInvalidCastException(CORINFO_CLASS_HANDLE pTarget
 //
 //========================================================================
 
-extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
+CORINFO_GENERIC_HANDLE GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
 {
-    QCALL_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
     CORINFO_GENERIC_HANDLE result = NULL;
-
-    BEGIN_QCALL;
 
     _ASSERTE(pMT != NULL || pMD != NULL);
     _ASSERTE(pMT == NULL || pMD == NULL);
@@ -663,6 +661,19 @@ extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE GenericHandleWorker(MethodDesc * pMD
             InterlockedExchangeT(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDeclaringMTDictionary);
         }
     }
+
+    return result;
+}
+
+extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
+{
+    QCALL_CONTRACT;
+
+    CORINFO_GENERIC_HANDLE result = NULL;
+
+    BEGIN_QCALL;
+
+    result = GenericHandleWorkerCore(pMD, pMT, signature, dictionaryIndexAndSlot, pModule);
 
     END_QCALL;
 
