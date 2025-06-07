@@ -8,6 +8,9 @@
 #include "interpexec.h"
 #include "callstubgenerator.h"
 
+// for numeric_limits
+#include <limits>
+
 FCDECL1(uint64_t, JIT_Dbl2ULng, double);
 FCDECL1(int64_t, JIT_Dbl2Lng, double);
 FCDECL1(uint32_t, JIT_Dbl2UInt, double);
@@ -94,7 +97,12 @@ template <typename THelper> static THelper GetPossiblyIndirectHelper(void* dataI
         return (THelper)helperDirectOrIndirect;
 }
 
-template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t *stack, const int32_t *ip, void** pDataItems)
+template <typename TResult, typename TSource> static void ConvFpHelper(int8_t *stack, const int32_t *ip)
+{
+    assert(0);
+}
+
+template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t *stack, const int32_t *ip)
 {
     static_assert(!std::numeric_limits<TSource>::is_integer, "ConvOvfFpHelper is only for use on floats and doubles");
 
@@ -331,11 +339,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_I1_R4:
-                    LOCAL_VAR(ip[1], int32_t) = (int8_t)HCCALL1(JIT_Dbl2Int, (double)LOCAL_VAR(ip[2], float));
+                    ConvOvfFpHelper<int8_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I1_R8:
-                    LOCAL_VAR(ip[1], int32_t) = (int8_t)HCCALL1(JIT_Dbl2Int, LOCAL_VAR(ip[2], double));
+                    ConvOvfFpHelper<int8_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_I4:
@@ -347,11 +355,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R4:
-                    LOCAL_VAR(ip[1], int32_t) = (uint8_t)HCCALL1(JIT_Dbl2UInt, (double)LOCAL_VAR(ip[2], float));
+                    ConvOvfFpHelper<uint8_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R8:
-                    LOCAL_VAR(ip[1], int32_t) = (uint8_t)HCCALL1(JIT_Dbl2UInt, LOCAL_VAR(ip[2], double));
+                    ConvOvfFpHelper<uint8_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_I4:
@@ -363,11 +371,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_R4:
-                    LOCAL_VAR(ip[1], int32_t) = (int16_t)HCCALL1(JIT_Dbl2Int, (double)LOCAL_VAR(ip[2], float));
+                    ConvOvfFpHelper<int16_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_R8:
-                    LOCAL_VAR(ip[1], int32_t) = (int16_t)HCCALL1(JIT_Dbl2Int, LOCAL_VAR(ip[2], double));
+                    ConvOvfFpHelper<int16_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_I4:
@@ -379,27 +387,27 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R4:
-                    LOCAL_VAR(ip[1], int32_t) = (uint16_t)HCCALL1(JIT_Dbl2UInt, (double)LOCAL_VAR(ip[2], float));
+                    ConvOvfFpHelper<uint16_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R8:
-                    LOCAL_VAR(ip[1], int32_t) = (uint16_t)HCCALL1(JIT_Dbl2UInt, LOCAL_VAR(ip[2], double));
+                    ConvOvfFpHelper<uint16_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I4_R4:
-                    LOCAL_VAR(ip[1], int32_t) = HCCALL1(JIT_Dbl2Int, (double)LOCAL_VAR(ip[2], float));
+                    ConvOvfFpHelper<int32_t, float>(stack, ip);
                     ip += 3;
                     break;;
                 case INTOP_CONV_I4_R8:
-                    LOCAL_VAR(ip[1], int32_t) = HCCALL1(JIT_Dbl2Int, LOCAL_VAR(ip[2], double));
+                    ConvOvfFpHelper<int32_t, double>(stack, ip);
                     ip += 3;
                     break;;
                 case INTOP_CONV_U4_R4:
-                    LOCAL_VAR(ip[1], uint32_t) = HCCALL1(JIT_Dbl2UInt, (double)LOCAL_VAR(ip[2], float));
+                    ConvOvfFpHelper<uint32_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U4_R8:
-                    LOCAL_VAR(ip[1], uint32_t) = HCCALL1(JIT_Dbl2UInt, LOCAL_VAR(ip[2], double));
+                    ConvOvfFpHelper<uint32_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I8_I4:
@@ -411,11 +419,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;;
                 case INTOP_CONV_I8_R4:
-                    LOCAL_VAR(ip[1], int64_t) = HCCALL1(JIT_Dbl2Lng, (double)LOCAL_VAR(ip[2], float));
+                    ConvOvfFpHelper<int64_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I8_R8:
-                    LOCAL_VAR(ip[1], int64_t) = HCCALL1(JIT_Dbl2Lng, LOCAL_VAR(ip[2], double));
+                    ConvOvfFpHelper<int64_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_R4_I4:
@@ -443,11 +451,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U8_R4:
-                    LOCAL_VAR(ip[1], uint64_t) = HCCALL1(JIT_Dbl2ULng, (double)LOCAL_VAR(ip[2], float));
+                    ConvOvfFpHelper<uint64_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U8_R8:
-                    LOCAL_VAR(ip[1], uint64_t) = HCCALL1(JIT_Dbl2ULng, LOCAL_VAR(ip[2], double));
+                    ConvOvfFpHelper<uint64_t, double>(stack, ip);
                     ip += 3;
                     break;
 
@@ -460,12 +468,12 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_OVF_I1_R4:
-                    ConvOvfFpHelper<int8_t, float>(stack, ip, pMethod->pDataItems);
-                    ip += 4;
+                    ConvOvfFpHelper<int8_t, float>(stack, ip);
+                    ip += 3;
                     break;
                 case INTOP_CONV_OVF_I1_R8:
-                    ConvOvfFpHelper<int8_t, double>(stack, ip, pMethod->pDataItems);
-                    ip += 4;
+                    ConvOvfFpHelper<int8_t, double>(stack, ip);
+                    ip += 3;
                     break;
 
                 case INTOP_CONV_OVF_U1_I4:
@@ -477,12 +485,12 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_OVF_U1_R4:
-                    ConvOvfFpHelper<uint8_t, float>(stack, ip, pMethod->pDataItems);
-                    ip += 4;
+                    ConvOvfFpHelper<uint8_t, float>(stack, ip);
+                    ip += 3;
                     break;
                 case INTOP_CONV_OVF_U1_R8:
-                    ConvOvfFpHelper<uint8_t, double>(stack, ip, pMethod->pDataItems);
-                    ip += 4;
+                    ConvOvfFpHelper<uint8_t, double>(stack, ip);
+                    ip += 3;
                     break;
 
                 case INTOP_CONV_OVF_I2_I4:
@@ -494,12 +502,12 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_OVF_I2_R4:
-                    ConvOvfFpHelper<int16_t, float>(stack, ip, pMethod->pDataItems);
-                    ip += 4;
+                    ConvOvfFpHelper<int16_t, float>(stack, ip);
+                    ip += 3;
                     break;
                 case INTOP_CONV_OVF_I2_R8:
-                    ConvOvfFpHelper<int16_t, double>(stack, ip, pMethod->pDataItems);
-                    ip += 4;
+                    ConvOvfFpHelper<int16_t, double>(stack, ip);
+                    ip += 3;
                     break;
 
                 case INTOP_CONV_OVF_U2_I4:
@@ -511,12 +519,12 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_OVF_U2_R4:
-                    ConvOvfFpHelper<uint16_t, float>(stack, ip, pMethod->pDataItems);
-                    ip += 4;
+                    ConvOvfFpHelper<uint16_t, float>(stack, ip);
+                    ip += 3;
                     break;
                 case INTOP_CONV_OVF_U2_R8:
-                    ConvOvfFpHelper<uint16_t, double>(stack, ip, pMethod->pDataItems);
-                    ip += 4;
+                    ConvOvfFpHelper<uint16_t, double>(stack, ip);
+                    ip += 3;
                     break;
 
                 case INTOP_CONV_OVF_I4_I8:
@@ -524,12 +532,12 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_OVF_I4_R4:
-                    ConvOvfFpHelper<int32_t, float>(stack, ip, pMethod->pDataItems);
-                    ip += 4;
+                    ConvOvfFpHelper<int32_t, float>(stack, ip);
+                    ip += 3;
                     break;
                 case INTOP_CONV_OVF_I4_R8:
-                    ConvOvfFpHelper<int32_t, double>(stack, ip, pMethod->pDataItems);
-                    ip += 4;
+                    ConvOvfFpHelper<int32_t, double>(stack, ip);
+                    ip += 3;
                     break;
 
                 case INTOP_CONV_OVF_U4_I8:
@@ -537,30 +545,30 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_OVF_U4_R4:
-                    ConvOvfFpHelper<uint32_t, float>(stack, ip, pMethod->pDataItems);
-                    ip += 4;
+                    ConvOvfFpHelper<uint32_t, float>(stack, ip);
+                    ip += 3;
                     break;
                 case INTOP_CONV_OVF_U4_R8:
-                    ConvOvfFpHelper<uint32_t, double>(stack, ip, pMethod->pDataItems);
-                    ip += 4;
+                    ConvOvfFpHelper<uint32_t, double>(stack, ip);
+                    ip += 3;
                     break;
 
                 case INTOP_CONV_OVF_I8_R4:
-                    ConvOvfFpHelper<int64_t, float>(stack, ip, pMethod->pDataItems);
-                    ip += 4;
+                    ConvOvfFpHelper<int64_t, float>(stack, ip);
+                    ip += 3;
                     break;
                 case INTOP_CONV_OVF_I8_R8:
-                    ConvOvfFpHelper<int64_t, double>(stack, ip, pMethod->pDataItems);
-                    ip += 4;
+                    ConvOvfFpHelper<int64_t, double>(stack, ip);
+                    ip += 3;
                     break;
 
                 case INTOP_CONV_OVF_U8_R4:
-                    ConvOvfFpHelper<uint64_t, float>(stack, ip, pMethod->pDataItems);
-                    ip += 4;
+                    ConvOvfFpHelper<uint64_t, float>(stack, ip);
+                    ip += 3;
                     break;
                 case INTOP_CONV_OVF_U8_R8:
-                    ConvOvfFpHelper<uint64_t, double>(stack, ip, pMethod->pDataItems);
-                    ip += 4;
+                    ConvOvfFpHelper<uint64_t, double>(stack, ip);
+                    ip += 3;
                     break;
 
                 case INTOP_SWITCH:
