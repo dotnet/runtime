@@ -21914,8 +21914,8 @@ GenTree* Compiler::gtNewSimdCvtVectorToMaskNode(var_types   type,
 #if defined(TARGET_XARCH)
     return gtNewSimdHWIntrinsicNode(TYP_MASK, op1, NI_AVX512_ConvertVectorToMask, simdBaseJitType, simdSize);
 #elif defined(TARGET_ARM64)
-    // We use cmpne which requires an embedded mask.
-    GenTree* trueMask = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+    // ConvertVectorToMask uses cmpne which requires an embedded mask.
+    GenTree* trueMask = gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_ConversionTrueMask, simdBaseJitType, simdSize);
     return gtNewSimdHWIntrinsicNode(TYP_MASK, trueMask, op1, NI_Sve_ConvertVectorToMask, simdBaseJitType, simdSize);
 #else
 #error Unsupported platform
@@ -31728,6 +31728,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
+    // Fold ConvertMaskToVector(ConvertVectorToMask(vec)) to vec
     if (tree->OperIsConvertMaskToVector())
     {
         GenTree* op = op1;
@@ -31760,6 +31761,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         }
     }
 
+    // Fold ConvertVectorToMask(ConvertMaskToVector(mask)) to mask
     if (tree->OperIsConvertVectorToMask())
     {
         GenTree* op        = op1;
@@ -31768,11 +31770,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #if defined(TARGET_XARCH)
         tryHandle = op->OperIsHWIntrinsic();
 #elif defined(TARGET_ARM64)
-        if (op->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll))
-        {
-            op        = op2;
-            tryHandle = op->OperIsHWIntrinsic();
-        }
+        assert(op->OperIsHWIntrinsic(NI_Sve_ConversionTrueMask));
+        op        = op2;
+        tryHandle = op->OperIsHWIntrinsic();
 #endif // TARGET_ARM64
 
         if (tryHandle)
@@ -31858,53 +31858,12 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             resultNode = gtNewVconNode(retType, &simdVal);
         }
+#if defined(TARGET_XARCH)
         else if (tree->OperIsConvertVectorToMask())
         {
-            GenTreeVecCon* vecCon = cnsNode->AsVecCon();
-            GenTreeMskCon* mskCon = gtNewMskConNode(retType);
-
-            switch (vecCon->TypeGet())
-            {
-                case TYP_SIMD8:
-                {
-                    EvaluateSimdCvtVectorToMask<simd8_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd8Val);
-                    break;
-                }
-
-                case TYP_SIMD12:
-                {
-                    EvaluateSimdCvtVectorToMask<simd12_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd12Val);
-                    break;
-                }
-
-                case TYP_SIMD16:
-                {
-                    EvaluateSimdCvtVectorToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd16Val);
-                    break;
-                }
-
-#if defined(TARGET_XARCH)
-                case TYP_SIMD32:
-                {
-                    EvaluateSimdCvtVectorToMask<simd32_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd32Val);
-                    break;
-                }
-
-                case TYP_SIMD64:
-                {
-                    EvaluateSimdCvtVectorToMask<simd64_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd64Val);
-                    break;
-                }
-#endif // TARGET_XARCH
-
-                default:
-                {
-                    unreached();
-                }
-            }
-
-            resultNode = mskCon;
+            resultNode = gtFoldExprConvertVecCnsToMask(tree, cnsNode->AsVecCon());
         }
+#endif // TARGET_XARCH
 #endif // FEATURE_MASKED_HW_INTRINSICS
         else
         {
@@ -32747,6 +32706,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         switch (ni)
         {
 #ifdef TARGET_ARM64
+            case NI_Sve_ConvertVectorToMask:
+                resultNode = gtFoldExprConvertVecCnsToMask(tree, cnsNode->AsVecCon());
+                break;
+
             case NI_AdvSimd_MultiplyByScalar:
             case NI_AdvSimd_Arm64_MultiplyByScalar:
             {
@@ -32888,7 +32851,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     break;
                 }
 
-                if (op1->IsVectorAllBitsSet() || op1->IsMaskAllBitsSet())
+                if (op1->IsVectorAllBitsSet() || op1->IsTrueMask(tree))
                 {
                     if ((op3->gtFlags & GTF_SIDE_EFFECT) != 0)
                     {
@@ -32902,7 +32865,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     return op2;
                 }
 
-                if (op1->IsVectorZero())
+                if (op1->IsVectorZero() || op1->IsFalseMask())
                 {
                     return gtWrapWithSideEffects(op3, op2, GTF_ALL_EFFECT);
                 }
@@ -32954,6 +32917,127 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
     return resultNode;
 }
+
+GenTreeMskCon* Compiler::gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon)
+{
+    assert(tree->OperIsConvertVectorToMask());
+    assert(vecCon == tree->Op(1) || vecCon == tree->Op(2));
+
+    var_types      retType      = tree->TypeGet();
+    var_types      simdBaseType = tree->GetSimdBaseType();
+    GenTreeMskCon* mskCon       = gtNewMskConNode(retType);
+
+    switch (vecCon->TypeGet())
+    {
+        case TYP_SIMD8:
+        {
+            EvaluateSimdCvtVectorToMask<simd8_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd8Val);
+            break;
+        }
+
+        case TYP_SIMD12:
+        {
+            EvaluateSimdCvtVectorToMask<simd12_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd12Val);
+            break;
+        }
+
+        case TYP_SIMD16:
+        {
+            EvaluateSimdCvtVectorToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd16Val);
+            break;
+        }
+
+#if defined(TARGET_XARCH)
+        case TYP_SIMD32:
+        {
+            EvaluateSimdCvtVectorToMask<simd32_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd32Val);
+            break;
+        }
+
+        case TYP_SIMD64:
+        {
+            EvaluateSimdCvtVectorToMask<simd64_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd64Val);
+            break;
+        }
+#endif // TARGET_XARCH
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    return mskCon;
+}
+
+//------------------------------------------------------------------------
+// IsTrueMask: Is the given node a true mask
+//
+// Arguments:
+//   parent - parent of the node
+//
+// Returns true if the node is a true mask for the given parent.
+//
+// Note that a byte true mask is different to an int true mask, therefore
+// the usage of the mask (ie the type of the parent) needs to be taken into account.
+//
+bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
+{
+#ifdef TARGET_ARM64
+    var_types ParentSimdBaseType = JitType2PreciseVarType(parent->GetSimdBaseJitType());
+
+    if (IsCnsMsk())
+    {
+        switch (parent->gtType)
+        {
+            case TYP_SIMD8:
+                return SveMaskPatternAll ==
+                       EvaluateSimdMaskToPattern<simd8_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
+
+            case TYP_SIMD12:
+                return SveMaskPatternAll ==
+                       EvaluateSimdMaskToPattern<simd12_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
+
+            case TYP_SIMD16:
+                return SveMaskPatternAll ==
+                       EvaluateSimdMaskToPattern<simd16_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
+
+            case TYP_MASK:
+                // The mask parent does not have a vector type, so we cannot evaluate the size of the vector.
+                return false;
+
+            default:
+                unreached();
+        }
+    }
+#endif
+
+    return false;
+}
+
+bool GenTree::IsFalseMask() const
+{
+#ifdef TARGET_ARM64
+    if (OperIsHWIntrinsic())
+    {
+        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
+        if (id == NI_Sve_ConvertMaskToVector)
+        {
+            GenTree* op1 = AsHWIntrinsic()->Op(1);
+            assert(op1->OperIsHWIntrinsic());
+            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
+        }
+        return (id == NI_Sve_CreateFalseMaskByte);
+    }
+    else if (IsCnsMsk())
+    {
+        return AsMskCon()->IsZero();
+    }
+#endif
+
+    return false;
+}
+
 #endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
