@@ -210,13 +210,13 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_RETFILT:
             assert(dstCount == 0);
-            if (tree->TypeGet() == TYP_VOID)
+            if (tree->TypeIs(TYP_VOID))
             {
                 srcCount = 0;
             }
             else
             {
-                assert(tree->TypeGet() == TYP_INT);
+                assert(tree->TypeIs(TYP_INT));
                 srcCount = 1;
                 BuildUse(tree->gtGetOp1(), RBM_INTRET.GetIntRegSet());
             }
@@ -1195,7 +1195,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     SingleTypeRegSet      singleDstCandidates = RBM_NONE;
 
     assert(!call->isContained());
-    if (call->TypeGet() != TYP_VOID)
+    if (!call->TypeIs(TYP_VOID))
     {
         hasMultiRegRetVal = call->HasMultiRegRetVal();
         if (hasMultiRegRetVal)
@@ -1415,7 +1415,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         {
             case GenTreeBlk::BlkOpKindUnroll:
             {
-                bool willUseSimdMov = compiler->IsBaselineSimdIsaSupported() && (size >= XMM_REGSIZE_BYTES);
+                bool willUseSimdMov = (size >= XMM_REGSIZE_BYTES);
                 if (willUseSimdMov && blkNode->IsOnHeapAndContainsReferences())
                 {
                     ClassLayout* layout = blkNode->GetLayout();
@@ -1670,7 +1670,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 {
     int srcCount = 0;
-    if (putArgStk->gtOp1->gtOper == GT_FIELD_LIST)
+    if (putArgStk->gtOp1->OperIs(GT_FIELD_LIST))
     {
         assert(putArgStk->gtOp1->isContained());
 
@@ -1896,7 +1896,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
     //    Dividend in RAX:RDX  and computes
     //    Quotient in RAX, Remainder in RDX
 
-    if (tree->OperGet() == GT_MOD || tree->OperGet() == GT_UMOD)
+    if (tree->OperIs(GT_MOD) || tree->OperIs(GT_UMOD))
     {
         // We are interested in just the remainder.
         // RAX is used as a trashable register during computation of remainder.
@@ -1910,7 +1910,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
     }
 
 #ifdef TARGET_X86
-    if (op1->OperGet() == GT_LONG)
+    if (op1->OperIs(GT_LONG))
     {
         assert(op1->isContained());
 
@@ -1920,7 +1920,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
         assert(!loVal->isContained() && !hiVal->isContained());
 
         assert(op2->IsCnsIntOrI());
-        assert(tree->OperGet() == GT_UMOD);
+        assert(tree->OperIs(GT_UMOD));
 
         // This situation also requires an internal register.
         buildInternalIntRegisterDefForNode(tree);
@@ -2366,7 +2366,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_SSE2_MaskMove:
+            case NI_X86Base_MaskMove:
             {
                 assert(numArgs == 3);
                 assert(!isRMW);
@@ -2512,20 +2512,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_FMA_MultiplySubtractNegated:
             case NI_FMA_MultiplySubtractNegatedScalar:
             case NI_FMA_MultiplySubtractScalar:
-            case NI_AVX512F_FusedMultiplyAdd:
-            case NI_AVX512F_FusedMultiplyAddScalar:
-            case NI_AVX512F_FusedMultiplyAddNegated:
-            case NI_AVX512F_FusedMultiplyAddNegatedScalar:
-            case NI_AVX512F_FusedMultiplyAddSubtract:
-            case NI_AVX512F_FusedMultiplySubtract:
-            case NI_AVX512F_FusedMultiplySubtractScalar:
-            case NI_AVX512F_FusedMultiplySubtractAdd:
-            case NI_AVX512F_FusedMultiplySubtractNegated:
-            case NI_AVX512F_FusedMultiplySubtractNegatedScalar:
-            case NI_AVX10v1_FusedMultiplyAddNegatedScalar:
-            case NI_AVX10v1_FusedMultiplyAddScalar:
-            case NI_AVX10v1_FusedMultiplySubtractNegatedScalar:
-            case NI_AVX10v1_FusedMultiplySubtractScalar:
+            case NI_AVX512_FusedMultiplyAdd:
+            case NI_AVX512_FusedMultiplyAddScalar:
+            case NI_AVX512_FusedMultiplyAddNegated:
+            case NI_AVX512_FusedMultiplyAddNegatedScalar:
+            case NI_AVX512_FusedMultiplyAddSubtract:
+            case NI_AVX512_FusedMultiplySubtract:
+            case NI_AVX512_FusedMultiplySubtractScalar:
+            case NI_AVX512_FusedMultiplySubtractAdd:
+            case NI_AVX512_FusedMultiplySubtractNegated:
+            case NI_AVX512_FusedMultiplySubtractNegatedScalar:
             {
                 assert((numArgs == 3) || (intrinsicTree->OperIsEmbRoundingEnabled()));
                 assert(isRMW);
@@ -2650,7 +2646,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_EVEX_BlendVariableMask:
+            case NI_AVX512_BlendVariableMask:
             {
                 assert(numArgs == 3);
 
@@ -2694,27 +2690,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_AVX512F_PermuteVar8x64x2:
-            case NI_AVX512F_PermuteVar16x32x2:
-            case NI_AVX512F_VL_PermuteVar2x64x2:
-            case NI_AVX512F_VL_PermuteVar4x32x2:
-            case NI_AVX512F_VL_PermuteVar4x64x2:
-            case NI_AVX512F_VL_PermuteVar8x32x2:
-            case NI_AVX512BW_PermuteVar32x16x2:
-            case NI_AVX512BW_VL_PermuteVar8x16x2:
-            case NI_AVX512BW_VL_PermuteVar16x16x2:
+            case NI_AVX512_PermuteVar2x64x2:
+            case NI_AVX512_PermuteVar4x32x2:
+            case NI_AVX512_PermuteVar4x64x2:
+            case NI_AVX512_PermuteVar8x32x2:
+            case NI_AVX512_PermuteVar8x64x2:
+            case NI_AVX512_PermuteVar8x16x2:
+            case NI_AVX512_PermuteVar16x16x2:
+            case NI_AVX512_PermuteVar16x32x2:
+            case NI_AVX512_PermuteVar32x16x2:
+            case NI_AVX512VBMI_PermuteVar16x8x2:
+            case NI_AVX512VBMI_PermuteVar32x8x2:
             case NI_AVX512VBMI_PermuteVar64x8x2:
-            case NI_AVX512VBMI_VL_PermuteVar16x8x2:
-            case NI_AVX512VBMI_VL_PermuteVar32x8x2:
-            case NI_AVX10v1_PermuteVar16x8x2:
-            case NI_AVX10v1_PermuteVar2x64x2:
-            case NI_AVX10v1_PermuteVar4x32x2:
-            case NI_AVX10v1_PermuteVar8x16x2:
-            case NI_AVX10v1_PermuteVar32x8x2:
-            case NI_AVX10v1_PermuteVar4x64x2:
-            case NI_AVX10v1_PermuteVar8x32x2:
-            case NI_AVX10v1_PermuteVar16x16x2:
-            case NI_AVX10v1_V512_PermuteVar64x8x2:
             {
                 assert(numArgs == 3);
                 assert(isRMW);
@@ -2959,8 +2946,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     }
 #endif // TARGET_AMD64
 
-                    srcCount += isRMW ? BuildDelayFreeUses(op3, op1, op3RegCandidates)
-                                      : BuildOperandUses(op3, op3RegCandidates);
+                    if (op3->OperIs(GT_HWINTRINSIC) && op3->AsHWIntrinsic()->OperIsMemoryLoad() && op3->isContained())
+                    {
+                        srcCount += BuildAddrUses(op3->AsHWIntrinsic()->Op(1), op3RegCandidates);
+                    }
+                    else if (isRMW && !op3->isContained())
+                    {
+                        srcCount += BuildDelayFreeUses(op3, op1, op3RegCandidates);
+                    }
+                    else
+                    {
+                        srcCount += BuildOperandUses(op3, op3RegCandidates);
+                    }
 
                     if (op4 != nullptr)
                     {
@@ -3087,7 +3084,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 {
     // struct typed indirs are expected only on rhs of a block copy,
     // but in this case they must be contained.
-    assert(indirTree->TypeGet() != TYP_STRUCT);
+    assert(!indirTree->TypeIs(TYP_STRUCT));
     SingleTypeRegSet useCandidates = RBM_NONE;
 
 #ifdef FEATURE_SIMD
@@ -3106,7 +3103,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     }
 #endif // TARGET_AMD64
     int srcCount = BuildIndirUses(indirTree, useCandidates);
-    if (indirTree->gtOper == GT_STOREIND)
+    if (indirTree->OperIs(GT_STOREIND))
     {
         GenTree* source = indirTree->gtGetOp2();
 
@@ -3198,7 +3195,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     assert(srcCount <= BYTE_REG_COUNT);
 #endif
 
-    if (indirTree->gtOper != GT_STOREIND)
+    if (!indirTree->OperIs(GT_STOREIND))
     {
         BuildDef(indirTree);
     }
@@ -3241,7 +3238,7 @@ int LinearScan::BuildMul(GenTree* tree)
 
     // This special widening 32x32->64 MUL is not used on x64
 #if defined(TARGET_X86)
-    if (tree->OperGet() != GT_MUL_LONG)
+    if (!tree->OperIs(GT_MUL_LONG))
 #endif
     {
         assert((tree->gtFlags & GTF_MUL_64RSLT) == 0);
@@ -3259,14 +3256,14 @@ int LinearScan::BuildMul(GenTree* tree)
         //
         dstCandidates = SRBM_RAX;
     }
-    else if (tree->OperGet() == GT_MULHI)
+    else if (tree->OperIs(GT_MULHI))
     {
         // Have to use the encoding:RDX:RAX = RAX * rm. Since we only care about the
         // upper 32 bits of the result set the destination candidate to REG_RDX.
         dstCandidates = SRBM_RDX;
     }
 #if defined(TARGET_X86)
-    else if (tree->OperGet() == GT_MUL_LONG)
+    else if (tree->OperIs(GT_MUL_LONG))
     {
         // have to use the encoding:RDX:RAX = RAX * rm
         dstCandidates = SRBM_RAX | SRBM_RDX;

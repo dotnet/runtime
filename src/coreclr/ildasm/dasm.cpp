@@ -12,6 +12,7 @@
 #include <metamodelpub.h>
 #include "formattype.h"
 #include "readytorun.h"
+#include "metadataexports.h"
 
 #define DECLARE_DATA
 #include "dasmenum.hpp"
@@ -1569,7 +1570,7 @@ mdToken TypeRefToTypeDef(mdToken tk, IMDInternalImport *pIMDI, IMDInternalImport
             IUnknown *pUnk;
             if(FAILED(pIAMDI[0]->QueryInterface(IID_IUnknown, (void**)&pUnk))) goto AssignAndReturn;
 
-            if (FAILED(GetMetaDataInternalInterfaceFromPublic(
+            if (FAILED(GetMDInternalInterfaceFromPublic(
                 pUnk,
                 IID_IMDInternalImport,
                 (LPVOID *)ppIMDInew)))
@@ -6933,8 +6934,7 @@ void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ con
     if(pch && (!_wcsicmp(pch+1,W("lib")) || !_wcsicmp(pch+1,W("obj"))))
     {   // This works only when all the rest does not
         // Init and run.
-        if (SUCCEEDED(MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
-            IID_IMetaDataDispenserEx, (void **)&g_pDisp)))
+        if (SUCCEEDED(CreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void **)&g_pDisp)))
         {
             WCHAR *pwzObjFileName=NULL;
             if (pszObjFileName)
@@ -6955,8 +6955,7 @@ void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ con
         HRESULT hr = S_OK;
         if(g_pDisp == NULL)
         {
-            hr = MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
-                IID_IMetaDataDispenserEx, (void **)&g_pDisp);
+            hr = CreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void **)&g_pDisp);
         }
         if(SUCCEEDED(hr))
         {
@@ -7464,7 +7463,7 @@ BOOL DumpFile()
         g_cbMetaData = VAL32(g_CORHeader->MetaData.Size);
     }
 
-    if (FAILED(GetMetaDataInternalInterface(
+    if (FAILED(GetMDInternalInterface(
         (BYTE *)g_pMetaData,
         g_cbMetaData,
         openFlags,
@@ -7478,7 +7477,7 @@ BOOL DumpFile()
     }
 
     TokenSigInit(g_pImport);
-    if (FAILED(MetaDataGetDispenser(CLSID_CorMetaDataDispenser, IID_IMetaDataDispenser, (LPVOID*)&pMetaDataDispenser)))
+    if (FAILED(CreateMetaDataDispenser(IID_IMetaDataDispenser, (LPVOID*)&pMetaDataDispenser)))
     {
         if (g_fDumpHeader)
             DumpHeader(g_CORHeader, g_pFile);

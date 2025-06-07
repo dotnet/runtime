@@ -130,9 +130,9 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_end_catch", "void", []],
     [true, "mono_interp_pgo_load_table", "number", ["number", "number"]],
     [true, "mono_interp_pgo_save_table", "number", ["number", "number"]],
-    [() => !runtimeHelpers.emscriptenBuildOptions.enablePerfTracing && !runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler, "mono_jiterp_prof_enter", "void", ["number", "number"]],
-    [() => !runtimeHelpers.emscriptenBuildOptions.enablePerfTracing && !runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler, "mono_jiterp_prof_samplepoint", "void", ["number", "number"]],
-    [() => !runtimeHelpers.emscriptenBuildOptions.enablePerfTracing && !runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler, "mono_jiterp_prof_leave", "void", ["number", "number"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableEventPipe && !runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler, "mono_jiterp_prof_enter", "void", ["number", "number"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableEventPipe && !runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler, "mono_jiterp_prof_samplepoint", "void", ["number", "number"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableEventPipe && !runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler, "mono_jiterp_prof_leave", "void", ["number", "number"]],
 
     ...threading_cwraps,
 ];

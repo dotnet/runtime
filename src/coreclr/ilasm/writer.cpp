@@ -11,6 +11,8 @@
 #include "ceefilegenwriter.h"
 #include "sha256.h"
 
+#include "metadataexports.h"
+
 #ifndef _MSC_VER
 //cloned definition from ntimage.h that is removed for non MSVC builds
 typedef VOID
@@ -30,8 +32,7 @@ HRESULT Assembler::InitMetaData()
 
     if(bClock) bClock->cMDInitBegin = minipal_lowres_ticks();
 
-    hr = MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
-        IID_IMetaDataDispenserEx2, (void **)&m_pDisp);
+    hr = CreateMetaDataDispenser(IID_IMetaDataDispenserEx2, (void **)&m_pDisp);
     if (FAILED(hr))
         goto exit;
 

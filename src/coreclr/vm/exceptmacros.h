@@ -383,14 +383,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER                                                 \
     INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX
 
-// Optimized version for helper method frame. Avoids redundant GetThread() calls.
-#define INSTALL_UNWIND_AND_CONTINUE_HANDLER_FOR_HMF(pHelperFrame)                           \
-    {                                                                                       \
-        Exception* __pUnCException  = NULL;                                                 \
-        Frame*     __pUnCEntryFrame = (pHelperFrame);                                       \
-        bool       __fExceptionCaught = false;                                              \
-        if (true) PAL_CPP_TRY {
-
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(nativeRethrow)                             \
         }                                                                                   \
         PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \

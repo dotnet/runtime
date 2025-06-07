@@ -2154,9 +2154,56 @@ void EECodeManager::UpdateSSP(PREGDISPLAY pRD)
 #ifdef FEATURE_INTERPRETER
 DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
 {
-    // Interpreter-TODO: implement calling the funclet in the intepreted code
-    _ASSERTE(FALSE);
-    return 0;
+    Thread *pThread = GetThread();
+    InterpThreadContext *threadContext = pThread->GetInterpThreadContext();
+    if (threadContext == nullptr || threadContext->pStackStart == nullptr)
+    {
+        COMPlusThrow(kOutOfMemoryException);
+    }
+    int8_t *sp = threadContext->pStackPointer;
+
+    // This construct ensures that the InterpreterFrame is always stored at a higher address than the
+    // InterpMethodContextFrame. This is important for the stack walking code.
+    struct Frames
+    {
+        InterpMethodContextFrame interpMethodContextFrame = {0};
+        InterpreterFrame interpreterFrame;
+
+        Frames(TransitionBlock* pTransitionBlock)
+        : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
+        {
+        }
+    }
+    frames(NULL);
+
+    InterpMethodContextFrame *pOriginalFrame = (InterpMethodContextFrame*)GetRegdisplaySP(pRD);
+
+    StackVal retVal;
+
+    frames.interpMethodContextFrame.startIp = pOriginalFrame->startIp;
+    frames.interpMethodContextFrame.pStack = isFilter ? sp : pOriginalFrame->pStack;
+    frames.interpMethodContextFrame.pRetVal = (int8_t*)&retVal;
+
+    ExceptionClauseArgs exceptionClauseArgs;
+    exceptionClauseArgs.ip = (const int32_t *)pHandler;
+    exceptionClauseArgs.pFrame = pOriginalFrame;
+    exceptionClauseArgs.isFilter = isFilter;
+    exceptionClauseArgs.throwable = throwable;
+
+    InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext, &exceptionClauseArgs);
+
+    frames.interpreterFrame.Pop();
+
+    if (isFilter)
+    {
+        // The filter funclet returns the result of the filter funclet (EXCEPTION_CONTINUE_SEARCH (0) or EXCEPTION_EXECUTE_HANDLER (1))
+        return retVal.data.i;
+    }
+    else
+    {
+        // The catch funclet returns the address to resume at after the catch returns.
+        return (DWORD_PTR)retVal.data.s;
+    }
 }
 
 void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted)
