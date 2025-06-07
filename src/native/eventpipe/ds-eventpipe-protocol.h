@@ -37,7 +37,7 @@ struct _EventPipeCollectTracingCommandPayload_Internal {
 	// provider_config = ulong keywords, uint logLevel, string provider_name, string filter_data
 
 	uint8_t *incoming_buffer;
-	dn_vector_ptr_t *provider_configs;
+	dn_vector_t *provider_configs;
 	uint32_t circular_buffer_size_in_mb;
 	EventPipeSerializationFormat serialization_format;
 	bool rundown_requested;

@@ -94,7 +94,7 @@ eventpipe_collect_tracing_command_try_parse_config (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
 	EventPipeProviderOptionalFieldFlags optional_field_flags,
-	dn_vector_ptr_t **result);
+	dn_vector_t **result);
 
 static
 uint8_t *
@@ -427,6 +427,13 @@ eventpipe_collect_tracing_command_try_parse_provider_config (
 	EventPipeProviderEventFilter *event_filter = NULL;
 	EventPipeProviderTracepointConfiguration *tracepoint_config = NULL;
 
+	provider_config->keywords = 0;
+	provider_config->logging_level = (EventPipeEventLevel)0;
+	provider_config->provider_name = NULL;
+	provider_config->filter_data = NULL;
+	provider_config->event_filter = NULL;
+	provider_config->tracepoint_config = NULL;
+
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint64_t (buffer, buffer_len, &provider_config->keywords));
 
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &log_level));
@@ -487,7 +494,7 @@ eventpipe_collect_tracing_command_try_parse_config (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
 	EventPipeProviderOptionalFieldFlags optional_field_flags,
-	dn_vector_ptr_t **result)
+	dn_vector_t **result)
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
@@ -497,27 +504,25 @@ eventpipe_collect_tracing_command_try_parse_config (
 	// This should be larger than any reasonable client request.
 	const uint32_t max_count_configs = 1000;
 	uint32_t count_configs = 0;
-	dn_vector_ptr_custom_alloc_params_t params = {0, };
+	dn_vector_custom_alloc_params_t  params = {0, };
 
-	EventPipeProviderConfiguration *provider_config = NULL;
+	EventPipeProviderConfiguration provider_config;
 
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &count_configs));
 	ep_raise_error_if_nok (count_configs <= max_count_configs);
 	params.capacity = count_configs;
-	*result = dn_vector_ptr_custom_alloc (&params);
+	*result = dn_vector_custom_alloc_t (&params, EventPipeProviderConfiguration);
 	ep_raise_error_if_nok (*result);
 
 	for (uint32_t i = 0; i < count_configs; ++i) {
-		provider_config = ep_rt_object_alloc (EventPipeProviderConfiguration);
-		ep_raise_error_if_nok (provider_config != NULL);
 		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_provider_config (
 			buffer,
 			buffer_len,
 			optional_field_flags,
-			provider_config));
+			&provider_config));
 
-		ep_raise_error_if_nok (dn_vector_ptr_push_back (*result, provider_config));
-		provider_config = NULL; // Ownership transferred.
+		ep_raise_error_if_nok (dn_vector_push_back (*result, provider_config));
+		ep_provider_config_fini (&provider_config);
 	}
 
 ep_on_exit:
@@ -526,14 +531,10 @@ ep_on_exit:
 ep_on_error:
 	count_configs = 0;
 
-	if (provider_config != NULL) {
-		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (provider_config));
-		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (provider_config));
-		ep_event_filter_free ((EventPipeProviderEventFilter *)ep_provider_config_get_event_filter (provider_config));
-		ep_tracepoint_config_free ((EventPipeProviderTracepointConfiguration *)ep_provider_config_get_tracepoint_config (provider_config));
-		ep_rt_object_free (provider_config);
-		provider_config = NULL;
-	}
+	ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (&provider_config));
+	ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&provider_config));
+	ep_event_filter_free ((EventPipeProviderEventFilter *)ep_provider_config_get_event_filter (&provider_config));
+	ep_tracepoint_config_free ((EventPipeProviderTracepointConfiguration *)ep_provider_config_get_tracepoint_config (&provider_config));
 
 	ep_exit_error_handler ();
 }
@@ -550,11 +551,11 @@ ds_eventpipe_collect_tracing_command_payload_free (EventPipeCollectTracingComman
 	ep_return_void_if_nok (payload != NULL);
 	ep_rt_byte_array_free (payload->incoming_buffer);
 
-	DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeProviderConfiguration *, config, payload->provider_configs) {
-		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (config));
-		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (config));
-		ep_event_filter_free ((EventPipeProviderEventFilter *)ep_provider_config_get_event_filter (config));
-		ep_tracepoint_config_free ((EventPipeProviderTracepointConfiguration *)ep_provider_config_get_tracepoint_config (config));
+	DN_VECTOR_FOREACH_BEGIN (EventPipeProviderConfiguration, config, payload->provider_configs) {
+		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (&config));
+		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&config));
+		ep_event_filter_free ((EventPipeProviderEventFilter *)ep_provider_config_get_event_filter (&config));
+		ep_tracepoint_config_free ((EventPipeProviderTracepointConfiguration *)ep_provider_config_get_tracepoint_config (&config));
 	} DN_VECTOR_FOREACH_END;
 
 	ep_rt_object_free (payload);
@@ -866,8 +867,8 @@ eventpipe_protocol_helper_collect_tracing (
 		&options,
 		NULL,
 		payload->circular_buffer_size_in_mb,
-		*(EventPipeProviderConfiguration **)dn_vector_ptr_data (payload->provider_configs),
-		dn_vector_ptr_size (payload->provider_configs),
+		dn_vector_data_t (payload->provider_configs, EventPipeProviderConfiguration),
+		dn_vector_size (payload->provider_configs),
 		payload->session_type == EP_IPC_SESSION_TYPE_USEREVENTS ? EP_SESSION_TYPE_USEREVENTS : EP_SESSION_TYPE_IPCSTREAM,
 		payload->serialization_format,
 		payload->rundown_keyword,
