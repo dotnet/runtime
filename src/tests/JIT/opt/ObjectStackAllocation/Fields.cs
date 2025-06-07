@@ -118,7 +118,7 @@ public class Fields
         }
     }
 
-    // --------------- NO ESCAPE TESTS (once fields are fully enabled) ------------------
+    // --------------- NO ESCAPE TESTS ------------------
 
     // Local objects that refer to one another
 
@@ -138,7 +138,7 @@ public class Fields
     public static int Stack0()
     {
         RunStack0();
-        return CallTestAndVerifyAllocation(RunStack0, 11, HeapAllocation());
+        return CallTestAndVerifyAllocation(RunStack0, 11, StackAllocation());
     }
 
     // Field refers to both non-escaping and other objects
@@ -160,7 +160,7 @@ public class Fields
     public static int Stack2()
     {
         RunStack2();
-        return CallTestAndVerifyAllocation(RunStack2, 3, HeapAllocation());
+        return CallTestAndVerifyAllocation(RunStack2, 3, StackAllocation());
     }
 
     // Array refers to both non-escaping and other objects
@@ -180,7 +180,7 @@ public class Fields
     [Fact]
     public static int Stack3()
     {
-        return CallTestAndVerifyAllocation(RunStack3, 77, HeapAllocation());
+        return CallTestAndVerifyAllocation(RunStack3, 77, StackAllocation());
     }
 
     // Local objects that refer to one another (including array)
@@ -203,7 +203,7 @@ public class Fields
     [Fact]
     public static int Stack4()
     {
-        return CallTestAndVerifyAllocation(RunStack4, 7, HeapAllocation());
+        return CallTestAndVerifyAllocation(RunStack4, 7, StackAllocation());
     }
 
     // Local objects that refer to one another (including array)
@@ -227,7 +227,7 @@ public class Fields
     [Fact]
     public static int Stack5()
     {
-        return CallTestAndVerifyAllocation(RunStack5, 8, HeapAllocation());
+        return CallTestAndVerifyAllocation(RunStack5, 8, StackAllocation());
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -258,7 +258,7 @@ public class Fields
     [Fact]
     public static int Stack6()
     {
-        return CallTestAndVerifyAllocation(RunStack6, 10, HeapAllocation());
+        return CallTestAndVerifyAllocation(RunStack6, 10, StackAllocation());
     }
 
     // --------------- ESCAPE TESTS ------------------

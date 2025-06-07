@@ -984,8 +984,6 @@ ClassLayoutBuilder ClassLayoutBuilder::BuildArray(Compiler* compiler, CORINFO_CL
 //
 BYTE* ClassLayoutBuilder::GetOrCreateGCPtrs()
 {
-    assert(m_size % TARGET_POINTER_SIZE == 0);
-
     if (m_gcPtrs == nullptr)
     {
         m_gcPtrs = new (m_compiler, CMK_ClassLayout) BYTE[m_size / TARGET_POINTER_SIZE]{};
