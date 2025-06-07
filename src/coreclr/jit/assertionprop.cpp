@@ -4285,6 +4285,11 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
     GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
     assert(node->IsPhiDefn());
 
+    // Keep track of the set of phi-preds
+    //
+    BitVecTraits traits(fgBBNumMax + 1, this);
+    BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
+
     for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
     {
         GenTreePhiArg* phiArg     = use.GetNode()->AsPhiArg();
@@ -4293,6 +4298,22 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
         if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
         {
             // The visitor wants to abort the walk.
+            return AssertVisit::Abort;
+        }
+        BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
+    }
+
+    // Verify the set of phi-preds covers the set of block preds
+    //
+    for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
+    {
+        if (!BitVecOps::IsMember(&traits, visitedBlocks, pred->bbNum))
+        {
+            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": pred " FMT_BB " not a phi-pred\n",
+                    ssaDef->GetBlock()->bbNum, pred->bbNum);
+
+            // We missed examining a block pred. Fail the phi inference.
+            //
             return AssertVisit::Abort;
         }
     }
@@ -4431,6 +4452,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     // and if all of them are known to be non-null, we can bash the comparison to true/false.
     if (op2->IsIntegralConst(0) && op1->TypeIs(TYP_REF))
     {
+        JITDUMP("Checking PHI [%06u] arguments for non-nullness\n", dspTreeID(op1))
         auto visitor = [this](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
             return optAssertionVNIsNonNull(reachingVN, reachingAssertions) ? AssertVisit::Continue : AssertVisit::Abort;
         };
@@ -5005,6 +5027,7 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
             }
         }
     }
+
     return false;
 }
 

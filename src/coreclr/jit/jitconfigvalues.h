@@ -262,13 +262,16 @@ CONFIG_METHODSET(JitUnwindDump, "JitUnwindDump") // Dump the unwind codes for th
 // JitDumpFg - dump flowgraph
 //
 
-CONFIG_METHODSET(JitDumpFg, "JitDumpFg")        // Dumps Xml/Dot Flowgraph for specified method
-CONFIG_STRING(JitDumpFgDir, "JitDumpFgDir")     // Directory for Xml/Dot flowgraph dump(s)
-CONFIG_STRING(JitDumpFgFile, "JitDumpFgFile")   // Filename for Xml/Dot flowgraph dump(s) (default: "default")
-CONFIG_STRING(JitDumpFgPhase, "JitDumpFgPhase") // Phase-based Xml/Dot flowgraph support. Set to the short name of a
-                                                // phase to see the flowgraph after that phase. Leave unset to dump
-                                                // after COLD-BLK (determine first cold block) or set to * for all
-                                                // phases
+CONFIG_METHODSET(JitDumpFg, "JitDumpFg")            // Dumps Xml/Dot Flowgraph for specified method
+CONFIG_INTEGER(JitDumpFgHash, "JitDumpFgHash", 0)   // Dumps Xml/Dot Flowgraph for specified method
+CONFIG_INTEGER(JitDumpFgTier0, "JitDumpFgTier0", 1) // Dumps Xml/Dot Flowgraph for tier-0 compilations of specified
+                                                    // methods
+CONFIG_STRING(JitDumpFgDir, "JitDumpFgDir")         // Directory for Xml/Dot flowgraph dump(s)
+CONFIG_STRING(JitDumpFgFile, "JitDumpFgFile")       // Filename for Xml/Dot flowgraph dump(s) (default: "default")
+CONFIG_STRING(JitDumpFgPhase, "JitDumpFgPhase")     // Phase-based Xml/Dot flowgraph support. Set to the short name of a
+                                                    // phase to see the flowgraph after that phase. Leave unset to dump
+                                                    // after COLD-BLK (determine first cold block) or set to * for all
+                                                    // phases
 CONFIG_STRING(JitDumpFgPrePhase, "JitDumpFgPrePhase") // Same as JitDumpFgPhase, but specifies to dump pre-phase, not
                                                       // post-phase.
 CONFIG_INTEGER(JitDumpFgDot, "JitDumpFgDot", 1)       // 0 == dump XML format; non-zero == dump DOT format
