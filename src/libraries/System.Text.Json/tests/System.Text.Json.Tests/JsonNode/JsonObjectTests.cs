@@ -1026,7 +1026,7 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void DeepClone_FromElement()
         {
-            JsonDocument document = JsonDocument.Parse("{\"One\": 1, \"String\": \"abc\"}");
+            using JsonDocument document = JsonDocument.Parse("{\"One\": 1, \"String\": \"abc\"}");
             JsonObject jObject = JsonObject.Create(document.RootElement);
             var clone = jObject.DeepClone().AsObject();
 
