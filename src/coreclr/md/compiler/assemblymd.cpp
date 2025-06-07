@@ -568,7 +568,7 @@ ErrExit:
 }   // RegMeta::FindManifestResourceByName
 
 //*******************************************************************************
-// Used to find assemblies either in Fusion cache or on disk at build time.
+// Used to find assemblies either on disk at build time.
 //*******************************************************************************
 STDMETHODIMP RegMeta::FindAssembliesByName( // S_OK or error
         LPCWSTR  szAppBase,           // [IN] optional - can be NULL

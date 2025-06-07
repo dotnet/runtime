@@ -64,14 +64,10 @@ STDAPI DLLEXPORT MetaDataGetDispenser(            // Return HRESULT
         PRECONDITION(CheckPointer(ppv));
     } CONTRACTL_END;
 
-    NonVMComHolder<IClassFactory> pcf(NULL);
-    HRESULT hr;
+    if (rclsid != CLSID_CorMetaDataDispenser)
+        return CLASS_E_CLASSNOTAVAILABLE;
 
-    IfFailGo(MetaDataDllGetClassObject(rclsid, IID_IClassFactory, (void **) &pcf));
-    hr = pcf->CreateInstance(NULL, riid, ppv);
-
-ErrExit:
-    return (hr);
+    return CreateMetaDataDispenser(riid, ppv);
 }
 
 // ---------------------------------------------------------------------------

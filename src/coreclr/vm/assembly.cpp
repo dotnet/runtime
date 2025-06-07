@@ -37,6 +37,7 @@
 
 #include "peimagelayout.inl"
 
+#include "metadataexports.h"
 
 // Define these macro's to do strict validation for jit lock and class init entry leaks.
 // This defines determine if the asserts that verify for these leaks are defined or not.
@@ -77,10 +78,7 @@ namespace
         SafeComHolder<IMetaDataDispenserEx> pDispenser;
 
         // Get the Dispenser interface.
-        MetaDataGetDispenser(
-            CLSID_CorMetaDataDispenser,
-            IID_IMetaDataDispenserEx,
-            (void**)&pDispenser);
+        CreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void**)&pDispenser);
         if (pDispenser == NULL)
         {
             ThrowOutOfMemory();

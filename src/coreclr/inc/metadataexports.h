@@ -17,11 +17,8 @@
 
 
 
-// General creation function for ClassFactory semantics.
-STDAPI  MetaDataDllGetClassObject(REFCLSID rclsid, REFIID riid, void ** ppv);
-
 // Specific creation function to get IMetaDataDispenser(Ex) interface.
-HRESULT InternalCreateMetaDataDispenser(REFIID riid, void ** pMetaDataDispenserOut);
+HRESULT CreateMetaDataDispenser(REFIID riid, void ** pMetaDataDispenserOut);
 
 STDAPI  GetMDInternalInterface(
     LPVOID      pData,
