@@ -16,8 +16,6 @@
 #include "dynamicarray.h"
 #include "resource.h"
 
-#include "metadataexports.h"
-
 #ifndef MAX_LOCALE_NAME
 #define MAX_LOCALE_NAME (32)
 #endif

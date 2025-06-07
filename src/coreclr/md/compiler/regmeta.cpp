@@ -1405,9 +1405,9 @@ ErrExit:
 //*****************************************************************************
 // This function returns the requested public interface based on the given
 // internal import interface.
-// A common path to call this is updating the matedata for dynamic modules.
+// A common path to call this is updating the metadata for dynamic modules.
 //*****************************************************************************
-STDAPI MDReOpenMetaDataWithMemoryEx(
+STDAPI MDReOpenMetaDataWithMemory(
     void        *pImport,               // [IN] Given scope. public interfaces
     LPCVOID     pData,                  // [in] Location of scope data.
     ULONG       cbData,                 // [in] Size of the data pointed to by pData.
@@ -1430,15 +1430,7 @@ ErrExit:
         pMDImport->Release();
 
     return hr;
-} // MDReOpenMetaDataWithMemoryEx
-
-STDAPI MDReOpenMetaDataWithMemory(
-    void        *pImport,               // [IN] Given scope. public interfaces
-    LPCVOID     pData,                  // [in] Location of scope data.
-    ULONG       cbData)                 // [in] Size of the data pointed to by pData.
-{
-    return MDReOpenMetaDataWithMemoryEx(pImport, pData, cbData, 0);
-}
+} // MDReOpenMetaDataWithMemory
 
 
 //

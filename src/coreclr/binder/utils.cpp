@@ -18,6 +18,8 @@
 #include "clr/fs/path.h"
 using namespace clr::fs;
 
+BOOL RuntimeFileNotFound(HRESULT hr);
+
 namespace BINDER_SPACE
 {
     namespace
