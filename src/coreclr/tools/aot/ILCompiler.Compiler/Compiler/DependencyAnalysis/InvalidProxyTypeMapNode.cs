@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
         public int ClassCode => 36910224;
         public int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            var otherNode = (InvalidExternalTypeMapNode)other;
+            var otherNode = (InvalidProxyTypeMapNode)other;
             int result = comparer.Compare(TypeMapGroup, otherNode.TypeMapGroup);
             if (result != 0)
                 return result;
