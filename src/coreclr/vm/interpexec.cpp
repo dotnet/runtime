@@ -10,6 +10,8 @@
 
 // for numeric_limits
 #include <limits>
+// for nexttoward
+#include <cmath>
 
 FCDECL1(uint64_t, JIT_Dbl2ULng, double);
 FCDECL1(int64_t, JIT_Dbl2Lng, double);
@@ -110,6 +112,7 @@ template <typename TResult, typename TSource> static void ConvFpHelper(int8_t *s
     // (src != src) checks for NaN, then we check whether the min and max values (as represented by their closest double)
     //  properly bound the source value so that when it is truncated it will be in range
     // We assume that we are in round-towards-zero mode. For NaN we want to return 0, and for out of range values, saturate.
+    // We don't need to be fancy with nexttoward and 0.5 since we're saturating.
     TResult result;
     if (src != src)
         result = 0;
@@ -136,17 +139,17 @@ template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t
 
     // First, promote the source value to double
     double src = LOCAL_VAR(ip[2], TSource),
-        minValue = (double)std::numeric_limits<TResult>::lowest(),
-        maxValue = (double)std::numeric_limits<TResult>::max();
+    // Promote the most-negative and most-positive integral values to double, then offset them by half to establish the rounding
+    //  boundary, then use nexttoward to find the last value that will round the direction we want
+    // Note that for int64, the lowest and max values will be out of the exactly representable range of double, but nexttoward
+    //  will ensure that we get a value that can be converted safely back into int64
+    // FIXME: For int32 and smaller types, is this off by exactly one float?
+        minValue = std::nexttoward((double)std::numeric_limits<TResult>::lowest() - 0.5, 0.0),
+        maxValue = std::nexttoward((double)std::numeric_limits<TResult>::max() + 0.5, 0.0);
 
-    bool outOfRange;
-    // (src != src) checks for NaN, then we check whether the min and max values (as represented by their closest double)
-    //  properly bound the source value so that when it is truncated it will be in range
+    // (src != src) checks for NaN, then we check whether the min and max values properly bound the source value
     // We assume that we are in round-towards-zero mode
-    if (std::numeric_limits<TResult>::is_signed)
-        outOfRange = (src != src) || (src < minValue) || (src > maxValue);
-    else
-        outOfRange = (src != src) || (src <= -1) || (src > maxValue);
+    bool outOfRange = (src != src) || (src < minValue) || (src > maxValue);
 
     if (outOfRange)
         COMPlusThrow(kOverflowException);

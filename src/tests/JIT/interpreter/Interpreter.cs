@@ -410,7 +410,24 @@ public class InterpreterTest
             if (!TestConvOvf(1, 2, 3, 4, 1.0 / 0.0, -32, 1234567890))
                 Environment.FailFast(null);
 
-            if (!TestConvBoundaries(Int16.MaxValue, (double)Int16.MaxValue + 1, Int32.MaxValue, (double)Int32.MaxValue + 1))
+            // double.BitDecrement((double)short.MaxValue + 0.5) = 32767.499999999996
+            // doubleBitIncrement((double)short.MaxValue + 0.5) = 32767.500000000004
+            // double.BitDecrement((double)int.MaxValue + 0.5) = 2147483647.4999998
+            // double.BitIncrement((double)int.MaxValue + 0.5) = 2147483647.5000002
+            if (!TestConvBoundaries(
+                32767.499999999996, 32767.500000000004,
+                2147483647.4999998, 2147483647.5000002
+            ))
+                Environment.FailFast(null);
+
+            // double.BitIncrement((double)short.MinValue - 0.5) = -32768.499999999993
+            // double.BitDecrement((double)short.MinValue - 0.5) = -32768.500000000007
+            // double.BitIncrement((double)int.MinValue - 0.5) = -2147483648.4999995
+            // double.BitDecrement((double)int.MinValue - 0.5) = -2147483648.5000005
+            if (!TestConvBoundaries(
+                -32768.499999999993, -32768.500000000007,
+                -2147483648.4999995, -2147483648.5000005
+            ))
                 Environment.FailFast(null);
         }
 
