@@ -1195,7 +1195,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    bool     isIsaSupported            = comp->compSupportsHWIntrinsic(isa);
+    bool     isHWIntrinsicEnabled      = (JitConfig.EnableHWIntrinsic() != 0);
+    bool     isIsaSupported            = isHWIntrinsicEnabled && comp->compSupportsHWIntrinsic(isa);
     bool     isHardwareAcceleratedProp = false;
     bool     isSupportedProp           = false;
     uint32_t vectorByteLength          = 0;
@@ -1300,7 +1301,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
     if (isa == InstructionSet_Vector128)
     {
-        if (!comp->IsBaselineSimdIsaSupported())
+        if (!isHWIntrinsicEnabled)
         {
             return NI_Illegal;
         }
@@ -1330,7 +1331,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 #elif defined(TARGET_ARM64)
     else if (isa == InstructionSet_Vector64)
     {
-        if (!comp->IsBaselineSimdIsaSupported())
+        if (!isHWIntrinsicEnabled)
         {
             return NI_Illegal;
         }
