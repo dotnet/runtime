@@ -21,6 +21,7 @@
 // Command = 0x0203
 // Command = 0x0204
 // Command = 0x0205
+// Command = 0x0206
 #if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_EVENTPIPE_PROTOCOL_GETTER_SETTER)
 struct _EventPipeCollectTracingCommandPayload {
 #else
@@ -36,12 +37,13 @@ struct _EventPipeCollectTracingCommandPayload_Internal {
 	// provider_config = ulong keywords, uint logLevel, string provider_name, string filter_data
 
 	uint8_t *incoming_buffer;
-	dn_vector_t *provider_configs;
+	dn_vector_ptr_t *provider_configs;
 	uint32_t circular_buffer_size_in_mb;
 	EventPipeSerializationFormat serialization_format;
 	bool rundown_requested;
 	bool stackwalk_requested;
 	uint64_t rundown_keyword;
+	uint32_t session_type;
 };
 
 #if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_EVENTPIPE_PROTOCOL_GETTER_SETTER)

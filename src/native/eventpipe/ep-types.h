@@ -176,6 +176,83 @@ ep_provider_callback_data_queue_try_dequeue (
 	EventPipeProviderCallbackData *provider_callback_data);
 
 /*
+ * EventPipeTracepoint.
+ */
+
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeTracepoint {
+#else
+struct _EventPipeTracepoint_Internal {
+#endif
+	ep_char8_t tracepoint_format[EP_TRACEPOINT_FORMAT_MAX_SIZE];
+	uint32_t write_index;
+	uint32_t enabled;
+};
+
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeTracepoint {
+	uint8_t _internal [sizeof (struct _EventPipeTracepoint_Internal)];
+};
+#endif
+
+/*
+ * EventPipeProviderEventFilter.
+ */
+
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeProviderEventFilter {
+#else
+struct _EventPipeProviderEventFilter_Internal {
+#endif
+	bool enable;
+	dn_umap_t *event_ids;
+};
+
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeProviderEventFilter {
+	uint8_t _internal [sizeof (struct _EventPipeProviderEventFilter_Internal)];
+};
+#endif
+
+EventPipeProviderEventFilter *
+ep_provider_event_filter_dup (const EventPipeProviderEventFilter *event_filter_src);
+
+void
+ep_event_filter_fini (EventPipeProviderEventFilter *event_filter);
+
+void
+ep_event_filter_free (EventPipeProviderEventFilter *event_filter);
+
+/*
+ * EventPipeProviderTracepointConfiguration.
+ */
+
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeProviderTracepointConfiguration {
+#else
+struct _EventPipeProviderTracepointConfiguration_Internal {
+#endif
+	EventPipeTracepoint default_tracepoint;
+	dn_vector_ptr_t *tracepoints;
+	dn_umap_t *event_id_to_tracepoint_map;
+};
+
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeProviderTracepointConfiguration {
+	uint8_t _internal [sizeof (struct _EventPipeProviderTracepointConfiguration_Internal)];
+};
+#endif
+
+EventPipeProviderTracepointConfiguration *
+ep_provider_tracepoint_config_dup (const EventPipeProviderTracepointConfiguration *tracepoint_config);
+
+void
+ep_tracepoint_config_fini (EventPipeProviderTracepointConfiguration *tracepoint_config);
+
+void
+ep_tracepoint_config_free (EventPipeProviderTracepointConfiguration *tracepoint_config);
+
+/*
  * EventPipeProviderConfiguration.
  */
 
@@ -188,6 +265,8 @@ struct _EventPipeProviderConfiguration_Internal {
 	const ep_char8_t *filter_data;
 	uint64_t keywords;
 	EventPipeEventLevel logging_level;
+	const EventPipeProviderEventFilter *event_filter;
+	const EventPipeProviderTracepointConfiguration *tracepoint_config;
 };
 
 
@@ -201,6 +280,8 @@ EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, const ep_cha
 EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, const ep_char8_t *, filter_data)
 EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, uint64_t, keywords)
 EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, EventPipeEventLevel, logging_level)
+EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, const EventPipeProviderEventFilter *, event_filter)
+EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, const EventPipeProviderTracepointConfiguration *, tracepoint_config)
 
 EventPipeProviderConfiguration *
 ep_provider_config_init (

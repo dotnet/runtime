@@ -31,6 +31,8 @@ typedef struct _EventPipeProvider EventPipeProvider;
 typedef struct _EventPipeProviderCallbackData EventPipeProviderCallbackData;
 typedef struct _EventPipeProviderCallbackDataQueue EventPipeProviderCallbackDataQueue;
 typedef struct _EventPipeProviderConfiguration EventPipeProviderConfiguration;
+typedef struct _EventPipeProviderEventFilter EventPipeProviderEventFilter;
+typedef struct _EventPipeProviderTracepointConfiguration EventPipeProviderTracepointConfiguration;
 typedef struct _EventPipeExecutionCheckpoint EventPipeExecutionCheckpoint;
 typedef struct _EventPipeSession EventPipeSession;
 typedef struct _EventPipeSessionProvider EventPipeSessionProvider;
@@ -44,6 +46,7 @@ typedef struct _EventPipeSystemTime EventPipeSystemTime;
 typedef struct _EventPipeThread EventPipeThread;
 typedef struct _EventPipeThreadHolder EventPipeThreadHolder;
 typedef struct _EventPipeThreadSessionState EventPipeThreadSessionState;
+typedef struct _EventPipeTracepoint EventPipeTracepoint;
 typedef struct _FastSerializableObject FastSerializableObject;
 typedef struct _FastSerializableObjectVtable FastSerializableObjectVtable;
 typedef struct _FastSerializer FastSerializer;
@@ -62,6 +65,26 @@ typedef struct _StreamWriterVtable StreamWriterVtable;
 #define EP_ACTIVITY_ID_SIZE EP_GUID_SIZE
 
 #define EP_MAX_STACK_DEPTH 100
+
+/*
+ * User_Events constants
+ */
+
+#define EP_TRACEPOINT_ENABLE_BIT 31
+
+#define EP_TRACEPOINT_FORMAT_MAX_SIZE 512
+
+#define EP_TRACEPOINT_FORMAT_V1 "u8 version; u16 event_id; __rel_loc u8[] extension; __rel_loc u8[] payload; __rel_loc u8[] meta"
+
+#define EP_MAX_EXTENSION_SIZE (2 * (EP_ACTIVITY_ID_SIZE + 1))
+
+// Number of static iovec buffers for writing user_events
+// EventPipeEventPayloads may contain a variable number of EventData structures,
+// so statically allocate a reasonable number of iovecs to avoid dynamic allocations
+#define EP_DEFAULT_IOVEC_SIZE 30
+
+// Tracepoint V1 - write_index, version, truncated_event_id, extension_rel_loc, payload_rel_loc, meta_rel_loc, extension, payload, metadata
+#define EP_TRACEPOINT_V1_PAYLOAD_INDEX 7
 
 /*
  * EventPipe Enums.
@@ -147,7 +170,8 @@ typedef enum {
 	EP_SESSION_TYPE_LISTENER,
 	EP_SESSION_TYPE_IPCSTREAM,
 	EP_SESSION_TYPE_SYNCHRONOUS,
-	EP_SESSION_TYPE_FILESTREAM
+	EP_SESSION_TYPE_FILESTREAM,
+	EP_SESSION_TYPE_USEREVENTS
 } EventPipeSessionType ;
 
 typedef enum {
@@ -161,6 +185,28 @@ typedef enum {
 	EP_THREAD_TYPE_SESSION,
 	EP_THREAD_TYPE_SAMPLING
 } EventPipeThreadType;
+
+/*
+ *  CollectTracing5 introduces additional provider configuration fields.
+ *  For backwards compatibility, these fields are optional and
+ *  these flags indicate which of the optional fields should be
+ *  deserialized from the IPC Stream.
+ */
+typedef enum
+{
+    EP_PROVIDER_OPTFIELD_NONE = 0,
+    EP_PROVIDER_OPTFIELD_EVENT_FILTER = 1,
+    EP_PROVIDER_OPTFIELD_TRACEPOINT_CONFIG = 2
+} EventPipeProviderOptionalFieldFlags;
+
+/*
+ *  EventPipe session types that can be started via IPC commands.
+ */
+typedef enum {
+	EP_IPC_SESSION_TYPE_STREAMING,
+	EP_IPC_SESSION_TYPE_USEREVENTS,
+	EP_IPC_SESSION_TYPE_COUNT
+} EventPipeIPCSessionType;
 
 /*
  * EventPipe Basic Types.
