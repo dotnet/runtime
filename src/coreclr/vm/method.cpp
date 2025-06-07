@@ -1208,7 +1208,7 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
     // Always pickup overrides like reflection emit, EnC, etc.
     TADDR pIL = pModule->GetDynamicIL(GetMemberDef());
 
-    if (pIL == (TADDR)NULL)
+    if (pIL == (TADDR)NULL && !IsNDirect())
     {
         pIL = pModule->GetIL(GetRVA());
     }
