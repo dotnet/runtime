@@ -79,6 +79,17 @@ static void InterpBreakpoint()
 }
 #endif
 
+static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int32_t dimsOffset, int rank)
+{
+    int32_t* dims = (int32_t*)alloca(rank * sizeof(int32_t));
+    for (int i = 0; i < rank; i++)
+    {
+        dims[i] = *(int32_t*)(stack + dimsOffset + i * 8);
+    }
+
+    return AllocateArrayEx(arrayClass, dims, rank);
+}
+
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 #define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
@@ -1252,28 +1263,9 @@ CALL_TARGET_IP:
 
                     goto CALL_INTERP_SLOT;
                 }
-                case INTOP_NEWOBJ_ARR:
+                case INTOP_NEWMDARR:
                 {
-                    const int32_t dVar = ip[1];
-                    const int32_t callArgsOffset = ip[2];
-                    const int32_t clsIdx = ip[3];
-                    const int32_t rank = ip[4];
-
-                    MethodTable* arrayClass = (MethodTable*)pMethod->pDataItems[clsIdx];
-
-                    // TODO: Stack slot is 8 bytes aligned and
-                    // AllocateArrayEx expects the dimensions to be in int32_t array
-                    // so we need to convert the stack slots to int32_t
-                    int32_t* dims = (int32_t*)alloca(rank * sizeof(int32_t));
-                    for (int i = 0; i < rank; i++)
-                    {
-                        dims[i] = *(int32_t*)(stack + callArgsOffset + i * 8);
-                    }
-
-                    OBJECTREF arr = AllocateArrayEx(arrayClass, dims, rank);
-
-                    LOCAL_VAR(dVar, OBJECTREF) = arr;
-
+                    LOCAL_VAR(ip[1], OBJECTREF) = CreateMultiDimArray((MethodTable*)pMethod->pDataItems[ip[3]], stack, ip[2], ip[4]);
                     ip += 5;
                     break;
                 }
@@ -1569,9 +1561,17 @@ do {                                                                           \
                         COMPlusThrow(kIndexOutOfRangeException);
 
                     OBJECTREF elemRef = LOCAL_VAR(ip[3], OBJECTREF);
+
+                    if (elemRef != NULL)
+                    {
+                        MethodTable* arrayElemMT = (MethodTable*)pMethod->pDataItems[ip[4]];
+                        if (arrayElemMT != NULL && !ObjIsInstanceOf(OBJECTREFToObject(elemRef), arrayElemMT))
+                            COMPlusThrow(kArrayTypeMismatchException);
+                    }
+
                     uint8_t* pData = arr->GetDataPtr();
                     SetObjectReferenceUnchecked((OBJECTREF*)(pData + idx * sizeof(OBJECTREF)), elemRef);
-                    ip += 4;
+                    ip += 5;
                     break;
                 }
                 case INTOP_STELEM_VT:
@@ -1587,10 +1587,9 @@ do {                                                                           \
                         COMPlusThrow(kIndexOutOfRangeException);
 
                     uint8_t* pData = arr->GetDataPtr();
-                    size_t structSize = ip[4];
+                    size_t elemSize = ip[4];
+                    void* elemAddr = pData + idx * elemSize;
                     MethodTable* pMT = (MethodTable*)pMethod->pDataItems[ip[5]];
-                    size_t componentSize = arr->GetMethodTable()->GetComponentSize();
-                    void* elemAddr = pData + idx * componentSize;
 
                     CopyValueClassUnchecked(elemAddr, stack + ip[3], pMT);
                     ip += 6;
@@ -1609,16 +1608,14 @@ do {                                                                           \
                         COMPlusThrow(kIndexOutOfRangeException);
 
                     uint8_t* pData = arr->GetDataPtr();
+                    size_t elemSize = ip[4];
+                    void* elemAddr = pData + idx * elemSize;
 
-                    size_t structSize = ip[4];
-                    size_t componentSize = arr->GetMethodTable()->GetComponentSize();
-                    void* elemAddr = pData + idx * componentSize;
-
-                    memcpyNoGCRefs(elemAddr, stack + ip[3], structSize);
+                    memcpyNoGCRefs(elemAddr, stack + ip[3], elemSize);
                     ip += 5;
                     break;
                 }
-                case INTOP_LDELEMA1:
+                case INTOP_LDELEMA:
                 {
                     BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
                     if (arrayRef == NULL)
@@ -1631,10 +1628,39 @@ do {                                                                           \
                         COMPlusThrow(kIndexOutOfRangeException);
 
                     uint8_t* pData = arr->GetDataPtr();
-                    uint32_t elemSize = ip[4];
+                    size_t elemSize = ip[4];
                     void* elemAddr = pData + idx * elemSize;
                     LOCAL_VAR(ip[1], void*) = elemAddr;
                     ip += 5;
+                    break;
+                }
+                case INTOP_LDELEMA_REF:
+                {
+                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
+                    if (arrayRef == NULL)
+                        COMPlusThrow(kNullReferenceException);
+
+                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    uint32_t len = arr->GetNumComponents();
+                    uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
+                    if (idx >= len)
+                        COMPlusThrow(kIndexOutOfRangeException);
+
+                    uint8_t* pData = arr->GetDataPtr();
+                    size_t elemSize = ip[4];
+                    void* elemAddr = pData + idx * elemSize;
+
+                    MethodTable* arrayElemMT = arr->GetArrayElementTypeHandle().AsMethodTable();
+                    MethodTable* expectedMT = (MethodTable*)pMethod->pDataItems[ip[5]];
+                    if (arrayElemMT != expectedMT)
+                    {
+                        OBJECTREF elemRef = *(OBJECTREF*)elemAddr;
+                        if (!ObjIsInstanceOf(OBJECTREFToObject(elemRef), expectedMT))
+                            COMPlusThrow(kArrayTypeMismatchException);
+                    }
+
+                    LOCAL_VAR(ip[1], void*) = elemAddr;
+                    ip += 6;
                     break;
                 }
                 case INTOP_LDTOKEN:

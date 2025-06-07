@@ -2386,6 +2386,8 @@ void InterpCompiler::EmitStelem(InterpType interpType)
     int32_t opcode = GetStelemForType(interpType);
     AddIns(opcode);
     m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
+    if (opcode == INTOP_STELEM_REF)
+        m_pLastNewIns->data[0] = GetDataItemIndex(m_pStackPointer[2].clsHnd);
 }
 
 void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken)
@@ -3446,32 +3448,27 @@ retry_emit:
                 uint32_t attribs = m_compHnd->getClassAttribs(ctorClass);
                 if ((attribs & CORINFO_FLG_ARRAY) != 0)
                 {
-                    if (numArgs > 1)
-                    {
-                        m_pStackPointer -= numArgs;
+                    m_pStackPointer -= numArgs;
 
-                        int32_t *callArgs = (int32_t*) AllocMemPool((numArgs + 1) * sizeof(int32_t));
-                        for (int i = 0; i < numArgs; i++)
-                            callArgs[i] = m_pStackPointer[i].var;
-                        callArgs[numArgs] = -1;
+                    int32_t *callArgs = (int32_t*) AllocMemPool((numArgs + 1) * sizeof(int32_t));
+                    for (int i = 0; i < numArgs; i++)
+                        callArgs[i] = m_pStackPointer[i].var;
+                    callArgs[numArgs] = -1;
 
-                        AddIns(INTOP_NEWOBJ_ARR);
-                        m_pLastNewIns->data[0] = GetDataItemIndex(ctorClass);
-                        m_pLastNewIns->data[1] = numArgs;
+                    AddIns(INTOP_NEWMDARR);
+                    m_pLastNewIns->data[0] = GetDataItemIndex(ctorClass);
+                    m_pLastNewIns->data[1] = numArgs;
 
-                        PushInterpType(InterpTypeO, ctorClass);
+                    PushInterpType(InterpTypeO, ctorClass);
 
-                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-                        m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                    m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
 
-                        m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
-                        m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof(InterpCallInfo));
-                        m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
+                    m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
+                    m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof(InterpCallInfo));
+                    m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 
-                        break;
-                    }
-
-                    assert(!"Array constructor with <= 1 args is not allowed");
+                    break;
                 }
 
                 // TODO Special case array ctor / string ctor
@@ -4274,16 +4271,26 @@ retry_emit:
                 ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
 
                 CORINFO_CLASS_HANDLE elemClsHnd = resolvedToken.hClass;
+                CorInfoType elemCorType = m_compHnd->asCorInfoType(elemClsHnd);
 
                 m_pStackPointer -= 2;
-                AddIns(INTOP_LDELEMA1);
-                m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
-
-                PushInterpType(InterpTypeByRef, NULL);
-                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-
-                int elemSize = m_compHnd->getClassSize(elemClsHnd);
-                m_pLastNewIns->data[0] = elemSize;
+                if (elemCorType == CORINFO_TYPE_CLASS)
+                {
+                    AddIns(INTOP_LDELEMA_REF);
+                    m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+                    PushInterpType(InterpTypeByRef, elemClsHnd);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                    m_pLastNewIns->data[0] = m_compHnd->getClassSize(elemClsHnd);
+                    m_pLastNewIns->data[1] = GetDataItemIndex(elemClsHnd);
+                }
+                else
+                {
+                    AddIns(INTOP_LDELEMA);
+                    m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+                    PushInterpType(InterpTypeByRef, elemClsHnd);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                    m_pLastNewIns->data[0] = m_compHnd->getClassSize(elemClsHnd);
+                }
 
                 m_ip += 5;
                 break;

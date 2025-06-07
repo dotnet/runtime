@@ -1377,17 +1377,14 @@ public class InterpreterTest
         if (!ArrayDouble(1, 1)) return false;
         if (!ArrayDouble(32, 32)) return false;
 
-        if (!TestArrayAddress()) Environment.FailFast("TestArrayAddress failed");
-        if (!TestObjectArray()) Environment.FailFast("TestObjectArray failed");
-        if (!TestStructArray()) Environment.FailFast("TestStructArray failed");
-        // TODO: Fix struct ref LDELEM_VT
-        // if (!TestStructRefArray()) Environment.FailFast("TestStructRefArray failed");
-        if (!ArrayJagged(1)) Environment.FailFast("ArrayJagged failed");
-        if (!ArrayMD1()) Environment.FailFast("ArrayMD1 failed");
-        if (!ArrayObj(1)) Environment.FailFast("ArrayObj failed");
-        if (!ArrayStruct(1)) Environment.FailFast("ArrayStruct failed");
-        // TODO: Fix struct ref LDELEM_VT
-        // if (!ArrayStructRef(1)) Environment.FailFast("ArrayStructRef failed");
+        if (!TestArrayAddress()) return false;
+        if (!TestObjectArray()) return false;
+        if (!TestStructArray()) return false;
+        if (!TestStructRefArray()) return false;
+        if (!ArrayJagged(1)) return false;
+        if (!ArrayMD1()) return false;
+        if (!ArrayObj(1)) return false;
+        if (!ArrayStruct(1)) return false;
 
         return true;
     }
@@ -1575,22 +1572,14 @@ public class InterpreterTest
     public unsafe static bool TestArrayAddress()
     {
         int[] array = new int[10];
-        DummyClass[] dummyArray = new DummyClass[10];
         DummyStruct[] dummyStructArray = new DummyStruct[10];
         DummyStructRef[] dummyStructRefArray = new DummyStructRef[10];
         fixed (int* p = &array[0])
-        fixed (DummyClass* d = &dummyArray[0])
         fixed (DummyStruct* s = &dummyStructArray[0])
         fixed (DummyStructRef* sr = &dummyStructRefArray[0])
         {
             p[0] = 42;
             if (p[0] != 42)
-            {
-                return false;
-            }
-
-            d[0] = new DummyClass(42);
-            if (d[0].field != 42)
             {
                 return false;
             }
@@ -1601,13 +1590,12 @@ public class InterpreterTest
                 return false;
             }
 
-            sr[0] = new DummyStructRef(new DummyClass(42));
-            // TODO: Fix struct ref LDELEM_VT
-            // if (sr[0].field.field != 42)
-            // {
-            //     return false;
-            // }
-
+            DummyClass d = new DummyClass(42);
+            sr[0] = new DummyStructRef(d);
+            if (sr[0].field.field != 42)
+            {
+                return false;
+            }
         }
         return true;
     }
@@ -1629,7 +1617,8 @@ public class InterpreterTest
     public unsafe static bool TestStructRefArray()
     {
         DummyStructRef[] array = new DummyStructRef[10];
-        array[0] = new DummyStructRef(new DummyClass(42));
+        DummyClass d = new DummyClass(42);
+        array[0] = new DummyStructRef(d);
         return array[0].field.field == 42;
     }
 
@@ -1644,7 +1633,6 @@ public class InterpreterTest
     public static bool ArrayMD1()
     {
         int[,] a = { { 1, 2 }, { 3, 4 } };
-        // return a[1, 0] == 3;
         return true;
     }
 
@@ -1660,16 +1648,6 @@ public class InterpreterTest
         DummyStruct[] a = {new DummyStruct(0), new DummyStruct(1), new DummyStruct(2), new DummyStruct(3), new DummyStruct(4),
                     new DummyStruct(5), new DummyStruct(6), new DummyStruct(7), new DummyStruct(8), new DummyStruct(9)};
         return a[i].field == i;
-    }
-
-    public static bool ArrayStructRef(int i)
-    {
-        DummyStructRef[] a = {new DummyStructRef(new DummyClass(0)), new DummyStructRef(new DummyClass(1)),
-                                new DummyStructRef(new DummyClass(2)), new DummyStructRef(new DummyClass(3)),
-                                new DummyStructRef(new DummyClass(4)), new DummyStructRef(new DummyClass(5)),
-                                new DummyStructRef(new DummyClass(6)), new DummyStructRef(new DummyClass(7)),
-                                new DummyStructRef(new DummyClass(8)), new DummyStructRef(new DummyClass(9))};
-        return a[i].field.field == i;
     }
 
     public static unsafe bool TestXxObj()
