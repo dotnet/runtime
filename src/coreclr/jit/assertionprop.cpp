@@ -274,10 +274,10 @@ bool IntegralRange::Contains(int64_t value) const
                     }
                     break;
 
-                case NI_BMI1_TrailingZeroCount:
-                case NI_BMI1_X64_TrailingZeroCount:
-                case NI_LZCNT_LeadingZeroCount:
-                case NI_LZCNT_X64_LeadingZeroCount:
+                case NI_AVX2_LeadingZeroCount:
+                case NI_AVX2_TrailingZeroCount:
+                case NI_AVX2_X64_LeadingZeroCount:
+                case NI_AVX2_X64_TrailingZeroCount:
                 case NI_SSE42_PopCount:
                 case NI_SSE42_X64_PopCount:
                     // Note: No advantage in using a precise range for IntegralRange.

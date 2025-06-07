@@ -1366,7 +1366,7 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
 }
 
 //----------------------------------------------------------------------------------------------
-// LowerFusedMultiplyAdd: Changes NI_FMA_MultiplyAddScalar produced
+// LowerFusedMultiplyAdd: Changes NI_AVX2_MultiplyAddScalar produced
 //     by Math(F).FusedMultiplyAdd to a better FMA intrinsics if there are GT_NEG around in order
 //     to eliminate them.
 //
@@ -1374,21 +1374,21 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
 //     node - The hardware intrinsic node
 //
 //  Notes:
-//     Math(F).FusedMultiplyAdd is expanded into NI_FMA_MultiplyAddScalar and
+//     Math(F).FusedMultiplyAdd is expanded into NI_AVX2_MultiplyAddScalar and
 //     depending on additional GT_NEG nodes around it can be:
 //
-//      x *  y + z -> NI_FMA_MultiplyAddScalar
-//      x * -y + z -> NI_FMA_MultiplyAddNegatedScalar
-//     -x *  y + z -> NI_FMA_MultiplyAddNegatedScalar
-//     -x * -y + z -> NI_FMA_MultiplyAddScalar
-//      x *  y - z -> NI_FMA_MultiplySubtractScalar
-//      x * -y - z -> NI_FMA_MultiplySubtractNegatedScalar
-//     -x *  y - z -> NI_FMA_MultiplySubtractNegatedScalar
-//     -x * -y - z -> NI_FMA_MultiplySubtractScalar
+//      x *  y + z -> NI_AVX2_MultiplyAddScalar
+//      x * -y + z -> NI_AVX2_MultiplyAddNegatedScalar
+//     -x *  y + z -> NI_AVX2_MultiplyAddNegatedScalar
+//     -x * -y + z -> NI_AVX2_MultiplyAddScalar
+//      x *  y - z -> NI_AVX2_MultiplySubtractScalar
+//      x * -y - z -> NI_AVX2_MultiplySubtractNegatedScalar
+//     -x *  y - z -> NI_AVX2_MultiplySubtractNegatedScalar
+//     -x * -y - z -> NI_AVX2_MultiplySubtractScalar
 //
 void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
 {
-    assert(node->GetHWIntrinsicId() == NI_FMA_MultiplyAddScalar);
+    assert(node->GetHWIntrinsicId() == NI_AVX2_MultiplyAddScalar);
     assert(node->GetOperandCount() == 3);
 
     bool negatedArgs[3] = {};
@@ -1412,11 +1412,11 @@ void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
     bool negMul = negatedArgs[0] ^ negatedArgs[1];
     if (negatedArgs[2])
     {
-        node->ChangeHWIntrinsicId(negMul ? NI_FMA_MultiplySubtractNegatedScalar : NI_FMA_MultiplySubtractScalar);
+        node->ChangeHWIntrinsicId(negMul ? NI_AVX2_MultiplySubtractNegatedScalar : NI_AVX2_MultiplySubtractScalar);
     }
     else
     {
-        node->ChangeHWIntrinsicId(negMul ? NI_FMA_MultiplyAddNegatedScalar : NI_FMA_MultiplyAddScalar);
+        node->ChangeHWIntrinsicId(negMul ? NI_AVX2_MultiplyAddNegatedScalar : NI_AVX2_MultiplyAddScalar);
     }
 }
 
@@ -2468,7 +2468,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LowerHWIntrinsicCC(node, NI_AVX_PTEST, GenCondition::UGT);
             break;
 
-        case NI_FMA_MultiplyAddScalar:
+        case NI_AVX2_MultiplyAddScalar:
             LowerFusedMultiplyAdd(node);
             break;
 
@@ -5614,7 +5614,7 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
         case TYP_LONG:
         case TYP_ULONG:
         {
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE41_X64));
+            assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE42_X64));
 
             idx = comp->gtNewIconNode(imm8);
             BlockRange().InsertBefore(result, idx);
@@ -5762,7 +5762,7 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
         case TYP_INT:
         case TYP_UINT:
         {
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE41));
+            assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE42));
 
             idx = comp->gtNewIconNode(imm8);
             BlockRange().InsertBefore(result, idx);
@@ -6622,13 +6622,13 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
     }
 
     NamedIntrinsic intrinsic;
-    if (op1->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64))
+    if (op1->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX2_X64))
     {
-        intrinsic = NamedIntrinsic::NI_BMI1_X64_ResetLowestSetBit;
+        intrinsic = NamedIntrinsic::NI_AVX2_X64_ResetLowestSetBit;
     }
-    else if (comp->compOpportunisticallyDependsOn(InstructionSet_BMI1))
+    else if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
     {
-        intrinsic = NamedIntrinsic::NI_BMI1_ResetLowestSetBit;
+        intrinsic = NamedIntrinsic::NI_AVX2_ResetLowestSetBit;
     }
     else
     {
@@ -6707,13 +6707,13 @@ GenTree* Lowering::TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode)
     }
 
     NamedIntrinsic intrinsic;
-    if (andNode->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64))
+    if (andNode->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX2_X64))
     {
-        intrinsic = NamedIntrinsic::NI_BMI1_X64_ExtractLowestSetBit;
+        intrinsic = NamedIntrinsic::NI_AVX2_X64_ExtractLowestSetBit;
     }
-    else if (comp->compOpportunisticallyDependsOn(InstructionSet_BMI1))
+    else if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
     {
-        intrinsic = NamedIntrinsic::NI_BMI1_ExtractLowestSetBit;
+        intrinsic = NamedIntrinsic::NI_AVX2_ExtractLowestSetBit;
     }
     else
     {
@@ -6792,13 +6792,13 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
     }
 
     NamedIntrinsic intrinsic;
-    if (andNode->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64))
+    if (andNode->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX2_X64))
     {
-        intrinsic = NamedIntrinsic::NI_BMI1_X64_AndNot;
+        intrinsic = NamedIntrinsic::NI_AVX2_X64_AndNot;
     }
-    else if (comp->compOpportunisticallyDependsOn(InstructionSet_BMI1))
+    else if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
     {
-        intrinsic = NamedIntrinsic::NI_BMI1_AndNot;
+        intrinsic = NamedIntrinsic::NI_AVX2_AndNotScalar;
     }
     else
     {
@@ -6879,13 +6879,13 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
     }
 
     NamedIntrinsic intrinsic;
-    if (xorNode->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64))
+    if (xorNode->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX2_X64))
     {
-        intrinsic = NamedIntrinsic::NI_BMI1_X64_GetMaskUpToLowestSetBit;
+        intrinsic = NamedIntrinsic::NI_AVX2_X64_GetMaskUpToLowestSetBit;
     }
-    else if (comp->compOpportunisticallyDependsOn(InstructionSet_BMI1))
+    else if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
     {
-        intrinsic = NamedIntrinsic::NI_BMI1_GetMaskUpToLowestSetBit;
+        intrinsic = NamedIntrinsic::NI_AVX2_GetMaskUpToLowestSetBit;
     }
     else
     {
@@ -6932,7 +6932,7 @@ void Lowering::LowerBswapOp(GenTreeOp* node)
 {
     assert(node->OperIs(GT_BSWAP, GT_BSWAP16));
 
-    if (!comp->opts.OptimizationEnabled() || !comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE))
+    if (!comp->opts.OptimizationEnabled() || !comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
     {
         return;
     }
@@ -7568,7 +7568,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
     // If the source is a BSWAP, contain it on supported hardware to generate a MOVBE.
     if (comp->opts.OptimizationEnabled())
     {
-        if (src->OperIs(GT_BSWAP, GT_BSWAP16) && comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE))
+        if (src->OperIs(GT_BSWAP, GT_BSWAP16) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
             unsigned swapSize = src->OperIs(GT_BSWAP16) ? 2 : genTypeSize(src);
 
@@ -7675,7 +7675,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 
                         if (simdBaseType == TYP_FLOAT)
                         {
-                            // SSE41_Extract is "extractps reg/mem, xmm, imm8"
+                            // SSE41.Extract is "extractps reg/mem, xmm, imm8"
                             //
                             // In the case we are coming from and going to memory, we want to
                             // preserve the original containment as we'll end up emitting:
@@ -8062,7 +8062,7 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
     // BMI2 rotate and shift instructions take memory operands but do not set flags.
     // rorx takes imm8 for the rotate amount; shlx/shrx/sarx take r32/64 for shift amount.
     if (canContainSource && !node->gtSetFlags() && (shiftBy->isContained() != node->OperIsShift()) &&
-        comp->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+        comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
     {
         if (IsContainableMemoryOp(source) && IsSafeToContainMem(node, source))
         {
@@ -10496,8 +10496,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                             }
 
-                            case NI_BMI2_MultiplyNoFlags:
-                            case NI_BMI2_X64_MultiplyNoFlags:
+                            case NI_AVX2_MultiplyNoFlags:
+                            case NI_AVX2_X64_MultiplyNoFlags:
                             {
                                 bool supportsOp1RegOptional = false;
                                 bool supportsOp2RegOptional = false;

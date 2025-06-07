@@ -6624,7 +6624,7 @@ bool ValueNumStore::IsVNLog2(ValueNum vn, int* upperBound)
         IsVNBinFunc(op, VNF_Cast, &op);
 
 #ifdef TARGET_XARCH
-        VNFunc lzcntFunc = (xorBy == 31) ? VNF_HWI_LZCNT_LeadingZeroCount : VNF_HWI_LZCNT_X64_LeadingZeroCount;
+        VNFunc lzcntFunc = (xorBy == 31) ? VNF_HWI_AVX2_LeadingZeroCount : VNF_HWI_AVX2_X64_LeadingZeroCount;
 #else
         VNFunc lzcntFunc = (xorBy == 31) ? VNF_HWI_ArmBase_LeadingZeroCount : VNF_HWI_ArmBase_Arm64_LeadingZeroCount;
 #endif
@@ -6704,10 +6704,10 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 #ifdef TARGET_XARCH
                 case VNF_HWI_SSE42_PopCount:
                 case VNF_HWI_SSE42_X64_PopCount:
-                case VNF_HWI_LZCNT_LeadingZeroCount:
-                case VNF_HWI_LZCNT_X64_LeadingZeroCount:
-                case VNF_HWI_BMI1_TrailingZeroCount:
-                case VNF_HWI_BMI1_X64_TrailingZeroCount:
+                case VNF_HWI_AVX2_LeadingZeroCount:
+                case VNF_HWI_AVX2_TrailingZeroCount:
+                case VNF_HWI_AVX2_X64_LeadingZeroCount:
+                case VNF_HWI_AVX2_X64_TrailingZeroCount:
                     return VNVisit::Continue;
 #elif defined(TARGET_ARM64)
                 case VNF_HWI_AdvSimd_PopCount:
@@ -7910,7 +7910,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 #ifdef TARGET_ARM64
             case NI_ArmBase_LeadingZeroCount:
 #else
-            case NI_LZCNT_LeadingZeroCount:
+            case NI_AVX2_LeadingZeroCount:
 #endif
             {
                 assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
@@ -7932,7 +7932,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForIntCon(static_cast<int32_t>(result));
             }
 #else
-            case NI_LZCNT_X64_LeadingZeroCount:
+            case NI_AVX2_X64_LeadingZeroCount:
             {
                 assert(varTypeIsLong(type));
 
@@ -7991,7 +7991,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return EvaluateUnarySimd(this, GT_LZCNT, /* scalar */ false, type, baseType, arg0VN);
             }
 
-            case NI_BMI1_TrailingZeroCount:
+            case NI_AVX2_TrailingZeroCount:
             {
                 assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
 
@@ -8001,7 +8001,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForIntCon(static_cast<int32_t>(result));
             }
 
-            case NI_BMI1_X64_TrailingZeroCount:
+            case NI_AVX2_X64_TrailingZeroCount:
             {
                 assert(varTypeIsLong(type));
 

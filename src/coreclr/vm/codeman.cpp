@@ -1278,11 +1278,6 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_Avx2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX2))
     {
         CPUCompileFlags.Set(InstructionSet_AVX2);
-        CPUCompileFlags.Set(InstructionSet_BMI1);
-        CPUCompileFlags.Set(InstructionSet_BMI2);
-        CPUCompileFlags.Set(InstructionSet_FMA);
-        CPUCompileFlags.Set(InstructionSet_LZCNT);
-        CPUCompileFlags.Set(InstructionSet_MOVBE);
     }
 
     // x86-64-v4

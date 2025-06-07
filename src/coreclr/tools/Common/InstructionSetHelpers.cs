@@ -202,11 +202,6 @@ namespace System.CommandLine
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
                 {
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx2");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("movbe");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxifma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v256");

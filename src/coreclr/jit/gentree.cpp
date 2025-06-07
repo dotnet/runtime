@@ -20257,8 +20257,8 @@ bool GenTree::isCommutativeHWIntrinsic() const
 
             case NI_AVX512_Add:
             case NI_AVX512_Multiply:
-            case NI_BMI2_MultiplyNoFlags:
-            case NI_BMI2_X64_MultiplyNoFlags:
+            case NI_AVX2_MultiplyNoFlags:
+            case NI_AVX2_X64_MultiplyNoFlags:
             {
                 return node->GetOperandCount() == 2;
             }
@@ -23195,8 +23195,8 @@ GenTree* Compiler::gtNewSimdFmaNode(
     }
     else
     {
-        assert(compIsaSupportedDebugOnly(InstructionSet_FMA));
-        intrinsic = NI_FMA_MultiplyAdd;
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+        intrinsic = NI_AVX2_MultiplyAdd;
     }
 #elif defined(TARGET_ARM64)
     if (simdBaseType == TYP_DOUBLE)
@@ -28179,8 +28179,8 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
         {
             switch (intrinsicId)
             {
-                case NI_BMI2_MultiplyNoFlags:
-                case NI_BMI2_X64_MultiplyNoFlags:
+                case NI_AVX2_MultiplyNoFlags:
+                case NI_AVX2_X64_MultiplyNoFlags:
                     addr = Op(3);
                     break;
 
@@ -28744,7 +28744,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 #if defined(TARGET_XARCH)
         case NI_X86Base_AndNot:
         case NI_AVX_AndNot:
-        case NI_AVX2_AndNot:
+        case NI_AVX2_AndNotVector:
         case NI_AVX512_AndNot:
         case NI_AVX512_AndNotMask:
 #elif defined(TARGET_ARM64)
@@ -29453,7 +29453,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
                 if (varTypeIsIntegral(simdBaseType))
                 {
                     assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                    id = NI_AVX2_AndNot;
+                    id = NI_AVX2_AndNotVector;
                 }
                 else
                 {
@@ -31813,7 +31813,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #ifdef TARGET_ARM64
                 case NI_ArmBase_LeadingZeroCount:
 #else
-                case NI_LZCNT_LeadingZeroCount:
+                case NI_AVX2_LeadingZeroCount:
 #endif
                 {
                     assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
@@ -31841,7 +31841,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     break;
                 }
 #else
-                case NI_LZCNT_X64_LeadingZeroCount:
+                case NI_AVX2_X64_LeadingZeroCount:
                 {
                     assert(varTypeIsLong(retType));
 

@@ -89,17 +89,9 @@ namespace ILCompiler
                 if ((flags & Avx) != 0)
                     builder.AddSupportedInstructionSet("avx");
                 if ((flags & Avx2) != 0)
-                {
                     builder.AddSupportedInstructionSet("avx2");
-                    builder.AddSupportedInstructionSet("bmi");
-                    builder.AddSupportedInstructionSet("bmi2");
-                    builder.AddSupportedInstructionSet("fma");
-                    builder.AddSupportedInstructionSet("lznct");
-                    builder.AddSupportedInstructionSet("movbe");
-                }
                 if ((flags & Avx512) != 0)
                     builder.AddSupportedInstructionSet("avx512");
-
                 if ((flags & Avx512v2) != 0)
                     builder.AddSupportedInstructionSet("avx512v2");
                 if ((flags & Avx512v3) != 0)
@@ -152,7 +144,7 @@ namespace ILCompiler
             {
                 Debug.Assert(InstructionSet.X64_AES == InstructionSet.X86_AES);
                 Debug.Assert(InstructionSet.X64_SSE42 == InstructionSet.X86_SSE42);
-                Debug.Assert(InstructionSet.X64_LZCNT == InstructionSet.X86_LZCNT);
+                Debug.Assert(InstructionSet.X64_AVX2 == InstructionSet.X86_AVX2);
 
                 return instructionSet switch
                 {
@@ -165,15 +157,6 @@ namespace ILCompiler
 
                     InstructionSet.X64_AVX2 => Avx2,
                     InstructionSet.X64_AVX2_X64 => Avx2,
-                    InstructionSet.X64_BMI1 => Avx2,
-                    InstructionSet.X64_BMI1_X64 => Avx2,
-                    InstructionSet.X64_BMI2 => Avx2,
-                    InstructionSet.X64_BMI2_X64 => Avx2,
-                    InstructionSet.X64_FMA => Avx2,
-                    InstructionSet.X64_FMA_X64 => Avx2,
-                    InstructionSet.X64_LZCNT => Avx2,
-                    InstructionSet.X64_LZCNT_X64 => Avx2,
-                    InstructionSet.X64_MOVBE => Avx2,
 
                     InstructionSet.X64_AVX512 => Avx512,
                     InstructionSet.X64_AVX512_X64 => Avx512,

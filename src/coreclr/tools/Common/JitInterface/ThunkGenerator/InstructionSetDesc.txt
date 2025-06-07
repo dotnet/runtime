@@ -41,12 +41,12 @@ instructionset     ,X86   ,Popcnt               ,                   ,15 ,SSE42  
 instructionset     ,X86   ,Avx                  ,                   ,7  ,AVX                   ,avx
 
 instructionset     ,X86   ,Avx2                 ,                   ,8  ,AVX2                  ,avx2
-instructionset     ,X86   ,Bmi1                 ,                   ,10 ,BMI1                  ,bmi
-instructionset     ,X86   ,Bmi2                 ,                   ,11 ,BMI2                  ,bmi2
+instructionset     ,X86   ,Bmi1                 ,                   ,10 ,AVX2                  ,avx2
+instructionset     ,X86   ,Bmi2                 ,                   ,11 ,AVX2                  ,avx2
 instructionset     ,X86   ,F16C                 ,                   ,67 ,AVX2                  ,avx2
-instructionset     ,X86   ,Fma                  ,                   ,12 ,FMA                   ,fma
-instructionset     ,X86   ,Lzcnt                ,                   ,13 ,LZCNT                 ,lzcnt
-instructionset     ,X86   ,                     ,Movbe              ,27 ,MOVBE                 ,movbe
+instructionset     ,X86   ,Fma                  ,                   ,12 ,AVX2                  ,avx2
+instructionset     ,X86   ,Lzcnt                ,                   ,13 ,AVX2                  ,avx2
+instructionset     ,X86   ,                     ,Movbe              ,27 ,AVX2                  ,avx2
 
 instructionset     ,X86   ,                     ,Evex               ,47 ,AVX512                ,avx512
 instructionset     ,X86   ,Avx512F              ,                   ,29 ,AVX512                ,avx512
@@ -118,12 +118,7 @@ instructionset     ,X86   ,                     ,VectorT512         ,41 ,VectorT
 instructionset64bit,X86   ,X86Base
 instructionset64bit,X86   ,SSE42
 instructionset64bit,X86   ,AVX
-
 instructionset64bit,X86   ,AVX2
-instructionset64bit,X86   ,BMI1
-instructionset64bit,X86   ,BMI2
-instructionset64bit,X86   ,FMA
-instructionset64bit,X86   ,LZCNT
 
 instructionset64bit,X86   ,AVX512
 instructionset64bit,X86   ,AVX512VBMI
@@ -154,24 +149,9 @@ vectorinstructionset,X86  ,Vector512
 
 implication        ,X86   ,SSE42                ,X86Base
 implication        ,X86   ,AVX                  ,SSE42
-
-implication        ,X86   ,BMI1                 ,AVX
-implication        ,X86   ,BMI2                 ,AVX
-implication        ,X86   ,FMA                  ,AVX
-implication        ,X86   ,LZCNT                ,AVX
-implication        ,X86   ,MOVBE                ,AVX
-implication        ,X86   ,AVX2                 ,BMI1
-implication        ,X86   ,AVX2                 ,BMI2
-implication        ,X86   ,AVX2                 ,FMA
-implication        ,X86   ,AVX2                 ,LZCNT
-implication        ,X86   ,AVX2                 ,MOVBE
+implication        ,X86   ,AVX2                 ,AVX
 
 implication        ,X86   ,AVX512               ,AVX2
-implication        ,X86   ,AVX512               ,BMI1
-implication        ,X86   ,AVX512               ,BMI2
-implication        ,X86   ,AVX512               ,FMA
-implication        ,X86   ,AVX512               ,LZCNT
-implication        ,X86   ,AVX512               ,MOVBE
 
 implication        ,X86   ,AVX512VBMI           ,AVX512
 implication        ,X86   ,AVX512v3             ,AVX512VBMI
@@ -283,7 +263,7 @@ implication        ,RiscV64 ,Zba                 ,RiscV64Base
 ;                    ,name and aliases           ,archs    ,lower baselines included by implication
 instructionsetgroup  ,x86-64                     ,X64 X86  ,base
 instructionsetgroup  ,x86-64-v2                  ,X64 X86  ,x86-64 sse4.2
-instructionsetgroup  ,x86-64-v3                  ,X64 X86  ,x86-64-v2 avx2 bmi bmi2 fma lzcnt movbe
+instructionsetgroup  ,x86-64-v3                  ,X64 X86  ,x86-64-v2 avx2
 instructionsetgroup  ,x86-64-v4                  ,X64 X86  ,x86-64-v3 avx512
 
 instructionsetgroup  ,armv8-a                    ,ARM64    ,neon

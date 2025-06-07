@@ -6053,11 +6053,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableAVX2() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX2);
-            instructionSetFlags.AddInstructionSet(InstructionSet_BMI1);
-            instructionSetFlags.AddInstructionSet(InstructionSet_BMI2);
-            instructionSetFlags.AddInstructionSet(InstructionSet_FMA);
-            instructionSetFlags.AddInstructionSet(InstructionSet_LZCNT);
-            instructionSetFlags.AddInstructionSet(InstructionSet_MOVBE);
         }
 
         if (JitConfig.EnableAVX512() != 0)

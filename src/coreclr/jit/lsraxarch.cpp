@@ -1083,7 +1083,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
         int       shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
         var_types targetType   = tree->TypeGet();
 
-        if ((genActualType(targetType) == TYP_LONG) && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) &&
+        if ((genActualType(targetType) == TYP_LONG) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) &&
             tree->OperIs(GT_ROL, GT_ROR) && (shiftByValue > 0) && (shiftByValue < 64))
         {
             srcCandidates = ForceLowGprForApxIfNeeded(source, srcCandidates, getEvexIsSupported());
@@ -1093,7 +1093,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 #endif
     }
     else if (!tree->isContained() && (tree->OperIsShift() || source->isContained()) &&
-             compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && !tree->gtSetFlags())
+             compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) && !tree->gtSetFlags())
     {
         // We don'thave any specific register requirements here, so skip the logic that
         // reserves RCX or preferences the source reg.
@@ -2481,8 +2481,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_BMI2_MultiplyNoFlags:
-            case NI_BMI2_X64_MultiplyNoFlags:
+            case NI_AVX2_MultiplyNoFlags:
+            case NI_AVX2_X64_MultiplyNoFlags:
             {
                 assert(numArgs == 2 || numArgs == 3);
                 srcCount += BuildOperandUses(op1, SRBM_EDX);
@@ -2502,16 +2502,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_FMA_MultiplyAdd:
-            case NI_FMA_MultiplyAddNegated:
-            case NI_FMA_MultiplyAddNegatedScalar:
-            case NI_FMA_MultiplyAddScalar:
-            case NI_FMA_MultiplyAddSubtract:
-            case NI_FMA_MultiplySubtract:
-            case NI_FMA_MultiplySubtractAdd:
-            case NI_FMA_MultiplySubtractNegated:
-            case NI_FMA_MultiplySubtractNegatedScalar:
-            case NI_FMA_MultiplySubtractScalar:
+            case NI_AVX2_MultiplyAdd:
+            case NI_AVX2_MultiplyAddNegated:
+            case NI_AVX2_MultiplyAddNegatedScalar:
+            case NI_AVX2_MultiplyAddScalar:
+            case NI_AVX2_MultiplyAddSubtract:
+            case NI_AVX2_MultiplySubtract:
+            case NI_AVX2_MultiplySubtractAdd:
+            case NI_AVX2_MultiplySubtractNegated:
+            case NI_AVX2_MultiplySubtractNegatedScalar:
+            case NI_AVX2_MultiplySubtractScalar:
             case NI_AVX512_FusedMultiplyAdd:
             case NI_AVX512_FusedMultiplyAddScalar:
             case NI_AVX512_FusedMultiplyAddNegated:

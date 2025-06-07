@@ -906,11 +906,6 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_SSE42, LAST_NI_SSE42 },                          // SSE42
     { FIRST_NI_AVX, LAST_NI_AVX },                              // AVX
     { FIRST_NI_AVX2, LAST_NI_AVX2 },                            // AVX2
-    { FIRST_NI_BMI1, LAST_NI_BMI1 },                            // BMI1
-    { FIRST_NI_BMI2, LAST_NI_BMI2 },                            // BMI2
-    { FIRST_NI_FMA, LAST_NI_FMA },                              // FMA
-    { FIRST_NI_LZCNT, LAST_NI_LZCNT },                          // LZCNT
-    { NI_Illegal, NI_Illegal },                                 //      MOVBE
     { FIRST_NI_AVX512, LAST_NI_AVX512 },                        // AVX512
     { FIRST_NI_AVX512VBMI, LAST_NI_AVX512VBMI },                // AVX512VBMI
     { NI_Illegal, NI_Illegal },                                 //      AVX512v3
@@ -942,11 +937,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_X86Base_X64, LAST_NI_X86Base_X64 },              // X86Base_X64
     { FIRST_NI_SSE42_X64, LAST_NI_SSE42_X64 },                  // SSE42_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX_X64
-    { NI_Illegal, NI_Illegal },                                 //      AVX2_X64
-    { FIRST_NI_BMI1_X64, LAST_NI_BMI1_X64 },                    // BMI1_X64
-    { FIRST_NI_BMI2_X64, LAST_NI_BMI2_X64 },                    // BMI2_X64
-    { NI_Illegal, NI_Illegal },                                 //      FMA_X64
-    { FIRST_NI_LZCNT_X64, LAST_NI_LZCNT_X64 },                  // LZCNT_X64
+    { FIRST_NI_AVX2_X64, LAST_NI_AVX2_X64 },                    // AVX2_X64
     { FIRST_NI_AVX512_X64, LAST_NI_AVX512_X64 },                // AVX512_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX512VBMI_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX512v3_X64

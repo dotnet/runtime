@@ -26,14 +26,6 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX_X64;
         case InstructionSet_AVX2:
             return InstructionSet_AVX2_X64;
-        case InstructionSet_BMI1:
-            return InstructionSet_BMI1_X64;
-        case InstructionSet_BMI2:
-            return InstructionSet_BMI2_X64;
-        case InstructionSet_FMA:
-            return InstructionSet_FMA_X64;
-        case InstructionSet_LZCNT:
-            return InstructionSet_LZCNT_X64;
         case InstructionSet_AVX512:
             return InstructionSet_AVX512_X64;
         case InstructionSet_AVX512VBMI:
@@ -285,11 +277,11 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         {
             if (strcmp(className + 3, "1") == 0)
             {
-                return InstructionSet_BMI1;
+                return InstructionSet_AVX2;
             }
             else if (strcmp(className + 3, "2") == 0)
             {
-                return InstructionSet_BMI2;
+                return InstructionSet_AVX2;
             }
         }
     }
@@ -297,7 +289,7 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
     {
         if (strcmp(className + 1, "ma") == 0)
         {
-            return InstructionSet_FMA;
+            return InstructionSet_AVX2;
         }
         else if (strcmp(className + 1, "16c") == 0)
         {
@@ -315,7 +307,7 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
     {
         if (strcmp(className + 1, "zcnt") == 0)
         {
-            return InstructionSet_LZCNT;
+            return InstructionSet_AVX2;
         }
     }
     else if (className[0] == 'P')
@@ -928,25 +920,7 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
 //    true if isa is scalar; otherwise, false
 bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
 {
-    switch (isa)
-    {
-        case InstructionSet_BMI1:
-        case InstructionSet_BMI1_X64:
-        case InstructionSet_BMI2:
-        case InstructionSet_BMI2_X64:
-        case InstructionSet_LZCNT:
-        case InstructionSet_LZCNT_X64:
-        case InstructionSet_X86Base:
-        case InstructionSet_X86Base_X64:
-        {
-            return true;
-        }
-
-        default:
-        {
-            return false;
-        }
-    }
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -1387,40 +1361,50 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AVX2_AndNot:
+        {
+            if (simdBaseType == TYP_UNKNOWN)
+            {
+                intrinsic = NI_AVX2_AndNotScalar;
+            }
+            else
+            {
+                intrinsic = NI_AVX2_AndNotVector;
+            }
+            FALLTHROUGH;
+        }
+
         case NI_X86Base_AndNot:
         case NI_AVX_AndNot:
-        case NI_AVX2_AndNot:
         case NI_AVX512_AndNot:
         {
             assert(sig->numArgs == 2);
 
-            // We don't want to support creating AND_NOT nodes prior to LIR
-            // as it can break important optimizations. We'll produces this
-            // in lowering instead so decompose into the individual operations
-            // on import, taking into account that despite the name, these APIs
-            // do (~op1 & op2), so we need to account for that
+            if (simdBaseType != TYP_UNKNOWN)
+            {
+                // We don't want to support creating AND_NOT nodes prior to LIR
+                // as it can break important optimizations. We'll produces this
+                // in lowering instead so decompose into the individual operations
+                // on import, taking into account that despite the name, these APIs
+                // do (~op1 & op2), so we need to account for that
 
-            op2 = impSIMDPopStack();
-            op1 = impSIMDPopStack();
+                op2 = impSIMDPopStack();
+                op1 = impSIMDPopStack();
 
-            op1     = gtFoldExpr(gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize));
-            retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseJitType, simdSize);
-            break;
-        }
+                op1     = gtFoldExpr(gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize));
+                retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseJitType, simdSize);
+            }
+            else
+            {
+                // The same general reasoning for the decomposition exists here as
+                // given above for the SIMD AndNot APIs.
 
-        case NI_BMI1_AndNot:
-        case NI_BMI1_X64_AndNot:
-        {
-            assert(sig->numArgs == 2);
+                op2 = impPopStack().val;
+                op1 = impPopStack().val;
 
-            // The same general reasoning for the decomposition exists here as
-            // given above for the SIMD AndNot APIs.
-
-            op2 = impPopStack().val;
-            op1 = impPopStack().val;
-
-            op1     = gtFoldExpr(gtNewOperNode(GT_NOT, retType, op1));
-            retNode = gtNewOperNode(GT_AND, retType, op1, op2);
+                op1     = gtFoldExpr(gtNewOperNode(GT_NOT, retType, op1));
+                retNode = gtNewOperNode(GT_AND, retType, op1, op2);
+            }
             break;
         }
 
@@ -2645,7 +2629,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 3);
             assert(varTypeIsFloating(simdBaseType));
 
-            if (compOpportunisticallyDependsOn(InstructionSet_FMA))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
                 op3 = impSIMDPopStack();
                 op2 = impSIMDPopStack();
@@ -3322,7 +3306,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            if (varTypeIsFloating(simdBaseType) && compExactlyDependsOn(InstructionSet_FMA))
+            if (varTypeIsFloating(simdBaseType) && compExactlyDependsOn(InstructionSet_AVX2))
             {
                 retNode = gtNewSimdFmaNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
             }
@@ -5291,8 +5275,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_BMI2_ZeroHighBits:
-        case NI_BMI2_X64_ZeroHighBits:
+        case NI_AVX2_ZeroHighBits:
+        case NI_AVX2_X64_ZeroHighBits:
         {
             assert(sig->numArgs == 2);
 
@@ -5305,8 +5289,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             return gtNewScalarHWIntrinsicNode(retType, op2, op1, intrinsic);
         }
 
-        case NI_BMI1_BitFieldExtract:
-        case NI_BMI1_X64_BitFieldExtract:
+        case NI_AVX2_BitFieldExtract:
+        case NI_AVX2_X64_BitFieldExtract:
         {
             // The 3-arg version is implemented in managed code
             if (sig->numArgs == 3)

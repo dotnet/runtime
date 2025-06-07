@@ -1247,10 +1247,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector128_CreateScalar:
                             case NI_Vector128_CreateScalarUnsafe:
 #if defined(TARGET_XARCH)
-                            case NI_BMI1_TrailingZeroCount:
-                            case NI_BMI1_X64_TrailingZeroCount:
-                            case NI_LZCNT_LeadingZeroCount:
-                            case NI_LZCNT_X64_LeadingZeroCount:
+                            case NI_AVX2_LeadingZeroCount:
+                            case NI_AVX2_TrailingZeroCount:
+                            case NI_AVX2_X64_LeadingZeroCount:
+                            case NI_AVX2_X64_TrailingZeroCount:
                             case NI_SSE42_PopCount:
                             case NI_SSE42_X64_PopCount:
                             case NI_Vector256_Create:

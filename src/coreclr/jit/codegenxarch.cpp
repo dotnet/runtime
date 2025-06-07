@@ -4855,7 +4855,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
     // Only the non-RMW case here.
     assert(tree->OperIsShiftOrRotate());
     assert(tree->GetRegNum() != REG_NA);
-    assert(tree->AsOp()->gtOp1->isUsedFromReg() || compiler->compIsaSupportedDebugOnly(InstructionSet_BMI2));
+    assert(tree->AsOp()->gtOp1->isUsedFromReg() || compiler->compIsaSupportedDebugOnly(InstructionSet_AVX2));
 
     genConsumeOperands(tree->AsOp());
 
@@ -4902,7 +4902,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         {
             int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
 
-            if (tree->OperIsRotate() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) &&
+            if (tree->OperIsRotate() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) &&
                 !tree->gtSetFlags())
             {
                 // If we have a contained source operand, we must emit rorx.
@@ -4930,7 +4930,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             return;
         }
     }
-    else if (tree->OperIsShift() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) &&
+    else if (tree->OperIsShift() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) &&
              !tree->gtSetFlags())
     {
         // Emit shlx, sarx, shrx if BMI2 is available instead of mov+shl, mov+sar, mov+shr.

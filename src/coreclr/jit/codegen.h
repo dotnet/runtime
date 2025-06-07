@@ -937,12 +937,10 @@ protected:
 
     void genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genSSE42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
+    void genSse42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genFMAIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
+    void genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genPermuteVar2x(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genLZCNTIntrinsic(GenTreeHWIntrinsic* node);
     void genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins);
     void genX86SerializeIntrinsic(GenTreeHWIntrinsic* node);
 
