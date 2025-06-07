@@ -1040,8 +1040,7 @@ SingleResponse ::= SEQUENCE {
             {
                 List<KeyFactory> factories = [RSA, ECDsa];
 
-                // TODO: MLDsa certificate support on Windows is not available yet. Remove this once it is.
-                if (Cryptography.MLDsa.IsSupported && !PlatformDetection.IsWindows)
+                if (Cryptography.MLDsa.IsSupported)
                 {
                     factories.Add(MLDsa);
                 }

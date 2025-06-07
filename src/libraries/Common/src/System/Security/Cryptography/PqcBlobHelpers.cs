@@ -35,25 +35,6 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
-        internal static MLDsaAlgorithm GetMLDsaAlgorithmFromParameterSet(ReadOnlySpan<char> parameterSet)
-        {
-            if (parameterSet.SequenceEqual(BCRYPT_MLDSA_PARAMETER_SET_44))
-            {
-                return MLDsaAlgorithm.MLDsa44;
-            }
-            else if (parameterSet.SequenceEqual(BCRYPT_MLDSA_PARAMETER_SET_65))
-            {
-                return MLDsaAlgorithm.MLDsa65;
-            }
-            else if (parameterSet.SequenceEqual(BCRYPT_MLDSA_PARAMETER_SET_87))
-            {
-                return MLDsaAlgorithm.MLDsa87;
-            }
-
-            Debug.Fail($"Unknown parameter set: {parameterSet.ToString()}");
-            throw new PlatformNotSupportedException();
-        }
-
         internal delegate TResult EncodeBlobFunc<TResult>(ReadOnlySpan<byte> blob);
 
         internal static TResult EncodeMLDsaBlob<TResult>(

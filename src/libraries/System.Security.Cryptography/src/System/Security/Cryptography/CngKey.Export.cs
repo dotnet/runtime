@@ -44,6 +44,9 @@ namespace System.Security.Cryptography
             // Sanity check the current bounds
             Span<byte> empty = default;
 
+            // TODO why not just pass in destination? if it succeeds, return true,
+            // if it fails with length exception, return false, and throw otherwise.
+
             ErrorCode errorCode = Interop.NCrypt.NCryptExportKey(
                 _keyHandle,
                 IntPtr.Zero,

@@ -17,6 +17,7 @@ namespace System.Security.Cryptography
         internal const string Length = "Length";                            // NCRYPT_LENGTH_PROPERTY
         internal const string Name = "Name";                                // NCRYPT_NAME_PROPERTY
         internal const string ParentWindowHandle = "HWND Handle";           // NCRYPT_WINDOW_HANDLE_PROPERTY
+        internal const string ParameterSetName = "ParameterSetName";        // NCRYPT_PARAMETER_SET_NAME_PROPERTY
         internal const string PublicKeyLength = "PublicKeyLength";          // NCRYPT_PUBLIC_KEY_LENGTH (Win10+)
         internal const string ProviderHandle = "Provider Handle";           // NCRYPT_PROVIDER_HANDLE_PROPERTY
         internal const string UIPolicy = "UI Policy";                       // NCRYPT_UI_POLICY_PROPERTY
