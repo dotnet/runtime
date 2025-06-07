@@ -8317,7 +8317,7 @@ public:
     // and do not do any SPMI handling. There are then convenience printing
     // functions exposed on top that have SPMI handling and additional buffer
     // handling. Note that the strings returned are never truncated here.
-    void eePrintJitType(class StringPrinter* printer, var_types jitType);
+    void eePrintCorInfoType(class StringPrinter* printer, CorInfoType corInfoType);
     void eePrintType(class StringPrinter* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation);
     void eePrintTypeOrJitAlias(class StringPrinter* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation);
     void eePrintMethod(class StringPrinter*  printer,

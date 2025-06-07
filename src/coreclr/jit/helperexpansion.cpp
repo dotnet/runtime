@@ -2823,7 +2823,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
     {
         case CORINFO_HELP_NEWARR_1_DIRECT:
         case CORINFO_HELP_NEWARR_1_VC:
-        case CORINFO_HELP_NEWARR_1_OBJ:
+        case CORINFO_HELP_NEWARR_1_PTR:
         case CORINFO_HELP_NEWARR_1_ALIGN8:
             lengthArgIndex = 1;
             typeArgIndex   = 0;
