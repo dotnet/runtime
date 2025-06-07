@@ -409,6 +409,9 @@ public class InterpreterTest
         {
             if (!TestConvOvf(1, 2, 3, 4, 1.0 / 0.0, -32, 1234567890))
                 Environment.FailFast(null);
+
+            if (!TestConvBoundaries(Int16.MaxValue, (double)Int16.MaxValue + 1, Int32.MaxValue, (double)Int32.MaxValue + 1))
+                Environment.FailFast(null);
         }
 
         if (!TestLocalloc())
@@ -1086,6 +1089,39 @@ public class InterpreterTest
 
             try {
                 c = (byte)negativeInt;
+                return false;
+            } catch (OverflowException) {
+            }
+        }
+
+        return true;
+    }
+
+    public static bool TestConvBoundaries (double inRangeShort, double outOfRangeShort, double inRangeInt, double outOfRangeInt) {
+        // In unchecked mode, the interpreter saturates on float->int conversions if the value is out of range
+        unchecked {
+            short a = (short)inRangeShort,
+                b = (short)outOfRangeShort;
+            int c = (int)inRangeInt,
+                d = (int)outOfRangeInt;
+
+            if (a != b)
+                return false;
+            if (c != d)
+                return false;
+        }
+
+        checked {
+            short tempA = (short)inRangeShort;
+            try {
+                tempA = (short)outOfRangeShort;
+                return false;
+            } catch (OverflowException) {
+            }
+
+            int tempB = (int)inRangeInt;
+            try {
+                tempB = (int)outOfRangeInt;
                 return false;
             } catch (OverflowException) {
             }

@@ -117,7 +117,7 @@ template <typename TResult, typename TSource> static void ConvFpHelper(int8_t *s
         result = std::numeric_limits<TResult>::max();
     else if (std::numeric_limits<TResult>::is_signed && (src <= -1))
         result = 0;
-    else if (src < minValue)
+    else if (!std::numeric_limits<TResult>::is_signed && (src < minValue))
         result = std::numeric_limits<TResult>::lowest();
     else
         result = (TResult)src;
@@ -144,9 +144,9 @@ template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t
     //  properly bound the source value so that when it is truncated it will be in range
     // We assume that we are in round-towards-zero mode
     if (std::numeric_limits<TResult>::is_signed)
-        outOfRange = (src != src) || (src < minValue) || (src >= maxValue);
+        outOfRange = (src != src) || (src < minValue) || (src > maxValue);
     else
-        outOfRange = (src != src) || (src <= -1) || (src >= maxValue);
+        outOfRange = (src != src) || (src <= -1) || (src > maxValue);
 
     if (outOfRange)
         COMPlusThrow(kOverflowException);
