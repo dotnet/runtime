@@ -1296,7 +1296,7 @@ void Compiler::JitTestCheckSSA()
         assert(nodeExists);
         if (tlAndN.m_tl == TL_SsaName)
         {
-            if (node->OperGet() != GT_LCL_VAR)
+            if (!node->OperIs(GT_LCL_VAR))
             {
                 printf("SSAName constraint put on non-lcl-var expression ");
                 printTreeID(node);

@@ -14,13 +14,14 @@ public class Async2Object
         return (int)AsyncTestEntryPoint(100).Result;
     }
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     private static async Task<object> AsyncTestEntryPoint(int arg)
     {
         return await ObjMethod(arg);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async2 Task<object> ObjMethod(int arg)
+    private static async Task<object> ObjMethod(int arg)
     {
         await Task.Yield();
         return arg;

@@ -916,6 +916,12 @@
   <data name="BaseInterfaceDefinedInOtherAssemblyTitle" xml:space="preserve">
     <value>Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</value>
   </data>
+  <data name="ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode" xml:space="preserve">
+    <value>The type '{0}' specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</value>
+  </data>
+  <data name="InvalidExceptionToUnmanagedMarshallerType" xml:space="preserve">
+    <value>The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</value>
+  </data>
   <data name="GenericDelegatesNotSupported" xml:space="preserve">
     <value>Marshalling a generic delegate is not supported. Consider using a function pointer instead.</value>
   </data>

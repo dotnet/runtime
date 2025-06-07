@@ -109,17 +109,54 @@ struct CloneInfo : public GuardInfo
     bool m_willClone       = false;
 };
 
+struct StoreInfo
+{
+    StoreInfo(unsigned index, bool connected = false)
+        : m_index(index)
+        , m_connected(connected)
+    {
+    }
+    unsigned m_index;
+    bool     m_connected;
+};
+
 typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, CloneInfo*> CloneMap;
+typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, StoreInfo>              NodeToIndexMap;
 
 class ObjectAllocator final : public Phase
 {
-    typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalToLocalMap;
     enum ObjectAllocationType
     {
         OAT_NONE,
         OAT_NEWOBJ,
+        OAT_NEWOBJ_HEAP,
         OAT_NEWARR
     };
+
+    struct AllocationCandidate
+    {
+        AllocationCandidate(
+            BasicBlock* block, Statement* statement, GenTree* tree, unsigned lclNum, ObjectAllocationType allocType)
+            : m_block(block)
+            , m_statement(statement)
+            , m_tree(tree)
+            , m_lclNum(lclNum)
+            , m_allocType(allocType)
+            , m_onHeapReason(nullptr)
+            , m_bashCall(false)
+        {
+        }
+
+        BasicBlock* const          m_block;
+        Statement* const           m_statement;
+        GenTree* const             m_tree;
+        unsigned const             m_lclNum;
+        ObjectAllocationType const m_allocType;
+        const char*                m_onHeapReason;
+        bool                       m_bashCall;
+    };
+
+    typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalToLocalMap;
 
     //===============================================================================
     // Data members
@@ -134,9 +171,11 @@ class ObjectAllocator final : public Phase
     // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
     BitVec              m_PossiblyStackPointingPointers;
     BitVec              m_DefinitelyStackPointingPointers;
-    LocalToLocalMap     m_HeapLocalToStackLocalMap;
+    LocalToLocalMap     m_HeapLocalToStackObjLocalMap;
+    LocalToLocalMap     m_HeapLocalToStackArrLocalMap;
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
     unsigned int        m_StackAllocMaxSize;
+    unsigned            m_stackAllocationCount;
 
     // Info for conditionally-escaping locals
     LocalToLocalMap m_EnumeratorLocalToPseudoIndexMap;
@@ -148,7 +187,8 @@ class ObjectAllocator final : public Phase
     unsigned        m_regionsToClone;
 
     // Struct fields
-    bool m_trackFields;
+    bool           m_trackFields;
+    NodeToIndexMap m_StoreAddressToIndexMap;
 
     //===============================================================================
     // Methods
@@ -192,6 +232,10 @@ private:
     void         ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& escapingNodes);
     void         ComputeStackObjectPointers(BitVecTraits* bitVecTraits);
     bool         MorphAllocObjNodes();
+    void         MorphAllocObjNode(AllocationCandidate& candidate);
+    bool         MorphAllocObjNodeHelper(AllocationCandidate& candidate);
+    bool         MorphAllocObjNodeHelperArr(AllocationCandidate& candidate);
+    bool         MorphAllocObjNodeHelperObj(AllocationCandidate& candidate);
     void         RewriteUses();
     GenTree*     MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
     unsigned int MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj,
@@ -206,7 +250,8 @@ private:
                                                Statement*           stmt);
     struct BuildConnGraphVisitorCallbackData;
     void AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
-    void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, bool retypeFields);
+    void UpdateAncestorTypes(
+        GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, ClassLayout* newLayout, bool retypeFields);
     ObjectAllocationType AllocationKind(GenTree* tree);
 
     // Conditionally escaping allocation support

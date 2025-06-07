@@ -1080,7 +1080,9 @@ namespace Internal.TypeSystem
             if (type.Context.Target.Abi == TargetAbi.NativeAotArmel)
                 return NotHA;
 
-            MetadataType metadataType = (MetadataType)type;
+            // If type represents an enum, we want to treat it as its underlying type.
+            MetadataType metadataType = (MetadataType)type.UnderlyingType;
+
             int haElementSize = 0;
 
             switch (metadataType.Category)

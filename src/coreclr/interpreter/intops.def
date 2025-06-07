@@ -22,6 +22,27 @@ OPDEF(INTOP_LDC_R4, "ldc.r4", 3, 1, 0, InterpOpFloat)
 OPDEF(INTOP_LDC_R8, "ldc.r8", 4, 1, 0, InterpOpDouble)
 
 OPDEF(INTOP_LDPTR, "ldptr", 3, 1, 0, InterpOpInt)
+OPDEF(INTOP_NEWARR, "newarr", 5, 1, 1, InterpOpInt)
+
+OPDEF(INTOP_LDELEM_I1, "ldelem.i1", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_LDELEM_U1, "ldelem.u1", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_LDELEM_I2, "ldelem.i2", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_LDELEM_U2, "ldelem.u2", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_LDELEM_I4, "ldelem.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_LDELEM_I8, "ldelem.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_LDELEM_R4, "ldelem.r4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_LDELEM_R8, "ldelem.r8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_STELEM_I1, "stelem.i1", 4, 0, 3, InterpOpNoArgs)
+OPDEF(INTOP_STELEM_U1, "stelem.u1", 4, 0, 3, InterpOpNoArgs)
+OPDEF(INTOP_STELEM_I2, "stelem.i2", 4, 0, 3, InterpOpNoArgs)
+OPDEF(INTOP_STELEM_U2, "stelem.u2", 4, 0, 3, InterpOpNoArgs)
+OPDEF(INTOP_STELEM_I4, "stelem.i4", 4, 0, 3, InterpOpNoArgs)
+OPDEF(INTOP_STELEM_I8, "stelem.i8", 4, 0, 3, InterpOpNoArgs)
+OPDEF(INTOP_STELEM_R4, "stelem.r4", 4, 0, 3, InterpOpNoArgs)
+OPDEF(INTOP_STELEM_R8, "stelem.r8", 4, 0, 3, InterpOpNoArgs)
+
+OPDEF(INTOP_LDTOKEN, "ldtoken", 4, 1, 0, InterpOpTwoInts) // [token data item] [conversion helper func]
 
 OPDEF(INTOP_MOV_I4_I1, "mov.i4.i1", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_MOV_I4_U1, "mov.i4.u1", 3, 1, 1, InterpOpNoArgs)
@@ -35,6 +56,7 @@ OPDEF(INTOP_LDLOCA, "ldloca", 3, 1, 0, InterpOpInt)
 
 OPDEF(INTOP_SWITCH, "switch", 0, 0, 1, InterpOpSwitch)
 
+OPDEF(INTOP_SAFEPOINT, "safepoint", 1, 0, 0, InterpOpNoArgs)
 OPDEF(INTOP_BR, "br", 2, 0, 0, InterpOpBranch)
 
 OPDEF(INTOP_BRFALSE_I4, "brfalse.i4", 3, 0, 1, InterpOpBranch)
@@ -138,6 +160,10 @@ OPDEF(INTOP_CONV_R8_R4, "conv.r8.r4", 3, 1, 1, InterpOpNoArgs)
 
 OPDEF(INTOP_CONV_U8_R4, "conv.u8.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_U8_R8, "conv.u8.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_BOX, "box", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
+OPDEF(INTOP_UNBOX, "unbox", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
+OPDEF(INTOP_UNBOX_ANY, "unbox.any", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
 // Unary operations end
 
 OPDEF(INTOP_ADD_I4_IMM, "add.i4.imm", 4, 1, 1, InterpOpInt)
@@ -251,21 +277,30 @@ OPDEF(INTOP_STIND_VT_NOREF, "stind.vt.noref", 5, 0, 2, InterpOpTwoInts)
 OPDEF(INTOP_LDFLDA, "ldflda", 4, 1, 1, InterpOpInt)
 
 // Calls
-OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodToken)
-OPDEF(INTOP_CALLVIRT, "callvirt", 4, 1, 1, InterpOpMethodToken)
-OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodToken)
-OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodToken)
+OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_CALLVIRT, "callvirt", 4, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodHandle)
 
-OPDEF(INTOP_CALL_HELPER_PP, "call.helper.pp", 5, 1, 0, InterpOpThreeInts)
+OPDEF(INTOP_CALL_HELPER_PP, "call.helper.pp", 4, 1, 0, InterpOpTwoInts)
+OPDEF(INTOP_CALL_HELPER_PP_2, "call.helper.pp.2", 5, 1, 1, InterpOpTwoInts)
+
+OPDEF(INTOP_CALL_FINALLY, "call.finally", 2, 0, 0, InterpOpBranch)
 
 OPDEF(INTOP_ZEROBLK_IMM, "zeroblk.imm", 3, 0, 1, InterpOpInt)
 OPDEF(INTOP_LOCALLOC, "localloc", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_BREAKPOINT, "breakpoint", 1, 0, 0, InterpOpNoArgs)
 
 OPDEF(INTOP_THROW, "throw", 4, 0, 1, InterpOpInt)
+OPDEF(INTOP_RETHROW, "rethrow", 1, 0, 0, InterpOpInt)
+OPDEF(INTOP_LEAVE_FILTER, "leavefilter", 2, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_LEAVE_CATCH, "leavecatch", 2, 0, 0, InterpOpBranch)
+OPDEF(INTOP_LOAD_EXCEPTION, "load.exception", 2, 1, 0, InterpOpNoArgs)
 
 OPDEF(INTOP_FAILFAST, "failfast", 1, 0, 0, InterpOpNoArgs)
 OPDEF(INTOP_GC_COLLECT, "gc.collect", 1, 0, 0, InterpOpNoArgs)
+
+OPDEF(INTOP_LOAD_FRAMEVAR, "load.framevar", 2, 1, 0, InterpOpNoArgs)
 
 // All instructions after this point are IROPS, instructions that are not emitted/executed
 OPDEF(INTOP_NOP, "nop", 1, 0, 0, InterpOpNoArgs)
