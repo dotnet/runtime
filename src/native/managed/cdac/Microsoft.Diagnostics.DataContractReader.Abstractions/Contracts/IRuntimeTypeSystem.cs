@@ -156,6 +156,10 @@ public interface IRuntimeTypeSystem : IContract
     // A IL Stub method is also a StoredSigMethodDesc, and a NoMetadataMethod
     bool IsILStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
+    // Return true if the MethodDesc represents an IL Stub that takes a context argument
+    // that is an interop MethodDesc.
+    public bool HasMDContextArg(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
+
     bool IsCollectibleMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
     bool IsVersionable(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
