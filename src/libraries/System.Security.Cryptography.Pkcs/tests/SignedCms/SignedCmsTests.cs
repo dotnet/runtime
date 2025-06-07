@@ -1702,6 +1702,69 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
+        // Ed25519 certificate from https://datatracker.ietf.org/doc/html/rfc8410#section-10.2
+        private const string UnknownAlgorithmCert =
+            """
+            MIIBLDCB36ADAgECAghWAUdKKo3DMDAFBgMrZXAwGTEXMBUGA1UEAwwOSUVURiBUZX
+            N0IERlbW8wHhcNMTYwODAxMTIxOTI0WhcNNDAxMjMxMjM1OTU5WjAZMRcwFQYDVQQD
+            DA5JRVRGIFRlc3QgRGVtbzAqMAUGAytlbgMhAIUg8AmJMKdUdIt93LQ+91oNvzoNJj
+            ga9OukqY6qm05qo0UwQzAPBgNVHRMBAf8EBTADAQEAMA4GA1UdDwEBAAQEAwIDCDAg
+            BgNVHQ4BAQAEFgQUmx9e7e0EM4Xk97xiPFl1uQvIuzswBQYDK2VwA0EAryMB/t3J5v
+            /BzKc9dNZIpDmAgs3babFOTQbs+BolzlDUwsPrdGxO3YNGhW7Ibz3OGhhlxXrCe1Cg
+            w1AH9efZBw==
+            """;
+
+        [Fact]
+        public static void ComputeSignature_UnknownAlgorithm_NoSignature()
+        {
+            using X509Certificate2 cert = X509CertificateLoader.LoadCertificate(Convert.FromBase64String(UnknownAlgorithmCert));
+
+            byte[] message = "Hello World!"u8.ToArray();
+            SignedCms cms = new SignedCms(new ContentInfo(message));
+            CmsSigner cmsSigner = new CmsSigner(SubjectIdentifierType.NoSignature, cert)
+            {
+                DigestAlgorithm = new Oid(Oids.Sha256, Oids.Sha256)
+            };
+
+            cms.ComputeSignature(cmsSigner);
+
+            // "NoSignature" OID
+            Assert.Equal("1.3.6.1.5.5.7.6.2", cms.SignerInfos[0].SignatureAlgorithm.Value);
+
+            byte[] messageHash = Convert.FromBase64String("f4OxZX/x/FO5LcGBSKHWXfwtSx+j1ncoSt3SABJtkGk=");
+            byte[] signature = cms.SignerInfos[0].GetSignature();
+
+            Assert.Equal(messageHash, signature);
+
+            SignedCms cmsNoCert = new SignedCms(new ContentInfo(message));
+            cmsNoCert.Decode(cms.Encode());
+            cmsNoCert.SignerInfos[0].CheckHash();
+        }
+
+        [Fact]
+        public static void ComputeSignature_NoSignature_DefaultDigest()
+        {
+            // A certificate shouldn't really be required here, but on .NET Framework
+            // it will encounter throw a NullReferenceException.
+            using X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.GetCertificate();
+
+            byte[] message = "Hello World!"u8.ToArray();
+            SignedCms cms = new SignedCms(new ContentInfo(message));
+
+            // Use default value for DigestAlgorithm
+            CmsSigner signer = new CmsSigner(SubjectIdentifierType.NoSignature, cert);
+
+            cms.ComputeSignature(signer);
+
+            byte[] defaultDigestSignature = cms.SignerInfos[0].GetSignature();
+            byte[] messageHash = Convert.FromBase64String(
+                PlatformDetection.IsNetFramework
+                    ? "Lve95gjOVATpfV8EL5X4nxwjKHE="                    // Sha1
+                    : "f4OxZX/x/FO5LcGBSKHWXfwtSx+j1ncoSt3SABJtkGk=");  // Sha256
+
+            Assert.Equal(messageHash, defaultDigestSignature);
+        }
+
         private static void CheckNoSignature(byte[] encoded, bool badOid=false)
         {
             SignedCms cms = new SignedCms();
