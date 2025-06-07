@@ -143,6 +143,28 @@ struct EtwGCSettingsInfo
     bool no_affinitize_p;
 };
 
+// These definitions are also in managed code.
+struct StronglyConnectedComponent
+{
+    size_t Count;
+    uintptr_t* Context;
+};
+
+struct ComponentCrossReference
+{
+    size_t SourceGroupIndex;
+    size_t DestinationGroupIndex;
+};
+
+struct MarkCrossReferences
+{
+    size_t ComponentCount;
+    StronglyConnectedComponent* Components;
+    size_t CrossReferenceCount;
+    ComponentCrossReference* CrossReferences;
+};
+
+
 // Opaque type for tracking object pointers
 #ifndef DACCESS_COMPILE
 struct OBJECTHANDLE__
@@ -506,7 +528,14 @@ typedef enum
      * have an extra pointer which points at an interior pointer into the first object.
      *
      */
-    HNDTYPE_WEAK_INTERIOR_POINTER = 10
+    HNDTYPE_WEAK_INTERIOR_POINTER = 10,
+
+    /*
+     * CROSSREFERENCE HANDLES
+     *
+     * Crossreference handles are used to track the lifetime of an object in another VM heap.
+     */
+    HNDTYPE_CROSSREFERENCE = 11
 } HandleType;
 
 typedef enum
@@ -800,6 +829,9 @@ public:
     // Returns whether nor this GC was promoted by the last GC.
     virtual bool IsPromoted(Object* object) PURE_VIRTUAL
 
+    // Returns whether nor this GC was promoted by the last GC.
+    virtual bool IsPromoted(Object* object, bool bVerifyNextHeader) PURE_VIRTUAL
+
     // Returns true if this pointer points into a GC heap, false otherwise.
     virtual bool IsHeapPointer(void* object, bool small_heap_only = false) PURE_VIRTUAL
 
@@ -1022,6 +1054,8 @@ public:
 
     // Walk the heap object by object outside of a GC.
     virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
+
+    virtual void NullBridgeObjectsWeakRefs(int length, void* unreachableObjectHandles) PURE_VIRTUAL;
 };
 
 #ifdef WRITE_BARRIER_CHECK

@@ -113,6 +113,20 @@ namespace System
             }
         }
 
+#if FEATURE_GCBRIDGE
+        private static object? InternalGetBridgeWait(nint wh)
+        {
+            object? target = null;
+
+            if (GCHandle.InternalTryGetBridgeWait(wh, ref target))
+                return target;
+
+            GCHandle.InternalGetBridgeWait(wh, ref target);
+
+            return target;
+        }
+#endif
+
         // Determines whether or not this instance of WeakReference still refers to an object
         // that has not been collected.
         public virtual bool IsAlive
@@ -126,7 +140,11 @@ namespace System
                 if (wh == 0)
                     return false;
 
+#if FEATURE_GCBRIDGE
+                bool result = InternalGetBridgeWait(wh) != null;
+#else
                 bool result = GCHandle.InternalGet(wh) != null;
+#endif
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
@@ -171,8 +189,12 @@ namespace System
                 }
 #endif
 
+#if FEATURE_GCBRIDGE
+                target = InternalGetBridgeWait(th);
+#else
                 // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive
                 target = GCHandle.InternalGet(th);
+#endif
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);

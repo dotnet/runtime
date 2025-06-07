@@ -509,6 +509,7 @@ set(GC_SOURCES_WKS
     ../gc/gceesvr.cpp
     ../gc/gceewks.cpp
     ../gc/gcload.cpp
+    ../gc/gcbridge.cpp
     ../gc/softwarewritewatch.cpp
     ../gc/handletablecache.cpp)
 
@@ -517,6 +518,7 @@ set(GC_HEADERS_WKS
     ../gc/gceventstatus.h
     ../gc/gcconfig.h
     ../gc/gcscan.h
+    ../gc/gcbridge.h
     ../gc/gchandletableimpl.h
     ../gc/softwarewritewatch.h)
 
@@ -557,6 +559,12 @@ if(FEATURE_OBJCMARSHAL)
         interoplibinterface_objc.cpp
     )
 endif(FEATURE_OBJCMARSHAL)
+
+if(FEATURE_JAVAMARSHAL)
+    list(APPEND VM_SOURCES_WKS
+        interoplibinterface_java.cpp
+    )
+endif(FEATURE_JAVAMARSHAL)
 
 if(CLR_CMAKE_TARGET_WIN32)
 

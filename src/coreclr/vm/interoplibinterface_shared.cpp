@@ -154,3 +154,142 @@ void Interop::OnAfterGCScanRoots(_In_ bool isConcurrent)
         ObjCMarshalNative::AfterRefCountedHandleCallbacks();
 #endif // FEATURE_OBJCMARSHAL
 }
+
+#ifdef FEATURE_GCBRIDGE
+
+namespace
+{
+    Volatile<BOOL> g_GCBridgeActive = FALSE;
+    CLREvent* g_bridgeFinished = nullptr;
+
+    void ReleaseGCBridgeArgumentsWorker(
+        _In_ size_t sccsLen,
+        _In_ StronglyConnectedComponent* sccs,
+        _In_ ComponentCrossReference* ccrs)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
+        // Memory was allocated for the collections by the GC.
+        // See callers of GCToEEInterface::TriggerGCBridge().
+
+        // Free memory in each of the SCCs
+        for (size_t i = 0; i < sccsLen; i++)
+        {
+            free(sccs[i].Context);
+        }
+        free(sccs);
+        free(ccrs);
+    }
+}
+
+bool Interop::IsGCBridgeActive()
+{
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    return g_GCBridgeActive;
+}
+
+void Interop::WaitForGCBridgeFinish()
+{
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    while (g_GCBridgeActive)
+    {
+        GCX_PREEMP();
+        g_bridgeFinished->Wait(INFINITE, false);
+        // In theory, even though we waited for bridge to finish, because we are in preemptive mode
+        // the thread could have been suspended and another GC could have happened, triggering bridge
+        // processing again. In this case we would wait again for bridge processing.
+    }
+}
+
+void Interop::TriggerClientBridgeProcessing(
+    _In_ size_t sccsLen,
+    _In_ StronglyConnectedComponent* sccs,
+    _In_ size_t ccrsLen,
+    _In_ ComponentCrossReference* ccrs)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (g_GCBridgeActive)
+    {
+        // Release the memory allocated since the GCBridge
+        // is already running and we're not passing them to it.
+        ReleaseGCBridgeArgumentsWorker(sccsLen, sccs, ccrs);
+        return;
+    }
+
+    bool gcBridgeTriggered;
+
+#ifdef FEATURE_JAVAMARSHAL
+    gcBridgeTriggered = JavaNative::TriggerClientBridgeProcessing(sccsLen, sccs, ccrsLen, ccrs);
+#endif // FEATURE_JAVAMARSHAL
+
+    if (!gcBridgeTriggered)
+    {
+        // Release the memory allocated since the GCBridge
+        // wasn't trigger for some reason.
+        ReleaseGCBridgeArgumentsWorker(sccsLen, sccs, ccrs);
+        return;
+    }
+
+    // This runs during GC while the world is stopped, no synchronisation required
+    if (!g_bridgeFinished)
+    {
+        g_bridgeFinished = new CLREvent();
+        g_bridgeFinished->CreateManualEvent(false);
+    }
+    else
+    {
+        g_bridgeFinished->Reset();
+    }
+
+    // Mark the GCBridge as active.
+    g_GCBridgeActive = TRUE;
+}
+
+void Interop::FinishCrossReferenceProcessing(
+    _In_ MarkCrossReferences *crossReferences,
+    _In_ int length,
+    _In_ void* unreachableObjectHandles)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(g_GCBridgeActive);
+
+    // Mark the GCBridge as inactive.
+    // This much be synchronized with the GC so switch to cooperative mode.
+    {
+        GCX_COOP();
+
+        GCHeapUtilities::GetGCHeap()->NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
+
+        IGCHandleManager* pHandleManager = GCHandleUtilities::GetGCHandleManager();
+        for (int i = 0; i < length; i++)
+            pHandleManager->DestroyHandleOfUnknownType(((OBJECTHANDLE*)unreachableObjectHandles)[i]);
+
+        g_GCBridgeActive = FALSE;
+        g_bridgeFinished->Set();
+    }
+
+    ReleaseGCBridgeArgumentsWorker(crossReferences->ComponentCount, crossReferences->Components, crossReferences->CrossReferences);
+}
+
+#endif // FEATURE_GCBRIDGE
