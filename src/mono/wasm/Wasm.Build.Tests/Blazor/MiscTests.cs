@@ -96,6 +96,6 @@ public class MiscTests : BlazorWasmTestBase
         string bootConfigPath = _provider.GetBootConfigPath(GetBlazorBinFrameworkDir(config, forPublish: true));
         BootJsonData bootJson = _provider.GetBootJson(bootConfigPath);
 
-        Assert.Contains(bootJson.resources.lazyAssembly.Keys, f => f.StartsWith(razorClassLibraryName));
+        Assert.Contains(((AssetsData)bootJson.resources).lazyAssembly, f => f.name.StartsWith(razorClassLibraryName));
     }
 }

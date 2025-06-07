@@ -5,15 +5,14 @@ import { mono_log_debug, mono_log_warn } from "./logging";
 import { appendUniqueQuery } from "./assets";
 import { loaderHelpers } from "./globals";
 import { mono_exit } from "./exit";
-import { ResourceList } from "../types";
+import { JsAsset } from "../types";
 
-export async function importLibraryInitializers (libraryInitializers: ResourceList | undefined): Promise<void> {
+export async function importLibraryInitializers (libraryInitializers: JsAsset[] | undefined): Promise<void> {
     if (!libraryInitializers) {
         return;
     }
 
-    const initializerFiles = Object.keys(libraryInitializers);
-    await Promise.all(initializerFiles.map(f => importInitializer(f)));
+    await Promise.all((libraryInitializers ?? []).map(i => importInitializer(i.name!)));
 
     async function importInitializer (path: string): Promise<void> {
         try {

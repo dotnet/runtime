@@ -75,6 +75,8 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
         public void ComputeResourcesHash(BootJsonData bootConfig)
         {
+            ResourcesData resources = (ResourcesData)bootConfig.resources;
+
             var sb = new StringBuilder();
 
             static void AddDictionary(StringBuilder sb, Dictionary<string, string>? res)
@@ -86,59 +88,61 @@ namespace Microsoft.NET.Sdk.WebAssembly
                     sb.Append(assetHash);
             }
 
-            AddDictionary(sb, bootConfig.resources.assembly);
-            AddDictionary(sb, bootConfig.resources.coreAssembly);
+            AddDictionary(sb, resources.assembly);
+            AddDictionary(sb, resources.coreAssembly);
 
-            AddDictionary(sb, bootConfig.resources.jsModuleWorker);
-            AddDictionary(sb, bootConfig.resources.jsModuleDiagnostics);
-            AddDictionary(sb, bootConfig.resources.jsModuleNative);
-            AddDictionary(sb, bootConfig.resources.jsModuleRuntime);
-            AddDictionary(sb, bootConfig.resources.wasmNative);
-            AddDictionary(sb, bootConfig.resources.wasmSymbols);
-            AddDictionary(sb, bootConfig.resources.icu);
-            AddDictionary(sb, bootConfig.resources.runtime);
-            AddDictionary(sb, bootConfig.resources.lazyAssembly);
+            AddDictionary(sb, resources.jsModuleWorker);
+            AddDictionary(sb, resources.jsModuleDiagnostics);
+            AddDictionary(sb, resources.jsModuleNative);
+            AddDictionary(sb, resources.jsModuleRuntime);
+            AddDictionary(sb, resources.wasmNative);
+            AddDictionary(sb, resources.wasmSymbols);
+            AddDictionary(sb, resources.icu);
+            AddDictionary(sb, resources.runtime);
+            AddDictionary(sb, resources.lazyAssembly);
 
-            if (bootConfig.resources.satelliteResources != null)
+            if (resources.satelliteResources != null)
             {
-                foreach (var culture in bootConfig.resources.satelliteResources)
+                foreach (var culture in resources.satelliteResources)
                     AddDictionary(sb, culture.Value);
             }
 
-            if (bootConfig.resources.vfs != null)
+            if (resources.vfs != null)
             {
-                foreach (var entry in bootConfig.resources.vfs)
+                foreach (var entry in resources.vfs)
                     AddDictionary(sb, entry.Value);
             }
 
-            if (bootConfig.resources.coreVfs != null)
+            if (resources.coreVfs != null)
             {
-                foreach (var entry in bootConfig.resources.coreVfs)
+                foreach (var entry in resources.coreVfs)
                     AddDictionary(sb, entry.Value);
             }
 
-            bootConfig.resources.hash = Utils.ComputeTextIntegrity(sb.ToString());
+            resources.hash = Utils.ComputeTextIntegrity(sb.ToString());
         }
 
         public Dictionary<string, string>? GetNativeResourceTargetInBootConfig(BootJsonData bootConfig, string resourceName)
         {
+            ResourcesData resources = (ResourcesData)bootConfig.resources;
+
             string resourceExtension = Path.GetExtension(resourceName);
             if (resourceName.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".mjs", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.jsModuleWorker ??= new();
+                return resources.jsModuleWorker ??= new();
             else if (resourceName.StartsWith("dotnet.diagnostics", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.jsModuleDiagnostics ??= new();
+                return resources.jsModuleDiagnostics ??= new();
             else if (resourceName.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.jsModuleNative ??= new();
+                return resources.jsModuleNative ??= new();
             else if (resourceName.StartsWith("dotnet.runtime", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.jsModuleRuntime ??= new();
+                return resources.jsModuleRuntime ??= new();
             else if (resourceName.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".wasm", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.wasmNative ??= new();
+                return resources.wasmNative ??= new();
             else if (resourceName.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
                 return null;
             else if (resourceName.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".symbols", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.wasmSymbols ??= new();
+                return resources.wasmSymbols ??= new();
             else if (resourceName.StartsWith("icudt", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.icu ??= new();
+                return resources.icu ??= new();
             else
                 Log.LogError($"The resource '{resourceName}' is not recognized as any native asset");
 
@@ -173,6 +177,73 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 return null;
 
             return intValue;
+        }
+
+        public void TransformResourcesToAssets(BootJsonData config)
+        {
+            ResourcesData resources = (ResourcesData)config.resources;
+            var assets = new AssetsData();
+
+            assets.hash = resources.hash;
+            assets.jsModuleRuntime = MapJsAssets(resources.jsModuleRuntime);
+            assets.jsModuleNative = MapJsAssets(resources.jsModuleNative);
+            assets.jsModuleWorker = MapJsAssets(resources.jsModuleWorker);
+            assets.jsModuleDiagnostics = MapJsAssets(resources.jsModuleDiagnostics);
+
+            assets.wasmNative = resources.wasmNative?.Select(a => new WasmAsset()
+            {
+                name = a.Key,
+                integrity = a.Value
+            }).ToList();
+            assets.wasmSymbols = resources.wasmSymbols?.Select(a => new SymbolsAsset()
+            {
+                name = a.Key,
+            }).ToList();
+
+            assets.icu = MapGeneralAssets(resources.icu);
+            assets.coreAssembly = MapGeneralAssets(resources.coreAssembly);
+            assets.assembly = MapGeneralAssets(resources.assembly);
+            assets.corePdb = MapGeneralAssets(resources.corePdb);
+            assets.pdb = MapGeneralAssets(resources.pdb);
+            assets.lazyAssembly = MapGeneralAssets(resources.lazyAssembly);
+
+            if (resources.satelliteResources != null)
+            {
+                assets.satelliteResources = resources.satelliteResources.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => MapGeneralAssets(kvp.Value)
+                );
+            }
+
+            assets.libraryInitializers = MapJsAssets(resources.libraryInitializers);
+            assets.modulesAfterConfigLoaded = MapJsAssets(resources.modulesAfterConfigLoaded);
+            assets.modulesAfterRuntimeReady = MapJsAssets(resources.modulesAfterRuntimeReady);
+
+            assets.extensions = resources.extensions;
+
+            assets.coreVfs = MapVfsAssets(resources.coreVfs);
+            assets.vfs = MapVfsAssets(resources.vfs);
+
+            List<GeneralAsset>? MapGeneralAssets(Dictionary<string, string>? assets) => assets?.Select(a => new GeneralAsset()
+            {
+                virtualPath = resources.fingerprinting?[a.Key] ?? a.Key,
+                name = a.Key,
+                integrity = a.Value
+            }).ToList();
+
+            List<JsAsset>? MapJsAssets(Dictionary<string, string>? assets) => assets?.Select(a => new JsAsset()
+            {
+                name = a.Key
+            }).ToList();
+
+            List<VfsAsset>? MapVfsAssets(Dictionary<string, Dictionary<string, string>>? assets) => assets?.Select(a => new VfsAsset()
+            {
+                virtualPath = a.Key,
+                name = a.Value.Keys.First(),
+                integrity = a.Value.Values.First()
+            }).ToList();
+
+            config.resources = assets;
         }
     }
 }
