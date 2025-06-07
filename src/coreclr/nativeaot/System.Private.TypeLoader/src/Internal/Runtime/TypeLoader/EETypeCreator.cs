@@ -435,18 +435,18 @@ namespace Internal.Runtime.TypeLoader
                     return series > 0 ? (series + 2) * IntPtr.Size : 0;
                 }
             }
-            else if (gcBitfield != null)
-            {
-                int series = CreateGCDesc(gcBitfield, 0, isValueType, false, null);
-                return series > 0 ? (series * 2 + 1) * IntPtr.Size : 0;
-            }
-            else if (pTemplateEEType != null)
-            {
-                return RuntimeAugments.GetGCDescSize(pTemplateEEType->ToRuntimeTypeHandle());
-            }
             else
             {
-                return 0;
+                Debug.Assert(gcBitfield == null);
+
+                if (pTemplateEEType != null)
+                {
+                    return RuntimeAugments.GetGCDescSize(pTemplateEEType->ToRuntimeTypeHandle());
+                }
+                else
+                {
+                    return 0;
+                }
             }
         }
 
@@ -530,69 +530,6 @@ namespace Internal.Runtime.TypeLoader
                     *(void**)gcdesc = (void*)-numSeries;
                     *baseOffsetPtr = (void*)(baseOffset * IntPtr.Size);
                 }
-            }
-
-            return numSeries;
-        }
-
-        private static unsafe int CreateGCDesc(bool[] bitfield, int size, bool isValueType, bool isStatic, void* gcdesc)
-        {
-            int offs = 0;
-            // if this type is a class we have to account for the gcdesc.
-            if (isValueType)
-                offs = IntPtr.Size;
-
-            if (bitfield == null)
-                return 0;
-
-            void** ptr = (void**)gcdesc - 1;
-
-            int* staticPtr = isStatic ? ((int*)gcdesc + 1) : null;
-
-            int numSeries = 0;
-            int i = 0;
-            while (i < bitfield.Length)
-            {
-                if (bitfield[i])
-                {
-                    numSeries++;
-                    int seriesOffset = i * IntPtr.Size + offs;
-                    int seriesSize = 0;
-
-                    while ((i < bitfield.Length) && (bitfield[i]))
-                    {
-                        seriesSize += IntPtr.Size;
-                        i++;
-                    }
-
-
-                    if (gcdesc != null)
-                    {
-                        if (staticPtr != null)
-                        {
-                            *staticPtr++ = seriesSize;
-                            *staticPtr++ = seriesOffset;
-                        }
-                        else
-                        {
-                            seriesSize -= size;
-                            *ptr-- = (void*)seriesOffset;
-                            *ptr-- = (void*)seriesSize;
-                        }
-                    }
-                }
-                else
-                {
-                    i++;
-                }
-            }
-
-            if (gcdesc != null)
-            {
-                if (staticPtr != null)
-                    *(int*)gcdesc = numSeries;
-                else
-                    *(void**)gcdesc = (void*)numSeries;
             }
 
             return numSeries;
