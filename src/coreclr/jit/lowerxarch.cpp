@@ -9089,7 +9089,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 assert(childBaseType == TYP_DOUBLE);
             }
 
-            if (parentNode->isEmbeddedBroadcastCompatibleHWIntrinsic() && comp->canUseEvexEncoding())
+            if (parentNode->isEmbeddedBroadcastCompatibleHWIntrinsic(comp))
             {
                 GenTree* broadcastOperand = hwintrinsic->Op(1);
 
@@ -9131,8 +9131,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             assert(hwintrinsic->OperIsMemoryLoad());
             assert(varTypeIsFloating(childBaseType));
 
-            return (parentBaseType == childBaseType) && parentNode->isEmbeddedBroadcastCompatibleHWIntrinsic() &&
-                   comp->canUseEvexEncoding();
+            return (parentBaseType == childBaseType) && parentNode->isEmbeddedBroadcastCompatibleHWIntrinsic(comp);
         }
 
         default:
@@ -9284,8 +9283,7 @@ void Lowering::TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, 
 
     if (IsContainableHWIntrinsicOp(parentNode, childNode, &supportsRegOptional))
     {
-        if (childNode->IsCnsVec() && parentNode->isEmbeddedBroadcastCompatibleHWIntrinsic() &&
-            comp->canUseEvexEncoding())
+        if (childNode->IsCnsVec() && parentNode->isEmbeddedBroadcastCompatibleHWIntrinsic(comp))
         {
             TryFoldCnsVecForEmbeddedBroadcast(parentNode, childNode->AsVecCon());
         }
@@ -9688,8 +9686,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (containedOperand != nullptr)
                     {
-                        if (containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic() &&
-                            comp->canUseEvexEncoding())
+                        if (containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic(comp))
                         {
                             TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());
                         }
@@ -10007,8 +10004,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         if (containedOperand != nullptr)
                         {
-                            if (containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic() &&
-                                comp->canUseEvexEncoding())
+                            if (containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic(comp))
                             {
                                 TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());
                             }
@@ -10091,7 +10087,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         if (containedOperand != nullptr)
                         {
-                            if (containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic())
+                            if (containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic(comp))
                             {
                                 TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());
                             }
@@ -10963,7 +10959,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             if (containedOperand != nullptr)
                             {
-                                if (containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic())
+                                if (containedOperand->IsCnsVec() &&
+                                    node->isEmbeddedBroadcastCompatibleHWIntrinsic(comp))
                                 {
                                     TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());
                                 }

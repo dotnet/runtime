@@ -1263,28 +1263,12 @@ void EEJitManager::SetCpuInfo()
 
     // x86-64-v2
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Sse3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE3))
-    {
-        CPUCompileFlags.Set(InstructionSet_SSE3);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Ssse3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSSE3))
-    {
-        CPUCompileFlags.Set(InstructionSet_SSSE3);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Sse41) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE41))
-    {
-        CPUCompileFlags.Set(InstructionSet_SSE41);
-    }
-
     if (((cpuFeatures & XArchIntrinsicConstants_Sse42) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE42))
     {
+        CPUCompileFlags.Set(InstructionSet_SSE3);
+        CPUCompileFlags.Set(InstructionSet_SSSE3);
+        CPUCompileFlags.Set(InstructionSet_SSE41);
         CPUCompileFlags.Set(InstructionSet_SSE42);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Popcnt) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnablePOPCNT))
-    {
         CPUCompileFlags.Set(InstructionSet_POPCNT);
     }
 
@@ -1298,30 +1282,10 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_Avx2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX2))
     {
         CPUCompileFlags.Set(InstructionSet_AVX2);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Bmi1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableBMI1))
-    {
         CPUCompileFlags.Set(InstructionSet_BMI1);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Bmi2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableBMI2))
-    {
         CPUCompileFlags.Set(InstructionSet_BMI2);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Fma) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableFMA))
-    {
         CPUCompileFlags.Set(InstructionSet_FMA);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Lzcnt) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableLZCNT))
-    {
         CPUCompileFlags.Set(InstructionSet_LZCNT);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Movbe) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableMOVBE))
-    {
         CPUCompileFlags.Set(InstructionSet_MOVBE);
     }
 
@@ -1332,44 +1296,16 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_AVX512);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Vbmi) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI))
+    // x86-64-vFuture
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512v2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512v2))
     {
         CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
     }
 
-    // Unversioned
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Aes) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAES))
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512v3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512v3))
     {
-        CPUCompileFlags.Set(InstructionSet_AES);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Pclmulqdq) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnablePCLMULQDQ))
-    {
-        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Vpclmulqdq) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableVPCLMULQDQ))
-    {
-        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ_V256);
-        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ_V512);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_AvxVnni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNI))
-    {
-        CPUCompileFlags.Set(InstructionSet_AVXVNNI);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Serialize) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableX86Serialize))
-    {
-        CPUCompileFlags.Set(InstructionSet_X86Serialize);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Gfni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableGFNI))
-    {
-        CPUCompileFlags.Set(InstructionSet_GFNI);
-        CPUCompileFlags.Set(InstructionSet_GFNI_V256);
-        CPUCompileFlags.Set(InstructionSet_GFNI_V512);
+        CPUCompileFlags.Set(InstructionSet_AVX512v3);
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
@@ -1388,6 +1324,59 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_APX);
     }
 #endif  // TARGET_AMD64
+
+    // Unversioned
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Aes) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAES))
+    {
+        CPUCompileFlags.Set(InstructionSet_AES);
+        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Vp2intersect) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VP2INTERSECT))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX512VP2INTERSECT);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_AvxIfma) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXIFMA))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVXIFMA);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_AvxVnni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNI))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVXVNNI);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Gfni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableGFNI))
+    {
+        CPUCompileFlags.Set(InstructionSet_GFNI);
+        CPUCompileFlags.Set(InstructionSet_GFNI_V256);
+        CPUCompileFlags.Set(InstructionSet_GFNI_V512);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Sha) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSHA))
+    {
+        CPUCompileFlags.Set(InstructionSet_SHA);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Vaes) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableVAES))
+    {
+        CPUCompileFlags.Set(InstructionSet_AES_V256);
+        CPUCompileFlags.Set(InstructionSet_AES_V512);
+        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ_V256);
+        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ_V512);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_WaitPkg) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableWAITPKG))
+    {
+        CPUCompileFlags.Set(InstructionSet_WAITPKG);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_X86Serialize) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableX86Serialize))
+    {
+        CPUCompileFlags.Set(InstructionSet_X86Serialize);
+    }
 #elif defined(TARGET_ARM64)
     CPUCompileFlags.Set(InstructionSet_VectorT128);
 

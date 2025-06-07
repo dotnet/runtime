@@ -28,36 +28,46 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_SSE41_X64;
         case InstructionSet_SSE42:
             return InstructionSet_SSE42_X64;
+        case InstructionSet_POPCNT:
+            return InstructionSet_POPCNT_X64;
         case InstructionSet_AVX:
             return InstructionSet_AVX_X64;
         case InstructionSet_AVX2:
             return InstructionSet_AVX2_X64;
-        case InstructionSet_AVX512:
-            return InstructionSet_AVX512_X64;
-        case InstructionSet_AVX512VBMI:
-            return InstructionSet_AVX512VBMI_X64;
-        case InstructionSet_AVX10v1:
-            return InstructionSet_AVX10v1_X64;
-        case InstructionSet_AVX10v2:
-            return InstructionSet_AVX10v2_X64;
-        case InstructionSet_AVXVNNI:
-            return InstructionSet_AVXVNNI_X64;
-        case InstructionSet_AES:
-            return InstructionSet_AES_X64;
         case InstructionSet_BMI1:
             return InstructionSet_BMI1_X64;
         case InstructionSet_BMI2:
             return InstructionSet_BMI2_X64;
         case InstructionSet_FMA:
             return InstructionSet_FMA_X64;
-        case InstructionSet_GFNI:
-            return InstructionSet_GFNI_X64;
         case InstructionSet_LZCNT:
             return InstructionSet_LZCNT_X64;
+        case InstructionSet_AVX512:
+            return InstructionSet_AVX512_X64;
+        case InstructionSet_AVX512VBMI:
+            return InstructionSet_AVX512VBMI_X64;
+        case InstructionSet_AVX512v3:
+            return InstructionSet_AVX512v3_X64;
+        case InstructionSet_AVX10v1:
+            return InstructionSet_AVX10v1_X64;
+        case InstructionSet_AVX10v2:
+            return InstructionSet_AVX10v2_X64;
+        case InstructionSet_AES:
+            return InstructionSet_AES_X64;
         case InstructionSet_PCLMULQDQ:
             return InstructionSet_PCLMULQDQ_X64;
-        case InstructionSet_POPCNT:
-            return InstructionSet_POPCNT_X64;
+        case InstructionSet_AVX512VP2INTERSECT:
+            return InstructionSet_AVX512VP2INTERSECT_X64;
+        case InstructionSet_AVXIFMA:
+            return InstructionSet_AVXIFMA_X64;
+        case InstructionSet_AVXVNNI:
+            return InstructionSet_AVXVNNI_X64;
+        case InstructionSet_GFNI:
+            return InstructionSet_GFNI_X64;
+        case InstructionSet_SHA:
+            return InstructionSet_SHA_X64;
+        case InstructionSet_WAITPKG:
+            return InstructionSet_WAITPKG_X64;
         case InstructionSet_X86Serialize:
             return InstructionSet_X86Serialize_X64;
         default:
@@ -79,6 +89,8 @@ static CORINFO_InstructionSet VLVersionOfIsa(CORINFO_InstructionSet isa)
     {
         case InstructionSet_AVX512:
         case InstructionSet_AVX512VBMI:
+        case InstructionSet_AVX512v3:
+        case InstructionSet_AVX10v1:
         {
             // These nested ISAs aren't tracked by the JIT support
             return isa;
@@ -103,6 +115,11 @@ static CORINFO_InstructionSet V256VersionOfIsa(CORINFO_InstructionSet isa)
 {
     switch (isa)
     {
+        case InstructionSet_AES:
+        {
+            return InstructionSet_AES_V256;
+        }
+
         case InstructionSet_GFNI:
         {
             return InstructionSet_GFNI_V256;
@@ -141,6 +158,11 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
             return isa;
         }
 
+        case InstructionSet_AES:
+        {
+            return InstructionSet_AES_V512;
+        }
+
         case InstructionSet_GFNI:
         {
             return InstructionSet_GFNI_V512;
@@ -172,11 +194,11 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
 
     if (className[0] == 'A')
     {
-        if (strcmp(className, "Aes") == 0)
+        if (strcmp(className + 1, "es") == 0)
         {
             return InstructionSet_AES;
         }
-        else if (strncmp(className, "Avx", 3) == 0)
+        else if (strncmp(className + 1, "vx", 2) == 0)
         {
             if (className[3] == '\0')
             {
@@ -199,15 +221,65 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
             }
             else if (strncmp(className + 3, "512", 3) == 0)
             {
-                if ((strcmp(className + 6, "BW") == 0) || (strcmp(className + 6, "CD") == 0) ||
-                    (strcmp(className + 6, "DQ") == 0) || (strcmp(className + 6, "F") == 0))
+                if (className[6] == 'B')
+                {
+                    if (strcmp(className + 7, "italg") == 0)
+                    {
+                        return InstructionSet_AVX512v3;
+                    }
+                    else if (strcmp(className + 7, "f16") == 0)
+                    {
+                        return InstructionSet_AVX10v1;
+                    }
+                    else if (strcmp(className + 7, "W") == 0)
+                    {
+                        return InstructionSet_AVX512;
+                    }
+                }
+                else if ((strcmp(className + 6, "CD") == 0) || (strcmp(className + 6, "DQ") == 0))
                 {
                     return InstructionSet_AVX512;
                 }
-                else if (strcmp(className + 6, "Vbmi") == 0)
+                else if (className[6] == 'F')
                 {
-                    return InstructionSet_AVX512VBMI;
+                    if (className[7] == '\0')
+                    {
+                        return InstructionSet_AVX512;
+                    }
+                    else if (strcmp(className + 7, "p16") == 0)
+                    {
+                        return InstructionSet_AVX10v1;
+                    }
                 }
+                else if (className[6] == 'V')
+                {
+                    if (strncmp(className + 7, "bmi", 3) == 0)
+                    {
+                        if (className[10] == '\0')
+                        {
+                            return InstructionSet_AVX512VBMI;
+                        }
+                        else if (strcmp(className + 10, "2") == 0)
+                        {
+                            return InstructionSet_AVX512v3;
+                        }
+                    }
+                    else if (className[7] == 'p')
+                    {
+                        if (strcmp(className + 8, "p2intersect") == 0)
+                        {
+                            return InstructionSet_AVX512VP2INTERSECT;
+                        }
+                        else if (strcmp(className + 8, "opcntdq") == 0)
+                        {
+                            return InstructionSet_AVX512v3;
+                        }
+                    }
+                }
+            }
+            else if (strcmp(className + 3, "Ifma") == 0)
+            {
+                return InstructionSet_AVXIFMA;
             }
             else if (strcmp(className + 3, "Vnni") == 0)
             {
@@ -217,7 +289,7 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
     }
     else if (className[0] == 'B')
     {
-        if (strncmp(className, "Bmi", 3) == 0)
+        if (strncmp(className + 1, "mi", 2) == 0)
         {
             if (strcmp(className + 3, "1") == 0)
             {
@@ -231,39 +303,47 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
     }
     else if (className[0] == 'F')
     {
-        if (strcmp(className, "Fma") == 0)
+        if (strcmp(className + 1, "ma") == 0)
         {
             return InstructionSet_FMA;
+        }
+        else if (strcmp(className + 1, "16c") == 0)
+        {
+            return InstructionSet_AVX2;
         }
     }
     else if (className[0] == 'G')
     {
-        if (strcmp(className, "Gfni") == 0)
+        if (strcmp(className + 1, "fni") == 0)
         {
             return InstructionSet_GFNI;
         }
     }
     else if (className[0] == 'L')
     {
-        if (strcmp(className, "Lzcnt") == 0)
+        if (strcmp(className + 1, "zcnt") == 0)
         {
             return InstructionSet_LZCNT;
         }
     }
     else if (className[0] == 'P')
     {
-        if (strcmp(className, "Pclmulqdq") == 0)
+        if (strcmp(className + 1, "clmulqdq") == 0)
         {
             return InstructionSet_PCLMULQDQ;
         }
-        else if (strcmp(className, "Popcnt") == 0)
+        else if (strcmp(className + 1, "opcnt") == 0)
         {
             return InstructionSet_POPCNT;
         }
     }
     else if (className[0] == 'S')
     {
-        if (strncmp(className, "Sse", 3) == 0)
+        if (strcmp(className + 1, "ha") == 0)
+        {
+            return InstructionSet_SHA;
+        }
+        else if (strncmp(className + 1, "se", 2) == 0)
         {
             if ((className[3] == '\0') || (strcmp(className + 3, "2") == 0))
             {
@@ -282,14 +362,14 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
                 return InstructionSet_SSE42;
             }
         }
-        else if (strcmp(className, "Ssse3") == 0)
+        else if (strcmp(className + 1, "sse3") == 0)
         {
             return InstructionSet_SSSE3;
         }
     }
     else if (className[0] == 'V')
     {
-        if (strncmp(className, "Vector", 6) == 0)
+        if (strncmp(className + 1, "ector", 5) == 0)
         {
             if (strncmp(className + 6, "128", 3) == 0)
             {
@@ -313,11 +393,15 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
                 }
             }
         }
-        else if (strcmp(className, "VL") == 0)
+        else if (strcmp(className + 1, "L") == 0)
         {
             assert(!"VL.X64 support doesn't exist in the managed libraries and so is not yet implemented");
             return InstructionSet_ILLEGAL;
         }
+    }
+    else if (strcmp(className, "WaitPkg") == 0)
+    {
+        return InstructionSet_WAITPKG;
     }
     else if (strncmp(className, "X86", 3) == 0)
     {
@@ -838,67 +922,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
 //    true if isa is supported; otherwise, false
 bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
 {
-    switch (isa)
-    {
-        // These ISAs are fully implemented
-        case InstructionSet_AES:
-        case InstructionSet_AES_X64:
-        case InstructionSet_AVX:
-        case InstructionSet_AVX_X64:
-        case InstructionSet_AVX2:
-        case InstructionSet_AVX2_X64:
-        case InstructionSet_AVX512:
-        case InstructionSet_AVX512_X64:
-        case InstructionSet_AVX512VBMI:
-        case InstructionSet_AVX512VBMI_X64:
-        case InstructionSet_AVXVNNI:
-        case InstructionSet_AVXVNNI_X64:
-        case InstructionSet_BMI1:
-        case InstructionSet_BMI1_X64:
-        case InstructionSet_BMI2:
-        case InstructionSet_BMI2_X64:
-        case InstructionSet_FMA:
-        case InstructionSet_FMA_X64:
-        case InstructionSet_LZCNT:
-        case InstructionSet_LZCNT_X64:
-        case InstructionSet_PCLMULQDQ:
-        case InstructionSet_PCLMULQDQ_X64:
-        case InstructionSet_PCLMULQDQ_V256:
-        case InstructionSet_PCLMULQDQ_V512:
-        case InstructionSet_POPCNT:
-        case InstructionSet_POPCNT_X64:
-        case InstructionSet_SSE3:
-        case InstructionSet_SSE3_X64:
-        case InstructionSet_SSSE3:
-        case InstructionSet_SSSE3_X64:
-        case InstructionSet_SSE41:
-        case InstructionSet_SSE41_X64:
-        case InstructionSet_SSE42:
-        case InstructionSet_SSE42_X64:
-        case InstructionSet_Vector128:
-        case InstructionSet_Vector256:
-        case InstructionSet_Vector512:
-        case InstructionSet_X86Base:
-        case InstructionSet_X86Base_X64:
-        case InstructionSet_X86Serialize:
-        case InstructionSet_X86Serialize_X64:
-        case InstructionSet_AVX10v1:
-        case InstructionSet_AVX10v1_X64:
-        case InstructionSet_AVX10v2:
-        case InstructionSet_AVX10v2_X64:
-        case InstructionSet_GFNI:
-        case InstructionSet_GFNI_X64:
-        case InstructionSet_GFNI_V256:
-        case InstructionSet_GFNI_V512:
-        {
-            return true;
-        }
-
-        default:
-        {
-            return false;
-        }
-    }
+    // All ISAs are currently fully implemented
+    return true;
 }
 
 //------------------------------------------------------------------------

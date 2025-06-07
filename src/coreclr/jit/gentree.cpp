@@ -20541,7 +20541,7 @@ bool GenTree::isEvexCompatibleHWIntrinsic(Compiler* comp) const
 // Return Value:
 //   true if the intrinsic node lowering instruction has a EVEX embedded broadcast support
 //
-bool GenTree::isEmbeddedBroadcastCompatibleHWIntrinsic() const
+bool GenTree::isEmbeddedBroadcastCompatibleHWIntrinsic(Compiler* comp) const
 {
     if (OperIsHWIntrinsic())
     {
@@ -20549,7 +20549,7 @@ bool GenTree::isEmbeddedBroadcastCompatibleHWIntrinsic() const
         var_types      simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
         instruction    ins          = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType, nullptr);
 
-        if (CodeGenInterface::instIsEmbeddedBroadcastCompatible(ins))
+        if (comp->codeGen->instIsEmbeddedBroadcastCompatible(ins))
         {
             insTupleType tupleType = emitter::insTupleTypeInfo(ins);
 
