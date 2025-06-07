@@ -949,7 +949,7 @@ namespace System
                         return (result >= 0) ? (index + result) : ~(index + ~result);
 
                         static int GenericBinarySearch<T>(Array array, int adjustedIndex, int length, object value) where T : struct, IComparable<T>
-                            => UnsafeArrayAsSpan<T>(array, adjustedIndex, length).BinarySearch(Unsafe.ReadUnaligned<T>(ref value.GetRawData()));
+                            => UnsafeArrayAsSpan<T>(array, adjustedIndex, length).BinarySearch(Unsafe.As<byte, T>(ref value.GetRawData()));
                     }
                 }
             }
@@ -1445,7 +1445,7 @@ namespace System
                     return (result >= 0 ? startIndex : lb) + result;
 
                     static int GenericIndexOf<T>(Array array, object value, int adjustedIndex, int length) where T : struct, IEquatable<T>
-                        => UnsafeArrayAsSpan<T>(array, adjustedIndex, length).IndexOf(Unsafe.ReadUnaligned<T>(ref value.GetRawData()));
+                        => UnsafeArrayAsSpan<T>(array, adjustedIndex, length).IndexOf(Unsafe.As<byte, T>(ref value.GetRawData()));
                 }
             }
 
@@ -1672,7 +1672,7 @@ namespace System
                     return (result >= 0 ? endIndex : lb) + result;
 
                     static int GenericLastIndexOf<T>(Array array, object value, int adjustedIndex, int length) where T : struct, IEquatable<T>
-                        => UnsafeArrayAsSpan<T>(array, adjustedIndex, length).LastIndexOf(Unsafe.ReadUnaligned<T>(ref value.GetRawData()));
+                        => UnsafeArrayAsSpan<T>(array, adjustedIndex, length).LastIndexOf(Unsafe.As<byte, T>(ref value.GetRawData()));
                 }
             }
 
