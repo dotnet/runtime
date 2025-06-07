@@ -63,13 +63,8 @@
 #endif
 
 #if defined(_MSC_VER)
-#  ifdef SANITIZER_SHARED_RUNTIME
-#    define SANITIZER_CALLBACK_CALLCONV __declspec(dllexport no_sanitize_address) __cdecl
-#    define SANITIZER_INTERFACE_CALLCONV __declspec(dllimport) __cdecl
-#  else
-#    define SANITIZER_CALLBACK_CALLCONV __declspec(no_sanitize_address) __cdecl
-#    define SANITIZER_INTERFACE_CALLCONV __cdecl
-#  endif
+#  define SANITIZER_CALLBACK_CALLCONV __declspec(no_sanitize_address) __cdecl
+#  define SANITIZER_INTERFACE_CALLCONV __cdecl
 #else
 #  ifdef SANITIZER_SHARED_RUNTIME
 #    define SANITIZER_CALLBACK_CALLCONV __attribute__((no_address_safety_analysis)) __attribute__((visibility("default")))
