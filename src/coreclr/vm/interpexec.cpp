@@ -105,43 +105,31 @@ template <typename TResult, typename TSource> static void ConvFpHelper(int8_t *s
 template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t *stack, const int32_t *ip)
 {
     static_assert(!std::numeric_limits<TSource>::is_integer, "ConvOvfFpHelper is only for use on floats and doubles");
+    static_assert(std::numeric_limits<TResult>::is_integer, "ConvOvfFpHelper is only for use on floats and doubles to be converted to integers");
 
-    // First, promote the source value to double - that's what the helpers accept
-    double promoted_src = LOCAL_VAR(ip[2], TSource);
-    // Next, perform the initial overflow-checked conversion down to the smallest appropriate integer type.
-    // For an I8/U8 destination, we will use Dbl2Lng or Dbl2ULng; for every other destination we use Dbl2Int or Dbl2UInt.
-    switch (sizeof(TResult))
-    {
-        case 8:
-        {
-            // This helper is either DBL2Lng or DBL2ULng, and our result is I8 or U8, so just store the result directly.
-            HELPER_FTN_R82I8 helper = GetPossiblyIndirectHelper<HELPER_FTN_R82I8>(pDataItems[ip[3]]);
-            LOCAL_VAR(ip[1], int64_t) = helper(promoted_src);
-            break;
-        }
-        case 4:
-        {
-            // This helper is either DBL2Int or DBL2UInt, and our result is I4 or U4, so just store the result directly.
-            HELPER_FTN_R82I4 helper = GetPossiblyIndirectHelper<HELPER_FTN_R82I4>(pDataItems[ip[3]]);
-            LOCAL_VAR(ip[1], int32_t) = helper(promoted_src);
-            break;
-        }
-        default:
-        {
-            // This helper is DBL2Int, and our result is smaller so we need a second overflow check at the end.
-            HELPER_FTN_R82I4 helper = GetPossiblyIndirectHelper<HELPER_FTN_R82I4>(pDataItems[ip[3]]);
-            int32_t temp = helper(promoted_src);
-            if ((temp < (int32_t)std::numeric_limits<TResult>::min()) || (temp > (int32_t)std::numeric_limits<TResult>::max()))
-            {
-                COMPlusThrow(kOverflowException);
-            }
-            else
-            {
-                LOCAL_VAR(ip[1], int32_t) = temp;
-            }
-            break;
-        }
-    }
+    // First, promote the source value to double
+    double src = LOCAL_VAR(ip[2], TSource),
+        minValue = (double)std::numeric_limits<TResult>::lowest(),
+        maxValue = (double)std::numeric_limits<TResult>::max();
+
+    bool outOfRange;
+    // (src != src) checks for NaN, then we check whether the min and max values (as represented by their closest double)
+    //  properly bound the source value so that when it is truncated it will be in range
+    // We assume that we are in round-towards-zero mode
+    if (std::numeric_limits<TResult>::is_signed)
+        outOfRange = (src != src) || (src < minValue) || (src > maxValue);
+    else
+        outOfRange = (src != src) || (src <= -1) || (src > maxValue);
+
+    if (outOfRange)
+        COMPlusThrow(kOverflowException);
+
+    TResult truncated = (TResult)src;
+    // According to spec, for result types smaller than int32, we store them on the stack as int32
+    if (sizeof(TResult) >= 4)
+        LOCAL_VAR(ip[1], TResult) = truncated;
+    else
+        LOCAL_VAR(ip[1], int32_t) = (int32_t)truncated;
 }
 
 template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, const int32_t *ip)
@@ -150,17 +138,17 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
     static_assert(std::numeric_limits<TSource>::is_integer, "ConvOvfHelper is only for use on integers");
 
     TSource src = LOCAL_VAR(ip[2], TSource);
-    bool in_range;
+    bool inRange;
     if (std::numeric_limits<TSource>::is_signed)
     {
-        in_range = (src >= (TSource)std::numeric_limits<TResult>::min()) && (src <= (TSource)std::numeric_limits<TResult>::max());
+        inRange = (src >= (TSource)std::numeric_limits<TResult>::lowest()) && (src <= (TSource)std::numeric_limits<TResult>::max());
     }
     else
     {
-        in_range = (src <= (TSource)std::numeric_limits<TResult>::max());
+        inRange = (src <= (TSource)std::numeric_limits<TResult>::max());
     }
 
-    if (in_range)
+    if (inRange)
     {
         // conv_ovf with floating point inputs is handled in ConvOvfFpHelper, so all possible conv_ovfs in this function are
         // from int64 into int32-or-smaller, or int32-or-smaller into int16-or-smaller.
@@ -339,11 +327,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_I1_R4:
-                    ConvOvfFpHelper<int8_t, float>(stack, ip);
+                    ConvFpHelper<int8_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I1_R8:
-                    ConvOvfFpHelper<int8_t, double>(stack, ip);
+                    ConvFpHelper<int8_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_I4:
@@ -355,11 +343,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R4:
-                    ConvOvfFpHelper<uint8_t, float>(stack, ip);
+                    ConvFpHelper<uint8_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R8:
-                    ConvOvfFpHelper<uint8_t, double>(stack, ip);
+                    ConvFpHelper<uint8_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_I4:
@@ -371,11 +359,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_R4:
-                    ConvOvfFpHelper<int16_t, float>(stack, ip);
+                    ConvFpHelper<int16_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_R8:
-                    ConvOvfFpHelper<int16_t, double>(stack, ip);
+                    ConvFpHelper<int16_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_I4:
@@ -387,27 +375,27 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R4:
-                    ConvOvfFpHelper<uint16_t, float>(stack, ip);
+                    ConvFpHelper<uint16_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R8:
-                    ConvOvfFpHelper<uint16_t, float>(stack, ip);
+                    ConvFpHelper<uint16_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I4_R4:
-                    ConvOvfFpHelper<int32_t, float>(stack, ip);
+                    ConvFpHelper<int32_t, float>(stack, ip);
                     ip += 3;
                     break;;
                 case INTOP_CONV_I4_R8:
-                    ConvOvfFpHelper<int32_t, double>(stack, ip);
+                    ConvFpHelper<int32_t, double>(stack, ip);
                     ip += 3;
                     break;;
                 case INTOP_CONV_U4_R4:
-                    ConvOvfFpHelper<uint32_t, float>(stack, ip);
+                    ConvFpHelper<uint32_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U4_R8:
-                    ConvOvfFpHelper<uint32_t, double>(stack, ip);
+                    ConvFpHelper<uint32_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I8_I4:
@@ -419,11 +407,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;;
                 case INTOP_CONV_I8_R4:
-                    ConvOvfFpHelper<int64_t, float>(stack, ip);
+                    ConvFpHelper<int64_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I8_R8:
-                    ConvOvfFpHelper<int64_t, double>(stack, ip);
+                    ConvFpHelper<int64_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_R4_I4:
@@ -451,11 +439,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U8_R4:
-                    ConvOvfFpHelper<uint64_t, float>(stack, ip);
+                    ConvFpHelper<uint64_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U8_R8:
-                    ConvOvfFpHelper<uint64_t, double>(stack, ip);
+                    ConvFpHelper<uint64_t, double>(stack, ip);
                     ip += 3;
                     break;
 
