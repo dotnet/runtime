@@ -636,7 +636,7 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             sAppPaths));
     }
 
-#if defined(TARGET_UNIX)
+#if defined(TARGET_UNIX) and !defined(TARGET_WASM)
     if (!g_coreclr_embedded)
     {
         // Check if the current code is executing in the single file host or in libcoreclr.so. The libSystem.Native is linked

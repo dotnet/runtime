@@ -28,6 +28,10 @@ struct CallDescrData
 #endif
     UINT32                      fpReturnSize;
     PCODE                       pTarget;
+#ifdef TARGET_WASM
+    MethodDesc*                 pMD;
+    size_t                      nArgsSize;
+#endif
 
 #ifdef CALLDESCR_RETBUFFARGREG
     // Pointer to return buffer arg location

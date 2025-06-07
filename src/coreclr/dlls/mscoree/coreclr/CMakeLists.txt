@@ -56,8 +56,14 @@ endif (CLR_CMAKE_HOST_WIN32)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=CoreCLR.dll)
 
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+    set(LINK_TYPE STATIC)
+else()
+    set(LINK_TYPE SHARED)
+endif()
+
 add_library_clr(coreclr
-    SHARED
+    ${LINK_TYPE}
     ${CLR_SOURCES}
 )
 
@@ -70,9 +76,15 @@ add_dependencies(coreclr coreclr_exports)
 set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
 set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 
-if (CLR_CMAKE_HOST_UNIX)
+if (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     set(LIB_UNWINDER unwinder_wks)
-endif (CLR_CMAKE_HOST_UNIX)
+endif (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    set(LIB_CORDBEE cordbee_wks)
+    set(LIB_INTEROP interop)
+    set(LIB_CDAC_CONTRACT_DESCRIPTOR cdac_contract_descriptor)
+endif (NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared
@@ -80,7 +92,7 @@ endif (CLR_CMAKE_HOST_UNIX)
 set(CORECLR_LIBRARIES
     utilcode
     ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
-    cordbee_wks
+    ${LIB_CORDBEE}
     debug-pal
     ${LIB_UNWINDER}
     v3binder
@@ -95,10 +107,10 @@ set(CORECLR_LIBRARIES
     utilcode
     v3binder
     System.Globalization.Native-Static
-    interop
+    ${LIB_INTEROP}
     coreclrminipal
     gc_pal
-    cdac_contract_descriptor
+    ${LIB_CDAC_CONTRACT_DESCRIPTOR}
 )
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)

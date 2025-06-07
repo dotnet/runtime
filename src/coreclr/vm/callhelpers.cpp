@@ -532,6 +532,10 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 #endif
     callDescrData.fpReturnSize = fpReturnSize;
     callDescrData.pTarget = m_pCallTarget;
+#ifdef TARGET_WASM
+    callDescrData.pMD = m_pMD;
+    callDescrData.nArgsSize = m_argIt.GetArgSize();
+#endif
 
     CallDescrWorkerWithHandler(&callDescrData);
 

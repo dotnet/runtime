@@ -77,7 +77,7 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
 {
     assert(buffer != NULL);
 
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) && defined(MONO_RUNTIME)
     extern int32_t mono_wasm_browser_entropy(uint8_t* buffer, int32_t bufferLength);
     static bool sMissingBrowserCrypto;
     if (!sMissingBrowserCrypto)

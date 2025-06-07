@@ -2392,7 +2392,7 @@ DebuggerAssemblyControlFlags Assembly::ComputeDebuggingConfig()
     IfFailThrow(GetDebuggingCustomAttributes(&dacfFlags));
     return (DebuggerAssemblyControlFlags)dacfFlags;
 #else // !DEBUGGING_SUPPORTED
-    return 0;
+    return (DebuggerAssemblyControlFlags)0;
 #endif // DEBUGGING_SUPPORTED
 }
 

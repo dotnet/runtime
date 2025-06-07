@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_JIT)
 
 #include "callstubgenerator.h"
 
@@ -997,4 +997,4 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
 #endif // UNIX_AMD64_ABI
 }
 
-#endif // FEATURE_INTERPRETER
+#endif // FEATURE_INTERPRETER && FEATURE_JIT
