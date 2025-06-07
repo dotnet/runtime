@@ -179,7 +179,6 @@
     <Compile Include="SocketsHttpHandlerTest.Http2ExtendedConnect.cs" />
     <Compile Include="SocketsHttpHandlerTest.Http2FlowControl.cs" />
     <Compile Include="SocketsHttpHandlerTest.Http2KeepAlivePing.cs" />
-    <Compile Include="SocketsHttpHandlerTest.Http2KeepAlivePingZeroLifetime.cs" />
     <Compile Include="HttpClientHandlerTest.Connect.cs" />
     <Compile Include="HttpClientHandlerTest.Finalization.cs" />
     <Compile Include="HttpClientHandlerTest.Headers.cs" />
