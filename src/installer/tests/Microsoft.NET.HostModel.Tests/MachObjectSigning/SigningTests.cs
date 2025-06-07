@@ -31,7 +31,8 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true))
             using (var managedSignedAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite))
             {
-                if (!MachObjectFile.Create(managedSignedAccessor).HasSignature) {
+                if (!MachObjectFile.Create(managedSignedAccessor).HasSignature)
+                {
                     return false;
                 }
             }
@@ -87,7 +88,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 
                 // Managed signed file
                 AdHocSignFile(originalFilePath, managedSignedPath, fileName);
-                Assert.True(IsSigned(managedSignedPath), $"Failed to sign a copy of {filePath}");
+                Assert.True(IsSigned(managedSignedPath), $"Failed to sign file '{managedSignedPath}'. Original: '{filePath}'");
             }
         }
 
@@ -136,7 +137,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             using var testArtifact = TestArtifact.Create(nameof(MatchesCodesignOutput));
             foreach (var filePath in GetTestFilePaths(testArtifact))
             {
-                string fileName = Path.GetFileName(filePath);
+                string identifier = Path.GetFileName(filePath);
                 string originalFilePath = filePath;
                 string codesignFilePath = filePath + ".codesigned";
                 string managedSignedPath = filePath + ".signed";
@@ -144,15 +145,14 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 // Codesigned file
                 File.Copy(filePath, codesignFilePath);
                 Assert.True(Codesign.IsAvailable, "Could not find codesign tool");
-                Codesign.Run("--remove-signature", codesignFilePath).ExitCode.Should().Be(0, $"'codesign --remove-signature {codesignFilePath}' failed!");
-                Codesign.Run("-s -", codesignFilePath).ExitCode.Should().Be(0, $"'codesign -s - {codesignFilePath}' failed!");
+                Codesign.Run($"-s - --preserve-metadata=entitlements -f -i {identifier}", codesignFilePath).ExitCode.Should().Be(0, $"'codesign -s - --preserve-metadata=Entitlements -f' failed for '{codesignFilePath}'. Original file: '{filePath}'");
 
                 // Managed signed file
-                AdHocSignFile(originalFilePath, managedSignedPath, fileName);
+                AdHocSignFile(originalFilePath, managedSignedPath, identifier);
 
                 var check = Codesign.Run("-v", managedSignedPath);
                 check.ExitCode.Should().Be(0, check.StdErr, $"Failed to sign a copy of '{filePath}'");
-                Assert.True(MachFilesAreEquivalent(codesignFilePath, managedSignedPath, fileName), $"Managed signature does not match codesign output for '{filePath}'");
+                Assert.True(MachFilesAreEquivalent(codesignFilePath, managedSignedPath), $"File at '{managedSignedPath}' signed by managed codesigner does not match file '{codesignFilePath}' signed by codesign tool. Original file: '{filePath}'");
             }
         }
 
@@ -161,7 +161,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         void SignedMachOExecutableRuns()
         {
             using var testArtifact = TestArtifact.Create(nameof(SignedMachOExecutableRuns));
-            foreach(var (fileName, fileInfo) in TestData.MachObjects.GetRunnable())
+            foreach (var (fileName, fileInfo) in TestData.MachObjects.GetRunnable())
             {
                 string unsignedFilePath = Path.Combine(testArtifact.Location, fileName);
                 string signedPath = unsignedFilePath + ".signed";
@@ -177,13 +177,13 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             }
         }
 
-        static bool MachFilesAreEquivalent(string codesignedPath, string managedSignedPath, string fileName)
+        static bool MachFilesAreEquivalent(string codesignedPath, string managedSignedPath)
         {
             using var managedFileStream = new FileStream(managedSignedPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
             using var managedMMapFile = MemoryMappedFile.CreateFromFile(managedFileStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
             using var managedSignedAccessor = managedMMapFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
 
-            using var codesignedFileStream = new FileStream(managedSignedPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
+            using var codesignedFileStream = new FileStream(codesignedPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
             using var codesignedMMapFile = MemoryMappedFile.CreateFromFile(codesignedFileStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
             using var codesignedAccessor = codesignedMMapFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
 
@@ -212,35 +212,40 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, appHostSignedLength, MemoryMappedFileAccess.ReadWrite))
                 {
                     var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
-                    appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, fileName);
+                    appHostLength = machObjectFile.AdHocSignFile(memoryMappedViewAccessor, fileName);
                 }
                 appHostDestinationStream.SetLength(appHostLength);
             }
         }
 
-        public static void AdHocSignFileInPlace(string managedSignedPath)
+        public static bool HasDerEntitlementsBlob(string filePath)
         {
-            var tmpFile = Path.GetTempFileName();
-            var mode = File.GetUnixFileMode(managedSignedPath);
-            using (FileStream appHostDestinationStream = new FileStream(tmpFile, FileMode.Create, FileAccess.ReadWrite))
+            using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                using (FileStream appHostSourceStream = new(managedSignedPath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                {
-                    appHostSourceStream.CopyTo(appHostDestinationStream);
-                }
-                var appHostLength = appHostDestinationStream.Length;
-                var appHostSignedLength = appHostLength + MachObjectFile.GetSignatureSizeEstimate((uint)appHostLength, tmpFile);
-
-                using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, appHostSignedLength, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
-                using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, appHostSignedLength, MemoryMappedFileAccess.ReadWrite))
+                using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true))
+                using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
                 {
                     var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
-                    appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, tmpFile);
+                    return machObjectFile.EmbeddedSignatureBlob?.DerEntitlementsBlob != null;
                 }
-                appHostDestinationStream.SetLength(appHostLength);
             }
-            File.Move(tmpFile, managedSignedPath, true);
-            File.SetUnixFileMode(managedSignedPath, mode);
+        }
+
+        public static bool HasEntitlementsBlob(string filePath)
+        {
+            using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true))
+                using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
+                {
+                    var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
+                    if (machObjectFile.EmbeddedSignatureBlob.DerEntitlementsBlob == null)
+                    {
+                        return false;
+                    }
+                    return machObjectFile.EmbeddedSignatureBlob?.EntitlementsBlob != null;
+                }
+            }
         }
 
         /// <summary>
