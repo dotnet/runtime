@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -72,7 +73,11 @@ namespace System.Buffers
             }
         }
 
+        // SetCharBit and IsCharBitSet must bypass R2R because the set of supported intrinsics impacts how the type is constructed in memory,
+        // so which branch is taken must never change during program execution as we're tiering up. Other methods in this type only check for
+        // intrinsics as a fast path where the fallback path behaves identically, so they are fine to compile R2R.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [BypassReadyToRun]
         private static void SetCharBit(ref uint charMap, byte value)
         {
             if (Sse41.IsSupported || AdvSimd.Arm64.IsSupported)
@@ -86,6 +91,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [BypassReadyToRun]
         private static bool IsCharBitSet(ref uint charMap, byte value) => Sse41.IsSupported || AdvSimd.Arm64.IsSupported
             ? (Unsafe.Add(ref Unsafe.As<uint, byte>(ref charMap), value & VectorizedIndexMask) & (1u << (value >> VectorizedIndexShift))) != 0
             : (Unsafe.Add(ref charMap, value & PortableIndexMask) & (1u << (value >> PortableIndexShift))) != 0;
