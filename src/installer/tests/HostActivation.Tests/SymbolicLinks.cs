@@ -110,7 +110,6 @@ namespace HostActivation.Tests
                     Path.Combine(targetPath, appHostName),
                     Path.Combine(appHostDir, appHostName)));
 
-                Console.ReadLine();
                 var result = Command.Create(Path.Combine(targetPath, appHostName))
                     .CaptureStdErr()
                     .CaptureStdOut()
