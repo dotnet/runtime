@@ -939,7 +939,7 @@ session_tracepoint_write_event (
 	io[index].iov_base = (void *)ep_event_get_metadata (ep_event);
 	io[index].iov_len = metadata_len;
 
-	size_t bytes_written;
+	ssize_t bytes_written;
 	while ((bytes_written = writev(session->user_events_data_fd, (const struct iovec *)io, index + 1) < 0) && errno == EINTR);
 
 	if (io != static_io)

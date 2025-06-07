@@ -184,7 +184,7 @@ struct _EventPipeTracepoint {
 #else
 struct _EventPipeTracepoint_Internal {
 #endif
-	ep_char8_t tracepoint_format[EP_TRACEPOINT_FORMAT_MAX_SIZE];
+	const ep_char8_t *tracepoint_format;
 	uint32_t write_index;
 	uint32_t enabled;
 };
@@ -194,6 +194,11 @@ struct _EventPipeTracepoint {
 	uint8_t _internal [sizeof (struct _EventPipeTracepoint_Internal)];
 };
 #endif
+
+bool
+ep_tracepoint_format_init (
+    EventPipeTracepoint *tracepoint,
+    const ep_char8_t *tracepoint_name);
 
 /*
  * EventPipeProviderEventFilter.

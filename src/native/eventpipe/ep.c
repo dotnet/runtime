@@ -1755,6 +1755,38 @@ ep_ipc_stream_factory_callback_set (EventPipeIpcStreamFactorySuspendedPortsCallb
 	_ep_ipc_stream_factory_suspended_ports_callback = suspended_ports_callback;
 }
 
+bool
+ep_tracepoint_format_init (
+    EventPipeTracepoint *tracepoint,
+    const ep_char8_t *tracepoint_name)
+{
+	EP_ASSERT (tracepoint != NULL);
+
+	bool result = false;
+	int32_t res = 0;
+
+	tracepoint->tracepoint_format = NULL;
+	if (tracepoint_name == NULL || tracepoint_name[0] == '\0')
+		return true;
+
+	size_t tracepoint_format_len = strlen(tracepoint_name) + strlen(EP_TRACEPOINT_FORMAT_V1) + 2; // +2 for space and null terminator
+	ep_char8_t *tracepoint_format = ep_rt_utf8_string_alloc (tracepoint_format_len);
+	ep_raise_error_if_nok (tracepoint_format != NULL);
+	res = snprintf(tracepoint_format, sizeof(tracepoint_format), "%s %s", tracepoint_name, EP_TRACEPOINT_FORMAT_V1);
+	ep_raise_error_if_nok (res >= 0 && (size_t)res < sizeof(tracepoint_format));
+	tracepoint->tracepoint_format = tracepoint_format;
+	tracepoint_format = NULL;
+
+	result = true;
+
+ep_on_exit:
+	return result;
+
+ep_on_error:
+	ep_rt_utf8_string_free (tracepoint_format);
+	ep_exit_error_handler ();
+}
+
 EventPipeProviderEventFilter *
 ep_provider_event_filter_dup (const EventPipeProviderEventFilter *event_filter_src)
 {
@@ -1811,9 +1843,7 @@ ep_provider_tracepoint_config_dup (const EventPipeProviderTracepointConfiguratio
 
 	EventPipeTracepoint *tracepoint_copy = NULL;
 	dn_umap_t *tracepoints_seen = NULL;
-	tracepoint_config->default_tracepoint.tracepoint_format[0] = '\0';
-	if (tracepoint_config_src->default_tracepoint.tracepoint_format[0] != '\0')
-		memcpy(&tracepoint_config->default_tracepoint, &tracepoint_config_src->default_tracepoint, sizeof(EventPipeTracepoint));
+	ep_raise_error_if_nok (ep_tracepoint_format_init (&tracepoint_config->default_tracepoint, tracepoint_config_src->default_tracepoint.tracepoint_format));
 
 	tracepoint_config->tracepoints = NULL;
 	if (tracepoint_config_src->tracepoints) {
@@ -1832,7 +1862,8 @@ ep_provider_tracepoint_config_dup (const EventPipeProviderTracepointConfiguratio
 			if (!dn_umap_extract_key (tracepoints_seen, tracepoint, NULL, (void **)&tracepoint_copy)) {
 				tracepoint_copy = ep_rt_object_alloc (EventPipeTracepoint);
 				ep_return_null_if_nok (tracepoint_copy != NULL);
-				memcpy(tracepoint_copy, tracepoint, sizeof(EventPipeTracepoint));
+				ep_raise_error_if_nok (ep_tracepoint_format_init (tracepoint_copy, tracepoint->tracepoint_format));
+
 				dn_umap_result_t insert_result = dn_umap_insert (tracepoints_seen, tracepoint, tracepoint_copy);
 				ep_raise_error_if_nok (insert_result.result);
 				ep_raise_error_if_nok (dn_vector_ptr_push_back (tracepoint_config->tracepoints, tracepoint_copy));

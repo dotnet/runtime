@@ -69,12 +69,6 @@ eventpipe_collect_tracing_command_try_parse_event_filter (
 
 static
 bool
-tracepoint_format_init (
-    EventPipeTracepoint *tracepoint,
-    const ep_char8_t *tracepoint_name);
-
-static
-bool
 eventpipe_collect_tracing_command_try_parse_tracepoint_config (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
@@ -282,24 +276,6 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
-static
-bool
-tracepoint_format_init (
-    EventPipeTracepoint *tracepoint,
-    const ep_char8_t *tracepoint_name)
-{
-	EP_ASSERT (tracepoint != NULL);
-
-	tracepoint->tracepoint_format[0] = '\0';
-	if (tracepoint_name == NULL || tracepoint_name[0] == '\0')
-		return true;
-
-	size_t default_tracepoint_format_len = strlen(tracepoint_name) + strlen(EP_TRACEPOINT_FORMAT_V1) + 2; // +2 for space and null terminator
-	int32_t res = snprintf(tracepoint->tracepoint_format, sizeof(tracepoint->tracepoint_format), "%s %s", tracepoint_name, EP_TRACEPOINT_FORMAT_V1);
-
-	return (res >= 0 && (size_t)res < sizeof(tracepoint->tracepoint_format));
-}
-
 /*
  *  eventpipe_collect_tracing_command_try_parse_tracepoint_config
  *
@@ -339,7 +315,7 @@ eventpipe_collect_tracing_command_try_parse_tracepoint_config (
 
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &tracepoint_name));
 
-	ep_raise_error_if_nok (tracepoint_format_init (&tracepoint_config->default_tracepoint, tracepoint_name));
+	ep_raise_error_if_nok (ep_tracepoint_format_init (&tracepoint_config->default_tracepoint, tracepoint_name));
 	ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_name);
 	tracepoint_name = NULL;
 
@@ -361,7 +337,7 @@ eventpipe_collect_tracing_command_try_parse_tracepoint_config (
 			ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &tracepoint_name));
 			ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (tracepoint_name));
 
-			ep_raise_error_if_nok (tracepoint_format_init (tracepoint, tracepoint_name));
+			ep_raise_error_if_nok (ep_tracepoint_format_init (tracepoint, tracepoint_name));
 			ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_name);
 			tracepoint_name = NULL;
 
