@@ -51,6 +51,8 @@ namespace System.Net.Security
             RemoteCertRequired = true;
             CertificateContext = sslClientAuthenticationOptions.ClientCertificateContext;
             TargetHost = sslClientAuthenticationOptions.TargetHost ?? string.Empty;
+            AllowRsaPssPadding = sslClientAuthenticationOptions.AllowRsaPssPadding;
+            AllowRsaPkcs1Padding = sslClientAuthenticationOptions.AllowRsaPkcs1Padding;
 
             // Client specific options.
             CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
@@ -110,6 +112,8 @@ namespace System.Net.Security
             RemoteCertRequired = sslServerAuthenticationOptions.ClientCertificateRequired;
             CipherSuitesPolicy = sslServerAuthenticationOptions.CipherSuitesPolicy;
             CertificateRevocationCheckMode = sslServerAuthenticationOptions.CertificateRevocationCheckMode;
+            AllowRsaPssPadding = sslServerAuthenticationOptions.AllowRsaPssPadding;
+            AllowRsaPkcs1Padding = sslServerAuthenticationOptions.AllowRsaPkcs1Padding;
             if (sslServerAuthenticationOptions.ServerCertificateContext != null)
             {
                 CertificateContext = sslServerAuthenticationOptions.ServerCertificateContext;
@@ -185,6 +189,8 @@ namespace System.Net.Security
         internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; set; }
         internal X509ChainPolicy? CertificateChainPolicy { get; set; }
         internal bool AllowTlsResume { get; set; }
+        internal bool AllowRsaPssPadding { get; set; }
+        internal bool AllowRsaPkcs1Padding { get; set; }
 
 #if TARGET_ANDROID
         internal SslStream.JavaProxy? SslStreamProxy { get; set; }
