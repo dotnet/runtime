@@ -106,7 +106,12 @@ namespace ILCompiler
                 if ((flags & Aes) != 0)
                 {
                     builder.AddSupportedInstructionSet("aes");
-                    builder.AddSupportedInstructionSet("pclmul");
+                    if ((flags & Vaes) != 0)
+                    {
+                        builder.AddSupportedInstructionSet("aes_v256");
+                        if ((flags & Avx512) != 0)
+                            builder.AddSupportedInstructionSet("vaes_v512");
+                    }
                 }
                 if ((flags & Avx512Vp2intersect) != 0)
                     builder.AddSupportedInstructionSet("avx512vp2intersect");
@@ -124,16 +129,6 @@ namespace ILCompiler
                 }
                 if ((flags & Sha) != 0)
                     builder.AddSupportedInstructionSet("sha");
-                if ((flags & Vaes) != 0)
-                {
-                    builder.AddSupportedInstructionSet("vaes");
-                    builder.AddSupportedInstructionSet("vpclmul");
-                    if ((flags & Avx512) != 0)
-                    {
-                        builder.AddSupportedInstructionSet("vaes_v512");
-                        builder.AddSupportedInstructionSet("vpclmul_v512");
-                    }
-                }
                 if ((flags & WaitPkg) != 0)
                     builder.AddSupportedInstructionSet("waitpkg");
                 if ((flags & X86Serialize) != 0)
@@ -161,8 +156,8 @@ namespace ILCompiler
                     InstructionSet.X64_AVX512 => Avx512,
                     InstructionSet.X64_AVX512_X64 => Avx512,
 
-                    InstructionSet.X64_AVX512VBMI => Avx512v2,
-                    InstructionSet.X64_AVX512VBMI_X64 => Avx512v2,
+                    InstructionSet.X64_AVX512v2 => Avx512v2,
+                    InstructionSet.X64_AVX512v2_X64 => Avx512v2,
 
                     InstructionSet.X64_AVX512v3 => Avx512v3,
                     InstructionSet.X64_AVX512v3_X64 => Avx512v3,
@@ -179,11 +174,6 @@ namespace ILCompiler
                     InstructionSet.X64_AES_X64 => Aes,
                     InstructionSet.X64_AES_V256 => (Vaes | Avx),
                     InstructionSet.X64_AES_V512 => (Vaes | Avx512),
-
-                    InstructionSet.X64_PCLMULQDQ => Aes,
-                    InstructionSet.X64_PCLMULQDQ_X64 => Aes,
-                    InstructionSet.X64_PCLMULQDQ_V256 => (Vaes | Avx),
-                    InstructionSet.X64_PCLMULQDQ_V512 => (Vaes | Avx512),
 
                     InstructionSet.X64_AVX512VP2INTERSECT => Avx512Vp2intersect,
                     InstructionSet.X64_AVX512VP2INTERSECT_X64 => Avx512Vp2intersect,

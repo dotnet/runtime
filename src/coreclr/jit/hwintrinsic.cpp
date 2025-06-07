@@ -907,13 +907,14 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_AVX, LAST_NI_AVX },                              // AVX
     { FIRST_NI_AVX2, LAST_NI_AVX2 },                            // AVX2
     { FIRST_NI_AVX512, LAST_NI_AVX512 },                        // AVX512
-    { FIRST_NI_AVX512VBMI, LAST_NI_AVX512VBMI },                // AVX512VBMI
+    { FIRST_NI_AVX512v2, LAST_NI_AVX512v2 },                    // AVX512v2
     { NI_Illegal, NI_Illegal },                                 //      AVX512v3
     { NI_Illegal, NI_Illegal },                                 //      AVX10v1
     { FIRST_NI_AVX10v2, LAST_NI_AVX10v2 },                      //      AVX10v2
     { NI_Illegal, NI_Illegal },                                 //      APX
     { FIRST_NI_AES, LAST_NI_AES },                              // AES
-    { FIRST_NI_PCLMULQDQ, LAST_NI_PCLMULQDQ },                  // PCLMULQDQ
+    { FIRST_NI_AES_V256, LAST_NI_AES_V256 },                    // AES_V256
+    { FIRST_NI_AES_V512, LAST_NI_AES_V512 },                    // AES_V512
     { NI_Illegal, NI_Illegal },                                 //      AVX512VP2INTERSECT
     { NI_Illegal, NI_Illegal },                                 //      AVXIFMA
     { FIRST_NI_AVXVNNI, LAST_NI_AVXVNNI },                      // AVXVNNI
@@ -921,10 +922,6 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_GFNI_V256, LAST_NI_GFNI_V256 },                  // GFNI_V256
     { FIRST_NI_GFNI_V512, LAST_NI_GFNI_V512 },                  // GFNI_V512
     { NI_Illegal, NI_Illegal },                                 //      SHA
-    { NI_Illegal, NI_Illegal },                                 //      AES_V256
-    { NI_Illegal, NI_Illegal },                                 //      AES_V512
-    { FIRST_NI_PCLMULQDQ_V256, LAST_NI_PCLMULQDQ_V256 },        // PCLMULQDQ_V256
-    { FIRST_NI_PCLMULQDQ_V512, LAST_NI_PCLMULQDQ_V512 },        // PCLMULQDQ_V512
     { NI_Illegal, NI_Illegal },                                 //      WAITPKG
     { FIRST_NI_X86Serialize, LAST_NI_X86Serialize },            // X86Serialize
     { FIRST_NI_Vector128, LAST_NI_Vector128 },                  // Vector128
@@ -939,12 +936,11 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      AVX_X64
     { FIRST_NI_AVX2_X64, LAST_NI_AVX2_X64 },                    // AVX2_X64
     { FIRST_NI_AVX512_X64, LAST_NI_AVX512_X64 },                // AVX512_X64
-    { NI_Illegal, NI_Illegal },                                 //      AVX512VBMI_X64
+    { NI_Illegal, NI_Illegal },                                 //      AVX512v2_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX512v3_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX10v1_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX10v2_X64
     { NI_Illegal, NI_Illegal },                                 //      AES_X64
-    { NI_Illegal, NI_Illegal },                                 //      PCLMULQDQ_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX512VP2INTERSECT_X64
     { NI_Illegal, NI_Illegal },                                 //      AVXIFMA_X64
     { NI_Illegal, NI_Illegal },                                 //      AVXVNNI_X64
@@ -1348,7 +1344,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         {
             return ni;
         }
-        return binarySearchId(InstructionSet_AVX512VBMI, sig, methodName, isLimitedVector256Isa);
+        return binarySearchId(InstructionSet_AVX512v2, sig, methodName, isLimitedVector256Isa);
     }
     else if (isa == InstructionSet_AVX10v1_X64)
     {

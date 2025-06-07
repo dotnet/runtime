@@ -189,7 +189,6 @@ namespace System.CommandLine
                 //
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse42");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("waitpkg");
@@ -204,9 +203,8 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx2");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxifma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes_v256");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v256");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vaes");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul");
 
                     // If AVX2 is not in the supported set, we need to restrict the optimistic Vector<T> size, because
                     // 256-bit Vector<T> cannot be fully accelerated based on AVX2 being in the optimistic set only.
@@ -225,9 +223,8 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vp2intersect");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v512");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vaes_v512");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul_v512");
 
                 }
             }

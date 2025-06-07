@@ -28,8 +28,8 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX2_X64;
         case InstructionSet_AVX512:
             return InstructionSet_AVX512_X64;
-        case InstructionSet_AVX512VBMI:
-            return InstructionSet_AVX512VBMI_X64;
+        case InstructionSet_AVX512v2:
+            return InstructionSet_AVX512v2_X64;
         case InstructionSet_AVX512v3:
             return InstructionSet_AVX512v3_X64;
         case InstructionSet_AVX10v1:
@@ -38,8 +38,6 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX10v2_X64;
         case InstructionSet_AES:
             return InstructionSet_AES_X64;
-        case InstructionSet_PCLMULQDQ:
-            return InstructionSet_PCLMULQDQ_X64;
         case InstructionSet_AVX512VP2INTERSECT:
             return InstructionSet_AVX512VP2INTERSECT_X64;
         case InstructionSet_AVXIFMA:
@@ -72,7 +70,7 @@ static CORINFO_InstructionSet VLVersionOfIsa(CORINFO_InstructionSet isa)
     switch (isa)
     {
         case InstructionSet_AVX512:
-        case InstructionSet_AVX512VBMI:
+        case InstructionSet_AVX512v2:
         case InstructionSet_AVX512v3:
         case InstructionSet_AVX10v1:
         {
@@ -107,11 +105,6 @@ static CORINFO_InstructionSet V256VersionOfIsa(CORINFO_InstructionSet isa)
         case InstructionSet_GFNI:
         {
             return InstructionSet_GFNI_V256;
-        }
-
-        case InstructionSet_PCLMULQDQ:
-        {
-            return InstructionSet_PCLMULQDQ_V256;
         }
 
         default:
@@ -150,11 +143,6 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
         case InstructionSet_GFNI:
         {
             return InstructionSet_GFNI_V512;
-        }
-
-        case InstructionSet_PCLMULQDQ:
-        {
-            return InstructionSet_PCLMULQDQ_V512;
         }
 
         default:
@@ -241,7 +229,7 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
                     {
                         if (className[10] == '\0')
                         {
-                            return InstructionSet_AVX512VBMI;
+                            return InstructionSet_AVX512v2;
                         }
                         else if (strcmp(className + 10, "2") == 0)
                         {
@@ -314,7 +302,7 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
     {
         if (strcmp(className + 1, "clmulqdq") == 0)
         {
-            return InstructionSet_PCLMULQDQ;
+            return InstructionSet_AES;
         }
         else if (strcmp(className + 1, "opcnt") == 0)
         {
@@ -4369,9 +4357,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_AVX512_PermuteVar16x16:
         case NI_AVX512_PermuteVar16x32:
         case NI_AVX512_PermuteVar32x16:
-        case NI_AVX512VBMI_PermuteVar16x8:
-        case NI_AVX512VBMI_PermuteVar32x8:
-        case NI_AVX512VBMI_PermuteVar64x8:
+        case NI_AVX512v2_PermuteVar16x8:
+        case NI_AVX512v2_PermuteVar32x8:
+        case NI_AVX512v2_PermuteVar64x8:
         {
             simdBaseJitType = getBaseJitTypeOfSIMDType(sig->retTypeSigClass);
 

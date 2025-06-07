@@ -320,13 +320,9 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         case INS_aesdeclast:
         case INS_aesenc:
         case INS_aesenclast:
-        {
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_AES_V256);
-        }
-
         case INS_pclmulqdq:
         {
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_PCLMULQDQ_V256);
+            return emitComp->compSupportsHWIntrinsic(InstructionSet_AES_V512);
         }
 
         case INS_vpdpbusd:
@@ -340,7 +336,7 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         case INS_vpmadd52huq:
         case INS_vpmadd52luq:
         {
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVX512VBMI);
+            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVX512v2);
         }
 #endif // FEATURE_HW_INTRINSICS
 

@@ -51,13 +51,14 @@ namespace Internal.JitInterface
         X64_AVX = InstructionSet_X64.AVX,
         X64_AVX2 = InstructionSet_X64.AVX2,
         X64_AVX512 = InstructionSet_X64.AVX512,
-        X64_AVX512VBMI = InstructionSet_X64.AVX512VBMI,
+        X64_AVX512v2 = InstructionSet_X64.AVX512v2,
         X64_AVX512v3 = InstructionSet_X64.AVX512v3,
         X64_AVX10v1 = InstructionSet_X64.AVX10v1,
         X64_AVX10v2 = InstructionSet_X64.AVX10v2,
         X64_APX = InstructionSet_X64.APX,
         X64_AES = InstructionSet_X64.AES,
-        X64_PCLMULQDQ = InstructionSet_X64.PCLMULQDQ,
+        X64_AES_V256 = InstructionSet_X64.AES_V256,
+        X64_AES_V512 = InstructionSet_X64.AES_V512,
         X64_AVX512VP2INTERSECT = InstructionSet_X64.AVX512VP2INTERSECT,
         X64_AVXIFMA = InstructionSet_X64.AVXIFMA,
         X64_AVXVNNI = InstructionSet_X64.AVXVNNI,
@@ -65,10 +66,6 @@ namespace Internal.JitInterface
         X64_GFNI_V256 = InstructionSet_X64.GFNI_V256,
         X64_GFNI_V512 = InstructionSet_X64.GFNI_V512,
         X64_SHA = InstructionSet_X64.SHA,
-        X64_AES_V256 = InstructionSet_X64.AES_V256,
-        X64_AES_V512 = InstructionSet_X64.AES_V512,
-        X64_PCLMULQDQ_V256 = InstructionSet_X64.PCLMULQDQ_V256,
-        X64_PCLMULQDQ_V512 = InstructionSet_X64.PCLMULQDQ_V512,
         X64_WAITPKG = InstructionSet_X64.WAITPKG,
         X64_X86Serialize = InstructionSet_X64.X86Serialize,
         X64_Vector128 = InstructionSet_X64.Vector128,
@@ -82,12 +79,11 @@ namespace Internal.JitInterface
         X64_AVX_X64 = InstructionSet_X64.AVX_X64,
         X64_AVX2_X64 = InstructionSet_X64.AVX2_X64,
         X64_AVX512_X64 = InstructionSet_X64.AVX512_X64,
-        X64_AVX512VBMI_X64 = InstructionSet_X64.AVX512VBMI_X64,
+        X64_AVX512v2_X64 = InstructionSet_X64.AVX512v2_X64,
         X64_AVX512v3_X64 = InstructionSet_X64.AVX512v3_X64,
         X64_AVX10v1_X64 = InstructionSet_X64.AVX10v1_X64,
         X64_AVX10v2_X64 = InstructionSet_X64.AVX10v2_X64,
         X64_AES_X64 = InstructionSet_X64.AES_X64,
-        X64_PCLMULQDQ_X64 = InstructionSet_X64.PCLMULQDQ_X64,
         X64_AVX512VP2INTERSECT_X64 = InstructionSet_X64.AVX512VP2INTERSECT_X64,
         X64_AVXIFMA_X64 = InstructionSet_X64.AVXIFMA_X64,
         X64_AVXVNNI_X64 = InstructionSet_X64.AVXVNNI_X64,
@@ -100,13 +96,14 @@ namespace Internal.JitInterface
         X86_AVX = InstructionSet_X86.AVX,
         X86_AVX2 = InstructionSet_X86.AVX2,
         X86_AVX512 = InstructionSet_X86.AVX512,
-        X86_AVX512VBMI = InstructionSet_X86.AVX512VBMI,
+        X86_AVX512v2 = InstructionSet_X86.AVX512v2,
         X86_AVX512v3 = InstructionSet_X86.AVX512v3,
         X86_AVX10v1 = InstructionSet_X86.AVX10v1,
         X86_AVX10v2 = InstructionSet_X86.AVX10v2,
         X86_APX = InstructionSet_X86.APX,
         X86_AES = InstructionSet_X86.AES,
-        X86_PCLMULQDQ = InstructionSet_X86.PCLMULQDQ,
+        X86_AES_V256 = InstructionSet_X86.AES_V256,
+        X86_AES_V512 = InstructionSet_X86.AES_V512,
         X86_AVX512VP2INTERSECT = InstructionSet_X86.AVX512VP2INTERSECT,
         X86_AVXIFMA = InstructionSet_X86.AVXIFMA,
         X86_AVXVNNI = InstructionSet_X86.AVXVNNI,
@@ -114,10 +111,6 @@ namespace Internal.JitInterface
         X86_GFNI_V256 = InstructionSet_X86.GFNI_V256,
         X86_GFNI_V512 = InstructionSet_X86.GFNI_V512,
         X86_SHA = InstructionSet_X86.SHA,
-        X86_AES_V256 = InstructionSet_X86.AES_V256,
-        X86_AES_V512 = InstructionSet_X86.AES_V512,
-        X86_PCLMULQDQ_V256 = InstructionSet_X86.PCLMULQDQ_V256,
-        X86_PCLMULQDQ_V512 = InstructionSet_X86.PCLMULQDQ_V512,
         X86_WAITPKG = InstructionSet_X86.WAITPKG,
         X86_X86Serialize = InstructionSet_X86.X86Serialize,
         X86_Vector128 = InstructionSet_X86.Vector128,
@@ -131,12 +124,11 @@ namespace Internal.JitInterface
         X86_AVX_X64 = InstructionSet_X86.AVX_X64,
         X86_AVX2_X64 = InstructionSet_X86.AVX2_X64,
         X86_AVX512_X64 = InstructionSet_X86.AVX512_X64,
-        X86_AVX512VBMI_X64 = InstructionSet_X86.AVX512VBMI_X64,
+        X86_AVX512v2_X64 = InstructionSet_X86.AVX512v2_X64,
         X86_AVX512v3_X64 = InstructionSet_X86.AVX512v3_X64,
         X86_AVX10v1_X64 = InstructionSet_X86.AVX10v1_X64,
         X86_AVX10v2_X64 = InstructionSet_X86.AVX10v2_X64,
         X86_AES_X64 = InstructionSet_X86.AES_X64,
-        X86_PCLMULQDQ_X64 = InstructionSet_X86.PCLMULQDQ_X64,
         X86_AVX512VP2INTERSECT_X64 = InstructionSet_X86.AVX512VP2INTERSECT_X64,
         X86_AVXIFMA_X64 = InstructionSet_X86.AVXIFMA_X64,
         X86_AVXVNNI_X64 = InstructionSet_X86.AVXVNNI_X64,
@@ -196,50 +188,46 @@ namespace Internal.JitInterface
         AVX = 3,
         AVX2 = 4,
         AVX512 = 5,
-        AVX512VBMI = 6,
+        AVX512v2 = 6,
         AVX512v3 = 7,
         AVX10v1 = 8,
         AVX10v2 = 9,
         APX = 10,
         AES = 11,
-        PCLMULQDQ = 12,
-        AVX512VP2INTERSECT = 13,
-        AVXIFMA = 14,
-        AVXVNNI = 15,
-        GFNI = 16,
-        GFNI_V256 = 17,
-        GFNI_V512 = 18,
-        SHA = 19,
-        AES_V256 = 20,
-        AES_V512 = 21,
-        PCLMULQDQ_V256 = 22,
-        PCLMULQDQ_V512 = 23,
-        WAITPKG = 24,
-        X86Serialize = 25,
-        Vector128 = 26,
-        Vector256 = 27,
-        Vector512 = 28,
-        VectorT128 = 29,
-        VectorT256 = 30,
-        VectorT512 = 31,
-        X86Base_X64 = 32,
-        SSE42_X64 = 33,
-        AVX_X64 = 34,
-        AVX2_X64 = 35,
-        AVX512_X64 = 36,
-        AVX512VBMI_X64 = 37,
-        AVX512v3_X64 = 38,
-        AVX10v1_X64 = 39,
-        AVX10v2_X64 = 40,
-        AES_X64 = 41,
-        PCLMULQDQ_X64 = 42,
-        AVX512VP2INTERSECT_X64 = 43,
-        AVXIFMA_X64 = 44,
-        AVXVNNI_X64 = 45,
-        GFNI_X64 = 46,
-        SHA_X64 = 47,
-        WAITPKG_X64 = 48,
-        X86Serialize_X64 = 49,
+        AES_V256 = 12,
+        AES_V512 = 13,
+        AVX512VP2INTERSECT = 14,
+        AVXIFMA = 15,
+        AVXVNNI = 16,
+        GFNI = 17,
+        GFNI_V256 = 18,
+        GFNI_V512 = 19,
+        SHA = 20,
+        WAITPKG = 21,
+        X86Serialize = 22,
+        Vector128 = 23,
+        Vector256 = 24,
+        Vector512 = 25,
+        VectorT128 = 26,
+        VectorT256 = 27,
+        VectorT512 = 28,
+        X86Base_X64 = 29,
+        SSE42_X64 = 30,
+        AVX_X64 = 31,
+        AVX2_X64 = 32,
+        AVX512_X64 = 33,
+        AVX512v2_X64 = 34,
+        AVX512v3_X64 = 35,
+        AVX10v1_X64 = 36,
+        AVX10v2_X64 = 37,
+        AES_X64 = 38,
+        AVX512VP2INTERSECT_X64 = 39,
+        AVXIFMA_X64 = 40,
+        AVXVNNI_X64 = 41,
+        GFNI_X64 = 42,
+        SHA_X64 = 43,
+        WAITPKG_X64 = 44,
+        X86Serialize_X64 = 45,
     }
 
     public enum InstructionSet_X86
@@ -251,50 +239,46 @@ namespace Internal.JitInterface
         AVX = 3,
         AVX2 = 4,
         AVX512 = 5,
-        AVX512VBMI = 6,
+        AVX512v2 = 6,
         AVX512v3 = 7,
         AVX10v1 = 8,
         AVX10v2 = 9,
         APX = 10,
         AES = 11,
-        PCLMULQDQ = 12,
-        AVX512VP2INTERSECT = 13,
-        AVXIFMA = 14,
-        AVXVNNI = 15,
-        GFNI = 16,
-        GFNI_V256 = 17,
-        GFNI_V512 = 18,
-        SHA = 19,
-        AES_V256 = 20,
-        AES_V512 = 21,
-        PCLMULQDQ_V256 = 22,
-        PCLMULQDQ_V512 = 23,
-        WAITPKG = 24,
-        X86Serialize = 25,
-        Vector128 = 26,
-        Vector256 = 27,
-        Vector512 = 28,
-        VectorT128 = 29,
-        VectorT256 = 30,
-        VectorT512 = 31,
-        X86Base_X64 = 32,
-        SSE42_X64 = 33,
-        AVX_X64 = 34,
-        AVX2_X64 = 35,
-        AVX512_X64 = 36,
-        AVX512VBMI_X64 = 37,
-        AVX512v3_X64 = 38,
-        AVX10v1_X64 = 39,
-        AVX10v2_X64 = 40,
-        AES_X64 = 41,
-        PCLMULQDQ_X64 = 42,
-        AVX512VP2INTERSECT_X64 = 43,
-        AVXIFMA_X64 = 44,
-        AVXVNNI_X64 = 45,
-        GFNI_X64 = 46,
-        SHA_X64 = 47,
-        WAITPKG_X64 = 48,
-        X86Serialize_X64 = 49,
+        AES_V256 = 12,
+        AES_V512 = 13,
+        AVX512VP2INTERSECT = 14,
+        AVXIFMA = 15,
+        AVXVNNI = 16,
+        GFNI = 17,
+        GFNI_V256 = 18,
+        GFNI_V512 = 19,
+        SHA = 20,
+        WAITPKG = 21,
+        X86Serialize = 22,
+        Vector128 = 23,
+        Vector256 = 24,
+        Vector512 = 25,
+        VectorT128 = 26,
+        VectorT256 = 27,
+        VectorT512 = 28,
+        X86Base_X64 = 29,
+        SSE42_X64 = 30,
+        AVX_X64 = 31,
+        AVX2_X64 = 32,
+        AVX512_X64 = 33,
+        AVX512v2_X64 = 34,
+        AVX512v3_X64 = 35,
+        AVX10v1_X64 = 36,
+        AVX10v2_X64 = 37,
+        AES_X64 = 38,
+        AVX512VP2INTERSECT_X64 = 39,
+        AVXIFMA_X64 = 40,
+        AVXVNNI_X64 = 41,
+        GFNI_X64 = 42,
+        SHA_X64 = 43,
+        WAITPKG_X64 = 44,
+        X86Serialize_X64 = 45,
     }
 
     public unsafe struct InstructionSetFlags : IEnumerable<InstructionSet>
@@ -549,10 +533,10 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX512_X64);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512_X64))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VBMI))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512VBMI_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VBMI_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512VBMI);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v2))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512v2_X64);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v2_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512v2);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v3))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX512v3_X64);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v3_X64))
@@ -569,10 +553,6 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_AES_X64);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AES_X64))
                         resultflags.AddInstructionSet(InstructionSet.X64_AES);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ))
-                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT_X64);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT_X64))
@@ -609,18 +589,24 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VBMI))
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v2))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v3))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512VBMI);
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512v2);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX512v3);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v2))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AES))
                         resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ))
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V256))
                         resultflags.AddInstructionSet(InstructionSet.X64_AES);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V256))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVX);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V512))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V256);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V512))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVXIFMA))
@@ -634,27 +620,11 @@ namespace Internal.JitInterface
                     if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_V256))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_GFNI);
+                        resultflags.AddInstructionSet(InstructionSet.X64_GFNI_V256);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_V512))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SHA))
                         resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V512);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_WAITPKG))
                         resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_X86Serialize))
@@ -682,18 +652,24 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512VBMI))
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512v2))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512v3))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512VBMI);
+                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512v2);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX10v1))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX512v3);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX10v2))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX10v1);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AES))
                         resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_PCLMULQDQ))
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V256))
                         resultflags.AddInstructionSet(InstructionSet.X86_AES);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V256))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AVX);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V512))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V256);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V512))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512VP2INTERSECT))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVXIFMA))
@@ -707,27 +683,11 @@ namespace Internal.JitInterface
                     if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI_V256))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_GFNI);
+                        resultflags.AddInstructionSet(InstructionSet.X86_GFNI_V256);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI_V512))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_SHA))
                         resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AES);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_PCLMULQDQ_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X86_PCLMULQDQ);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_PCLMULQDQ_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_PCLMULQDQ_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_PCLMULQDQ_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_PCLMULQDQ_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V512);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_WAITPKG))
                         resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_X86Serialize))
@@ -831,8 +791,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512_X64))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VBMI_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512VBMI);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v2_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512v2);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v3_X64))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX512v3);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1_X64))
@@ -841,8 +801,6 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v2);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AES_X64))
                         resultflags.AddInstructionSet(InstructionSet.X64_AES);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT_X64))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVXIFMA_X64))
@@ -866,8 +824,8 @@ namespace Internal.JitInterface
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512VBMI);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VBMI))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512v2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v2))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX512v3);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v3))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1);
@@ -876,7 +834,13 @@ namespace Internal.JitInterface
                     if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
                         resultflags.AddInstructionSet(InstructionSet.X64_AES);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AES))
-                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ);
+                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V256);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V256);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V256))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V512);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V512);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
@@ -889,28 +853,12 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_GFNI_V256);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
                         resultflags.AddInstructionSet(InstructionSet.X64_GFNI_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI))
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_V256))
                         resultflags.AddInstructionSet(InstructionSet.X64_GFNI_V512);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
                         resultflags.AddInstructionSet(InstructionSet.X64_GFNI_V512);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
                         resultflags.AddInstructionSet(InstructionSet.X64_SHA);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ))
-                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ_V512);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
                         resultflags.AddInstructionSet(InstructionSet.X64_WAITPKG);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
@@ -939,8 +887,8 @@ namespace Internal.JitInterface
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512VBMI);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512VBMI))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512v2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512v2))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX512v3);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512v3))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX10v1);
@@ -949,7 +897,13 @@ namespace Internal.JitInterface
                     if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
                         resultflags.AddInstructionSet(InstructionSet.X86_AES);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AES))
-                        resultflags.AddInstructionSet(InstructionSet.X86_PCLMULQDQ);
+                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V256);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V256);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V256))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V512);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V512);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX512VP2INTERSECT);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
@@ -962,28 +916,12 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X86_GFNI_V256);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
                         resultflags.AddInstructionSet(InstructionSet.X86_GFNI_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI))
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI_V256))
                         resultflags.AddInstructionSet(InstructionSet.X86_GFNI_V512);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
                         resultflags.AddInstructionSet(InstructionSet.X86_GFNI_V512);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
                         resultflags.AddInstructionSet(InstructionSet.X86_SHA);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_PCLMULQDQ))
-                        resultflags.AddInstructionSet(InstructionSet.X86_PCLMULQDQ_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X86_PCLMULQDQ_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_PCLMULQDQ_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X86_PCLMULQDQ_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_PCLMULQDQ_V512);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
                         resultflags.AddInstructionSet(InstructionSet.X86_WAITPKG);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
@@ -1106,9 +1044,9 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("avx512", "Avx512CD_VL", InstructionSet.X64_AVX512, true);
                     yield return new InstructionSetInfo("avx512", "Avx512DQ", InstructionSet.X64_AVX512, true);
                     yield return new InstructionSetInfo("avx512", "Avx512DQ_VL", InstructionSet.X64_AVX512, true);
-                    yield return new InstructionSetInfo("avx512v2", "", InstructionSet.X64_AVX512VBMI, true);
-                    yield return new InstructionSetInfo("avx512v2", "Avx512Vbmi", InstructionSet.X64_AVX512VBMI, true);
-                    yield return new InstructionSetInfo("avx512v2", "Avx512Vbmi_VL", InstructionSet.X64_AVX512VBMI, true);
+                    yield return new InstructionSetInfo("avx512v2", "", InstructionSet.X64_AVX512v2, true);
+                    yield return new InstructionSetInfo("avx512v2", "Avx512Vbmi", InstructionSet.X64_AVX512v2, true);
+                    yield return new InstructionSetInfo("avx512v2", "Avx512Vbmi_VL", InstructionSet.X64_AVX512v2, true);
                     yield return new InstructionSetInfo("avx512v3", "Avx512Bitalg", InstructionSet.X64_AVX512v3, true);
                     yield return new InstructionSetInfo("avx512v3", "Avx512Bitalg_VL", InstructionSet.X64_AVX512v3, true);
                     yield return new InstructionSetInfo("avx512v3", "Avx512Vbmi2", InstructionSet.X64_AVX512v3, true);
@@ -1126,7 +1064,11 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("avx10v2", "Avx10v2_V512", InstructionSet.X64_AVX10v2, true);
                     yield return new InstructionSetInfo("apx", "", InstructionSet.X64_APX, true);
                     yield return new InstructionSetInfo("aes", "Aes", InstructionSet.X64_AES, true);
-                    yield return new InstructionSetInfo("pclmul", "Pclmulqdq", InstructionSet.X64_PCLMULQDQ, true);
+                    yield return new InstructionSetInfo("aes_v256", "Aes_V256", InstructionSet.X64_AES_V256, true);
+                    yield return new InstructionSetInfo("aes_v512", "Aes_V512", InstructionSet.X64_AES_V512, true);
+                    yield return new InstructionSetInfo("aes", "Pclmulqdq", InstructionSet.X64_AES, true);
+                    yield return new InstructionSetInfo("aes_v256", "Pclmulqdq_V256", InstructionSet.X64_AES_V256, true);
+                    yield return new InstructionSetInfo("aes_v512", "Pclmulqdq_V512", InstructionSet.X64_AES_V512, true);
                     yield return new InstructionSetInfo("avx512vp2intersect", "Avx512Vp2intersect", InstructionSet.X64_AVX512VP2INTERSECT, true);
                     yield return new InstructionSetInfo("avx512vp2intersect", "Avx512Vp2intersect_VL", InstructionSet.X64_AVX512VP2INTERSECT, true);
                     yield return new InstructionSetInfo("avxifma", "AvxIfma", InstructionSet.X64_AVXIFMA, true);
@@ -1135,10 +1077,6 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("gfni_v256", "Gfni_V256", InstructionSet.X64_GFNI_V256, true);
                     yield return new InstructionSetInfo("gfni_v512", "Gfni_V512", InstructionSet.X64_GFNI_V512, true);
                     yield return new InstructionSetInfo("sha", "Sha", InstructionSet.X64_SHA, true);
-                    yield return new InstructionSetInfo("vaes", "Aes_V256", InstructionSet.X64_AES_V256, true);
-                    yield return new InstructionSetInfo("vaes_v512", "Aes_V512", InstructionSet.X64_AES_V512, true);
-                    yield return new InstructionSetInfo("vpclmul", "Pclmulqdq_V256", InstructionSet.X64_PCLMULQDQ_V256, true);
-                    yield return new InstructionSetInfo("vpclmul_v512", "Pclmulqdq_V512", InstructionSet.X64_PCLMULQDQ_V512, true);
                     yield return new InstructionSetInfo("waitpkg", "WaitPkg", InstructionSet.X64_WAITPKG, true);
                     yield return new InstructionSetInfo("x86serialize", "X86Serialize", InstructionSet.X64_X86Serialize, true);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.X64_Vector128, false);
@@ -1175,9 +1113,9 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("avx512", "Avx512CD_VL", InstructionSet.X86_AVX512, true);
                     yield return new InstructionSetInfo("avx512", "Avx512DQ", InstructionSet.X86_AVX512, true);
                     yield return new InstructionSetInfo("avx512", "Avx512DQ_VL", InstructionSet.X86_AVX512, true);
-                    yield return new InstructionSetInfo("avx512v2", "", InstructionSet.X86_AVX512VBMI, true);
-                    yield return new InstructionSetInfo("avx512v2", "Avx512Vbmi", InstructionSet.X86_AVX512VBMI, true);
-                    yield return new InstructionSetInfo("avx512v2", "Avx512Vbmi_VL", InstructionSet.X86_AVX512VBMI, true);
+                    yield return new InstructionSetInfo("avx512v2", "", InstructionSet.X86_AVX512v2, true);
+                    yield return new InstructionSetInfo("avx512v2", "Avx512Vbmi", InstructionSet.X86_AVX512v2, true);
+                    yield return new InstructionSetInfo("avx512v2", "Avx512Vbmi_VL", InstructionSet.X86_AVX512v2, true);
                     yield return new InstructionSetInfo("avx512v3", "Avx512Bitalg", InstructionSet.X86_AVX512v3, true);
                     yield return new InstructionSetInfo("avx512v3", "Avx512Bitalg_VL", InstructionSet.X86_AVX512v3, true);
                     yield return new InstructionSetInfo("avx512v3", "Avx512Vbmi2", InstructionSet.X86_AVX512v3, true);
@@ -1195,7 +1133,11 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("avx10v2", "Avx10v2_V512", InstructionSet.X86_AVX10v2, true);
                     yield return new InstructionSetInfo("apx", "", InstructionSet.X86_APX, true);
                     yield return new InstructionSetInfo("aes", "Aes", InstructionSet.X86_AES, true);
-                    yield return new InstructionSetInfo("pclmul", "Pclmulqdq", InstructionSet.X86_PCLMULQDQ, true);
+                    yield return new InstructionSetInfo("aes_v256", "Aes_V256", InstructionSet.X86_AES_V256, true);
+                    yield return new InstructionSetInfo("aes_v512", "Aes_V512", InstructionSet.X86_AES_V512, true);
+                    yield return new InstructionSetInfo("aes", "Pclmulqdq", InstructionSet.X86_AES, true);
+                    yield return new InstructionSetInfo("aes_v256", "Pclmulqdq_V256", InstructionSet.X86_AES_V256, true);
+                    yield return new InstructionSetInfo("aes_v512", "Pclmulqdq_V512", InstructionSet.X86_AES_V512, true);
                     yield return new InstructionSetInfo("avx512vp2intersect", "Avx512Vp2intersect", InstructionSet.X86_AVX512VP2INTERSECT, true);
                     yield return new InstructionSetInfo("avx512vp2intersect", "Avx512Vp2intersect_VL", InstructionSet.X86_AVX512VP2INTERSECT, true);
                     yield return new InstructionSetInfo("avxifma", "AvxIfma", InstructionSet.X86_AVXIFMA, true);
@@ -1204,10 +1146,6 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("gfni_v256", "Gfni_V256", InstructionSet.X86_GFNI_V256, true);
                     yield return new InstructionSetInfo("gfni_v512", "Gfni_V512", InstructionSet.X86_GFNI_V512, true);
                     yield return new InstructionSetInfo("sha", "Sha", InstructionSet.X86_SHA, true);
-                    yield return new InstructionSetInfo("vaes", "Aes_V256", InstructionSet.X86_AES_V256, true);
-                    yield return new InstructionSetInfo("vaes_v512", "Aes_V512", InstructionSet.X86_AES_V512, true);
-                    yield return new InstructionSetInfo("vpclmul", "Pclmulqdq_V256", InstructionSet.X86_PCLMULQDQ_V256, true);
-                    yield return new InstructionSetInfo("vpclmul_v512", "Pclmulqdq_V512", InstructionSet.X86_PCLMULQDQ_V512, true);
                     yield return new InstructionSetInfo("waitpkg", "WaitPkg", InstructionSet.X86_WAITPKG, true);
                     yield return new InstructionSetInfo("x86serialize", "X86Serialize", InstructionSet.X86_X86Serialize, true);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.X86_Vector128, false);
@@ -1262,8 +1200,8 @@ namespace Internal.JitInterface
                         AddInstructionSet(InstructionSet.X64_AVX2_X64);
                     if (HasInstructionSet(InstructionSet.X64_AVX512))
                         AddInstructionSet(InstructionSet.X64_AVX512_X64);
-                    if (HasInstructionSet(InstructionSet.X64_AVX512VBMI))
-                        AddInstructionSet(InstructionSet.X64_AVX512VBMI_X64);
+                    if (HasInstructionSet(InstructionSet.X64_AVX512v2))
+                        AddInstructionSet(InstructionSet.X64_AVX512v2_X64);
                     if (HasInstructionSet(InstructionSet.X64_AVX512v3))
                         AddInstructionSet(InstructionSet.X64_AVX512v3_X64);
                     if (HasInstructionSet(InstructionSet.X64_AVX10v1))
@@ -1272,8 +1210,6 @@ namespace Internal.JitInterface
                         AddInstructionSet(InstructionSet.X64_AVX10v2_X64);
                     if (HasInstructionSet(InstructionSet.X64_AES))
                         AddInstructionSet(InstructionSet.X64_AES_X64);
-                    if (HasInstructionSet(InstructionSet.X64_PCLMULQDQ))
-                        AddInstructionSet(InstructionSet.X64_PCLMULQDQ_X64);
                     if (HasInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT))
                         AddInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT_X64);
                     if (HasInstructionSet(InstructionSet.X64_AVXIFMA))
@@ -1322,12 +1258,11 @@ namespace Internal.JitInterface
                     AddInstructionSet(InstructionSet.X64_AVX_X64);
                     AddInstructionSet(InstructionSet.X64_AVX2_X64);
                     AddInstructionSet(InstructionSet.X64_AVX512_X64);
-                    AddInstructionSet(InstructionSet.X64_AVX512VBMI_X64);
+                    AddInstructionSet(InstructionSet.X64_AVX512v2_X64);
                     AddInstructionSet(InstructionSet.X64_AVX512v3_X64);
                     AddInstructionSet(InstructionSet.X64_AVX10v1_X64);
                     AddInstructionSet(InstructionSet.X64_AVX10v2_X64);
                     AddInstructionSet(InstructionSet.X64_AES_X64);
-                    AddInstructionSet(InstructionSet.X64_PCLMULQDQ_X64);
                     AddInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT_X64);
                     AddInstructionSet(InstructionSet.X64_AVXIFMA_X64);
                     AddInstructionSet(InstructionSet.X64_AVXVNNI_X64);
@@ -1343,12 +1278,11 @@ namespace Internal.JitInterface
                     AddInstructionSet(InstructionSet.X86_AVX_X64);
                     AddInstructionSet(InstructionSet.X86_AVX2_X64);
                     AddInstructionSet(InstructionSet.X86_AVX512_X64);
-                    AddInstructionSet(InstructionSet.X86_AVX512VBMI_X64);
+                    AddInstructionSet(InstructionSet.X86_AVX512v2_X64);
                     AddInstructionSet(InstructionSet.X86_AVX512v3_X64);
                     AddInstructionSet(InstructionSet.X86_AVX10v1_X64);
                     AddInstructionSet(InstructionSet.X86_AVX10v2_X64);
                     AddInstructionSet(InstructionSet.X86_AES_X64);
-                    AddInstructionSet(InstructionSet.X86_PCLMULQDQ_X64);
                     AddInstructionSet(InstructionSet.X86_AVX512VP2INTERSECT_X64);
                     AddInstructionSet(InstructionSet.X86_AVXIFMA_X64);
                     AddInstructionSet(InstructionSet.X86_AVXVNNI_X64);
@@ -1633,15 +1567,15 @@ namespace Internal.JitInterface
 
                     case "Avx512Vbmi":
                         if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AVX512VBMI_X64; }
+                        { return InstructionSet.X64_AVX512v2_X64; }
                         else
                         if (nestedTypeName == "VL_X64")
-                        { return InstructionSet.X64_AVX512VBMI_X64; }
+                        { return InstructionSet.X64_AVX512v2_X64; }
                         else
                         if (nestedTypeName == "VL")
-                        { return InstructionSet.X64_AVX512VBMI; }
+                        { return InstructionSet.X64_AVX512v2; }
                         else
-                        { return InstructionSet.X64_AVX512VBMI; }
+                        { return InstructionSet.X64_AVX512v2; }
 
                     case "Avx512Bitalg":
                         if (nestedTypeName == "X64")
@@ -1741,15 +1675,15 @@ namespace Internal.JitInterface
 
                     case "Pclmulqdq":
                         if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_PCLMULQDQ_X64; }
+                        { return InstructionSet.X64_AES_X64; }
                         else
                         if (nestedTypeName == "V256")
-                        { return InstructionSet.X64_PCLMULQDQ_V256; }
+                        { return InstructionSet.X64_AES_V256; }
                         else
                         if (nestedTypeName == "V512")
-                        { return InstructionSet.X64_PCLMULQDQ_V512; }
+                        { return InstructionSet.X64_AES_V512; }
                         else
-                        { return InstructionSet.X64_PCLMULQDQ; }
+                        { return InstructionSet.X64_AES; }
 
                     case "Avx512Vp2intersect":
                         if (nestedTypeName == "X64")
@@ -1883,9 +1817,9 @@ namespace Internal.JitInterface
 
                     case "Avx512Vbmi":
                         if (nestedTypeName == "VL")
-                        { return InstructionSet.X86_AVX512VBMI; }
+                        { return InstructionSet.X86_AVX512v2; }
                         else
-                        { return InstructionSet.X86_AVX512VBMI; }
+                        { return InstructionSet.X86_AVX512v2; }
 
                     case "Avx512Bitalg":
                         if (nestedTypeName == "VL")
@@ -1940,12 +1874,12 @@ namespace Internal.JitInterface
 
                     case "Pclmulqdq":
                         if (nestedTypeName == "V256")
-                        { return InstructionSet.X86_PCLMULQDQ_V256; }
+                        { return InstructionSet.X86_AES_V256; }
                         else
                         if (nestedTypeName == "V512")
-                        { return InstructionSet.X86_PCLMULQDQ_V512; }
+                        { return InstructionSet.X86_AES_V512; }
                         else
-                        { return InstructionSet.X86_PCLMULQDQ; }
+                        { return InstructionSet.X86_AES; }
 
                     case "Avx512Vp2intersect":
                         if (nestedTypeName == "VL")

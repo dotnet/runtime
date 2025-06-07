@@ -1291,7 +1291,7 @@ void EEJitManager::SetCpuInfo()
 
     if (((cpuFeatures & XArchIntrinsicConstants_Avx512v2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512v2))
     {
-        CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
+        CPUCompileFlags.Set(InstructionSet_AVX512v2);
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_Avx512v3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512v3))
@@ -1321,7 +1321,12 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_Aes) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAES))
     {
         CPUCompileFlags.Set(InstructionSet_AES);
-        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ);
+
+        if (((cpuFeatures & XArchIntrinsicConstants_Vaes) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableVAES))
+        {
+            CPUCompileFlags.Set(InstructionSet_AES_V256);
+            CPUCompileFlags.Set(InstructionSet_AES_V512);
+        }
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_Avx512Vp2intersect) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VP2INTERSECT))
@@ -1349,14 +1354,6 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_Sha) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSHA))
     {
         CPUCompileFlags.Set(InstructionSet_SHA);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Vaes) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableVAES))
-    {
-        CPUCompileFlags.Set(InstructionSet_AES_V256);
-        CPUCompileFlags.Set(InstructionSet_AES_V512);
-        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ_V256);
-        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ_V512);
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_WaitPkg) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableWAITPKG))

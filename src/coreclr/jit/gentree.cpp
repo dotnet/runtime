@@ -18393,9 +18393,9 @@ bool Compiler::IsValidForShuffle(
     }
     else if (simdSize == 64)
     {
-        if (varTypeIsByte(simdBaseType) && (!compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI)))
+        if (varTypeIsByte(simdBaseType) && (!compOpportunisticallyDependsOn(InstructionSet_AVX512v2)))
         {
-            // TYP_BYTE, TYP_UBYTE need AVX512VBMI.
+            // TYP_BYTE, TYP_UBYTE need AVX512v2.
             return false;
         }
     }
@@ -20520,9 +20520,9 @@ bool GenTree::isEvexCompatibleHWIntrinsic(Compiler* comp) const
 
         switch (intrinsicId)
         {
-            case NI_PCLMULQDQ_CarrylessMultiply:
+            case NI_AES_CarrylessMultiply:
             {
-                return comp->compOpportunisticallyDependsOn(InstructionSet_PCLMULQDQ_V256);
+                return comp->compOpportunisticallyDependsOn(InstructionSet_AES_V512);
             }
 
             default:
@@ -25329,10 +25329,10 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     {
         if (elementSize == 1)
         {
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512VBMI));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512v2));
 
             // swap the operands to match the encoding requirements
-            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_PermuteVar64x8, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512v2_PermuteVar64x8, simdBaseJitType, simdSize);
             retNode->SetReverseOp();
         }
         else if (elementSize == 2)
@@ -25370,9 +25370,9 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
         // high bit on index gives 0 already
         canUseSignedComparisonHint = true;
     }
-    else if ((elementSize == 1) && (simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI))
+    else if ((elementSize == 1) && (simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX512v2))
     {
-        NamedIntrinsic intrinsic = NI_AVX512VBMI_PermuteVar32x8;
+        NamedIntrinsic intrinsic = NI_AVX512v2_PermuteVar32x8;
 
         // swap the operands to match the encoding requirements
         retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseJitType, simdSize);
@@ -26048,7 +26048,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     if (simdSize == 32)
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-        if ((varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI)) ||
+        if ((varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512v2)) ||
             (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512)) ||
             // This condition is the condition for when we'd have to emit something slower than what we can do with
             // NI_AVX2_Shuffle directly:
@@ -26228,12 +26228,12 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         else if (elementSize == 1)
         {
             assert(crossLane);
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512VBMI));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512v2));
             op2                        = gtNewVconNode(type);
             op2->AsVecCon()->gtSimdVal = vecCns;
 
             // swap the operands to match the encoding requirements
-            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_PermuteVar32x8, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512v2_PermuteVar32x8, simdBaseJitType, simdSize);
         }
         else
         {
@@ -26341,12 +26341,12 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         }
         else if (elementSize == 1)
         {
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512VBMI));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512v2));
             op2                        = gtNewVconNode(type);
             op2->AsVecCon()->gtSimdVal = vecCns;
 
             // swap the operands to match the encoding requirements
-            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_PermuteVar64x8, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512v2_PermuteVar64x8, simdBaseJitType, simdSize);
         }
         else
         {
