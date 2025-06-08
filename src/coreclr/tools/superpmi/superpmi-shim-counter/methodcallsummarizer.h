@@ -16,7 +16,7 @@ public:
 
 private:
     std::map<std::string, int> namesAndCounts;
-    std::wstring               dataFileName;
+    std::string                dataFileName;
 };
 
 #endif

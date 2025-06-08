@@ -5,15 +5,22 @@
 #include "methodcallsummarizer.h"
 #include "logging.h"
 #include "spmiutil.h"
-#include <iostream>
 #include <fstream>
 
 MethodCallSummarizer::MethodCallSummarizer(WCHAR* logPath)
 {
-    std::wstring fileName(GetCommandLineW());
-    const WCHAR* extension = W(".csv");
-
-    dataFileName = GetResultFileName(logPath, fileName.c_str(), extension);
+#ifdef HOST_WINDOWS
+    std::string fileName(GetCommandLineA());
+#else
+    std::string fileName("");
+    std::ifstream proc("/proc/self/cmdline");
+    if (proc)
+    {
+        std::getline(proc, fileName);
+    }
+#endif
+    const std::string extension = ".csv";
+    dataFileName = GetResultFileName(ConvertToUtf8(logPath), fileName, extension);
 }
 
 // Use ordered map to make the most commonly added items are at the top of the list...
@@ -38,6 +45,6 @@ void MethodCallSummarizer::SaveTextFile()
     }
     catch (std::exception& ex)
     {
-        LogError("Couldn't write file '%ws': %s", dataFileName.c_str(), ex.what());
+        LogError("Couldn't write file '%s': %s", dataFileName.c_str(), ex.what());
     }
 }

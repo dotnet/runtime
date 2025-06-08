@@ -9,6 +9,8 @@
 #include "logging.h"
 #include "spmiutil.h"
 
+#include <sstream>
+#include <iomanip>
 #include <minipal/debugger.h>
 #include <minipal/random.h>
 
@@ -187,6 +189,41 @@ void ReplaceIllegalCharacters(WCHAR* fileName)
     }
 }
 
+void ReplaceIllegalCharacters(std::string& fileName)
+{
+    // Perform the following transforms:
+    //  - Convert non-ASCII to ASCII for simplicity
+    //  - Remove any illegal or annoying characters from the file name by
+    // converting them to underscores.
+    //  - Replace any quotes in the file name with spaces.
+
+    for (char& quote : fileName)
+    {
+        char ch = quote;
+        if ((ch <= 32) || (ch >= 127)) // Only allow textual ASCII characters
+        {
+            quote = '_';
+        }
+        else
+        {
+            switch (ch)
+            {
+                case '(': case ')': case '=': case '<':
+                case '>': case ':': case '/': case '\\':
+                case '|': case '?': case '!': case '*':
+                case '.': case ',':
+                    quote = '_';
+                    break;
+                case '"':
+                    quote = ' ';
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
+
 // All lengths in this function exclude the terminal NULL.
 WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const WCHAR* extension)
 {
@@ -248,6 +285,21 @@ WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const W
     wcsncat_s(fullPath, fullPathLength + 1, extension, extensionLength);
 
     return fullPath;
+}
+
+std::string GetResultFileName(const std::string& folderPath, const std::string& fileName, const std::string& extension)
+{
+    // Append a random string to improve uniqueness.
+    //
+    uint32_t randomNumber = 0;
+    minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&randomNumber, sizeof(randomNumber));
+
+    std::stringstream ss;
+    ss << folderPath << DIRECTORY_SEPARATOR_STR_A << fileName << std::hex << std::setw(8) << std::setfill('0') << randomNumber << extension;
+
+    std::string result = ss.str();
+    ReplaceIllegalCharacters(result);
+    return result;
 }
 
 #ifdef TARGET_AMD64
