@@ -1676,10 +1676,7 @@ configuration:
       - payloadType: Pull_Request
       - or:
         - filesMatchPattern:
-            pattern: .*ILLink.*
-            matchAny: true
-        - filesMatchPattern:
-            pattern: .*illink.*
+            pattern: (?i).*ILLink.*
             matchAny: true
       - not:
           hasLabel:
