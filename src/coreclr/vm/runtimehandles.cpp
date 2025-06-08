@@ -1766,22 +1766,24 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod)
 
     DynamicMethodDesc* pDynamicMethodDesc = pMethod->AsDynamicMethodDesc();
 
-    GCX_COOP();
+    {
+        GCX_COOP();
 
-    // Destroy should be called only if the managed part is gone.
-    _ASSERTE(OBJECTREFToObject(pDynamicMethodDesc->GetLCGMethodResolver()->GetManagedResolver()) == NULL);
+        // Destroy should be called only if the managed part is gone.
+        _ASSERTE(OBJECTREFToObject(pDynamicMethodDesc->GetLCGMethodResolver()->GetManagedResolver()) == NULL);
 
-    // Fire Unload Dynamic Method Event here
-    ETW::MethodLog::DynamicMethodDestroyed(pMethod);
+        // Fire Unload Dynamic Method Event here
+        ETW::MethodLog::DynamicMethodDestroyed(pMethod);
 
-    BEGIN_PROFILER_CALLBACK(CORProfilerTrackDynamicFunctionUnloads());
-    (&g_profControlBlock)->DynamicMethodUnloaded((FunctionID)pMethod);
-    END_PROFILER_CALLBACK();
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackDynamicFunctionUnloads());
+        (&g_profControlBlock)->DynamicMethodUnloaded((FunctionID)pMethod);
+        END_PROFILER_CALLBACK();
+    }
 
     pDynamicMethodDesc->Destroy();
 
     END_QCALL;
-    }
+}
 
 FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsTypicalMethodDefinition, ReflectMethodObject *pMethodUNSAFE)
 {

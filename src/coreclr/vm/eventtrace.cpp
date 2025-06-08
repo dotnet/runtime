@@ -3674,7 +3674,7 @@ VOID ETW::MethodLog::DynamicMethodDestroyed(MethodDesc *pMethodDesc)
 {
     CONTRACTL {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
     } CONTRACTL_END;
 
     EX_TRY
