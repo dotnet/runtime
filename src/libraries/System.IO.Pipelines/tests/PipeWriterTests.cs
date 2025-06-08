@@ -362,7 +362,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.Is64BitProcess))]
-        public void UnflushedBytesShouldOverflowInt()
+        public void UnflushedBytes_HandlesLargeValues()
         {
             PipeWriter writer = PipeWriter.Create(Stream.Null);
             int bufferSize = 10000;
