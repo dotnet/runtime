@@ -8,6 +8,12 @@
 #define _SPMIUtil
 
 #include "methodcontext.h"
+#ifdef TARGET_WINDOWS
+#define GET_PROC_ADDRESS ::GetProcAddress
+#else
+#include <dlfcn.h>
+#define GET_PROC_ADDRESS ::dlsym
+#endif
 
 bool BreakOnDebugBreakorAV();
 void SetBreakOnDebugBreakOrAV(bool value);

@@ -13,9 +13,6 @@
 #include <iomanip>
 #include <minipal/debugger.h>
 #include <minipal/random.h>
-#ifdef TARGET_UNIX
-#include <dlfcn.h>
-#endif
 
 static bool breakOnDebugBreakorAV = false;
 

@@ -112,7 +112,7 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* host)
     }
 
     // Get the required entrypoint
-    PjitStartup pnjitStartup = (PjitStartup)::GetProcAddress(g_hRealJit, "jitStartup");
+    PjitStartup pnjitStartup = (PjitStartup)GET_PROC_ADDRESS(g_hRealJit, "jitStartup");
     if (pnjitStartup == nullptr)
     {
         // This portion of the interface is not used by the JIT under test.
@@ -150,7 +150,7 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
     }
 
     // get the required entrypoints
-    pngetJit = (PgetJit)::GetProcAddress(g_hRealJit, "getJit");
+    pngetJit = (PgetJit)GET_PROC_ADDRESS(g_hRealJit, "getJit");
     if (pngetJit == 0)
     {
         LogError("getJit() - GetProcAddress 'getJit' failed (0x%08x)", ::GetLastError());
