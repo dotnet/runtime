@@ -13,6 +13,9 @@
 #include <iomanip>
 #include <minipal/debugger.h>
 #include <minipal/random.h>
+#ifdef TARGET_UNIX
+#include <dlfcn.h>
+#endif
 
 static bool breakOnDebugBreakorAV = false;
 
@@ -154,6 +157,30 @@ bool LoadRealJitLib(HMODULE& jitLib, WCHAR* jitLibPath)
         if (jitLib == NULL)
         {
             LogError("LoadRealJitLib - LoadLibrary failed to load '%ws' (0x%08x)", jitLibPath, ::GetLastError());
+            return false;
+        }
+    }
+    return true;
+}
+
+bool LoadRealJitLib(HMODULE& jitLib, const std::string& jitLibPath)
+{
+    // Load Library
+    if (jitLib == NULL)
+    {
+        if (jitLibPath.empty())
+        {
+            LogError("LoadRealJitLib - No real jit path");
+            return false;
+        }
+#ifdef TARGET_WINDOWS
+        jitLib = ::LoadLibraryExA(jitLibPath.c_str(), NULL, 0);
+#else
+        jitLib = ::dlopen(jitLibPath.c_str(), RTLD_LAZY);
+#endif
+        if (jitLib == NULL)
+        {
+            LogError("LoadRealJitLib - LoadLibrary failed to load '%s' (%d)", jitLibPath.c_str(), errno);
             return false;
         }
     }

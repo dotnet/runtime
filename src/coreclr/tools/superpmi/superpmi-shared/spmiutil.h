@@ -29,6 +29,7 @@ LPSTR GetCommandLineA();
 #endif // TARGET_UNIX
 
 bool LoadRealJitLib(HMODULE& realJit, WCHAR* realJitPath);
+bool LoadRealJitLib(HMODULE& realJit, const std::string& realJitPath);
 
 WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const WCHAR* extension);
 std::string GetResultFileName(const std::string& folderPath, const std::string& fileName, const std::string& extension);

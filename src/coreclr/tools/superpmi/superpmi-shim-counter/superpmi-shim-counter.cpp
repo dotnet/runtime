@@ -29,14 +29,14 @@ class LoggerHolder
 public:
     LoggerHolder()
     {
-    Logger::Initialize();
-    // If the environment variable isn't set, we don't enable file logging
-    const char* logFilePath = GetEnvWithDefault("SuperPMIShimLogFilePath", nullptr);
-    if (logFilePath)
-    {
-        Logger::OpenLogFile(logFilePath);
+        Logger::Initialize();
+        // If the environment variable isn't set, we don't enable file logging
+        const char* logFilePath = GetEnvWithDefault("SuperPMIShimLogFilePath", nullptr);
+        if (logFilePath)
+        {
+            Logger::OpenLogFile(logFilePath);
+        }
     }
-}
 
     ~LoggerHolder()
     {
@@ -106,7 +106,7 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* host)
     SetLibName();
     SetDebugDumpVariables();
 
-    if (!LoadRealJitLib(g_hRealJit, g_realJitPath.c_str()))
+    if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
     {
         return;
     }
@@ -144,7 +144,7 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
     SetLibName();
     SetDebugDumpVariables();
 
-    if (!LoadRealJitLib(g_hRealJit, g_realJitPath.c_str()))
+    if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
     {
         return nullptr;
     }
