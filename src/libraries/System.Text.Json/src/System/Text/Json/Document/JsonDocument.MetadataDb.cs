@@ -23,7 +23,7 @@ namespace System.Text.Json
         //   * Top bit is unassigned / always clear
         //   * 31 bits for token offset
         // * Second int
-        //   * Top bit is set if the number uses scientific notation
+        //   * Top bit is unassigned / always clear
         //   * 31 bits for the token length
         // * Third int
         //   * 4 bits JsonTokenType
@@ -88,6 +88,23 @@ namespace System.Text.Json
             private const int SizeOrLengthOffset = 4;
             private const int NumberOfRowsOffset = 8;
 
+            private static readonly MetadataDb LockedTrue =
+                CreateLockedForNonStringPrimitiveImpl(JsonTokenType.True, JsonConstants.TrueValue.Length);
+
+            private static readonly MetadataDb LockedFalse =
+                CreateLockedForNonStringPrimitiveImpl(JsonTokenType.False, JsonConstants.FalseValue.Length);
+
+            private static readonly MetadataDb LockedNull =
+                CreateLockedForNonStringPrimitiveImpl(JsonTokenType.Null, JsonConstants.NullValue.Length);
+
+            // Index i is a singleton database for all numbers of length i
+            private static MetadataDb[] LockedNumbers =>
+                field ??= CreateLockedCache(static length => CreateLockedForNonStringPrimitiveImpl(JsonTokenType.Number, length), 8);
+
+            // Index i is a singleton database for all strings of length i without escape sequences
+            private static MetadataDb[] LockedSimpleStrings =>
+                field ??= CreateLockedCache(static length => CreateLockedForStringImpl(JsonTokenType.String, length, isComplex: false), 16);
+
             internal int Length { get; private set; }
             private byte[] _data;
 
@@ -139,13 +156,39 @@ namespace System.Text.Json
                 return new MetadataDb(data, isLocked: false, convertToAlloc);
             }
 
-            internal static MetadataDb CreateLocked(int payloadLength)
+            internal static MetadataDb CreateLockedForLiteral(JsonTokenType tokenType)
             {
-                // Add one row worth of data since we need at least one row for a primitive type.
-                int size = payloadLength + DbRow.Size;
+                switch (tokenType)
+                {
+                    case JsonTokenType.True:
+                        return LockedTrue;
+                    case JsonTokenType.False:
+                        return LockedFalse;
+                    case JsonTokenType.Null:
+                        return LockedNull;
+                    default:
+                        Debug.Fail($"Unexpected token type: {tokenType}.");
+                        ThrowHelper.ThrowJsonException();
+                        return default;
+                };
+            }
 
-                byte[] data = new byte[size];
-                return new MetadataDb(data, isLocked: true, convertToAlloc: false);
+            internal static MetadataDb CreateLockedForString(int valueLength, bool isComplex)
+            {
+                Debug.Assert(valueLength >= 0);
+
+                return valueLength < LockedSimpleStrings.Length && !isComplex
+                    ? LockedSimpleStrings[valueLength]
+                    : CreateLockedForStringImpl(JsonTokenType.String, valueLength, isComplex);
+            }
+
+            internal static MetadataDb CreateLockedForNumber(int valueLength)
+            {
+                Debug.Assert(valueLength >= 0);
+
+                return valueLength < LockedNumbers.Length
+                    ? LockedNumbers[valueLength]
+                    : CreateLockedForNonStringPrimitiveImpl(JsonTokenType.Number, valueLength);
             }
 
             public void Dispose()
@@ -220,7 +263,7 @@ namespace System.Text.Json
                     (tokenType == JsonTokenType.StartArray || tokenType == JsonTokenType.StartObject) ==
                     (length == DbRow.UnknownSize));
 
-                if (Length >= _data.Length - DbRow.Size)
+                if (Length > _data.Length - DbRow.Size)
                 {
                     Enlarge();
                 }
@@ -397,6 +440,40 @@ namespace System.Text.Json
                 }
 
                 return new MetadataDb(newDatabase);
+            }
+
+            private static MetadataDb[] CreateLockedCache(Func<int, MetadataDb> createForLength, int count)
+            {
+                MetadataDb[] cache = new MetadataDb[count];
+
+                for (int i = 0; i < count; i++)
+                {
+                    cache[i] = createForLength(i);
+                }
+
+                return cache;
+            }
+
+            private static MetadataDb CreateLockedForNonStringPrimitiveImpl(JsonTokenType tokenType, int valueLength)
+            {
+                byte[] data = new byte[DbRow.Size];
+                MetadataDb db = new MetadataDb(data, isLocked: true, convertToAlloc: false);
+                db.Append(tokenType, 0, valueLength);
+                return db;
+            }
+
+            private static MetadataDb CreateLockedForStringImpl(JsonTokenType tokenType, int valueLength, bool isComplex)
+            {
+                byte[] data = new byte[DbRow.Size];
+                MetadataDb db = new MetadataDb(data, isLocked: true, convertToAlloc: false);
+                db.Append(tokenType, 1, valueLength); // Skip start quote
+
+                if (isComplex)
+                {
+                    db.SetHasComplexChildren(0);
+                }
+
+                return db;
             }
         }
     }

@@ -684,7 +684,7 @@ namespace System.Text.Json
                     owned = valueSpan.ToArray();
                 }
 
-                document = ParseUnrented(owned, state.Options, reader.TokenType, allowDuplicateProperties: allowDuplicateProperties);
+                document = ParseUnrented(owned, state.Options, ref reader, allowDuplicateProperties: allowDuplicateProperties);
             }
 
             return true;
@@ -695,21 +695,20 @@ namespace System.Text.Json
             switch (tokenType)
             {
                 case JsonTokenType.False:
-                    s_falseLiteral ??= Create(JsonConstants.FalseValue.ToArray());
+                    s_falseLiteral ??= Create(tokenType, JsonConstants.FalseValue.ToArray());
                     return s_falseLiteral;
                 case JsonTokenType.True:
-                    s_trueLiteral ??= Create(JsonConstants.TrueValue.ToArray());
+                    s_trueLiteral ??= Create(tokenType, JsonConstants.TrueValue.ToArray());
                     return s_trueLiteral;
                 default:
                     Debug.Assert(tokenType == JsonTokenType.Null);
-                    s_nullLiteral ??= Create(JsonConstants.NullValue.ToArray());
+                    s_nullLiteral ??= Create(tokenType, JsonConstants.NullValue.ToArray());
                     return s_nullLiteral;
             }
 
-            JsonDocument Create(byte[] utf8Json)
+            static JsonDocument Create(JsonTokenType tokenType, byte[] utf8Json)
             {
-                MetadataDb database = MetadataDb.CreateLocked(utf8Json.Length);
-                database.Append(tokenType, startLocation: 0, utf8Json.Length);
+                MetadataDb database = MetadataDb.CreateLockedForLiteral(tokenType);
                 return new JsonDocument(utf8Json, database, isDisposable: false);
             }
         }
@@ -754,37 +753,52 @@ namespace System.Text.Json
         private static JsonDocument ParseUnrented(
             ReadOnlyMemory<byte> utf8Json,
             JsonReaderOptions readerOptions,
-            JsonTokenType tokenType = JsonTokenType.None,
+            ref readonly Utf8JsonReader reader,
             bool allowDuplicateProperties = true)
         {
+            JsonTokenType tokenType = reader.TokenType;
+
             // These tokens should already have been processed.
             Debug.Assert(
                 tokenType != JsonTokenType.Null &&
                 tokenType != JsonTokenType.False &&
                 tokenType != JsonTokenType.True);
 
-            ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
-            MetadataDb database;
-
-            if (tokenType == JsonTokenType.String || tokenType == JsonTokenType.Number)
+            // The remaining primitive values have been validated by the reader, so we don't need to reparse.
+            if (tokenType == JsonTokenType.String)
             {
-                // For primitive types, we can avoid renting MetadataDb and creating StackRowStack.
-                database = MetadataDb.CreateLocked(utf8Json.Length);
-                StackRowStack stack = default;
-                Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
+                // Remove quotes
+                MetadataDb database = MetadataDb.CreateLockedForString(utf8Json.Length - 2, reader.ValueIsEscaped);
+                return new JsonDocument(utf8Json, database, isDisposable: false);
+            }
+            else if (tokenType == JsonTokenType.Number)
+            {
+                MetadataDb database = MetadataDb.CreateLockedForNumber(utf8Json.Length);
+                return new JsonDocument(utf8Json, database, isDisposable: false);
             }
             else
             {
-                database = MetadataDb.CreateRented(utf8Json.Length, convertToAlloc: true);
-                var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
-                try
-                {
-                    Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
-                }
-                finally
-                {
-                    stack.Dispose();
-                }
+                return ParseUnrented(utf8Json, readerOptions, allowDuplicateProperties);
+            }
+        }
+
+        private static JsonDocument ParseUnrented(
+            ReadOnlyMemory<byte> utf8Json,
+            JsonReaderOptions readerOptions,
+            bool allowDuplicateProperties = true)
+        {
+            ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
+            MetadataDb database;
+
+            database = MetadataDb.CreateRented(utf8Json.Length, convertToAlloc: true);
+            var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
+            try
+            {
+                Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
+            }
+            finally
+            {
+                stack.Dispose();
             }
 
             JsonDocument document = new JsonDocument(utf8Json, database, isDisposable: false);
