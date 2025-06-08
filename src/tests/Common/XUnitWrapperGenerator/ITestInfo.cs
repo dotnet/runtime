@@ -506,7 +506,7 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
             if (interestingTest)
             {
-                builder.AppendLine("} catch (Exception eee) when (FailNow(eee)) { } bool FailNow(Exception eee) { Environment.FailFast(\"FailNow\", eee); return true; } }");
+                builder.AppendLine("} catch (System.Exception eee) when (FailNow(eee)) { } bool FailNow(Exception eee) { System.Environment.FailFast(\"FailNow\", eee); return true; } }");
             }
         }
 
