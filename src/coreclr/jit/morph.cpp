@@ -6373,7 +6373,13 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         if (call->gtCallType == CT_INDIRECT)
         {
             optCallCount++;
-            optIndirectCallCount++;
+            // Do not count the tailcall morphed from fgMorphCall ->
+            // fgMorphPotentialTailCall -> fgMorphCall as indirect call
+            // to prevent forcing EBP frame later.
+            if ((call->gtCallMoreFlags & GTF_CALL_M_TAILCALL) == 0)
+            {
+                optIndirectCallCount++;
+            }
         }
         else if (call->gtCallType == CT_USER_FUNC)
         {
