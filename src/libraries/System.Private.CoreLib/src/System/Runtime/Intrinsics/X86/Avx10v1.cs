@@ -1680,12 +1680,14 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>__m256i _mm256_permutexvar_epi16 (__m256i idx, __m256i a)</para>
         ///   <para>  VPERMW ymm1 {k1}{z}, ymm2, ymm3/m256</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector256<short> PermuteVar16x16(Vector256<short> left, Vector256<short> control) => PermuteVar16x16(left, control);
 
         /// <summary>
         ///   <para>__m256i _mm256_permutexvar_epi16 (__m256i idx, __m256i a)</para>
         ///   <para>  VPERMW ymm1 {k1}{z}, ymm2, ymm3/m256</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector256<ushort> PermuteVar16x16(Vector256<ushort> left, Vector256<ushort> control) => PermuteVar16x16(left, control);
 
         /// <summary>
@@ -1706,12 +1708,14 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>__m128i _mm_permutexvar_epi8 (__m128i idx, __m128i a)</para>
         ///   <para>  VPERMB xmm1 {k1}{z}, xmm2, xmm3/m128</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector128<byte> PermuteVar16x8(Vector128<byte> left, Vector128<byte> control) => PermuteVar16x8(left, control);
 
         /// <summary>
         ///   <para>__m128i _mm_permutexvar_epi8 (__m128i idx, __m128i a)</para>
         ///   <para>  VPERMB xmm1 {k1}{z}, xmm2, xmm3/m128</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector128<sbyte> PermuteVar16x8(Vector128<sbyte> left, Vector128<sbyte> control) => PermuteVar16x8(left, control);
 
         /// <summary>
@@ -1753,12 +1757,14 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>__m256i _mm256_permutexvar_epi8 (__m256i idx, __m256i a)</para>
         ///   <para>  VPERMB ymm1 {k1}{z}, ymm2, ymm3/m256</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector256<byte> PermuteVar32x8(Vector256<byte> left, Vector256<byte> control) => PermuteVar32x8(left, control);
 
         /// <summary>
         ///   <para>__m256i _mm256_permutexvar_epi8 (__m256i idx, __m256i a)</para>
         ///   <para>  VPERMB ymm1 {k1}{z}, ymm2, ymm3/m256</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector256<sbyte> PermuteVar32x8(Vector256<sbyte> left, Vector256<sbyte> control) => PermuteVar32x8(left, control);
 
         /// <summary>
@@ -1806,12 +1812,14 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>__m256i _mm256_permutexvar_epi64 (__m256i idx, __m256i a)</para>
         ///   <para>  VPERMQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector256<long> PermuteVar4x64(Vector256<long> value, Vector256<long> control) => PermuteVar4x64(value, control);
 
         /// <summary>
         ///   <para>__m256i _mm256_permutexvar_epi64 (__m256i idx, __m256i a)</para>
         ///   <para>  VPERMQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector256<ulong> PermuteVar4x64(Vector256<ulong> value, Vector256<ulong> control) => PermuteVar4x64(value, control);
 
         /// <summary>
@@ -1839,12 +1847,14 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>__m128i _mm_permutexvar_epi16 (__m128i idx, __m128i a)</para>
         ///   <para>  VPERMW xmm1 {k1}{z}, xmm2, xmm3/m128</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector128<short> PermuteVar8x16(Vector128<short> left, Vector128<short> control) => PermuteVar8x16(left, control);
 
         /// <summary>
         ///   <para>__m128i _mm_permutexvar_epi16 (__m128i idx, __m128i a)</para>
         ///   <para>  VPERMW xmm1 {k1}{z}, xmm2, xmm3/m128</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector128<ushort> PermuteVar8x16(Vector128<ushort> left, Vector128<ushort> control) => PermuteVar8x16(left, control);
 
         /// <summary>
@@ -3161,12 +3171,14 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>__m512i _mm512_permutexvar_epi8 (__m512i idx, __m512i a)</para>
             ///   <para>  VPERMB zmm1 {k1}{z}, zmm2, zmm3/m512</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector512<sbyte> PermuteVar64x8(Vector512<sbyte> left, Vector512<sbyte> control) => PermuteVar64x8(left, control);
 
             /// <summary>
             ///   <para>__m512i _mm512_permutexvar_epi8 (__m512i idx, __m512i a)</para>
             ///   <para>  VPERMB zmm1 {k1}{z}, zmm2, zmm3/m512</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector512<byte> PermuteVar64x8(Vector512<byte> left, Vector512<byte> control) => PermuteVar64x8(left, control);
 
             /// <summary>

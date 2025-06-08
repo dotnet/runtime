@@ -53,11 +53,13 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>__m128i _mm_permutexvar_epi8 (__m128i idx, __m128i a)</para>
             ///   <para>  VPERMB xmm1 {k1}{z}, xmm2, xmm3/m128</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector128<sbyte> PermuteVar16x8(Vector128<sbyte> left, Vector128<sbyte> control) { throw new PlatformNotSupportedException(); }
             /// <summary>
             ///   <para>__m128i _mm_permutexvar_epi8 (__m128i idx, __m128i a)</para>
             ///   <para>  VPERMB xmm1 {k1}{z}, xmm2, xmm3/m128</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector128<byte> PermuteVar16x8(Vector128<byte> left, Vector128<byte> control) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
@@ -77,11 +79,13 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>__m256i _mm256_permutexvar_epi8 (__m256i idx, __m256i a)</para>
             ///   <para>  VPERMB ymm1 {k1}{z}, ymm2, ymm3/m256</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector256<sbyte> PermuteVar32x8(Vector256<sbyte> left, Vector256<sbyte> control) { throw new PlatformNotSupportedException(); }
             /// <summary>
             ///   <para>__m256i _mm256_permutexvar_epi8 (__m256i idx, __m256i a)</para>
             ///   <para>  VPERMB ymm1 {k1}{z}, ymm2, ymm3/m256</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector256<byte> PermuteVar32x8(Vector256<byte> left, Vector256<byte> control) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
@@ -124,11 +128,13 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>__m512i _mm512_permutexvar_epi8 (__m512i idx, __m512i a)</para>
         ///   <para>  VPERMB zmm1 {k1}{z}, zmm2, zmm3/m512</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<sbyte> PermuteVar64x8(Vector512<sbyte> left, Vector512<sbyte> control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m512i _mm512_permutexvar_epi8 (__m512i idx, __m512i a)</para>
         ///   <para>  VPERMB zmm1 {k1}{z}, zmm2, zmm3/m512</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<byte> PermuteVar64x8(Vector512<byte> left, Vector512<byte> control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
