@@ -2559,7 +2559,7 @@ void CodeGen::genSse42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             {
                 ins = INS_crc32_apx;
             }
-#endif                                                               // TARGET_AMD64
+#endif // TARGET_AMD64
 
             if ((baseType == TYP_UBYTE) || (baseType == TYP_USHORT)) // baseType is the type of the second argument
             {
@@ -2648,23 +2648,24 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
 
     var_types baseType   = node->GetSimdBaseType();
     var_types targetType = node->TypeGet();
-    emitAttr  attr       = emitTypeSize(targetType);
+    emitAttr  attr       = EA_UNKNOWN;
 
     if (baseType == TYP_UNKNOWN)
     {
         baseType = targetType;
+        attr     = emitTypeSize(targetType);
     }
     else
     {
         attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
     }
 
-    instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
-    size_t      numArgs    = node->GetOperandCount();
-    GenTree*    op1        = node->Op(1);
-    regNumber   op1Reg     = REG_NA;
-    regNumber   targetReg  = node->GetRegNum();
-    emitter*    emit       = GetEmitter();
+    instruction ins       = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+    size_t      numArgs   = node->GetOperandCount();
+    GenTree*    op1       = node->Op(1);
+    regNumber   op1Reg    = REG_NA;
+    regNumber   targetReg = node->GetRegNum();
+    emitter*    emit      = GetEmitter();
 
     genConsumeMultiOpOperands(node);
 

@@ -1571,11 +1571,7 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
 //    true iff the given instruction set is enabled via configuration (environment variables, etc.).
 bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
 {
-    return compHWIntrinsicDependsOn(isa) && (
-#ifdef DEBUG
-                                                JitConfig.EnableIncompleteISAClass() ||
-#endif
-                                                HWIntrinsicInfo::isFullyImplementedIsa(isa));
+    return compHWIntrinsicDependsOn(isa);
 }
 
 //------------------------------------------------------------------------
@@ -1919,7 +1915,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     if (simdBaseJitType == CORINFO_TYPE_UNDEF)
     {
-        if ((category == HW_Category_Scalar) || HWIntrinsicInfo::isScalarIsa(isa))
+        if ((category == HW_Category_Scalar) || (category == HW_Category_Special))
         {
             simdBaseJitType = sig->retType;
 
@@ -1984,7 +1980,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #endif // TARGET_ARM64
 
     // Immediately return if the category is other than scalar/special and this is not a supported base type.
-    if ((category != HW_Category_Special) && (category != HW_Category_Scalar) && !HWIntrinsicInfo::isScalarIsa(isa) &&
+    if ((category != HW_Category_Special) && (category != HW_Category_Scalar) &&
         !isSupportedBaseType(intrinsic, simdBaseJitType))
     {
         return nullptr;

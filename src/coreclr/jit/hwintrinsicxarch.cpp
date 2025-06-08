@@ -885,33 +885,6 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
 }
 
 //------------------------------------------------------------------------
-// isFullyImplementedIsa: Gets a value that indicates whether the InstructionSet is fully implemented
-//
-// Arguments:
-//    isa - The InstructionSet to check
-//
-// Return Value:
-//    true if isa is supported; otherwise, false
-bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
-{
-    // All ISAs are currently fully implemented
-    return true;
-}
-
-//------------------------------------------------------------------------
-// isScalarIsa: Gets a value that indicates whether the InstructionSet is scalar
-//
-// Arguments:
-//    isa - The InstructionSet to check
-//
-// Return Value:
-//    true if isa is scalar; otherwise, false
-bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
-{
-    return false;
-}
-
-//------------------------------------------------------------------------
 // lookupIval: Gets a the implicit immediate value for the given intrinsic
 //
 // Arguments:
@@ -1351,19 +1324,23 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_AVX2_AndNot:
         {
-            if (simdBaseType == TYP_UNKNOWN)
+            if (varTypeIsSIMD(retType))
             {
-                intrinsic = NI_AVX2_AndNotScalar;
+                intrinsic             = NI_AVX2_AndNotVector;
+                simdSize              = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
+                simdBaseType          = JitType2PreciseVarType(simdBaseJitType);
+                compFloatingPointUsed = true;
             }
             else
             {
-                intrinsic = NI_AVX2_AndNotVector;
+                intrinsic = NI_AVX2_AndNotScalar;
             }
             FALLTHROUGH;
         }
 
         case NI_X86Base_AndNot:
         case NI_AVX_AndNot:
+        case NI_AVX2_X64_AndNot:
         case NI_AVX512_AndNot:
         {
             assert(sig->numArgs == 2);
