@@ -12,6 +12,7 @@
 #include "logging.h"
 #include "spmiutil.h"
 #include "jithost.h"
+#include <fstream>
 
 // Assumptions:
 // -We'll never be unloaded - we leak memory and have no facility to unload libraries
@@ -22,7 +23,7 @@ std::filesystem::path g_realJitPath{""}; // Destructable objects will be cleaned
 std::filesystem::path g_logPath{""};
 std::filesystem::path g_HomeDirectory{""};
 std::filesystem::path g_DefaultRealJitPath{""};
-WCHAR*                g_dataFileName     = nullptr; // We leak this
+std::filesystem::path g_dataFileName{""};
 MethodContext*        g_globalContext    = nullptr;
 bool                  g_initialized      = false;
 char*                 g_collectionFilter = nullptr;
@@ -79,10 +80,17 @@ void SetLogPath()
 
 void SetLogPathName()
 {
-    // NOTE: under PAL, we don't get the command line, so we depend on the random number generator to give us a unique
-    // filename
-    const WCHAR* fileName  = GetCommandLineW();
-    const WCHAR* extension = W(".mc");
+#ifdef HOST_WINDOWS
+    std::string fileName(GetCommandLineA());
+#else
+    std::string   fileName("");
+    std::ifstream proc("/proc/self/cmdline");
+    if (proc)
+    {
+        std::getline(proc, fileName);
+    }
+#endif
+    const std::string extension = ".mc";
 
     g_dataFileName = GetResultFileName(g_logPath, fileName, extension);
 }
@@ -219,11 +227,11 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
 #endif
 
     // create our datafile
-    pJitInstance->hFile = CreateFileW(g_dataFileName, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                                      FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    pJitInstance->hFile = CreateFileW((const WCHAR*)g_dataFileName.u16string().c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL,
+                                      CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
     if (pJitInstance->hFile == INVALID_HANDLE_VALUE)
     {
-        LogError("Couldn't open file '%ws': error %d", g_dataFileName, GetLastError());
+        LogError("Couldn't open file '%s': error %d", g_dataFileName.string().c_str(), GetLastError());
     }
 
     return pJitInstance;
