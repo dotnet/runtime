@@ -7,7 +7,7 @@
 #include "spmiutil.h"
 #include <fstream>
 
-MethodCallSummarizer::MethodCallSummarizer(const std::string& logPath)
+MethodCallSummarizer::MethodCallSummarizer(const std::filesystem::path& logPath)
 {
 #ifdef HOST_WINDOWS
     std::string fileName(GetCommandLineA());

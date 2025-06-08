@@ -163,7 +163,7 @@ bool LoadRealJitLib(HMODULE& jitLib, WCHAR* jitLibPath)
     return true;
 }
 
-bool LoadRealJitLib(HMODULE& jitLib, const std::string& jitLibPath)
+bool LoadRealJitLib(HMODULE& jitLib, const std::filesystem::path& jitLibPath)
 {
     // Load Library
     if (jitLib == NULL)
@@ -174,13 +174,14 @@ bool LoadRealJitLib(HMODULE& jitLib, const std::string& jitLibPath)
             return false;
         }
 #ifdef TARGET_WINDOWS
-        jitLib = ::LoadLibraryExA(jitLibPath.c_str(), NULL, 0);
+        jitLib = ::LoadLibraryExW(jitLibPath.c_str(), NULL, 0);
 #else
         jitLib = ::dlopen(jitLibPath.c_str(), RTLD_LAZY);
+        // The simulated DllMain of JIT doesn't do any meaningful initialization. Skip it.
 #endif
         if (jitLib == NULL)
         {
-            LogError("LoadRealJitLib - LoadLibrary failed to load '%s' (%d)", jitLibPath.c_str(), errno);
+            LogError("LoadRealJitLib - LoadLibrary failed to load '%s' (%d)", jitLibPath.string().c_str(), errno);
             return false;
         }
     }
@@ -321,19 +322,20 @@ WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const W
     return fullPath;
 }
 
-std::string GetResultFileName(const std::string& folderPath, const std::string& fileName, const std::string& extension)
+std::filesystem::path GetResultFileName(const std::filesystem::path& folderPath,
+                                        const std::string&           fileName,
+                                        const std::string&           extension)
 {
     // Append a random string to improve uniqueness.
     //
     uint32_t randomNumber = 0;
     minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&randomNumber, sizeof(randomNumber));
-
     std::stringstream ss;
-    ss << folderPath << DIRECTORY_SEPARATOR_STR_A << fileName << std::hex << std::setw(8) << std::setfill('0') << randomNumber << extension;
+    ss << std::hex << std::setw(8) << std::setfill('0') << randomNumber;
 
-    std::string result = ss.str();
-    ReplaceIllegalCharacters(result);
-    return result;
+    std::string nameAndExtension = fileName + ss.str() + extension;
+    ReplaceIllegalCharacters(nameAndExtension);
+    return folderPath / nameAndExtension;
 }
 
 #ifdef TARGET_AMD64

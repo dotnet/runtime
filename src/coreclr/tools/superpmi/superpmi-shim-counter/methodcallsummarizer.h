@@ -10,14 +10,14 @@
 class MethodCallSummarizer
 {
 public:
-    MethodCallSummarizer(const std::string& name);
+    MethodCallSummarizer(const std::filesystem::path& name);
     void AddCall(const char* name);
     void SaveTextFile();
     ~MethodCallSummarizer();
 
 private:
     std::map<std::string, int> namesAndCounts;
-    std::string                dataFileName;
+    std::filesystem::path      dataFileName;
 };
 
 #endif

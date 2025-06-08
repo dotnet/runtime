@@ -8,7 +8,6 @@
 #define _SPMIUtil
 
 #include "methodcontext.h"
-#include <string>
 
 bool BreakOnDebugBreakorAV();
 void SetBreakOnDebugBreakOrAV(bool value);
@@ -29,10 +28,12 @@ LPSTR GetCommandLineA();
 #endif // TARGET_UNIX
 
 bool LoadRealJitLib(HMODULE& realJit, WCHAR* realJitPath);
-bool LoadRealJitLib(HMODULE& realJit, const std::string& realJitPath);
+bool LoadRealJitLib(HMODULE& realJit, const std::filesystem::path& realJitPath);
 
 WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const WCHAR* extension);
-std::string GetResultFileName(const std::string& folderPath, const std::string& fileName, const std::string& extension);
+std::filesystem::path GetResultFileName(const std::filesystem::path& folderPath,
+                                        const std::string&           fileName,
+                                        const std::string&           extension);
 
 // SuperPMI stores handles as unsigned 64-bit integers, no matter the platform the collection happens on
 // (32 or 64 bit). Handles are defined as pointers. We need to be careful when converting from a handle
