@@ -101,10 +101,10 @@ WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* 
     return retString;
 }
 
-std::string GetEnvWithDefault(const std::string& envVarName, const std::string& defaultValue = "")
+const char* GetEnvWithDefault(const char* envVarName, const char* defaultValue)
 {
     // getenv isn't thread safe, but it's simple and sufficient since we are development-only tool
-    char* env = getenv(envVarName.c_str());
+    char* env = getenv(envVarName);
     return env ? env : defaultValue;
 }
 

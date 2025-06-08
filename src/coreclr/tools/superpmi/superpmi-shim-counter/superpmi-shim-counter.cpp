@@ -18,11 +18,31 @@
 HMODULE     g_hRealJit           = 0;  // We leak this currently (could do the proper shutdown in process_detach)
 std::string g_realJitPath        = ""; // std::string will be cleaned up and won't leak
 std::string g_logPath            = "";
-std::string g_logFilePath        = "";
 std::string g_HomeDirectory      = "";
 std::string g_DefaultRealJitPath = "";
 
 std::unique_ptr<MethodCallSummarizer> g_globalContext = nullptr;
+
+// RAII holder for logger
+class LoggerHolder
+{
+public:
+    LoggerHolder()
+    {
+    Logger::Initialize();
+    // If the environment variable isn't set, we don't enable file logging
+    const char* logFilePath = GetEnvWithDefault("SuperPMIShimLogFilePath", nullptr);
+    if (logFilePath)
+    {
+        Logger::OpenLogFile(logFilePath);
+    }
+}
+
+    ~LoggerHolder()
+    {
+        Logger::Shutdown();
+    }
+} loggerHolder;
 
 void SetDefaultPaths()
 {
@@ -41,7 +61,7 @@ void SetLibName()
 {
     if (g_realJitPath.empty())
     {
-        g_realJitPath = GetEnvWithDefault("SuperPMIShimPath", g_DefaultRealJitPath);
+        g_realJitPath = GetEnvWithDefault("SuperPMIShimPath", g_DefaultRealJitPath.c_str());
     }
 }
 
@@ -49,16 +69,7 @@ void SetLogPath()
 {
     if (g_logPath.empty())
     {
-        g_logPath = GetEnvWithDefault("SuperPMIShimLogPath", g_HomeDirectory);
-    }
-}
-
-void SetLogFilePath()
-{
-    if (g_logFilePath.empty())
-    {
-        // If the environment variable isn't set, we don't enable file logging
-        g_logFilePath = GetEnvWithDefault("SuperPMIShimLogFilePath", nullptr);
+        g_logPath = GetEnvWithDefault("SuperPMIShimLogPath", g_HomeDirectory.c_str());
     }
 }
 
@@ -79,17 +90,9 @@ extern "C"
                 exit(1);
             }
 #endif // HOST_UNIX
-
-            Logger::Initialize();
-            SetLogFilePath();
-            Logger::OpenLogFile(g_logFilePath.c_str());
             break;
 
         case DLL_PROCESS_DETACH:
-            Logger::Shutdown();
-
-            break;
-
         case DLL_THREAD_ATTACH:
         case DLL_THREAD_DETACH:
             break;

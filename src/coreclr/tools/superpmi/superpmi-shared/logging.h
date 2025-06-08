@@ -73,7 +73,7 @@ public:
     static void Initialize();
     static void Shutdown();
 
-    static void OpenLogFile(char* logFilePath);
+    static void OpenLogFile(const char* logFilePath);
     static void CloseLogFile();
 
     static UINT32 ParseLogLevelString(const char* specifierStr);
