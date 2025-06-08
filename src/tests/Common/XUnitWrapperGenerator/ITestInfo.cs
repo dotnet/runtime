@@ -456,8 +456,15 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
                          + $" || {_filterLocalIdentifier}.ShouldRunTest(@\"{test.ContainingType}.{test.Method}\","
                          + $" {test.TestNameExpression}))");
 
+        bool interestingTest = test.TestNameExpression.Contains("Runtime_108612") || test.TestNameExpression.Contains("b26496");
+
         using (builder.NewBracesScope())
         {
+            if (interestingTest)
+            {
+                builder.AppendLine("for (int abcd = 0; abcd < 100; abcd++) { try {");
+            }
+
             builder.AppendLine($"System.TimeSpan testStart = stopwatch.Elapsed;");
             builder.AppendLine("try");
 
@@ -495,6 +502,11 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
                                  + $" System.Console.Out,"
                                  + $" tempLogSw,"
                                  + $" statsCsvSw);");
+            }
+
+            if (interestingTest)
+            {
+                builder.AppendLine("} catch (Exception eee) when (FailNow(eee)) { } bool FailNow(Exception eee) { Environment.FailFast(\"FailNow\", eee); return true; } }");
             }
         }
 
