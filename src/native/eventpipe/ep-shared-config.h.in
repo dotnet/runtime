@@ -6,7 +6,8 @@
 #cmakedefine01 HAVE_SYS_IOCTL_H
 #cmakedefine01 HAVE_SYS_SOCKET_H
 #cmakedefine01 HAVE_SYS_UIO_H
-#cmakedefine01 HAVE_UNISTD_H
+/* mono files use ifdef HAVE_UNISTD_H, so for compatibility */
+#cmakedefine HAVE_UNISTD_H 1
 /* This platforms supports setting flags atomically when accepting connections. */
 #cmakedefine01 HAVE_ACCEPT4
 
