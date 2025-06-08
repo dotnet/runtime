@@ -1676,9 +1676,8 @@ configuration:
       - payloadType: Pull_Request
       - or:
         - filesMatchPattern:
-            pattern: .*ILLink.*
-        - filesMatchPattern:
-            pattern: .*illink.*
+            pattern: (?i).*ILLink.*
+            matchAny: true
       - not:
           hasLabel:
             label: linkable-framework
@@ -1692,9 +1691,8 @@ configuration:
       - payloadType: Pull_Request
       - or:
         - filesMatchPattern:
-            pattern: .*ILLink.*
-        - filesMatchPattern:
-            pattern: .*illink.*
+            pattern: (?i).*ILLink.*
+            matchAny: true
       - not:
           hasLabel:
             label: linkable-framework
