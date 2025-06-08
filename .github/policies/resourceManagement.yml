@@ -1677,8 +1677,10 @@ configuration:
       - or:
         - filesMatchPattern:
             pattern: .*ILLink.*
+            matchAny: true
         - filesMatchPattern:
             pattern: .*illink.*
+            matchAny: true
       - not:
           hasLabel:
             label: linkable-framework
@@ -1693,8 +1695,10 @@ configuration:
       - or:
         - filesMatchPattern:
             pattern: .*ILLink.*
+            matchAny: true
         - filesMatchPattern:
             pattern: .*illink.*
+            matchAny: true
       - not:
           hasLabel:
             label: linkable-framework
