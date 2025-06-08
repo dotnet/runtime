@@ -29,14 +29,10 @@ WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* 
 
 const char* GetEnvWithDefault(const char* envVarName, const char* defaultValue = nullptr);
 
-#ifdef TARGET_UNIX
-LPSTR GetCommandLineA();
-#endif // TARGET_UNIX
+std::string GetProcessCommandLine();
 
-bool LoadRealJitLib(HMODULE& realJit, WCHAR* realJitPath);
 bool LoadRealJitLib(HMODULE& realJit, const std::filesystem::path& realJitPath);
 
-WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const WCHAR* extension);
 std::filesystem::path GetResultFileName(const std::filesystem::path& folderPath,
                                         const std::string&           fileName,
                                         const std::string&           extension);

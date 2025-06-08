@@ -12,7 +12,6 @@
 #include "logging.h"
 #include "spmiutil.h"
 #include "jithost.h"
-#include <fstream>
 
 // Assumptions:
 // -We'll never be unloaded - we leak memory and have no facility to unload libraries
@@ -80,19 +79,7 @@ void SetLogPath()
 
 void SetLogPathName()
 {
-#ifdef HOST_WINDOWS
-    std::string fileName(GetCommandLineA());
-#else
-    std::string   fileName("");
-    std::ifstream proc("/proc/self/cmdline");
-    if (proc)
-    {
-        std::getline(proc, fileName);
-    }
-#endif
-    const std::string extension = ".mc";
-
-    g_dataFileName = GetResultFileName(g_logPath, fileName, extension);
+    g_dataFileName = GetResultFileName(g_logPath, GetProcessCommandLine(), ".mc");
 }
 
 void SetCollectionFilter()

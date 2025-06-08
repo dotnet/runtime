@@ -108,56 +108,19 @@ const char* GetEnvWithDefault(const char* envVarName, const char* defaultValue)
     return env ? env : defaultValue;
 }
 
-#ifdef TARGET_UNIX
-// For some reason, the PAL doesn't have GetCommandLineA(). So write it.
-LPSTR GetCommandLineA()
+std::string GetProcessCommandLine()
 {
-    LPSTR  pCmdLine  = nullptr;
-    LPWSTR pwCmdLine = GetCommandLineW();
-
-    if (pwCmdLine != nullptr)
+#ifdef TARGET_WINDOWS
+    return ::GetCommandLineA();
+#else
+    std::string   cmdLine("");
+    std::ifstream proc("/proc/self/cmdline");
+    if (proc)
     {
-        // Convert to ASCII
-
-        int n = WideCharToMultiByte(CP_ACP, 0, pwCmdLine, -1, nullptr, 0, nullptr, nullptr);
-        if (n == 0)
-        {
-            LogError("MultiByteToWideChar failed %d", GetLastError());
-            return nullptr;
-        }
-
-        pCmdLine = new char[n];
-
-        int n2 = WideCharToMultiByte(CP_ACP, 0, pwCmdLine, -1, pCmdLine, n, nullptr, nullptr);
-        if ((n2 == 0) || (n2 != n))
-        {
-            LogError("MultiByteToWideChar failed %d", GetLastError());
-            return nullptr;
-        }
+        std::getline(proc, cmdLine);
     }
-
-    return pCmdLine;
-}
-#endif // TARGET_UNIX
-
-bool LoadRealJitLib(HMODULE& jitLib, WCHAR* jitLibPath)
-{
-    // Load Library
-    if (jitLib == NULL)
-    {
-        if (jitLibPath == nullptr)
-        {
-            LogError("LoadRealJitLib - No real jit path");
-            return false;
-        }
-        jitLib = ::LoadLibraryExW(jitLibPath, NULL, 0);
-        if (jitLib == NULL)
-        {
-            LogError("LoadRealJitLib - LoadLibrary failed to load '%ws' (0x%08x)", jitLibPath, ::GetLastError());
-            return false;
-        }
-    }
-    return true;
+    return cmdLine;
+#endif
 }
 
 bool LoadRealJitLib(HMODULE& jitLib, const std::filesystem::path& jitLibPath)
@@ -183,42 +146,6 @@ bool LoadRealJitLib(HMODULE& jitLib, const std::filesystem::path& jitLibPath)
         }
     }
     return true;
-}
-
-void ReplaceIllegalCharacters(WCHAR* fileName)
-{
-    WCHAR* quote = nullptr;
-
-    // Perform the following transforms:
-    //  - Convert non-ASCII to ASCII for simplicity
-    //  - Remove any illegal or annoying characters from the file name by
-    // converting them to underscores.
-    //  - Replace any quotes in the file name with spaces.
-    for (quote = fileName; *quote != '\0'; quote++)
-    {
-        WCHAR ch = *quote;
-        if ((ch <= 32) || (ch >= 127)) // Only allow textual ASCII characters
-        {
-            *quote = W('_');
-        }
-        else
-        {
-            switch (ch)
-            {
-                case W('('): case W(')'): case W('='): case W('<'):
-                case W('>'): case W(':'): case W('/'): case W('\\'):
-                case W('|'): case W('?'): case W('!'): case W('*'):
-                case W('.'): case W(','):
-                    *quote = W('_');
-                    break;
-                case W('"'):
-                    *quote = W(' ');
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
 }
 
 void ReplaceIllegalCharacters(std::string& fileName)
@@ -254,69 +181,6 @@ void ReplaceIllegalCharacters(std::string& fileName)
             }
         }
     }
-}
-
-// All lengths in this function exclude the terminal NULL.
-WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const WCHAR* extension)
-{
-    const size_t extensionLength    = u16_strlen(extension);
-    const size_t fileNameLength     = u16_strlen(fileName);
-    const size_t randomStringLength = 8;
-    const size_t maxPathLength      = MAX_PATH - 50;
-
-    // See how long the folder part is, and start building the file path with the folder part.
-    //
-    WCHAR* fullPath = new WCHAR[MAX_PATH];
-    fullPath[0] = W('\0');
-    const size_t folderPathLength = GetFullPathNameW(folderPath, MAX_PATH, (LPWSTR)fullPath, NULL);
-
-    if (folderPathLength == 0)
-    {
-        LogError("GetResultFileName - can't resolve folder path '%ws'", folderPath);
-        return nullptr;
-    }
-
-    // Account for the folder, directory separator and extension.
-    //
-    size_t fullPathLength = folderPathLength + 1 + extensionLength;
-
-    // If we won't have room for a minimal file name part, bail.
-    //
-    if ((fullPathLength + randomStringLength) > maxPathLength)
-    {
-        LogError("GetResultFileName - folder path '%ws' length + minimal file name exceeds limit %d", fullPath, maxPathLength);
-        return nullptr;
-    }
-
-    // Now figure out the file name part.
-    //
-    const size_t maxFileNameLength = maxPathLength - fullPathLength;
-    size_t usableFileNameLength = min(fileNameLength, maxFileNameLength - randomStringLength);
-    fullPathLength += usableFileNameLength + randomStringLength;
-
-    // Append the file name part
-    //
-    wcsncat_s(fullPath, fullPathLength + 1, DIRECTORY_SEPARATOR_STR_W, 1);
-    wcsncat_s(fullPath, fullPathLength + 1, fileName, usableFileNameLength);
-
-    // Clean up anything in the file part that can't be in a file name.
-    //
-    ReplaceIllegalCharacters(fullPath + folderPathLength + 1);
-
-    // Append a random string to improve uniqueness.
-    //
-    unsigned int randomNumber = 0;
-    minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&randomNumber, sizeof(randomNumber));
-
-    WCHAR randomString[randomStringLength + 1];
-    FormatInteger(randomString, randomStringLength + 1, "%08X", randomNumber);
-    wcsncat_s(fullPath, fullPathLength + 1, randomString, randomStringLength);
-
-    // Append extension
-    //
-    wcsncat_s(fullPath, fullPathLength + 1, extension, extensionLength);
-
-    return fullPath;
 }
 
 std::filesystem::path GetResultFileName(const std::filesystem::path& folderPath,

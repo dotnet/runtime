@@ -9,18 +9,7 @@
 
 MethodCallSummarizer::MethodCallSummarizer(const std::filesystem::path& logPath)
 {
-#ifdef HOST_WINDOWS
-    std::string fileName(GetCommandLineA());
-#else
-    std::string fileName("");
-    std::ifstream proc("/proc/self/cmdline");
-    if (proc)
-    {
-        std::getline(proc, fileName);
-    }
-#endif
-    const std::string extension = ".csv";
-    dataFileName = GetResultFileName(logPath, fileName, extension);
+    dataFileName = GetResultFileName(logPath, GetProcessCommandLine(), ".csv");
 }
 
 // Use ordered map to make the most commonly added items are at the top of the list...

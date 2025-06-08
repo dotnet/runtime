@@ -71,6 +71,7 @@
 #include <string>
 #include <algorithm>
 #include <vector>
+#include <fstream>
 
 
 #ifdef USE_MSVCDIS
