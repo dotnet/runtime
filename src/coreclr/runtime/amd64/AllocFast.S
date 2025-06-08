@@ -78,7 +78,6 @@ LEAF_END RhpNewFinalizable, _TEXT
 NESTED_ENTRY RhpNewObject, _TEXT, NoHandler
 
         PUSH_COOP_PINVOKE_FRAME rcx
-        END_PROLOGUE
 
         // RCX: transition frame
 
@@ -258,7 +257,6 @@ NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
         // rsi == element count
 
         PUSH_COOP_PINVOKE_FRAME rcx
-        END_PROLOGUE
 
         // rcx: transition frame
 
