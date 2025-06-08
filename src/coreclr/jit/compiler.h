@@ -7665,7 +7665,6 @@ public:
                                            GenTree**   nullCheckParent,
                                            Statement** nullCheckStmt);
     bool        optCanMoveNullCheckPastTree(GenTree* tree,
-                                            unsigned nullCheckLclNum,
                                             bool     isInsideTry,
                                             bool     checkSideEffectSummary);
 #if DEBUG

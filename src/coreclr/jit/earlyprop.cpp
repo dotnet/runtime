@@ -277,40 +277,6 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
             printf("\n");
         }
 #endif
-
-        GenTree* actualValClone = gtCloneExpr(actualVal);
-
-        if (actualValClone->gtType != tree->gtType)
-        {
-            assert(actualValClone->TypeIs(TYP_LONG));
-            assert(tree->TypeIs(TYP_INT));
-            assert((actualConstVal >= 0) && (actualConstVal <= INT32_MAX));
-            actualValClone->gtType = tree->gtType;
-        }
-
-        // actualValClone has small tree node size, it is safe to use CopyFrom here.
-        tree->ReplaceWith(actualValClone, this);
-
-        // update SSA accounting
-        optRecordSsaUses(tree, compCurBB);
-
-        // Propagating a constant may create an opportunity to use a division by constant optimization
-        //
-        if ((tree->gtNext != nullptr) && tree->gtNext->OperIsBinary())
-        {
-            // We need to mark the parent divide/mod operation when this occurs
-            tree->gtNext->AsOp()->CheckDivideByConstOptimized(this);
-        }
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("to\n");
-            gtDispStmt(compCurStmt);
-            printf("\n");
-        }
-#endif
-        return tree;
     }
 
     return folded ? tree : nullptr;
@@ -539,7 +505,6 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
 
     const unsigned lclNum          = lclVarNode->GetLclNum();
     GenTree*       nullCheckTree   = nullptr;
-    unsigned       nullCheckLclNum = BAD_VAR_NUM;
 
     // Check if we saw a nullcheck on this local in this basic block
     // This corresponds to nullcheck(x) tree in the header comment.
@@ -549,10 +514,6 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
         if (!nullCheckAddr->OperIs(GT_LCL_VAR) || (nullCheckAddr->AsLclVarCommon()->GetSsaNum() != ssaNum))
         {
             nullCheckTree = nullptr;
-        }
-        else
-        {
-            nullCheckLclNum = nullCheckAddr->AsLclVarCommon()->GetLclNum();
         }
     }
 
@@ -635,7 +596,6 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
 {
     // Check all nodes between the GT_NULLCHECK and the indirection to see
     // if any nodes have unsafe side effects.
-    unsigned       nullCheckLclNum    = nullCheckTree->gtGetOp1()->AsLclVarCommon()->GetLclNum();
     bool           isInsideTry        = compCurBB->hasTryIndex();
     bool           canRemoveNullCheck = true;
     const unsigned maxNodesWalked     = 50;
@@ -654,7 +614,7 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
         }
         const bool checkExceptionSummary = false;
         if ((nodesWalked++ > maxNodesWalked) ||
-            !optCanMoveNullCheckPastTree(currentTree, nullCheckLclNum, isInsideTry, checkExceptionSummary))
+            !optCanMoveNullCheckPastTree(currentTree, isInsideTry, checkExceptionSummary))
         {
             canRemoveNullCheck = false;
         }
@@ -682,7 +642,7 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
         {
             const bool checkExceptionSummary = false;
             if ((nodesWalked++ > maxNodesWalked) ||
-                !optCanMoveNullCheckPastTree(currentTree, nullCheckLclNum, isInsideTry, checkExceptionSummary))
+                !optCanMoveNullCheckPastTree(currentTree, isInsideTry, checkExceptionSummary))
             {
                 canRemoveNullCheck = false;
             }
@@ -701,7 +661,7 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
         {
             const bool checkExceptionSummary = true;
             if ((nodesWalked++ > maxNodesWalked) ||
-                !optCanMoveNullCheckPastTree(currentTree, nullCheckLclNum, isInsideTry, checkExceptionSummary))
+                !optCanMoveNullCheckPastTree(currentTree, isInsideTry, checkExceptionSummary))
             {
                 canRemoveNullCheck = false;
             }
@@ -729,7 +689,6 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
 //
 // Arguments:
 //    tree                  - The tree to check.
-//    nullCheckLclNum       - The local variable that GT_NULLCHECK checks.
 //    isInsideTry           - True if tree is inside try, false otherwise.
 //    checkSideEffectSummary -If true, check side effect summary flags only,
 //                            otherwise check the side effects of the operation itself.
@@ -739,7 +698,6 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
 //    false otherwise.
 
 bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree,
-                                           unsigned nullCheckLclNum,
                                            bool     isInsideTry,
                                            bool     checkSideEffectSummary)
 {
