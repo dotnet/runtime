@@ -893,7 +893,7 @@ namespace System
             }
             return new TimeSpan(result);
 
-            void ThrowOverflowException_TimeSpanTooLong(TimeSpan t1, TimeSpan t2)
+            static void ThrowOverflowException_TimeSpanTooLong(TimeSpan t1, TimeSpan t2)
             {
                 throw new OverflowException(t1.ToString() + " " + t2.ToString());
             }
