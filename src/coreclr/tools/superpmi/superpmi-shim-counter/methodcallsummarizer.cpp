@@ -7,7 +7,7 @@
 #include "spmiutil.h"
 #include <fstream>
 
-MethodCallSummarizer::MethodCallSummarizer(WCHAR* logPath)
+MethodCallSummarizer::MethodCallSummarizer(const std::string& logPath)
 {
 #ifdef HOST_WINDOWS
     std::string fileName(GetCommandLineA());
@@ -20,7 +20,7 @@ MethodCallSummarizer::MethodCallSummarizer(WCHAR* logPath)
     }
 #endif
     const std::string extension = ".csv";
-    dataFileName = GetResultFileName(ConvertToUtf8(logPath), fileName, extension);
+    dataFileName = GetResultFileName(logPath, fileName, extension);
 }
 
 // Use ordered map to make the most commonly added items are at the top of the list...

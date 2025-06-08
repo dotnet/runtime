@@ -101,6 +101,13 @@ WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* 
     return retString;
 }
 
+std::string GetEnvWithDefault(const std::string& envVarName, const std::string& defaultValue = "")
+{
+    // getenv isn't thread safe, but it's simple and sufficient since we are development-only tool
+    char* env = getenv(envVarName.c_str());
+    return env ? env : defaultValue;
+}
+
 #ifdef TARGET_UNIX
 // For some reason, the PAL doesn't have GetCommandLineA(). So write it.
 LPSTR GetCommandLineA()

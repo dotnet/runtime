@@ -10,7 +10,7 @@
 class MethodCallSummarizer
 {
 public:
-    MethodCallSummarizer(WCHAR* name);
+    MethodCallSummarizer(const std::string& name);
     void AddCall(const char* name);
     void SaveTextFile();
 

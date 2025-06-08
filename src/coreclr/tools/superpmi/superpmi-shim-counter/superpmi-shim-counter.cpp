@@ -15,53 +15,48 @@
 #include "jithost.h"
 
 HMODULE               g_hRealJit      = 0; // We leak this currently (could do the proper shutdown in process_detach)
-WCHAR*                g_realJitPath   = nullptr; // We leak this (could do the proper shutdown in process_detach)
-WCHAR*                g_logPath       = nullptr; // Again, we leak this one too...
-char*                 g_logFilePath   = nullptr; // We *don't* leak this, hooray!
-WCHAR*                g_HomeDirectory = nullptr;
-WCHAR*                g_DefaultRealJitPath = nullptr;
+std::string           g_realJitPath   = ""; // std::string will be cleaned up and won't leak
+std::string           g_logPath            = "";
+std::string           g_logFilePath        = "";
+std::string           g_HomeDirectory      = "";
+std::string           g_DefaultRealJitPath = "";
 MethodCallSummarizer* g_globalContext      = nullptr;
 
 void SetDefaultPaths()
 {
-    if (g_HomeDirectory == nullptr)
+    if (g_HomeDirectory.empty())
     {
-        g_HomeDirectory = GetEnvironmentVariableWithDefaultW(W("HOME"), W("."));
+        g_HomeDirectory = GetEnvWithDefault("HOME", ".");
     }
 
-    if (g_DefaultRealJitPath == nullptr)
+    if (g_DefaultRealJitPath.empty())
     {
-        size_t len           = u16_strlen(g_HomeDirectory) + 1 + u16_strlen(DEFAULT_REAL_JIT_NAME_W) + 1;
-        g_DefaultRealJitPath = new WCHAR[len];
-        wcscpy_s(g_DefaultRealJitPath, len, g_HomeDirectory);
-        wcscat_s(g_DefaultRealJitPath, len, DIRECTORY_SEPARATOR_STR_W);
-        wcscat_s(g_DefaultRealJitPath, len, DEFAULT_REAL_JIT_NAME_W);
+        g_DefaultRealJitPath = g_HomeDirectory + DIRECTORY_SEPARATOR_STR_A + DEFAULT_REAL_JIT_NAME_A;
     }
 }
 
 void SetLibName()
 {
-    if (g_realJitPath == nullptr)
+    if (g_realJitPath.empty())
     {
-        g_realJitPath = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimPath"), g_DefaultRealJitPath);
+        g_realJitPath = GetEnvWithDefault("SuperPMIShimPath", g_DefaultRealJitPath);
     }
 }
 
 void SetLogPath()
 {
-    if (g_logPath == nullptr)
+    if (g_logPath.empty())
     {
-        g_logPath = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimLogPath"), g_HomeDirectory);
+        g_logPath = GetEnvWithDefault("SuperPMIShimLogPath", g_HomeDirectory);
     }
 }
 
-// TODO: this only works for ANSI file paths...
 void SetLogFilePath()
 {
-    if (g_logFilePath == nullptr)
+    if (g_logFilePath.empty())
     {
         // If the environment variable isn't set, we don't enable file logging
-        g_logFilePath = GetEnvironmentVariableWithDefaultA("SuperPMIShimLogFilePath", nullptr);
+        g_logFilePath = GetEnvWithDefault("SuperPMIShimLogFilePath", nullptr);
     }
 }
 
@@ -85,14 +80,11 @@ extern "C"
 
             Logger::Initialize();
             SetLogFilePath();
-            Logger::OpenLogFile(g_logFilePath);
+            Logger::OpenLogFile(g_logFilePath.c_str());
             break;
 
         case DLL_PROCESS_DETACH:
             Logger::Shutdown();
-
-            delete[] g_logFilePath;
-            g_logFilePath = nullptr;
 
             if (g_globalContext != nullptr)
             {
@@ -114,7 +106,7 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* host)
     SetLibName();
     SetDebugDumpVariables();
 
-    if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
+    if (!LoadRealJitLib(g_hRealJit, g_realJitPath.c_str()))
     {
         return;
     }
@@ -152,7 +144,7 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
     SetLibName();
     SetDebugDumpVariables();
 
-    if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
+    if (!LoadRealJitLib(g_hRealJit, g_realJitPath.c_str()))
     {
         return nullptr;
     }

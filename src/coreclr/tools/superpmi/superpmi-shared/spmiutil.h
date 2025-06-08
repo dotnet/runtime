@@ -22,6 +22,8 @@ char* GetEnvironmentVariableWithDefaultA(const char* envVarName, const char* def
 
 WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* defaultValue = nullptr);
 
+std::string GetEnvWithDefault(const std::string& envVarName, const std::string& defaultValue = "");
+
 #ifdef TARGET_UNIX
 LPSTR GetCommandLineA();
 #endif // TARGET_UNIX
