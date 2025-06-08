@@ -48,3 +48,8 @@ void MethodCallSummarizer::SaveTextFile()
         LogError("Couldn't write file '%s': %s", dataFileName.c_str(), ex.what());
     }
 }
+
+MethodCallSummarizer::~MethodCallSummarizer()
+{
+    SaveTextFile();
+}

@@ -13,14 +13,16 @@
 #include "logging.h"
 #include "spmiutil.h"
 #include "jithost.h"
+#include <memory>
 
-HMODULE               g_hRealJit      = 0; // We leak this currently (could do the proper shutdown in process_detach)
-std::string           g_realJitPath   = ""; // std::string will be cleaned up and won't leak
-std::string           g_logPath            = "";
-std::string           g_logFilePath        = "";
-std::string           g_HomeDirectory      = "";
-std::string           g_DefaultRealJitPath = "";
-MethodCallSummarizer* g_globalContext      = nullptr;
+HMODULE     g_hRealJit           = 0;  // We leak this currently (could do the proper shutdown in process_detach)
+std::string g_realJitPath        = ""; // std::string will be cleaned up and won't leak
+std::string g_logPath            = "";
+std::string g_logFilePath        = "";
+std::string g_HomeDirectory      = "";
+std::string g_DefaultRealJitPath = "";
+
+std::unique_ptr<MethodCallSummarizer> g_globalContext = nullptr;
 
 void SetDefaultPaths()
 {
@@ -86,11 +88,6 @@ extern "C"
         case DLL_PROCESS_DETACH:
             Logger::Shutdown();
 
-            if (g_globalContext != nullptr)
-            {
-                g_globalContext->SaveTextFile();
-            }
-
             break;
 
         case DLL_THREAD_ATTACH:
@@ -125,10 +122,10 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* host)
     if (g_globalContext == nullptr)
     {
         SetLogPath();
-        g_globalContext = new MethodCallSummarizer(g_logPath);
+        g_globalContext = std::make_unique<MethodCallSummarizer>(g_logPath);
     }
 
-    g_ourJitHost->setMethodCallSummarizer(g_globalContext);
+    g_ourJitHost->setMethodCallSummarizer(g_globalContext.get());
 
     pnjitStartup(g_ourJitHost);
 }
@@ -170,8 +167,8 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
     if (g_globalContext == nullptr)
     {
         SetLogPath();
-        g_globalContext = new MethodCallSummarizer(g_logPath);
+        g_globalContext = std::make_unique<MethodCallSummarizer>(g_logPath);
     }
-    pJitInstance->mcs = g_globalContext;
+    pJitInstance->mcs = g_globalContext.get();
     return pJitInstance;
 }
