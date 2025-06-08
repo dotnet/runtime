@@ -145,7 +145,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [ConditionalFact(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.CertificatesAreSupported))]
         public static void PrivateKey_FromCertificate_CanExportPrivate_MLDsa()
         {
             string pem = PemEncoding.WriteString("CERTIFICATE", MLDsaTestsData.IetfMLDsa44.Certificate);

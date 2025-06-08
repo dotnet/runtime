@@ -1942,10 +1942,6 @@ enum class TypeCheckPassedAction
     CallHelper_AlwaysThrows,
 };
 
-// Some arbitrary limit on the number of guesses we can make
-// The actual number of guesses is usually much smaller
-#define MAX_CAST_GUESSES 8
-
 //------------------------------------------------------------------------------
 // PickCandidatesForTypeCheck: picks classes to use as fast type checks against
 //    the object being casted. The function also defines the strategy to follow
@@ -1954,7 +1950,7 @@ enum class TypeCheckPassedAction
 // Arguments:
 //    comp               - Compiler instance
 //    castHelper         - Cast helper call to expand
-//    candidates         - [out] Classes (guesses) to use in the fast path (up to MAX_CAST_GUESSES)
+//    candidates         - [out] Classes (guesses) to use in the fast path (up to MAX_GDV_TYPE_CHECKS)
 //    commonCls          - [out] Common denominator class for the fast and the fallback paths.
 //    likelihoods        - [out] Likelihoods of successful type checks [0..100]
 //    typeCheckFailed    - [out] Action to perform if the type check fails
@@ -2160,9 +2156,9 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // Let's re-use GDV's threshold on how many guesses we can make (can be 3 by default).
-    const int maxTypeChecks = min(comp->getGDVMaxTypeChecks(), MAX_CAST_GUESSES);
+    const int maxTypeChecks = min(comp->getGDVMaxTypeChecks(), MAX_GDV_TYPE_CHECKS);
 
-    CORINFO_CLASS_HANDLE exactClasses[MAX_CAST_GUESSES] = {};
+    CORINFO_CLASS_HANDLE exactClasses[MAX_GDV_TYPE_CHECKS] = {};
     const int numExactClasses = comp->info.compCompHnd->getExactClasses(castToCls, maxTypeChecks, exactClasses);
     bool      allTrulyExact   = true;
     for (int i = 0; i < numExactClasses; i++)
@@ -2234,9 +2230,9 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     // 3) Consult with PGO data
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    CORINFO_CLASS_HANDLE likelyClasses[MAX_CAST_GUESSES]     = {};
-    unsigned             likelyLikelihoods[MAX_CAST_GUESSES] = {};
-    int                  likelyClassCount                    = 0;
+    CORINFO_CLASS_HANDLE likelyClasses[MAX_GDV_TYPE_CHECKS]     = {};
+    unsigned             likelyLikelihoods[MAX_GDV_TYPE_CHECKS] = {};
+    int                  likelyClassCount                       = 0;
     comp->pickGDV(castHelper, castHelper->gtCastHelperILOffset, false, likelyClasses, nullptr, &likelyClassCount,
                   likelyLikelihoods);
 
@@ -2364,8 +2360,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     TypeCheckFailedAction typeCheckFailedAction;
     TypeCheckPassedAction typeCheckPassedAction;
     CORINFO_CLASS_HANDLE  commonCls;
-    CORINFO_CLASS_HANDLE  expectedExactClasses[MAX_CAST_GUESSES] = {};
-    unsigned              likelihoods[MAX_CAST_GUESSES]          = {};
+    CORINFO_CLASS_HANDLE  expectedExactClasses[MAX_GDV_TYPE_CHECKS] = {};
+    unsigned              likelihoods[MAX_GDV_TYPE_CHECKS]          = {};
 
     const int numOfCandidates = PickCandidatesForTypeCheck(this, call, expectedExactClasses, &commonCls, likelihoods,
                                                            &typeCheckFailedAction, &typeCheckPassedAction);
@@ -2450,8 +2446,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     // Block 2: typeCheckBb(s)
     // TODO-InlineCast: if likelyCls == expectedCls we can consider saving to a local to re-use.
 
-    BasicBlock* typeChecksBbs[MAX_CAST_GUESSES] = {};
-    BasicBlock* lastTypeCheckBb                 = nullcheckBb;
+    BasicBlock* typeChecksBbs[MAX_GDV_TYPE_CHECKS] = {};
+    BasicBlock* lastTypeCheckBb                    = nullcheckBb;
     for (int candidateId = 0; candidateId < numOfCandidates; candidateId++)
     {
         const CORINFO_CLASS_HANDLE expectedCls = expectedExactClasses[candidateId];
@@ -2827,7 +2823,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
     {
         case CORINFO_HELP_NEWARR_1_DIRECT:
         case CORINFO_HELP_NEWARR_1_VC:
-        case CORINFO_HELP_NEWARR_1_OBJ:
+        case CORINFO_HELP_NEWARR_1_PTR:
         case CORINFO_HELP_NEWARR_1_ALIGN8:
             lengthArgIndex = 1;
             typeArgIndex   = 0;

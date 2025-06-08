@@ -707,7 +707,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [ConditionalFact(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.CertificatesAreSupported))]
         public static void GetMLDsaPublicKeyTest()
         {
             // Cert without private key
@@ -739,7 +739,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [ConditionalFact(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.CertificatesAreSupported))]
         public static void GetMLDsaPrivateKeyTest()
         {
             // Cert without private key
@@ -768,7 +768,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [ConditionalFact(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.CertificatesAreSupported))]
         public static void CheckCopyWithPrivateKey_MLDSA()
         {
             using (MLDsa privKey = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65))
@@ -812,7 +812,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [ConditionalFact(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.CertificatesAreSupported))]
         public static void CheckCopyWithPrivateKey_MLDsa_OtherMLDsa_SecretKey()
         {
             using (X509Certificate2 pubOnly = X509CertificateLoader.LoadCertificate(MLDsaTestsData.IetfMLDsa44.Certificate))
@@ -862,7 +862,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [ConditionalFact(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.CertificatesAreSupported))]
         public static void CheckCopyWithPrivateKey_MLDsa_OtherMLDsa_PrivateSeed()
         {
             using (X509Certificate2 pubOnly = X509CertificateLoader.LoadCertificate(MLDsaTestsData.IetfMLDsa44.Certificate))
