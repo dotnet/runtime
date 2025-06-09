@@ -1962,7 +1962,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             node->Op(lastOpNum)->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect &&
             TryContainingCselOp(node, node->Op(lastOpNum)->AsHWIntrinsic()))
         {
-            JITDUMP("lowering EmbeddedMasked HWIntrinisic (after):\n");
+            JITDUMP("contained CondSel inside HWIntrinisic (after):\n");
             DISPTREERANGE(BlockRange(), node);
             JITDUMP("\n");
             return node->gtNext;
@@ -1974,7 +1974,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
         bool      foundUse = BlockRange().TryGetUse(node, &use);
         GenTree*  trueMask = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
-        GenTree*  falseVal = comp->gtNewSimdFalseMaskByteNode(simdSize);
+        GenTree*  falseVal = comp->gtNewZeroConNode(simdType);
         var_types nodeType = simdType;
 
         if (HWIntrinsicInfo::ReturnsPerElementMask(node->GetHWIntrinsicId()))
@@ -3695,7 +3695,7 @@ bool Lowering::TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntr
     bool canContain = false;
 
     var_types simdBaseType = parentNode->GetSimdBaseType();
-    if (childNode->Op(3)->IsFalseMask())
+    if (childNode->Op(3)->IsVectorZero())
     {
         switch (parentNode->GetHWIntrinsicId())
         {
@@ -4023,7 +4023,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 // Handle op3
-                if (op3->IsFalseMask() && op1->IsTrueMask(node) && op2->IsEmbMaskOp())
+                if (op3->IsVectorZero() && op1->IsTrueMask(node) && op2->IsEmbMaskOp())
                 {
                     // When we are merging with zero, we can specialize
                     // and avoid instantiating the vector constant.
@@ -4149,7 +4149,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             // optimisation when the nestedOp is a reduce operation.
 
             if (nestedOp1->IsTrueMask(cndSelNode) && !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) &&
-                (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsFalseMask()))
+                (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsVectorZero()))
             {
                 GenTree* nestedOp2 = nestedCndSel->Op(2);
                 GenTree* nestedOp3 = nestedCndSel->Op(3);
