@@ -2177,14 +2177,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			// instead we fallback to the managed implementation which will do the right things
 
 			MonoType *tfrom = ctx->method_inst->type_argv [0];
-			if (mini_is_gsharedvt_variable_type (tfrom)) {
-				return FALSE;
-			}
-
 			MonoType *tto = ctx->method_inst->type_argv [1];
-			if (mini_is_gsharedvt_variable_type (tto)) {
-				return FALSE;
-			}
 
 			// The underlying API always throws for reference type inputs, so we
 			// fallback to the managed implementation to let that handling occur
@@ -2230,6 +2223,17 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			}
 
 			if (*op == -1) {
+
+				if (size <= 4) {
+					*op = MINT_MOV_4;
+				} else if (size <= 8) {
+					*op = MINT_MOV_8;
+				} else {
+					*op = MINT_MOV_VT;
+				}
+			}
+
+			if (*op == MINT_MOV_VT) {
 				td->sp--;
 				interp_add_ins (td, MINT_MOV_VT);
 				interp_ins_set_sreg (td->last_ins, td->sp [0].var);
