@@ -751,6 +751,10 @@ namespace System.Net.Http
                 string? cookieHeader = WinHttpCookieContainerAdapter.GetCookieHeader(requestMessage.RequestUri, cookies);
                 if (!string.IsNullOrEmpty(cookieHeader))
                 {
+                    if (!ContainsOnlyValidLatin1(cookieHeader))
+                    {
+                        throw new FormatException(SR.Format(SR.net_http_invalid_header_value, nameof(HttpRequestMessage)));
+                    }
                     requestHeadersBuffer.AppendLine(cookieHeader);
                 }
             }
