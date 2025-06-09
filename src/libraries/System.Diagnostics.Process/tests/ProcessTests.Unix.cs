@@ -15,6 +15,7 @@ using System.Security;
 using Xunit;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics.Tests
 {
@@ -1029,6 +1030,11 @@ namespace System.Diagnostics.Tests
             File.WriteAllText(filename, $"#!/bin/sh\nexit {returnValue}\n");
             File.SetUnixFileMode(filename, ExecutablePermissions);
             return filename;
+        }
+
+        private static bool FileHandleIsValid(SafeFileHandle fileHandle)
+        {
+            throw new PlatformNotSupportedException();
         }
 
         private static string StartAndReadToEnd(string filename, string[] arguments)
