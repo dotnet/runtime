@@ -374,19 +374,29 @@ C_FUNC(\Name\()_End):
 
 .endm
 
+.macro INLINE_GET_TLS_VAR Var
+       .att_syntax
+#if defined(__APPLE__)
+        movq    _\Var@TLVP(%rip), %rdi
+        callq   *(%rdi)
+#else
+        .byte 0x66  // data16 prefix - padding to have space for linker relaxations
+        leaq    \Var@TLSGD(%rip), %rdi
+        .byte 0x66  //
+        .byte 0x66  //
+        .byte 0x48  // rex.W prefix, also for padding
+        callq   __tls_get_addr@PLT
+#endif
+       .intel_syntax noprefix
+.endm
+
+
 // Inlined version of GetThreadEEAllocContext. Trashes volatile registers.
 .macro INLINE_GET_ALLOC_CONTEXT_BASE
 #if defined(FEATURE_EMULATED_TLS) || defined(__APPLE__)
         call    C_FUNC(GetThreadEEAllocContext)
 #else
-        .att_syntax
-        .byte 0x66  // data16 prefix - padding to have space for linker relaxations
-        leaq    t_runtime_thread_locals@TLSGD(%rip), %rdi
-        .byte 0x66  //
-        .byte 0x66  //
-        .byte 0x48  // rex.W prefix, also for padding
-        callq   __tls_get_addr@PLT
-        .intel_syntax noprefix
+        INLINE_GET_TLS_VAR t_runtime_thread_locals
 
         .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
                 lea     rax, [rax + OFFSETOF__RuntimeThreadLocals__ee_alloc_context]
@@ -410,22 +420,6 @@ C_FUNC(\Name\()_End):
 .macro POP_COOP_PINVOKE_FRAME
         free_stack      56
         POP_CALLEE_SAVED_REGISTERS
-.endm
-
-.macro INLINE_GET_TLS_VAR Var
-       .att_syntax
-#if defined(__APPLE__)
-        movq    _\Var@TLVP(%rip), %rdi
-        callq   *(%rdi)
-#else
-        .byte 0x66  // data16 prefix - padding to have space for linker relaxations
-        leaq    \Var@TLSGD(%rip), %rdi
-        .byte 0x66  //
-        .byte 0x66  //
-        .byte 0x48  // rex.W prefix, also for padding
-        callq   __tls_get_addr@PLT
-#endif
-       .intel_syntax noprefix
 .endm
 
 .macro INLINE_GETTHREAD
