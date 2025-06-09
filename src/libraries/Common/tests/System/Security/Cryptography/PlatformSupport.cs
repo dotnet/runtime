@@ -137,7 +137,9 @@ namespace Test.Cryptography
 #if NETFRAMEWORK
                 return false;
 #else
+#pragma warning disable SYSLIB5006 // PQC is experimental
                 return MLKem.IsSupported && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#pragma warning restore SYSLIB5006
 #endif
             }
         }
