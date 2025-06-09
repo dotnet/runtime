@@ -1713,7 +1713,6 @@ CLRToCOMMethodFrame::CLRToCOMMethodFrame(TransitionBlock * pTransitionBlock, Met
 }
 #endif // #ifndef DACCESS_COMPILE
 
-//virtual
 void CLRToCOMMethodFrame::GcScanRoots_Impl(promote_func* fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
@@ -1732,11 +1731,11 @@ void CLRToCOMMethodFrame::GcScanRoots_Impl(promote_func* fn, ScanContext* sc)
 
     TypeHandle thValueType;
     CorElementType et = sig.GetReturnTypeNormalized(&thValueType);
-    if (CorTypeInfo::IsObjRef(et))
+    if (CorTypeInfo::IsObjRef_NoThrow(et))
     {
         (*fn)(GetReturnObjectPtr(), sc, CHECK_APP_DOMAIN);
     }
-    else if (CorTypeInfo::IsByRef(et))
+    else if (CorTypeInfo::IsByRef_NoThrow(et))
     {
         PromoteCarefully(fn, GetReturnObjectPtr(), sc, GC_CALL_INTERIOR | CHECK_APP_DOMAIN);
     }
