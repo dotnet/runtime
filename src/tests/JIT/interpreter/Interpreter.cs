@@ -133,6 +133,33 @@ public struct TestStruct3d
     public double c;
 }
 
+class DummyClass
+{
+    public int field;
+    public DummyClass(int f)
+    {
+        field = f;
+    }
+}
+
+struct DummyStruct
+{
+    public int field;
+    public DummyStruct(int f)
+    {
+        field = f;
+    }
+}
+
+struct DummyStructRef
+{
+    public DummyClass field;
+    public DummyStructRef(DummyClass f)
+    {
+        field = f;
+    }
+}
+
 public class InterpreterTest
 {
     static void TestCallingConvention0(int a, float b, int c, double d, int e, double f)
@@ -615,7 +642,9 @@ public class InterpreterTest
                 x *= 10;
                 x += 3;
             }
-        } catch (Exception) {
+        }
+        catch (Exception)
+        {
             x *= 10;
             x += 4;
         }
@@ -734,7 +763,7 @@ public class InterpreterTest
             long ret = 1;
             for (int i = 0; i < n; i++)
                 ret *= nr;
-            bool dummy=  (int)ret == 100;
+            bool dummy = (int)ret == 100;
 
             x *= 10;
             x += 3;
@@ -793,7 +822,9 @@ public class InterpreterTest
                 x *= 10;
                 x += 5;
             }
-        } catch (Exception) {
+        }
+        catch (Exception)
+        {
             x *= 10;
             x += 6;
         }
@@ -1051,16 +1082,16 @@ public class InterpreterTest
             case 2:
                 return a * b;
             default:
-               return 42;
+                return 42;
         }
     }
 
     public static void TestSwitch()
     {
-        int n0 = SwitchOp (20, 6, 0); // 26
-        int n1 = SwitchOp (20, 6, 1); // 14
-        int n2 = SwitchOp (20, 6, 2); // 120
-        int n3 = SwitchOp (20, 6, 3); // 42
+        int n0 = SwitchOp(20, 6, 0); // 26
+        int n1 = SwitchOp(20, 6, 1); // 14
+        int n2 = SwitchOp(20, 6, 2); // 120
+        int n3 = SwitchOp(20, 6, 3); // 42
 
         if ((n0 + n1 + n2 + n3) != 202)
             Environment.FailFast(null);
@@ -1391,11 +1422,12 @@ public class InterpreterTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    static object BoxedSubtraction (object lhs, object rhs) {
+    static object BoxedSubtraction(object lhs, object rhs)
+    {
         return (int)lhs - (int)rhs;
     }
 
-  public static bool TestArray()
+    public static bool TestArray()
     {
         // sbyte
         if (!ArraySByte(0, 0)) return false;
@@ -1457,6 +1489,15 @@ public class InterpreterTest
         if (!ArrayDouble(0, 0)) return false;
         if (!ArrayDouble(1, 1)) return false;
         if (!ArrayDouble(32, 32)) return false;
+
+        // ref and value types
+        if (!TestObjectArray()) return false;
+        if (!TestStructArray()) return false;
+        if (!TestStructRefArray()) return false;
+        if (!ArrayJagged(1)) return false;
+        if (!ArrayMD1()) return false;
+        if (!ArrayObj(1)) return false;
+        if (!ArrayStruct(1)) return false;
 
         return true;
     }
@@ -1641,6 +1682,56 @@ public class InterpreterTest
         return true;
     }
 
+    public unsafe static bool TestObjectArray()
+    {
+        DummyClass[] array = new DummyClass[10];
+        array[0] = new DummyClass(42);
+        return array[0].field == 42;
+    }
+
+    public unsafe static bool TestStructArray()
+    {
+        DummyStruct[] array = new DummyStruct[10];
+        array[0] = new DummyStruct(42);
+        return array[0].field == 42;
+    }
+
+    public unsafe static bool TestStructRefArray()
+    {
+        DummyStructRef[] array = new DummyStructRef[10];
+        DummyClass d = new DummyClass(42);
+        array[0] = new DummyStructRef(d);
+        return array[0].field.field == 42;
+    }
+
+    public static bool ArrayJagged(int i)
+    {
+        int[][] a = new int[2][];
+        a[0] = new int[2] { 0, 1 };
+        a[1] = new int[2] { 2, 3 };
+        return a[1][i] == 3;
+    }
+
+    public static bool ArrayMD1()
+    {
+        int[,] a = { { 1, 2 }, { 3, 4 } };
+        return true;
+    }
+
+    public static bool ArrayObj(int i)
+    {
+        DummyClass[] a = {new DummyClass(0), new DummyClass(1), new DummyClass(2), new DummyClass(3), new DummyClass(4),
+                    new DummyClass(5), new DummyClass(6), new DummyClass(7), new DummyClass(8), new DummyClass(9)};
+        return a[i].field == i;
+    }
+
+    public static bool ArrayStruct(int i)
+    {
+        DummyStruct[] a = {new DummyStruct(0), new DummyStruct(1), new DummyStruct(2), new DummyStruct(3), new DummyStruct(4),
+                    new DummyStruct(5), new DummyStruct(6), new DummyStruct(7), new DummyStruct(8), new DummyStruct(9)};
+        return a[i].field == i;
+    }
+
     public static unsafe bool TestXxObj()
     {
         // FIXME: There is no way to generate cpobj opcodes with roslyn at present.
@@ -1701,7 +1792,7 @@ public class InterpreterTest
         // ldtoken int[,]
         // call System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray
         // The newobj currently fails because int[,].ctor isn't a real method, the interp needs to use getCallInfo to determine how to invoke it
-        int[,] a = {{1, 2}, {3, 4}};
+        int[,] a = { { 1, 2 }, { 3, 4 } };
         return a[0, 1] == 2;
     }
 }
