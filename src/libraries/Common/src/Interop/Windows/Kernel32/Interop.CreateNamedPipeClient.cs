@@ -12,7 +12,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateFileW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial SafePipeHandle CreateNamedPipeClient(
-            string? lpFileName,
+            string lpFileName,
             int dwDesiredAccess,
             System.IO.FileShare dwShareMode,
             ref SECURITY_ATTRIBUTES secAttrs,
