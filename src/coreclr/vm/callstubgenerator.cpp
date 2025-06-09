@@ -1203,7 +1203,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     S_SIZE_T finalStubSize(sizeof(CallStubHeader) + m_routineIndex * sizeof(PCODE));
     void *pHeaderStorage = pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(finalStubSize));
 
-    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), pInvokeFunction);
+    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), m_pInvokeFunction);
 
     return pHeader;
 }

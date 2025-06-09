@@ -2246,8 +2246,7 @@ public class InterpreterTest
             return false;
         }
 
-/*
-        TODO! This will pass once we support passing parameters to the invoked methods. The GetCallStub logic needs to handle the param arg
+
         GetCalliGeneric<object>()();
         if (_typeFromFill != typeof(object))
         {
@@ -2261,7 +2260,6 @@ public class InterpreterTest
             Console.WriteLine("Calli generic test failed: expected string, got " + _typeFromFill);
             return false;
         }
-*/
         return true;
     }
 
