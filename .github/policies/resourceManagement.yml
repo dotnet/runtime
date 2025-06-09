@@ -1674,11 +1674,9 @@ configuration:
       description: Add breaking change doc label to PR
     - if:
       - payloadType: Pull_Request
-      - or:
-        - filesMatchPattern:
-            pattern: .*ILLink.*
-        - filesMatchPattern:
-            pattern: .*illink.*
+      - filesMatchPattern:
+          pattern: (?i).*ILLink.*
+          matchAny: true
       - not:
           hasLabel:
             label: linkable-framework
@@ -1690,11 +1688,9 @@ configuration:
       description: '[Linkable-framework workgroup] Add linkable-framework label to new Prs that touch files with *ILLink* that not have it already'
     - if:
       - payloadType: Pull_Request
-      - or:
-        - filesMatchPattern:
-            pattern: .*ILLink.*
-        - filesMatchPattern:
-            pattern: .*illink.*
+      - filesMatchPattern:
+          pattern: (?i).*ILLink.*
+          matchAny: true
       - not:
           hasLabel:
             label: linkable-framework

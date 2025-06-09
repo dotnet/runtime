@@ -2648,9 +2648,10 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
             GenTree* lArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
             GenTree* rArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
-            ssize_t MaxUnrollSize = comp->IsBaselineSimdIsaSupported() ? 32 : 16;
+            ssize_t MaxUnrollSize = 16;
 
-#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+#ifdef FEATURE_SIMD
+#ifdef TARGET_XARCH
             if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
             {
                 MaxUnrollSize = 128;
@@ -2660,7 +2661,12 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
                 // We need AVX2 for NI_Vector256_op_Equality, fallback to Vector128 if only AVX is available
                 MaxUnrollSize = 64;
             }
-#endif
+            else
+#endif // TARGET_XARCH
+            {
+                MaxUnrollSize = 32;
+            }
+#endif // FEATURE_SIMD
 
             if (cnsSize <= MaxUnrollSize)
             {
@@ -10273,29 +10279,25 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 #if defined(FEATURE_HW_INTRINSICS)
             case TYP_LONG:
             case TYP_REF:
-                if (comp->IsBaselineSimdIsaSupported())
+                // TLDR: we should be here only if one of the conditions is true:
+                // 1) Both GT_INDs have GTF_IND_ALLOW_NON_ATOMIC flag
+                // 2) ARM64: Data is at least 8-byte aligned
+                // 3) AMD64: Data is at least 16-byte aligned on AMD/Intel with AVX+
+                //
+                newType = TYP_SIMD16;
+                if ((oldType == TYP_REF) &&
+                    (!currData.value->IsIntegralConst(0) || !prevData.value->IsIntegralConst(0)))
                 {
-                    // TLDR: we should be here only if one of the conditions is true:
-                    // 1) Both GT_INDs have GTF_IND_ALLOW_NON_ATOMIC flag
-                    // 2) ARM64: Data is at least 8-byte aligned
-                    // 3) AMD64: Data is at least 16-byte aligned on AMD/Intel with AVX+
+                    // For TYP_REF we only support null values. In theory, we can also support frozen handles, e.g.:
                     //
-                    newType = TYP_SIMD16;
-                    if ((oldType == TYP_REF) &&
-                        (!currData.value->IsIntegralConst(0) || !prevData.value->IsIntegralConst(0)))
-                    {
-                        // For TYP_REF we only support null values. In theory, we can also support frozen handles, e.g.:
-                        //
-                        //   arr[1] = "hello";
-                        //   arr[0] = "world";
-                        //
-                        // but we don't want to load managed references into SIMD registers (we can only do so
-                        // when we can issue a nongc region for a block)
-                        return;
-                    }
-                    break;
+                    //   arr[1] = "hello";
+                    //   arr[0] = "world";
+                    //
+                    // but we don't want to load managed references into SIMD registers (we can only do so
+                    // when we can issue a nongc region for a block)
+                    return;
                 }
-                return;
+                break;
 
 #if defined(TARGET_AMD64)
             case TYP_SIMD16:
@@ -11373,11 +11375,6 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 // Return value:
 //    true if the replacement was made, false otherwise.
 //
-// Notes:
-//    TODO-CQ: this method should do the transformation when possible
-//    and STOREIND should always generate better or the same code as
-//    STORE_BLK for the same copy.
-//
 bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK));
@@ -11393,12 +11390,6 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     }
 
     GenTree* src = blkNode->Data();
-    if (varTypeIsSIMD(regType) && src->IsConstInitVal())
-    {
-        // TODO-CQ: support STORE_IND SIMD16(SIMD16, CNT_INT 0).
-        return false;
-    }
-
     if (varTypeIsGC(regType))
     {
         // TODO-CQ: STOREIND does not try to contain src if we need a barrier,
@@ -11411,28 +11402,42 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         return false;
     }
 
-    JITDUMP("Replacing STORE_BLK with STOREIND for [%06u]\n", blkNode->gtTreeID);
-    blkNode->ChangeOper(GT_STOREIND);
-    blkNode->ChangeType(regType);
+    if (src->IsConstInitVal())
+    {
+#if !defined(TARGET_XARCH)
+        if (varTypeIsSIMD(regType))
+        {
+            // Platforms with zero-regs may produce better/more compact codegen
+            return false;
+        }
+#endif
 
-    if (varTypeIsStruct(src))
+        assert(!blkNode->ContainsReferences());
+        if (src->OperIsInitVal())
+        {
+            BlockRange().Remove(src);
+            src = src->gtGetOp1();
+        }
+
+        uint8_t  initVal = static_cast<uint8_t>(src->AsIntCon()->IconValue());
+        GenTree* cnsVec  = comp->gtNewConWithPattern(regType, initVal);
+        BlockRange().InsertAfter(src, cnsVec);
+        BlockRange().Remove(src);
+        blkNode->SetData(cnsVec);
+    }
+    else if (varTypeIsStruct(src))
     {
         src->ChangeType(regType);
         LowerNode(blkNode->Data());
     }
-    else if (src->OperIsInitVal())
-    {
-        GenTreeUnOp* initVal = src->AsUnOp();
-        src                  = src->gtGetOp1();
-        assert(src->IsCnsIntOrI());
-        src->AsIntCon()->FixupInitBlkValue(regType);
-        blkNode->SetData(src);
-        BlockRange().Remove(initVal);
-    }
     else
     {
-        assert(src->TypeIs(regType) || src->IsCnsIntOrI() || src->IsCall());
+        unreached();
     }
+
+    JITDUMP("Replacing STORE_BLK with STOREIND for [%06u]\n", blkNode->gtTreeID);
+    blkNode->ChangeOper(GT_STOREIND);
+    blkNode->ChangeType(regType);
 
 #if defined(TARGET_XARCH)
     if (varTypeIsSmall(regType) && src->OperIs(GT_IND, GT_LCL_FLD))

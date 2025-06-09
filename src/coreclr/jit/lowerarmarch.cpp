@@ -3503,9 +3503,6 @@ bool Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next)
     if (!comp->opts.OptimizationEnabled())
         return false;
 
-    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
-        return false;
-
     if (op->isContained())
         return false;
 
@@ -3607,9 +3604,6 @@ bool Lowering::TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next)
     assert(op->OperIs(GT_NEG));
 
     if (!comp->opts.OptimizationEnabled())
-        return false;
-
-    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
         return false;
 
     if (op->isContained())

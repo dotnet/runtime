@@ -294,20 +294,14 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType))
     {
         if (srcType == TYP_FLOAT
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // Arm64: src = float, dst is overflow conversion.
+#ifdef TARGET_64BIT
+            // 64-bit: src = float, dst is overflow conversion.
             // This goes through helper and hence src needs to be converted to double.
             && tree->gtOverflow()
-#elif defined(TARGET_AMD64)
-            // Amd64: src = float, dst = overflow conversion or SSE2 is not enabled
-            && (tree->gtOverflow() || !IsBaselineSimdIsaSupported())
-#elif defined(TARGET_ARM)
-            // Arm: src = float, dst = int64/uint64 or overflow conversion.
-            && (tree->gtOverflow() || varTypeIsLong(dstType))
 #else
-            // x86: src = float, dst = int64/uint64 or overflow conversion or SSE2 is not enabled
-            && (tree->gtOverflow() || varTypeIsLong(dstType) || !IsBaselineSimdIsaSupported())
-#endif
+            // 32-bit: src = float, dst = int64/uint64 or overflow conversion.
+            && (tree->gtOverflow() || varTypeIsLong(dstType))
+#endif // TARGET_64BIT
         )
         {
             oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
@@ -328,39 +322,24 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         {
             if (!tree->gtOverflow())
             {
-// ARM64 and LoongArch64 optimize all non-overflow checking conversions
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#ifdef TARGET_64BIT
                 return nullptr;
 #else
-#if defined(TARGET_XARCH)
-                if (IsBaselineSimdIsaSupported() && (!varTypeIsLong(dstType) || TargetArchitecture::Is64Bit))
+                if (!varTypeIsLong(dstType))
                 {
                     return nullptr;
                 }
-#endif // TARGET_XARCH
+
                 switch (dstType)
                 {
-                    case TYP_INT:
-#ifdef TARGET_XARCH
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT, oper);
-#endif // TARGET_XARCH
-                        return nullptr;
-
-                    case TYP_UINT:
-#if defined(TARGET_ARM)
-                        return nullptr;
-#endif
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT, oper);
-
                     case TYP_LONG:
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
-
                     case TYP_ULONG:
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2ULNG, oper);
                     default:
                         unreached();
                 }
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_64BIT
             }
             else
             {
