@@ -287,6 +287,9 @@ namespace System.Security.Cryptography
         ///   An optional context-specific value to limit the scope of the signature.
         ///   The default value is an empty buffer.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hashAlgorithmOid"/> is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="ArgumentException">
         ///   The buffer in <paramref name="destination"/> is the incorrect length to receive the signature.
         /// </exception>
@@ -306,8 +309,10 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while signing the hash.</para>
         /// </exception>
-        public void SignPreHash(ReadOnlySpan<byte> hash, Span<byte> destination, ReadOnlySpan<char> hashAlgorithmOid, ReadOnlySpan<byte> context = default)
+        public void SignPreHash(ReadOnlySpan<byte> hash, Span<byte> destination, string hashAlgorithmOid, ReadOnlySpan<byte> context = default)
         {
+            ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
+
             if (destination.Length != Algorithm.SignatureSizeInBytes)
             {
                 throw new ArgumentException(
@@ -392,6 +397,9 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   <see langword="true"/> if the signature validates the hash; otherwise, <see langword="false"/>.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hashAlgorithmOid"/> is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
         ///   255 bytes.
@@ -406,8 +414,10 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while verifying the hash.</para>
         /// </exception>
-        public bool VerifyPreHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, ReadOnlySpan<char> hashAlgorithmOid, ReadOnlySpan<byte> context = default)
+        public bool VerifyPreHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, string hashAlgorithmOid, ReadOnlySpan<byte> context = default)
         {
+            ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
+
             if (context.Length > MaxContextLength)
             {
                 throw new ArgumentOutOfRangeException(
@@ -446,6 +456,9 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   <see langword="true"/> if the signature validates the hash; otherwise, <see langword="false"/>.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hash"/> or <paramref name="signature"/> or <paramref name="hashAlgorithmOid"/> is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="context"/> has a length in excess of 255 bytes.
         /// </exception>
@@ -1806,7 +1819,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while signing the hash.
         /// </exception>
-        protected abstract void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, ReadOnlySpan<char> hashAlgorithmOid, Span<byte> destination);
+        protected abstract void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination);
 
         /// <summary>
         ///   When overridden in a derived class, verifies the pre-hash signature of the specified hash and context.
@@ -1829,7 +1842,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while verifying the hash.
         /// </exception>
-        protected abstract bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, ReadOnlySpan<char> hashAlgorithmOid, ReadOnlySpan<byte> signature);
+        protected abstract bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature);
 
         /// <summary>
         ///   When overridden in a derived class, exports the FIPS 205 public key to the specified buffer.
@@ -2015,7 +2028,6 @@ namespace System.Security.Cryptography
                 try
                 {
                     // Only the format of the OID is validated here. The derived classes can decide to do more if they want to.
-                    // TODO there must be a better way to do this..
                     writer.WriteObjectIdentifier(hashAlgorithmOid);
                 }
                 catch (ArgumentException ae)

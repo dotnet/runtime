@@ -469,39 +469,20 @@ namespace Internal.Cryptography
         internal static bool IsSlhDsaOid(string? oid) =>
             SlhDsaAlgorithm.GetAlgorithmFromOid(oid) is not null;
 
-        public delegate void SlhDsaPreHashActionCallback<T, TState>(Span<T> span, TState arg)
-            where TState : allows ref struct;
+        public delegate TResult SlhDsaPreHashFuncCallback<TKey, TSignature, TResult>(
+            TKey key,
+            ReadOnlySpan<byte> encodedMessage,
+            TSignature signatureBuffer)
+            where TSignature : allows ref struct;
 
-        public delegate TResult SlhDsaPreHashFuncCallback<T, TState, TResult>(Span<T> span, TState arg)
-            where TState : allows ref struct;
-
-        internal static void SlhDsaPreHash<TState>(
+        internal static TResult SlhDsaPreHash<TKey, TSignature, TResult>(
             ReadOnlySpan<byte> hash,
             ReadOnlySpan<byte> context,
             ReadOnlySpan<char> hashAlgorithmOid,
-            TState state,
-            SlhDsaPreHashActionCallback<byte, TState> callback)
-            where TState : allows ref struct
-        {
-            SlhDsaPreHash(
-                hash,
-                context,
-                hashAlgorithmOid,
-                CreateStackTuple(state, callback),
-                static (message, myState) =>
-                {
-                    myState.Item2(message, myState.Item1);
-                    return true;
-                });
-        }
-
-        internal static TResult SlhDsaPreHash<TState, TResult>(
-            ReadOnlySpan<byte> hash,
-            ReadOnlySpan<byte> context,
-            ReadOnlySpan<char> hashAlgorithmOid,
-            TState state,
-            SlhDsaPreHashFuncCallback<byte, TState, TResult> callback)
-            where TState : allows ref struct
+            TKey key,
+            TSignature signatureBuffer,
+            SlhDsaPreHashFuncCallback<TKey, TSignature, TResult> callback)
+            where TSignature : allows ref struct
         {
             // The OIDs for the algorithms above have max length 11. We'll just round up for a conservative initial estimate.
             const int MaxEncodedOidLengthForCommonHashAlgorithms = 16;
@@ -509,24 +490,21 @@ namespace Internal.Cryptography
             writer.WriteObjectIdentifier(hashAlgorithmOid);
 
             int encodedOidLength = writer.GetEncodedLength();
-            int messageLength =
+            int messageLength = checked(
                 1 +                 // Pre-hash encoding flag
                 1 +                 // Context length
                 context.Length +    // Context
                 encodedOidLength +  // OID
-                hash.Length;        // Hash
+                hash.Length);       // Hash
 
-            const int MessageLengthUpperBoundEstimate = 1 + 1 + 255 + 11 + (512 / 8);
-            Debug.Assert(
-                messageLength <= MessageLengthUpperBoundEstimate,
-                $"Message length {messageLength} exceeds the upper bound of {MessageLengthUpperBoundEstimate}.");
-
-            // Unknown hash algorithms might overshoot the estimated upper bound so we will rent as a backup.
+            // Common hash algorithms are at most 64 bytes, but unknown hash algorithms or long contexts
+            // might overshoot the estimate.
+            const int StackAllocThreshold = 128;
             byte[]? rented = null;
             Span<byte> message =
-                messageLength > MessageLengthUpperBoundEstimate
+                messageLength > StackAllocThreshold
                     ? (rented = CryptoPool.Rent(messageLength))
-                    : stackalloc byte[MessageLengthUpperBoundEstimate];
+                    : stackalloc byte[StackAllocThreshold];
 
             try
             {
@@ -547,7 +525,7 @@ namespace Internal.Cryptography
                 // Hash
                 hash.CopyTo(message.Slice(2 + context.Length + encodedOidLength));
 
-                return callback(message.Slice(0, messageLength), state);
+                return callback(key, message.Slice(0, messageLength), signatureBuffer);
             }
             finally
             {
@@ -555,26 +533,6 @@ namespace Internal.Cryptography
                 {
                     CryptoPool.Return(rented);
                 }
-            }
-        }
-
-        internal static StackTuple<T1, T2> CreateStackTuple<T1, T2>(T1 item1, T2 item2)
-            where T1 : allows ref struct
-            where T2 : allows ref struct
-        {
-            return new StackTuple<T1, T2>(item1, item2);
-        }
-
-        internal ref struct StackTuple<T1, T2>
-            where T1 : allows ref struct
-            where T2 : allows ref struct
-        {
-            public T1 Item1;
-            public T2 Item2;
-            public StackTuple(T1 item1, T2 item2)
-            {
-                Item1 = item1;
-                Item2 = item2;
             }
         }
     }

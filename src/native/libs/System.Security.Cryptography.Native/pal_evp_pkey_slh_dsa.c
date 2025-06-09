@@ -318,8 +318,6 @@ done:
     (void)extraHandle;
     (void)msg;
     (void)msgLen;
-    (void)context;
-    (void)contextLen;
     (void)sig;
     (void)sigLen;
     return -1;

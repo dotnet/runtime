@@ -36,13 +36,13 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
-        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, ReadOnlySpan<char> hashAlgorithmOid, Span<byte> destination)
+        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination)
         {
             Debug.Fail("Caller should have checked platform availability.");
             throw new PlatformNotSupportedException();
         }
 
-        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, ReadOnlySpan<char> hashAlgorithmOid, ReadOnlySpan<byte> signature)
+        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature)
         {
             Debug.Fail("Caller should have checked platform availability.");
             throw new PlatformNotSupportedException();

@@ -64,21 +64,27 @@ namespace System.Security.Cryptography
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             Interop.Crypto.SlhDsaVerifyPure(_key, data, context, signature);
 
-        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, ReadOnlySpan<char> hashAlgorithmOid, Span<byte> destination) =>
+        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
             Helpers.SlhDsaPreHash(
                 hash,
                 context,
                 hashAlgorithmOid,
-                Helpers.CreateStackTuple(_key, destination),
-                static (message, state) => Interop.Crypto.SlhDsaSignPreEncoded(state.Item1, message, state.Item2));
+                _key,
+                destination,
+                static (key, encodedMessage, destination) =>
+                {
+                    Interop.Crypto.SlhDsaSignPreEncoded(key, encodedMessage, destination);
+                    return true;
+                });
 
-        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, ReadOnlySpan<char> hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
+        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
             Helpers.SlhDsaPreHash(
                 hash,
                 context,
                 hashAlgorithmOid,
-                Helpers.CreateStackTuple(_key, signature),
-                static (message, state) => Interop.Crypto.SlhDsaVerifyPreEncoded(state.Item1, message, state.Item2));
+                _key,
+                signature,
+                static (key, encodedMessage, signature) => Interop.Crypto.SlhDsaVerifyPreEncoded(key, encodedMessage, signature));
 
         protected override void ExportSlhDsaPublicKeyCore(Span<byte> destination) =>
             Interop.Crypto.SlhDsaExportPublicKey(_key, destination);

@@ -183,7 +183,6 @@ internal static partial class Interop
             }
         }
 
-
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_SlhDsaExportSecretKey(SafeEvpPKeyHandle pkey, Span<byte> destination, int destinationLength);
 
