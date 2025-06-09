@@ -44,7 +44,7 @@ OPDEF(INTOP_STELEM_I4, "stelem.i4", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_STELEM_I8, "stelem.i8", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_STELEM_R4, "stelem.r4", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_STELEM_R8, "stelem.r8", 4, 0, 3, InterpOpNoArgs)
-OPDEF(INTOP_STELEM_REF, "stelem.ref", 5, 0, 3, InterpOpInt)
+OPDEF(INTOP_STELEM_REF, "stelem.ref", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_STELEM_VT, "stelem.vt", 6, 0, 3, InterpOpTwoInts)
 OPDEF(INTOP_STELEM_VT_NOREF, "stelem.vt.noref", 5, 0, 3, InterpOpInt)
 

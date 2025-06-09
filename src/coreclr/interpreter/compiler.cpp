@@ -2386,8 +2386,6 @@ void InterpCompiler::EmitStelem(InterpType interpType)
     int32_t opcode = GetStelemForType(interpType);
     AddIns(opcode);
     m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
-    if (opcode == INTOP_STELEM_REF)
-        m_pLastNewIns->data[0] = GetDataItemIndex(m_pStackPointer[2].clsHnd);
 }
 
 void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken)

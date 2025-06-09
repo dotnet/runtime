@@ -1564,14 +1564,19 @@ do {                                                                           \
 
                     if (elemRef != NULL)
                     {
-                        MethodTable* arrayElemMT = (MethodTable*)pMethod->pDataItems[ip[4]];
-                        if (arrayElemMT != NULL && !ObjIsInstanceOf(OBJECTREFToObject(elemRef), arrayElemMT))
+                        TypeHandle arrayElemType = arr->GetArrayElementTypeHandle();
+                        if (!ObjIsInstanceOf(OBJECTREFToObject(elemRef), arrayElemType.AsMethodTable()))
                             COMPlusThrow(kArrayTypeMismatchException);
+
+                        // ObjIsInstanceOf can trigger GC, so the object references have to be re-fetched
+                        arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);
+                        arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                        elemRef = LOCAL_VAR(ip[3], OBJECTREF);
                     }
 
                     uint8_t* pData = arr->GetDataPtr();
                     SetObjectReferenceUnchecked((OBJECTREF*)(pData + idx * sizeof(OBJECTREF)), elemRef);
-                    ip += 5;
+                    ip += 4;
                     break;
                 }
                 case INTOP_STELEM_VT:
@@ -1654,9 +1659,7 @@ do {                                                                           \
                     MethodTable* expectedMT = (MethodTable*)pMethod->pDataItems[ip[5]];
                     if (arrayElemMT != expectedMT)
                     {
-                        OBJECTREF elemRef = *(OBJECTREF*)elemAddr;
-                        if (!ObjIsInstanceOf(OBJECTREFToObject(elemRef), expectedMT))
-                            COMPlusThrow(kArrayTypeMismatchException);
+                        COMPlusThrow(kArrayTypeMismatchException);
                     }
 
                     LOCAL_VAR(ip[1], void*) = elemAddr;
