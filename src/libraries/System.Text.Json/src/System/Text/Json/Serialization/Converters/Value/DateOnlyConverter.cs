@@ -47,12 +47,14 @@ namespace System.Text.Json.Serialization.Converters
                 source = stackSpan.Slice(0, bytesWritten);
             }
 
-            if (!JsonHelpers.TryParseAsIso(source, out DateOnly value))
+            if (JsonHelpers.IsInRangeInclusive(source.Length, FormatLength, MaxEscapedFormatLength) &&
+                JsonHelpers.TryParseAsIso(source, out DateOnly value))
             {
-                ThrowHelper.ThrowFormatException(DataType.DateOnly);
+                return value;
             }
 
-            return value;
+            ThrowHelper.ThrowFormatException(DataType.DateOnly);
+            return default;
         }
 
         public override void Write(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options)
