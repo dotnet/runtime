@@ -93,8 +93,6 @@ typedef void* (*HELPER_FTN_PP)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 typedef Object* (*HELPER_FTN_NEWARR)(CORINFO_CLASS_HANDLE, intptr_t);
 typedef void* (*HELPER_FTN_PP_2)(void*, void*);
-typedef int32_t (*HELPER_FTN_R82I4)(double);
-typedef int64_t (*HELPER_FTN_R82I8)(double);
 
 InterpThreadContext::InterpThreadContext()
 {
@@ -198,7 +196,7 @@ template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t
 
     // (src != src) checks for NaN, then we check whether the min and max values properly bound the source value
     // We assume that we are in round-towards-zero mode
-    bool outOfRange = (src != src) || (src < minValue) || (src > maxValue);
+    bool outOfRange = (src != src) || (src <= minValue) || (src >= maxValue);
 
     if (outOfRange)
         COMPlusThrow(kOverflowException);
