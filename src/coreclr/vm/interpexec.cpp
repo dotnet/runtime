@@ -7,9 +7,6 @@
 #include "gcenv.h"
 #include "interpexec.h"
 
-#ifdef FEATURE_JIT
-#include "callstubgenerator.h"
-
 FCDECL1(uint64_t, JIT_Dbl2ULng, double);
 FCDECL1(int64_t, JIT_Dbl2Lng, double);
 FCDECL1(uint32_t, JIT_Dbl2UInt, double);
@@ -18,6 +15,9 @@ FCDECL1(float, JIT_ULng2Flt, uint64_t val);
 FCDECL1(double, JIT_ULng2Dbl, uint64_t val);
 FCDECL1(float, JIT_Lng2Flt, int64_t val);
 FCDECL1(double, JIT_Lng2Dbl, int64_t val);
+
+#ifdef FEATURE_JIT
+#include "callstubgenerator.h"
 
 void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
 {
