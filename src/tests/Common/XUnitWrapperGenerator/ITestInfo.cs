@@ -456,7 +456,7 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
                          + $" || {_filterLocalIdentifier}.ShouldRunTest(@\"{test.ContainingType}.{test.Method}\","
                          + $" {test.TestNameExpression}))");
 
-        bool interestingTest = test.TestNameExpression.Contains("Runtime_108612") || test.TestNameExpression.Contains("b26496");
+        bool interestingTest = true; // test.TestNameExpression.Contains("Runtime_108612") || test.TestNameExpression.Contains("b26496");
 
         using (builder.NewBracesScope())
         {
