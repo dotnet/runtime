@@ -22,7 +22,6 @@ using Mono.Linker.Tests.Cases.Reflection;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[Kept]
-	[IgnoreTestCase("Trimmer support is currently not implemented", IgnoredBy = Tool.Trimmer)]
 	class TypeMap
 	{
 		[Kept]
