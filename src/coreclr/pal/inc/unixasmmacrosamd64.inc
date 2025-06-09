@@ -393,7 +393,7 @@ C_FUNC(\Name\()_End):
 
 // Inlined version of GetThreadEEAllocContext. Trashes volatile registers.
 .macro INLINE_GET_ALLOC_CONTEXT_BASE
-#if defined(FEATURE_EMULATED_TLS) || defined(__APPLE__)
+#ifdef FEATURE_EMULATED_TLS
         call    C_FUNC(GetThreadEEAllocContext)
 #else
         INLINE_GET_TLS_VAR t_runtime_thread_locals
