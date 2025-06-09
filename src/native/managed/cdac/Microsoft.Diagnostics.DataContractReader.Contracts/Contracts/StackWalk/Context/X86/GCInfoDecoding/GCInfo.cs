@@ -45,8 +45,6 @@ public record GCInfo
     public bool IsInEpilog => EpilogOffset != unchecked((uint)-1);
     public uint EpilogOffset { get; set; } = unchecked((uint)-1);
 
-    public bool HasReversePInvoke => Header.RevPInvokeOffset != InfoHdr.INVALID_REV_PINVOKE_OFFSET;
-
     public uint RawStackSize { get; set; }
 
 

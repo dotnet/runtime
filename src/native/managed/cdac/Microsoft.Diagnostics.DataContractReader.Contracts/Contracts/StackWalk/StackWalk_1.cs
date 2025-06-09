@@ -7,19 +7,16 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
-using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct StackWalk_1 : IStackWalk
 {
     private readonly Target _target;
-    private readonly RuntimeInfoArchitecture _arch;
 
     internal StackWalk_1(Target target)
     {
         _target = target;
-        _arch = target.Contracts.RuntimeInfo.GetTargetArchitecture();
     }
 
     public enum StackWalkState
@@ -77,7 +74,6 @@ internal readonly struct StackWalk_1 : IStackWalk
 
     private bool Next(StackWalkData handle)
     {
-        IPlatformAgnosticContext prevContext = handle.Context.Clone();
         switch (handle.State)
         {
             case StackWalkState.SW_FRAMELESS:
@@ -105,12 +101,12 @@ internal readonly struct StackWalk_1 : IStackWalk
             case StackWalkState.SW_COMPLETE:
                 return false;
         }
-        UpdateState(handle, prevContext);
+        UpdateState(handle);
 
         return handle.State is not (StackWalkState.SW_ERROR or StackWalkState.SW_COMPLETE);
     }
 
-    private void UpdateState(StackWalkData handle, IPlatformAgnosticContext prevContext)
+    private void UpdateState(StackWalkData handle)
     {
         // If we are complete or in a bad state, no updating is required.
         if (handle.State is StackWalkState.SW_ERROR or StackWalkState.SW_COMPLETE)
@@ -120,35 +116,6 @@ internal readonly struct StackWalk_1 : IStackWalk
 
         bool isManaged = IsManaged(handle.Context.InstructionPointer, out _);
         bool validFrame = handle.FrameIter.IsValid();
-
-        //
-        // Platform specific logic
-        //
-        if (_arch == RuntimeInfoArchitecture.X86)
-        {
-            if (IsManaged(prevContext.InstructionPointer, out CodeBlockHandle? prevCbh))
-            {
-                IExecutionManager eman = _target.Contracts.ExecutionManager;
-
-                if (!eman.IsFunclet(prevCbh.Value))
-                {
-                    eman.GetGCInfo(prevCbh.Value, out TargetPointer gcInfoAddress, out uint _);
-                    uint relOffset = (uint)eman.GetRelativeOffset(prevCbh.Value).Value;
-                    GCInfo gcInfo = new(_target, gcInfoAddress, relOffset);
-                    if (gcInfo.HasReversePInvoke)
-                    {
-                        // The managed frame we've unwound from had reverse PInvoke frame. Since we are on a frameless
-                        // frame, that means that the method was called from managed code without any native frames in between.
-                        // On x86, the InlinedCallFrame of the PInvoke would get skipped as we've just unwound to the PInvoke IL stub and
-                        // for this architecture, the inlined call frames are supposed to be processed before the managed frame they are stored in.
-                        // So we force the stack frame iterator to process the InlinedCallFrame before the IL stub.
-                        Debug.Assert(handle.FrameIter.IsInlineCallFrameWithActiveCall());
-                        handle.State = StackWalkState.SW_FRAME;
-                        return;
-                    }
-                }
-            }
-        }
 
         if (isManaged)
         {
@@ -185,50 +152,7 @@ internal readonly struct StackWalk_1 : IStackWalk
         IPlatformAgnosticContext parentContext = handle.Context.Clone();
         parentContext.Unwind(_target);
 
-        if (_arch == RuntimeInfoArchitecture.X86)
-        {
-            return CheckForSkippedFramesX86(handle, parentContext);
-        }
-
         return handle.FrameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value;
-    }
-
-    /// <summary>
-    /// X86 specific check for skipped frames. Different than other platforms due to X86
-    /// only reporting the InlinedCallFrame once unless it is an IL stub with an MD context argument.
-    /// </summary>
-    /// <returns> true if there are skipped frames. </returns>
-    private bool CheckForSkippedFramesX86(StackWalkData handle, IPlatformAgnosticContext parentContext)
-    {
-        IExecutionManager eman = _target.Contracts.ExecutionManager;
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-
-        while (handle.FrameIter.IsValid() &&
-               handle.FrameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value)
-        {
-            bool reportInteropMD = false;
-            if (eman.GetCodeBlockHandle(handle.Context.InstructionPointer.Value) is CodeBlockHandle cbh)
-            {
-                MethodDescHandle mdHandle = rts.GetMethodDescHandle(eman.GetMethodDesc(cbh));
-                reportInteropMD =
-                    handle.FrameIter.IsValid() &&
-                    handle.FrameIter.GetCurrentFrameType() == FrameIterator.FrameType.InlinedCallFrame &&
-                    rts.IsILStub(mdHandle) &&
-                    rts.HasMDContextArg(mdHandle);
-            }
-
-            if (handle.FrameIter.IsInlineCallFrameWithActiveCall() && !reportInteropMD)
-            {
-                // On x86 we have already reported the InlinedCallFrame, don't report it again.
-                handle.FrameIter.Next();
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     byte[] IStackWalk.GetRawContext(IStackDataFrameHandle stackDataFrameHandle)

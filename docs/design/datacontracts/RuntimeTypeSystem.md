@@ -138,10 +138,6 @@ partial interface IRuntimeTypeSystem : IContract
     // A IL Stub method is also a StoredSigMethodDesc, and a NoMetadataMethod
     public virtual bool IsILStub(MethodDescHandle methodDesc);
 
-    // Return true if the MethodDesc represents an IL Stub that takes a context argument
-    // that is an interop MethodDesc.
-    public virtual bool HasMDContextArg(MethodDescHandle methodDesc);
-
     // Return true if a MethodDesc is in a collectible module
     public virtual bool IsCollectibleMethod(MethodDescHandle methodDesc);
 
@@ -712,13 +708,6 @@ And the following enumeration definitions
         WrapperStubWithInstantiations = 0x04,
     }
 
-    internal enum ILStubType : uint
-    {
-        StubNotSet = 0x0,
-        StubCLRToNativeInterop = 0x1,
-        StubCLRToCOMInterop = 0x2,
-    }
-
     [Flags]
     internal enum DynamicMethodDescExtendedFlags : uint
     {
@@ -978,30 +967,6 @@ And the various apis are implemented with the following algorithms
         uint ExtendedFlags = // Read ExtendedFlags field from StoredSigMethodDesc contract using address methodDescHandle.Address
 
         return ((DynamicMethodDescExtendedFlags)ExtendedFlags).HasFlag(DynamicMethodDescExtendedFlags.IsILStub);
-    }
-
-    public bool HasMDContextArg(MethodDescHandle methodDescHandle)
-    {
-        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
-
-        if (methodDesc.Classification != MethodDescClassification.Dynamic)
-        {
-            return false;
-        }
-
-        uint ExtendedFlags = // Read ExtendedFlags field from StoredSigMethodDesc contract using address methodDescHandle.Address
-
-        ILStubType ilStubType = (ILStubType)(ExtendedFlags & DynamicMethodDescExtendedFlags.ILStubTypeMask);
-
-        bool isStatic = ((DynamicMethodDescExtendedFlags)ExtendedFlags).HasFlag(DynamicMethodDescExtendedFlags.Static);
-        bool isDelegate = ((DynamicMethodDescExtendedFlags)ExtendedFlags).HasFlag(DynamicMethodDescExtendedFlags.IsDelegate);
-        bool isCALLI = ((DynamicMethodDescExtendedFlags)ExtendedFlags).HasFlag(DynamicMethodDescExtendedFlags.IsCALLI);
-
-
-        bool isPInvokeStub = isStatic && !isCALLI && ilStubType == ILStubType.StubCLRToNativeInterop;
-        bool isCLRToCOMStub = !isStatic && ilStubType == ILStubType.StubCLRToCOMInterop;
-
-        return isCLRToCOMStub || (isPInvokeStub && !isDelegate);
     }
 
     public ushort GetSlotNumber(MethodDescHandle methodDesc) => _methodDescs[methodDesc.Addres]._desc.Slot;
