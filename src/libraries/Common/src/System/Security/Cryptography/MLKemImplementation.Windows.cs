@@ -172,7 +172,7 @@ namespace System.Security.Cryptography
                 Debug.Assert(IsSupported);
                 // ML-KEM 1024 seeds are 86 byte blobs. Round it off to 128.
                 // Other keys like encapsulation or decapsulation keys will never fit in a stack buffer, so don't
-                // try to accomodate them.
+                // try to accommodate them.
                 const int MaxKeyStackSize = 128;
                 string parameterSet = PqcBlobHelpers.GetMLKemParameterSet(algorithm);
                 int blobHeaderSize = Marshal.SizeOf<BCRYPT_MLKEM_KEY_BLOB>();
