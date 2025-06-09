@@ -611,7 +611,7 @@ internal class AMD64Unwinder(Target target)
         // subject function and any chained unwind information.
         //
 
-        if (!UnwindPrologue(ref context, controlPC, establisherFrame, functionEntry))
+        if (!UnwindPrologue(ref context, controlPC, imageBase, establisherFrame, functionEntry))
             return false;
 
         //
@@ -811,9 +811,47 @@ internal class AMD64Unwinder(Target target)
     private bool UnwindPrologue(
         ref AMD64Context context,
         TargetPointer controlPC,
+        TargetPointer imageBase,
         TargetPointer frameBase,
         Data.RuntimeFunction functionEntry)
     {
+
+        while (true)
+        {
+            uint index = 0;
+            bool machineFrame = false;
+            uint prologOffset = (uint)(controlPC - (functionEntry.BeginAddress + imageBase));
+
+            if (GetUnwindInfoHeader(imageBase + functionEntry.UnwindData) is not UnwindInfoHeader unwindInfo)
+                return false;
+
+            while (index < unwindInfo.CountOfUnwindCodes)
+            {
+                //
+                // If the prologue offset is greater than the next unwind code
+                // offset, then simulate the effect of the unwind code.
+                //
+
+                UnwindCode unwindOp = GetUnwindCode(unwindInfo, index);
+
+                if (_unix)
+                {
+                    if (unwindOp.UnwindOp > UnwindCode.OpCodes.UWOP_SET_FPREG_LARGE)
+                    {
+                        Debug.Fail("Expected unwind code");
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (unwindOp.UnwindOp == UnwindCode.OpCodes.UWOP_SET_FPREG_LARGE)
+                    {
+                        Debug.Fail("Expected unwind code");
+                        return false;
+                    }
+                }
+            }
+        }
         throw new NotImplementedException("UnwindPrologue is not implemented yet.");
     }
 
