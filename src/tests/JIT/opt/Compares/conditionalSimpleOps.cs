@@ -192,4 +192,26 @@ public class ConditionalSimpleOpVariableTest
         uint result = a > 42 ? a >> 1 : a;
         Assert.Equal(expected, result);
     }
+
+    [Theory]
+    [InlineData(44, 0)]
+    [InlineData(43, 1)]
+    [InlineData(11, 0)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void and_or_zero_var(int a, int expected)
+    {
+        int result = a > 42 ? a & 1 : 0;
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(4, 16)]
+    [InlineData(6, 64)]
+    [InlineData(43, 0)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void pow2_or_zero_var(int a, int expected)
+    {
+        int result = a > 42 ? 0 : 1 << a;
+        Assert.Equal(expected, result);
+    }
 }

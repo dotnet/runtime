@@ -964,12 +964,27 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
                 }
             }
         }
-        // else if (trueInput->IsIntegralConst(0) != falseInput->IsIntegralConst(0))
-        // {
-        //     bool isTrueZero = trueInput->IsIntegralConst(0);
-        //     GenTree* binOp = isTrueZero ? falseInput : trueInput;
-        //     if (binOp->OperIs())
-        // }
+        else if (trueInput->IsIntegralConst(0) != falseInput->IsIntegralConst(0))
+        {
+            bool isTrueZero = trueInput->IsIntegralConst(0);
+
+            GenTree* binOp = isTrueZero ? falseInput : trueInput;
+            if (binOp->OperIs(GT_LSH, GT_AND))
+            {
+                GenTree*& op1 = binOp->AsOp()->gtOp1;
+                GenTree*& op2 = binOp->AsOp()->gtOp2;
+
+                if (op1->IsIntegralConst(1) || (op2->IsIntegralConst(1) && binOp->OperIs(GT_AND)))
+                {
+                    GenTree*& constOp = op1->IsIntegralConst(1) ? op1 : op2;
+
+                    constOp = isTrueLclVar ? m_comp->gtReverseCond(m_cond) : m_cond;
+
+                    binOp->gtFlags |= m_cond->gtFlags & GTF_ALL_EFFECT;
+                    return binOp;
+                }
+            }
+        }
     }
 #endif // TARGET_RISCV64
     return nullptr;
