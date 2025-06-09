@@ -79,6 +79,6 @@ struct ExceptionClauseArgs
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs = NULL);
 
-CallStubHeader *CreateNativeToInterpreterCallStub(PCODE pCode);
+CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod);
 
 #endif

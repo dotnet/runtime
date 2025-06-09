@@ -432,8 +432,6 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 #ifdef FEATURE_INTERPRETER
         if (pConfig->IsInterpreterCode())
         {
-            CreateNativeToInterpreterCallStub(pCode);
-
             AllocMemTracker amt;
             InterpreterPrecode* pPrecode = Precode::AllocateInterpreterPrecode(pCode, GetLoaderAllocator(), &amt);
             amt.SuppressRelease();
@@ -2183,12 +2181,15 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 
         if (doBackpatch)
         {
-            RETURN DoBackpatch(pMT, pDispatchingMT, doFullBackpatch);
+            pCode = DoBackpatch(pMT, pDispatchingMT, doFullBackpatch);
+        }
+        else
+        {
+            _ASSERTE(!doFullBackpatch);
         }
 
         _ASSERTE(pCode != (PCODE)NULL);
-        _ASSERTE(!doFullBackpatch);
-        RETURN pCode;
+        goto Return;
     }
 #endif
 
@@ -2200,7 +2201,8 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             MarkMethodNotPitchingCandidate(this);
         #endif
 
-        RETURN DoBackpatch(pMT, pDispatchingMT, TRUE);
+        pCode = DoBackpatch(pMT, pDispatchingMT, TRUE);
+        goto Return;
     }
 
     /**************************   CODE CREATION  *************************/
@@ -2322,7 +2324,19 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     _ASSERTE(!IsPointingToPrestub());
     _ASSERTE(HasStableEntryPoint());
 
-    RETURN DoBackpatch(pMT, pDispatchingMT, FALSE);
+
+    pCode = DoBackpatch(pMT, pDispatchingMT, FALSE);
+
+Return:
+#ifdef FEATURE_INTERPRETER
+    InterpByteCodeStart *pInterpreterCode = GetInterpreterCode();
+    if (pInterpreterCode != NULL)
+    {
+        CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
+    }
+#endif // FEATURE_INTERPRETER
+
+    RETURN pCode;
 }
 
 #endif // !DACCESS_COMPILE

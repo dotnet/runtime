@@ -55,11 +55,9 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
 
-
-CallStubHeader *CreateNativeToInterpreterCallStub(PCODE pCode)
+// Create call stub for calling interpreted methods from JITted/AOTed code.
+CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
 {
-    InterpMethod* pInterpMethod = *(InterpMethod**)pCode;
-
     CallStubGenerator callStubGenerator;
     CallStubHeader *pHeader = VolatileLoadWithoutBarrier(&pInterpMethod->pCallStub);
     GCX_PREEMP();
