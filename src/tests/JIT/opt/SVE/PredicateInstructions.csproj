@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PredicateInstructions.cs">
-      <HasDisasmCheck>true</HasDisasmCheck>
+      <HasDisasmCheck Condition="'$(DOTNET_EnableHWIntrinsic)' != '0' and '$(DOTNET_EnableArm64Sve)' != '0'">true</HasDisasmCheck>
     </Compile>
     <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
     <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
