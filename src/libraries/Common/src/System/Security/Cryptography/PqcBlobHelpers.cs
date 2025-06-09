@@ -11,14 +11,11 @@ using BCRYPT_PQDSA_KEY_BLOB = Interop.BCrypt.BCRYPT_PQDSA_KEY_BLOB;
 
 namespace System.Security.Cryptography
 {
-    internal static class PqcBlobHelpers
+    internal static partial class PqcBlobHelpers
     {
         internal const string BCRYPT_MLDSA_PARAMETER_SET_44 = "44";
         internal const string BCRYPT_MLDSA_PARAMETER_SET_65 = "65";
         internal const string BCRYPT_MLDSA_PARAMETER_SET_87 = "87";
-        internal const string BCRYPT_MLKEM_PARAMETER_SET_512 = "512";
-        internal const string BCRYPT_MLKEM_PARAMETER_SET_768 = "768";
-        internal const string BCRYPT_MLKEM_PARAMETER_SET_1024 = "1024";
 
         internal static string GetMLDsaParameterSet(MLDsaAlgorithm algorithm)
         {
@@ -37,42 +34,6 @@ namespace System.Security.Cryptography
 
             Debug.Fail($"Unknown MLDsaAlgorithm: {algorithm}");
             throw new PlatformNotSupportedException();
-        }
-
-        internal static string GetMLKemParameterSet(MLKemAlgorithm algorithm)
-        {
-            if (algorithm == MLKemAlgorithm.MLKem512)
-            {
-                return BCRYPT_MLKEM_PARAMETER_SET_512;
-            }
-            else if (algorithm == MLKemAlgorithm.MLKem768)
-            {
-                return BCRYPT_MLKEM_PARAMETER_SET_768;
-            }
-            else if (algorithm == MLKemAlgorithm.MLKem1024)
-            {
-                return BCRYPT_MLKEM_PARAMETER_SET_1024;
-            }
-
-            Debug.Fail($"Unknown MLKemAlgorithm: {algorithm.Name}");
-            throw new PlatformNotSupportedException();
-        }
-
-        internal static string MLKemBlobMagicToBlobType(KeyBlobMagicNumber magicNumber)
-        {
-            return magicNumber switch
-            {
-                KeyBlobMagicNumber.BCRYPT_MLKEM_PRIVATE_SEED_MAGIC => KeyBlobType.BCRYPT_MLKEM_PRIVATE_SEED_BLOB,
-                KeyBlobMagicNumber.BCRYPT_MLKEM_PRIVATE_MAGIC => KeyBlobType.BCRYPT_MLKEM_PRIVATE_BLOB,
-                KeyBlobMagicNumber.BCRYPT_MLKEM_PUBLIC_MAGIC => KeyBlobType.BCRYPT_MLKEM_PUBLIC_BLOB,
-                KeyBlobMagicNumber other => throw Fail(other),
-            };
-
-            static CryptographicException Fail(KeyBlobMagicNumber other)
-            {
-                Debug.Fail($"Unknown blob type '{other}'.");
-                return new CryptographicException();
-            }
         }
 
         internal static MLDsaAlgorithm GetMLDsaAlgorithmFromParameterSet(ReadOnlySpan<char> parameterSet)
