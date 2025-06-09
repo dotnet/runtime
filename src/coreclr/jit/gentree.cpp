@@ -7876,9 +7876,10 @@ GenTreeVecCon* Compiler::gtNewVconNode(var_types type, void* data)
 #endif // FEATURE_SIMD
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-GenTreeMskCon* Compiler::gtNewMskConNode(var_types type)
+GenTreeMskCon* Compiler::gtNewMskConNode(var_types type, unsigned char simdSize)
 {
     GenTreeMskCon* mskCon = new (this, GT_CNS_MSK) GenTreeMskCon(type);
+    mskCon->gtSimdSize = simdSize;
     return mskCon;
 }
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -9212,7 +9213,7 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
         case GT_CNS_MSK:
         {
-            GenTreeMskCon* mskCon = gtNewMskConNode(tree->TypeGet());
+            GenTreeMskCon* mskCon = gtNewMskConNode(tree->TypeGet(), tree->AsMskCon()->gtSimdSize);
             mskCon->gtSimdMaskVal = tree->AsMskCon()->gtSimdMaskVal;
             copy                  = mskCon;
             break;
@@ -9403,7 +9404,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
             case GT_CNS_MSK:
             {
-                GenTreeMskCon* mskCon = gtNewMskConNode(tree->TypeGet());
+                GenTreeMskCon* mskCon = gtNewMskConNode(tree->TypeGet(), tree->AsMskCon()->gtSimdSize);
                 mskCon->gtSimdMaskVal = tree->AsMskCon()->gtSimdMaskVal;
                 copy                  = mskCon;
                 goto DONE;
@@ -33307,7 +33308,7 @@ GenTreeMskCon* Compiler::gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree,
 
     var_types      retType      = tree->TypeGet();
     var_types      simdBaseType = tree->GetSimdBaseType();
-    GenTreeMskCon* mskCon       = gtNewMskConNode(retType);
+    GenTreeMskCon* mskCon       = gtNewMskConNode(retType, tree->GetSimdSize());
 
     switch (vecCon->TypeGet())
     {

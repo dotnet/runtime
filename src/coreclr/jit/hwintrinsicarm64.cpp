@@ -3409,7 +3409,7 @@ GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigne
     var_types      simdType     = getSIMDTypeForSize(simdSize);
     var_types      simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     bool           found        = false;
-    GenTreeMskCon* mskCon       = gtNewMskConNode(TYP_MASK);
+    GenTreeMskCon* mskCon       = gtNewMskConNode(TYP_MASK, simdSize);
 
     switch (simdType)
     {
@@ -3447,10 +3447,10 @@ GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigne
 // Return Value:
 //    The mask
 //
-GenTree* Compiler::gtNewSimdFalseMaskByteNode()
+GenTree* Compiler::gtNewSimdFalseMaskByteNode(unsigned simdSize)
 {
     // Import as a constant mask 0
-    GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
+    GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK, simdSize);
     mskCon->gtSimdMaskVal = simdmask_t::Zero();
     return mskCon;
 }

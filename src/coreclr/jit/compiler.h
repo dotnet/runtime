@@ -3026,7 +3026,7 @@ public:
 #endif // FEATURE_SIMD
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-    GenTreeMskCon* gtNewMskConNode(var_types type);
+    GenTreeMskCon* gtNewMskConNode(var_types type, unsigned char simdSize);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
     GenTree* gtNewAllBitsSetConNode(var_types type);
@@ -3133,7 +3133,7 @@ public:
 
 #if defined(TARGET_ARM64)
     GenTree* gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize);
-    GenTree* gtNewSimdFalseMaskByteNode();
+    GenTree* gtNewSimdFalseMaskByteNode(unsigned simdSize);
 #endif
 
     GenTree* gtNewSimdBinOpNode(genTreeOps  op,

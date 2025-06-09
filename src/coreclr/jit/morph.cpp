@@ -9772,7 +9772,7 @@ GenTree* Compiler::doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic*
     else if (node->IsVectorZero())
     {
         // Morph the vector of zeroes into mask of zeroes.
-        GenTree* mask = gtNewSimdFalseMaskByteNode();
+        GenTree* mask = gtNewSimdFalseMaskByteNode(parent->GetSimdSize());
         mask->SetMorphed(this);
         return mask;
     }
