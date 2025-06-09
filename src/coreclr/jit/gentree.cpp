@@ -33371,23 +33371,19 @@ bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
 
     if (IsCnsMsk())
     {
-        switch (parent->gtType)
+        switch (AsMskCon()->gtSimdSize)
         {
-            case TYP_SIMD8:
+            case 8:
                 return SveMaskPatternAll ==
                        EvaluateSimdMaskToPattern<simd8_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
 
-            case TYP_SIMD12:
+            case 12:
                 return SveMaskPatternAll ==
                        EvaluateSimdMaskToPattern<simd12_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
 
-            case TYP_SIMD16:
+            case 16:
                 return SveMaskPatternAll ==
                        EvaluateSimdMaskToPattern<simd16_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
-
-            case TYP_MASK:
-                // The mask parent does not have a vector type, so we cannot evaluate the size of the vector.
-                return false;
 
             default:
                 unreached();
