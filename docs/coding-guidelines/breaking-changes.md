@@ -1,11 +1,11 @@
 # Breaking Changes
 
-We take compatibility in .NET Framework and .NET Core extremely seriously. We use the [breaking change process](../project/breaking-change-process.md) to manage and consider potential breaking changes.
+We take compatibility in .NET Framework and .NET extremely seriously. We use the [breaking change process](../project/breaking-change-process.md) to manage and consider potential breaking changes.
 
-Although .NET Core can be deployed app local, we are engineering it such that
+Although .NET can be deployed app local, we are engineering it such that
 portable libraries can target it and still run on .NET Framework as well. This
 means that the behavior of .NET Framework can constrain the implementation of
-any overlapping APIs in .NET Core.
+any overlapping APIs in .NET.
 
 Below is a summary of some documentation we have internally about what kinds of
 things constitute breaking changes, how we categorize them, and how we decide
@@ -46,7 +46,7 @@ Examples:
 * Throwing a new/different exception type in an existing common scenario
 * An exception is no longer thrown
 * A different behavior is observed after the change for an input
-* decreasing the range of accepted values within a given parameter
+* Decreasing the range of accepted values within a given parameter
 * A new instance field is added to a type (impacts serialization)
 * Change in timing/order of events (even when not specified in docs)
 * Change in parsing of input and throwing new errors (even if parsing behavior
@@ -74,14 +74,17 @@ in theory, but breaks an app.*
 Examples:
 
 * Changes to internal API that break private reflection
+* Changes to private members that break round-tripping through `BinaryFormatter`
+  or other legacy serializers that rely on persisted private state
 
 It is impossible to evolve a code base without making such changes, so we don't
 require up-front approval for these, but we will sometimes have to go back and
 revisit such change if there's too much pain inflicted on the ecosystem through
 a popular app or library.
 
-This bucket is painful for the machine-wide .NET Framework, but we do have much
-more latitude here in .NET Core.
+This type of change does not require `breaking-change` treatment or documentation.
+While this bucket was painful for the machine-wide .NET Framework, we have much
+more latitude in .NET.
 
 ## What This Means for Contributors
 
