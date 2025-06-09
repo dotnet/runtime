@@ -10,13 +10,7 @@
 
 // for numeric_limits
 #include <limits>
-// for nexttoward
-#include <cmath>
 
-FCDECL1(uint64_t, JIT_Dbl2ULng, double);
-FCDECL1(int64_t, JIT_Dbl2Lng, double);
-FCDECL1(uint32_t, JIT_Dbl2UInt, double);
-FCDECL1(int32_t, JIT_Dbl2Int, double);
 FCDECL1(float, JIT_ULng2Flt, uint64_t val);
 FCDECL1(double, JIT_ULng2Dbl, uint64_t val);
 FCDECL1(float, JIT_Lng2Flt, int64_t val);
@@ -172,7 +166,6 @@ template <typename TResult, typename TSource> static void ConvFpHelper(int8_t *s
     // (src != src) checks for NaN, then we check whether the min and max values (as represented by their closest double)
     //  properly bound the source value so that when it is truncated it will be in range
     // We assume that we are in round-towards-zero mode. For NaN we want to return 0, and for out of range values, saturate.
-    // We don't need to be fancy with nexttoward and 0.5 since we're saturating.
     TResult result;
     if (src != src)
         result = 0;
