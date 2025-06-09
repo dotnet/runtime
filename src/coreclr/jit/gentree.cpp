@@ -30167,7 +30167,7 @@ unsigned* SsaNumInfo::GetOutlinedNumSlot(Compiler* compiler, unsigned index) con
     // Copy over all of the already encoded numbers.
     if (!baseNum.IsInvalid())
     {
-        for (int i = 0; i < SIMPLE_NUM_COUNT; i++)
+        for (int i = 0; i < count; i++)
         {
             pFirstSlot[i] = baseNum.GetNum(compiler, i);
         }
