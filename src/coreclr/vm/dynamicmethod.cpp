@@ -886,13 +886,7 @@ void HostCodeHeap::FreeMemForCode(void * codeStart)
 //
 void DynamicMethodDesc::Destroy()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(IsDynamicMethod());
     LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();
@@ -920,10 +914,7 @@ void DynamicMethodDesc::Destroy()
     if (pLoaderAllocator->IsCollectible())
     {
         if (pLoaderAllocator->Release())
-        {
-            GCX_PREEMP();
             LoaderAllocator::GCLoaderAllocators(pLoaderAllocator);
-        }
     }
 }
 
@@ -946,11 +937,13 @@ void LCGMethodResolver::Reset()
 //
 void LCGMethodResolver::RecycleIndCells()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
         GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
 
     // Append the list of indirection cells used by this dynamic method to the free list
     IndCellList * list = m_UsedIndCellList;
@@ -999,11 +992,13 @@ void LCGMethodResolver::RecycleIndCells()
 
 void LCGMethodResolver::Destroy()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
         GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
 
     LOG((LF_BCL, LL_INFO100, "Level2 - Resolver - Destroying Resolver {%p}\n", this));
     if (m_Code)

@@ -362,31 +362,13 @@ public:
         ~CrstHolder()
         {
             WRAPPER_NO_CONTRACT;
-            if (m_pCrst != nullptr)
-                ReleaseLock(m_pCrst);
+            ReleaseLock(m_pCrst);
         }
 
         CrstHolder(CrstHolder const&) = delete;
         CrstHolder &operator=(CrstHolder const&) = delete;
-        CrstHolder(CrstHolder&& other)
-            : m_pCrst{ other.m_pCrst }
-        {
-            WRAPPER_NO_CONTRACT;
-            other.m_pCrst = nullptr;
-        }
-        CrstHolder& operator=(CrstHolder&& other)
-        {
-            WRAPPER_NO_CONTRACT;
-            if (this != &other)
-            {
-                if (m_pCrst != nullptr)
-                    ReleaseLock(m_pCrst);
-
-                m_pCrst = other.m_pCrst;
-                other.m_pCrst = nullptr;
-            }
-            return *this;
-        }
+        CrstHolder(CrstHolder&& other) = delete;
+        CrstHolder& operator=(CrstHolder&& other) = delete;
     };
 
     // Note that the holders for CRSTs are used in extremely low stack conditions. Because of this, they
