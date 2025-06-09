@@ -7569,7 +7569,8 @@ HRESULT Debugger::SendException(Thread *pThread,
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO10000, "D::SendException\n"));
+    LOG((LF_CORDB, LL_INFO10000, "D::SendException pThread=0x%p fFirstChance=%s currentIP=0x%p currentSP= 0x%p fContinuable=%s fAttaching=%s fForceNonInterceptable=%s\n",
+        pThread, fFirstChance ? "true" : "false", (void*)currentIP, (void*)currentSP, fContinuable ? "true" : "false", fAttaching ? "true" : "false", fForceNonInterceptable ? "true" : "false"));
 
     if (CORDBUnrecoverableError(this))
     {
@@ -7898,8 +7899,6 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    SCAN_IGNORE_TRIGGER; // Scan can't handle conditional contracts.
 
     // @@@
     // Implements DebugInterface

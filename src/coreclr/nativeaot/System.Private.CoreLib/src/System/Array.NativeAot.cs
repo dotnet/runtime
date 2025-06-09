@@ -664,7 +664,7 @@ namespace System
                 throw new OutOfMemoryException(); // "Array dimensions exceeded supported range."
 
             Debug.Assert(eeType->NumVtableSlots != 0, "Compiler enforces we never have unconstructed MTs for multi-dim arrays since those can be template-constructed anytime");
-            Array ret = RuntimeImports.RhNewArray(eeType, (int)totalLength);
+            Array ret = RuntimeImports.RhNewVariableSizeObject(eeType, (int)totalLength);
 
             ref int bounds = ref ret.GetRawMultiDimArrayBounds();
             for (int i = 0; i < rank; i++)

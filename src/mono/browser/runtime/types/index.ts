@@ -119,14 +119,6 @@ export type MonoConfig = {
     debugLevel?: number,
 
     /**
-     * Gets a value that determines whether to enable caching of the 'resources' inside a CacheStorage instance within the browser.
-     */
-    cacheBootResources?: boolean,
-    /**
-     * Delay of the purge of the cached resources in milliseconds. Default is 10000 (10 seconds).
-     */
-    cachedResourcesPurgeDelay?: number,
-    /**
      * Configures use of the `integrity` directive for fetching assets
      */
     disableIntegrityCheck?: boolean,
@@ -619,7 +611,7 @@ export type DiagnosticsAPIType = {
      * It could be opened in PerfView or Visual Studio as is.
      * It could be summarized by `dotnet-trace report xxx.nettrace topN -n 10`
      */
-    collectPerfCounters: (options?:DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    collectMetrics: (options?:DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
      * creates diagnostic trace file.
      * It could be opened in PerfView as is.

@@ -438,7 +438,7 @@ FORCEINLINE void AwareLock::RecordWaiterStarvationStartTime()
 {
     WRAPPER_NO_CONTRACT;
 
-    DWORD currentTimeMs = GetTickCount();
+    DWORD currentTimeMs = (DWORD)minipal_lowres_ticks();
     if (currentTimeMs == 0)
     {
         // Don't record zero, that value is reserved for identifying that a time is not recorded
@@ -455,7 +455,7 @@ FORCEINLINE bool AwareLock::ShouldStopPreemptingWaiters() const
     DWORD waiterStarvationStartTimeMs = m_waiterStarvationStartTimeMs;
     return
         waiterStarvationStartTimeMs != 0 &&
-        GetTickCount() - waiterStarvationStartTimeMs >= WaiterStarvationDurationMsBeforeStoppingPreemptingWaiters;
+        (DWORD)minipal_lowres_ticks() - waiterStarvationStartTimeMs >= WaiterStarvationDurationMsBeforeStoppingPreemptingWaiters;
 }
 
 FORCEINLINE void AwareLock::SpinWait(const YieldProcessorNormalizationInfo &normalizationInfo, DWORD spinIteration)

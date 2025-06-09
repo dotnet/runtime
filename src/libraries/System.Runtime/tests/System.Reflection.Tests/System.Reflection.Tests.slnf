@@ -1,6 +1,6 @@
 {
   "solution": {
-    "path": "..\\..\\System.Runtime.sln",
+    "path": "..\\..\\System.Runtime.slnx",
     "projects": [
       "..\\..\\coreclr\\System.Private.CoreLib\\System.Private.CoreLib.csproj",
       "..\\..\\tools\\illink\\src\\ILLink.CodeFix\\ILLink.CodeFixProvider.csproj",
