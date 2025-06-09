@@ -3655,9 +3655,13 @@ void EECodeGenManager::Unload(LoaderAllocator* pAllocator)
 
     // Unload any code heaps that were delayed for unloading.
     UINT32 unloadCount = m_delayUnload.Count();
-    for (UINT32 i = 0; i < unloadCount; ++i)
+    if (unloadCount != 0)
     {
-        UnloadWorker(m_delayUnload.Table()[i]);
+        for (UINT32 i = 0; i < unloadCount; ++i)
+        {
+            UnloadWorker(m_delayUnload.Table()[i]);
+        }
+        m_delayUnload.Clear();
     }
 
     UnloadWorker(pAllocator);
@@ -4011,6 +4015,7 @@ void EECodeGenManager::ReleaseIterator()
     {
         RemoveJitDataWorker(m_delayRemoveJitData.Table()[i]);
     }
+    m_delayRemoveJitData.Clear();
 
     count = m_delayFreeHostCodeHeapMemory.Count();
     for (UINT32 i = 0; i < count; ++i)
@@ -4018,6 +4023,7 @@ void EECodeGenManager::ReleaseIterator()
         FreeHostCodeHeapStartCode& delay = m_delayFreeHostCodeHeapMemory.Table()[i];
         FreeHostCodeHeapMemoryWorker(delay.CodeHeap, delay.CodeStartAddress);
     }
+    m_delayFreeHostCodeHeapMemory.Clear();
 }
 
 void EECodeGenManager::AddToCleanupList(HostCodeHeap *pCodeHeap)
