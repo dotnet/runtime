@@ -121,11 +121,6 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     PORTABILITY_ASSERT("FaultingExceptionFrame::UpdateRegDisplay_Impl is not implemented on wasm");
 }
 
-void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
-{
-    PORTABILITY_ASSERT("HelperMethodFrame::UpdateRegDisplay_Impl is not implemented on wasm");
-}
-
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     PORTABILITY_ASSERT("TransitionFrame::UpdateRegDisplay_Impl is not implemented on wasm");
@@ -182,15 +177,6 @@ EXTERN_C void JIT_ByRefWriteBarrier_End()
 EXTERN_C void JIT_StackProbe_End()
 {
     PORTABILITY_ASSERT("JIT_StackProbe_End is not implemented on wasm");
-}
-
-EXTERN_C int __fastcall HelperMethodFrameRestoreState(
-    INDEBUG_COMMA(HelperMethodFrame *pFrame)
-    MachState *pState
-)
-{
-    PORTABILITY_ASSERT("HelperMethodFrameRestoreState is not implemented on wasm");
-    return 0;
 }
 
 EXTERN_C VOID STDCALL ResetCurrentContext()
@@ -355,6 +341,72 @@ extern "C" void RhpVTableOffsetDispatchAVLocation()
     PORTABILITY_ASSERT("RhpVTableOffsetDispatchAVLocation is not implemented on wasm");
 }
 
+EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
+{
+    PORTABILITY_ASSERT("RhpNewVariableSizeObject is not implemented on wasm");
+    return nullptr;
+}
+
+EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
+{
+    PORTABILITY_ASSERT("RhpNewMaybeFrozen is not implemented on wasm");
+    return nullptr;
+}
+
+EXTERN_C FCDECL2(Object*, RhpNewArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
+{
+    PORTABILITY_ASSERT("RhpNewArrayFast is not implemented on wasm");
+    return nullptr;
+}
+
+EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
+{
+    PORTABILITY_ASSERT("RhpNewPtrArrayFast is not implemented on wasm");
+    return nullptr;
+}
+
+EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
+{
+    PORTABILITY_ASSERT("RhpNewArrayFastAlign8 is not implemented on wasm");
+    return nullptr;
+}
+
+EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, CORINFO_CLASS_HANDLE typeHnd_)
+{
+    PORTABILITY_ASSERT("RhpNewFastAlign8 is not implemented on wasm");
+    return nullptr;
+}
+
+EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, CORINFO_CLASS_HANDLE typeHnd_)
+{
+    PORTABILITY_ASSERT("RhpNewFastMisalign is not implemented on wasm");
+    return nullptr;
+}
+
+EXTERN_C FCDECL1(Object*, RhpNewFast, CORINFO_CLASS_HANDLE typeHnd_)
+{
+    PORTABILITY_ASSERT("RhpNewFast is not implemented on wasm");
+    return nullptr;
+}
+
+EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_)
+{
+    PORTABILITY_ASSERT("RhpNew is not implemented on wasm");
+    return nullptr;
+}
+
+EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
+{
+    PORTABILITY_ASSERT("RhpNewArrayMaybeFrozen is not implemented on wasm");
+    return nullptr;
+}
+
+EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, DWORD stringLength)
+{
+    PORTABILITY_ASSERT("RhNewString is not implemented on wasm");
+    return nullptr;
+}
+
 extern "C" void STDCALL ThePreStubPatchLabel(void)
 {
     PORTABILITY_ASSERT("ThePreStubPatchLabel is not implemented on wasm");
@@ -381,15 +433,20 @@ EXTERN_C void STDMETHODCALLTYPE ProfileTailcallNaked(UINT_PTR clientData)
     PORTABILITY_ASSERT("ProfileTailcallNaked is not implemented on wasm");
 }
 
+void InitJITWriteBarrierHelpers()
+{
+    // TODO: implement me
+}
+
 int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
-    _ASSERTE("StompWriteBarrierEphemeral is not implemented on wasm");
+    // TODO: implement me
     return 0;
 }
 
 int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
-    _ASSERTE("StompWriteBarrierResize is not implemented on wasm");
+    // TODO: implement me
     return 0;
 }
 
