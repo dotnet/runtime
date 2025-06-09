@@ -9880,15 +9880,15 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
         {
             copy->gtCallCookie = tree->gtCallCookie ? gtCloneExpr(tree->gtCallCookie) : nullptr;
         }
-        copy->gtCallAddr   = tree->gtCallAddr ? gtCloneExpr(tree->gtCallAddr) : nullptr;
+        copy->gtCallAddr = tree->gtCallAddr ? gtCloneExpr(tree->gtCallAddr) : nullptr;
     }
     else
     {
         copy->gtCallMethHnd         = tree->gtCallMethHnd;
         copy->gtInlineCandidateInfo = tree->gtInlineCandidateInfo;
-        copy->gtInlineInfoCount     = tree->gtInlineInfoCount;
     }
 
+    copy->gtInlineInfoCount          = tree->gtInlineInfoCount;
     copy->gtLateDevirtualizationInfo = tree->gtLateDevirtualizationInfo;
 
     copy->gtCallType   = tree->gtCallType;

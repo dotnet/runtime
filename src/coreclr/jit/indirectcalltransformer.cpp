@@ -502,16 +502,7 @@ private:
             if (!origCall->IsInlineCandidate())
             {
                 JITDUMP("*** %s Bailing on [%06u] -- not an inline candidate\n", Name(), compiler->dspTreeID(origCall));
-                ClearFlag();
-                return;
-            }
-
-            // Bail on CT_INDIRECT for now
-            //
-            if (origCall->gtCallType == CT_INDIRECT)
-            {
-                JITDUMP("*** %s Bailing on [%06u] -- can't handle CT_INDIRECT yet\n", Name(), compiler->dspTreeID(origCall));
-                ClearFlag();
+                origCall->ClearGuardedDevirtualizationCandidate();
                 return;
             }
 
@@ -580,7 +571,6 @@ private:
 
         virtual void ClearFlag()
         {
-            // We remove the GDV flag from the call in the CreateElse
         }
 
         virtual UINT8 GetChecksCount()
@@ -1056,7 +1046,6 @@ private:
                 JITDUMP("Devirtualization was unable to use the unboxed entry; so marking call (to boxed entry) as not "
                         "inlineable\n");
 
-                call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
                 call->ClearInlineInfo();
 
                 if (returnTemp != BAD_VAR_NUM)

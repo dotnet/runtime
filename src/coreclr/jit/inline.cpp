@@ -1345,7 +1345,7 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     // ldarg instruction.
     context->m_Location = stmt->GetDebugInfo().GetLocation();
 
-    assert(call->gtCallType == CT_USER_FUNC);
+    // assert(call->gtCallType == CT_USER_FUNC);
     context->m_Callee = call->gtCallMethHnd;
 
 #if defined(DEBUG)
