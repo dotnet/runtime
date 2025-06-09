@@ -463,6 +463,7 @@ enum BasicBlockFlags : uint64_t
     BBF_HAS_NEWARR                     = MAKE_BBFLAG(38), // BB contains 'new' of an array type.
     BBF_MAY_HAVE_BOUNDS_CHECKS         = MAKE_BBFLAG(39), // BB *likely* has a bounds check (after rangecheck phase).
     BBF_ASYNC_RESUMPTION               = MAKE_BBFLAG(40), // Block is a resumption block in an async method
+    BBF_SWITCH_CONVERSION_LIKELY       = MAKE_BBFLAG(41), // Block is marked to be converted to switch and hence avoid ccmp conversion
 
     // The following are sets of flags.
 
