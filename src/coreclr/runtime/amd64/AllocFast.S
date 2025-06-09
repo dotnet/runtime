@@ -78,7 +78,6 @@ LEAF_END RhpNewFinalizable, _TEXT
 NESTED_ENTRY RhpNewObject, _TEXT, NoHandler
 
         PUSH_COOP_PINVOKE_FRAME rcx
-        END_PROLOGUE
 
         // RCX: transition frame
 
@@ -236,7 +235,7 @@ LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
         // Delegate overflow handling to the generic helper conservatively
 
         cmp         rsi, (0x40000000 / 8) // sizeof(void*)
-        jae         C_FUNC(RhpNewVariableSizeObject)
+        jae         C_FUNC(RhpNewArrayFast)
 
         // In this case we know the element size is sizeof(void *), or 8 for x64
         // This helps us in two ways - we can shift instead of multiplying, and
@@ -258,7 +257,6 @@ NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
         // rsi == element count
 
         PUSH_COOP_PINVOKE_FRAME rcx
-        END_PROLOGUE
 
         // rcx: transition frame
 

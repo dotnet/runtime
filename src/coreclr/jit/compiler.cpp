@@ -1920,11 +1920,15 @@ void Compiler::compSetProcessor()
     opts.compSupportsISAReported.Reset();
     opts.compSupportsISAExactly.Reset();
 
-// The VM will set the ISA flags depending on actual hardware support
-// and any specified config switches specified by the user. The exception
-// here is for certain "artificial ISAs" such as Vector64/128/256 where they
-// don't actually exist. The JIT is in charge of adding those and ensuring
-// the total sum of flags is still valid.
+    // The VM will set the ISA flags depending on actual hardware support and any
+    // config values specified by the user. Config may cause the VM to omit baseline
+    // ISAs from the supported set. We force their inclusion here so that JIT code
+    // can use them unconditionally, but we will honor the config when resolving
+    // managed HWIntrinsic methods.
+    //
+    // We also take care of adding the virtual vector ISAs (i.e. Vector64/128/256/512)
+    // here, based on the combination of hardware ISA support and config values.
+
 #if defined(TARGET_XARCH)
     // If the VM passed in a virtual vector ISA, it was done to communicate PreferredVectorBitWidth.
     // No check is done for the validity of the value, since it will be clamped to max supported by
@@ -1955,10 +1959,14 @@ void Compiler::compSetProcessor()
            !instructionSetFlags.HasInstructionSet(InstructionSet_Vector256) &&
            !instructionSetFlags.HasInstructionSet(InstructionSet_Vector512));
 
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_X86Base))
-    {
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-    }
+    // Ensure required baseline ISAs are supported in JIT code, even if not passed in by the VM.
+    instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
+#ifdef TARGET_AMD64
+    instructionSetFlags.AddInstructionSet(InstructionSet_X86Base_X64);
+#endif // TARGET_AMD64
+
+    // We can now add the virtual vector ISAs as appropriate. Vector128 is part of the required baseline.
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
 
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX))
     {
@@ -1970,11 +1978,15 @@ void Compiler::compSetProcessor()
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
     }
 #elif defined(TARGET_ARM64)
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
-    {
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-    }
+    // Ensure required baseline ISAs are supported in JIT code, even if not passed in by the VM.
+    instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
+    instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase_Arm64);
+    instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
+    instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd_Arm64);
+
+    // Add virtual vector ISAs. These are both supported as part of the required baseline.
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
 #endif // TARGET_ARM64
 
     assert(instructionSetFlags.Equals(EnsureInstructionSetFlagsAreValid(instructionSetFlags)));
@@ -5956,11 +5968,8 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             }
         }
 
-        if (JitConfig.EnableHWIntrinsic() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
-            instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
-        }
+        instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
+        instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
 
         if (JitConfig.EnableArm64Aes() != 0)
         {
@@ -6029,29 +6038,15 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             }
         }
 
-        if (JitConfig.EnableHWIntrinsic() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
-        }
-
-        if (JitConfig.EnableSSE3() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE3);
-        }
-
-        if (JitConfig.EnableSSSE3() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSSE3);
-        }
-
-        if (JitConfig.EnableSSE41() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE41);
-        }
+        instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
 
         if (JitConfig.EnableSSE42() != 0)
         {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE3);
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSSE3);
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE41);
             instructionSetFlags.AddInstructionSet(InstructionSet_SSE42);
+            instructionSetFlags.AddInstructionSet(InstructionSet_POPCNT);
         }
 
         if (JitConfig.EnableAVX() != 0)
@@ -6062,59 +6057,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableAVX2() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX2);
-        }
-
-        if (JitConfig.EnableAES() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AES);
-        }
-
-        if (JitConfig.EnableBMI1() != 0)
-        {
             instructionSetFlags.AddInstructionSet(InstructionSet_BMI1);
-        }
-
-        if (JitConfig.EnableBMI2() != 0)
-        {
             instructionSetFlags.AddInstructionSet(InstructionSet_BMI2);
-        }
-
-        if (JitConfig.EnableFMA() != 0)
-        {
             instructionSetFlags.AddInstructionSet(InstructionSet_FMA);
-        }
-
-        if (JitConfig.EnableGFNI() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_GFNI);
-            instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V256);
-            instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V512);
-        }
-
-        if (JitConfig.EnableLZCNT() != 0)
-        {
             instructionSetFlags.AddInstructionSet(InstructionSet_LZCNT);
-        }
-
-        if (JitConfig.EnablePCLMULQDQ() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ);
-        }
-
-        if (JitConfig.EnableVPCLMULQDQ() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ_V256);
-            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ_V512);
-        }
-
-        if (JitConfig.EnablePOPCNT() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_POPCNT);
-        }
-
-        if (JitConfig.EnableAVXVNNI() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
+            instructionSetFlags.AddInstructionSet(InstructionSet_MOVBE);
         }
 
         if (JitConfig.EnableAVX512() != 0)
@@ -6122,9 +6069,14 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX512);
         }
 
-        if (JitConfig.EnableAVX512VBMI() != 0)
+        if (JitConfig.EnableAVX512v2() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VBMI);
+        }
+
+        if (JitConfig.EnableAVX512v3() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512v3);
         }
 
         if (JitConfig.EnableAVX10v1() != 0)
@@ -6141,11 +6093,59 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_APX);
         }
-#elif defined(TARGET_RISCV64)
-        if (JitConfig.EnableHWIntrinsic() != 0)
+
+        if (JitConfig.EnableAES() != 0)
         {
-            instructionSetFlags.AddInstructionSet(InstructionSet_RiscV64Base);
+            instructionSetFlags.AddInstructionSet(InstructionSet_AES);
+            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ);
         }
+
+        if (JitConfig.EnableAVX512VP2INTERSECT() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VP2INTERSECT);
+        }
+
+        if (JitConfig.EnableAVXIFMA() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVXIFMA);
+        }
+
+        if (JitConfig.EnableAVXVNNI() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
+        }
+
+        if (JitConfig.EnableGFNI() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_GFNI);
+            instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V256);
+            instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V512);
+        }
+
+        if (JitConfig.EnableSHA() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SHA);
+        }
+
+        if (JitConfig.EnableVAES() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AES_V256);
+            instructionSetFlags.AddInstructionSet(InstructionSet_AES_V512);
+            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ_V256);
+            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ_V512);
+        }
+
+        if (JitConfig.EnableWAITPKG() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_WAITPKG);
+        }
+
+        if (JitConfig.EnableX86Serialize() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_X86Serialize);
+        }
+#elif defined(TARGET_RISCV64)
+        instructionSetFlags.AddInstructionSet(InstructionSet_RiscV64Base);
 
         if (JitConfig.EnableRiscV64Zba() != 0)
         {

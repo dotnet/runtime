@@ -28,7 +28,6 @@ static int64_t getCycleCount() { LIMITED_METHOD_CONTRACT; return(0); }
 // state change made by the call to BeginForbidGC.
 DEBUG_NOINLINE ForbidGC::ForbidGC(const char *szFile, int lineNum)
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
@@ -42,8 +41,6 @@ DEBUG_NOINLINE ForbidGC::ForbidGC(const char *szFile, int lineNum)
 // state change made by the call to BeginForbidGC.
 DEBUG_NOINLINE ForbidGC::~ForbidGC()
 {
-    SCAN_SCOPE_END;
-
     // IF EH happens, this is still called, in which case
     // we should not bother
 
