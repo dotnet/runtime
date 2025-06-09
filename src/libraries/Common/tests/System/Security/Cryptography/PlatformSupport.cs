@@ -129,5 +129,17 @@ namespace Test.Cryptography
 
         private static bool? s_isVbsAvailable;
         internal static bool IsVbsAvailable => s_isVbsAvailable ??= CheckIfVbsAvailable();
+
+        internal static bool IsPqcMLKemX509Supported
+        {
+            get
+            {
+#if NETFRAMEWORK
+                return false;
+#else
+                return MLKem.IsSupported && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#endif
+            }
+        }
     }
 }
