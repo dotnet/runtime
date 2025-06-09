@@ -133,6 +133,33 @@ public struct TestStruct3d
     public double c;
 }
 
+class DummyClass
+{
+    public int field;
+    public DummyClass(int f)
+    {
+        field = f;
+    }
+}
+
+struct DummyStruct
+{
+    public int field;
+    public DummyStruct(int f)
+    {
+        field = f;
+    }
+}
+
+struct DummyStructRef
+{
+    public DummyClass field;
+    public DummyStructRef(DummyClass f)
+    {
+        field = f;
+    }
+}
+
 public class InterpreterTest
 {
     static void TestCallingConvention0(int a, float b, int c, double d, int e, double f)
@@ -1471,6 +1498,15 @@ public class InterpreterTest
         if (!ArrayDouble(1, 1)) return false;
         if (!ArrayDouble(32, 32)) return false;
 
+        // ref and value types
+        if (!TestObjectArray()) return false;
+        if (!TestStructArray()) return false;
+        if (!TestStructRefArray()) return false;
+        if (!ArrayJagged(1)) return false;
+        if (!ArrayMD1()) return false;
+        if (!ArrayObj(1)) return false;
+        if (!ArrayStruct(1)) return false;
+
         return true;
     }
 
@@ -1652,6 +1688,56 @@ public class InterpreterTest
             return false;
 
         return true;
+    }
+
+    public unsafe static bool TestObjectArray()
+    {
+        DummyClass[] array = new DummyClass[10];
+        array[0] = new DummyClass(42);
+        return array[0].field == 42;
+    }
+
+    public unsafe static bool TestStructArray()
+    {
+        DummyStruct[] array = new DummyStruct[10];
+        array[0] = new DummyStruct(42);
+        return array[0].field == 42;
+    }
+
+    public unsafe static bool TestStructRefArray()
+    {
+        DummyStructRef[] array = new DummyStructRef[10];
+        DummyClass d = new DummyClass(42);
+        array[0] = new DummyStructRef(d);
+        return array[0].field.field == 42;
+    }
+
+    public static bool ArrayJagged(int i)
+    {
+        int[][] a = new int[2][];
+        a[0] = new int[2] { 0, 1 };
+        a[1] = new int[2] { 2, 3 };
+        return a[1][i] == 3;
+    }
+
+    public static bool ArrayMD1()
+    {
+        int[,] a = { { 1, 2 }, { 3, 4 } };
+        return true;
+    }
+
+    public static bool ArrayObj(int i)
+    {
+        DummyClass[] a = {new DummyClass(0), new DummyClass(1), new DummyClass(2), new DummyClass(3), new DummyClass(4),
+                    new DummyClass(5), new DummyClass(6), new DummyClass(7), new DummyClass(8), new DummyClass(9)};
+        return a[i].field == i;
+    }
+
+    public static bool ArrayStruct(int i)
+    {
+        DummyStruct[] a = {new DummyStruct(0), new DummyStruct(1), new DummyStruct(2), new DummyStruct(3), new DummyStruct(4),
+                    new DummyStruct(5), new DummyStruct(6), new DummyStruct(7), new DummyStruct(8), new DummyStruct(9)};
+        return a[i].field == i;
     }
 
     public static unsafe bool TestXxObj()
