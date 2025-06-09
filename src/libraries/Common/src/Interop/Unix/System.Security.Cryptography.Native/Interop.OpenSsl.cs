@@ -528,6 +528,8 @@ internal static partial class Interop
         {
             ushort[] rawAlgs = Interop.Ssl.GetDefaultSignatureAlgorithms();
 
+            // The mapping below is taken from STRINT_PAIR signature_tls13_scheme_list and other
+            // data structures in OpenSSL source code (apps/lib/s_cb.c file).
             static string ConvertAlg(ushort rawAlg) => rawAlg switch
             {
                 0x0201 => "rsa_pkcs1_sha1",
@@ -576,7 +578,7 @@ internal static partial class Interop
             return Array.ConvertAll(rawAlgs, ConvertAlg);
         }
 
-        internal static unsafe void ConfigureSignatureAlgorithms(SafeSslHandle sslHandle, bool enablePss, bool enablePkcs)
+        internal static unsafe void ConfigureSignatureAlgorithms(SafeSslHandle sslHandle, bool enablePss, bool enablePkcs1)
         {
             byte[] buffer = ArrayPool<byte>.Shared.Rent(512);
             try
@@ -586,17 +588,18 @@ internal static partial class Interop
                 foreach (string alg in s_defaultSigAlgs.Value)
                 {
                     // includes both rsa_pss_pss_* and rsa_pss_rsae_*
-                    if (alg.StartsWith("rsa_pss_") && !enablePss)
+                    if (alg.StartsWith("rsa_pss_", StringComparison.Ordinal) && !enablePss)
                     {
                         continue;
                     }
 
-                    if (alg.StartsWith("rsa_pkcs1_") && !enablePkcs)
+                    if (alg.StartsWith("rsa_pkcs1_", StringComparison.Ordinal) && !enablePkcs1)
                     {
                         continue;
                     }
 
-                    EnsureSize(ref buffer, index + alg.Length + 1);
+                    // Ensure we have enough space for the algorithm name, separator and null terminator.
+                    EnsureSize(ref buffer, index + alg.Length + 2);
 
                     if (index > 0)
                     {
@@ -632,9 +635,12 @@ internal static partial class Interop
             {
                 if (buffer.Length < size)
                 {
-                    byte[] oldBuffer = buffer;
-                    Array.Resize(ref buffer, buffer.Length * 2);
+                    // there are a few dozen algorithms total in existence, so we don't expect the buffer to grow too large.
+                    Debug.Assert(size < 10 * 1024, "The buffer should not grow too large.");
 
+                    byte[] oldBuffer = buffer;
+                    buffer = ArrayPool<byte>.Shared.Rent(buffer.Length * 2);
+                    oldBuffer.AsSpan().CopyTo(buffer);
                     ArrayPool<byte>.Shared.Return(oldBuffer);
                 }
             }

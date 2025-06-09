@@ -1246,6 +1246,8 @@ int32_t CryptoNative_GetDefaultSignatureAlgorithms(uint16_t* buffer, int32_t* co
             {
                 if (i >= *count)
                 {
+                    // this should not happen, but just in case
+                    ret = -1;
                     break;
                 }
 

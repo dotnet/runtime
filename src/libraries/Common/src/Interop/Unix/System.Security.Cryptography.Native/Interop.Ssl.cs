@@ -84,13 +84,15 @@ internal static partial class Interop
         internal static partial int SslRead(SafeSslHandle ssl, ref byte buf, int num, out SslErrorCode error);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetDefaultSignatureAlgorithms")]
-        private static unsafe partial void GetDefaultSignatureAlgorithms(Span<ushort> algorithms, ref int algorithmCount);
+        private static unsafe partial int GetDefaultSignatureAlgorithms(Span<ushort> algorithms, ref int algorithmCount);
 
         internal static ushort[] GetDefaultSignatureAlgorithms()
         {
+            // 256 algorithms should be more than enough for any use case.
             Span<ushort> algorithms = stackalloc ushort[256];
             int algorithmCount = algorithms.Length;
-            GetDefaultSignatureAlgorithms(algorithms, ref algorithmCount);
+            int res = GetDefaultSignatureAlgorithms(algorithms, ref algorithmCount);
+            Debug.Assert(res == 0, "Expected GetDefaultSignatureAlgorithms to return 0 on success");
             return algorithms.Slice(0, algorithmCount).ToArray();
         }
 
