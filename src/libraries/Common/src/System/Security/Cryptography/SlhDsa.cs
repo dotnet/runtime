@@ -1162,7 +1162,7 @@ namespace System.Security.Cryptography
         ///   Generates a new SLH-DSA key for the specified algorithm.
         /// </summary>
         /// <param name="algorithm">
-        ///   An algorithm identifying what kind of ML-DSA key to generate.
+        ///   An algorithm identifying what kind of SLH-DSA key to generate.
         /// </param>
         /// <returns>
         ///   The generated object.
