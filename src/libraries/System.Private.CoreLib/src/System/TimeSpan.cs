@@ -895,7 +895,7 @@ namespace System
 
             static void ThrowOverflowException_TimeSpanTooLong(TimeSpan t1, TimeSpan t2)
             {
-                throw new OverflowException(t1.ToString() + " " + t2.ToString());
+                throw new OverflowException(t1.Ticks.ToString("x") + " " + t2.Ticks.ToString("x"));
             }
         }
 
