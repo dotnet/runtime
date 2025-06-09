@@ -1688,14 +1688,13 @@ public:
     // corresponding instantiation of the target of a call.
     MethodDesc *ResolveGenericVirtualMethod(OBJECTREF *orThis);
 
-#if defined(TARGET_X86) || defined(FEATURE_COMINTEROP)
+#if defined(TARGET_X86) && defined(HAVE_GCCOVER)
 public:
-    // This method is used to restore ReturnKind using the class handle.
-    // It does not support multi-reg return case with pointers. Use this method only when you can't hit
-    // this case (like CLRToCOMMethodFrame::GcScanRoots) or when you can tolerate RT_Illegal return.
-    // Also, for a single field struct return case the function can't distinguish RT_Object and RT_ByRef.
-    ReturnKind GetReturnKind(INDEBUG(bool supportStringConstructors = false));
-#endif // TARGET_X86 || FEATURE_COMINTEROP
+    // This method is used to restore ReturnKind using the class handle. It will return
+    // RT_Illegal for rare cases like byref-like types. Use this method only when you can tolerate
+    // RT_Illegal return.
+    ReturnKind GetReturnKind();
+#endif // TARGET_X86 && HAVE_GCCOVER
 
 public:
     // In general you don't want to call GetCallTarget - you want to

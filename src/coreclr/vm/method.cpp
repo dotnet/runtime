@@ -1234,9 +1234,9 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
 #endif // !DACCESS_COMPILE
 }
 
-#if defined(TARGET_X86) || defined(FEATURE_COMINTEROP)
+#if defined(TARGET_X86) && defined(HAVE_GCCOVER)
 //*******************************************************************************
-ReturnKind MethodDesc::GetReturnKind(INDEBUG(bool supportStringConstructors))
+ReturnKind MethodDesc::GetReturnKind()
 {
     CONTRACTL
     {
@@ -1263,7 +1263,6 @@ ReturnKind MethodDesc::GetReturnKind(INDEBUG(bool supportStringConstructors))
 
     switch (et)
     {
-#ifdef TARGET_X86
         case ELEMENT_TYPE_R4:
         case ELEMENT_TYPE_R8:
             // Figuring out whether the function returns FP or not is hard to do
@@ -1271,7 +1270,6 @@ ReturnKind MethodDesc::GetReturnKind(INDEBUG(bool supportStringConstructors))
             // piece of information is needed in order to perform the right save &
             // restore of the return value around the call to OnHijackScalarWorker.
             return RT_Float;
-#endif
 
         case ELEMENT_TYPE_STRING:
         case ELEMENT_TYPE_CLASS:
@@ -1281,7 +1279,6 @@ ReturnKind MethodDesc::GetReturnKind(INDEBUG(bool supportStringConstructors))
         case ELEMENT_TYPE_VAR:
             return RT_Object;
 
-#ifdef ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
         case ELEMENT_TYPE_VALUETYPE:
             // We return value types in registers if they fit in ENREGISTERED_RETURNTYPE_MAXSIZE
             // These valuetypes could contain gc refs.
@@ -1294,40 +1291,29 @@ ReturnKind MethodDesc::GetReturnKind(INDEBUG(bool supportStringConstructors))
                     if (!thValueType.IsTypeDesc())
                     {
                         MethodTable * pReturnTypeMT = thValueType.AsMethodTable();
-
-                        if (pReturnTypeMT->ContainsGCPointers() || pReturnTypeMT->IsByRefLike())
+                        if (pReturnTypeMT->ContainsGCPointers())
                         {
-                            if (pReturnTypeMT->GetNumInstanceFields() == 1)
-                            {
-                                _ASSERTE(pReturnTypeMT->GetNumInstanceFieldBytes() == sizeof(void*));
-                                // Note: we can't distinguish RT_Object from RT_ByRef, the caller has to tolerate that.
-                                return RT_Object;
-                            }
-                            else
-                            {
-                                // Multi reg return case with pointers, can't restore the actual kind.
-                                return RT_Illegal;
-                            }
+                            _ASSERTE(pReturnTypeMT->GetNumInstanceFieldBytes() == sizeof(void*));
+                            return RT_Object;
+                        }
+
+                        if (pReturnTypeMT->IsByRefLike())
+                        {
+                            // This would require going through all fields
+                            return RT_Illegal;
                         }
                     }
                 }
             }
             break;
-#endif // ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 
-#ifdef _DEBUG
         case ELEMENT_TYPE_VOID:
-            // String constructors return objects.  We should not have any ecall string
-            // constructors, except when called from gc coverage codes (which is only
-            // done under debug).  We will therefore optimize the retail version of this
-            // method to not support string constructors.
+            // String constructors return objects..
             if (IsCtor() && GetMethodTable()->HasComponentSize())
             {
-                _ASSERTE(supportStringConstructors);
                 return RT_Object;
             }
             break;
-#endif // _DEBUG
 
         case ELEMENT_TYPE_BYREF:
             return RT_ByRef;
@@ -1338,7 +1324,7 @@ ReturnKind MethodDesc::GetReturnKind(INDEBUG(bool supportStringConstructors))
 
     return RT_Scalar;
 }
-#endif // TARGET_X86 || FEATURE_COMINTEROP
+#endif // TARGET_X86 && HAVE_GCCOVER
 
 #ifdef FEATURE_COMINTEROP
 

@@ -1724,22 +1724,32 @@ void CLRToCOMMethodFrame::GcScanRoots_Impl(promote_func* fn, ScanContext* sc)
     FramedMethodFrame::GcScanRoots_Impl(fn, sc);
     PromoteCallerStack(fn, sc);
 
-
+    //
     // Promote the returned object
-    MethodDesc* methodDesc = GetFunction();
-    ReturnKind returnKind = methodDesc->GetReturnKind();
-    if (returnKind == RT_Object)
+    //
+
+    MetaSig sig(GetFunction());
+
+    TypeHandle thValueType;
+    CorElementType et = sig.GetReturnTypeNormalized(&thValueType);
+    if (CorTypeInfo::IsObjRef(et))
     {
         (*fn)(GetReturnObjectPtr(), sc, CHECK_APP_DOMAIN);
     }
-    else if (returnKind == RT_ByRef)
+    else if (CorTypeInfo::IsByRef(et))
     {
         PromoteCarefully(fn, GetReturnObjectPtr(), sc, GC_CALL_INTERIOR | CHECK_APP_DOMAIN);
     }
-    else
+    else if (et == ELEMENT_TYPE_VALUETYPE)
     {
-        _ASSERTE_MSG(!IsStructReturnKind(returnKind), "NYI: We can't promote multiregs struct returns");
-        _ASSERTE_MSG(IsScalarReturnKind(returnKind), "Non-scalar types must be promoted.");
+        ArgIterator argit(&sig);
+        if (!argit.HasRetBuffArg())
+        {
+#ifdef TARGET_UNIX
+#error Non-Windows ABIs must be special cased
+#endif
+            ReportPointersFromValueType(fn, sc, thValueType.AsMethodTable(), GetReturnObjectPtr());
+        }
     }
 }
 #endif // FEATURE_COMINTEROP
