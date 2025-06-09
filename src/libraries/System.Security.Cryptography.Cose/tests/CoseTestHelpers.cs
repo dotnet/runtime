@@ -41,19 +41,6 @@ namespace System.Security.Cryptography.Cose.Tests
             RS512 = -259
         }
 
-        public enum CoseAlgorithm
-        {
-            ES256 = -7,
-            ES384 = -35,
-            ES512 = -36,
-            PS256 = -37,
-            PS384 = -38,
-            PS512 = -39,
-            RS256 = -257,
-            RS384 = -258,
-            RS512 = -259
-        }
-
         public enum ContentTestCase
         {
             Empty,
@@ -415,6 +402,12 @@ namespace System.Security.Cryptography.Cose.Tests
 
             return RSA.Create(rsaParameters);
         }
+
+        internal static bool AlgorithmNeedsHashAlgorithm(CoseAlgorithm algorithm)
+            => algorithm is
+                CoseAlgorithm.ES256 or CoseAlgorithm.ES384 or CoseAlgorithm.ES512 or
+                CoseAlgorithm.PS256 or CoseAlgorithm.PS384 or CoseAlgorithm.PS512 or
+                CoseAlgorithm.RS256 or CoseAlgorithm.RS384 or CoseAlgorithm.RS512;
 
         internal static (T Key, HashAlgorithmName Hash, RSASignaturePadding? Padding) GetKeyHashPaddingTriplet<T>(CoseAlgorithm algorithm, bool useNonPrivateKey = false)
         {
