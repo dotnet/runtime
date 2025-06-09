@@ -462,7 +462,7 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
         {
             if (interestingTest)
             {
-                builder.AppendLine("{ try {");
+                builder.AppendLine("for (int abcd = 0; abcd < 100; abcd++) { try {");
             }
 
             builder.AppendLine($"System.TimeSpan testStart = stopwatch.Elapsed;");
