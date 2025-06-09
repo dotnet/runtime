@@ -314,6 +314,12 @@
   <data name="net_allocate_ssl_context_failed" xml:space="preserve">
     <value>Failed to allocate SSL/TLS context, OpenSSL error - {0}.</value>
   </data>
+  <data name="net_ssl_get_default_sigalgs_failed" xml:space="preserve">
+    <value>Failed to get default signature algorithms.</value>
+  </data>
+  <data name="net_ssl_set_sigalgs_failed" xml:space="preserve">
+    <value>Failed to set {0} signature algorithms.</value>
+  </data>
   <data name="net_generic_operation_failed" xml:space="preserve">
     <value>Operation failed with error - {0}.</value>
   </data>

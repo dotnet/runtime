@@ -616,13 +616,13 @@ internal static partial class Interop
                     ret = Interop.Ssl.SslSetSigalgs(sslHandle, pBuffer);
                     if (ret != 1)
                     {
-                        throw new InvalidOperationException("Failed to set signature algorithms.");
+                        throw CreateSslException(SR.Format(SR.net_ssl_set_sigalgs_failed, "server"));
                     }
 
                     ret = Interop.Ssl.SslSetClientSigalgs(sslHandle, pBuffer);
                     if (ret != 1)
                     {
-                        throw new InvalidOperationException("Failed to set client signature algorithms.");
+                        throw CreateSslException(SR.Format(SR.net_ssl_set_sigalgs_failed, "client"));
                     }
                 }
             }

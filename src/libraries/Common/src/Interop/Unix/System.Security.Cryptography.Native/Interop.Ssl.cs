@@ -92,7 +92,12 @@ internal static partial class Interop
             Span<ushort> algorithms = stackalloc ushort[256];
             int algorithmCount = algorithms.Length;
             int res = GetDefaultSignatureAlgorithms(algorithms, ref algorithmCount);
-            Debug.Assert(res == 0, "Expected GetDefaultSignatureAlgorithms to return 0 on success");
+
+            if (res != 0 || algorithmCount > algorithms.Length)
+            {
+                throw Interop.OpenSsl.CreateSslException(SR.net_ssl_get_default_sigalgs_failed);
+            }
+
             return algorithms.Slice(0, algorithmCount).ToArray();
         }
 
