@@ -46,7 +46,7 @@ namespace System.Net.Http
         internal static bool DefaultCertificateRevocationCheck { get; } =
             AppContextSwitchHelper.GetBooleanConfig(
                 "System.Net.Security.NoRevocationCheckByDefault",
-                "DOTNET_SYSTEM_NET_SECURITY_NOREVOCATIONCHECKBYDEFAULT");
+                "DOTNET_SYSTEM_NET_SECURITY_NOREVOCATIONCHECKBYDEFAULT") ? false : true;
 
         internal static bool CertificateCachingAppContextSwitchEnabled { get; } = AppContext.TryGetSwitch("System.Net.Http.UseWinHttpCertificateCaching", out bool enabled) && enabled;
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
