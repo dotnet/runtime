@@ -58,6 +58,10 @@
 #include "pgo.h"
 #endif
 
+#ifdef FEATURE_INTERPRETER
+#include "callstubgenerator.h"
+#endif
+
 #include "tailcallhelp.h"
 #include "patchpointinfo.h"
 
@@ -11259,6 +11263,32 @@ void CEEJitInfo::SetDebugInfo(PTR_BYTE pDebugInfo)
 }
 
 #ifdef FEATURE_INTERPRETER
+
+LPVOID CInterpreterJitInfo::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig,
+                                            void **ppIndirection)
+{
+    void* result = NULL;
+    JIT_TO_EE_TRANSITION();
+
+    if (ppIndirection != NULL)
+    {
+        // The JIT will not use the indirection for this cookie, so we can set it to NULL
+        *ppIndirection = NULL;
+    }
+    Module* module = GetModule(szMetaSig->scope);
+
+    Instantiation classInst = Instantiation((TypeHandle*) szMetaSig->sigInst.classInst, szMetaSig->sigInst.classInstCount);
+    Instantiation methodInst = Instantiation((TypeHandle*) szMetaSig->sigInst.methInst, szMetaSig->sigInst.methInstCount);
+    SigTypeContext typeContext = SigTypeContext(classInst, methodInst);
+
+    MetaSig sig(szMetaSig->pSig, szMetaSig->cbSig, module, &typeContext);
+    CallStubGenerator callStubGenerator;
+    result = callStubGenerator.GenerateCallStubForSig(sig);
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
 
 void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
 {

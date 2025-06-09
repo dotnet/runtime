@@ -558,6 +558,142 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     _ASSERTE(pMD != NULL);
 
     MetaSig sig(pMD);
+    // Allocate space for the routines. The size of the array is conservatively set to twice the number of arguments
+    // plus one slot for the target pointer and reallocated to the real size at the end.
+    PCODE *pRoutines = (PCODE*)alloca(ComputeTempStorageSize(sig));
+
+    ComputeCallStub(sig, pRoutines);
+
+    LoaderAllocator *pLoaderAllocator = pMD->GetLoaderAllocator();
+    S_SIZE_T finalStubSize(sizeof(CallStubHeader) + m_routineIndex * sizeof(PCODE));
+    void *pHeaderStorage = pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(finalStubSize));
+
+    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), m_pInvokeFunction);
+
+    return pHeader;
+}
+
+struct CachedCallStubKey
+{
+    CachedCallStubKey(int32_t hashCode, int numRoutines, PCODE *pRoutines, int totalStackSize, CallStubHeader::InvokeFunctionPtr pInvokeFunction)
+     : HashCode(hashCode), NumRoutines(numRoutines), TotalStackSize(totalStackSize), Invoke(pInvokeFunction), Routines(pRoutines)
+    {
+    }
+
+    bool operator==(const CachedCallStubKey& other) const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        if (HashCode != other.HashCode || NumRoutines != other.NumRoutines || TotalStackSize != other.TotalStackSize || Invoke != other.Invoke)
+            return false;
+
+        for (int i = 0; i < NumRoutines; i++)
+        {
+            if (Routines[i] != other.Routines[i])
+                return false;
+        }
+        return true;
+    }
+
+    const int32_t HashCode = 0;
+    const int NumRoutines = 0;
+    const int TotalStackSize = 0;
+    const CallStubHeader::InvokeFunctionPtr Invoke = NULL; // Pointer to the invoke function
+    const PCODE *Routines;
+};
+
+struct CachedCallStub
+{
+    CachedCallStub(int32_t hashCode, int numRoutines, PCODE *pRoutines, int totalStackSize, CallStubHeader::InvokeFunctionPtr pInvokeFunction) :
+        HashCode(hashCode),
+        Header(numRoutines, pRoutines, totalStackSize, pInvokeFunction)
+    {
+    }
+
+    int32_t HashCode;
+    CallStubHeader Header;
+
+    CachedCallStubKey GetKey()
+    {
+        return CachedCallStubKey(
+            HashCode,
+            Header.NumRoutines,
+            &Header.Routines[0],
+            Header.TotalStackSize,
+            Header.Invoke);
+    }
+
+    static COUNT_T Hash(const CachedCallStubKey& key)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return key.HashCode;
+    }
+};
+
+static CrstStatic s_callStubCrst;
+
+typedef  PtrSHashTraits<CachedCallStub, CachedCallStubKey> CallStubCacheTraits;
+
+typedef SHash<CallStubCacheTraits> CallStubCacheHash;
+static CallStubCacheHash* s_callStubCache;
+
+void InitCallStubGenerator()
+{
+    STANDARD_VM_CONTRACT;
+
+    s_callStubCrst.Init(CrstCallStubCache);
+    s_callStubCache = new CallStubCacheHash;
+}
+
+CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
+{
+    STANDARD_VM_CONTRACT;
+
+    // Allocate space for the routines. The size of the array is conservatively set to twice the number of arguments
+    // plus one slot for the target pointer and reallocated to the real size at the end.
+    PCODE *pRoutines = (PCODE*)alloca(ComputeTempStorageSize(sig));
+
+    ComputeCallStub(sig, pRoutines);
+
+    xxHash hashState;
+    for (int i = 0; i < m_routineIndex; i++)
+    {
+        hashState.AddPointer((void*)pRoutines[i]);
+    }
+    hashState.Add(m_totalStackSize);
+    hashState.AddPointer(m_pInvokeFunction);
+
+    CachedCallStubKey cachedHeaderKey(
+        hashState.ToHashCode(),
+        m_routineIndex,
+        pRoutines,
+        ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE),
+        m_pInvokeFunction);
+
+    CrstHolder lockHolder(&s_callStubCrst);
+    CachedCallStub *pCachedHeader = s_callStubCache->Lookup(cachedHeaderKey);
+    if (pCachedHeader != NULL)
+    {
+        // The stub is already cached, return the cached header
+        return &pCachedHeader->Header;
+    }
+    else
+    {
+        AllocMemTracker amTracker;
+        // The stub is not cached, create a new header and add it to the cache
+        // We only need to allocate the actual pRoutines array, and then we can just use the cachedHeader we already constructed
+        void* pHeaderStorage = amTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(CachedCallStub) + m_routineIndex * sizeof(PCODE))));
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), m_pInvokeFunction);
+        s_callStubCache->Add(pHeader);
+        amTracker.SuppressRelease();
+
+        _ASSERTE(s_callStubCache->Lookup(cachedHeaderKey) == pHeader);
+        return &pHeader->Header;
+    }
+};
+
+void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
+{
     ArgIterator argIt(&sig);
 
     m_r1 = NoRange; // indicates that there is no active range of general purpose registers
@@ -589,10 +725,6 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
             m_r1 = 0;
         }
     }
-
-    // Allocate space for the routines. The size of the array is conservatively set to twice the number of arguments
-    // plus one slot for the target pointer and reallocated to the real size at the end.
-    PCODE *pRoutines = (PCODE*)alloca(sizeof(CallStubHeader) + ((numArgs + 1) * 2 + 1) * sizeof(PCODE));
 
     if (argIt.HasParamType())
     {
@@ -687,11 +819,11 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
         pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
     }
 
-    CallStubHeader::InvokeFunctionPtr pInvokeFunction = NULL;
+    m_pInvokeFunction = NULL;
 
     if (argIt.HasRetBuffArg())
     {
-        pInvokeFunction = CallJittedMethodRetBuff;
+        m_pInvokeFunction = CallJittedMethodRetBuff;
     }
     else
     {
@@ -721,14 +853,14 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
             case ELEMENT_TYPE_ARRAY:
             case ELEMENT_TYPE_SZARRAY:
             case ELEMENT_TYPE_FNPTR:
-                pInvokeFunction = CallJittedMethodRetI8;
+                m_pInvokeFunction = CallJittedMethodRetI8;
                 break;
             case ELEMENT_TYPE_R4:
             case ELEMENT_TYPE_R8:
-                pInvokeFunction = CallJittedMethodRetDouble;
+                m_pInvokeFunction = CallJittedMethodRetDouble;
                 break;
             case ELEMENT_TYPE_VOID:
-                pInvokeFunction = CallJittedMethodRetVoid;
+                m_pInvokeFunction = CallJittedMethodRetVoid;
                 break;
             case ELEMENT_TYPE_VALUETYPE:
 #ifdef TARGET_AMD64
@@ -736,12 +868,12 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
                 if (thReturnValueType.AsMethodTable()->IsIntrinsicType())
                 {
                     // E.g. Vector2
-                    pInvokeFunction = CallJittedMethodRetDouble;
+                    m_pInvokeFunction = CallJittedMethodRetDouble;
                 }
                 else
                 {
                     // POD structs smaller than 64 bits are returned in rax
-                    pInvokeFunction = CallJittedMethodRetI8;
+                    m_pInvokeFunction = CallJittedMethodRetI8;
                 }
 #else // TARGET_WINDOWS
                 if (thReturnValueType.AsMethodTable()->IsRegPassedStruct())
@@ -749,11 +881,11 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
                     UINT fpReturnSize = argIt.GetFPReturnSize();
                     if (fpReturnSize == 0)
                     {
-                        pInvokeFunction = CallJittedMethodRetI8;
+                        m_pInvokeFunction = CallJittedMethodRetI8;
                     }
                     else if (fpReturnSize == 8)
                     {
-                        pInvokeFunction = CallJittedMethodRetDouble;
+                        m_pInvokeFunction = CallJittedMethodRetDouble;
                     }
                     else
                     {
@@ -764,16 +896,16 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
                         switch (fpReturnSize & 0x3)
                         {
                             case 0:
-                                pInvokeFunction = CallJittedMethodRetI8I8;
+                                m_pInvokeFunction = CallJittedMethodRetI8I8;
                                 break;
                             case 1:
-                                pInvokeFunction = CallJittedMethodRetDoubleI8;
+                                m_pInvokeFunction = CallJittedMethodRetDoubleI8;
                                 break;
                             case 2:
-                                pInvokeFunction = CallJittedMethodRetI8Double;
+                                m_pInvokeFunction = CallJittedMethodRetI8Double;
                                 break;
                             case 3:
-                                pInvokeFunction = CallJittedMethodRetDoubleDouble;
+                                m_pInvokeFunction = CallJittedMethodRetDoubleDouble;
                                 break;
                         }
                     }
@@ -793,16 +925,16 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
                             switch (thReturnValueType.GetSize())
                             {
                                 case 4:
-                                    pInvokeFunction = CallJittedMethodRetFloat;
+                                    m_pInvokeFunction = CallJittedMethodRetFloat;
                                     break;
                                 case 8:
-                                    pInvokeFunction = CallJittedMethodRet2Float;
+                                    m_pInvokeFunction = CallJittedMethodRet2Float;
                                     break;
                                 case 12:
-                                    pInvokeFunction = CallJittedMethodRet3Float;
+                                    m_pInvokeFunction = CallJittedMethodRet3Float;
                                     break;
                                 case 16:
-                                    pInvokeFunction = CallJittedMethodRet4Float;
+                                    m_pInvokeFunction = CallJittedMethodRet4Float;
                                     break;
                                 default:
                                     _ASSERTE(!"Should not get here");
@@ -813,16 +945,16 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
                             switch (thReturnValueType.GetSize())
                             {
                                 case 8:
-                                    pInvokeFunction = CallJittedMethodRetDouble;
+                                    m_pInvokeFunction = CallJittedMethodRetDouble;
                                     break;
                                 case 16:
-                                    pInvokeFunction = CallJittedMethodRet2Double;
+                                    m_pInvokeFunction = CallJittedMethodRet2Double;
                                     break;
                                 case 24:
-                                    pInvokeFunction = CallJittedMethodRet3Double;
+                                    m_pInvokeFunction = CallJittedMethodRet3Double;
                                     break;
                                 case 32:
-                                    pInvokeFunction = CallJittedMethodRet4Double;
+                                    m_pInvokeFunction = CallJittedMethodRet4Double;
                                     break;
                                 default:
                                     _ASSERTE(!"Should not get here");
@@ -842,10 +974,10 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
                         case 2:
                         case 4:
                         case 8:
-                            pInvokeFunction = CallJittedMethodRetI8;
+                            m_pInvokeFunction = CallJittedMethodRetI8;
                             break;
                         case 16:
-                            pInvokeFunction = CallJittedMethodRet2I8;
+                            m_pInvokeFunction = CallJittedMethodRet2I8;
                             break;
                         default:
                             _ASSERTE(!"The return types that are not HFA should be <= 16 bytes in size");
@@ -863,14 +995,6 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     }
 
     m_routineIndex++; // Reserve one extra slot for the target method pointer
-
-    LoaderAllocator *pLoaderAllocator = pMD->GetLoaderAllocator();
-    S_SIZE_T finalStubSize(sizeof(CallStubHeader) + m_routineIndex * sizeof(PCODE));
-    void *pHeaderStorage = pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(finalStubSize));
-
-    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), pInvokeFunction);
-
-    return pHeader;
 }
 
 // Process the argument described by argLocDesc. This function is called for each argument in the method signature.

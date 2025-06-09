@@ -455,6 +455,14 @@ public class InterpreterTest
         if (!TestSharedGenerics())
             Environment.FailFast(null);
 
+        Console.WriteLine("TestDelegate");
+        if (!TestDelegate())
+            Environment.FailFast(null);
+
+        Console.WriteLine("TestCalli");
+        if (!TestCalli())
+            Environment.FailFast(null);
+
         System.GC.Collect();
 
         Console.WriteLine("All tests passed successfully!");
@@ -615,7 +623,9 @@ public class InterpreterTest
                 x *= 10;
                 x += 3;
             }
-        } catch (Exception) {
+        }
+        catch (Exception)
+        {
             x *= 10;
             x += 4;
         }
@@ -734,7 +744,7 @@ public class InterpreterTest
             long ret = 1;
             for (int i = 0; i < n; i++)
                 ret *= nr;
-            bool dummy=  (int)ret == 100;
+            bool dummy = (int)ret == 100;
 
             x *= 10;
             x += 3;
@@ -793,7 +803,9 @@ public class InterpreterTest
                 x *= 10;
                 x += 5;
             }
-        } catch (Exception) {
+        }
+        catch (Exception)
+        {
             x *= 10;
             x += 6;
         }
@@ -1051,16 +1063,16 @@ public class InterpreterTest
             case 2:
                 return a * b;
             default:
-               return 42;
+                return 42;
         }
     }
 
     public static void TestSwitch()
     {
-        int n0 = SwitchOp (20, 6, 0); // 26
-        int n1 = SwitchOp (20, 6, 1); // 14
-        int n2 = SwitchOp (20, 6, 2); // 120
-        int n3 = SwitchOp (20, 6, 3); // 42
+        int n0 = SwitchOp(20, 6, 0); // 26
+        int n1 = SwitchOp(20, 6, 1); // 14
+        int n2 = SwitchOp(20, 6, 2); // 120
+        int n3 = SwitchOp(20, 6, 3); // 42
 
         if ((n0 + n1 + n2 + n3) != 202)
             Environment.FailFast(null);
@@ -1391,11 +1403,12 @@ public class InterpreterTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    static object BoxedSubtraction (object lhs, object rhs) {
+    static object BoxedSubtraction(object lhs, object rhs)
+    {
         return (int)lhs - (int)rhs;
     }
 
-  public static bool TestArray()
+    public static bool TestArray()
     {
         // sbyte
         if (!ArraySByte(0, 0)) return false;
@@ -1701,7 +1714,114 @@ public class InterpreterTest
         // ldtoken int[,]
         // call System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray
         // The newobj currently fails because int[,].ctor isn't a real method, the interp needs to use getCallInfo to determine how to invoke it
-        int[,] a = {{1, 2}, {3, 4}};
+        int[,] a = { { 1, 2 }, { 3, 4 } };
         return a[0, 1] == 2;
+    }
+
+    private static int _fieldA;
+    private static int _fieldB;
+    private static int _fieldResult;
+    private static void MultiplyAandB()
+    {
+        _fieldResult = _fieldA * _fieldB;
+    }
+
+    private static Type _typeFromFill;
+
+    private static void Fill<T>()
+    {
+        _typeFromFill = typeof(T);
+    }
+
+    public static bool TestDelegate()
+    {
+        _fieldA = 3;
+        _fieldB = 1;
+        _fieldResult = 0;
+
+        // This tests delegate creation, ldftn, and invocation via the "Invoke" method
+        Action func = new Action(MultiplyAandB);
+
+        _fieldB = 4;
+        Console.WriteLine("CallingFunc first time");
+        func();
+        Console.WriteLine("Return CallingFunc first time");
+        if (_fieldResult != 12)
+        {
+            Console.WriteLine("Delegate test failed: expected 12, got " + _fieldResult);
+            return false;
+        }
+
+        _fieldB = 3;
+        Console.WriteLine("CallingFunc second time");
+        func();
+        Console.WriteLine("Return CallingFunc second time");
+        if (_fieldResult != 9)
+        {
+            Console.WriteLine("Delegate test failed: expected 9, got " + _fieldResult);
+            return false;
+        }
+        return true;
+    }
+
+    public unsafe static bool TestCalli()
+    {
+        delegate*<void> func = &MultiplyAandB;
+
+        _fieldA = 3;
+        _fieldB = 1;
+        _fieldResult = 0;
+
+        // This tests ldftn, and calli
+
+        _fieldB = 4;
+        Console.WriteLine("CallingFunc first time");
+        func();
+        Console.WriteLine("Return CallingFunc first time");
+        if (_fieldResult != 12)
+        {
+            Console.WriteLine("Calli test failed: expected 12, got " + _fieldResult);
+            return false;
+        }
+
+        _fieldB = 3;
+        Console.WriteLine("CallingFunc second time");
+        func();
+        Console.WriteLine("Return CallingFunc second time");
+        if (_fieldResult != 9)
+        {
+            Console.WriteLine("Calli test failed: expected 9, got " + _fieldResult);
+            return false;
+        }
+
+        GetCalliGeneric<int>()();
+        if (_typeFromFill != typeof(int))
+        {
+            Console.WriteLine("Calli generic test failed: expected int, got " + _typeFromFill);
+            return false;
+        }
+
+/*
+        TODO! This will pass once we support passing parameters to the invoked methods. The GetCallStub logic needs to handle the param arg
+        GetCalliGeneric<object>()();
+        if (_typeFromFill != typeof(object))
+        {
+            Console.WriteLine("Calli generic test failed: expected object, got " + _typeFromFill);
+            return false;
+        }
+
+        GetCalliGeneric<string>()();
+        if (_typeFromFill != typeof(string))
+        {
+            Console.WriteLine("Calli generic test failed: expected string, got " + _typeFromFill);
+            return false;
+        }
+*/
+        return true;
+    }
+
+    private static unsafe delegate*<void> GetCalliGeneric<T>()
+    {
+        return &Fill<T>;
     }
 }

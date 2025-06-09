@@ -44,6 +44,14 @@ struct CallStubHeader
         _ASSERTE(target != 0);
         Routines[NumRoutines - 1] = target;
     }
+
+    size_t GetSize()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        // The size of the CallStubHeader is the size of the header plus the size of the routines array.
+        return sizeof(CallStubHeader) + (NumRoutines * sizeof(PCODE));
+    }
 };
 
 // This class generates the call stub for a given method. It uses the calling convention of the target CPU to determine
@@ -67,11 +75,28 @@ class CallStubGenerator
     // The total stack size used for the arguments.
     int m_totalStackSize;
 
+    CallStubHeader::InvokeFunctionPtr m_pInvokeFunction = NULL;
+
     // Process the argument described by argLocDesc. This function is called for each argument in the method signature.
     void ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocDesc, PCODE *pRoutines);
 public:
     // Generate the call stub for the given method.
     CallStubHeader *GenerateCallStub(MethodDesc *pMD, AllocMemTracker *pamTracker);
+
+    CallStubHeader *GenerateCallStubForSig(MetaSig &sig);
+
+private:
+    static size_t ComputeTempStorageSize(const MetaSig& sig)
+    {
+        int numArgs = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0);
+
+        // The size of the temporary storage is the size of the CallStubHeader plus the size of the routines array.
+        // The size of the routines array is twice the number of arguments plus one slot for the target method pointer.
+        return sizeof(CallStubHeader) + ((numArgs + 1) * 2 + 1) * sizeof(PCODE);
+    }
+    void ComputeCallStub(MetaSig &sig, PCODE *pRoutines);
 };
+
+void InitCallStubGenerator();
 
 #endif // CALLSTUBGENERATOR_H
