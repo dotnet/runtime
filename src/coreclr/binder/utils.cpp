@@ -18,6 +18,7 @@
 #include "clr/fs/path.h"
 using namespace clr::fs;
 
+// Forward declaration - see src/vm/util.cpp
 BOOL RuntimeFileNotFound(HRESULT hr);
 
 namespace BINDER_SPACE
