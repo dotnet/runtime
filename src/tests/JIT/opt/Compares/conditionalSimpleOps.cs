@@ -136,6 +136,18 @@ public class ConditionalSimpleOpVariableTest
         Assert.Equal(expected, a);
     }
 
+    public static int globVar = 0;
+    [Theory]
+    [InlineData(11, 10)]
+    [InlineData(12, 11)]
+    [InlineData(45, 45)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void sub_var_globref(int a, int expected)
+    {
+        a = (a + globVar) < 42 ? a - 1 : a;
+        Assert.Equal(expected, a);
+    }
+
     [Theory]
     [InlineData(12, 13)]
     [InlineData(13, 12)]

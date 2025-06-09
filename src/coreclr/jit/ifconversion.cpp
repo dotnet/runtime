@@ -958,6 +958,7 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
                         if (isDecrement)
                             binOp->ChangeOper(GT_SUB);
 
+                        binOp->gtFlags |= (m_cond->gtFlags | lclVar->gtFlags) & GTF_ALL_EFFECT;
                         return binOp;
                     }
                 }
