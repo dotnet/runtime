@@ -37,8 +37,7 @@ jobs:
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
-      - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.322.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-amd64
+      - (Alpine.322.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-amd64
 
     # Linux musl arm64
     - ${{ if eq(parameters.platform, 'linux_musl_arm64') }}:
