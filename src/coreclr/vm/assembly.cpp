@@ -37,8 +37,6 @@
 
 #include "peimagelayout.inl"
 
-#include "metadataexports.h"
-
 // Define these macro's to do strict validation for jit lock and class init entry leaks.
 // This defines determine if the asserts that verify for these leaks are defined or not.
 // These asserts can sometimes go off even if no entries have been leaked so this defines

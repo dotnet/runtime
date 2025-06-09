@@ -26,7 +26,6 @@
 // @dbgtodo shim: process has some private hooks into the shim.
 #include "shimpriv.h"
 
-#include "metadataexports.h"
 #include "readonlydatatargetfacade.h"
 #include "metahost.h"
 

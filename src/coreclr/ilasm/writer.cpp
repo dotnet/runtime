@@ -11,8 +11,6 @@
 #include "ceefilegenwriter.h"
 #include "sha256.h"
 
-#include "metadataexports.h"
-
 #ifndef _MSC_VER
 //cloned definition from ntimage.h that is removed for non MSVC builds
 typedef VOID
