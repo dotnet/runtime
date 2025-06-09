@@ -1070,7 +1070,11 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr GetExceptionPointers() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetFunctionPointerForDelegate<TDelegate> overload instead.")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("wasi")]
         public static System.IntPtr GetFunctionPointerForDelegate(System.Delegate d) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("wasi")]
         public static System.IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d) where TDelegate : notnull { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles("Windows only assigns HINSTANCE to assemblies loaded from disk. This API will return -1 for modules without a file on disk.")]
         public static System.IntPtr GetHINSTANCE(System.Reflection.Module m) { throw null; }
