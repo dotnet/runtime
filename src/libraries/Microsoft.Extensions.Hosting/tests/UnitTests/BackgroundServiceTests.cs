@@ -31,7 +31,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             var ct = new CancellationToken(true);
             var service = new WaitForCancelledTokenService();
 
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.StartAsync(ct));
+            await service.StartAsync(ct);
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.ExecuteTask);
         }
 
         [Fact]

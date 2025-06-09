@@ -39,11 +39,6 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>A <see cref="Task"/> that represents the asynchronous Start operation.</returns>
         public virtual Task StartAsync(CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-
             // Create linked token to allow cancelling executing task from provided token
             _stoppingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
