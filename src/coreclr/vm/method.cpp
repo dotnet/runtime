@@ -1324,6 +1324,15 @@ ReturnKind MethodDesc::ParseReturnKindFromSig(INDEBUG(bool supportStringConstruc
                                     regKinds[i] = RT_Scalar;
                                 }
                             }
+
+                            if (eeClass->GetEightByteClassification(0) == SystemVClassificationTypeSSE)
+                            {
+                                // Skip over SSE types since they do not consume integer registers.
+                                // An obj/byref in the 2nd eight bytes will be in the first integer register.
+                                regKinds[0] = regKinds[1];
+                                regKinds[1] = RT_Scalar;
+                            }
+
                             ReturnKind structReturnKind = GetStructReturnKind(regKinds[0], regKinds[1]);
                             return structReturnKind;
                         }
