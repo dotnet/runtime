@@ -160,7 +160,9 @@ namespace System.Data.OleDb
 
                 // since the delegate lifetime is longer than the original instance used to create it
                 // we double check before each usage to verify the delegates function pointer
+#pragma warning disable CA1416 // This call site is reachable on all platforms.
                 if ((null == Initialize) || (method != Marshal.GetFunctionPointerForDelegate(Initialize)))
+#pragma warning restore CA1416
                 {
                     Initialize = (UnsafeNativeMethods.IDBInitializeInitialize)Marshal.GetDelegateForFunctionPointer(method, typeof(UnsafeNativeMethods.IDBInitializeInitialize));
                     constr.DangerousIDBInitializeInitialize = Initialize;
@@ -189,7 +191,9 @@ namespace System.Data.OleDb
 
                         // since the delegate lifetime is longer than the original instance used to create it
                         // we double check before each usage to verify the delegates function pointer
+#pragma warning disable CA1416 // This call site is reachable on all platforms.
                         if ((null == CreateSession) || (method != Marshal.GetFunctionPointerForDelegate(CreateSession)))
+#pragma warning restore CA1416
                         {
                             CreateSession = (UnsafeNativeMethods.IDBCreateSessionCreateSession)Marshal.GetDelegateForFunctionPointer(method, typeof(UnsafeNativeMethods.IDBCreateSessionCreateSession));
                             constr.DangerousIDBCreateSessionCreateSession = CreateSession;
