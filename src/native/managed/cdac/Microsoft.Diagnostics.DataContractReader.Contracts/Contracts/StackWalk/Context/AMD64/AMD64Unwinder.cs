@@ -815,6 +815,7 @@ internal class AMD64Unwinder(Target target)
         TargetPointer frameBase,
         Data.RuntimeFunction functionEntry)
     {
+        uint chainCount = 0;
 
         while (true)
         {
@@ -850,9 +851,215 @@ internal class AMD64Unwinder(Target target)
                         return false;
                     }
                 }
+
+                if (prologOffset >= unwindOp.CodeOffset)
+                {
+                    switch (unwindOp.UnwindOp)
+                    {
+                        //
+                        // Push nonvolatile integer register.
+                        //
+                        // The operation information is the register number of
+                        // the register than was pushed.
+                        //
+                        case UnwindCode.OpCodes.UWOP_PUSH_NONVOL:
+                        {
+                            SetRegister(ref context, unwindOp.OpInfo, _target.ReadPointer(context.Rsp));
+                            context.Rsp += 8;
+                            break;
+                        }
+
+                        //
+                        // Allocate a large sized area on the stack.
+                        //
+                        // The operation information determines if the size is
+                        // 16- or 32-bits.
+                        //
+                        case UnwindCode.OpCodes.UWOP_ALLOC_LARGE:
+                        {
+                            index++;
+                            UnwindCode nextUnwindOp = GetUnwindCode(unwindInfo, index);
+                            uint frameOffset = nextUnwindOp.FrameOffset;
+                            if (unwindOp.OpInfo != 0)
+                            {
+                                index++;
+                                nextUnwindOp = GetUnwindCode(unwindInfo, index);
+                                frameOffset += (uint)(nextUnwindOp.FrameOffset << 16);
+                            }
+                            else
+                            {
+                                // The 16-bit form is scaled.
+                                frameOffset *= 8;
+                            }
+
+                            context.Rsp += frameOffset;
+                            break;
+                        }
+
+                        //
+                        // Allocate a small sized area on the stack.
+                        //
+                        // The operation information is the size of the unscaled
+                        // allocation size (8 is the scale factor) minus 8.
+                        //
+                        case UnwindCode.OpCodes.UWOP_ALLOC_SMALL:
+                        {
+                            context.Rsp += (unwindOp.OpInfo * 8u) + 8u;
+                            break;
+                        }
+
+                        //
+                        // Establish the frame pointer register.
+                        //
+                        // The operation information is not used.
+                        //
+                        case UnwindCode.OpCodes.UWOP_SET_FPREG:
+                        {
+                            context.Rsp = GetRegister(context, unwindInfo.FrameRegister);
+                            context.Rsp -= unwindInfo.FrameOffset * 16u;
+                            break;
+                        }
+
+                        //
+                        // Establish the frame pointer register using a large size displacement.
+                        // UNWIND_INFO.FrameOffset must be 15 (the maximum value, corresponding to a scaled
+                        // offset of 15 * 16 == 240). The next two codes contain a 32-bit offset, which
+                        // is also scaled by 16, since the stack must remain 16-bit aligned.
+                        // Unix only.
+                        //
+                        case UnwindCode.OpCodes.UWOP_SET_FPREG_LARGE:
+                        {
+                            Debug.Assert(_unix);
+                            Debug.Assert(unwindInfo.FrameOffset == 15);
+                            uint frameOffset = GetUnwindCode(unwindInfo, index + 1).FrameOffset;
+                            frameOffset += (uint)(GetUnwindCode(unwindInfo, index + 2).FrameOffset << 16);
+                            Debug.Assert((frameOffset & 0xF0000000) == 0);
+
+                            context.Rsp = GetRegister(context, unwindInfo.FrameRegister);
+                            context.Rsp -= frameOffset * 16;
+
+                            index += 2;
+                            break;
+                        }
+
+                        //
+                        // Save nonvolatile integer register on the stack using a
+                        // 16-bit displacement.
+                        //
+                        // The operation information is the register number.
+                        //
+                        case UnwindCode.OpCodes.UWOP_SAVE_NONVOL:
+                        {
+                            uint frameOffset = GetUnwindCode(unwindInfo, index + 1).FrameOffset * 8u;
+                            SetRegister(ref context, unwindOp.OpInfo, _target.ReadPointer(frameBase + frameOffset));
+                            index += 1;
+                            break;
+                        }
+
+                        //
+                        // Function epilog marker (ignored for prologue unwind).
+                        //
+                        case UnwindCode.OpCodes.UWOP_EPILOG:
+                            index += 1;
+                            break;
+
+                        //
+                        // Spare unused codes.
+                        //
+                        case UnwindCode.OpCodes.UWOP_SPARE_CODE:
+                            Debug.Assert(false);
+                            index += 2;
+                            break;
+
+                        //
+                        // Save a nonvolatile XMM(128) register on the stack using a
+                        // 16-bit displacement.
+                        //
+                        // The operation information is the register number.
+                        //
+                        case UnwindCode.OpCodes.UWOP_SAVE_XMM128:
+                            index += 1;
+                            // Operation not currently supported by the cDAC.
+                            break;
+
+                        //
+                        // Save a nonvolatile XMM(128) register on the stack using
+                        // a 32-bit displacement.
+                        //
+                        // The operation information is the register number.
+                        //
+                        case UnwindCode.OpCodes.UWOP_SAVE_XMM128_FAR:
+                            index += 2;
+                            // Operation not currently supported by the cDAC.
+                            break;
+
+                        //
+                        // Push a machine frame on the stack.
+                        //
+                        // The operation information determines whether the
+                        // machine frame contains an error code or not.
+                        //
+                        case UnwindCode.OpCodes.UWOP_PUSH_MACHFRAME:
+                        {
+                            machineFrame = false;
+                            TargetPointer returnAddressPtr = context.Rsp;
+                            TargetPointer stackAddressPtr = context.Rsp + (3 * 8);
+                            if (unwindOp.OpInfo != 0)
+                            {
+                                returnAddressPtr += (uint)_target.PointerSize;
+                                stackAddressPtr += (uint)_target.PointerSize;
+                            }
+
+                            context.Rip = _target.ReadPointer(returnAddressPtr);
+                            context.Rsp = _target.ReadPointer(stackAddressPtr);
+                            break;
+                        }
+
+                        default:
+                            Debug.Fail("Unexpected unwind operation code.");
+                            break;
+                    }
+
+                    index += 1;
+                }
+                else
+                {
+                    index += unwindOp.UnwindOpSlots();
+                }
             }
+
+            //
+            // If chained unwind information is specified, then set the function
+            // entry address to the chained function entry and continue the scan.
+            // Otherwise, determine the return address if a machine frame was not
+            // encountered during the scan of the unwind codes and terminate the
+            // scan.
+            //
+
+            if (unwindInfo.Flags.HasFlag(UnwindInfoHeader.Flag.UNW_FLAG_CHAININFO))
+            {
+                functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(unwindInfo.GetChainedEntryAddress());
+            }
+            else
+            {
+                if (!machineFrame)
+                {
+                    context.Rip = _target.ReadPointer(context.Rsp);
+                    context.Rsp += (uint)_target.PointerSize;
+                }
+
+                break;
+            }
+
+            //
+            // Limit the number of iterations possible for chained function table
+            // entries.
+            //
+            chainCount += 1;
+            Debug.Assert(chainCount <= UNWIND_CHAIN_LIMIT);
         }
-        throw new NotImplementedException("UnwindPrologue is not implemented yet.");
+
+        return true;
     }
 
 
@@ -943,35 +1150,23 @@ internal class AMD64Unwinder(Target target)
         public uint UnwindOpSlots()
         {
             Debug.Assert(UnwindOp != OpCodes.UWOP_SPARE_CODE);
-            switch (UnwindOp)
+            return UnwindOp switch
             {
-                case OpCodes.UWOP_PUSH_NONVOL:
-                    return 1;
-                case OpCodes.UWOP_ALLOC_LARGE:
-                    return OpInfo != 0 ? 3u : 2u;
-                case OpCodes.UWOP_ALLOC_SMALL:
-                    return 1;
-                case OpCodes.UWOP_SET_FPREG:
-                    return 1;
-                case OpCodes.UWOP_SAVE_NONVOL:
-                    return 2;
-                case OpCodes.UWOP_SAVE_NONVOL_FAR:
-                    return 3;
-                case OpCodes.UWOP_EPILOG:
-                    return 2;
-                case OpCodes.UWOP_SPARE_CODE: // previously 64-bit UWOP_SAVE_XMM_FAR
-                    return 3;
-                case OpCodes.UWOP_SAVE_XMM128:
-                    return 2;
-                case OpCodes.UWOP_SAVE_XMM128_FAR:
-                    return 3;
-                case OpCodes.UWOP_PUSH_MACHFRAME:
-                    return 1;
-                case OpCodes.UWOP_SET_FPREG_LARGE:
-                    return 3;
-                default:
-                    throw new InvalidOperationException($"Unsupported unwind operation: {UnwindOp}");
-            }
+                OpCodes.UWOP_PUSH_NONVOL => 1u,
+                OpCodes.UWOP_ALLOC_LARGE => OpInfo != 0 ? 3u : 2u,
+                OpCodes.UWOP_ALLOC_SMALL => 1u,
+                OpCodes.UWOP_SET_FPREG => 1u,
+                OpCodes.UWOP_SAVE_NONVOL => 2u,
+                OpCodes.UWOP_SAVE_NONVOL_FAR => 3u,
+                OpCodes.UWOP_EPILOG => 2u,
+                // previously 64-bit UWOP_SAVE_XMM_FAR
+                OpCodes.UWOP_SPARE_CODE => 3u,
+                OpCodes.UWOP_SAVE_XMM128 => 2u,
+                OpCodes.UWOP_SAVE_XMM128_FAR => 3u,
+                OpCodes.UWOP_PUSH_MACHFRAME => 1u,
+                OpCodes.UWOP_SET_FPREG_LARGE => 3u,
+                _ => throw new InvalidOperationException($"Unsupported unwind operation: {UnwindOp}"),
+            };
         }
     }
 
@@ -1055,13 +1250,13 @@ internal class AMD64Unwinder(Target target)
     private static TargetPointer GetRegister(AMD64Context context, byte register) => register switch
     {
         0 => context.Rax,
-        1 => context.Rbx,
-        2 => context.Rcx,
-        3 => context.Rdx,
-        4 => context.Rsi,
-        5 => context.Rdi,
-        6 => context.Rbp,
-        7 => context.Rsp,
+        1 => context.Rcx,
+        2 => context.Rdx,
+        3 => context.Rbx,
+        4 => context.Rsp,
+        5 => context.Rbp,
+        6 => context.Rsi,
+        7 => context.Rdi,
         8 => context.R8,
         9 => context.R9,
         10 => context.R10,
@@ -1078,13 +1273,13 @@ internal class AMD64Unwinder(Target target)
         switch (register)
         {
             case 0: context.Rax = value; break;
-            case 1: context.Rbx = value; break;
-            case 2: context.Rcx = value; break;
-            case 3: context.Rdx = value; break;
-            case 4: context.Rsi = value; break;
-            case 5: context.Rdi = value; break;
-            case 6: context.Rbp = value; break;
-            case 7: context.Rsp = value; break;
+            case 1: context.Rcx = value; break;
+            case 2: context.Rdx = value; break;
+            case 3: context.Rbx = value; break;
+            case 4: context.Rsp = value; break;
+            case 5: context.Rbp = value; break;
+            case 6: context.Rsi = value; break;
+            case 7: context.Rdi = value; break;
             case 8: context.R8 = value; break;
             case 9: context.R9 = value; break;
             case 10: context.R10 = value; break;
