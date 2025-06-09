@@ -181,7 +181,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 SlhDsaTestHelpers.AssertImportFromPem(import =>
                 {
                     // Roundtrip it using PEM
-                    SlhDsa roundTrippedSlhDsa = import(export(slhDsa));
+                    using SlhDsa roundTrippedSlhDsa = import(export(slhDsa));
 
                     // The keys should be the same
                     Assert.Equal(algorithm, roundTrippedSlhDsa.Algorithm);
@@ -203,7 +203,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 SlhDsaTestHelpers.AssertImportFromPem(import =>
                 {
                     // Roundtrip it using PEM
-                    SlhDsa roundTrippedSlhDsa = import(export(slhDsa));
+                    using SlhDsa roundTrippedSlhDsa = import(export(slhDsa));
 
                     // The keys should be the same
                     Assert.Equal(algorithm, roundTrippedSlhDsa.Algorithm);
@@ -246,7 +246,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             SlhDsaTestHelpers.AssertImportPublicKey(import =>
                 SlhDsaTestHelpers.AssertExportSlhDsaPublicKey(export =>
-                    AssertExtensions.SequenceEqual(info.PublicKey, export(import()))),
+                    SlhDsaTestHelpers.WithDispose(import(), slhDsa =>
+                        AssertExtensions.SequenceEqual(info.PublicKey, export(slhDsa)))),
                 info.Algorithm,
                 info.PublicKey);
         }
@@ -257,7 +258,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             SlhDsaTestHelpers.AssertImportSecretKey(import =>
                 SlhDsaTestHelpers.AssertExportSlhDsaSecretKey(export =>
-                    AssertExtensions.SequenceEqual(info.SecretKey, export(import()))),
+                    SlhDsaTestHelpers.WithDispose(import(), slhDsa =>
+                        AssertExtensions.SequenceEqual(info.SecretKey, export(slhDsa)))),
                 info.Algorithm,
                 info.SecretKey);
         }
@@ -268,7 +270,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import =>
                 SlhDsaTestHelpers.AssertExportSubjectPublicKeyInfo(export =>
-                    AssertExtensions.SequenceEqual(info.Pkcs8PublicKey, export(import(info.Pkcs8PublicKey)))));
+                    SlhDsaTestHelpers.WithDispose(import(info.Pkcs8PublicKey), slhDsa =>
+                        AssertExtensions.SequenceEqual(info.Pkcs8PublicKey, export(slhDsa)))));
         }
 
         [Theory]
@@ -277,7 +280,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             SlhDsaTestHelpers.AssertImportFromPem(import =>
                 SlhDsaTestHelpers.AssertExportToPublicKeyPem(export =>
-                    Assert.Equal(info.PublicKeyPem, export(import(info.PublicKeyPem)))));
+                    SlhDsaTestHelpers.WithDispose(import(info.PublicKeyPem), slhDsa =>
+                        Assert.Equal(info.PublicKeyPem, export(slhDsa)))));
         }
 
         [Theory]
@@ -286,7 +290,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             SlhDsaTestHelpers.AssertImportPkcs8PrivateKey(import =>
                 SlhDsaTestHelpers.AssertExportPkcs8PrivateKey(export =>
-                    AssertExtensions.SequenceEqual(info.Pkcs8PrivateKey, export(import(info.Pkcs8PrivateKey)))));
+                    SlhDsaTestHelpers.WithDispose(import(info.Pkcs8PrivateKey), slhDsa =>
+                        AssertExtensions.SequenceEqual(info.Pkcs8PrivateKey, export(slhDsa)))));
         }
 
         [Theory]
@@ -295,7 +300,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             SlhDsaTestHelpers.AssertImportFromPem(import =>
                 SlhDsaTestHelpers.AssertExportToPrivateKeyPem(export =>
-                    Assert.Equal(info.PrivateKeyPem, export(import(info.PrivateKeyPem)))));
+                    SlhDsaTestHelpers.WithDispose(import(info.PrivateKeyPem), slhDsa =>
+                        Assert.Equal(info.PrivateKeyPem, export(slhDsa)))));
         }
 
         #endregion Roundtrip by importing then exporting

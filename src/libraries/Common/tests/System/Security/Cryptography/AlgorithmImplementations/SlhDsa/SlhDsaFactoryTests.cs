@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] encodedBytes = CreateAsn1EncodedBytes();
             int actualEncodedLength = encodedBytes.Length;
 
-            // Add a trailing byte so the length indicated in the encoding will be larger than the actual data.
+            // Add a trailing byte so the length indicated in the encoding will be smaller than the actual data.
             Array.Resize(ref encodedBytes, actualEncodedLength + 1);
             AssertThrows(encodedBytes);
 
@@ -95,6 +95,23 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import =>
                 AssertThrowIfNotSupported(() =>
                     Assert.Throws<CryptographicException>(() => import(indefiniteLengthOctet))));
+        }
+
+        [Fact]
+        public static void ImportPkcs8_BerEncoding()
+        {
+            // Secret key is DER encoded, so create a BER encoding from it by making it use indefinite length encoding.
+            byte[] secretKeyPkcs8 = SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyPkcs8;
+
+            // Two 0x00 bytes at the end signal the end of the indefinite length encoding
+            byte[] indefiniteLengthOctet = new byte[secretKeyPkcs8.Length + 2];
+            secretKeyPkcs8.CopyTo(indefiniteLengthOctet);
+            indefiniteLengthOctet[1] = 0b1000_0000; // change length to indefinite
+
+            SlhDsaTestHelpers.AssertImportPkcs8PrivateKey(import =>
+                SlhDsaTestHelpers.AssertExportSlhDsaSecretKey(export =>
+                    SlhDsaTestHelpers.WithDispose(import(indefiniteLengthOctet), slhDsa =>
+                        AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, export(slhDsa)))));
         }
 
         [Fact]
@@ -186,6 +203,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(pkcs8.Encode()))));
 
             pkcs8.PrivateKeyAlgorithm.Parameters = AsnUtils.DerNull;
+
+            SlhDsaTestHelpers.AssertImportPkcs8PrivateKey(
+                import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(pkcs8.Encode()))));
 
             // Sanity check
             pkcs8.PrivateKeyAlgorithm.Parameters = null;

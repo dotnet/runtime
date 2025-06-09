@@ -70,7 +70,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 Algorithm = new AlgorithmIdentifierAsn
                 {
-                    Algorithm = AlgorithmToOid(algorithm) ?? throw new XunitException("Cannot create PKCS#8 private key because algorithm is unknown."),
+                    Algorithm = AlgorithmToOid(algorithm),
                     Parameters = default(ReadOnlyMemory<byte>?),
                 },
                 SubjectPublicKey = publicKey,
@@ -115,7 +115,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
                 {
-                    Algorithm = AlgorithmToOid(algorithm) ?? throw new XunitException("Cannot create PKCS#8 private key because algorithm is unknown."),
+                    Algorithm = AlgorithmToOid(algorithm),
                     Parameters = default(ReadOnlyMemory<byte>?),
                 },
                 PrivateKey = secretKey,
@@ -178,7 +178,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     string pem = PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", pkcs8);
                     return importPem(pem, password);
                 });
-            });
+            }, passwordTypeToTest);
         }
 
         internal delegate SlhDsa ImportFromEncryptedPemCallback(string source, string password);
@@ -372,7 +372,16 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             return buffer.AsSpan(0, written).ToArray();
         }
 
-        internal static string? AlgorithmToOid(SlhDsaAlgorithm algorithm)
+        internal static void WithDispose<T>(T disposable, Action<T> callback)
+            where T : IDisposable
+        {
+            using (disposable)
+            {
+                callback(disposable);
+            }
+        }
+
+        internal static string AlgorithmToOid(SlhDsaAlgorithm algorithm)
         {
             return algorithm?.Name switch
             {
@@ -388,7 +397,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 "SLH-DSA-SHAKE-192f" => "2.16.840.1.101.3.4.3.29",
                 "SLH-DSA-SHAKE-256s" => "2.16.840.1.101.3.4.3.30",
                 "SLH-DSA-SHAKE-256f" => "2.16.840.1.101.3.4.3.31",
-                _ => null,
+                _ => throw new XunitException("Unknown algorithm."),
             };
         }
 
