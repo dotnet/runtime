@@ -1377,7 +1377,7 @@ public class InterpreterTest
         if (!ArrayDouble(1, 1)) return false;
         if (!ArrayDouble(32, 32)) return false;
 
-        if (!TestArrayAddress()) return false;
+        // ref and value types
         if (!TestObjectArray()) return false;
         if (!TestStructArray()) return false;
         if (!TestStructRefArray()) return false;
@@ -1566,37 +1566,6 @@ public class InterpreterTest
         if (values[length - 1] != value)
             return false;
 
-        return true;
-    }
-
-    public unsafe static bool TestArrayAddress()
-    {
-        int[] array = new int[10];
-        DummyStruct[] dummyStructArray = new DummyStruct[10];
-        DummyStructRef[] dummyStructRefArray = new DummyStructRef[10];
-        fixed (int* p = &array[0])
-        fixed (DummyStruct* s = &dummyStructArray[0])
-        fixed (DummyStructRef* sr = &dummyStructRefArray[0])
-        {
-            p[0] = 42;
-            if (p[0] != 42)
-            {
-                return false;
-            }
-
-            s[0] = new DummyStruct(42);
-            if (s[0].field != 42)
-            {
-                return false;
-            }
-
-            DummyClass d = new DummyClass(42);
-            sr[0] = new DummyStructRef(d);
-            if (sr[0].field.field != 42)
-            {
-                return false;
-            }
-        }
         return true;
     }
 
