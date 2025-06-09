@@ -320,7 +320,7 @@ namespace System.Net.Http
                 return false;
             }
 
-            Debug.Assert(!ContainsNewLine(host.ToString()));
+            Debug.Assert(!ContainsNewLineOrNull(host.ToString()));
             return true;
         }
     }
