@@ -6717,10 +6717,17 @@ mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSi
 static gboolean
 decompose_vtype_opt_uses_simd_intrinsics (MonoCompile *cfg, MonoInst *ins)
 {
-	if (cfg->uses_simd_intrinsics)
-		return TRUE;
+    switch (ins->opcode){
+        case OP_XCALL:
+        case OP_XCALL_REG:
+        case OP_XCALL_MEMBASE:
+            return FALSE
+    }
 
-	switch (ins->opcode) {
+    if (cfg->uses_simd_intrinsics)
+        return TRUE;
+    
+    switch (ins->opcode) {
 	case OP_XMOVE:
 	case OP_XZERO:
 	case OP_XPHI:
@@ -6732,6 +6739,7 @@ decompose_vtype_opt_uses_simd_intrinsics (MonoCompile *cfg, MonoInst *ins)
 	default:
 		return FALSE;
 	}
+
 }
 
 static void
