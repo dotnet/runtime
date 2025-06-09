@@ -171,9 +171,9 @@ template <typename TResult, typename TSource> static void ConvFpHelper(int8_t *s
         result = 0;
     else if (src >= maxValue)
         result = std::numeric_limits<TResult>::max();
-    else if (std::numeric_limits<TResult>::is_signed && (src <= -1))
+    else if (!std::numeric_limits<TResult>::is_signed && (src <= -1))
         result = 0;
-    else if (!std::numeric_limits<TResult>::is_signed && (src < minValue))
+    else if (std::numeric_limits<TResult>::is_signed && (src < minValue))
         result = std::numeric_limits<TResult>::lowest();
     else
         result = (TResult)src;
