@@ -326,8 +326,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                     call = gtNewIndCallNode(stubAddr, callRetTyp, di);
 
-                    // hack... we will need this later to try devirt...
-                    call->AsCall()->gtStubCallStubAddr = methHnd;
                     call->gtFlags |= GTF_EXCEPT | (stubAddr->gtFlags & GTF_GLOB_EFFECT);
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
 
