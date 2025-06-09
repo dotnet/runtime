@@ -433,11 +433,11 @@ struct RuntimeThreadLocals
 
 #ifdef _MSC_VER
 // use selectany to avoid initialization de-optimization issues in the compiler
-__declspec(selectany)
+__declspec(selectany) thread_local
 #else
-extern
+extern __thread
 #endif
-thread_local RuntimeThreadLocals t_runtime_thread_locals;
+RuntimeThreadLocals t_runtime_thread_locals;
 
 typedef DPTR(struct RuntimeThreadLocals) PTR_RuntimeThreadLocals;
 typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
