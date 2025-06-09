@@ -24,6 +24,9 @@ struct StackVal
     } data;
 };
 
+typedef DPTR(struct InterpMethodContextFrame) PTR_InterpMethodContextFrame;
+class InterpreterFrame;
+
 struct InterpMethodContextFrame
 {
     PTR_InterpMethodContextFrame pParent;
@@ -75,5 +78,7 @@ struct ExceptionClauseArgs
 };
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs = NULL);
+
+CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod);
 
 #endif
