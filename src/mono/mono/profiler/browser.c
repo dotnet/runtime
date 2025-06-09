@@ -66,18 +66,10 @@ static int sample_skip_counter;
 double mono_wasm_profiler_now ();
 void mono_wasm_profiler_record (MonoMethod *method, double start);
 
-static gpointer get_last_sp (MonoProfilerCallContext *ctx)
+static gpointer get_last_sp ()
 {
-	/* TODO AOT
-	if (ctx) {
-		if (ctx->interp_frame) {
-			return ctx->interp_frame;
-		}
-		gpointer sp = MONO_CONTEXT_GET_SP (&ctx->context);
-		if (sp) {
-			return sp;
-		}
-	}*/
+	// TODO add support for AOT. We need some monotonic stack pointer from WASM C/AOT.
+	// maybe MonoProfilerCallContext* could be used for that? 
 
 	MonoLMF *lmf = mono_get_lmf ();
 
@@ -128,7 +120,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 	double now = newframe->start = mono_wasm_profiler_now ();
 	newframe->should_record = should_record_frame (now);
 	newframe->method = method;
-	newframe->sp = get_last_sp (ctx);
+	newframe->sp = get_last_sp ();
 	g_assertf(newframe->sp != NULL, "method_enter: stack frame is NULL for method %s\n", mono_method_get_full_name (method));
 }
 
@@ -144,7 +136,7 @@ record_and_mark_parent (ProfilerStackFrame *top_frame, int top_index)
 }
 
 static void
-pop_and_record_frames (bool leaving, MonoMethod *method, MonoProfilerCallContext *ctx)
+pop_and_record_frames (bool leaving, MonoMethod *method)
 {
 	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
 	g_assert(top_stack_frame_index >= 0);
@@ -152,7 +144,7 @@ pop_and_record_frames (bool leaving, MonoMethod *method, MonoProfilerCallContext
 	sample_skip_counter++;
 
 	// stack pointers grow down
-	gpointer sp = get_last_sp (ctx);
+	gpointer sp = get_last_sp ();
 	if (sp == NULL) {
 		g_warning ("pop_and_record_frames: stack frame is NULL for method %s\n", mono_method_get_full_name (method));
 		return;
@@ -169,6 +161,8 @@ pop_and_record_frames (bool leaving, MonoMethod *method, MonoProfilerCallContext
 
 		g_assert (top_frame->sp <= sp);
 
+		// events from exception handling are not called for all frames
+		// we are using stack pointer to determine what is the top of the profiler stack
 		if (top_frame->sp < sp) {
 			record_and_mark_parent (top_frame, top_stack_frame_index);
 
@@ -205,19 +199,19 @@ method_samplepoint (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallCont
 static void
 method_leave (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
-	pop_and_record_frames (TRUE, method, ctx);
+	pop_and_record_frames (TRUE, method);
 }
 
 static void
 method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 {
-	pop_and_record_frames (FALSE, method, NULL);
+	pop_and_record_frames (FALSE, method);
 }
 
 static void
 tail_call (MonoProfiler *prof, MonoMethod *method, MonoMethod *target)
 {
-	pop_and_record_frames (TRUE, method, NULL);
+	pop_and_record_frames (TRUE, method);
 	// TODO is this event duplicated with method_enter?
 	method_enter (prof, target, NULL);
 }
