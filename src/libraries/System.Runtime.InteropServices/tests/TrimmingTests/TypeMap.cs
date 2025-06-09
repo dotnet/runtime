@@ -40,7 +40,7 @@ if (!usedTypeMap.TryGetValue("TrimTargetIsTarget", out Type targetAndTrimTargetT
     return 1;
 }
 
-if (targetAndTrimTargetType != GetTypeWithoutTrimAnalysis("TargetAndTrimTarget"))
+if (targetAndTrimTargetType != GetTypeWithoutTrimAnalysis(nameof(TargetAndTrimTarget)))
 {
     Console.WriteLine("TrimTargetIsTarget type does not match expected type.");
     return 2;
@@ -52,13 +52,13 @@ if (!usedTypeMap.TryGetValue("TrimTargetIsUnrelated", out Type targetType))
     return 3;
 }
 
-if (targetType != GetTypeWithoutTrimAnalysis("TargetType"))
+if (targetType != GetTypeWithoutTrimAnalysis(nameof(TargetType)))
 {
     Console.WriteLine("TrimTargetIsUnrelated type does not match expected type.");
     return 4;
 }
 
-if (GetTypeWithoutTrimAnalysis("TrimTarget") is not null)
+if (GetTypeWithoutTrimAnalysis(nameof(TrimTarget)) is not null)
 {
     Console.WriteLine("TrimTarget should not be preserved if the only place that would preserve it is a check that is optimized away.");
     return 5;
@@ -77,19 +77,19 @@ if (!usedProxyTypeMap.TryGetValue(typeof(SourceClass), out Type proxyType))
     return 7;
 }
 
-if (proxyType != GetTypeWithoutTrimAnalysis("ProxyType"))
+if (proxyType != GetTypeWithoutTrimAnalysis(nameof(ProxyType)))
 {
     Console.WriteLine("SourceClass proxy type does not match expected type.");
     return 8;
 }
 
-if (GetTypeWithoutTrimAnalysis("UnusedTargetType") is not null)
+if (GetTypeWithoutTrimAnalysis(nameof(UnusedTargetType)) is not null)
 {
     Console.WriteLine("UnusedTargetType should not be preserved if the external type map is not used and it is not referenced otherwise even if the entry's trim target is kept.");
     return 9;
 }
 
-if (GetTypeWithoutTrimAnalysis("UnusedProxyType") is not null)
+if (GetTypeWithoutTrimAnalysis(nameof(UnusedProxyType)) is not null)
 {
     Console.WriteLine("UnusedProxyType should not be preserved if the proxy type map is not used and it is not referenced otherwise even if the entry's source type is kept.");
     return 10;

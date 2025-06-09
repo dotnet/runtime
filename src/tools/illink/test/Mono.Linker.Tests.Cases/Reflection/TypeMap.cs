@@ -13,6 +13,8 @@ using Mono.Linker.Tests.Cases.Reflection;
 [assembly: TypeMap<UsedTypeMap> ("TrimTargetIsUnrelated", typeof (TargetType), typeof (TrimTarget))]
 [assembly: TypeMap<UsedTypeMap> ("TrimTargetIsUnreferenced", typeof (UnreferencedTargetType), typeof (UnreferencedTrimTarget))]
 [assembly: TypeMapAssociation<UsedTypeMap> (typeof (SourceClass), typeof (ProxyType))]
+[assembly: TypeMapAssociation<UsedTypeMap> (typeof (I), typeof (IImpl))]
+[assembly: TypeMapAssociation<UsedTypeMap> (typeof (IInterfaceWithDynamicImpl), typeof (IDynamicImpl))]
 
 [assembly: TypeMap<UnusedTypeMap> ("UnusedName", typeof (UnusedTargetType), typeof (TrimTarget))]
 [assembly: TypeMapAssociation<UsedTypeMap> (typeof (UnusedSourceClass), typeof (UnusedProxyType))]
@@ -32,9 +34,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				Console.WriteLine ("Type deriving from TargetAndTrimTarget instantiated.");
 			} else if (t is TrimTarget) {
 				Console.WriteLine ("Type deriving from TrimTarget instantiated.");
+			} else if (t is IInterfaceWithDynamicImpl d) {
+				d.Method ();
 			}
 
 			Console.WriteLine ("Hash code of SourceClass instance: " + new SourceClass ().GetHashCode ());
+			Console.WriteLine ("Hash code of UsedClass instance: " + new UsedClass ().GetHashCode ());
 
 			Console.WriteLine (TypeMapping.GetOrCreateExternalTypeMapping<UsedTypeMap> ());
 			Console.WriteLine (TypeMapping.GetOrCreateProxyTypeMapping<UsedTypeMap> ());
@@ -76,6 +81,33 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	class UnusedTargetType;
 	class UnusedSourceClass;
 	class UnusedProxyType;
+
+	interface I;
+
+	interface IImpl : I;
+
+	[Kept]
+	[KeptMember (".ctor()")]
+	class UsedClass : IImpl;
+
+	[Kept]
+	interface IInterfaceWithDynamicImpl
+	{
+		[Kept (By = Tool.Trimmer)]
+		void Method ();
+	}
+	
+	[Kept]
+	[KeptInterface (typeof (IInterfaceWithDynamicImpl))]
+	[KeptAttributeAttribute (typeof (DynamicInterfaceCastableImplementationAttribute), By = Tool.Trimmer)]
+	[DynamicInterfaceCastableImplementation]
+	interface IDynamicImpl : IInterfaceWithDynamicImpl
+	{
+		[Kept]
+		void IInterfaceWithDynamicImpl.Method ()
+		{
+		}
+	}
 }
 
 // Polyfill for the type map types until we use an LKG runtime that has it.
