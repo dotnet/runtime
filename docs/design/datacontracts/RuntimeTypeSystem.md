@@ -711,14 +711,8 @@ And the following enumeration definitions
     [Flags]
     internal enum DynamicMethodDescExtendedFlags : uint
     {
-        Static = 0x00001000,
         IsLCGMethod = 0x00004000,
         IsILStub = 0x00008000,
-        IsDelegate = 0x00010000,
-        IsCALLI = 0x00020000,
-        FlagMask = 0x0003f800,
-        StackArgSizeMask = 0xfffc0000,
-        ILStubTypeMask = ~(FlagMask | StackArgSizeMask),
     }
 
     [Flags]
