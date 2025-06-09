@@ -2049,23 +2049,5 @@ namespace Internal.NativeFormat
                 }
             }
         }
-
-        public override bool Equals(object obj)
-        {
-            // TODO: Support value equality instead of just referential equality
-            return ReferenceEquals(this, obj);
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = 13;
-            foreach (var entry in _Entries)
-            {
-                int value = (int)entry.Hashcode * 0x5498341 + 0x832424;
-                hashCode = hashCode * 31 + value;
-            }
-
-            return hashCode;
-        }
     }
 }
