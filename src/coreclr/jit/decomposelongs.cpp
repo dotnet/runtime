@@ -1970,8 +1970,6 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicToScalar(LIR::Use& use, GenTreeHWIn
     }
     else
     {
-        assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_X86Base));
-
         GenTree* thirtyTwo = m_compiler->gtNewIconNode(32);
         GenTree* shift     = m_compiler->gtNewSimdBinOpNode(GT_RSZ, op1->TypeGet(), simdTmpVar, thirtyTwo,
                                                             node->GetSimdBaseJitType(), simdSize);

@@ -29,7 +29,8 @@ void dir_utils_t::create_directory_tree(const pal::string_t &path)
         create_directory_tree(get_directory(path));
     }
 
-    if (!pal::mkdir(path.c_str(), 0700)) // Owner - rwx
+    int mkdir_error = 0;
+    if (!pal::mkdir(path.c_str(), 0700, mkdir_error)) // Owner - rwx
     {
         if (pal::directory_exists(path))
         {
@@ -38,7 +39,7 @@ void dir_utils_t::create_directory_tree(const pal::string_t &path)
         }
 
         trace::error(_X("Failure processing application bundle."));
-        trace::error(_X("Failed to create directory [%s] for extracting bundled files."), path.c_str());
+        trace::error(_X("Failed to create directory [%s] for extracting bundled files. Error code: %d"), path.c_str(), mkdir_error);
         throw StatusCode::BundleExtractionIOError;
     }
 }
@@ -115,7 +116,7 @@ bool dir_utils_t::rename_with_retries(pal::string_t& old_name, pal::string_t& ne
             // Check directory_exists() on each run, because a concurrent process may have
             // created the new_name directory.
             //
-            // The rename() operation above fails with errono == EACCESS if 
+            // The rename() operation above fails with errono == EACCESS if
             // * Directory new_name already exists, or
             // * Paths are invalid paths, or
             // * Due to locking/permission problems.

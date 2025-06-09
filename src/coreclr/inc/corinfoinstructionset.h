@@ -55,55 +55,67 @@ enum CORINFO_InstructionSet
     InstructionSet_SSSE3=3,
     InstructionSet_SSE41=4,
     InstructionSet_SSE42=5,
-    InstructionSet_AVX=6,
-    InstructionSet_AVX2=7,
-    InstructionSet_AES=8,
+    InstructionSet_POPCNT=6,
+    InstructionSet_AVX=7,
+    InstructionSet_AVX2=8,
     InstructionSet_BMI1=9,
     InstructionSet_BMI2=10,
     InstructionSet_FMA=11,
     InstructionSet_LZCNT=12,
-    InstructionSet_PCLMULQDQ=13,
-    InstructionSet_PCLMULQDQ_V256=14,
-    InstructionSet_PCLMULQDQ_V512=15,
-    InstructionSet_POPCNT=16,
-    InstructionSet_Vector128=17,
-    InstructionSet_Vector256=18,
-    InstructionSet_Vector512=19,
-    InstructionSet_AVXVNNI=20,
-    InstructionSet_MOVBE=21,
-    InstructionSet_X86Serialize=22,
-    InstructionSet_AVX512=23,
-    InstructionSet_AVX512VBMI=24,
-    InstructionSet_AVX10v1=25,
-    InstructionSet_VectorT128=26,
-    InstructionSet_VectorT256=27,
-    InstructionSet_VectorT512=28,
-    InstructionSet_APX=29,
-    InstructionSet_AVX10v2=30,
-    InstructionSet_GFNI=31,
-    InstructionSet_GFNI_V256=32,
-    InstructionSet_GFNI_V512=33,
-    InstructionSet_X86Base_X64=34,
-    InstructionSet_SSE3_X64=35,
-    InstructionSet_SSSE3_X64=36,
-    InstructionSet_SSE41_X64=37,
-    InstructionSet_SSE42_X64=38,
-    InstructionSet_AVX_X64=39,
-    InstructionSet_AVX2_X64=40,
-    InstructionSet_AES_X64=41,
-    InstructionSet_BMI1_X64=42,
-    InstructionSet_BMI2_X64=43,
-    InstructionSet_FMA_X64=44,
-    InstructionSet_LZCNT_X64=45,
-    InstructionSet_PCLMULQDQ_X64=46,
-    InstructionSet_POPCNT_X64=47,
-    InstructionSet_AVXVNNI_X64=48,
-    InstructionSet_X86Serialize_X64=49,
-    InstructionSet_AVX512_X64=50,
-    InstructionSet_AVX512VBMI_X64=51,
-    InstructionSet_AVX10v1_X64=52,
-    InstructionSet_AVX10v2_X64=53,
-    InstructionSet_GFNI_X64=54,
+    InstructionSet_MOVBE=13,
+    InstructionSet_AVX512=14,
+    InstructionSet_AVX512VBMI=15,
+    InstructionSet_AVX512v3=16,
+    InstructionSet_AVX10v1=17,
+    InstructionSet_AVX10v2=18,
+    InstructionSet_APX=19,
+    InstructionSet_AES=20,
+    InstructionSet_PCLMULQDQ=21,
+    InstructionSet_AVX512VP2INTERSECT=22,
+    InstructionSet_AVXIFMA=23,
+    InstructionSet_AVXVNNI=24,
+    InstructionSet_GFNI=25,
+    InstructionSet_GFNI_V256=26,
+    InstructionSet_GFNI_V512=27,
+    InstructionSet_SHA=28,
+    InstructionSet_AES_V256=29,
+    InstructionSet_AES_V512=30,
+    InstructionSet_PCLMULQDQ_V256=31,
+    InstructionSet_PCLMULQDQ_V512=32,
+    InstructionSet_WAITPKG=33,
+    InstructionSet_X86Serialize=34,
+    InstructionSet_Vector128=35,
+    InstructionSet_Vector256=36,
+    InstructionSet_Vector512=37,
+    InstructionSet_VectorT128=38,
+    InstructionSet_VectorT256=39,
+    InstructionSet_VectorT512=40,
+    InstructionSet_X86Base_X64=41,
+    InstructionSet_SSE3_X64=42,
+    InstructionSet_SSSE3_X64=43,
+    InstructionSet_SSE41_X64=44,
+    InstructionSet_SSE42_X64=45,
+    InstructionSet_POPCNT_X64=46,
+    InstructionSet_AVX_X64=47,
+    InstructionSet_AVX2_X64=48,
+    InstructionSet_BMI1_X64=49,
+    InstructionSet_BMI2_X64=50,
+    InstructionSet_FMA_X64=51,
+    InstructionSet_LZCNT_X64=52,
+    InstructionSet_AVX512_X64=53,
+    InstructionSet_AVX512VBMI_X64=54,
+    InstructionSet_AVX512v3_X64=55,
+    InstructionSet_AVX10v1_X64=56,
+    InstructionSet_AVX10v2_X64=57,
+    InstructionSet_AES_X64=58,
+    InstructionSet_PCLMULQDQ_X64=59,
+    InstructionSet_AVX512VP2INTERSECT_X64=60,
+    InstructionSet_AVXIFMA_X64=61,
+    InstructionSet_AVXVNNI_X64=62,
+    InstructionSet_GFNI_X64=63,
+    InstructionSet_SHA_X64=64,
+    InstructionSet_WAITPKG_X64=65,
+    InstructionSet_X86Serialize_X64=66,
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
     InstructionSet_X86Base=1,
@@ -111,55 +123,67 @@ enum CORINFO_InstructionSet
     InstructionSet_SSSE3=3,
     InstructionSet_SSE41=4,
     InstructionSet_SSE42=5,
-    InstructionSet_AVX=6,
-    InstructionSet_AVX2=7,
-    InstructionSet_AES=8,
+    InstructionSet_POPCNT=6,
+    InstructionSet_AVX=7,
+    InstructionSet_AVX2=8,
     InstructionSet_BMI1=9,
     InstructionSet_BMI2=10,
     InstructionSet_FMA=11,
     InstructionSet_LZCNT=12,
-    InstructionSet_PCLMULQDQ=13,
-    InstructionSet_PCLMULQDQ_V256=14,
-    InstructionSet_PCLMULQDQ_V512=15,
-    InstructionSet_POPCNT=16,
-    InstructionSet_Vector128=17,
-    InstructionSet_Vector256=18,
-    InstructionSet_Vector512=19,
-    InstructionSet_AVXVNNI=20,
-    InstructionSet_MOVBE=21,
-    InstructionSet_X86Serialize=22,
-    InstructionSet_AVX512=23,
-    InstructionSet_AVX512VBMI=24,
-    InstructionSet_AVX10v1=25,
-    InstructionSet_VectorT128=26,
-    InstructionSet_VectorT256=27,
-    InstructionSet_VectorT512=28,
-    InstructionSet_APX=29,
-    InstructionSet_AVX10v2=30,
-    InstructionSet_GFNI=31,
-    InstructionSet_GFNI_V256=32,
-    InstructionSet_GFNI_V512=33,
-    InstructionSet_X86Base_X64=34,
-    InstructionSet_SSE3_X64=35,
-    InstructionSet_SSSE3_X64=36,
-    InstructionSet_SSE41_X64=37,
-    InstructionSet_SSE42_X64=38,
-    InstructionSet_AVX_X64=39,
-    InstructionSet_AVX2_X64=40,
-    InstructionSet_AES_X64=41,
-    InstructionSet_BMI1_X64=42,
-    InstructionSet_BMI2_X64=43,
-    InstructionSet_FMA_X64=44,
-    InstructionSet_LZCNT_X64=45,
-    InstructionSet_PCLMULQDQ_X64=46,
-    InstructionSet_POPCNT_X64=47,
-    InstructionSet_AVXVNNI_X64=48,
-    InstructionSet_X86Serialize_X64=49,
-    InstructionSet_AVX512_X64=50,
-    InstructionSet_AVX512VBMI_X64=51,
-    InstructionSet_AVX10v1_X64=52,
-    InstructionSet_AVX10v2_X64=53,
-    InstructionSet_GFNI_X64=54,
+    InstructionSet_MOVBE=13,
+    InstructionSet_AVX512=14,
+    InstructionSet_AVX512VBMI=15,
+    InstructionSet_AVX512v3=16,
+    InstructionSet_AVX10v1=17,
+    InstructionSet_AVX10v2=18,
+    InstructionSet_APX=19,
+    InstructionSet_AES=20,
+    InstructionSet_PCLMULQDQ=21,
+    InstructionSet_AVX512VP2INTERSECT=22,
+    InstructionSet_AVXIFMA=23,
+    InstructionSet_AVXVNNI=24,
+    InstructionSet_GFNI=25,
+    InstructionSet_GFNI_V256=26,
+    InstructionSet_GFNI_V512=27,
+    InstructionSet_SHA=28,
+    InstructionSet_AES_V256=29,
+    InstructionSet_AES_V512=30,
+    InstructionSet_PCLMULQDQ_V256=31,
+    InstructionSet_PCLMULQDQ_V512=32,
+    InstructionSet_WAITPKG=33,
+    InstructionSet_X86Serialize=34,
+    InstructionSet_Vector128=35,
+    InstructionSet_Vector256=36,
+    InstructionSet_Vector512=37,
+    InstructionSet_VectorT128=38,
+    InstructionSet_VectorT256=39,
+    InstructionSet_VectorT512=40,
+    InstructionSet_X86Base_X64=41,
+    InstructionSet_SSE3_X64=42,
+    InstructionSet_SSSE3_X64=43,
+    InstructionSet_SSE41_X64=44,
+    InstructionSet_SSE42_X64=45,
+    InstructionSet_POPCNT_X64=46,
+    InstructionSet_AVX_X64=47,
+    InstructionSet_AVX2_X64=48,
+    InstructionSet_BMI1_X64=49,
+    InstructionSet_BMI2_X64=50,
+    InstructionSet_FMA_X64=51,
+    InstructionSet_LZCNT_X64=52,
+    InstructionSet_AVX512_X64=53,
+    InstructionSet_AVX512VBMI_X64=54,
+    InstructionSet_AVX512v3_X64=55,
+    InstructionSet_AVX10v1_X64=56,
+    InstructionSet_AVX10v2_X64=57,
+    InstructionSet_AES_X64=58,
+    InstructionSet_PCLMULQDQ_X64=59,
+    InstructionSet_AVX512VP2INTERSECT_X64=60,
+    InstructionSet_AVXIFMA_X64=61,
+    InstructionSet_AVXVNNI_X64=62,
+    InstructionSet_GFNI_X64=63,
+    InstructionSet_SHA_X64=64,
+    InstructionSet_WAITPKG_X64=65,
+    InstructionSet_X86Serialize_X64=66,
 #endif // TARGET_X86
 
 };
@@ -289,12 +313,12 @@ public:
             AddInstructionSet(InstructionSet_SSE41_X64);
         if (HasInstructionSet(InstructionSet_SSE42))
             AddInstructionSet(InstructionSet_SSE42_X64);
+        if (HasInstructionSet(InstructionSet_POPCNT))
+            AddInstructionSet(InstructionSet_POPCNT_X64);
         if (HasInstructionSet(InstructionSet_AVX))
             AddInstructionSet(InstructionSet_AVX_X64);
         if (HasInstructionSet(InstructionSet_AVX2))
             AddInstructionSet(InstructionSet_AVX2_X64);
-        if (HasInstructionSet(InstructionSet_AES))
-            AddInstructionSet(InstructionSet_AES_X64);
         if (HasInstructionSet(InstructionSet_BMI1))
             AddInstructionSet(InstructionSet_BMI1_X64);
         if (HasInstructionSet(InstructionSet_BMI2))
@@ -303,24 +327,34 @@ public:
             AddInstructionSet(InstructionSet_FMA_X64);
         if (HasInstructionSet(InstructionSet_LZCNT))
             AddInstructionSet(InstructionSet_LZCNT_X64);
-        if (HasInstructionSet(InstructionSet_PCLMULQDQ))
-            AddInstructionSet(InstructionSet_PCLMULQDQ_X64);
-        if (HasInstructionSet(InstructionSet_POPCNT))
-            AddInstructionSet(InstructionSet_POPCNT_X64);
-        if (HasInstructionSet(InstructionSet_AVXVNNI))
-            AddInstructionSet(InstructionSet_AVXVNNI_X64);
-        if (HasInstructionSet(InstructionSet_X86Serialize))
-            AddInstructionSet(InstructionSet_X86Serialize_X64);
         if (HasInstructionSet(InstructionSet_AVX512))
             AddInstructionSet(InstructionSet_AVX512_X64);
         if (HasInstructionSet(InstructionSet_AVX512VBMI))
             AddInstructionSet(InstructionSet_AVX512VBMI_X64);
+        if (HasInstructionSet(InstructionSet_AVX512v3))
+            AddInstructionSet(InstructionSet_AVX512v3_X64);
         if (HasInstructionSet(InstructionSet_AVX10v1))
             AddInstructionSet(InstructionSet_AVX10v1_X64);
         if (HasInstructionSet(InstructionSet_AVX10v2))
             AddInstructionSet(InstructionSet_AVX10v2_X64);
+        if (HasInstructionSet(InstructionSet_AES))
+            AddInstructionSet(InstructionSet_AES_X64);
+        if (HasInstructionSet(InstructionSet_PCLMULQDQ))
+            AddInstructionSet(InstructionSet_PCLMULQDQ_X64);
+        if (HasInstructionSet(InstructionSet_AVX512VP2INTERSECT))
+            AddInstructionSet(InstructionSet_AVX512VP2INTERSECT_X64);
+        if (HasInstructionSet(InstructionSet_AVXIFMA))
+            AddInstructionSet(InstructionSet_AVXIFMA_X64);
+        if (HasInstructionSet(InstructionSet_AVXVNNI))
+            AddInstructionSet(InstructionSet_AVXVNNI_X64);
         if (HasInstructionSet(InstructionSet_GFNI))
             AddInstructionSet(InstructionSet_GFNI_X64);
+        if (HasInstructionSet(InstructionSet_SHA))
+            AddInstructionSet(InstructionSet_SHA_X64);
+        if (HasInstructionSet(InstructionSet_WAITPKG))
+            AddInstructionSet(InstructionSet_WAITPKG_X64);
+        if (HasInstructionSet(InstructionSet_X86Serialize))
+            AddInstructionSet(InstructionSet_X86Serialize_X64);
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
 #endif // TARGET_X86
@@ -433,6 +467,10 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_SSE42);
         if (resultflags.HasInstructionSet(InstructionSet_SSE42_X64) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
             resultflags.RemoveInstructionSet(InstructionSet_SSE42_X64);
+        if (resultflags.HasInstructionSet(InstructionSet_POPCNT) && !resultflags.HasInstructionSet(InstructionSet_POPCNT_X64))
+            resultflags.RemoveInstructionSet(InstructionSet_POPCNT);
+        if (resultflags.HasInstructionSet(InstructionSet_POPCNT_X64) && !resultflags.HasInstructionSet(InstructionSet_POPCNT))
+            resultflags.RemoveInstructionSet(InstructionSet_POPCNT_X64);
         if (resultflags.HasInstructionSet(InstructionSet_AVX) && !resultflags.HasInstructionSet(InstructionSet_AVX_X64))
             resultflags.RemoveInstructionSet(InstructionSet_AVX);
         if (resultflags.HasInstructionSet(InstructionSet_AVX_X64) && !resultflags.HasInstructionSet(InstructionSet_AVX))
@@ -441,10 +479,6 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_AVX2);
         if (resultflags.HasInstructionSet(InstructionSet_AVX2_X64) && !resultflags.HasInstructionSet(InstructionSet_AVX2))
             resultflags.RemoveInstructionSet(InstructionSet_AVX2_X64);
-        if (resultflags.HasInstructionSet(InstructionSet_AES) && !resultflags.HasInstructionSet(InstructionSet_AES_X64))
-            resultflags.RemoveInstructionSet(InstructionSet_AES);
-        if (resultflags.HasInstructionSet(InstructionSet_AES_X64) && !resultflags.HasInstructionSet(InstructionSet_AES))
-            resultflags.RemoveInstructionSet(InstructionSet_AES_X64);
         if (resultflags.HasInstructionSet(InstructionSet_BMI1) && !resultflags.HasInstructionSet(InstructionSet_BMI1_X64))
             resultflags.RemoveInstructionSet(InstructionSet_BMI1);
         if (resultflags.HasInstructionSet(InstructionSet_BMI1_X64) && !resultflags.HasInstructionSet(InstructionSet_BMI1))
@@ -461,22 +495,6 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_LZCNT);
         if (resultflags.HasInstructionSet(InstructionSet_LZCNT_X64) && !resultflags.HasInstructionSet(InstructionSet_LZCNT))
             resultflags.RemoveInstructionSet(InstructionSet_LZCNT_X64);
-        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_X64))
-            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
-        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_X64) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ))
-            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_X64);
-        if (resultflags.HasInstructionSet(InstructionSet_POPCNT) && !resultflags.HasInstructionSet(InstructionSet_POPCNT_X64))
-            resultflags.RemoveInstructionSet(InstructionSet_POPCNT);
-        if (resultflags.HasInstructionSet(InstructionSet_POPCNT_X64) && !resultflags.HasInstructionSet(InstructionSet_POPCNT))
-            resultflags.RemoveInstructionSet(InstructionSet_POPCNT_X64);
-        if (resultflags.HasInstructionSet(InstructionSet_AVXVNNI) && !resultflags.HasInstructionSet(InstructionSet_AVXVNNI_X64))
-            resultflags.RemoveInstructionSet(InstructionSet_AVXVNNI);
-        if (resultflags.HasInstructionSet(InstructionSet_AVXVNNI_X64) && !resultflags.HasInstructionSet(InstructionSet_AVXVNNI))
-            resultflags.RemoveInstructionSet(InstructionSet_AVXVNNI_X64);
-        if (resultflags.HasInstructionSet(InstructionSet_X86Serialize) && !resultflags.HasInstructionSet(InstructionSet_X86Serialize_X64))
-            resultflags.RemoveInstructionSet(InstructionSet_X86Serialize);
-        if (resultflags.HasInstructionSet(InstructionSet_X86Serialize_X64) && !resultflags.HasInstructionSet(InstructionSet_X86Serialize))
-            resultflags.RemoveInstructionSet(InstructionSet_X86Serialize_X64);
         if (resultflags.HasInstructionSet(InstructionSet_AVX512) && !resultflags.HasInstructionSet(InstructionSet_AVX512_X64))
             resultflags.RemoveInstructionSet(InstructionSet_AVX512);
         if (resultflags.HasInstructionSet(InstructionSet_AVX512_X64) && !resultflags.HasInstructionSet(InstructionSet_AVX512))
@@ -485,6 +503,10 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_AVX512VBMI);
         if (resultflags.HasInstructionSet(InstructionSet_AVX512VBMI_X64) && !resultflags.HasInstructionSet(InstructionSet_AVX512VBMI))
             resultflags.RemoveInstructionSet(InstructionSet_AVX512VBMI_X64);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX512v3) && !resultflags.HasInstructionSet(InstructionSet_AVX512v3_X64))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX512v3);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX512v3_X64) && !resultflags.HasInstructionSet(InstructionSet_AVX512v3))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX512v3_X64);
         if (resultflags.HasInstructionSet(InstructionSet_AVX10v1) && !resultflags.HasInstructionSet(InstructionSet_AVX10v1_X64))
             resultflags.RemoveInstructionSet(InstructionSet_AVX10v1);
         if (resultflags.HasInstructionSet(InstructionSet_AVX10v1_X64) && !resultflags.HasInstructionSet(InstructionSet_AVX10v1))
@@ -493,10 +515,42 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_AVX10v2);
         if (resultflags.HasInstructionSet(InstructionSet_AVX10v2_X64) && !resultflags.HasInstructionSet(InstructionSet_AVX10v2))
             resultflags.RemoveInstructionSet(InstructionSet_AVX10v2_X64);
+        if (resultflags.HasInstructionSet(InstructionSet_AES) && !resultflags.HasInstructionSet(InstructionSet_AES_X64))
+            resultflags.RemoveInstructionSet(InstructionSet_AES);
+        if (resultflags.HasInstructionSet(InstructionSet_AES_X64) && !resultflags.HasInstructionSet(InstructionSet_AES))
+            resultflags.RemoveInstructionSet(InstructionSet_AES_X64);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_X64))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_X64) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_X64);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX512VP2INTERSECT) && !resultflags.HasInstructionSet(InstructionSet_AVX512VP2INTERSECT_X64))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX512VP2INTERSECT);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX512VP2INTERSECT_X64) && !resultflags.HasInstructionSet(InstructionSet_AVX512VP2INTERSECT))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX512VP2INTERSECT_X64);
+        if (resultflags.HasInstructionSet(InstructionSet_AVXIFMA) && !resultflags.HasInstructionSet(InstructionSet_AVXIFMA_X64))
+            resultflags.RemoveInstructionSet(InstructionSet_AVXIFMA);
+        if (resultflags.HasInstructionSet(InstructionSet_AVXIFMA_X64) && !resultflags.HasInstructionSet(InstructionSet_AVXIFMA))
+            resultflags.RemoveInstructionSet(InstructionSet_AVXIFMA_X64);
+        if (resultflags.HasInstructionSet(InstructionSet_AVXVNNI) && !resultflags.HasInstructionSet(InstructionSet_AVXVNNI_X64))
+            resultflags.RemoveInstructionSet(InstructionSet_AVXVNNI);
+        if (resultflags.HasInstructionSet(InstructionSet_AVXVNNI_X64) && !resultflags.HasInstructionSet(InstructionSet_AVXVNNI))
+            resultflags.RemoveInstructionSet(InstructionSet_AVXVNNI_X64);
         if (resultflags.HasInstructionSet(InstructionSet_GFNI) && !resultflags.HasInstructionSet(InstructionSet_GFNI_X64))
             resultflags.RemoveInstructionSet(InstructionSet_GFNI);
         if (resultflags.HasInstructionSet(InstructionSet_GFNI_X64) && !resultflags.HasInstructionSet(InstructionSet_GFNI))
             resultflags.RemoveInstructionSet(InstructionSet_GFNI_X64);
+        if (resultflags.HasInstructionSet(InstructionSet_SHA) && !resultflags.HasInstructionSet(InstructionSet_SHA_X64))
+            resultflags.RemoveInstructionSet(InstructionSet_SHA);
+        if (resultflags.HasInstructionSet(InstructionSet_SHA_X64) && !resultflags.HasInstructionSet(InstructionSet_SHA))
+            resultflags.RemoveInstructionSet(InstructionSet_SHA_X64);
+        if (resultflags.HasInstructionSet(InstructionSet_WAITPKG) && !resultflags.HasInstructionSet(InstructionSet_WAITPKG_X64))
+            resultflags.RemoveInstructionSet(InstructionSet_WAITPKG);
+        if (resultflags.HasInstructionSet(InstructionSet_WAITPKG_X64) && !resultflags.HasInstructionSet(InstructionSet_WAITPKG))
+            resultflags.RemoveInstructionSet(InstructionSet_WAITPKG_X64);
+        if (resultflags.HasInstructionSet(InstructionSet_X86Serialize) && !resultflags.HasInstructionSet(InstructionSet_X86Serialize_X64))
+            resultflags.RemoveInstructionSet(InstructionSet_X86Serialize);
+        if (resultflags.HasInstructionSet(InstructionSet_X86Serialize_X64) && !resultflags.HasInstructionSet(InstructionSet_X86Serialize))
+            resultflags.RemoveInstructionSet(InstructionSet_X86Serialize_X64);
         if (resultflags.HasInstructionSet(InstructionSet_SSE3) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
             resultflags.RemoveInstructionSet(InstructionSet_SSE3);
         if (resultflags.HasInstructionSet(InstructionSet_SSSE3) && !resultflags.HasInstructionSet(InstructionSet_SSE3))
@@ -507,43 +561,59 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_SSE42);
         if (resultflags.HasInstructionSet(InstructionSet_POPCNT) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
             resultflags.RemoveInstructionSet(InstructionSet_POPCNT);
-        if (resultflags.HasInstructionSet(InstructionSet_AVX) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
+        if (resultflags.HasInstructionSet(InstructionSet_AVX) && !resultflags.HasInstructionSet(InstructionSet_POPCNT))
             resultflags.RemoveInstructionSet(InstructionSet_AVX);
-        if (resultflags.HasInstructionSet(InstructionSet_AVX2) && !resultflags.HasInstructionSet(InstructionSet_AVX))
-            resultflags.RemoveInstructionSet(InstructionSet_AVX2);
         if (resultflags.HasInstructionSet(InstructionSet_BMI1) && !resultflags.HasInstructionSet(InstructionSet_AVX))
             resultflags.RemoveInstructionSet(InstructionSet_BMI1);
         if (resultflags.HasInstructionSet(InstructionSet_BMI2) && !resultflags.HasInstructionSet(InstructionSet_AVX))
             resultflags.RemoveInstructionSet(InstructionSet_BMI2);
         if (resultflags.HasInstructionSet(InstructionSet_FMA) && !resultflags.HasInstructionSet(InstructionSet_AVX))
             resultflags.RemoveInstructionSet(InstructionSet_FMA);
-        if (resultflags.HasInstructionSet(InstructionSet_LZCNT) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
+        if (resultflags.HasInstructionSet(InstructionSet_LZCNT) && !resultflags.HasInstructionSet(InstructionSet_AVX))
             resultflags.RemoveInstructionSet(InstructionSet_LZCNT);
-        if (resultflags.HasInstructionSet(InstructionSet_MOVBE) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
+        if (resultflags.HasInstructionSet(InstructionSet_MOVBE) && !resultflags.HasInstructionSet(InstructionSet_AVX))
             resultflags.RemoveInstructionSet(InstructionSet_MOVBE);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX2) && !resultflags.HasInstructionSet(InstructionSet_BMI1))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX2);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX2) && !resultflags.HasInstructionSet(InstructionSet_BMI2))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX2);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX2) && !resultflags.HasInstructionSet(InstructionSet_FMA))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX2);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX2) && !resultflags.HasInstructionSet(InstructionSet_LZCNT))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX2);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX2) && !resultflags.HasInstructionSet(InstructionSet_MOVBE))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX2);
         if (resultflags.HasInstructionSet(InstructionSet_AVX512) && !resultflags.HasInstructionSet(InstructionSet_AVX2))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX512);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX512) && !resultflags.HasInstructionSet(InstructionSet_BMI1))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX512);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX512) && !resultflags.HasInstructionSet(InstructionSet_BMI2))
             resultflags.RemoveInstructionSet(InstructionSet_AVX512);
         if (resultflags.HasInstructionSet(InstructionSet_AVX512) && !resultflags.HasInstructionSet(InstructionSet_FMA))
             resultflags.RemoveInstructionSet(InstructionSet_AVX512);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX512) && !resultflags.HasInstructionSet(InstructionSet_LZCNT))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX512);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX512) && !resultflags.HasInstructionSet(InstructionSet_MOVBE))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX512);
         if (resultflags.HasInstructionSet(InstructionSet_AVX512VBMI) && !resultflags.HasInstructionSet(InstructionSet_AVX512))
             resultflags.RemoveInstructionSet(InstructionSet_AVX512VBMI);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX512v3) && !resultflags.HasInstructionSet(InstructionSet_AVX512VBMI))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX512v3);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX10v1) && !resultflags.HasInstructionSet(InstructionSet_AVX512v3))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX10v1);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX10v2) && !resultflags.HasInstructionSet(InstructionSet_AVX10v1))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX10v2);
         if (resultflags.HasInstructionSet(InstructionSet_AES) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
             resultflags.RemoveInstructionSet(InstructionSet_AES);
-        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ) && !resultflags.HasInstructionSet(InstructionSet_AES))
             resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
-        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ))
-            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V256);
-        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256) && !resultflags.HasInstructionSet(InstructionSet_AVX))
-            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V256);
-        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V512) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256))
-            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V512);
-        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V512) && !resultflags.HasInstructionSet(InstructionSet_AVX512))
-            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V512);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX512VP2INTERSECT) && !resultflags.HasInstructionSet(InstructionSet_AVX512))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX512VP2INTERSECT);
+        if (resultflags.HasInstructionSet(InstructionSet_AVXIFMA) && !resultflags.HasInstructionSet(InstructionSet_AVX2))
+            resultflags.RemoveInstructionSet(InstructionSet_AVXIFMA);
         if (resultflags.HasInstructionSet(InstructionSet_AVXVNNI) && !resultflags.HasInstructionSet(InstructionSet_AVX2))
             resultflags.RemoveInstructionSet(InstructionSet_AVXVNNI);
-        if (resultflags.HasInstructionSet(InstructionSet_X86Serialize) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
-            resultflags.RemoveInstructionSet(InstructionSet_X86Serialize);
-        if (resultflags.HasInstructionSet(InstructionSet_GFNI) && !resultflags.HasInstructionSet(InstructionSet_SSE41))
+        if (resultflags.HasInstructionSet(InstructionSet_GFNI) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
             resultflags.RemoveInstructionSet(InstructionSet_GFNI);
         if (resultflags.HasInstructionSet(InstructionSet_GFNI_V256) && !resultflags.HasInstructionSet(InstructionSet_GFNI))
             resultflags.RemoveInstructionSet(InstructionSet_GFNI_V256);
@@ -553,12 +623,28 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_GFNI_V512);
         if (resultflags.HasInstructionSet(InstructionSet_GFNI_V512) && !resultflags.HasInstructionSet(InstructionSet_AVX512))
             resultflags.RemoveInstructionSet(InstructionSet_GFNI_V512);
-        if (resultflags.HasInstructionSet(InstructionSet_AVX10v1) && !resultflags.HasInstructionSet(InstructionSet_AVX512))
-            resultflags.RemoveInstructionSet(InstructionSet_AVX10v1);
-        if (resultflags.HasInstructionSet(InstructionSet_AVX10v1) && !resultflags.HasInstructionSet(InstructionSet_AVX512VBMI))
-            resultflags.RemoveInstructionSet(InstructionSet_AVX10v1);
-        if (resultflags.HasInstructionSet(InstructionSet_AVX10v2) && !resultflags.HasInstructionSet(InstructionSet_AVX10v1))
-            resultflags.RemoveInstructionSet(InstructionSet_AVX10v2);
+        if (resultflags.HasInstructionSet(InstructionSet_SHA) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
+            resultflags.RemoveInstructionSet(InstructionSet_SHA);
+        if (resultflags.HasInstructionSet(InstructionSet_AES_V256) && !resultflags.HasInstructionSet(InstructionSet_AES))
+            resultflags.RemoveInstructionSet(InstructionSet_AES_V256);
+        if (resultflags.HasInstructionSet(InstructionSet_AES_V256) && !resultflags.HasInstructionSet(InstructionSet_AVX))
+            resultflags.RemoveInstructionSet(InstructionSet_AES_V256);
+        if (resultflags.HasInstructionSet(InstructionSet_AES_V512) && !resultflags.HasInstructionSet(InstructionSet_AES_V256))
+            resultflags.RemoveInstructionSet(InstructionSet_AES_V512);
+        if (resultflags.HasInstructionSet(InstructionSet_AES_V512) && !resultflags.HasInstructionSet(InstructionSet_AVX512))
+            resultflags.RemoveInstructionSet(InstructionSet_AES_V512);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V256);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256) && !resultflags.HasInstructionSet(InstructionSet_AES_V256))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V256);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V512) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V512);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V512) && !resultflags.HasInstructionSet(InstructionSet_AES_V512))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V512);
+        if (resultflags.HasInstructionSet(InstructionSet_WAITPKG) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
+            resultflags.RemoveInstructionSet(InstructionSet_WAITPKG);
+        if (resultflags.HasInstructionSet(InstructionSet_X86Serialize) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
+            resultflags.RemoveInstructionSet(InstructionSet_X86Serialize);
         if (resultflags.HasInstructionSet(InstructionSet_Vector128) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
             resultflags.RemoveInstructionSet(InstructionSet_Vector128);
         if (resultflags.HasInstructionSet(InstructionSet_Vector256) && !resultflags.HasInstructionSet(InstructionSet_AVX))
@@ -583,43 +669,59 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_SSE42);
         if (resultflags.HasInstructionSet(InstructionSet_POPCNT) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
             resultflags.RemoveInstructionSet(InstructionSet_POPCNT);
-        if (resultflags.HasInstructionSet(InstructionSet_AVX) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
+        if (resultflags.HasInstructionSet(InstructionSet_AVX) && !resultflags.HasInstructionSet(InstructionSet_POPCNT))
             resultflags.RemoveInstructionSet(InstructionSet_AVX);
-        if (resultflags.HasInstructionSet(InstructionSet_AVX2) && !resultflags.HasInstructionSet(InstructionSet_AVX))
-            resultflags.RemoveInstructionSet(InstructionSet_AVX2);
         if (resultflags.HasInstructionSet(InstructionSet_BMI1) && !resultflags.HasInstructionSet(InstructionSet_AVX))
             resultflags.RemoveInstructionSet(InstructionSet_BMI1);
         if (resultflags.HasInstructionSet(InstructionSet_BMI2) && !resultflags.HasInstructionSet(InstructionSet_AVX))
             resultflags.RemoveInstructionSet(InstructionSet_BMI2);
         if (resultflags.HasInstructionSet(InstructionSet_FMA) && !resultflags.HasInstructionSet(InstructionSet_AVX))
             resultflags.RemoveInstructionSet(InstructionSet_FMA);
-        if (resultflags.HasInstructionSet(InstructionSet_LZCNT) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
+        if (resultflags.HasInstructionSet(InstructionSet_LZCNT) && !resultflags.HasInstructionSet(InstructionSet_AVX))
             resultflags.RemoveInstructionSet(InstructionSet_LZCNT);
-        if (resultflags.HasInstructionSet(InstructionSet_MOVBE) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
+        if (resultflags.HasInstructionSet(InstructionSet_MOVBE) && !resultflags.HasInstructionSet(InstructionSet_AVX))
             resultflags.RemoveInstructionSet(InstructionSet_MOVBE);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX2) && !resultflags.HasInstructionSet(InstructionSet_BMI1))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX2);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX2) && !resultflags.HasInstructionSet(InstructionSet_BMI2))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX2);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX2) && !resultflags.HasInstructionSet(InstructionSet_FMA))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX2);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX2) && !resultflags.HasInstructionSet(InstructionSet_LZCNT))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX2);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX2) && !resultflags.HasInstructionSet(InstructionSet_MOVBE))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX2);
         if (resultflags.HasInstructionSet(InstructionSet_AVX512) && !resultflags.HasInstructionSet(InstructionSet_AVX2))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX512);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX512) && !resultflags.HasInstructionSet(InstructionSet_BMI1))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX512);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX512) && !resultflags.HasInstructionSet(InstructionSet_BMI2))
             resultflags.RemoveInstructionSet(InstructionSet_AVX512);
         if (resultflags.HasInstructionSet(InstructionSet_AVX512) && !resultflags.HasInstructionSet(InstructionSet_FMA))
             resultflags.RemoveInstructionSet(InstructionSet_AVX512);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX512) && !resultflags.HasInstructionSet(InstructionSet_LZCNT))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX512);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX512) && !resultflags.HasInstructionSet(InstructionSet_MOVBE))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX512);
         if (resultflags.HasInstructionSet(InstructionSet_AVX512VBMI) && !resultflags.HasInstructionSet(InstructionSet_AVX512))
             resultflags.RemoveInstructionSet(InstructionSet_AVX512VBMI);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX512v3) && !resultflags.HasInstructionSet(InstructionSet_AVX512VBMI))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX512v3);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX10v1) && !resultflags.HasInstructionSet(InstructionSet_AVX512v3))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX10v1);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX10v2) && !resultflags.HasInstructionSet(InstructionSet_AVX10v1))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX10v2);
         if (resultflags.HasInstructionSet(InstructionSet_AES) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
             resultflags.RemoveInstructionSet(InstructionSet_AES);
-        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ) && !resultflags.HasInstructionSet(InstructionSet_AES))
             resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
-        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ))
-            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V256);
-        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256) && !resultflags.HasInstructionSet(InstructionSet_AVX))
-            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V256);
-        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V512) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256))
-            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V512);
-        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V512) && !resultflags.HasInstructionSet(InstructionSet_AVX512))
-            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V512);
+        if (resultflags.HasInstructionSet(InstructionSet_AVX512VP2INTERSECT) && !resultflags.HasInstructionSet(InstructionSet_AVX512))
+            resultflags.RemoveInstructionSet(InstructionSet_AVX512VP2INTERSECT);
+        if (resultflags.HasInstructionSet(InstructionSet_AVXIFMA) && !resultflags.HasInstructionSet(InstructionSet_AVX2))
+            resultflags.RemoveInstructionSet(InstructionSet_AVXIFMA);
         if (resultflags.HasInstructionSet(InstructionSet_AVXVNNI) && !resultflags.HasInstructionSet(InstructionSet_AVX2))
             resultflags.RemoveInstructionSet(InstructionSet_AVXVNNI);
-        if (resultflags.HasInstructionSet(InstructionSet_X86Serialize) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
-            resultflags.RemoveInstructionSet(InstructionSet_X86Serialize);
-        if (resultflags.HasInstructionSet(InstructionSet_GFNI) && !resultflags.HasInstructionSet(InstructionSet_SSE41))
+        if (resultflags.HasInstructionSet(InstructionSet_GFNI) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
             resultflags.RemoveInstructionSet(InstructionSet_GFNI);
         if (resultflags.HasInstructionSet(InstructionSet_GFNI_V256) && !resultflags.HasInstructionSet(InstructionSet_GFNI))
             resultflags.RemoveInstructionSet(InstructionSet_GFNI_V256);
@@ -629,12 +731,28 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_GFNI_V512);
         if (resultflags.HasInstructionSet(InstructionSet_GFNI_V512) && !resultflags.HasInstructionSet(InstructionSet_AVX512))
             resultflags.RemoveInstructionSet(InstructionSet_GFNI_V512);
-        if (resultflags.HasInstructionSet(InstructionSet_AVX10v1) && !resultflags.HasInstructionSet(InstructionSet_AVX512))
-            resultflags.RemoveInstructionSet(InstructionSet_AVX10v1);
-        if (resultflags.HasInstructionSet(InstructionSet_AVX10v1) && !resultflags.HasInstructionSet(InstructionSet_AVX512VBMI))
-            resultflags.RemoveInstructionSet(InstructionSet_AVX10v1);
-        if (resultflags.HasInstructionSet(InstructionSet_AVX10v2) && !resultflags.HasInstructionSet(InstructionSet_AVX10v1))
-            resultflags.RemoveInstructionSet(InstructionSet_AVX10v2);
+        if (resultflags.HasInstructionSet(InstructionSet_SHA) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
+            resultflags.RemoveInstructionSet(InstructionSet_SHA);
+        if (resultflags.HasInstructionSet(InstructionSet_AES_V256) && !resultflags.HasInstructionSet(InstructionSet_AES))
+            resultflags.RemoveInstructionSet(InstructionSet_AES_V256);
+        if (resultflags.HasInstructionSet(InstructionSet_AES_V256) && !resultflags.HasInstructionSet(InstructionSet_AVX))
+            resultflags.RemoveInstructionSet(InstructionSet_AES_V256);
+        if (resultflags.HasInstructionSet(InstructionSet_AES_V512) && !resultflags.HasInstructionSet(InstructionSet_AES_V256))
+            resultflags.RemoveInstructionSet(InstructionSet_AES_V512);
+        if (resultflags.HasInstructionSet(InstructionSet_AES_V512) && !resultflags.HasInstructionSet(InstructionSet_AVX512))
+            resultflags.RemoveInstructionSet(InstructionSet_AES_V512);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V256);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256) && !resultflags.HasInstructionSet(InstructionSet_AES_V256))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V256);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V512) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V512);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V512) && !resultflags.HasInstructionSet(InstructionSet_AES_V512))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V512);
+        if (resultflags.HasInstructionSet(InstructionSet_WAITPKG) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
+            resultflags.RemoveInstructionSet(InstructionSet_WAITPKG);
+        if (resultflags.HasInstructionSet(InstructionSet_X86Serialize) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
+            resultflags.RemoveInstructionSet(InstructionSet_X86Serialize);
         if (resultflags.HasInstructionSet(InstructionSet_Vector128) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
             resultflags.RemoveInstructionSet(InstructionSet_Vector128);
         if (resultflags.HasInstructionSet(InstructionSet_Vector256) && !resultflags.HasInstructionSet(InstructionSet_AVX))
@@ -747,6 +865,10 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "SSE42";
         case InstructionSet_SSE42_X64 :
             return "SSE42_X64";
+        case InstructionSet_POPCNT :
+            return "POPCNT";
+        case InstructionSet_POPCNT_X64 :
+            return "POPCNT_X64";
         case InstructionSet_AVX :
             return "AVX";
         case InstructionSet_AVX_X64 :
@@ -755,10 +877,6 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "AVX2";
         case InstructionSet_AVX2_X64 :
             return "AVX2_X64";
-        case InstructionSet_AES :
-            return "AES";
-        case InstructionSet_AES_X64 :
-            return "AES_X64";
         case InstructionSet_BMI1 :
             return "BMI1";
         case InstructionSet_BMI1_X64 :
@@ -775,34 +893,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "LZCNT";
         case InstructionSet_LZCNT_X64 :
             return "LZCNT_X64";
-        case InstructionSet_PCLMULQDQ :
-            return "PCLMULQDQ";
-        case InstructionSet_PCLMULQDQ_X64 :
-            return "PCLMULQDQ_X64";
-        case InstructionSet_PCLMULQDQ_V256 :
-            return "PCLMULQDQ_V256";
-        case InstructionSet_PCLMULQDQ_V512 :
-            return "PCLMULQDQ_V512";
-        case InstructionSet_POPCNT :
-            return "POPCNT";
-        case InstructionSet_POPCNT_X64 :
-            return "POPCNT_X64";
-        case InstructionSet_Vector128 :
-            return "Vector128";
-        case InstructionSet_Vector256 :
-            return "Vector256";
-        case InstructionSet_Vector512 :
-            return "Vector512";
-        case InstructionSet_AVXVNNI :
-            return "AVXVNNI";
-        case InstructionSet_AVXVNNI_X64 :
-            return "AVXVNNI_X64";
         case InstructionSet_MOVBE :
             return "MOVBE";
-        case InstructionSet_X86Serialize :
-            return "X86Serialize";
-        case InstructionSet_X86Serialize_X64 :
-            return "X86Serialize_X64";
         case InstructionSet_AVX512 :
             return "AVX512";
         case InstructionSet_AVX512_X64 :
@@ -811,22 +903,40 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "AVX512VBMI";
         case InstructionSet_AVX512VBMI_X64 :
             return "AVX512VBMI_X64";
+        case InstructionSet_AVX512v3 :
+            return "AVX512v3";
+        case InstructionSet_AVX512v3_X64 :
+            return "AVX512v3_X64";
         case InstructionSet_AVX10v1 :
             return "AVX10v1";
         case InstructionSet_AVX10v1_X64 :
             return "AVX10v1_X64";
-        case InstructionSet_VectorT128 :
-            return "VectorT128";
-        case InstructionSet_VectorT256 :
-            return "VectorT256";
-        case InstructionSet_VectorT512 :
-            return "VectorT512";
-        case InstructionSet_APX :
-            return "APX";
         case InstructionSet_AVX10v2 :
             return "AVX10v2";
         case InstructionSet_AVX10v2_X64 :
             return "AVX10v2_X64";
+        case InstructionSet_APX :
+            return "APX";
+        case InstructionSet_AES :
+            return "AES";
+        case InstructionSet_AES_X64 :
+            return "AES_X64";
+        case InstructionSet_PCLMULQDQ :
+            return "PCLMULQDQ";
+        case InstructionSet_PCLMULQDQ_X64 :
+            return "PCLMULQDQ_X64";
+        case InstructionSet_AVX512VP2INTERSECT :
+            return "AVX512VP2INTERSECT";
+        case InstructionSet_AVX512VP2INTERSECT_X64 :
+            return "AVX512VP2INTERSECT_X64";
+        case InstructionSet_AVXIFMA :
+            return "AVXIFMA";
+        case InstructionSet_AVXIFMA_X64 :
+            return "AVXIFMA_X64";
+        case InstructionSet_AVXVNNI :
+            return "AVXVNNI";
+        case InstructionSet_AVXVNNI_X64 :
+            return "AVXVNNI_X64";
         case InstructionSet_GFNI :
             return "GFNI";
         case InstructionSet_GFNI_X64 :
@@ -835,6 +945,38 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "GFNI_V256";
         case InstructionSet_GFNI_V512 :
             return "GFNI_V512";
+        case InstructionSet_SHA :
+            return "SHA";
+        case InstructionSet_SHA_X64 :
+            return "SHA_X64";
+        case InstructionSet_AES_V256 :
+            return "AES_V256";
+        case InstructionSet_AES_V512 :
+            return "AES_V512";
+        case InstructionSet_PCLMULQDQ_V256 :
+            return "PCLMULQDQ_V256";
+        case InstructionSet_PCLMULQDQ_V512 :
+            return "PCLMULQDQ_V512";
+        case InstructionSet_WAITPKG :
+            return "WAITPKG";
+        case InstructionSet_WAITPKG_X64 :
+            return "WAITPKG_X64";
+        case InstructionSet_X86Serialize :
+            return "X86Serialize";
+        case InstructionSet_X86Serialize_X64 :
+            return "X86Serialize_X64";
+        case InstructionSet_Vector128 :
+            return "Vector128";
+        case InstructionSet_Vector256 :
+            return "Vector256";
+        case InstructionSet_Vector512 :
+            return "Vector512";
+        case InstructionSet_VectorT128 :
+            return "VectorT128";
+        case InstructionSet_VectorT256 :
+            return "VectorT256";
+        case InstructionSet_VectorT512 :
+            return "VectorT512";
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
         case InstructionSet_X86Base :
@@ -847,12 +989,12 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "SSE41";
         case InstructionSet_SSE42 :
             return "SSE42";
+        case InstructionSet_POPCNT :
+            return "POPCNT";
         case InstructionSet_AVX :
             return "AVX";
         case InstructionSet_AVX2 :
             return "AVX2";
-        case InstructionSet_AES :
-            return "AES";
         case InstructionSet_BMI1 :
             return "BMI1";
         case InstructionSet_BMI2 :
@@ -861,48 +1003,62 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "FMA";
         case InstructionSet_LZCNT :
             return "LZCNT";
-        case InstructionSet_PCLMULQDQ :
-            return "PCLMULQDQ";
-        case InstructionSet_PCLMULQDQ_V256 :
-            return "PCLMULQDQ_V256";
-        case InstructionSet_PCLMULQDQ_V512 :
-            return "PCLMULQDQ_V512";
-        case InstructionSet_POPCNT :
-            return "POPCNT";
-        case InstructionSet_Vector128 :
-            return "Vector128";
-        case InstructionSet_Vector256 :
-            return "Vector256";
-        case InstructionSet_Vector512 :
-            return "Vector512";
-        case InstructionSet_AVXVNNI :
-            return "AVXVNNI";
         case InstructionSet_MOVBE :
             return "MOVBE";
-        case InstructionSet_X86Serialize :
-            return "X86Serialize";
         case InstructionSet_AVX512 :
             return "AVX512";
         case InstructionSet_AVX512VBMI :
             return "AVX512VBMI";
+        case InstructionSet_AVX512v3 :
+            return "AVX512v3";
         case InstructionSet_AVX10v1 :
             return "AVX10v1";
-        case InstructionSet_VectorT128 :
-            return "VectorT128";
-        case InstructionSet_VectorT256 :
-            return "VectorT256";
-        case InstructionSet_VectorT512 :
-            return "VectorT512";
-        case InstructionSet_APX :
-            return "APX";
         case InstructionSet_AVX10v2 :
             return "AVX10v2";
+        case InstructionSet_APX :
+            return "APX";
+        case InstructionSet_AES :
+            return "AES";
+        case InstructionSet_PCLMULQDQ :
+            return "PCLMULQDQ";
+        case InstructionSet_AVX512VP2INTERSECT :
+            return "AVX512VP2INTERSECT";
+        case InstructionSet_AVXIFMA :
+            return "AVXIFMA";
+        case InstructionSet_AVXVNNI :
+            return "AVXVNNI";
         case InstructionSet_GFNI :
             return "GFNI";
         case InstructionSet_GFNI_V256 :
             return "GFNI_V256";
         case InstructionSet_GFNI_V512 :
             return "GFNI_V512";
+        case InstructionSet_SHA :
+            return "SHA";
+        case InstructionSet_AES_V256 :
+            return "AES_V256";
+        case InstructionSet_AES_V512 :
+            return "AES_V512";
+        case InstructionSet_PCLMULQDQ_V256 :
+            return "PCLMULQDQ_V256";
+        case InstructionSet_PCLMULQDQ_V512 :
+            return "PCLMULQDQ_V512";
+        case InstructionSet_WAITPKG :
+            return "WAITPKG";
+        case InstructionSet_X86Serialize :
+            return "X86Serialize";
+        case InstructionSet_Vector128 :
+            return "Vector128";
+        case InstructionSet_Vector256 :
+            return "Vector256";
+        case InstructionSet_Vector512 :
+            return "Vector512";
+        case InstructionSet_VectorT128 :
+            return "VectorT128";
+        case InstructionSet_VectorT256 :
+            return "VectorT256";
+        case InstructionSet_VectorT512 :
+            return "VectorT512";
 #endif // TARGET_X86
 
         default:
@@ -951,20 +1107,15 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Ssse3: return InstructionSet_SSSE3;
         case READYTORUN_INSTRUCTION_Sse41: return InstructionSet_SSE41;
         case READYTORUN_INSTRUCTION_Sse42: return InstructionSet_SSE42;
+        case READYTORUN_INSTRUCTION_Popcnt: return InstructionSet_POPCNT;
         case READYTORUN_INSTRUCTION_Avx: return InstructionSet_AVX;
         case READYTORUN_INSTRUCTION_Avx2: return InstructionSet_AVX2;
-        case READYTORUN_INSTRUCTION_Aes: return InstructionSet_AES;
         case READYTORUN_INSTRUCTION_Bmi1: return InstructionSet_BMI1;
         case READYTORUN_INSTRUCTION_Bmi2: return InstructionSet_BMI2;
+        case READYTORUN_INSTRUCTION_F16C: return InstructionSet_AVX2;
         case READYTORUN_INSTRUCTION_Fma: return InstructionSet_FMA;
         case READYTORUN_INSTRUCTION_Lzcnt: return InstructionSet_LZCNT;
-        case READYTORUN_INSTRUCTION_Pclmulqdq: return InstructionSet_PCLMULQDQ;
-        case READYTORUN_INSTRUCTION_Pclmulqdq_V256: return InstructionSet_PCLMULQDQ_V256;
-        case READYTORUN_INSTRUCTION_Pclmulqdq_V512: return InstructionSet_PCLMULQDQ_V512;
-        case READYTORUN_INSTRUCTION_Popcnt: return InstructionSet_POPCNT;
-        case READYTORUN_INSTRUCTION_AvxVnni: return InstructionSet_AVXVNNI;
         case READYTORUN_INSTRUCTION_Movbe: return InstructionSet_MOVBE;
-        case READYTORUN_INSTRUCTION_X86Serialize: return InstructionSet_X86Serialize;
         case READYTORUN_INSTRUCTION_Evex: return InstructionSet_AVX512;
         case READYTORUN_INSTRUCTION_Avx512F: return InstructionSet_AVX512;
         case READYTORUN_INSTRUCTION_Avx512F_VL: return InstructionSet_AVX512;
@@ -974,19 +1125,44 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Avx512CD_VL: return InstructionSet_AVX512;
         case READYTORUN_INSTRUCTION_Avx512DQ: return InstructionSet_AVX512;
         case READYTORUN_INSTRUCTION_Avx512DQ_VL: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512Ifma: return InstructionSet_AVX512VBMI;
         case READYTORUN_INSTRUCTION_Avx512Vbmi: return InstructionSet_AVX512VBMI;
         case READYTORUN_INSTRUCTION_Avx512Vbmi_VL: return InstructionSet_AVX512VBMI;
+        case READYTORUN_INSTRUCTION_Avx512Bitalg: return InstructionSet_AVX512v3;
+        case READYTORUN_INSTRUCTION_Avx512Bitalg_VL: return InstructionSet_AVX512v3;
+        case READYTORUN_INSTRUCTION_Avx512Vbmi2: return InstructionSet_AVX512v3;
+        case READYTORUN_INSTRUCTION_Avx512Vbmi2_VL: return InstructionSet_AVX512v3;
+        case READYTORUN_INSTRUCTION_Avx512Vnni: return InstructionSet_AVX512v3;
+        case READYTORUN_INSTRUCTION_Avx512Vpopcntdq: return InstructionSet_AVX512v3;
+        case READYTORUN_INSTRUCTION_Avx512Vpopcntdq_VL: return InstructionSet_AVX512v3;
+        case READYTORUN_INSTRUCTION_Avx512Bf16: return InstructionSet_AVX10v1;
+        case READYTORUN_INSTRUCTION_Avx512Bf16_VL: return InstructionSet_AVX10v1;
+        case READYTORUN_INSTRUCTION_Avx512Fp16: return InstructionSet_AVX10v1;
+        case READYTORUN_INSTRUCTION_Avx512Fp16_VL: return InstructionSet_AVX10v1;
         case READYTORUN_INSTRUCTION_Avx10v1: return InstructionSet_AVX10v1;
         case READYTORUN_INSTRUCTION_Avx10v1_V512: return InstructionSet_AVX10v1;
-        case READYTORUN_INSTRUCTION_VectorT128: return InstructionSet_VectorT128;
-        case READYTORUN_INSTRUCTION_VectorT256: return InstructionSet_VectorT256;
-        case READYTORUN_INSTRUCTION_VectorT512: return InstructionSet_VectorT512;
-        case READYTORUN_INSTRUCTION_Apx: return InstructionSet_APX;
         case READYTORUN_INSTRUCTION_Avx10v2: return InstructionSet_AVX10v2;
         case READYTORUN_INSTRUCTION_Avx10v2_V512: return InstructionSet_AVX10v2;
+        case READYTORUN_INSTRUCTION_Apx: return InstructionSet_APX;
+        case READYTORUN_INSTRUCTION_Aes: return InstructionSet_AES;
+        case READYTORUN_INSTRUCTION_Pclmulqdq: return InstructionSet_PCLMULQDQ;
+        case READYTORUN_INSTRUCTION_Avx512Vp2intersect: return InstructionSet_AVX512VP2INTERSECT;
+        case READYTORUN_INSTRUCTION_Avx512Vp2intersect_VL: return InstructionSet_AVX512VP2INTERSECT;
+        case READYTORUN_INSTRUCTION_AvxIfma: return InstructionSet_AVXIFMA;
+        case READYTORUN_INSTRUCTION_AvxVnni: return InstructionSet_AVXVNNI;
         case READYTORUN_INSTRUCTION_Gfni: return InstructionSet_GFNI;
         case READYTORUN_INSTRUCTION_Gfni_V256: return InstructionSet_GFNI_V256;
         case READYTORUN_INSTRUCTION_Gfni_V512: return InstructionSet_GFNI_V512;
+        case READYTORUN_INSTRUCTION_Sha: return InstructionSet_SHA;
+        case READYTORUN_INSTRUCTION_Aes_V256: return InstructionSet_AES_V256;
+        case READYTORUN_INSTRUCTION_Aes_V512: return InstructionSet_AES_V512;
+        case READYTORUN_INSTRUCTION_Pclmulqdq_V256: return InstructionSet_PCLMULQDQ_V256;
+        case READYTORUN_INSTRUCTION_Pclmulqdq_V512: return InstructionSet_PCLMULQDQ_V512;
+        case READYTORUN_INSTRUCTION_WaitPkg: return InstructionSet_WAITPKG;
+        case READYTORUN_INSTRUCTION_X86Serialize: return InstructionSet_X86Serialize;
+        case READYTORUN_INSTRUCTION_VectorT128: return InstructionSet_VectorT128;
+        case READYTORUN_INSTRUCTION_VectorT256: return InstructionSet_VectorT256;
+        case READYTORUN_INSTRUCTION_VectorT512: return InstructionSet_VectorT512;
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
         case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;
@@ -996,20 +1172,15 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Ssse3: return InstructionSet_SSSE3;
         case READYTORUN_INSTRUCTION_Sse41: return InstructionSet_SSE41;
         case READYTORUN_INSTRUCTION_Sse42: return InstructionSet_SSE42;
+        case READYTORUN_INSTRUCTION_Popcnt: return InstructionSet_POPCNT;
         case READYTORUN_INSTRUCTION_Avx: return InstructionSet_AVX;
         case READYTORUN_INSTRUCTION_Avx2: return InstructionSet_AVX2;
-        case READYTORUN_INSTRUCTION_Aes: return InstructionSet_AES;
         case READYTORUN_INSTRUCTION_Bmi1: return InstructionSet_BMI1;
         case READYTORUN_INSTRUCTION_Bmi2: return InstructionSet_BMI2;
+        case READYTORUN_INSTRUCTION_F16C: return InstructionSet_AVX2;
         case READYTORUN_INSTRUCTION_Fma: return InstructionSet_FMA;
         case READYTORUN_INSTRUCTION_Lzcnt: return InstructionSet_LZCNT;
-        case READYTORUN_INSTRUCTION_Pclmulqdq: return InstructionSet_PCLMULQDQ;
-        case READYTORUN_INSTRUCTION_Pclmulqdq_V256: return InstructionSet_PCLMULQDQ_V256;
-        case READYTORUN_INSTRUCTION_Pclmulqdq_V512: return InstructionSet_PCLMULQDQ_V512;
-        case READYTORUN_INSTRUCTION_Popcnt: return InstructionSet_POPCNT;
-        case READYTORUN_INSTRUCTION_AvxVnni: return InstructionSet_AVXVNNI;
         case READYTORUN_INSTRUCTION_Movbe: return InstructionSet_MOVBE;
-        case READYTORUN_INSTRUCTION_X86Serialize: return InstructionSet_X86Serialize;
         case READYTORUN_INSTRUCTION_Evex: return InstructionSet_AVX512;
         case READYTORUN_INSTRUCTION_Avx512F: return InstructionSet_AVX512;
         case READYTORUN_INSTRUCTION_Avx512F_VL: return InstructionSet_AVX512;
@@ -1019,19 +1190,44 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Avx512CD_VL: return InstructionSet_AVX512;
         case READYTORUN_INSTRUCTION_Avx512DQ: return InstructionSet_AVX512;
         case READYTORUN_INSTRUCTION_Avx512DQ_VL: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512Ifma: return InstructionSet_AVX512VBMI;
         case READYTORUN_INSTRUCTION_Avx512Vbmi: return InstructionSet_AVX512VBMI;
         case READYTORUN_INSTRUCTION_Avx512Vbmi_VL: return InstructionSet_AVX512VBMI;
+        case READYTORUN_INSTRUCTION_Avx512Bitalg: return InstructionSet_AVX512v3;
+        case READYTORUN_INSTRUCTION_Avx512Bitalg_VL: return InstructionSet_AVX512v3;
+        case READYTORUN_INSTRUCTION_Avx512Vbmi2: return InstructionSet_AVX512v3;
+        case READYTORUN_INSTRUCTION_Avx512Vbmi2_VL: return InstructionSet_AVX512v3;
+        case READYTORUN_INSTRUCTION_Avx512Vnni: return InstructionSet_AVX512v3;
+        case READYTORUN_INSTRUCTION_Avx512Vpopcntdq: return InstructionSet_AVX512v3;
+        case READYTORUN_INSTRUCTION_Avx512Vpopcntdq_VL: return InstructionSet_AVX512v3;
+        case READYTORUN_INSTRUCTION_Avx512Bf16: return InstructionSet_AVX10v1;
+        case READYTORUN_INSTRUCTION_Avx512Bf16_VL: return InstructionSet_AVX10v1;
+        case READYTORUN_INSTRUCTION_Avx512Fp16: return InstructionSet_AVX10v1;
+        case READYTORUN_INSTRUCTION_Avx512Fp16_VL: return InstructionSet_AVX10v1;
         case READYTORUN_INSTRUCTION_Avx10v1: return InstructionSet_AVX10v1;
         case READYTORUN_INSTRUCTION_Avx10v1_V512: return InstructionSet_AVX10v1;
-        case READYTORUN_INSTRUCTION_VectorT128: return InstructionSet_VectorT128;
-        case READYTORUN_INSTRUCTION_VectorT256: return InstructionSet_VectorT256;
-        case READYTORUN_INSTRUCTION_VectorT512: return InstructionSet_VectorT512;
-        case READYTORUN_INSTRUCTION_Apx: return InstructionSet_APX;
         case READYTORUN_INSTRUCTION_Avx10v2: return InstructionSet_AVX10v2;
         case READYTORUN_INSTRUCTION_Avx10v2_V512: return InstructionSet_AVX10v2;
+        case READYTORUN_INSTRUCTION_Apx: return InstructionSet_APX;
+        case READYTORUN_INSTRUCTION_Aes: return InstructionSet_AES;
+        case READYTORUN_INSTRUCTION_Pclmulqdq: return InstructionSet_PCLMULQDQ;
+        case READYTORUN_INSTRUCTION_Avx512Vp2intersect: return InstructionSet_AVX512VP2INTERSECT;
+        case READYTORUN_INSTRUCTION_Avx512Vp2intersect_VL: return InstructionSet_AVX512VP2INTERSECT;
+        case READYTORUN_INSTRUCTION_AvxIfma: return InstructionSet_AVXIFMA;
+        case READYTORUN_INSTRUCTION_AvxVnni: return InstructionSet_AVXVNNI;
         case READYTORUN_INSTRUCTION_Gfni: return InstructionSet_GFNI;
         case READYTORUN_INSTRUCTION_Gfni_V256: return InstructionSet_GFNI_V256;
         case READYTORUN_INSTRUCTION_Gfni_V512: return InstructionSet_GFNI_V512;
+        case READYTORUN_INSTRUCTION_Sha: return InstructionSet_SHA;
+        case READYTORUN_INSTRUCTION_Aes_V256: return InstructionSet_AES_V256;
+        case READYTORUN_INSTRUCTION_Aes_V512: return InstructionSet_AES_V512;
+        case READYTORUN_INSTRUCTION_Pclmulqdq_V256: return InstructionSet_PCLMULQDQ_V256;
+        case READYTORUN_INSTRUCTION_Pclmulqdq_V512: return InstructionSet_PCLMULQDQ_V512;
+        case READYTORUN_INSTRUCTION_WaitPkg: return InstructionSet_WAITPKG;
+        case READYTORUN_INSTRUCTION_X86Serialize: return InstructionSet_X86Serialize;
+        case READYTORUN_INSTRUCTION_VectorT128: return InstructionSet_VectorT128;
+        case READYTORUN_INSTRUCTION_VectorT256: return InstructionSet_VectorT256;
+        case READYTORUN_INSTRUCTION_VectorT512: return InstructionSet_VectorT512;
 #endif // TARGET_X86
 
         default:
