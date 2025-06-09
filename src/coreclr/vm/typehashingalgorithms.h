@@ -265,7 +265,7 @@ public:
         Add((uint32_t)(UINT_PTR)ptr);
         Add((uint32_t)(((UINT64)ptr) >> 32));
 #else
-        Add((uint32_t)(((UINT64)ptr) >> 32));
+        Add((uint32_t)(UINT_PTR)ptr);
 #endif
     }
     void Add(uint32_t val)
