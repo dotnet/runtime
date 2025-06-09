@@ -62,9 +62,7 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<byte> AsBytes(BitArray? array) =>
             array is null ? default :
-            MemoryMarshal
-                .AsBytes((Span<int>)array.m_array)
-                [..BitArray.GetByteArrayLengthFromBitLength(array.Length)];
+            array._array.AsSpan(0, BitArray.GetByteArrayLengthFromBitLength(array.Length));
 
         /// <summary>
         /// Gets either a ref to a <typeparamref name="TValue"/> in the <see cref="Dictionary{TKey, TValue}"/> or a ref null if it does not exist in the <paramref name="dictionary"/>.
