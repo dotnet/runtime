@@ -7876,10 +7876,10 @@ GenTreeVecCon* Compiler::gtNewVconNode(var_types type, void* data)
 #endif // FEATURE_SIMD
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-GenTreeMskCon* Compiler::gtNewMskConNode(var_types type, unsigned char simdSize)
+GenTreeMskCon* Compiler::gtNewMskConNode(var_types type, unsigned simdSize)
 {
     GenTreeMskCon* mskCon = new (this, GT_CNS_MSK) GenTreeMskCon(type);
-    mskCon->gtSimdSize = simdSize;
+    mskCon->gtSimdSize    = simdSize;
     return mskCon;
 }
 #endif // FEATURE_MASKED_HW_INTRINSICS

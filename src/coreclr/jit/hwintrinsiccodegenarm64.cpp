@@ -608,7 +608,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         if (intrin.op3->isContained())
                         {
-                            assert(intrin.op3->IsFalseMask());
+                            assert(intrin.op3->IsVectorZero());
 
                             if (intrin.op1->isContained() || intrin.op1->IsTrueMask(node))
                             {

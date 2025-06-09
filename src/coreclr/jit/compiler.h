@@ -3026,7 +3026,7 @@ public:
 #endif // FEATURE_SIMD
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-    GenTreeMskCon* gtNewMskConNode(var_types type, unsigned char simdSize);
+    GenTreeMskCon* gtNewMskConNode(var_types type, unsigned simdSize);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
     GenTree* gtNewAllBitsSetConNode(var_types type);

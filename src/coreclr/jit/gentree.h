@@ -7324,8 +7324,8 @@ struct GenTreeVecCon : public GenTree
 //
 struct GenTreeMskCon : public GenTree
 {
-    simdmask_t     gtSimdMaskVal;
-    unsigned char  gtSimdSize;         // SIMD vector size in bytes
+    simdmask_t gtSimdMaskVal;
+    unsigned   gtSimdSize; // SIMD vector size in bytes
 
     void EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize);
     void EvaluateBinaryInPlace(
