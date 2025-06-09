@@ -176,32 +176,10 @@ ep_provider_callback_data_queue_try_dequeue (
 	EventPipeProviderCallbackData *provider_callback_data);
 
 /*
- * EventPipeTracepoint.
- */
-
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
-struct _EventPipeTracepoint {
-#else
-struct _EventPipeTracepoint_Internal {
-#endif
-	const ep_char8_t *tracepoint_format;
-	uint32_t write_index;
-	uint32_t enabled;
-};
-
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
-struct _EventPipeTracepoint {
-	uint8_t _internal [sizeof (struct _EventPipeTracepoint_Internal)];
-};
-#endif
-
-bool
-ep_tracepoint_format_init (
-    EventPipeTracepoint *tracepoint,
-    const ep_char8_t *tracepoint_name);
-
-/*
  * EventPipeProviderEventFilter.
+ *
+ * Used as read-only data to configure a SessionProvider's set EventFilter,
+ * matching the DiagnosticServer IPC Protocol encoding specification.
  */
 
 #if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
@@ -210,7 +188,8 @@ struct _EventPipeProviderEventFilter {
 struct _EventPipeProviderEventFilter_Internal {
 #endif
 	bool enable;
-	dn_umap_t *event_ids;
+	uint32_t length;
+	const uint32_t *event_ids;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
@@ -219,17 +198,34 @@ struct _EventPipeProviderEventFilter {
 };
 #endif
 
-EventPipeProviderEventFilter *
-ep_provider_event_filter_dup (const EventPipeProviderEventFilter *event_filter_src);
+/*
+ * EventPipeProviderTracepointSet.
+ *
+ * Used as read-only data to configure a Tracepoint Configuration's set of non-default
+ * tracepoints, matching the DiagnosticServer IPC Protocol encoding specification.
+ */
 
-void
-ep_event_filter_fini (EventPipeProviderEventFilter *event_filter);
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeProviderTracepointSet {
+#else
+struct _EventPipeProviderTracepointSet_Internal {
+#endif
+	const ep_char8_t *tracepoint_name;
+	const uint32_t *event_ids;
+	uint32_t event_ids_length;
+};
 
-void
-ep_event_filter_free (EventPipeProviderEventFilter *event_filter);
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeProviderTracepointSet {
+	uint8_t _internal [sizeof (struct _EventPipeProviderTracepointSet_Internal)];
+};
+#endif
 
 /*
  * EventPipeProviderTracepointConfiguration.
+ *
+ * Used as read-only data to configure the SessionProvider's Tracepoint
+ * configuration, matching the DiagnosticServer IPC Protocol encoding specification.
  */
 
 #if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
@@ -237,9 +233,9 @@ struct _EventPipeProviderTracepointConfiguration {
 #else
 struct _EventPipeProviderTracepointConfiguration_Internal {
 #endif
-	EventPipeTracepoint default_tracepoint;
-	dn_vector_ptr_t *tracepoints;
-	dn_umap_t *event_id_to_tracepoint_map;
+	const ep_char8_t *default_tracepoint_name;
+	const EventPipeProviderTracepointSet *non_default_tracepoints;
+	uint32_t non_default_tracepoints_length;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
@@ -247,15 +243,6 @@ struct _EventPipeProviderTracepointConfiguration {
 	uint8_t _internal [sizeof (struct _EventPipeProviderTracepointConfiguration_Internal)];
 };
 #endif
-
-EventPipeProviderTracepointConfiguration *
-ep_provider_tracepoint_config_dup (const EventPipeProviderTracepointConfiguration *tracepoint_config);
-
-void
-ep_tracepoint_config_fini (EventPipeProviderTracepointConfiguration *tracepoint_config);
-
-void
-ep_tracepoint_config_free (EventPipeProviderTracepointConfiguration *tracepoint_config);
 
 /*
  * EventPipeProviderConfiguration.

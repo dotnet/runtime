@@ -62,10 +62,30 @@ eventpipe_collect_tracing_command_try_parse_stackwalk_requested (
 
 static
 bool
+eventpipe_collect_tracing_command_try_parse_event_ids (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	const uint32_t length,
+	uint32_t **event_ids);
+
+static
+void
+eventpipe_collect_tracing_command_free_event_filter (EventPipeProviderEventFilter *event_filter);
+
+static
+bool
 eventpipe_collect_tracing_command_try_parse_event_filter (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
 	EventPipeProviderEventFilter *event_filter);
+
+static
+void
+eventpipe_collect_tracing_command_free_tracepoint_set (EventPipeProviderTracepointSet *tracepoint_set);
+
+static
+void
+eventpipe_collect_tracing_command_free_tracepoint_config (EventPipeProviderTracepointConfiguration *tracepoint_config);
 
 static
 bool
@@ -222,6 +242,52 @@ eventpipe_collect_tracing_command_try_parse_stackwalk_requested (
 	return ds_ipc_message_try_parse_bool (buffer, buffer_len, stackwalk_requested);
 }
 
+static
+bool
+eventpipe_collect_tracing_command_try_parse_event_ids (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	const uint32_t length,
+	uint32_t **event_ids)
+{
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (buffer_len != NULL);
+	EP_ASSERT (event_ids != NULL);
+
+	bool result = false;
+
+	*event_ids = NULL;
+	if (length == 0)
+		return true;
+
+	*event_ids = ep_rt_object_array_alloc (uint32_t, length);
+	ep_raise_error_if_nok (*event_ids != NULL);
+	for (uint32_t i = 0; i < length; ++i)
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &(*event_ids)[i]));
+
+	result = true;
+
+ep_on_exit:
+	return result;
+
+ep_on_error:
+	ep_rt_object_array_free (*event_ids);
+	*event_ids = NULL;
+
+	ep_exit_error_handler ();
+}
+
+static
+void
+eventpipe_collect_tracing_command_free_event_filter (EventPipeProviderEventFilter *event_filter)
+{
+	ep_return_void_if_nok (event_filter != NULL);
+
+	ep_rt_object_array_free ((uint32_t *)event_filter->event_ids);
+
+	ep_rt_object_free (event_filter);
+}
+
 /*
  *  eventpipe_collect_tracing_command_try_parse_event_filter
  *
@@ -246,24 +312,15 @@ eventpipe_collect_tracing_command_try_parse_event_filter (
 	EP_ASSERT (event_filter != NULL);
 
 	bool result = false;
-	uint32_t event_id_array_len = 0;
+	uint32_t *event_ids = NULL;
 
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_bool (buffer, buffer_len, &event_filter->enable));
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &event_id_array_len));
-	if (event_id_array_len > 0) {
-		event_filter->event_ids = dn_umap_alloc ();
-		ep_raise_error_if_nok (event_filter->event_ids != NULL);
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &event_filter->length));
 
-		for (uint32_t i = 0; i < event_id_array_len; ++i) {
-			uint32_t event_id;
-			ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &event_id));
-			dn_umap_result_t insert_result = dn_umap_ptr_uint32_insert (event_filter->event_ids, (void *)(uintptr_t)event_id, 0);
-			ep_raise_error_if_nok (insert_result.result);
-		}
-	} else {
-		event_filter->event_ids = NULL;
-	}
+	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_ids (buffer, buffer_len, event_filter->length, &event_ids));
+	event_filter->event_ids = event_ids;
+	event_ids = NULL; // Ownership transferred to event_filter.
 
 	result = true;
 
@@ -271,9 +328,34 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	ep_event_filter_fini (event_filter);
-
 	ep_exit_error_handler ();
+}
+
+static
+void
+eventpipe_collect_tracing_command_free_tracepoint_sets (EventPipeProviderTracepointSet *tracepoint_set, uint32_t length)
+{
+	ep_return_void_if_nok (tracepoint_set != NULL);
+
+	for (uint32_t i = 0; i < length; ++i) {
+		ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_set->tracepoint_name);
+		ep_rt_object_array_free ((uint32_t *)tracepoint_set->event_ids);
+	}
+
+	ep_rt_object_array_free (tracepoint_set);
+}
+
+static
+void
+eventpipe_collect_tracing_command_free_tracepoint_config (EventPipeProviderTracepointConfiguration *tracepoint_config)
+{
+	ep_return_void_if_nok (tracepoint_config != NULL);
+
+	ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_config->default_tracepoint_name);
+
+	eventpipe_collect_tracing_command_free_tracepoint_sets ((EventPipeProviderTracepointSet *)tracepoint_config->non_default_tracepoints, tracepoint_config->non_default_tracepoints_length);
+
+	ep_rt_object_free (tracepoint_config);
 }
 
 /*
@@ -305,60 +387,38 @@ eventpipe_collect_tracing_command_try_parse_tracepoint_config (
 
 	bool result = false;
 
-	EventPipeTracepoint *tracepoint = NULL;
 	ep_char8_t *tracepoint_name = NULL;
-
-	uint32_t tracepoint_set_array_len = 0;
-
-	tracepoint_config->tracepoints = NULL;
-	tracepoint_config->event_id_to_tracepoint_map = NULL;
+	EventPipeProviderTracepointSet *non_default_tracepoints = NULL;
+	uint32_t *event_ids = NULL;
 
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &tracepoint_name));
+	tracepoint_config->default_tracepoint_name = tracepoint_name;
+	tracepoint_name = NULL; // Ownership transferred to tracepoint_config.
 
-	ep_raise_error_if_nok (ep_tracepoint_format_init (&tracepoint_config->default_tracepoint, tracepoint_name));
-	ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_name);
-	tracepoint_name = NULL;
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &tracepoint_config->non_default_tracepoints_length));
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &tracepoint_set_array_len));
-
-	if (tracepoint_set_array_len > 0) {
-		dn_vector_ptr_custom_alloc_params_t tracepoint_set_array_params = {0, };
-		tracepoint_set_array_params.capacity = tracepoint_set_array_len;
-		tracepoint_config->tracepoints = dn_vector_ptr_custom_alloc (&tracepoint_set_array_params);
-		ep_raise_error_if_nok (tracepoint_config->tracepoints != NULL);
-
-		tracepoint_config->event_id_to_tracepoint_map = dn_umap_alloc ();
-		ep_raise_error_if_nok (tracepoint_config->event_id_to_tracepoint_map != NULL);
-
-		for (uint32_t i = 0; i < tracepoint_set_array_len; ++i) {
-			tracepoint = ep_rt_object_alloc (EventPipeTracepoint); // Ownership will be transferred to the tracepoint_config's tracepoint vector.
-			ep_raise_error_if_nok (tracepoint != NULL);
-
-			ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &tracepoint_name));
-			ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (tracepoint_name));
-
-			ep_raise_error_if_nok (ep_tracepoint_format_init (tracepoint, tracepoint_name));
-			ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_name);
-			tracepoint_name = NULL;
-
-			uint32_t event_id_array_len = 0;
-			ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &event_id_array_len));
-			ep_raise_error_if_nok (event_id_array_len > 0);
-
-			for (uint32_t j = 0; j < event_id_array_len; ++j) {
-				uint32_t event_id;
-				ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &event_id));
-				dn_umap_result_t insert_result = dn_umap_insert (tracepoint_config->event_id_to_tracepoint_map, (void *)(uintptr_t)event_id, tracepoint);
-				ep_raise_error_if_nok (insert_result.result);
-			}
-
-			ep_raise_error_if_nok (dn_vector_ptr_push_back (tracepoint_config->tracepoints, tracepoint));
-			tracepoint = NULL;
-			// Ownership of tracepoint is transferred to the tracepoint_config's tracepoint vector.
-		}
+	if (tracepoint_config->non_default_tracepoints_length > 0) {
+		non_default_tracepoints = ep_rt_object_array_alloc (EventPipeProviderTracepointSet, tracepoint_config->non_default_tracepoints_length);
+		ep_raise_error_if_nok (non_default_tracepoints != NULL);
 	}
 
-	ep_raise_error_if_nok (tracepoint_config->default_tracepoint.tracepoint_format[0] != '\0' || tracepoint_config->tracepoints != NULL);
+	for (uint32_t i = 0; i < tracepoint_config->non_default_tracepoints_length; ++i) {
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &tracepoint_name));
+		ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (tracepoint_name));
+		non_default_tracepoints[i].tracepoint_name = tracepoint_name;
+		tracepoint_name = NULL; // Ownership transferred to tracepoint_set.
+
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &non_default_tracepoints[i].event_ids_length));
+
+		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_ids (buffer, buffer_len, non_default_tracepoints[i].event_ids_length, &event_ids));
+		non_default_tracepoints[i].event_ids = event_ids;
+		event_ids = NULL; // Ownership transferred to tracepoint_set.
+	}
+
+	tracepoint_config->non_default_tracepoints = non_default_tracepoints;
+	non_default_tracepoints = NULL; // Ownership transferred to tracepoint_config.
+
+	ep_raise_error_if_nok (tracepoint_config->default_tracepoint_name != NULL || tracepoint_config->non_default_tracepoints_length > 0);
 
 	result = true;
 
@@ -366,11 +426,9 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	ep_rt_object_free (tracepoint);
-	tracepoint = NULL;
-
-	ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_name);
-	tracepoint_name = NULL;
+	ep_rt_object_array_free (event_ids);
+	eventpipe_collect_tracing_command_free_tracepoint_sets ((EventPipeProviderTracepointSet *)non_default_tracepoints, tracepoint_config->non_default_tracepoints_length);
+	ep_rt_utf8_string_free (tracepoint_name);
 
 	ep_exit_error_handler ();
 }
@@ -426,7 +484,7 @@ eventpipe_collect_tracing_command_try_parse_provider_config (
 	filter_data = NULL; // Ownership transferred to provider_config.
 
 	if ((optional_field_flags & EP_PROVIDER_OPTFIELD_EVENT_FILTER) != 0) {
-		event_filter = ep_rt_object_alloc(EventPipeProviderEventFilter);
+		event_filter = ep_rt_object_alloc (EventPipeProviderEventFilter);
 		ep_raise_error_if_nok (event_filter != NULL);
 		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_filter (buffer, buffer_len, event_filter));
 		provider_config->event_filter = event_filter;
@@ -447,8 +505,8 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	ep_tracepoint_config_free (tracepoint_config);
-	ep_event_filter_free (event_filter);
+	eventpipe_collect_tracing_command_free_tracepoint_config (tracepoint_config);
+	eventpipe_collect_tracing_command_free_event_filter (event_filter);
 	ep_rt_utf8_string_free (filter_data);
 	ep_rt_utf8_string_free (provider_name);
 
@@ -509,8 +567,8 @@ ep_on_error:
 
 	ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (&provider_config));
 	ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&provider_config));
-	ep_event_filter_free ((EventPipeProviderEventFilter *)ep_provider_config_get_event_filter (&provider_config));
-	ep_tracepoint_config_free ((EventPipeProviderTracepointConfiguration *)ep_provider_config_get_tracepoint_config (&provider_config));
+	eventpipe_collect_tracing_command_free_event_filter ((EventPipeProviderEventFilter *)ep_provider_config_get_event_filter (&provider_config));
+	eventpipe_collect_tracing_command_free_tracepoint_config ((EventPipeProviderTracepointConfiguration *)ep_provider_config_get_tracepoint_config (&provider_config));
 
 	ep_exit_error_handler ();
 }
@@ -530,8 +588,8 @@ ds_eventpipe_collect_tracing_command_payload_free (EventPipeCollectTracingComman
 	DN_VECTOR_FOREACH_BEGIN (EventPipeProviderConfiguration, config, payload->provider_configs) {
 		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (&config));
 		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&config));
-		ep_event_filter_free ((EventPipeProviderEventFilter *)ep_provider_config_get_event_filter (&config));
-		ep_tracepoint_config_free ((EventPipeProviderTracepointConfiguration *)ep_provider_config_get_tracepoint_config (&config));
+		eventpipe_collect_tracing_command_free_event_filter ((EventPipeProviderEventFilter *)ep_provider_config_get_event_filter (&config));
+		eventpipe_collect_tracing_command_free_tracepoint_config ((EventPipeProviderTracepointConfiguration *)ep_provider_config_get_tracepoint_config (&config));
 	} DN_VECTOR_FOREACH_END;
 
 	ep_rt_object_free (payload);

@@ -12,6 +12,69 @@
 #include "ep-getter-setter.h"
 
 /*
+ * EventPipeTracepoint.
+ */
+
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeTracepoint {
+#else
+struct _EventPipeTracepoint_Internal {
+#endif
+	const ep_char8_t *tracepoint_format;
+	uint32_t write_index;
+	uint32_t enabled;
+};
+
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeTracepoint {
+	uint8_t _internal [sizeof (struct _EventPipeTracepoint_Internal)];
+};
+#endif
+
+
+/*
+ * EventPipeSessionProviderEventFilter.
+ *
+ * Used in conjunction with keywords and logging level to determine
+ * whether an event should be enabled for the session.
+ */
+
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeSessionProviderEventFilter {
+#else
+struct _EventPipeSessionProviderEventFilter_Internal {
+#endif
+	bool enable;
+	dn_umap_t *event_ids;
+};
+
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeSessionProviderEventFilter {
+	uint8_t _internal [sizeof (struct _EventPipeSessionProviderEventFilter_Internal)];
+};
+#endif
+
+/*
+ * EventPipeSessionProviderTracepointConfiguration.
+ */
+
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeSessionProviderTracepointConfiguration {
+#else
+struct _EventPipeSessionProviderTracepointConfiguration_Internal {
+#endif
+	EventPipeTracepoint default_tracepoint;
+	dn_vector_ptr_t *tracepoints;
+	dn_umap_t *event_id_to_tracepoint_map;
+};
+
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeSessionProviderTracepointConfiguration {
+	uint8_t _internal [sizeof (struct _EventPipeSessionProviderTracepointConfiguration_Internal)];
+};
+#endif
+
+/*
  * EventPipeSessionProvider.
  */
 
@@ -24,8 +87,8 @@ struct _EventPipeSessionProvider_Internal {
 	uint64_t keywords;
 	EventPipeEventLevel logging_level;
 	ep_char8_t *filter_data;
-	EventPipeProviderEventFilter *event_filter;
-	EventPipeProviderTracepointConfiguration *tracepoint_config;
+	const EventPipeSessionProviderEventFilter *event_filter;
+	EventPipeSessionProviderTracepointConfiguration *tracepoint_config;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_SESSION_PROVIDER_GETTER_SETTER)
@@ -38,8 +101,8 @@ EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, const ep_char8_t 
 EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, uint64_t, keywords)
 EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, EventPipeEventLevel, logging_level)
 EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, const ep_char8_t *, filter_data)
-EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, EventPipeProviderEventFilter *, event_filter)
-EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, EventPipeProviderTracepointConfiguration *, tracepoint_config)
+EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, const EventPipeSessionProviderEventFilter *, event_filter)
+EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, EventPipeSessionProviderTracepointConfiguration *, tracepoint_config)
 
 EventPipeSessionProvider *
 ep_session_provider_alloc (

@@ -314,7 +314,7 @@ session_user_events_tracepoints_init (
 		EventPipeSessionProvider *session_provider = *dn_list_it_data_t (it, EventPipeSessionProvider *);
 		EP_ASSERT (session_provider != NULL);
 
-		EventPipeProviderTracepointConfiguration *tracepoint_config = ep_session_provider_get_tracepoint_config (session_provider);
+		EventPipeSessionProviderTracepointConfiguration *tracepoint_config = ep_session_provider_get_tracepoint_config (session_provider);
 		EP_ASSERT (tracepoint_config != NULL);
 		EP_ASSERT (tracepoint_config->default_tracepoint.tracepoint_format[0] != '\0' || tracepoint_config->tracepoints != NULL);
 
@@ -733,7 +733,7 @@ session_disable_user_events (EventPipeSession *session)
 	EP_ASSERT (providers != NULL);
 	for (dn_list_it_t it = dn_list_begin (ep_session_provider_list_get_providers (providers)); !dn_list_it_end (it); it = dn_list_it_next (it)) {
 		EventPipeSessionProvider *session_provider = *dn_list_it_data_t (it, EventPipeSessionProvider *);
-		EventPipeProviderTracepointConfiguration *tracepoint_config = ep_session_provider_get_tracepoint_config (session_provider);
+		EventPipeSessionProviderTracepointConfiguration *tracepoint_config = ep_session_provider_get_tracepoint_config (session_provider);
 		if (tracepoint_config->default_tracepoint.tracepoint_format[0] != '\0')
 			session_unregister_tracepoint (session, &tracepoint_config->default_tracepoint);
 
@@ -768,7 +768,7 @@ session_get_tracepoint_for_event (
 	EventPipeProvider *provider = ep_event_get_provider (ep_event);
 	EventPipeSessionProviderList *session_provider_list = ep_session_get_providers (session);
 	EventPipeSessionProvider *session_provider = ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (session_provider_list), ep_provider_get_provider_name (provider));
-	EventPipeProviderTracepointConfiguration *tracepoint_config = ep_session_provider_get_tracepoint_config (session_provider);
+	EventPipeSessionProviderTracepointConfiguration *tracepoint_config = ep_session_provider_get_tracepoint_config (session_provider);
 
 	if (tracepoint_config->default_tracepoint.tracepoint_format[0] != '\0')
 		tracepoint = &tracepoint_config->default_tracepoint;
