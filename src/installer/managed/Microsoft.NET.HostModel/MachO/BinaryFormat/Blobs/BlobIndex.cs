@@ -13,7 +13,9 @@ namespace Microsoft.NET.HostModel.MachO;
 internal struct BlobIndex
 {
     private readonly CodeDirectorySpecialSlot _slot;
-    private uint _offset;
+    private readonly uint _offset;
+
+    internal const int Size = sizeof(CodeDirectorySpecialSlot) + sizeof(uint);
 
     public CodeDirectorySpecialSlot Slot => (CodeDirectorySpecialSlot)((uint)_slot).ConvertFromBigEndian();
 

@@ -162,18 +162,6 @@ namespace Microsoft.NET.HostModel.AppHost
             return -1;
         }
 
-        public static void CopyFile(string sourcePath, string destinationPath)
-        {
-            var destinationDirectory = new FileInfo(destinationPath).Directory.FullName;
-            if (!Directory.Exists(destinationDirectory))
-            {
-                Directory.CreateDirectory(destinationDirectory);
-            }
-
-            // Copy file to destination path so it inherits the same attributes/permissions.
-            File.Copy(sourcePath, destinationPath, overwrite: true);
-        }
-
         internal static void WriteToStream(MemoryMappedViewAccessor sourceViewAccessor, FileStream fileStream, long length)
         {
             int pos = 0;

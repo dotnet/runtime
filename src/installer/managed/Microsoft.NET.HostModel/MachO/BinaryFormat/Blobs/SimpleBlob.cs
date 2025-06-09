@@ -2,48 +2,54 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using Microsoft.NET.HostModel.MachO;
+
+namespace Microsoft.NET.HostModel.MachO;
 
 /// <summary>
-/// This class represents a simple blob with a byte array data.
+/// This class represents a simple blob with unstructured byte array data.
 /// </summary>
-internal class SimpleBlob : Blob
+internal class SimpleBlob : IBlob
 {
-    public override uint Size => base.Size + (uint)_data.Length;
-    protected byte[] _data;
+    /// <inheritdoc />
+    public BlobMagic Magic { get; }
 
-    public SimpleBlob(MemoryMappedViewAccessor accessor, long offset) : base(accessor, offset)
+    /// <inheritdoc />
+    public uint Size => sizeof(uint) + sizeof(uint) + (uint)Data.Length;
+
+    /// <summary>
+    /// Gets the data stored in the blob after the 8-byte header.
+    /// </summary>
+    public byte[] Data { get; }
+
+    public SimpleBlob(BlobMagic magic, byte[] data)
     {
-        accessor.Read(offset + sizeof(uint), out uint size);
-        size = size.ConvertFromBigEndian();
-        _data = new byte[size - base.Size];
-        if (size != base.Size)
-        {
-            accessor.ReadArray(offset + sizeof(uint) * 2, _data, 0, _data.Length);
-        }
-        Debug.Assert(size == Size, $"Invalid size for SimpleBlob: {size}");
+        Magic = magic;
+        Data = data;
     }
 
-    public SimpleBlob(BlobMagic magic, byte[] data) : base(magic)
+    protected SimpleBlob(SimpleBlob blob)
+        : this(blob.Magic, blob.Data)
     {
-        _data = data;
     }
 
-    public override void Write(MemoryMappedViewAccessor accessor, long offset)
+    /// <inheritdoc />
+    public int Write(IMachOFileWriter file, long offset)
     {
-        base.Write(accessor, offset);
-        if (_data.Length != 0)
-        {
-            accessor.WriteArray(offset + base.Size, _data, 0, _data.Length);
-        }
-    }
+        int bytesWritten = 0;
 
-    public override void Write(Span<byte> buffer)
-    {
-        base.Write(buffer);
-        _data.CopyTo(buffer.Slice((int)base.Size));
+        file.WriteUInt32BigEndian(offset, (uint)Magic);
+        bytesWritten += sizeof(uint);
+
+        file.WriteUInt32BigEndian(offset + sizeof(uint), Size);
+        bytesWritten += sizeof(uint);
+
+        file.WriteExactly(offset + sizeof(uint) * 2, Data);
+        bytesWritten += Data.Length;
+
+        return bytesWritten;
     }
 }

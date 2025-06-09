@@ -4,9 +4,11 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.NET.HostModel.MachO;
 
@@ -16,18 +18,27 @@ namespace Microsoft.NET.HostModel.MachO;
 /// This class handles reading and writing of all the sub-blobs.
 /// The blob contains the following structure:
 /// </summary>
-internal abstract unsafe class SuperBlob : Blob
+internal class SuperBlob : IBlob
 {
-    public override uint Size => (uint)(
-        base.Size
-        + sizeof(uint)
-        + _blobIndices.Count * sizeof(BlobIndex)
-        + _blobs.Sum(b => b.Size));
-    protected uint SubBlobCount => (uint)_blobIndices.Count;
-    private List<BlobIndex> _blobIndices;
-    private List<Blob> _blobs;
+    /// <inheritdoc />
+    public BlobMagic Magic { get; }
 
-    protected IEnumerable<Blob> Blobs => _blobs;
+    /// <inheritdoc />
+    public uint Size => (uint)(
+        sizeof(uint) + sizeof(uint) // magic + size
+        + sizeof(uint) // sub blob count
+        + _blobIndices.Count * BlobIndex.Size
+        + _blobs.Sum(b => b.Size));
+
+    /// <summary>
+    /// Gets the number of sub-blobs in this super blob.
+    /// </summary>
+    protected uint SubBlobCount => (uint)_blobIndices.Count;
+
+    private List<BlobIndex> _blobIndices;
+    private List<IBlob> _blobs;
+
+    protected IEnumerable<IBlob> Blobs => _blobs;
     protected IEnumerable<BlobIndex> BlobIndices => _blobIndices;
 
     protected void RemoveBlob(CodeDirectorySpecialSlot slot)
@@ -39,7 +50,7 @@ internal abstract unsafe class SuperBlob : Blob
         }
         _blobIndices.RemoveAt(index);
         _blobs.RemoveAt(index);
-        uint offset = (uint)(sizeof(uint) * 3 + _blobIndices.Count * sizeof(BlobIndex));
+        uint offset = (uint)(sizeof(uint) * 3 + _blobIndices.Count * BlobIndex.Size);
         for (int i = index + 1; i < _blobIndices.Count; i++)
         {
             _blobIndices[i] = new BlobIndex(_blobIndices[i].Slot, offset);
@@ -53,7 +64,7 @@ internal abstract unsafe class SuperBlob : Blob
     /// </summary>
     /// <param name="blob">The blob to insert.</param>
     /// <param name="slot">The slot to insert the blob into. The Offset property does not need to be set.</param>
-    protected void AddBlob(Blob blob, CodeDirectorySpecialSlot slot)
+    protected void AddBlob(IBlob blob, CodeDirectorySpecialSlot slot)
     {
         // Find the insertion point for the new blob based on slot order
         int insertionIndex = 0;
@@ -73,7 +84,7 @@ internal abstract unsafe class SuperBlob : Blob
         _blobs.Insert(insertionIndex, blob);
 
         // Recalculate all offsets
-        uint offset = (uint)(sizeof(uint) * 3 + _blobIndices.Count * sizeof(BlobIndex));
+        uint offset = (uint)(sizeof(uint) * 3 + _blobIndices.Count * BlobIndex.Size);
         for (int i = 0; i < _blobIndices.Count; i++)
         {
             _blobIndices[i] = new BlobIndex(_blobIndices[i].Slot, offset);
@@ -81,60 +92,52 @@ internal abstract unsafe class SuperBlob : Blob
         }
     }
 
-    /// <summary>
-    /// Reads the SuperBlob from the <paramref name="accessor"/> at the specified <paramref name="offset"/>.
-    /// </summary>
-    protected SuperBlob(MemoryMappedViewAccessor accessor, long offset) : base(accessor, offset)
+    public SuperBlob(BlobMagic magic, List<BlobIndex> blobIndices, List<IBlob> blobs)
     {
-        // accessor.Read(offset + sizeof(uint), out uint size);
-        // size = size.ConvertFromBigEndian();
-        accessor.Read(offset + sizeof(uint) * 2, out uint count);
-        count = count.ConvertFromBigEndian();
-        // throw new NotImplementedException($"SuperBlob not implemented yet. Size: {size}, Count: {count}, accessor: {accessor.Capacity}, offset: {offset}");
-        _blobs = new List<Blob>((int)count);
-        _blobIndices = new List<BlobIndex>((int)count);
-        for (int i = 0; i < count; i++)
+        if (blobIndices.Count != blobs.Count)
         {
-            accessor.Read(offset + sizeof(uint) * 3 + (i * sizeof(BlobIndex)), out BlobIndex blobIndex);
-            _blobIndices.Add(blobIndex);
-            _blobs.Add(Blob.Read(accessor, offset + blobIndex.Offset));
+            throw new ArgumentException("Blob indices and blobs count must match.");
         }
+        Magic = magic;
+        _blobs = blobs;
+        _blobIndices = blobIndices;
     }
 
-    protected SuperBlob(BlobMagic magic) : base(magic)
+    protected SuperBlob(SuperBlob other)
     {
-        _blobs = new List<Blob>();
-        _blobIndices = new List<BlobIndex>();
+        Magic = other.Magic;
+        _blobs = other._blobs;
+        _blobIndices = other._blobIndices;
     }
 
-    public override void Write(MemoryMappedViewAccessor accessor, long offset)
+    protected SuperBlob(BlobMagic magic) : this(magic, [], [])
     {
-        base.Write(accessor, offset);
-        accessor.Write(offset + sizeof(uint) * 2, SubBlobCount.ConvertToBigEndian());
+    }
+
+    public int Write(IMachOFileWriter file, long offset)
+    {
+        // Write magic and size
+        file.WriteUInt32BigEndian(offset, (uint)Magic);
+        file.WriteUInt32BigEndian(offset + sizeof(uint), Size);
+
+        // Write sub blob count
+        uint count = SubBlobCount;
+        file.WriteUInt32BigEndian(offset + sizeof(uint) * 2, count);
+
+        // Write blob indices
         for (int i = 0; i < SubBlobCount; i++)
         {
             var blobIndex = _blobIndices[i];
-            var blob = _blobs[i];
-            accessor.Write(offset + sizeof(uint) * 3 + (i * sizeof(BlobIndex)), ref blobIndex);
-            blob.Write(accessor, offset + blobIndex.Offset);
+            file.Write(offset + sizeof(uint) * 3 + (i * BlobIndex.Size), ref blobIndex);
         }
-    }
 
-    public override void Write(Span<byte> buffer)
-    {
-        base.Write(buffer);
-        BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice((int)base.Size), SubBlobCount);
-        buffer = buffer.Slice((int)base.Size + sizeof(uint));
-        foreach (var blobIndex in _blobIndices)
+        // Write blobs
+        long currentOffset = offset + sizeof(uint) * 3 + (SubBlobCount * BlobIndex.Size);
+        for (int i = 0; i < SubBlobCount; i++)
         {
-            BinaryPrimitives.WriteUInt32BigEndian(buffer, (uint)blobIndex.Slot);
-            BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(sizeof(uint)), blobIndex.Offset);
-            buffer = buffer.Slice(sizeof(BlobIndex));
+            currentOffset += _blobs[i].Write(file, currentOffset);
         }
-        foreach (var blob in _blobs)
-        {
-            blob.Write(buffer);
-            buffer = buffer.Slice((int)blob.Size);
-        }
+
+        return (int)Size;
     }
 }

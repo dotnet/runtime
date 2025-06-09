@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO.MemoryMappedFiles;
+using System.IO;
 #nullable enable
 
 namespace Microsoft.NET.HostModel.MachO;
@@ -88,9 +88,13 @@ internal sealed class EmbeddedSignatureBlob : SuperBlob
         }
     }
 
-    /// <Inheritdoc/>
-    public EmbeddedSignatureBlob(MemoryMappedViewAccessor accessor, long offset) : base(accessor, offset)
+    public EmbeddedSignatureBlob(SuperBlob superBlob)
+        : base(superBlob)
     {
+        if (Magic != BlobMagic.EmbeddedSignature)
+        {
+            throw new InvalidDataException($"Invalid magic for EmbeddedSignatureBlob: {Magic}");
+        }
     }
 
     /// <summary>
@@ -215,34 +219,30 @@ internal sealed class EmbeddedSignatureBlob : SuperBlob
         return size;
     }
 
-    public static bool AreEquivalent(EmbeddedSignatureBlob a, EmbeddedSignatureBlob b)
+    public static void AssertEquivalent(EmbeddedSignatureBlob? a, EmbeddedSignatureBlob? b)
     {
         if (a == null && b == null)
-            return true;
+            return;
 
         if (a == null || b == null)
-            return false;
+            throw new ArgumentNullException("Both EmbeddedSignatureBlobs must be non-null for comparison.");
 
         if (a.GetSpecialSlotHashCount() != b.GetSpecialSlotHashCount())
-            return false;
+            throw new ArgumentException("Special slot hash counts are not equivalent.");
 
         if (!a.CodeDirectoryBlob.Equals(b.CodeDirectoryBlob))
             throw new ArgumentException("CodeDirectory blobs are not equivalent");
 
-        if (a.RequirementsBlob == null ^ b.RequirementsBlob == null)
-            return false;
+        if (a.RequirementsBlob?.Size != b.RequirementsBlob?.Size)
+            throw new ArgumentException("Requirements blobs are not equivalent");
 
-        if (a.EntitlementsBlob == null ^ b.EntitlementsBlob == null)
-            return false;
+        if (a.EntitlementsBlob?.Size != b.EntitlementsBlob?.Size)
+            throw new ArgumentException("Entitlements blobs are not equivalent");
 
-        if (a.DerEntitlementsBlob == null ^ b.DerEntitlementsBlob == null)
-            return false;
+        if (a.DerEntitlementsBlob?.Size != b.DerEntitlementsBlob?.Size)
+            throw new ArgumentException("DER Entitlements blobs are not equivalent");
 
-        if (a.CmsWrapperBlob == null ^ b.CmsWrapperBlob == null)
-            return false;
-
-        // TODO: Compare the contents of the blobs
-
-        return true;
+        if (a.CmsWrapperBlob?.Size != b.CmsWrapperBlob?.Size)
+            throw new ArgumentException("CMS Wrapper blobs are not equivalent");
     }
 }

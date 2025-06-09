@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.NET.HostModel.MachO;
@@ -23,7 +22,7 @@ internal struct LinkEditLoadCommand
     {
         _command = (MachLoadCommandType)header.ConvertValue((uint)command);
         uint commandSize;
-        unsafe { commandSize = (uint) sizeof(LinkEditLoadCommand); }
+        unsafe { commandSize = (uint)sizeof(LinkEditLoadCommand); }
         _commandSize = header.ConvertValue(commandSize);
         _dataOffset = header.ConvertValue(dataOffset);
         _dataSize = header.ConvertValue(dataSize);

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
-using System.IO.MemoryMappedFiles;
 
 namespace Microsoft.NET.HostModel.MachO;
 
@@ -12,8 +12,17 @@ namespace Microsoft.NET.HostModel.MachO;
 /// </summary>
 internal sealed class EntitlementsBlob : SimpleBlob
 {
-    public EntitlementsBlob(MemoryMappedViewAccessor accessor, long offset)
-        : base(accessor, offset)
+    public EntitlementsBlob(byte[] data)
+        : base(BlobMagic.Entitlements, data)
+    {
+        if (Size > MaxSize)
+        {
+            throw new ArgumentException($"EntitlementsBlob data exceeds maximum size of {MaxSize} bytes.", nameof(data));
+        }
+    }
+
+    public EntitlementsBlob(SimpleBlob blob)
+        : base(blob)
     {
         if (Magic != BlobMagic.Entitlements)
         {
@@ -21,13 +30,8 @@ internal sealed class EntitlementsBlob : SimpleBlob
         }
         if (Size > MaxSize)
         {
-            throw new InvalidDataException($"EntitlementsBlob size exceeds maximum allowed size: {Size} > {MaxSize}");
+            throw new InvalidDataException($"EntitlementsBlob data exceeds maximum size of {MaxSize} bytes.");
         }
-    }
-
-    public EntitlementsBlob(byte[] data)
-        : base(BlobMagic.Entitlements, data)
-    {
     }
 
     public static uint MaxSize => 2048;

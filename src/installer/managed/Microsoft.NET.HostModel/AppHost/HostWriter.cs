@@ -151,12 +151,13 @@ namespace Microsoft.NET.HostModel.AppHost
                             RewriteAppHost(memoryMappedFile, memoryMappedViewAccessor);
                             if (isMachOImage)
                             {
-                                MachObjectFile machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
+                                var file = new MemoryMappedMachOViewAccessor(memoryMappedViewAccessor);
+                                MachObjectFile machObjectFile = MachObjectFile.Create(file);
                                 if (enableMacOSCodeSign)
                                 {
-                                    appHostLength = machObjectFile.AdHocSignFile(memoryMappedViewAccessor, destinationFileName);
+                                    appHostLength = machObjectFile.AdHocSignFile(file, destinationFileName);
                                 }
-                                else if (machObjectFile.RemoveCodeSignatureIfPresent(memoryMappedViewAccessor, out long? length))
+                                else if (machObjectFile.RemoveCodeSignatureIfPresent(file, out long? length))
                                 {
                                     appHostLength = length.Value;
                                 }

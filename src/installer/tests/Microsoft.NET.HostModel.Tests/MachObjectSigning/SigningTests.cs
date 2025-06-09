@@ -152,7 +152,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 
                 var check = Codesign.Run("-v", managedSignedPath);
                 check.ExitCode.Should().Be(0, check.StdErr, $"Failed to sign a copy of '{filePath}'");
-                Assert.True(MachFilesAreEquivalent(codesignFilePath, managedSignedPath), $"File at '{managedSignedPath}' signed by managed codesigner does not match file '{codesignFilePath}' signed by codesign tool. Original file: '{filePath}'");
+                AssertMachFilesAreEquivalent(codesignFilePath, managedSignedPath);
             }
         }
 
@@ -177,7 +177,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             }
         }
 
-        static bool MachFilesAreEquivalent(string codesignedPath, string managedSignedPath)
+        static void AssertMachFilesAreEquivalent(string codesignedPath, string managedSignedPath)
         {
             using var managedFileStream = new FileStream(managedSignedPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
             using var managedMMapFile = MemoryMappedFile.CreateFromFile(managedFileStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
@@ -189,7 +189,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 
             var codesignedObject = MachObjectFile.Create(codesignedAccessor);
             var managedSignedObject = MachObjectFile.Create(managedSignedAccessor);
-            return MachObjectFile.AreEquivalent(codesignedObject, managedSignedObject);
+            MachObjectFile.AssertEquivalent(codesignedObject, managedSignedObject);
         }
 
         /// <summary>
@@ -211,8 +211,9 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, appHostSignedLength, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
                 using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, appHostSignedLength, MemoryMappedFileAccess.ReadWrite))
                 {
-                    var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
-                    appHostLength = machObjectFile.AdHocSignFile(memoryMappedViewAccessor, fileName);
+                    var file = new MemoryMappedMachOViewAccessor(memoryMappedViewAccessor);
+                    var machObjectFile = MachObjectFile.Create(file);
+                    appHostLength = machObjectFile.AdHocSignFile(file, fileName);
                 }
                 appHostDestinationStream.SetLength(appHostLength);
             }

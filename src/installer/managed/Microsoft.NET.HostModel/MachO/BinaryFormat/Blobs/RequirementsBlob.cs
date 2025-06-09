@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.IO.MemoryMappedFiles;
+using System;
 
 namespace Microsoft.NET.HostModel.MachO;
 
@@ -13,19 +12,18 @@ namespace Microsoft.NET.HostModel.MachO;
 /// </summary>
 internal sealed class RequirementsBlob : SuperBlob
 {
-    public RequirementsBlob(MemoryMappedViewAccessor accessor, long offset)
-        : base(accessor, offset)
+    public RequirementsBlob(SuperBlob blob)
+        : base(blob)
     {
         if (Magic != BlobMagic.Requirements)
         {
-            throw new InvalidDataException($"Invalid magic for RequirementsBlob: {Magic}");
+            throw new ArgumentException($"Expected a SuperBlob with Magic number '{BlobMagic.Requirements}', got '{Magic}'.");
         }
     }
 
-    private RequirementsBlob()
-        : base(BlobMagic.Requirements)
+    private RequirementsBlob(BlobMagic blobMagic) : base(blobMagic)
     {
     }
 
-    public static RequirementsBlob Empty { get; } = new RequirementsBlob();
+    public static RequirementsBlob Empty { get; } = new RequirementsBlob(BlobMagic.Requirements);
 }

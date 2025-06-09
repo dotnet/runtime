@@ -317,6 +317,8 @@ namespace Microsoft.NET.HostModel.Bundle
             using (MemoryMappedFile bundleMap = MemoryMappedFile.CreateNew(null, bundleTotalSize, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
             {
                 long endOfHost;
+                long headerOffset;
+                using (MemoryMappedViewAccessor accessor = bundleMap.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
                 using (MemoryMappedViewStream bundleStream = bundleMap.CreateViewStream(0, 0, MemoryMappedFileAccess.ReadWrite))
                 {
                     using (FileStream hostSourceStream = File.OpenRead(hostSource))
@@ -324,26 +326,21 @@ namespace Microsoft.NET.HostModel.Bundle
                         hostSourceStream.CopyTo(bundleStream);
                     }
                     endOfHost = bundleStream.Position;
-                }
-                Debug.Assert(endOfHost == hostLength, $"Host file size on disk does not match bytes written to the bundle. Expected {hostLength}, but got {endOfHost}. This may indicate that the host file is not a valid native binary or that it is not a single-file apphost.");
-                MachObjectFile? machFile = null;
-                EmbeddedSignatureBlob? signatureBlob = null;
-                using (MemoryMappedViewAccessor viewAccessor = bundleMap.CreateViewAccessor())
-                {
+
+                    Debug.Assert(endOfHost == hostLength, $"Host file size on disk does not match bytes written to the bundle. Expected {hostLength}, but got {endOfHost}. This may indicate that the host file is not a valid native binary or that it is not a single-file apphost.");
+                    MachObjectFile? machFile = null;
+                    EmbeddedSignatureBlob? signatureBlob = null;
+                    IMachOFile machFileReader = null!;
                     if (_target.IsOSX)
                     {
-                        machFile = MachObjectFile.Create(viewAccessor);
+                        machFileReader  = new StreamBasedMachOFile(bundleStream);
+                        machFile = MachObjectFile.Create(machFileReader);
                         signatureBlob = machFile.EmbeddedSignatureBlob;
-                        if (machFile.RemoveCodeSignatureIfPresent(viewAccessor, out long? newEnd))
+                        if (machFile.RemoveCodeSignatureIfPresent(machFileReader, out long? newEnd))
                         {
                             endOfHost = newEnd!.Value;
                         }
                     }
-                }
-                ulong endOfBundle;
-                long headerOffset;
-                using (MemoryMappedViewStream bundleStream = bundleMap.CreateViewStream(0, 0, MemoryMappedFileAccess.ReadWrite))
-                {
                     bundleStream.Position = endOfHost;
                     foreach (var kvp in relativePathToSpec)
                     {
@@ -368,24 +365,22 @@ namespace Microsoft.NET.HostModel.Bundle
                         _tracer.Log($"Meta-data Size={writer.BaseStream.Position - headerOffset}");
                         _tracer.Log($"Bundle: Path={bundlePath}, Size={bundleStream.Length}");
                     }
-                    endOfBundle = (ulong)bundleStream.Position;
+                    ulong endOfBundle = (ulong)bundleStream.Position;
                     Debug.Assert((long)endOfBundle == endOfBundledFiles + bundleManifestLength, $"Bundle manifest is unexpected size. Expected {bundleManifestLength}, but got {(long)endOfBundle - endOfBundledFiles}");
-                }
-                using (MemoryMappedViewAccessor accessor = bundleMap.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
-                {
                     BinaryUtils.SearchAndReplace(accessor,
                                                 BundleHeaderPlaceholder.AsSpan(),
                                                 BitConverter.GetBytes(headerOffset),
                                                 pad0s: false);
                     if (_target.IsOSX && machFile is not null)
                     {
-                        if (!machFile.TryAdjustHeadersForBundle(endOfBundle, accessor))
+                        Debug.Assert(machFileReader is not null, "MachO file reader should not be null if the target is macOS.");
+                        if (!machFile.TryAdjustHeadersForBundle(endOfBundle, machFileReader!))
                         {
                             throw new InvalidOperationException("The single-file bundle was unable to be created. This is likely because the bundled content is too large.");
                         }
                         if (_macosCodesign)
                         {
-                            endOfBundle = (ulong)machFile.AdHocSignFile(accessor, bundleName, signatureBlob);
+                            endOfBundle = (ulong)machFile.AdHocSignFile(machFileReader!, bundleName, signatureBlob);
                         }
                     }
 
