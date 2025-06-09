@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using KeyBlobMagicNumber = Interop.BCrypt.KeyBlobMagicNumber;
-using KeyBlobType = Interop.BCrypt.KeyBlobType;
 using BCRYPT_PQDSA_KEY_BLOB = Interop.BCrypt.BCRYPT_PQDSA_KEY_BLOB;
 
 namespace System.Security.Cryptography
