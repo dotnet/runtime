@@ -108,6 +108,18 @@ public class ConditionalSimpleOpVariableTest
     [InlineData(12, 13)]
     [InlineData(45, 45)]
     [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void add_var_no_else(int a, int expected)
+    {
+        if (a < 42)
+            a++;
+        Assert.Equal(expected, a);
+    }
+
+    [Theory]
+    [InlineData(11, 12)]
+    [InlineData(12, 13)]
+    [InlineData(45, 45)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void add_var_reversed(int a, int expected)
     {
         a = a > 42 ? a : ++a;
@@ -122,6 +134,18 @@ public class ConditionalSimpleOpVariableTest
     public static void or_var(int a, int expected)
     {
         a = a < 42 ? a | 1 : a;
+        Assert.Equal(expected, a);
+    }
+
+    [Theory]
+    [InlineData(12, 13)]
+    [InlineData(13, 13)]
+    [InlineData(45, 45)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void or_var_no_else(int a, int expected)
+    {
+        if (a < 42)
+            a = a | 1;
         Assert.Equal(expected, a);
     }
 
@@ -149,6 +173,18 @@ public class ConditionalSimpleOpVariableTest
     }
 
     [Theory]
+    [InlineData(11, 10)]
+    [InlineData(12, 11)]
+    [InlineData(45, 45)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void sub_var_globref_no_else(int a, int expected)
+    {
+        if ((a + globVar) < 42)
+            --a;
+        Assert.Equal(expected, a);
+    }
+
+    [Theory]
     [InlineData(12, 13)]
     [InlineData(13, 12)]
     [InlineData(45, 45)]
@@ -167,6 +203,19 @@ public class ConditionalSimpleOpVariableTest
     public static void shift_left_var(int a, int expected)
     {
         long result = a > 42 ? a : a * 2;
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(-12, -24)]
+    [InlineData(12, 24)]
+    [InlineData(43, 43)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void shift_left_var_no_else(int a, int expected)
+    {
+        long result = a;
+        if (a <= 42)
+            result *= 2;
         Assert.Equal(expected, result);
     }
 

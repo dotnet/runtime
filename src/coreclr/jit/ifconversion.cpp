@@ -258,12 +258,6 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
 #endif
                     GenTree* op1 = tree->AsLclVar()->Data();
 
-#ifdef TARGET_RISCV64
-                    if (!m_doElseConversion)
-                    {
-                        return false;
-                    }
-#endif
                     // Ensure it won't cause any additional side effects.
                     if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
                     {
@@ -692,9 +686,8 @@ bool OptIfConversionDsc::optIfConvert()
         }
         else // Duplicate the destination of the Then store.
         {
-            GenTreeLclVar* store = m_thenOperation.node->AsLclVar();
-            selectTrueInput      = m_comp->gtNewLclVarNode(store->GetLclNum(), store->TypeGet());
-            selectFalseInput     = m_thenOperation.node->AsLclVar()->Data();
+            selectTrueInput  = nullptr;
+            selectFalseInput = m_thenOperation.node->AsLclVar()->Data();
         }
 
         // Pick the type as the type of the local, which should always be compatible even for implicit coercions.
@@ -718,6 +711,12 @@ bool OptIfConversionDsc::optIfConvert()
         JITDUMP("Skipping if-conversion that cannot be transformed to ordinary operations\n");
         return false;
 #endif
+        if (selectTrueInput == nullptr)
+        {
+            assert(m_mainOper == GT_STORE_LCL_VAR && !m_doElseConversion);
+            GenTreeLclVar* store = m_thenOperation.node->AsLclVar();
+            selectTrueInput      = m_comp->gtNewLclVarNode(store->GetLclNum(), store->TypeGet());
+        }
         // Create a select node
         select = m_comp->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
     }
@@ -778,19 +777,21 @@ bool OptIfConversionDsc::optIfConvert()
 // which can be fed as an argument to standard operations, e.g.
 //     * (cond ? 6 : 5) becomes (5 + cond)
 //     * (cond ? -25 : -13) becomes (-25 >> cond)
-//     * (cond ? a : ++a) becomes (a + !cond)
+//     * if (cond) a++; becomes (a + cond)
 //     * (cond ? 1 << a : 0) becomes (cond << a)
 //
 // Arguments:
-//     trueInput  - expression to be evaluated if m_cond is true
-//     falseInput - expression to be evaluated if m_cond is false
+//     trueInput  - expression to be evaluated when m_cond is true, or null if there is no else expression
+//     falseInput - expression to be evaluated when m_cond is false
 //
 // Return Value:
 //     The transformed single expression equivalent to the if-else expressions, or null if no transformation took place
 //
 GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput, GenTree* falseInput)
 {
-    if (trueInput->IsIntegralConst() && falseInput->IsIntegralConst())
+    assert(falseInput != nullptr);
+
+    if ((trueInput != nullptr && trueInput->IsIntegralConst()) && falseInput->IsIntegralConst())
     {
         int64_t trueVal  = trueInput->AsIntConCommon()->IntegralValue();
         int64_t falseVal = falseInput->AsIntConCommon()->IntegralValue();
@@ -923,16 +924,13 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
 #ifdef TARGET_RISCV64
     else
     {
-        bool isTrueLclVar  = trueInput->OperIs(GT_LCL_VAR);
+        bool isTrueLclVar  = (trueInput == nullptr || trueInput->OperIs(GT_LCL_VAR));
         bool isFalseLclVar = falseInput->OperIs(GT_LCL_VAR);
         if (isTrueLclVar != isFalseLclVar)
         {
-            GenTreeLclVarCommon* lclVar = (isTrueLclVar ? trueInput : falseInput)->AsLclVarCommon();
-
-            unsigned  lclNum     = lclVar->GetLclNum();
-            var_types lclVarType = m_comp->lvaGetDesc(lclNum)->TypeGet();
-
-            GenTree* binOp = isTrueLclVar ? falseInput : trueInput;
+            GenTree* lclVar = isTrueLclVar ? trueInput : falseInput;
+            GenTree* binOp  = isTrueLclVar ? falseInput : trueInput;
+            assert(binOp != nullptr);
             if (binOp->OperIs(GT_CAST))
             {
                 // TODO: check if casts to variable type; m_comp->lvaGetDesc(lclNum)->TypeGet() returns TYP_INT for
@@ -949,8 +947,16 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
                 bool isDecrement = binOp->OperIs(GT_ADD) && (op1->IsIntegralConst(-1) || op2->IsIntegralConst(-1));
                 if ((!binOp->OperIsShift() && op1->IsIntegralConst(1)) || op2->IsIntegralConst(1) || isDecrement)
                 {
-                    GenTree* varOp = op1->IsIntegralConst() ? op2 : op1;
-                    if (varOp->OperIs(GT_LCL_VAR) && varOp->AsLclVar()->GetLclNum() == lclNum)
+                    bool isSameLclVar = true;
+                    if (lclVar != nullptr)
+                    {
+                        unsigned lclNum = lclVar->AsLclVarCommon()->GetLclNum();
+                        GenTree* varOp  = op1->IsIntegralConst() ? op2 : op1;
+
+                        isSameLclVar = varOp->OperIs(GT_LCL_VAR) && (varOp->AsLclVar()->GetLclNum() == lclNum);
+                    }
+
+                    if (isSameLclVar)
                     {
                         GenTree*& constOp = op1->IsIntegralConst() ? op1 : op2;
 
@@ -958,17 +964,21 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
                         if (isDecrement)
                             binOp->ChangeOper(GT_SUB);
 
-                        binOp->gtFlags |= (m_cond->gtFlags | lclVar->gtFlags) & GTF_ALL_EFFECT;
+                        binOp->gtFlags |= (m_cond->gtFlags) & GTF_ALL_EFFECT;
+                        if (lclVar != nullptr)
+                            binOp->gtFlags |= (lclVar->gtFlags) & GTF_ALL_EFFECT;
+
                         return binOp;
                     }
                 }
             }
         }
-        else if (trueInput->IsIntegralConst(0) != falseInput->IsIntegralConst(0))
+        else if ((trueInput != nullptr && trueInput->IsIntegralConst(0)) != falseInput->IsIntegralConst(0))
         {
-            bool isTrueZero = trueInput->IsIntegralConst(0);
+            bool isTrueZero = (trueInput != nullptr && trueInput->IsIntegralConst(0));
 
             GenTree* binOp = isTrueZero ? falseInput : trueInput;
+            assert(binOp != nullptr);
             if (binOp->OperIs(GT_LSH, GT_AND))
             {
                 GenTree*& op1 = binOp->AsOp()->gtOp1;
