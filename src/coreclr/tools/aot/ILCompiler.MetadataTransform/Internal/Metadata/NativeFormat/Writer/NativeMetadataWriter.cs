@@ -969,10 +969,10 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             var flags = Enum.GetValues<T>().Where(
                 eVal => (((IConvertible)eVal).ToInt32(null) != 0) && ((((IConvertible)value).ToInt32(null) & ((IConvertible)eVal).ToInt32(null)) == ((IConvertible)eVal).ToInt32(null)));
-            if (flags.Count() == 0)
-                return "";
-            else
+            if (flags.Any())
                 return "[" + string.Join(" | ", flags.Select(Enum.GetName<T>)) + "] ";
+            else
+                return "";
         }
     }
 
