@@ -3338,11 +3338,11 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     GenTree* startNonGCNode = nullptr;
     if (!putargs.Empty())
     {
-        GenTree* firstPutargStk = putargs.Bottom(0);
+        GenTree* firstPutargStk   = putargs.Bottom(0);
         GenTree* firstPutargStkOp = firstPutargStk->gtGetOp1();
         for (int i = 1; i < putargs.Height(); i++)
         {
-            firstPutargStk = LIR::FirstNode(firstPutargStk, putargs.Bottom(i));
+            firstPutargStk   = LIR::FirstNode(firstPutargStk, putargs.Bottom(i));
             firstPutargStkOp = LIR::FirstNode(firstPutargStkOp, putargs.Bottom(i)->gtGetOp1());
         }
         // Since this is a fast tailcall each PUTARG_STK will place the argument in the
