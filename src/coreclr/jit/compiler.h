@@ -7094,6 +7094,7 @@ protected:
     unsigned optCallCount = 0;         // number of calls made in the method
     unsigned optIndirectCallCount = 0; // number of virtual, interface and indirect calls made in the method
     unsigned optNativeCallCount = 0;   // number of Pinvoke/Native calls made in the method
+    unsigned optFastTailCallCount = 0; // number of fast tail calls made in the method
 
 #ifdef DEBUG
     void optCheckPreds();
