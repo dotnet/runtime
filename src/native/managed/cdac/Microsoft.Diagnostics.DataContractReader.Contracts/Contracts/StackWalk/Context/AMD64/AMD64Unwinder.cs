@@ -53,7 +53,7 @@ internal class AMD64Unwinder(Target target)
         TargetPointer controlPC = context.InstructionPointer;
 
         TargetPointer imageBase = _eman.GetUnwindInfoBaseAddress(cbh);
-        Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh));
+        Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh, controlPC.Value));
         if (functionEntry.EndAddress is null)
             return false;
         if (GetUnwindInfoHeader(imageBase + functionEntry.UnwindData) is not UnwindInfoHeader unwindInfo)
@@ -1226,7 +1226,7 @@ internal class AMD64Unwinder(Target target)
             return null;
 
         TargetPointer targetImageBase = _eman.GetUnwindInfoBaseAddress(cbh);
-        Data.RuntimeFunction targetFunctionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh));
+        Data.RuntimeFunction targetFunctionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh, controlPC.Value));
 
         targetFunctionEntry = LookupPrimaryFunctionEntry(targetFunctionEntry, targetImageBase);
 
