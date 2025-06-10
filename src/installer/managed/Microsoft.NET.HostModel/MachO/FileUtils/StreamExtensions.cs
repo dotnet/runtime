@@ -6,41 +6,49 @@ using System.Buffers.Binary;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
+using Microsoft.NET.HostModel.MachO;
 
 internal static class StreamExtensions
 {
-    private static byte[] _readBuffer = new byte[sizeof(uint)];
     public static uint ReadUInt32BigEndian(this Stream stream)
     {
-        stream.ReadExactly(_readBuffer);
-        return BinaryPrimitives.ReadUInt32BigEndian(_readBuffer);
+#if NET
+        Span<byte> buffer = stackalloc byte[sizeof(uint)];
+#else
+        byte[] buffer = new byte[sizeof(uint)];
+#endif
+        stream.ReadExactly(buffer);
+        return BinaryPrimitives.ReadUInt32BigEndian(buffer);
     }
 
     public static uint ReadUInt32BigEndian(this MemoryMappedViewAccessor accessor, long offset)
     {
-        int bytesRead = accessor.ReadArray(offset, _readBuffer, 0, sizeof(uint));
-        if (bytesRead < sizeof(uint))
-        {
-            throw new ArgumentOutOfRangeException("Not enough bytes to read a UInt32.");
-        }
-        return BinaryPrimitives.ReadUInt32BigEndian(_readBuffer);
+        return accessor.ReadUInt32(offset).ConvertFromBigEndian();
     }
 
-    public static byte[] _writeBuffer = new byte[sizeof(uint)];
     public static void WriteUInt32BigEndian(this Stream stream, uint value)
     {
-        BinaryPrimitives.WriteUInt32BigEndian(_writeBuffer, value);
-        stream.Write(_writeBuffer);
+#if NET
+        Span<byte> buffer = stackalloc byte[sizeof(uint)];
+#else
+        byte[] buffer = new byte[sizeof(uint)];
+#endif
+        BinaryPrimitives.WriteUInt32BigEndian(buffer, value);
+        stream.Write(buffer);
     }
+
     public static void WriteUInt32BigEndian(this MemoryMappedViewAccessor accessor, long offset, uint value)
     {
-        BinaryPrimitives.WriteUInt32BigEndian(_writeBuffer, value);
-        accessor.WriteArray(offset, _writeBuffer, 0, _writeBuffer.Length);
+        accessor.Write(offset, value.ConvertToBigEndian());
     }
 
     public static unsafe void Read<T>(this Stream stream, out T result) where T : unmanaged
     {
+#if NET
+        Span<byte> buffer = sizeof(T) < 256 ? stackalloc byte[sizeof(T)] : new byte[sizeof(T)];
+#else
         byte[] buffer = new byte[sizeof(T)];
+#endif
         stream.ReadExactly(buffer);
         result = MemoryMarshal.Read<T>(buffer);
     }
