@@ -385,8 +385,12 @@ private:
         EmbedParent = 2,
     };
     InterpEmbedGenericResult EmitGenericHandle(CORINFO_RESOLVED_TOKEN* resolvedToken, GenericHandleEmbedOptions options);
+
+    // Do a generic handle lookup and acquire the result as either a var or a data item.
     int EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo);
-    void EmitCORINFO_LOOKUPToStack(const CORINFO_LOOKUP& lookup);
+
+    // Emit a generic dictionary lookup and push the result onto the interpreter stack
+    void EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup);
 
     void* AllocMethodData(size_t numBytes);
 public:

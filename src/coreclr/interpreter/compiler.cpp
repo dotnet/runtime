@@ -2239,7 +2239,7 @@ InterpCompiler::InterpEmbedGenericResult InterpCompiler::EmitGenericHandle(CORIN
     return result;
 }
 
-void InterpCompiler::EmitCORINFO_LOOKUPToStack(const CORINFO_LOOKUP& lookup)
+void InterpCompiler::EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup)
 {
     PushStackType(StackTypeI, NULL);
     int resultVar = m_pStackPointer[-1].var;
@@ -4311,7 +4311,7 @@ retry_emit:
                         }
                         else
                         {
-                            EmitCORINFO_LOOKUPToStack(callInfo.codePointerLookup);
+                            EmitPushCORINFO_LOOKUP(callInfo.codePointerLookup);
                         }
 
                         m_ip += 5;
