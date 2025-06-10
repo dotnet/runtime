@@ -63,7 +63,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	[Kept]
 	class TargetType;
 
-	[Kept]
+	[Kept] // This is kept by NativeAot by the scanner. It is not kept during codegen.
 	class TrimTarget;
 
 	class UnreferencedTargetType;
