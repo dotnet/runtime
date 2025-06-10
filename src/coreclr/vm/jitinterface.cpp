@@ -8629,7 +8629,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 return false;
             }
         }
-        else if (!pObjMT->IsSharedByGenericInstantiations() && !pObjMT->CanCastToInterface(pBaseMT))
+        else if (!pBaseMT->IsSharedByGenericInstantiations() && !pObjMT->CanCastToInterface(pBaseMT))
         {
             info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
             return false;
