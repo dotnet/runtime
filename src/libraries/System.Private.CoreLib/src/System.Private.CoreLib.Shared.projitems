@@ -49,11 +49,8 @@
     <DefineConstants Condition="'$(TargetsSolaris)' == 'true'">$(DefineConstants);TARGET_SOLARIS</DefineConstants>
     <DefineConstants Condition="'$(TargetsHaiku)' == 'true'">$(DefineConstants);TARGET_HAIKU</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup>
-    <ApiCompatSuppressionOutputFile>$(MSBuildThisFileDirectory)CompatibilitySuppressions.xml</ApiCompatSuppressionOutputFile>
-  </PropertyGroup>
   <ItemGroup>
-    <ApiCompatSuppressionFile Include="$(ApiCompatSuppressionOutputFile)" />
+    <ApiCompatSuppressionFile Include="$(MSBuildThisFileDirectory)CompatibilitySuppressions.xml" />
   </ItemGroup>
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.Shared.xml" />
