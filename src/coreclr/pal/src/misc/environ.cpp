@@ -958,14 +958,18 @@ Parameters
            [in] The name of the Android system property to retrieve.
     value
            [out] Buffer to receive the value of the Andoird system property.
+    len
+           [in] Lenght of value in bytes, at least PROP_VALUE_MAX.
 
 Return Values
 
     Returns length if the property was found and read successfully, -1 otherwise.
 
 --*/
-int GetSystemProperty(const char* name, char* value)
+int GetSystemProperty(const char* name, char* value, size_t valueLen)
 {
+    _ASSERT(valueLen >= PROP_VALUE_MAX);
+
     int ret = -1;
     const prop_info* info = __system_property_find(name);
     if (info != nullptr)
@@ -993,10 +997,10 @@ bool IsSystemPropertiesEnabled()
     char value[PROP_VALUE_MAX];
     bool enabled = false;
 
-    int ret = GetSystemProperty(SYS_PROPS_DEBUG_PREFIX SYS_PROPS_DOTNET_PREFIX ENABLED_SYS_PROPS, value);
+    int ret = GetSystemProperty(SYS_PROPS_DEBUG_PREFIX SYS_PROPS_DOTNET_PREFIX ENABLED_SYS_PROPS, value, ARRAY_SIZE(value));
     if (ret == -1)
     {
-        ret = GetSystemProperty(SYS_PROPS_DOTNET_PREFIX ENABLED_SYS_PROPS, value);
+        ret = GetSystemProperty(SYS_PROPS_DOTNET_PREFIX ENABLED_SYS_PROPS, value, ARRAY_SIZE(value));
     }
 
     if (ret == 1 && *value == '1')
@@ -1146,7 +1150,7 @@ void SystemPropertyCallback(const prop_info* info, void* cookie)
                     do
                     {
                         sprintf_s(name2, ARRAY_SIZE(name2), "%s.%d", name, index);
-                        ret = GetSystemProperty(name2, value2);
+                        ret = GetSystemProperty(name2, value2, ARRAY_SIZE(value2));
                         if (ret > 0)
                         {
                             if (usedSize + ret <= allocSize)
