@@ -204,7 +204,7 @@ std::filesystem::path GetResultFileName(const std::filesystem::path& folderPath,
     }
 
     std::string copy = fileName;
-    if (copy.size() > usableLength)
+    if ((int)copy.size() > usableLength)
     {
         copy = copy.substr(0, usableLength);
     }
