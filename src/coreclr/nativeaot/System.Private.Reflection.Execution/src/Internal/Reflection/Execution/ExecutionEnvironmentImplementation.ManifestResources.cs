@@ -10,7 +10,6 @@ using System.Reflection;
 using Internal.NativeFormat;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
-using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
 
 namespace Internal.Reflection.Execution
@@ -22,39 +21,38 @@ namespace Internal.Reflection.Execution
     {
         public sealed override ManifestResourceInfo GetManifestResourceInfo(Assembly assembly, string resourceName)
         {
-            LowLevelList<ResourceInfo> resourceInfos = GetExtractedResources(assembly);
-            for (int i = 0; i < resourceInfos.Count; i++)
+            ArgumentNullException.ThrowIfNull(resourceName);
+
+            foreach (ResourceInfo resourceInfo in ExtractResources(assembly))
             {
-                if (resourceName == resourceInfos[i].Name)
+                if (resourceInfo.Name == resourceName)
                 {
                     return new ManifestResourceInfo(null, null, ResourceLocation.Embedded | ResourceLocation.ContainedInManifestFile);
                 }
             }
+
             return null;
         }
 
         public sealed override string[] GetManifestResourceNames(Assembly assembly)
         {
-            LowLevelList<ResourceInfo> resourceInfos = GetExtractedResources(assembly);
-            string[] names = new string[resourceInfos.Count];
-            for (int i = 0; i < resourceInfos.Count; i++)
+            ArrayBuilder<string> arrayBuilder = default;
+
+            foreach (ResourceInfo resourceInfo in ExtractResources(assembly))
             {
-                names[i] = resourceInfos[i].Name;
+                arrayBuilder.Add(resourceInfo.Name);
             }
-            return names;
+
+            return arrayBuilder.ToArray();
         }
 
         public sealed override Stream GetManifestResourceStream(Assembly assembly, string name)
         {
             ArgumentNullException.ThrowIfNull(name);
 
-            // This was most likely an embedded resource which the toolchain should have embedded
-            // into an assembly.
-            LowLevelList<ResourceInfo> resourceInfos = GetExtractedResources(assembly);
-            for (int i = 0; i < resourceInfos.Count; i++)
+            foreach (ResourceInfo resourceInfo in ExtractResources(assembly))
             {
-                ResourceInfo resourceInfo = resourceInfos[i];
-                if (name == resourceInfo.Name)
+                if (resourceInfo.Name == name)
                 {
                     return ReadResourceFromBlob(resourceInfo);
                 }
@@ -78,73 +76,37 @@ namespace Internal.Reflection.Execution
             return new UnmanagedMemoryStream(pBlob + resourceInfo.Index, resourceInfo.Length);
         }
 
-        private static LowLevelList<ResourceInfo> GetExtractedResources(Assembly assembly)
+        private static IEnumerable<ResourceInfo> ExtractResources(Assembly assembly)
         {
-            LowLevelDictionary<string, LowLevelList<ResourceInfo>> extractedResourceDictionary = ExtractedResourceDictionary;
+            ArgumentNullException.ThrowIfNull(assembly);
             string assemblyName = assembly.GetName().FullName;
-            LowLevelList<ResourceInfo> resourceInfos;
-            if (!extractedResourceDictionary.TryGetValue(assemblyName, out resourceInfos))
-                return new LowLevelList<ResourceInfo>();
-            return resourceInfos;
-        }
 
-        private static LowLevelDictionary<string, LowLevelList<ResourceInfo>> ExtractedResourceDictionary
-        {
-            get
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
-                if (s_extractedResourceDictionary == null)
+                NativeReader reader;
+                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.BlobIdResourceIndex, out reader))
                 {
-                    // Lazily create the extracted resource dictionary. If two threads race here, we may construct two dictionaries
-                    // and overwrite one - this is ok since the dictionaries are read-only once constructed and they contain the identical data.
-
-                    LowLevelDictionary<string, LowLevelList<ResourceInfo>> dict = new LowLevelDictionary<string, LowLevelList<ResourceInfo>>();
-
-                    foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
-                    {
-                        NativeReader reader;
-                        if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.BlobIdResourceIndex, out reader))
-                        {
-                            continue;
-                        }
-                        NativeParser indexParser = new NativeParser(reader, 0);
-                        NativeHashtable indexHashTable = new NativeHashtable(indexParser);
-
-                        var entryEnumerator = indexHashTable.EnumerateAllEntries();
-                        NativeParser entryParser;
-                        while (!(entryParser = entryEnumerator.GetNext()).IsNull)
-                        {
-                            string assemblyName = entryParser.GetString();
-                            string resourceName = entryParser.GetString();
-                            int resourceOffset = (int)entryParser.GetUnsigned();
-                            int resourceLength = (int)entryParser.GetUnsigned();
-
-                            ResourceInfo resourceInfo = new ResourceInfo(resourceName, resourceOffset, resourceLength, module);
-
-                            LowLevelList<ResourceInfo> assemblyResources;
-                            if (!dict.TryGetValue(assemblyName, out assemblyResources))
-                            {
-                                assemblyResources = new LowLevelList<ResourceInfo>();
-                                dict[assemblyName] = assemblyResources;
-                            }
-
-                            assemblyResources.Add(resourceInfo);
-                        }
-                    }
-
-                    s_extractedResourceDictionary = dict;
+                    continue;
                 }
-                return s_extractedResourceDictionary;
+                NativeParser indexParser = new NativeParser(reader, 0);
+                NativeHashtable indexHashTable = new NativeHashtable(indexParser);
+
+                var entryEnumerator = indexHashTable.EnumerateAllEntries();
+                NativeParser entryParser;
+                while (!(entryParser = entryEnumerator.GetNext()).IsNull)
+                {
+                    string entryAssemblyName = entryParser.GetString();
+                    string entryResourceName = entryParser.GetString();
+                    int resourceOffset = (int)entryParser.GetUnsigned();
+                    int resourceLength = (int)entryParser.GetUnsigned();
+
+                    if (assemblyName == entryAssemblyName)
+                    {
+                        yield return new ResourceInfo(entryResourceName, resourceOffset, resourceLength, module);
+                    }
+                }
             }
         }
-
-        /// <summary>
-        /// This dictionary gets us from assembly + resource name to the offset of a resource
-        /// inside the resource data blob
-        ///
-        /// The dictionary's key is a Fusion-style assembly name.
-        /// The dictionary's value is a list of (resourcename,index) tuples.
-        /// </summary>
-        private static volatile LowLevelDictionary<string, LowLevelList<ResourceInfo>> s_extractedResourceDictionary;
 
         private struct ResourceInfo
         {
