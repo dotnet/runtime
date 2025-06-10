@@ -60,7 +60,6 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
-#endif // FEATURE_JIT
 
 // Create call stub for calling interpreted methods from JITted/AOTed code.
 CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
@@ -96,6 +95,8 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
 
     return pHeader;
 }
+
+#endif // FEATURE_JIT
 
 typedef void* (*HELPER_FTN_PP)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
@@ -1486,9 +1487,12 @@ CALL_INTERP_METHOD:
                         }
                         if (targetIp == NULL)
                         {
+#ifdef FEATURE_JIT
                             // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
                             InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset);
-                            break;
+#else
+                        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Attempted to execute non-interpreter code from interpreter on a non-JIT build"));
+#endif // FEATURE_JIT                            break;
                         }
                     }
 

@@ -4,7 +4,7 @@
 
 #include <interpexec.h>
 
-extern "C" void STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, int8_t* pArgs, size_t size, int8_t* pReturnValue, size_t returnValueSize);
+extern "C" void* STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, int8_t* pArgs, size_t size, void* retBuff);
 
 extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData * pCallDescrData)
 {
@@ -16,5 +16,5 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData * pCallDescrData)
         code = pCallDescrData->pMD->GetNativeCode();
     }
 
-    ExecuteInterpretedMethodWithArgs(((TransitionBlock*)pCallDescrData->pSrc) - 1, code, (int8_t*)pCallDescrData->pSrc, pCallDescrData->nArgsSize, (int8_t*)pCallDescrData->returnValue, sizeof(pCallDescrData->returnValue));
+    ExecuteInterpretedMethodWithArgs(((TransitionBlock*)pCallDescrData->pSrc) - 1, code, (int8_t*)pCallDescrData->pSrc, pCallDescrData->nArgsSize, pCallDescrData->returnValue);
 }
