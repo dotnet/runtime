@@ -4160,7 +4160,8 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
     {
         LABELEDDISPTREERANGE("Lowered ConditionalSelect(True, op2, op3) to op2 (before)", BlockRange(), cndSelNode);
 
-        assert(!op2->OperIsHWIntrinsic() || !HWIntrinsicInfo::IsEmbeddedMaskedOperation(op2->AsHWIntrinsic()->GetHWIntrinsicId()));
+        assert(!op2->OperIsHWIntrinsic() ||
+               !HWIntrinsicInfo::IsEmbeddedMaskedOperation(op2->AsHWIntrinsic()->GetHWIntrinsicId()));
 
         // Transform
         // CndSel(AllTrue, op2, op3) to
