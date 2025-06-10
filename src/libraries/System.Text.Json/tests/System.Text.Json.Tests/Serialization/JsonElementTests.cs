@@ -122,8 +122,8 @@ namespace System.Text.Json.Serialization.Tests
                     """[null, false, 314e-2, "\u0041\u0042\u0043", { "y" : 2, "x" : 1 }, [ ] ]""")]
         public static void DeepEquals_EqualValuesReturnTrue(string value1, string value2)
         {
-            JsonElement element1 = JsonDocument.Parse(value1).RootElement;
-            JsonElement element2 = JsonDocument.Parse(value2).RootElement;
+            JsonElement element1 = JsonElement.Parse(value1);
+            JsonElement element2 = JsonElement.Parse(value2);
 
             // Reflexivity
             Assert.True(JsonElement.DeepEquals(element1, element2));
@@ -210,8 +210,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{"test1":null}""", """{"test2":[null]}""")]
         public static void DeepEquals_NotEqualValuesReturnFalse(string value1, string value2)
         {
-            JsonElement element1 = JsonDocument.Parse(value1).RootElement;
-            JsonElement element2 = JsonDocument.Parse(value2).RootElement;
+            JsonElement element1 = JsonElement.Parse(value1);
+            JsonElement element2 = JsonElement.Parse(value2);
 
             // Reflexivity
             Assert.True(JsonElement.DeepEquals(element1, element1));
