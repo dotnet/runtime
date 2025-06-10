@@ -311,11 +311,6 @@ CONFIG_STRING(JitStressRange, "JitStressRange")        // Internal Jit stress mo
 CONFIG_METHODSET(JitEmitUnitTests, "JitEmitUnitTests") // Generate emitter unit tests in the specified functions
 CONFIG_STRING(JitEmitUnitTestsSections, "JitEmitUnitTestsSections") // Generate this set of unit tests
 
-///
-/// JIT Hardware Intrinsics
-///
-CONFIG_INTEGER(EnableIncompleteISAClass, "EnableIncompleteISAClass", 0) // Enable testing not-yet-implemented
-
 //
 // JitDisasm
 //
