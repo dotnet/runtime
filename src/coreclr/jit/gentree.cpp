@@ -10945,6 +10945,11 @@ void Compiler::gtDispNodeName(GenTree* tree)
         }
         else if (tree->AsCall()->gtCallType == CT_INDIRECT)
         {
+            if (tree->AsCall()->IsVirtual())
+            {
+                callType = "CALLV";
+            }
+
             ctType = " ind";
         }
         else

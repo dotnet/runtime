@@ -8629,6 +8629,11 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 return false;
             }
         }
+        else if (!pObjMT->IsSharedByGenericInstantiations() && !pObjMT->CanCastToInterface(pBaseMT))
+        {
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
+            return false;
+        }
 
         // For generic interface methods we must have context to
         // safely devirtualize.
@@ -8670,26 +8675,15 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                     info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
                     return false;
                 }
-            }
-
-            if (interfaceMT != nullptr)
-            {
-                // why do we need this...
-                //
-                if (!pObjMT->IsArray() && !pObjMT->ImplementsEquivalentInterface(interfaceMT))
-                {
-                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
-                    return false;
-                }
 
                 MethodDesc* interfaceMD = interfaceMT->GetParallelMethodDesc(pBaseMD);
-
+                
                 if (interfaceMD == nullptr)
                 {
                     info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
                     return false;
                 }
-
+                
                 pDevirtMD = pObjMT->GetMethodDescForInterfaceMethod(TypeHandle(interfaceMT), interfaceMD, FALSE /* throwOnConflict */);
             }
             else
