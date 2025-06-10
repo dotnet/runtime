@@ -8,12 +8,6 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        internal struct TimeSpec
-        {
-            internal long TvSec;
-            internal long TvNsec;
-        }
-
         /// <summary>
         /// Sets the last access and last modified time of a file
         /// </summary>
