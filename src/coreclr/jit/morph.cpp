@@ -6370,15 +6370,15 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     //
     if (fgGlobalMorph)
     {
-        if (call->IsFastTailCall())
-        {
-            optCallCount++;
-            optFastTailCallCount++;
-        }
-        else if (call->gtCallType == CT_INDIRECT)
+        if (call->gtCallType == CT_INDIRECT)
         {
             optCallCount++;
             optIndirectCallCount++;
+            if (call->IsFastTailCall())
+            {
+                optFastTailCallCount++;
+                optIndirectFastTailCallCount++;
+            }
         }
         else if (call->gtCallType == CT_USER_FUNC)
         {
@@ -6386,6 +6386,14 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             if (call->IsVirtual())
             {
                 optIndirectCallCount++;
+            }
+            if (call->IsFastTailCall())
+            {
+                optFastTailCallCount++;
+                if (call->IsVirtual())
+                {
+                    optIndirectFastTailCallCount++;
+                }
             }
         }
     }
