@@ -212,10 +212,10 @@ template <typename TSource> static void ConvOvfFpHelperI64(int8_t *stack, const 
 {
     static_assert(!std::numeric_limits<TSource>::is_integer, "ConvOvfFpHelper is only for use on floats and doubles");
 
-	const double two63  = 2147483648.0 * 4294967296.0;
+    const double two63  = 2147483648.0 * 4294967296.0;
     // First, promote the source value to double
     double src = LOCAL_VAR(ip[2], TSource),
-        // Define the boundary values we need to be between (see mono_try_trunc_i64)
+        // Define the boundary values we need to be between (see System.Math.ConvertToInt64Checked)
         minValue = (-two63 - 0x402),
         maxValue = two63;
 
@@ -234,7 +234,7 @@ template <typename TSource> static void ConvOvfFpHelperU64(int8_t *stack, const 
 
     // First, promote the source value to double
     double src = LOCAL_VAR(ip[2], TSource),
-        // Define the boundary values we need to be between (see mono_try_trunc_u64)
+        // Define the boundary values we need to be between (see System.Math.ConvertToUInt64Checked)
         minValue = -1.0,
         maxValue = 4294967296.0 * 4294967296.0;
 
