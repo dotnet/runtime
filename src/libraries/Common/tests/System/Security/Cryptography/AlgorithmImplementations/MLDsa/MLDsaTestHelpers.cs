@@ -10,7 +10,7 @@ using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
-    internal static class MLDsaTestHelpers
+    internal static partial class MLDsaTestHelpers
     {
         internal static bool MLDsaIsNotSupported => !MLDsa.IsSupported;
 
@@ -477,6 +477,25 @@ namespace System.Security.Cryptography.Tests
             }
 
             return buffer.AsSpan(0, written).ToArray();
+        }
+
+        internal static CngProperty GetCngProperty(MLDsaAlgorithm algorithm)
+        {
+            string parameterSetValue = algorithm.Name switch
+            {
+                "ML-DSA-44" => "44",
+                "ML-DSA-65" => "65",
+                "ML-DSA-87" => "87",
+                _ => throw new XunitException("Unknown algorithm."),
+            };
+
+            byte[] byteValue = new byte[(parameterSetValue.Length + 1) * 2]; // Null terminator
+            Assert.Equal(2 * parameterSetValue.Length, Encoding.Unicode.GetBytes(parameterSetValue, byteValue));
+
+            return new CngProperty(
+                "ParameterSetName",
+                byteValue,
+                CngPropertyOptions.None);
         }
 
         internal static string? AlgorithmToOid(MLDsaAlgorithm algorithm)

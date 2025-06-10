@@ -83,8 +83,11 @@ namespace System.Security.Cryptography.X509Certificates
         public MLDsa? GetMLDsaPrivateKey()
         {
             return GetPrivateKey<MLDsa>(
-                // TODO resx
-                _ => throw new NotSupportedException(),
+                _ =>
+                {
+                    Debug.Fail("CryptoApi does not support ML-DSA.");
+                    throw new PlatformNotSupportedException();
+                },
                 cngKey => new MLDsaCng(cngKey, transferOwnership: true)
             );
         }
@@ -227,9 +230,10 @@ namespace System.Security.Cryptography.X509Certificates
             using (MLDsaCng clonedKey = MLDsaCng.ImportPkcs8PrivateKey(exportedPkcs8, out _))
             {
                 CngKey clonedCngKey = clonedKey.GetCngKey();
+
                 if (clonedCngKey.AlgorithmGroup != CngAlgorithmGroup.MLDsa)
                 {
-                    // TODO resx
+                    Debug.Fail($"{nameof(MLDsaCng)} should only give ML-DSA keys.");
                     throw new CryptographicException();
                 }
 

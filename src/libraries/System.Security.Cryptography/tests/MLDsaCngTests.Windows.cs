@@ -1,90 +1,75 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
     [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
-    public sealed class MLDsaCngTests : MLDsaTestsBase
+    public sealed class MLDsaCngTests_AllowPlaintextExport : MLDsaTestsBase
     {
-        protected override MLDsa GenerateKey(MLDsaAlgorithm algorithm)
+        protected override MLDsaCng GenerateKey(MLDsaAlgorithm algorithm) =>
+            MLDsaTestHelpers.GenerateKey(algorithm, CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
+
+        protected override MLDsaCng ImportPrivateSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+            MLDsaTestHelpers.ImportPrivateSeed(algorithm, source, CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
+
+        protected override MLDsaCng ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+            MLDsaTestHelpers.ImportSecretKey(algorithm, source, CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
+
+        protected override MLDsaCng ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+            MLDsaTestHelpers.ImportPublicKey(algorithm, source);
+    }
+
+    [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+    public sealed class MLDsaCngTests_AllowExport : MLDsaTestsBase
+    {
+        protected override MLDsaCng GenerateKey(MLDsaAlgorithm algorithm) =>
+            MLDsaTestHelpers.GenerateKey(algorithm, CngExportPolicies.AllowExport);
+
+        protected override MLDsaCng ImportPrivateSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+            MLDsaTestHelpers.ImportPrivateSeed(algorithm, source, CngExportPolicies.AllowExport);
+
+        protected override MLDsaCng ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+            MLDsaTestHelpers.ImportSecretKey(algorithm, source, CngExportPolicies.AllowExport);
+
+        protected override MLDsaCng ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+            MLDsaTestHelpers.ImportPublicKey(algorithm, source);
+    }
+
+    [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+    public sealed class MLDsaCngTests
+    {
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void ImportPrivateKey_NoExportFlag(MLDsaKeyInfo info)
         {
-            string parameterSetValue = PqcBlobHelpers.GetParameterSet(algorithm);
-            byte[] byteValue = new byte[(parameterSetValue.Length + 1) * 2]; // Null terminator
-            Assert.Equal(2 * parameterSetValue.Length, Encoding.Unicode.GetBytes(parameterSetValue, byteValue));
+            using MLDsa mldsa = MLDsaTestHelpers.ImportSecretKey(info.Algorithm, info.SecretKey, CngExportPolicies.None);
 
-            CngProperty parameterSet = new CngProperty(
-                Interop.BCrypt.BCryptPropertyStrings.BCRYPT_PARAMETER_SET_NAME,
-                byteValue,
-                CngPropertyOptions.None);
+            MLDsaTestHelpers.AssertExportMLDsaPublicKey(export =>
+                AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)));
 
-            CngKeyCreationParameters creationParams = new();
-            creationParams.Parameters.Add(parameterSet);
-            creationParams.ExportPolicy = CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport;
+            MLDsaTestHelpers.AssertExportMLDsaSecretKey(export =>
+                AssertExtensions.ThrowsContains<CryptographicException>(() => export(mldsa), "The requested operation is not supported"));
 
-            CngKey key = CngKey.Create(CngAlgorithm.MLDsa, keyName: null, creationParams);
-            return new MLDsaCng(key);
+            MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
+                AssertExtensions.ThrowsContains<CryptographicException>(() => export(mldsa), "The requested operation is not supported"));
         }
 
-        protected override MLDsa ImportPrivateSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void ImportPrivateSeed_NoExportFlag(MLDsaKeyInfo info)
         {
-            CngKey key =  PqcBlobHelpers.EncodeMLDsaBlob(
-                PqcBlobHelpers.GetParameterSet(algorithm),
-                source,
-                Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB,
-                blob =>
-                {
-                    CngProperty mldsaBlob = new CngProperty(
-                        Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB,
-                        blob.ToArray(),
-                        CngPropertyOptions.None);
+            using MLDsa mldsa = MLDsaTestHelpers.ImportPrivateSeed(info.Algorithm, info.PrivateSeed, CngExportPolicies.None);
 
-                    CngKeyCreationParameters creationParams = new();
-                    creationParams.Parameters.Add(mldsaBlob);
-                    creationParams.ExportPolicy = CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport;
+            MLDsaTestHelpers.AssertExportMLDsaPublicKey(export =>
+                AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)));
 
-                    CngKey key = CngKey.Create(CngAlgorithm.MLDsa, keyName: null, creationParams);
-                    return key;
-                });
+            MLDsaTestHelpers.AssertExportMLDsaSecretKey(export =>
+                AssertExtensions.ThrowsContains<CryptographicException>(() => export(mldsa), "The requested operation is not supported"));
 
-            return new MLDsaCng(key);
-        }
-
-        protected override MLDsa ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
-        {
-            CngKey key = PqcBlobHelpers.EncodeMLDsaBlob(
-                PqcBlobHelpers.GetParameterSet(algorithm),
-                source,
-                Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB,
-                blob =>
-                {
-                    CngProperty mldsaBlob = new CngProperty(
-                        Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB,
-                        blob.ToArray(),
-                        CngPropertyOptions.None);
-
-                    CngKeyCreationParameters creationParams = new();
-                    creationParams.Parameters.Add(mldsaBlob);
-                    creationParams.ExportPolicy = CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport;
-
-                    CngKey key = CngKey.Create(CngAlgorithm.MLDsa, keyName: null, creationParams);
-                    return key;
-                });
-
-            return new MLDsaCng(key);
-        }
-
-        protected override MLDsa ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
-        {
-            CngKey key = PqcBlobHelpers.EncodeMLDsaBlob(
-                PqcBlobHelpers.GetParameterSet(algorithm),
-                source,
-                Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB,
-                blob => CngKey.Import(blob.ToArray(), CngKeyBlobFormat.PQDsaPublicBlob));
-
-            return new MLDsaCng(key);
+            MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
+                AssertExtensions.ThrowsContains<CryptographicException>(() => export(mldsa), "The requested operation is not supported"));
         }
 
         [Fact]
@@ -98,7 +83,7 @@ namespace System.Security.Cryptography.Tests
         {
             using RSACng rsa = new RSACng();
             using CngKey key = rsa.Key;
-            Assert.Throws<ArgumentException>(() => new MLDsaCng(key));
+            Assert.Throws<ArgumentException>("key", () => new MLDsaCng(key));
         }
 
         // TODO MLDsaCng doesn't have a public DuplicateHandle like OpenSSL since CngKey does that

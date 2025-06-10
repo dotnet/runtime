@@ -12,10 +12,20 @@ namespace System.Security.Cryptography
         private CngKey _key;
 
         /// <summary>
-        /// TODO
-        /// argnull when key is null, arg when key wrong algo, crypto on error
+        ///   Initializes a new instance of the <see cref="MLDsaCng"/> class by using the specified <see cref="CngKey"/>.
         /// </summary>
-        /// <param name="key"></param>
+        /// <param name="key">
+        ///   The key that will be used as input to the cryptographic operations performed by the current object.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="key"/> does not specify a Module-Lattice-Based Digital Signature Algorithm (ML-DSA) group.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Cryptography Next Generation (CNG) classes are not supported on this system.
+        /// </exception>
         [SupportedOSPlatform("windows")]
         public MLDsaCng(CngKey key)
             : base(AlgorithmFromHandle(key, out CngKey duplicateKey))
@@ -26,9 +36,18 @@ namespace System.Security.Cryptography
         private static partial MLDsaAlgorithm AlgorithmFromHandle(CngKey key, out CngKey duplicateKey);
 
         /// <summary>
-        /// TODO
+        ///   Gets the key that will be used by the <see cref="MLDsaCng"/> object for any cryptographic operation that it performs.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>
+        ///   The key used by the <see cref="MLDsaCng"/> object to perform cryptographic operations.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <remarks>
+        ///   This <see cref="CngKey"/> object is not the same as the one passed to the <see cref="MLDsaCng"/> constructor,
+        ///   if that constructor was used. However, it will point to the same CNG key.
+        /// </remarks>
         public partial CngKey GetCngKey();
     }
 }

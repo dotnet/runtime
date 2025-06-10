@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
@@ -84,7 +85,7 @@ namespace System.Security.Cryptography
 
                     if (privateAlgorithm.Algorithm is not (Oids.MLDsa44 or Oids.MLDsa65 or Oids.MLDsa87))
                     {
-                        // TODO resx
+                        Debug.Fail("Unexpected algorithm");
                         throw new CryptographicException();
                     }
 

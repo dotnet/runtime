@@ -392,6 +392,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsDraft10Pkcs8))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116463", TestPlatforms.Windows)]
         [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public static void ExportPkcs12_MLDsa_Generated_Roundtrip(MLDsaKeyInfo info)
         {

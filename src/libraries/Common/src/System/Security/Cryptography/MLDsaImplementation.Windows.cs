@@ -164,7 +164,6 @@ namespace System.Security.Cryptography
                 CryptoPool.Return(keyBlob);
             }
 
-            // TODO is this needed? If it's created by blob then it might already have this set.
             key.ExportPolicy = CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport;
             return key;
         }
