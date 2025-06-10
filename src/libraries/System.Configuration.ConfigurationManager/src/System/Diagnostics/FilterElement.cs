@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Configuration;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
 {
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     internal sealed class FilterElement : TypedElement
     {
         private static readonly ConditionalWeakTable<TraceFilter, string> s_initData = new();

@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Configuration
 {
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     public sealed class IdnElement : ConfigurationElement
     {
         internal const UriIdnScope EnabledDefaultValue = UriIdnScope.None;
@@ -29,6 +31,8 @@ namespace System.Configuration
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty(CommonConfigurationStrings.Enabled, DefaultValue = EnabledDefaultValue)]
         public UriIdnScope Enabled
         {
