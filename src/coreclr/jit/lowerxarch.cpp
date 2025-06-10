@@ -10500,6 +10500,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             case NI_BMI2_MultiplyNoFlags:
                             case NI_BMI2_X64_MultiplyNoFlags:
+                            case NI_X86Base_BigMul:
+                            case NI_X86Base_X64_BigMul:
                             {
                                 bool supportsOp1RegOptional = false;
                                 bool supportsOp2RegOptional = false;
@@ -10542,6 +10544,12 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 else if (regOptionalOperand != nullptr)
                                 {
                                     MakeSrcRegOptional(node, regOptionalOperand);
+                                }
+                                else if (op2->IsCnsIntOrI())
+                                {
+                                    // Prefer to have constant in op1 so it is placed in implicit register to reduce
+                                    // extra mov if both operands are in registers.
+                                    swapOperands = true;
                                 }
 
                                 if (swapOperands)
