@@ -365,7 +365,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEW_MDARR_RARE,// rare multi-dim array helper (Rank == 1)
     CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
     CORINFO_HELP_NEWARR_1_MAYBEFROZEN, // allocator for arrays that *might* allocate them on a frozen segment
-    CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
+    CORINFO_HELP_NEWARR_1_PTR,      // optimized 1-D arrays with pointer sized elements
     CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
     CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
@@ -1206,7 +1206,8 @@ enum CorInfoAccessAllowedHelperArgType
     CORINFO_HELPER_ARG_TYPE_Field   = 1,
     CORINFO_HELPER_ARG_TYPE_Method  = 2,
     CORINFO_HELPER_ARG_TYPE_Class   = 3,
-    CORINFO_HELPER_ARG_TYPE_Const   = 4,
+    CORINFO_HELPER_ARG_TYPE_Module  = 4,
+    CORINFO_HELPER_ARG_TYPE_Const   = 5,
 };
 struct CORINFO_HELPER_ARG
 {
@@ -1358,7 +1359,7 @@ enum CORINFO_CALLINFO_FLAGS
     CORINFO_CALLINFO_ALLOWINSTPARAM = 0x0001,   // Can the compiler generate code to pass an instantiation parameters? Simple compilers should not use this flag
     CORINFO_CALLINFO_CALLVIRT       = 0x0002,   // Is it a virtual call?
     // UNUSED                       = 0x0004,
-    // UNUSED                       = 0x0008,
+    CORINFO_CALLINFO_DISALLOW_STUB  = 0x0008,   // Do not use a stub for this call, even if it is a virtual call.
     CORINFO_CALLINFO_SECURITYCHECKS = 0x0010,   // Perform security checks.
     CORINFO_CALLINFO_LDFTN          = 0x0020,   // Resolving target of LDFTN
     // UNUSED                       = 0x0040,
@@ -3137,6 +3138,11 @@ public:
             CORINFO_MODULE_HANDLE   handle
             ) = 0;
 
+    virtual CORINFO_MODULE_HANDLE embedModuleHandle(
+            CORINFO_MODULE_HANDLE   handle,
+            void                  **ppIndirection = NULL
+            ) = 0;
+
     virtual CORINFO_CLASS_HANDLE embedClassHandle(
             CORINFO_CLASS_HANDLE    handle,
             void                  **ppIndirection = NULL
@@ -3144,6 +3150,11 @@ public:
 
     virtual CORINFO_METHOD_HANDLE embedMethodHandle(
             CORINFO_METHOD_HANDLE   handle,
+            void                  **ppIndirection = NULL
+            ) = 0;
+
+    virtual CORINFO_FIELD_HANDLE embedFieldHandle(
+            CORINFO_FIELD_HANDLE    handle,
             void                  **ppIndirection = NULL
             ) = 0;
 

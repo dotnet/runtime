@@ -139,55 +139,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(null)]
-        [InlineData(false)]
-        public void ListRuntimes(bool? multiLevelLookup)
-        {
-            // Multi-level lookup is only supported on Windows.
-            if (!OperatingSystem.IsWindows() && multiLevelLookup != false)
-                return;
-
-            string expectedOutput = string.Join(
-                string.Empty,
-                GetExpectedFrameworks(false) // MLL Is always disabled for dotnet --list-runtimes
-                    .Select(t => $"{MicrosoftNETCoreApp} {t.Version} [{Path.Combine(t.Path, "shared", MicrosoftNETCoreApp)}]{Environment.NewLine}"));
-
-            // !!IMPORTANT!!: This test verifies the exact match of the entire output of the command (not a substring!)
-            // This is important as the output of --list-runtimes is considered machine readable and thus must not change even in a minor way (unintentionally)
-            RunTest(
-                new TestSettings().WithCommandLine("--list-runtimes"),
-                multiLevelLookup,
-                testApp: null)
-                .Should().HaveStdOut(expectedOutput)
-                .And.HaveStdErrContaining("Ignoring FX version [9999.9.9] without .deps.json");
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(null)]
-        [InlineData(false)]
-        public void DotnetInfo(bool? multiLevelLookup)
-        {
-            // Multi-level lookup is only supported on Windows.
-            if (!OperatingSystem.IsWindows() && multiLevelLookup != false)
-                return;
-
-            string expectedOutput =
-                $".NET runtimes installed:{Environment.NewLine}" +
-                string.Join(string.Empty,
-                    GetExpectedFrameworks(false) // MLL is always disabled for dotnet --info
-                        .Select(t => $"  {MicrosoftNETCoreApp} {t.Version} [{Path.Combine(t.Path, "shared", MicrosoftNETCoreApp)}]{Environment.NewLine}"));
-
-            RunTest(
-                new TestSettings().WithCommandLine("--info"),
-                multiLevelLookup,
-                testApp: null)
-                .Should().HaveStdOutContaining(expectedOutput)
-                .And.HaveStdErrContaining("Ignoring FX version [9999.9.9] without .deps.json");
-        }
-
-        [Theory]
         [InlineData("net6.0", true, true)]
         [InlineData("net6.0", null, true)]
         [InlineData("net6.0", false, false)]

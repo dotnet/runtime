@@ -20,6 +20,10 @@ namespace System.Net.Http
         private static readonly SearchValues<char> s_hostDelimiterChars =
             SearchValues.Create("/ \t\r,");
 
+        // Characters such as '?' or '#' are interpreted as an end of the host part of the URI, so they will not be validated in the same way.
+        private static readonly SearchValues<char> s_disallowedHostChars =
+            SearchValues.Create("/\\?#@");
+
         private const int MaxNestedCount = 5;
 
         internal const char CR = (char)13;
@@ -193,8 +197,8 @@ namespace System.Net.Http
             }
 
             // Quoted-char has 2 characters. Check whether there are 2 chars left ('\' + char)
-            // If so, check whether the character is in the range 0-127. If not, it's an invalid value.
-            if ((startIndex + 2 > input.Length) || (input[startIndex + 1] > 127))
+            // If so, check whether the character is in the range 0-127 and not a new line. Otherwise, it's an invalid value.
+            if ((startIndex + 2 > input.Length) || (input[startIndex + 1] is > (char)127 or '\r' or '\n'))
             {
                 return HttpParseResult.InvalidFormat;
             }
@@ -303,8 +307,19 @@ namespace System.Net.Http
 
         private static bool IsValidHostName(ReadOnlySpan<char> host)
         {
-            // Also add user info (u@) to make sure 'host' doesn't include user info.
-            return Uri.TryCreate($"http://u@{host}/", UriKind.Absolute, out _);
+            if (host.ContainsAny(s_disallowedHostChars))
+            {
+                return false;
+            }
+
+            // Using a trailing slash as Uri ignores trailing whitespace otherwise.
+            if (!Uri.TryCreate($"http://{host}/", UriKind.Absolute, out _))
+            {
+                return false;
+            }
+
+            Debug.Assert(!ContainsNewLine(host.ToString()));
+            return true;
         }
     }
 }

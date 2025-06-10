@@ -90,11 +90,6 @@ bool emitter::IsApxOnlyInstruction(instruction ins)
     return (ins >= INS_FIRST_APX_INSTRUCTION) && (ins <= INS_LAST_APX_INSTRUCTION);
 }
 
-bool emitter::IsFMAInstruction(instruction ins)
-{
-    return (ins >= INS_FIRST_FMA_INSTRUCTION) && (ins <= INS_LAST_FMA_INSTRUCTION);
-}
-
 bool emitter::IsAVXVNNIInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_AVXVNNI_INSTRUCTION) && (ins <= INS_LAST_AVXVNNI_INSTRUCTION);
@@ -115,21 +110,7 @@ bool emitter::IsAVXVNNIFamilyInstruction(instruction ins)
     return (IsAVXVNNIInstruction(ins) || IsAVXVNNIINT8Instruction(ins) || IsAVXVNNIINT16Instruction(ins));
 }
 
-bool emitter::IsBMIInstruction(instruction ins)
-{
-    return (ins >= INS_FIRST_BMI_INSTRUCTION) && (ins <= INS_LAST_BMI_INSTRUCTION);
-}
-
-//------------------------------------------------------------------------
-// IsPermuteVar2xInstruction: Is this an Avx512 permutex2var instruction?
-//
-// Arguments:
-//    ins - The instruction to check.
-//
-// Returns:
-//    `true` if it is a permutex2var instruction.
-//
-bool emitter::IsPermuteVar2xInstruction(instruction ins)
+bool emitter::Is3OpRmwInstruction(instruction ins)
 {
     switch (ins)
     {
@@ -151,9 +132,16 @@ bool emitter::IsPermuteVar2xInstruction(instruction ins)
 
         default:
         {
-            return false;
+            return ((ins >= INS_FIRST_FMA_INSTRUCTION) && (ins <= INS_LAST_FMA_INSTRUCTION)) ||
+                   (IsAVXVNNIFamilyInstruction(ins)) ||
+                   ((ins >= INS_FIRST_AVXIFMA_INSTRUCTION) && (ins <= INS_LAST_AVXIFMA_INSTRUCTION));
         }
     }
+}
+
+bool emitter::IsBMIInstruction(instruction ins)
+{
+    return (ins >= INS_FIRST_BMI_INSTRUCTION) && (ins <= INS_LAST_BMI_INSTRUCTION);
 }
 
 //------------------------------------------------------------------------
@@ -270,18 +258,6 @@ regNumber emitter::getSseShiftRegNumber(instruction ins)
     }
 }
 
-bool emitter::HasVexEncoding(instruction ins)
-{
-    insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & Encoding_VEX) != 0;
-}
-
-bool emitter::HasEvexEncoding(instruction ins)
-{
-    insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & Encoding_EVEX) != 0;
-}
-
 bool emitter::HasRex2Encoding(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
@@ -306,7 +282,35 @@ bool emitter::IsVexEncodableInstruction(instruction ins) const
     {
         return false;
     }
-    return HasVexEncoding(ins);
+
+    // These can use compSupportsHWIntrinsic as we'll get here for
+    // some NAOT scenarios and it will already have been recorded
+    // for appropriate usage.
+
+    switch (ins)
+    {
+#if defined(FEATURE_HW_INTRINSICS)
+        case INS_vpdpbusd:
+        case INS_vpdpwssd:
+        case INS_vpdpbusds:
+        case INS_vpdpwssds:
+        {
+            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVXVNNI);
+        }
+
+        case INS_vpmadd52huq:
+        case INS_vpmadd52luq:
+        {
+            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVXIFMA);
+        }
+#endif // FEATURE_HW_INTRINSICS
+
+        default:
+        {
+            insFlags flags = CodeGenInterface::instInfo[ins];
+            return (flags & Encoding_VEX) != 0;
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -325,11 +329,24 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         return false;
     }
 
+    // These can use compSupportsHWIntrinsic as we'll get here for
+    // some NAOT scenarios and it will already have been recorded
+    // for appropriate usage.
+
     switch (ins)
     {
+#if defined(FEATURE_HW_INTRINSICS)
+        case INS_aesdec:
+        case INS_aesdeclast:
+        case INS_aesenc:
+        case INS_aesenclast:
+        {
+            return emitComp->compSupportsHWIntrinsic(InstructionSet_AES_V256);
+        }
+
         case INS_pclmulqdq:
         {
-            return emitComp->compOpportunisticallyDependsOn(InstructionSet_PCLMULQDQ_V256);
+            return emitComp->compSupportsHWIntrinsic(InstructionSet_PCLMULQDQ_V256);
         }
 
         case INS_vpdpwsud:
@@ -350,9 +367,25 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
             return emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
         }
 
+        case INS_vpdpbusd:
+        case INS_vpdpwssd:
+        case INS_vpdpbusds:
+        case INS_vpdpwssds:
+        {
+            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVX512v3);
+        }
+
+        case INS_vpmadd52huq:
+        case INS_vpmadd52luq:
+        {
+            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVX512VBMI);
+        }
+#endif // FEATURE_HW_INTRINSICS
+
         default:
         {
-            return HasEvexEncoding(ins);
+            insFlags flags = CodeGenInterface::instInfo[ins];
+            return (flags & Encoding_EVEX) != 0;
         }
     }
 }
@@ -547,13 +580,7 @@ bool emitter::IsLegacyMap1(code_t code) const
 //
 bool emitter::IsVexOrEvexEncodableInstruction(instruction ins) const
 {
-    if (!UseVEXEncoding())
-    {
-        return false;
-    }
-
-    insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & (Encoding_VEX | Encoding_EVEX)) != 0;
+    return IsVexEncodableInstruction(ins) || IsEvexEncodableInstruction(ins);
 }
 
 // Returns true if the AVX instruction is a binary operator that requires 3 operands.
@@ -2086,7 +2113,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
     if (IsApxExtendedEvexInstruction(ins))
     {
-        if (!HasEvexEncoding(ins))
+        if (!IsEvexEncodableInstruction(ins))
         {
             // Legacy-promoted insutrcions are not labeled with Encoding_EVEX.
             code |= MAP4_IN_BYTE_EVEX_PREFIX;
@@ -2238,11 +2265,6 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             if (aaaContext != 0)
             {
                 maskReg = static_cast<regNumber>(aaaContext + KBASE);
-
-                if (id->idIsEvexZContextSet())
-                {
-                    code |= ZBIT_IN_BYTE_EVEX_PREFIX;
-                }
             }
             break;
         }
@@ -2251,6 +2273,11 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     if (isMaskReg(maskReg))
     {
         code |= (static_cast<code_t>(maskReg - KBASE) << 32);
+
+        if (id->idIsEvexZContextSet())
+        {
+            code |= ZBIT_IN_BYTE_EVEX_PREFIX;
+        }
     }
     return code;
 }
@@ -10054,7 +10081,7 @@ void emitter::emitIns_SIMD_R_R_R_A(instruction   ins,
                                    GenTreeIndir* indir,
                                    insOpts       instOptions)
 {
-    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIFamilyInstruction(ins));
+    assert(Is3OpRmwInstruction(ins));
     assert(UseSimdEncoding());
 
     // Ensure we aren't overwriting op2
@@ -10087,7 +10114,7 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
                                    int                  offs,
                                    insOpts              instOptions)
 {
-    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIFamilyInstruction(ins));
+    assert(Is3OpRmwInstruction(ins));
     assert(UseSimdEncoding());
 
     // Ensure we aren't overwriting op2
@@ -10118,7 +10145,7 @@ void emitter::emitIns_SIMD_R_R_R_R(instruction ins,
                                    regNumber   op3Reg,
                                    insOpts     instOptions)
 {
-    if (IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIFamilyInstruction(ins))
+    if (Is3OpRmwInstruction(ins))
     {
         assert(UseSimdEncoding());
 
@@ -10205,7 +10232,7 @@ void emitter::emitIns_SIMD_R_R_R_S(instruction ins,
                                    int         offs,
                                    insOpts     instOptions)
 {
-    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIFamilyInstruction(ins));
+    assert(Is3OpRmwInstruction(ins));
     assert(UseSimdEncoding());
 
     // Ensure we aren't overwriting op2
@@ -20931,8 +20958,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vmovdqu8:
         case INS_vmovdqu16:
         case INS_vmovdqu64:
-        case INS_vmovd:
-        case INS_vmovw:
+        case INS_vmovd_simd:
+        case INS_vmovw_simd:
         case INS_movaps:
         case INS_movups:
         case INS_movapd:

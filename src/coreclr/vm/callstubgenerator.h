@@ -68,7 +68,7 @@ class CallStubGenerator
     int m_totalStackSize;
 
     // Process the argument described by argLocDesc. This function is called for each argument in the method signature.
-    void ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDesc, PCODE *pRoutines);
+    void ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocDesc, PCODE *pRoutines);
 public:
     // Generate the call stub for the given method.
     CallStubHeader *GenerateCallStub(MethodDesc *pMD, AllocMemTracker *pamTracker);

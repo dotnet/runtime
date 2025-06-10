@@ -5,15 +5,12 @@ namespace System.Diagnostics
 {
     public partial class Stopwatch
     {
-        private static long QueryPerformanceFrequency()
+        private static long GetFrequency()
         {
             const long SecondsToNanoSeconds = 1000000000;
             return SecondsToNanoSeconds;
         }
 
-        private static long QueryPerformanceCounter()
-        {
-            return Interop.Sys.GetTimestamp();
-        }
+        public static long GetTimestamp() => Interop.Sys.GetTimestamp();
     }
 }

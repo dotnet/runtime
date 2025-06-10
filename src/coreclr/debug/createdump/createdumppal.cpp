@@ -21,7 +21,6 @@ typedef void (*PFN_PAL_TerminateEx)(int);
 
 typedef BOOL (*PFN_PAL_VirtualUnwindOutOfProc)(
     CONTEXT *context,
-    KNONVOLATILE_CONTEXT_POINTERS *contextPointers,
     PULONG64 functionStart,
     SIZE_T baseAddress,
     UnwindReadMemoryCallback readMemoryCallback);
@@ -128,7 +127,6 @@ BOOL
 PALAPI
 PAL_VirtualUnwindOutOfProc(
     CONTEXT *context,
-    KNONVOLATILE_CONTEXT_POINTERS *contextPointers,
     PULONG64 functionStart,
     SIZE_T baseAddress,
     UnwindReadMemoryCallback readMemoryCallback)
@@ -137,7 +135,7 @@ PAL_VirtualUnwindOutOfProc(
     {
         return FALSE;
     }
-    return g_PAL_VirtualUnwindOutOfProc(context, contextPointers, functionStart, baseAddress, readMemoryCallback);
+    return g_PAL_VirtualUnwindOutOfProc(context, functionStart, baseAddress, readMemoryCallback);
 }
 
 BOOL

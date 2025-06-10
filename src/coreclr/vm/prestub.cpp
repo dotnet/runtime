@@ -437,6 +437,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
             amt.SuppressRelease();
             pCode = PINSTRToPCODE(pPrecode->GetEntryPoint());
             SetNativeCodeInterlocked(pCode);
+            SetInterpreterCode(dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr));
         }
 #endif // FEATURE_INTERPRETER
     }
@@ -2016,9 +2017,11 @@ extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlo
     }
     frames(pTransitionBlock);
 
-    frames.interpMethodContextFrame.startIp = (int32_t*)byteCodeAddr;
+    StackVal retVal;
+
+    frames.interpMethodContextFrame.startIp = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
     frames.interpMethodContextFrame.pStack = sp;
-    frames.interpMethodContextFrame.pRetVal = sp;
+    frames.interpMethodContextFrame.pRetVal = (int8_t*)&retVal;
 
     InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
 

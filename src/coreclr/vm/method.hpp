@@ -37,12 +37,16 @@ class GCCoverageInfo;
 class DynamicMethodDesc;
 class ReJitManager;
 class PrepareCodeConfig;
+struct InterpMethod;
+struct InterpByteCodeStart;
 
 typedef DPTR(FCallMethodDesc)        PTR_FCallMethodDesc;
 typedef DPTR(ArrayMethodDesc)        PTR_ArrayMethodDesc;
 typedef DPTR(DynamicMethodDesc)      PTR_DynamicMethodDesc;
 typedef DPTR(InstantiatedMethodDesc) PTR_InstantiatedMethodDesc;
 typedef DPTR(GCCoverageInfo)         PTR_GCCoverageInfo;        // see code:GCCoverageInfo::savedCode
+typedef DPTR(InterpMethod) PTR_InterpMethod;
+typedef DPTR(InterpByteCodeStart) PTR_InterpByteCodeStart;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 GVAL_DECL(DWORD, g_MiniMetaDataBuffMaxSize);
@@ -1657,6 +1661,13 @@ public:
         return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, TRUE, AsyncVariantLookup::AsyncOtherVariant);
     }
 
+    // same as above, but with allowCreate = FALSE
+    // for rare cases where we cannot allow GC, but we know that the other variant is already created.
+    MethodDesc* GetAsyncOtherVariantNoCreate(BOOL allowInstParam = TRUE)
+    {
+        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, FALSE, AsyncVariantLookup::AsyncOtherVariant);
+    }
+
     // True if a MD is an funny BoxedEntryPointStub (not from the method table) or
     // an MD for a generic instantiation...In other words the MethodDescs and the
     // MethodTable are guaranteed to be "tightly-knit", i.e. if one is present in
@@ -1793,6 +1804,20 @@ protected:
     WORD m_wSlotNumber; // The slot number of this MethodDesc in the vtable array.
     WORD m_wFlags; // See MethodDescFlags
     PTR_MethodDescCodeData m_codeData;
+#ifdef FEATURE_INTERPRETER
+    PTR_InterpByteCodeStart m_interpreterCode;
+public:
+    const PTR_InterpByteCodeStart GetInterpreterCode() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_interpreterCode;
+    }
+    void SetInterpreterCode(PTR_InterpByteCodeStart interpreterCode)
+    {
+        LIMITED_METHOD_CONTRACT;
+        VolatileStore(&m_interpreterCode, interpreterCode);
+    }
+#endif // FEATURE_INTERPRETER
 
 #ifdef _DEBUG
 public:
