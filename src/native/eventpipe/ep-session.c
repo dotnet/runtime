@@ -58,7 +58,7 @@ is_guid_empty(const uint8_t *guid);
 
 static
 uint16_t
-tracepoint_construct_extension_buffer (
+construct_extension_buffer (
 	uint8_t *extension,
 	const uint8_t *activity_id,
 	const uint8_t *related_activity_id);
@@ -655,15 +655,14 @@ is_guid_empty(const uint8_t *guid)
 }
 
 /*
- *  tracepoint_construct_extension_buffer
+ *  construct_extension_buffer
  *
  *  EventPipe Tracepoints include an extension buffer
- *  that encodes other optional information in the
- *  the NetTrace V6 LabelList format.
+ *  that encodes other optional information.
  */
 static
 uint16_t
-tracepoint_construct_extension_buffer (
+construct_extension_buffer (
 	uint8_t *extension,
 	const uint8_t *activity_id,
 	const uint8_t *related_activity_id)
@@ -676,13 +675,13 @@ tracepoint_construct_extension_buffer (
 	bool related_activity_id_is_empty = is_guid_empty (related_activity_id);
 
 	if (!activity_id_is_empty) {
-		extension[offset] = !related_activity_id_is_empty ? 0x81 : 0x01;
+		extension[offset] = 0x02;
 		memcpy(extension + offset + 1, activity_id, EP_ACTIVITY_ID_SIZE);
 		offset += 1 + EP_ACTIVITY_ID_SIZE;
 	}
 
 	if (!related_activity_id_is_empty) {
-		extension[offset] = 0x02;
+		extension[offset] = 0x03;
 		memcpy(extension + offset + 1, related_activity_id, EP_ACTIVITY_ID_SIZE);
 		offset += 1 + EP_ACTIVITY_ID_SIZE;
 	}
@@ -721,28 +720,29 @@ session_tracepoint_write_event (
 	uint32_t event_id = ep_event_get_event_id (ep_event);
 	uint16_t truncated_event_id = event_id & 0xFFFF; // For parity with EventSource, there shouldn't be any that need more than 16 bits. 
 
-	uint8_t extension[EP_MAX_EXTENSION_SIZE];
-	uint16_t extension_len = tracepoint_construct_extension_buffer (extension, activity_id, related_activity_id);
-	EP_ASSERT(extension_len <= EP_MAX_EXTENSION_SIZE);
+	uint8_t extension_metadata[5];
+	extension_metadata[0] = 0x01; // label
+	uint32_t metadata_len = ep_event_get_metadata_len (ep_event);
+	memcpy (extension_metadata + 1, &metadata_len, sizeof (metadata_len));
+
+	uint8_t extension_activity_ids[EP_MAX_EXTENSION_SIZE];
+	uint16_t extension_activity_ids_len = construct_extension_buffer (extension_activity_ids, activity_id, related_activity_id);
+	EP_ASSERT(extension_activity_ids_len <= EP_MAX_EXTENSION_SIZE);
+
+	uint32_t extension_len = 5 + metadata_len + extension_activity_ids_len;
+	if (extension_len & 0xFFFF0000)
+		return false;
 
 	uint32_t payload_len = ep_event_payload_get_size (ep_event_payload);
 	if ((payload_len & 0xFFFF0000) != 0)
 		return false;
 
-	uint32_t metadata_len = ep_event_get_metadata_len (ep_event);
-	if ((metadata_len & 0xFFFF0000) != 0)
+	uint32_t payload_rel_loc = payload_len << 16 | (extension_len & 0xFFFF);
+	if ((extension_len & 0xFFFF0000) != 0)
 		return false;
 
-	uint32_t meta_rel_loc = metadata_len << 16 | ((extension_len + payload_len) & 0xFFFF);
-	if (((extension_len + payload_len) & 0xFFFF0000) != 0)
-		return false;
-
-	uint32_t payload_rel_loc = payload_len << 16 | ((sizeof(meta_rel_loc) + extension_len) & 0xFFFF);
-	if (((sizeof(meta_rel_loc) + extension_len) & 0xFFFF0000) != 0)
-		return false;
-
-	uint32_t extension_rel_loc = extension_len << 16 | ((sizeof(payload_rel_loc) + sizeof(meta_rel_loc)) & 0xFFFF);
-	if (((sizeof(payload_rel_loc) + sizeof(meta_rel_loc)) & 0xFFFF0000) != 0)
+	uint32_t extension_rel_loc = extension_len << 16 | (sizeof(payload_rel_loc) & 0xFFFF);
+	if (sizeof(payload_rel_loc) & 0xFFFF0000)
 		return false;
 
 	struct iovec static_io[EP_DEFAULT_IOVEC_SIZE];
@@ -765,10 +765,10 @@ session_tracepoint_write_event (
 				return false;
 		}
 		for (uint32_t i = 0; i < ep_event_payload->event_data_len; ++i) {
-			io[index + i].iov_base = (void *)ep_event_data_get_ptr (&event_data[i]);
-			io[index + i].iov_len = ep_event_data_get_size (&event_data[i]);
+			io[index].iov_base = (void *)ep_event_data_get_ptr (&event_data[i]);
+			io[index].iov_len = ep_event_data_get_size (&event_data[i]);
+			++index;
 		}
-		index += ep_event_payload->event_data_len;
 	}
 
 	io[0].iov_base = (void *)&tracepoint->write_index;
@@ -786,17 +786,17 @@ session_tracepoint_write_event (
 	io[4].iov_base = &payload_rel_loc;
 	io[4].iov_len = sizeof(payload_rel_loc);
 
-	io[5].iov_base = &meta_rel_loc;
-	io[5].iov_len = sizeof(meta_rel_loc);
+	io[5].iov_base = extension_metadata;
+	io[5].iov_len = sizeof(extension_metadata);
 
-	io[6].iov_base = extension;
-	io[6].iov_len = extension_len;
+	io[6].iov_base = (void *)ep_event_get_metadata (ep_event);
+	io[6].iov_len = metadata_len;
 
-	io[index].iov_base = (void *)ep_event_get_metadata (ep_event);
-	io[index].iov_len = metadata_len;
+	io[7].iov_base = extension_activity_ids;
+	io[7].iov_len = extension_activity_ids_len;
 
 	ssize_t bytes_written;
-	while ((bytes_written = writev(session->user_events_data_fd, (const struct iovec *)io, index + 1) < 0) && errno == EINTR);
+	while ((bytes_written = writev(session->user_events_data_fd, (const struct iovec *)io, index) < 0) && errno == EINTR);
 
 	if (io != static_io)
 		free (io);
