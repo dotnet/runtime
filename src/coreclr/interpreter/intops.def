@@ -50,6 +50,7 @@ OPDEF(INTOP_STELEM_VT_NOREF, "stelem.vt.noref", 5, 0, 3, InterpOpInt)
 
 OPDEF(INTOP_LDELEMA, "ldelema", 5, 1, 2, InterpOpInt)
 OPDEF(INTOP_LDELEMA_REF, "ldelema.ref", 6, 1, 2, InterpOpTwoInts)
+OPDEF(INTOP_LDELEMA_MD, "ldelema.md", 5, 1, 1, InterpOpTwoInts)
 
 OPDEF(INTOP_LDTOKEN, "ldtoken", 4, 1, 0, InterpOpTwoInts) // [token data item] [conversion helper func]
 OPDEF(INTOP_LDTOKEN_VAR, "ldtoken.var", 4, 1, 1, InterpOpInt) // [var index] [conversion helper func]

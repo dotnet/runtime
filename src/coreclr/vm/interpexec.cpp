@@ -1939,6 +1939,41 @@ do {                                                                           \
                     ip += 6;
                     break;
                 }
+                case INTOP_LDELEMA_MD:
+                {
+                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
+                    if (arrayRef == NULL)
+                        COMPlusThrow(kNullReferenceException);
+
+                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    int32_t rank = ip[4];
+
+                    int32_t* bounds = arr->GetBoundsPtr();
+
+                    int32_t flatIndex = 0;
+                    int32_t stride = 1;
+                    for (int i = rank - 1; i >= 0; --i)
+                    {
+                        int32_t dimLen = bounds[i];
+                        // Could be non-zero
+                        int32_t lowerBound = bounds[rank + i];
+
+                        int32_t idx = *(int32_t*)(stack + ip[2] + (i + 1) * 8);
+                        if (idx < lowerBound || idx >= lowerBound + dimLen)
+                            COMPlusThrow(kIndexOutOfRangeException);
+
+                        flatIndex += (idx - lowerBound) * stride;
+                        stride *= dimLen;
+                    }
+
+                    uint8_t* pData = arr->GetDataPtr();
+                    size_t elemSize = arr->GetMethodTable()->GetComponentSize();
+                    void* elemAddr = pData + flatIndex * elemSize;
+
+                    LOCAL_VAR(ip[1], void*) = elemAddr;
+                    ip += 5;
+                    break;
+                }
 #define DO_GENERIC_LOOKUP(mdParam, mtParam) \
                     CORINFO_RUNTIME_LOOKUP *pLookup = (CORINFO_RUNTIME_LOOKUP*)pMethod->pDataItems[ip[3]];  \
                     CORINFO_GENERIC_HANDLE  result = 0;                                                     \

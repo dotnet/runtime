@@ -2508,15 +2508,41 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
             }
             else if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && !readonly)
             {
-                CORINFO_SIG_INFO ctorSignature;
-                CORINFO_CLASS_HANDLE ctorClass;
+                CORINFO_SIG_INFO methodSignature;
+                m_compHnd->getMethodSig(resolvedCallToken.hMethod, &methodSignature);
+                CORINFO_CLASS_HANDLE arrayClsHnd = m_compHnd->getMethodClass(resolvedCallToken.hMethod);
+                uint32_t rank = m_compHnd->getArrayRank(arrayClsHnd);
 
-                m_compHnd->getMethodSig(resolvedCallToken.hMethod, &ctorSignature);
-                ctorClass = m_compHnd->getMethodClass(resolvedCallToken.hMethod);
+                // MDArray.Get
+                if (callInfo.sig.retType != CORINFO_TYPE_VOID && callInfo.sig.numArgs == rank)
+                {
+                    AddIns(INTOP_LDELEMA_MD);
+                    m_pLastNewIns->data[0] = GetDataItemIndex(arrayClsHnd);
+                    m_pLastNewIns->data[1] = rank;
+                }
+                // MDArray.Set
+                else if (callInfo.sig.retType == CORINFO_TYPE_VOID && callInfo.sig.numArgs == rank + 1)
+                {
+                    int valueVar = m_pStackPointer[2].var;
+                    InterpType interpType = m_pVars[valueVar].interpType;
 
-                AddIns(INTOP_NEWMDARR);
-                m_pLastNewIns->data[0] = GetDataItemIndex(ctorClass);
-                m_pLastNewIns->data[1] = numArgs;
+                    int var = CreateVarExplicit(interpType, m_pVars[valueVar].clsHnd, m_pVars[valueVar].size);
+
+                    AddIns(InterpGetMovForType(interpType, false));
+                    m_pLastNewIns->SetSVar(valueVar);
+                    m_pLastNewIns->SetDVar(var);
+
+                    AddIns(INTOP_LDELEMA_MD);
+                    m_pLastNewIns->data[0] = GetDataItemIndex(arrayClsHnd);
+                    m_pLastNewIns->data[1] = rank;
+                }
+                // MDArray.New
+                else
+                {
+                    AddIns(INTOP_NEWMDARR);
+                    m_pLastNewIns->data[0] = GetDataItemIndex(arrayClsHnd);
+                    m_pLastNewIns->data[1] = numArgs;
+                }
             }
             else
             {
@@ -2575,6 +2601,35 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 
     m_ip += 5;
+
+    if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && !readonly)
+    {
+        CORINFO_SIG_INFO methodSignature;
+        m_compHnd->getMethodSig(resolvedCallToken.hMethod, &methodSignature);
+        CORINFO_CLASS_HANDLE arrayClsHnd = m_compHnd->getMethodClass(resolvedCallToken.hMethod);
+        uint32_t rank = m_compHnd->getArrayRank(arrayClsHnd);
+
+        CORINFO_CLASS_HANDLE elemClass = NULL;
+        CorInfoType elemType = m_compHnd->getChildType(resolvedCallToken.hClass, &elemClass);
+        InterpType interpType = GetInterpType(elemType);
+
+        // MDArray.Get ldobj
+        if (callInfo.sig.retType != CORINFO_TYPE_VOID && callInfo.sig.numArgs == rank)
+        {
+            EmitLdind(interpType, resolvedCallToken.hClass, 0);
+        }
+        // MDArray.Set stobj
+        if (callInfo.sig.retType == CORINFO_TYPE_VOID && callInfo.sig.numArgs == rank + 1)
+        {
+            int var = m_pLastNewIns->pPrev->dVar;
+            PushInterpType(interpType, m_pVars[var].clsHnd);
+            AddIns(InterpGetMovForType(interpType, false));
+            m_pLastNewIns->SetSVar(var);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+            EmitStind(interpType, resolvedCallToken.hClass, 0, false);
+        }
+    }
 }
 
 static int32_t GetLdindForType(InterpType interpType)

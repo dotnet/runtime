@@ -845,10 +845,7 @@ public class InterpreterTest
         Console.WriteLine("TestLdtoken");
         if (!TestLdtoken())
             Environment.FailFast(null);
-        /*
-        if (!TestMdArray())
-            Environment.FailFast(null);
-        */
+
         Console.WriteLine("TestExceptionHandling");
         TestExceptionHandling();
 
@@ -1947,6 +1944,7 @@ public class InterpreterTest
         if (!TestStructRefArray()) return false;
         if (!ArrayJagged(1)) return false;
         if (!ArrayMD1()) return false;
+        if (!ArrayMD2()) return false;
         if (!ArrayObj(1)) return false;
         if (!ArrayStruct(1)) return false;
 
@@ -2166,7 +2164,14 @@ public class InterpreterTest
     public static bool ArrayMD1()
     {
         int[,] a = { { 1, 2 }, { 3, 4 } };
-        return true;
+        return a[1, 1] == 4;
+    }
+
+    public static bool ArrayMD2()
+    {
+        int[,] a = new int[2, 2];
+        a[1, 1] = 4;
+        return a[1, 1] == 4;
     }
 
     public static bool ArrayObj(int i)
@@ -2234,16 +2239,5 @@ public class InterpreterTest
         System.Linq.Expressions.Expression<Action> a = () => TestLdtoken();
         */
         return true;
-    }
-
-    public static bool TestMdArray()
-    {
-        // FIXME: This generates roughly:
-        // newobj int[,].ctor
-        // ldtoken int[,]
-        // call System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray
-        // The newobj currently fails because int[,].ctor isn't a real method, the interp needs to use getCallInfo to determine how to invoke it
-        int[,] a = { { 1, 2 }, { 3, 4 } };
-        return a[0, 1] == 2;
     }
 }
