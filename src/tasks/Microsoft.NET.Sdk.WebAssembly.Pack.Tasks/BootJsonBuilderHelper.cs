@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -18,6 +19,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
     {
 #pragma warning disable SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
         internal static readonly Regex mergeWithPlaceholderRegex = new Regex(@"/\*!\s*dotnetBootConfig\s*\*/\s*{}");
+        internal static readonly Regex bundlerFriendlyImportsRegex = new Regex(@"/\*!\s*bundlerFriendlyImports\s*\*/");
 #pragma warning restore SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
 
         private static readonly string[] coreAssemblyNames = [
@@ -52,18 +54,33 @@ namespace Microsoft.NET.Sdk.WebAssembly
             return false;
         }
 
-        public void WriteConfigToFile(BootJsonData config, string outputPath, string? outputFileExtension = null, string? mergeWith = null)
+        public void WriteConfigToFile(BootJsonData config, string outputPath, string? outputFileExtension = null, string? mergeWith = null, string? imports = null)
         {
             var output = JsonSerializer.Serialize(config, JsonOptions);
+
+            // Remove the $#[ and ]#$" that are used to mark JS variable usage.
+            output = output
+                .Replace("\"$#[", string.Empty)
+                .Replace("]#$\"", string.Empty);
 
             outputFileExtension ??= Path.GetExtension(outputPath);
             Log.LogMessage($"Write config in format '{outputFileExtension}'");
             if (mergeWith != null)
             {
                 string existingContent = File.ReadAllText(mergeWith);
-                output = mergeWithPlaceholderRegex.Replace(existingContent, e => $"/*json-start*/{output}/*json-end*/");
-                if (existingContent.Equals(output))
-                    Log.LogError($"Merging boot config into '{mergeWith}' failed to find the placeholder.");
+                output = ReplaceWithAssert(
+                    mergeWithPlaceholderRegex,
+                    existingContent,
+                    $"/*json-start*/{output}/*json-end*/",
+                    $"Merging boot config into '{mergeWith}' failed to find the placeholder."
+                );
+
+                output = ReplaceWithAssert(
+                    bundlerFriendlyImportsRegex,
+                    output,
+                    imports ?? string.Empty,
+                    $"Failed to find the placeholder for bundler friendly imports."
+                );
             }
             else if (outputFileExtension == ".js")
             {
@@ -71,6 +88,16 @@ namespace Microsoft.NET.Sdk.WebAssembly
             }
 
             File.WriteAllText(outputPath, output);
+        }
+
+        private string ReplaceWithAssert(Regex regex, string content, string replacement, string errorMessage)
+        {
+            string existingContent = content;
+            content = regex.Replace(content, e => replacement);
+            if (existingContent.Equals(content))
+                Log.LogError(errorMessage);
+
+            return content;
         }
 
         public void ComputeResourcesHash(BootJsonData bootConfig)
@@ -179,8 +206,10 @@ namespace Microsoft.NET.Sdk.WebAssembly
             return intValue;
         }
 
-        public void TransformResourcesToAssets(BootJsonData config)
+        public string TransformResourcesToAssets(BootJsonData config, bool bundlerFriendly = false)
         {
+            List<string> imports = [];
+
             ResourcesData resources = (ResourcesData)config.resources;
             var assets = new AssetsData();
 
@@ -190,10 +219,22 @@ namespace Microsoft.NET.Sdk.WebAssembly
             assets.jsModuleWorker = MapJsAssets(resources.jsModuleWorker);
             assets.jsModuleDiagnostics = MapJsAssets(resources.jsModuleDiagnostics);
 
-            assets.wasmNative = resources.wasmNative?.Select(a => new WasmAsset()
+            assets.wasmNative = resources.wasmNative?.Select(a =>
             {
-                name = a.Key,
-                integrity = a.Value
+                var asset = new WasmAsset()
+                {
+                    name = a.Key,
+                    integrity = a.Value
+                };
+
+                if (bundlerFriendly)
+                {
+                    string escaped = EscapeName(a.Key);
+                    imports.Add($"import {escaped} from \"./{a.Key}\";");
+                    asset.resolvedUrl = EncodeJavascriptVariableInJson(escaped);
+                }
+
+                return asset;
             }).ToList();
             assets.wasmSymbols = resources.wasmSymbols?.Select(a => new SymbolsAsset()
             {
@@ -211,7 +252,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             {
                 assets.satelliteResources = resources.satelliteResources.ToDictionary(
                     kvp => kvp.Key,
-                    kvp => MapGeneralAssets(kvp.Value)
+                    kvp => MapGeneralAssets(kvp.Value, variableNamePrefix: kvp.Key)
                 );
             }
 
@@ -224,16 +265,45 @@ namespace Microsoft.NET.Sdk.WebAssembly
             assets.coreVfs = MapVfsAssets(resources.coreVfs);
             assets.vfs = MapVfsAssets(resources.vfs);
 
-            List<GeneralAsset>? MapGeneralAssets(Dictionary<string, string>? assets) => assets?.Select(a => new GeneralAsset()
+            string EscapeName(string name) => Utils.FixupSymbolName(name);
+            string EncodeJavascriptVariableInJson(string name) => $"$#[{name}]#$";
+
+            List<GeneralAsset>? MapGeneralAssets(Dictionary<string, string>? assets, string? variableNamePrefix = null) => assets?.Select(a =>
             {
-                virtualPath = resources.fingerprinting?[a.Key] ?? a.Key,
-                name = a.Key,
-                integrity = a.Value
+                Debugger.Launch();
+
+                var asset = new GeneralAsset()
+                {
+                    virtualPath = resources.fingerprinting?[a.Key] ?? a.Key,
+                    name = a.Key,
+                    integrity = a.Value
+                };
+
+                if (bundlerFriendly)
+                {
+                    string escaped = EscapeName(string.Concat(variableNamePrefix, a.Key));
+                    imports.Add($"import {escaped} from \"./{a.Key}\";");
+                    asset.resolvedUrl = EncodeJavascriptVariableInJson(escaped);
+                }
+
+                return asset;
             }).ToList();
 
-            List<JsAsset>? MapJsAssets(Dictionary<string, string>? assets) => assets?.Select(a => new JsAsset()
+            List<JsAsset>? MapJsAssets(Dictionary<string, string>? assets) => assets?.Select(a =>
             {
-                name = a.Key
+                var asset = new JsAsset()
+                {
+                    name = a.Key
+                };
+
+                if (bundlerFriendly)
+                {
+                    string escaped = EscapeName(a.Key);
+                    imports.Add($"import * as {escaped} from \"./{a.Key}\";");
+                    asset.moduleExports = EncodeJavascriptVariableInJson(escaped);
+                }
+
+                return asset;
             }).ToList();
 
             List<VfsAsset>? MapVfsAssets(Dictionary<string, Dictionary<string, string>>? assets) => assets?.Select(a => new VfsAsset()
@@ -244,6 +314,8 @@ namespace Microsoft.NET.Sdk.WebAssembly
             }).ToList();
 
             config.resources = assets;
+
+            return string.Join(Environment.NewLine, imports);
         }
     }
 }

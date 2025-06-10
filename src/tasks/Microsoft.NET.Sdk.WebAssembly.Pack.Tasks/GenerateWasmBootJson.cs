@@ -92,6 +92,8 @@ public class GenerateWasmBootJson : Task
 
     public string MergeWith { get; set; }
 
+    public bool BundlerFriendly { get; set; }
+
     public override bool Execute()
     {
         var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
@@ -452,10 +454,11 @@ public class GenerateWasmBootJson : Task
 
         helper.ComputeResourcesHash(result);
 
+        string? imports = null;
         if (IsTargeting100OrLater())
-            helper.TransformResourcesToAssets(result);
+            imports = helper.TransformResourcesToAssets(result, BundlerFriendly);
 
-        helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith);
+        helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith, imports: imports);
 
         void AddResourceToList(ITaskItem resource, ResourceHashesByNameDictionary resourceList, string resourceKey)
         {
