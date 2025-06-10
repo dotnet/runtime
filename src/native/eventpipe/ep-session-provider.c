@@ -71,7 +71,7 @@ session_provider_tracepoint_config_alloc (const EventPipeProviderTracepointConfi
 static
 bool
 event_filter_allows_event_id (
-	const EventPipeProviderEventFilter *event_filter,
+	const EventPipeSessionProviderEventFilter *event_filter,
 	uint32_t event_id);
 
 /*
