@@ -33372,8 +33372,7 @@ bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
 
     if (IsCnsMsk())
     {
-        return SveMaskPatternAll ==
-               EvaluateSimdMaskToPattern<simd16_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
+        return SveMaskPatternAll == EvaluateSimdMaskToPattern<simd16_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
     }
 #endif
 
