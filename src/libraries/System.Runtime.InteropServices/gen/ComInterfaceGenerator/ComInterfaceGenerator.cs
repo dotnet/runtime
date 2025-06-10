@@ -820,7 +820,7 @@ namespace Microsoft.Interop
             if (context.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper))
             {
                 return interfaceInformationType.AddMembers(
-                        // public static void** VirtualMethodTableManagedImplementation => (void**)System.Runtime.CompilerServices.Unsafe.AsPointer(ref Unsafe.AsRef(in InterfaceImplementation.Vtable));
+                        // public static void** VirtualMethodTableManagedImplementation => (void**)System.Runtime.CompilerServices.Unsafe.AsPointer(in InterfaceImplementation.Vtable);
                         PropertyDeclaration(TypeSyntaxes.VoidStarStar, "ManagedVirtualMethodTable")
                             .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword))
                             .WithExpressionBody(
@@ -833,18 +833,11 @@ namespace Microsoft.Interop
                                                 TypeSyntaxes.System_Runtime_CompilerServices_Unsafe,
                                                 IdentifierName("AsPointer")))
                                         .AddArgumentListArguments(
-                                            RefArgument(
-                                                InvocationExpression(
-                                                    MemberAccessExpression(
-                                                        SyntaxKind.SimpleMemberAccessExpression,
-                                                        TypeSyntaxes.System_Runtime_CompilerServices_Unsafe,
-                                                        IdentifierName("AsRef")))
-                                                .AddArgumentListArguments(
-                                                    InArgument(
-                                                        MemberAccessExpression(
-                                                            SyntaxKind.SimpleMemberAccessExpression,
-                                                            IdentifierName("InterfaceImplementation"),
-                                                            IdentifierName("Vtable")))))))))
+                                            InArgument(
+                                                MemberAccessExpression(
+                                                    SyntaxKind.SimpleMemberAccessExpression,
+                                                    IdentifierName("InterfaceImplementation"),
+                                                    IdentifierName("Vtable")))))))
                             .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)));
             }
 
