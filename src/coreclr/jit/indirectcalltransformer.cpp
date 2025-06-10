@@ -502,7 +502,7 @@ private:
             if (!origCall->IsInlineCandidate())
             {
                 JITDUMP("*** %s Bailing on [%06u] -- not an inline candidate\n", Name(), compiler->dspTreeID(origCall));
-                origCall->ClearGuardedDevirtualizationCandidate();
+                ClearFlag();
                 return;
             }
 
@@ -1046,6 +1046,7 @@ private:
                 JITDUMP("Devirtualization was unable to use the unboxed entry; so marking call (to boxed entry) as not "
                         "inlineable\n");
 
+                call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
                 call->ClearInlineInfo();
 
                 if (returnTemp != BAD_VAR_NUM)
