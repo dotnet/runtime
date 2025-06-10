@@ -63,10 +63,7 @@ namespace Internal.Reflection.Execution
 
         private static unsafe UnmanagedMemoryStream ReadResourceFromBlob(ResourceInfo resourceInfo)
         {
-            byte* pBlob;
-            uint cbBlob;
-
-            if (!resourceInfo.Module.TryFindBlob((int)ReflectionMapBlob.BlobIdResourceData, out pBlob, out cbBlob))
+            if (!resourceInfo.Module.TryFindBlob((int)ReflectionMapBlob.BlobIdResourceData, out byte* pBlob, out uint cbBlob))
             {
                 throw new BadImageFormatException();
             }
@@ -83,8 +80,7 @@ namespace Internal.Reflection.Execution
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
-                NativeReader reader;
-                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.BlobIdResourceIndex, out reader))
+                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.BlobIdResourceIndex, out NativeReader reader))
                 {
                     continue;
                 }
