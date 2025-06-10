@@ -3204,6 +3204,11 @@ public:
             CORINFO_SIG_INFO*   szMetaSig
             ) = 0;
 
+    // Generate a cookie based on the signature that would needs to be passed
+    // to INTOP_CALLI in the interpreter
+    virtual void* GetCookieForInterpreterCalliSig(
+            CORINFO_SIG_INFO*   szMetaSig) = 0;
+
     // Gets a handle that is checked to see if the current method is
     // included in "JustMyCode"
     virtual CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(

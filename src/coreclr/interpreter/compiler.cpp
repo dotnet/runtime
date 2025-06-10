@@ -2330,7 +2330,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
 
         callIFunctionPointerVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
-        calliCookie = m_compHnd->GetCookieForPInvokeCalliSig(&callInfo.sig);
+        calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
     }
     else
     {

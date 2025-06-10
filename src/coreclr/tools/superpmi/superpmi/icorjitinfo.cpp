@@ -1394,6 +1394,12 @@ bool MyICJI::canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
     return jitInstance->mc->repCanGetCookieForPInvokeCalliSig(szMetaSig);
 }
 
+LPVOID MyICJI::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
+{
+    jitInstance->mc->cr->AddCall("GetCookieForInterpreterCalliSig");
+    return jitInstance->mc->repGetCookieForInterpreterCalliSig(szMetaSig);
+}
+
 // Gets a handle that is checked to see if the current method is
 // included in "JustMyCode"
 CORINFO_JUST_MY_CODE_HANDLE MyICJI::getJustMyCodeHandle(CORINFO_METHOD_HANDLE         method,
