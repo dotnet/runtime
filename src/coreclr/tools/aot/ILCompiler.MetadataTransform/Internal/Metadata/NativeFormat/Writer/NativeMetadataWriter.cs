@@ -10,6 +10,7 @@ using ConditionalAttribute = System.Diagnostics.ConditionalAttribute;
 using Internal.LowLevelLinq;
 using Internal.NativeFormat;
 using Graph = Internal.Metadata.NativeFormat.Writer.AdjacencyGraph;
+using System.Runtime.InteropServices;
 
 namespace Internal.Metadata.NativeFormat.Writer
 {
@@ -1032,22 +1033,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         public static bool SequenceEqual<T>(this List<T> first, List<T> second, IEqualityComparer<T> comparer)
         {
-            if (first.Count != second.Count)
-            {
-                return false;
-            }
-
-            comparer ??= EqualityComparer<T>.Default;
-
-            for (int i = 0; i < first.Count; i++)
-            {
-                if (!comparer.Equals(first[i], second[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return CollectionsMarshal.AsSpan(first).SequenceEqual(CollectionsMarshal.AsSpan(second), comparer);
         }
     }
 
