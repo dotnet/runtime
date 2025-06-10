@@ -16,6 +16,7 @@
 #endif
 
 #include "corhdr.h"
+#include <minipal/guid.h>
 
 //-------------------------------------
 //--- PDB stream data structure

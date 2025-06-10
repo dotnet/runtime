@@ -1,9 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-
-//
-
 
 #include "common.h"
 #include "dynamicmethod.h"
@@ -15,12 +11,13 @@
 #include "nibblemapmacros.h"
 #include "stringliteralmap.h"
 #include "virtualcallstub.h"
-
+#include "CachedInterfaceDispatchPal.h"
+#include "CachedInterfaceDispatch.h"
 
 #ifndef DACCESS_COMPILE
 
 // get the method table for dynamic methods
-DynamicMethodTable* DomainAssembly::GetDynamicMethodTable()
+DynamicMethodTable* Module::GetDynamicMethodTable()
 {
     CONTRACT (DynamicMethodTable*)
     {
@@ -34,7 +31,7 @@ DynamicMethodTable* DomainAssembly::GetDynamicMethodTable()
     CONTRACT_END;
 
     if (!m_pDynamicMethodTable)
-        DynamicMethodTable::CreateDynamicMethodTable(&m_pDynamicMethodTable, GetModule(), GetAppDomain());
+        DynamicMethodTable::CreateDynamicMethodTable(&m_pDynamicMethodTable, this, AppDomain::GetCurrentDomain());
 
 
     RETURN m_pDynamicMethodTable;
@@ -112,7 +109,7 @@ void DynamicMethodTable::MakeMethodTable(AllocMemTracker *pamTracker)
     }
     CONTRACTL_END;
 
-    m_pMethodTable = CreateMinimalMethodTable(m_Module, m_pDomain->GetLoaderAllocator(), pamTracker);
+    m_pMethodTable = CreateMinimalMethodTable(m_Module, m_Module->GetLoaderAllocator(), pamTracker);
 }
 
 void DynamicMethodTable::Destroy()
@@ -162,7 +159,7 @@ void DynamicMethodTable::AddMethodsToList()
     // allocate as many chunks as needed to hold the methods
     //
     MethodDescChunk* pChunk = MethodDescChunk::CreateChunk(pHeap, 0 /* one chunk of maximum size */,
-        mcDynamic, TRUE /* fNonVtableSlot */, TRUE /* fNativeCodeSlot */, m_pMethodTable, &amt);
+        mcDynamic, TRUE /* fNonVtableSlot */, TRUE /* fNativeCodeSlot */, FALSE /* HasAsyncMethodData */, m_pMethodTable, &amt);
     if (m_DynamicMethodList) RETURN;
 
     int methodCount = pChunk->GetCount();
@@ -321,7 +318,7 @@ void DynamicMethodTable::LinkMethod(DynamicMethodDesc *pMethod)
 //
 // CodeHeap implementation
 //
-HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EEJitManager *pJitManager)
+HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenManager *pJitManager)
 {
     CONTRACT (HeapList*)
     {
@@ -333,7 +330,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EEJitManager 
     }
     CONTRACT_END;
 
-    NewHolder<HostCodeHeap> pCodeHeap(new HostCodeHeap(pJitManager));
+    NewHolder<HostCodeHeap> pCodeHeap(new HostCodeHeap(pJitManager, !pInfo->IsInterpreted()));
 
     HeapList *pHp = pCodeHeap->InitializeHeapList(pInfo);
     if (pHp == NULL)
@@ -351,7 +348,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EEJitManager 
     RETURN pHp;
 }
 
-HostCodeHeap::HostCodeHeap(EEJitManager *pJitManager)
+HostCodeHeap::HostCodeHeap(EECodeGenManager *pJitManager, bool isExecutable)
 {
     CONTRACTL
     {
@@ -367,6 +364,7 @@ HostCodeHeap::HostCodeHeap(EEJitManager *pJitManager)
     m_TotalBytesAvailable = 0;
     m_ApproximateLargestBlock = 0;
     m_AllocationCount = 0;
+    m_isExecutable = isExecutable;
     m_pHeapList = NULL;
     m_pJitManager = (PTR_EEJitManager)pJitManager;
     m_pFreeList = NULL;
@@ -401,7 +399,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     // Add TrackAllocation, HeapList and very conservative padding to make sure we have enough for the allocation
     ReserveBlockSize += sizeof(TrackAllocation) + HOST_CODEHEAP_SIZE_ALIGN + 0x100;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_64BIT)
     ReserveBlockSize += JUMP_ALLOCATE_SIZE;
 #endif
 
@@ -437,18 +435,26 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
 
     TrackAllocation *pTracker = NULL;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-    pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
-    if (pTracker == NULL)
+#if defined(TARGET_64BIT)
+#ifdef FEATURE_INTERPRETER
+    if (pInfo->IsInterpreted())
     {
-        // This should only ever happen with fault injection
-        _ASSERTE(g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP));
-        delete pHp;
-        ThrowOutOfMemory();
+        pHp->CLRPersonalityRoutine = NULL;
     }
+    else
+#endif // FEATURE_INTERPRETER
+    {
+        pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
+        if (pTracker == NULL)
+        {
+            // This should only ever happen with fault injection
+            _ASSERTE(g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP));
+            delete pHp;
+            ThrowOutOfMemory();
+        }
 
-    pHp->CLRPersonalityRoutine = (BYTE *)(pTracker + 1);
+        pHp->CLRPersonalityRoutine = (BYTE *)(pTracker + 1);
+    }
 #endif
 
     pHp->hpNext = NULL;
@@ -468,9 +474,12 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     pHp->maxCodeHeapSize = m_TotalBytesAvailable - (pTracker ? pTracker->size : 0);
     pHp->reserveForJumpStubs = 0;
 
-#ifdef HOST_64BIT
-    ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
-    emitJump(pHp->CLRPersonalityRoutine, personalityRoutineWriterHolder.GetRW(), (void *)ProcessCLRException);
+#if defined(TARGET_64BIT)
+    if (pHp->CLRPersonalityRoutine != NULL)
+    {
+        ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
+        emitJump(pHp->CLRPersonalityRoutine, personalityRoutineWriterHolder.GetRW(), (void *)ProcessCLRException);
+    }
 #endif
 
     size_t nibbleMapSize = HEAP2MAPSIZE(ROUND_UP_TO_PAGE(pHp->maxCodeHeapSize));
@@ -674,7 +683,11 @@ void* HostCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD al
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_INTERPRETER
+    _ASSERTE(header == sizeof(CodeHeader) || header == sizeof(InterpreterCodeHeader));
+#else
     _ASSERTE(header == sizeof(CodeHeader));
+#endif
     _ASSERTE(alignment <= HOST_CODEHEAP_SIZE_ALIGN);
 
     // The code allocator has to guarantee that there is only one entrypoint per nibble map entry.
@@ -683,6 +696,7 @@ void* HostCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD al
     // Assert the later fact here.
     _ASSERTE(HOST_CODEHEAP_SIZE_ALIGN >= BYTES_PER_BUCKET);
 
+    size_t codeHeaderSize = header;
     header += sizeof(TrackAllocation*);
 
     TrackAllocation* pTracker = AllocMemory_NoThrow(header, size, alignment, reserveForJumpStubs);
@@ -692,7 +706,7 @@ void* HostCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD al
     BYTE * pCode = ALIGN_UP((BYTE*)(pTracker + 1) + header, alignment);
 
     // Pointer to the TrackAllocation record is stored just before the code header
-    CodeHeader * pHdr = (CodeHeader *)pCode - 1;
+    void * pHdr = pCode - codeHeaderSize;
     ExecutableWriterHolder<TrackAllocation *> trackerWriterHolder((TrackAllocation **)(pHdr) - 1, sizeof(TrackAllocation *));
     *trackerWriterHolder.GetRW() = pTracker;
 
@@ -755,7 +769,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocMemory_NoThrow(size_t header, 
 
         if (m_pLastAvailableCommittedAddr + sizeToCommit <= m_pBaseAddr + m_TotalBytesAvailable)
         {
-            if (NULL == ExecutableAllocator::Instance()->Commit(m_pLastAvailableCommittedAddr, sizeToCommit, true /* isExecutable */))
+            if (NULL == ExecutableAllocator::Instance()->Commit(m_pLastAvailableCommittedAddr, sizeToCommit, m_isExecutable))
             {
                 LOG((LF_BCL, LL_ERROR, "CodeHeap [0x%p] - VirtualAlloc failed\n", this));
                 return NULL;
@@ -954,6 +968,19 @@ void LCGMethodResolver::RecycleIndCells()
             cellcurr = list->indcell;
             _ASSERTE(cellcurr != NULL);
 
+#if defined (FEATURE_CACHED_INTERFACE_DISPATCH)
+            // Cached dispatch dispatch uses dynamically allocated caches that need to be freed individually
+            if (UseCachedInterfaceDispatch())
+            {
+                InterfaceDispatchCell *pDispatchCell = (InterfaceDispatchCell*)cellcurr;
+                InterfaceDispatchCacheHeader* cellCacheHeader = pDispatchCell->GetCache();
+                if (cellCacheHeader != NULL)
+                {
+                    InterfaceDispatch_DiscardCacheHeader(cellCacheHeader);
+                    pDispatchCell->m_pCache = 0;
+                }
+            }
+#endif
             if (cellprev)
                 *((BYTE**)cellprev) = cellcurr;
 

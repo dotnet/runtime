@@ -147,7 +147,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// It can also happen that we see this for a static method - for example a delegate creation
 			// over a local function does this, even thought the "this" makes no sense inside a static scope.
 			if (OwningSymbol is IMethodSymbol method && !method.IsStatic)
-				return new MethodParameterValue (method, (ParameterIndex) 0, method.GetDynamicallyAccessedMemberTypes ());
+				return new MethodParameterValue (method, (ParameterIndex) 0, FlowAnnotations.GetMethodParameterAnnotation (new ParameterProxy (new (method), (ParameterIndex) 0)));
 
 			return TopValue;
 		}
@@ -243,6 +243,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public override MultiValue HandleArrayElementRead (MultiValue arrayValue, MultiValue indexValue, IOperation operation)
 		{
+			if (arrayValue.AsSingleValue() is ArrayOfAnnotatedSystemTypeValue arrayOfAnnotated && !arrayOfAnnotated.IsModified) {
+				return arrayOfAnnotated.GetAnyElementValue ();
+			}
+
 			if (indexValue.AsConstInt () is not int index)
 				return UnknownValue.Instance;
 
@@ -270,6 +274,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 							? _multiValueLattice.Meet (arr.IndexValues[index.Value], sanitizedValue)
 							: sanitizedValue;
 					}
+				} else if (arraySingleValue is ArrayOfAnnotatedSystemTypeValue arrayOfAnnotated) {
+					arrayOfAnnotated.MarkModified ();
 				}
 			}
 		}
@@ -308,6 +314,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				foreach (var argumentValue in argument.AsEnumerable ()) {
 					if (argumentValue is ArrayValue arrayValue)
 						arrayValue.IndexValues.Clear ();
+					else if (argumentValue is ArrayOfAnnotatedSystemTypeValue arrayOfAnnotated)
+						arrayOfAnnotated.MarkModified ();
 				}
 			}
 

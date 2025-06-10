@@ -285,11 +285,11 @@ As a matter of courtesy, notify the .NET macios and .NET Android teams if changi
 
 ### WASM
 
-The WASM and WASI runtimes in [`src/mono/wasm/runtime`](../../src/mono/wasm/runtime) and
+The WASM and WASI runtimes in [`src/mono/browser/runtime`](../../src/mono/browser/runtime) and
 `src/mono/wasi` are effectively external API clients.  When possible they should use existing `MONO_API` functions.
 
 As a matter of expedience, the wasm project has sometimes taken advantage of static linking by
-adding declarations of internal Mono functions in `src/mono/wasm/runtime/driver.c` and directly
+adding declarations of internal Mono functions in `src/mono/browser/runtime/driver.c` and directly
 calling Mono internals.
 
 In general new code should not do this.  When modifying existing code, mysterious WASM failures may

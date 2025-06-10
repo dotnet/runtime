@@ -64,7 +64,7 @@ namespace Microsoft.Interop
                     new NativeMarshallingAttributeParser(env.Compilation, diagnostics),
                     new ComInterfaceMarshallingInfoProvider(env.Compilation)),
                 ImmutableArray.Create<ITypeBasedMarshallingInfoProvider>(
-                    new SafeHandleMarshallingInfoProvider(env.Compilation, method.ContainingType),
+                    new SafeHandleMarshallingInfoProvider(env.Compilation),
                     new ArrayMarshallingInfoProvider(env.Compilation),
                     new CharMarshallingInfoProvider(defaultInfo),
                     new StringMarshallingInfoProvider(env.Compilation, diagnostics, unparsedAttributeData, defaultInfo),

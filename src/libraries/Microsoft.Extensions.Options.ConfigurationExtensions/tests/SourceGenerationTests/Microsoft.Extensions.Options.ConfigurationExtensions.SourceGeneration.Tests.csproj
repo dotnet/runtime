@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <DefineConstants>$(DefineConstants);BUILDING_SOURCE_GENERATOR_TESTS;ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>

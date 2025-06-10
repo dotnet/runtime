@@ -215,7 +215,7 @@ namespace Internal.JitInterface
                         {
                             derivesFromTypeDefinition = currentType.GetTypeDefinition() == tokenOnlyOwningType;
                             currentType = currentType.BaseType;
-                        } while(currentType != null && !derivesFromTypeDefinition);
+                        } while (currentType != null && !derivesFromTypeDefinition);
 
                         if (derivesFromTypeDefinition)
                         {
@@ -311,7 +311,7 @@ namespace Internal.JitInterface
 
         public override int GetHashCode()
         {
-            return Method.GetHashCode() ^ unchecked(17 * Token.GetHashCode()) ^ unchecked (39 * (ConstrainedType?.GetHashCode() ?? 0));
+            return Method.GetHashCode() ^ unchecked(17 * Token.GetHashCode()) ^ unchecked(39 * (ConstrainedType?.GetHashCode() ?? 0));
         }
 
         public bool Equals(MethodWithToken methodWithToken)
@@ -1128,6 +1128,12 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_ULNG2DBL:
                     id = ReadyToRunHelper.ULng2Dbl;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_LNG2FLT:
+                    id = ReadyToRunHelper.Lng2Flt;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_ULNG2FLT:
+                    id = ReadyToRunHelper.ULng2Flt;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_DIV:
                     id = ReadyToRunHelper.Div;
@@ -1238,10 +1244,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.PInvokeEnd;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_BBT_FCN_ENTER:
-                    id = ReadyToRunHelper.LogMethodEnter;
-                    break;
-
                 case CorInfoHelpFunc.CORINFO_HELP_STACK_PROBE:
                     id = ReadyToRunHelper.StackProbe;
                     break;
@@ -1303,10 +1305,12 @@ namespace Internal.JitInterface
                     return false;
                 }
 
-                // Do not tailcall from methods that are marked as noinline (people often use no-inline
+                // Do not tailcall from methods that are marked as NoInlining (people often use no-inline
                 // to mean "I want to always see this method in stacktrace")
                 if (caller.IsNoInlining)
                 {
+                    // NOTE: we don't have to handle NoOptimization here, because JIT is not expected
+                    // to emit fast tail calls if optimizations are disabled.
                     return false;
                 }
 
@@ -2115,7 +2119,7 @@ namespace Internal.JitInterface
                 // of shared generic code calling a shared generic implementation method, which should be rare.
                 //
                 // An alternative design would be to add a new generic dictionary entry kind to hold the MethodDesc
-                // of the constrained target instead, and use that in some circumstances; however, implementation of 
+                // of the constrained target instead, and use that in some circumstances; however, implementation of
                 // that design requires refactoring variuos parts of the JIT interface as well as
                 // TryResolveConstraintMethodApprox. In particular we would need to be abled to embed a constrained lookup
                 // via EmbedGenericHandle, as well as decide in TryResolveConstraintMethodApprox if the call can be made
@@ -2958,7 +2962,6 @@ namespace Internal.JitInterface
 
         private void* getMethodSync(CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
         {
-            // Used with CORINFO_HELP_MON_ENTER_STATIC/CORINFO_HELP_MON_EXIT_STATIC - we don't have this fixup in R2R.
             throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(getMethodSync)}");
         }
 
@@ -3082,11 +3085,6 @@ namespace Internal.JitInterface
                         Debug.Assert(!_compilation.NodeFactory.CompilationModuleGroup.GeneratesPInvoke(method));
                         return true;
                     }
-
-                    // Marshalling behavior isn't modeled as protected by R2R rules, so disable pinvoke inlining for code outside
-                    // of the version bubble
-                    if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(method))
-                        return true;
                 }
                 catch (RequiresRuntimeJitException)
                 {
@@ -3155,7 +3153,7 @@ namespace Internal.JitInterface
 
                         // Currently, the only place we are using a token here is for a COM-to-CLR exception-to-HRESULT
                         // mapping catch clause.  We want this catch clause to catch all exceptions, so we override the
-                        // token to be mdTypeRefNil, which used by the EH system to mean catch(...)
+                        // token to be mdTypeRefNil, which used by the EH system to mean catch (...)
                         Debug.Assert(clauseType.IsObject);
                         clause.ClassTokenOrOffset = 0;
                     }

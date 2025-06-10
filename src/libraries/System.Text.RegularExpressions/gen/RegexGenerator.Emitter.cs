@@ -452,12 +452,40 @@ namespace System.Text.RegularExpressions.Generator
                         "FFC1FFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptWhiteSpace",
                         "FFFFFFFFFFFF00FC01000078010000F8" => "s_asciiExceptWordChars",
 
+                        "FFFFFFFFFFDF00FCFFFFFFFFFFFFFFFF" => "s_asciiExceptDigitsAndDash",
+                        "000000000040FF03FEFFFF07FEFFFF07" => "s_asciiLettersAndDigitsAndDot",
+                        "000000000020FF03FEFFFF07FEFFFF07" => "s_asciiLettersAndDigitsAndDash",
+                        "000000000060FF03FEFFFF07FEFFFF07" => "s_asciiLettersAndDigitsAndDashDot",
+                        "000000000040FF03FEFFFF87FEFFFF07" => "s_asciiLettersAndDigitsAndDotUnderscore",
+                        "000000000020FF03FEFFFF87FEFFFF07" => "s_asciiLettersAndDigitsAndDashUnderscore",
+                        "000000000060FF03FEFFFF87FEFFFF07" => "s_asciiLettersAndDigitsAndDashDotUnderscore",
+                        "000000000040FF030000000000000000" => "s_asciiDigitsAndDot",
+                        "000000000020FF030000000000000000" => "s_asciiDigitsAndDash",
+                        "0000000000200000FEFFFF07FEFFFF07" => "s_asciiLettersAndDash",
+                        "0000000000000000FEFFFF87FEFFFF07" => "s_asciiLettersAndUnderscore",
+                        "000000000000FF0300000000FEFFFF07" => "s_asciiLettersLowerAndDigits",
+                        "000000000000FF03FEFFFF0700000000" => "s_asciiLettersUpperAndDigits",
+                        "000000000020FF0300000000FEFFFF07" => "s_asciiLettersLowerAndDigitsAndDash",
+
                         _ => $"s_ascii_{hexBitmap.TrimStart('0')}"
                     };
                 }
                 else
                 {
                     fieldName = GetSHA256FieldName("s_nonAscii_", new string(chars));
+
+                    fieldName = fieldName switch
+                    {
+                        "s_nonAscii_326E1FD0AD567A84CAD13F2BE521A57789829F59D59ABE37F9E111D0182B6601" => "s_asciiLettersAndKelvinSign",
+                        "s_nonAscii_46E3FAA2E94950B9D41E9AB1B570CAB55D04A30009110072B4BC074D57272527" => "s_asciiLettersAndDigitsAndKelvinSign",
+                        "s_nonAscii_2D5586687DC37F0329E3CA4127326E68B5A3A090B13B7834AEA7BFC4EDDE220F" => "s_asciiLettersAndDigitsAndDashKelvinSign",
+                        "s_nonAscii_83AFA3CC45CC4C2D8C316947CFC319199813C7F90226BDF348E2B3236D6237C1" => "s_asciiLettersAndDigitsAndDashDotKelvinSign",
+                        "s_nonAscii_9FA52D3BAECB644578472387D5284CC6F36F408FEB88A04BA674CE14F24D2386" => "s_asciiLettersAndDigitsAndUnderscoreKelvinSign",
+                        "s_nonAscii_D41BEF0BEAFBA32A45D2356E3F1579596F35B7C67CAA9CF7C4B3F2A5422DCA51" => "s_asciiLettersAndDigitsAndDashUnderscoreKelvinSign",
+                        "s_nonAscii_0D7E5600013B3F0349C00277028B6DEA566BB9BAF991CCB7AC92DEC54C4544C1" => "s_asciiLettersAndDigitsAndDashDotUnderscoreKelvinSign",
+
+                        _ => fieldName
+                    };
                 }
             }
 
@@ -1789,8 +1817,6 @@ namespace System.Text.RegularExpressions.Generator
                             writer.Indent++;
 
                             // Emit the code for the branch, without the first character that was already matched in the switch.
-                            RegexNode? remainder = null;
-                            HandleChild:
                             switch (child.Kind)
                             {
                                 case RegexNodeKind.One:
@@ -1802,9 +1828,7 @@ namespace System.Text.RegularExpressions.Generator
                                 case RegexNodeKind.Multi:
                                     // First character was handled by the switch. Emit matching code for the remainder of the multi string.
                                     sliceStaticPos++;
-                                    EmitNode(child.Str!.Length == 2 ?
-                                        new RegexNode(RegexNodeKind.One, child.Options, child.Str![1]) :
-                                        new RegexNode(RegexNodeKind.Multi, child.Options, child.Str!.Substring(1)));
+                                    EmitNode(SliceOffMultiFirstChar(child));
                                     writer.WriteLine();
                                     break;
 
@@ -1812,25 +1836,31 @@ namespace System.Text.RegularExpressions.Generator
                                     // This is a concatenation where its first node is the starting literal we found and that starting literal
                                     // is one of the nodes above that we know how to handle completely. This is a common
                                     // enough case that we want to special-case it to avoid duplicating the processing for that character
-                                    // unnecessarily. So, we'll shave off that first node from the concatenation and then handle the remainder.
-                                    // Note that it's critical startingLiteralNode is something we can fully handle above: if it's not,
-                                    // we'll end up losing some of the pattern due to overwriting `remainder`.
-                                    remainder = child;
-                                    child = child.Child(0);
-                                    remainder.ReplaceChild(0, new RegexNode(RegexNodeKind.Empty, remainder.Options));
-                                    goto HandleChild; // reprocess just the first node that was saved; the remainder will then be processed below
+                                    // unnecessarily. First slice off the first character that was already handled. If that child is a multi, temporarily
+                                    // replace it with a node that doesn't have the already-matched first character; otherwise, replace it with an empty node
+                                    // that'll be ignored when rendered. Then emit the new tree, and subsequently restore the original child.
+                                    sliceStaticPos++;
+                                    RegexNode originalFirst = child.Child(0);
+                                    child.ReplaceChild(0,
+                                        child.Child(0).Kind is RegexNodeKind.Multi ?
+                                            SliceOffMultiFirstChar(child.Child(0)) : // multi, so slice off the first character
+                                            new RegexNode(RegexNodeKind.Empty, child.Options)); // single, so removing it yields empty
+                                    try
+                                    {
+
+                                        EmitNode(child);
+                                    }
+                                    finally
+                                    {
+                                        child.ReplaceChild(0, originalFirst);
+                                    }
+                                    writer.WriteLine();
+                                    break;
 
                                 default:
-                                    Debug.Assert(remainder is null);
-                                    remainder = child;
+                                    EmitNode(child);
+                                    writer.WriteLine();
                                     break;
-                            }
-
-                            if (remainder is not null)
-                            {
-                                // Emit a full match for whatever part of the child we haven't yet handled.
-                                EmitNode(remainder);
-                                writer.WriteLine();
                             }
 
                             // This is only ever used for atomic alternations, so we can simply reset the doneLabel
@@ -1852,6 +1882,14 @@ namespace System.Text.RegularExpressions.Generator
                         // Default branch if the character didn't match the start of any branches.
                         CaseGoto("default:", doneLabel);
                     }
+                }
+
+                static RegexNode SliceOffMultiFirstChar(RegexNode multi)
+                {
+                    Debug.Assert(multi.Kind is RegexNodeKind.Multi, $"Expected a Multi node, got {multi.Kind}");
+                    return multi.Str!.Length == 2 ?
+                        new(RegexNodeKind.One, multi.Options, multi.Str[1]) :
+                        new(RegexNodeKind.Multi, multi.Options, multi.Str.Substring(1));
                 }
 
                 void EmitAllBranches()
@@ -2525,18 +2563,8 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 writer.WriteLine();
 
-                RegexNode child = node.Child(0);
-
-                if (uncapnum != -1)
-                {
-                    using (EmitBlock(writer, $"if (!base.IsMatched({uncapnum}))"))
-                    {
-                        Goto(doneLabel);
-                    }
-                    writer.WriteLine();
-                }
-
                 // Emit child node.
+                RegexNode child = node.Child(0);
                 string originalDoneLabel = doneLabel;
                 EmitNode(child, subsequent);
                 bool childBacktracks = doneLabel != originalDoneLabel;
@@ -2549,7 +2577,13 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else
                 {
-                    writer.WriteLine($"base.TransferCapture({capnum}, {uncapnum}, {startingPos}, pos);");
+                    using (EmitBlock(writer, $"if (!base.IsMatched({uncapnum}))"))
+                    {
+                        Goto(doneLabel);
+                    }
+
+                    writer.WriteLine();
+                    writer.WriteLine($"base.TransferCapture({capnum.ToString(CultureInfo.InvariantCulture)}, {uncapnum}, {startingPos}, pos);");
                 }
 
                 if (isAtomic || !childBacktracks)
@@ -4055,11 +4089,13 @@ namespace System.Text.RegularExpressions.Generator
 
                     // If we're able to vectorize the search, do so. Otherwise, fall back to a loop.
                     // For the loop, we're validating that each char matches the target node.
-                    // For IndexOf, we're looking for the first thing that _doesn't_ match the target node,
+                    // For Contains{Any}, we're looking for the first thing that _doesn't_ match the target node,
                     // and thus similarly validating that everything does.
                     if (TryEmitIndexOf(requiredHelpers, node, useLast: false, negate: true, out _, out string? indexOfExpr))
                     {
-                        using (EmitBlock(writer, $"if ({sliceSpan}.Slice({sliceStaticPos}, {iterations}).{indexOfExpr} >= 0)"))
+                        string containsExpr = indexOfExpr.Replace("IndexOf", "Contains");
+
+                        using (EmitBlock(writer, $"if ({sliceSpan}.Slice({sliceStaticPos}, {iterations}).{containsExpr})"))
                         {
                             Goto(doneLabel);
                         }

@@ -710,7 +710,6 @@ public:
     // we don't recreated one on exit if its been deleted.
     DEBUG_NOINLINE void Enter()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_DEBUG_ONLY;
 
         m_pClrDebugState = GetClrDebugState();
@@ -723,7 +722,6 @@ public:
 
     DEBUG_NOINLINE void Leave()
     {
-        SCAN_SCOPE_END;
         STATIC_CONTRACT_DEBUG_ONLY;
 
         m_pClrDebugState = CheckClrDebugState();
@@ -751,7 +749,6 @@ class AutoCleanupDebugOnlyCodeHolder : public DebugOnlyCodeHolder
 public:
     DEBUG_NOINLINE AutoCleanupDebugOnlyCodeHolder()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_DEBUG_ONLY;
 
         Enter();
@@ -759,8 +756,6 @@ public:
 
     DEBUG_NOINLINE ~AutoCleanupDebugOnlyCodeHolder()
     {
-        SCAN_SCOPE_END;
-
         Leave();
     };
 };
@@ -1160,7 +1155,6 @@ typedef __SafeToUsePostCondition __PostConditionOK;
     Contract::RanPostconditions ___ran(__FUNCTION__);                   \
     Contract::Operation ___op = Contract::Setup;                        \
     BOOL ___contract_enabled = FALSE;                                   \
-    DEBUG_ASSURE_NO_RETURN_BEGIN(CONTRACT)                              \
     ___contract_enabled = Contract::EnforceContract();                  \
     enum {___disabled = 0};                                             \
     if (!___contract_enabled)                                           \
@@ -1181,10 +1175,8 @@ typedef __SafeToUsePostCondition __PostConditionOK;
             }                                                           \
             else                                                        \
             {                                                           \
-                DEBUG_OK_TO_RETURN_BEGIN(CONTRACT)                      \
               ___run_return:                                            \
                 return _returnexp;                                      \
-                DEBUG_OK_TO_RETURN_END(CONTRACT)                        \
             }                                                           \
         }                                                               \
         if (0)                                                          \
@@ -1226,7 +1218,6 @@ typedef __SafeToUsePostCondition __PostConditionOK;
         Contract::Returner<_returntype> ___returner(RETVAL);                \
         Contract::RanPostconditions ___ran(__FUNCTION__);                   \
         Contract::Operation ___op = Contract::Setup;                        \
-        DEBUG_ASSURE_NO_RETURN_BEGIN(CONTRACT)                              \
         BOOL ___contract_enabled = Contract::EnforceContract();             \
         enum {___disabled = 0};                                             \
         {                                                                   \
@@ -1244,10 +1235,8 @@ typedef __SafeToUsePostCondition __PostConditionOK;
                 }                                                           \
                 else                                                        \
                 {                                                           \
-                    DEBUG_OK_TO_RETURN_BEGIN(CONTRACT)                      \
                   ___run_return:                                            \
                     return _returnexp;                                      \
-                    DEBUG_OK_TO_RETURN_END(CONTRACT)                        \
                 }                                                           \
             }                                                               \
             if (0)                                                          \
@@ -1409,7 +1398,6 @@ typedef __SafeToUsePostCondition __PostConditionOK;
 
 #define UNCHECKED(thecheck)                                                                 \
         do {                                                                                \
-            ANNOTATION_UNCHECKED(thecheck);                                                 \
             enum {___disabled = 1 };                                                        \
             thecheck;                                                                       \
         } while(0)
@@ -1460,8 +1448,7 @@ typedef __SafeToUsePostCondition __PostConditionOK;
 
 #endif // __FORCE_NORUNTIME_CONTRACTS__
 
-#define CONTRACT_END   CONTRACTL_END                                                        \
-   DEBUG_ASSURE_NO_RETURN_END(CONTRACT)                                                     \
+#define CONTRACT_END   CONTRACTL_END
 
 
 // The final expression in the RETURN macro deserves special explanation (or something.)
@@ -1608,7 +1595,7 @@ typedef __SafeToUsePostCondition __PostConditionOK;
 #define WRAPPER_NO_CONTRACT CUSTOM_WRAPPER_NO_CONTRACT(Contract)
 
 // GC_NOTRIGGER allowed but not currently enforced at runtime
-#define GC_NOTRIGGER STATIC_CONTRACT_GC_NOTRIGGER
+#define GC_NOTRIGGER do { STATIC_CONTRACT_GC_NOTRIGGER; } while(0)
 #define GC_TRIGGERS static_assert(false, "TriggersGC not supported in utilcode contracts")
 
 #ifdef ENABLE_CONTRACTS_IMPL
@@ -1626,7 +1613,6 @@ public:
 
     DEBUG_NOINLINE void Leave()
     {
-        SCAN_SCOPE_END;
         LeaveInternal();
     };
 
@@ -1667,7 +1653,6 @@ public:
 
     DEBUG_NOINLINE ~AutoCleanupContractViolationHolder()
     {
-        SCAN_SCOPE_END;
         this->LeaveInternal();
     };
 };
@@ -1679,7 +1664,6 @@ public:
     {                                                                       \
         ContractViolationHolder<violationmask> __violationHolder_onlyOneAllowedPerScope;   \
         __violationHolder_onlyOneAllowedPerScope.Enter();                   \
-        DEBUG_ASSURE_NO_RETURN_BEGIN(CONTRACT)                              \
 
 // Use this to jump out prematurely from a violation.  Used for EH
 // when the function might not return
@@ -1687,7 +1671,6 @@ public:
         __violationHolder_onlyOneAllowedPerScope.Leave();                   \
 
 #define END_CONTRACT_VIOLATION                                              \
-        DEBUG_ASSURE_NO_RETURN_END(CONTRACT)                                \
         __violationHolder_onlyOneAllowedPerScope.Leave();                   \
     }                                                                       \
 
@@ -1746,7 +1729,6 @@ class FaultForbidHolder
  public:
     DEBUG_NOINLINE FaultForbidHolder(BOOL fConditional, BOOL fAlloc, const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_FORBID_FAULT;
 
         m_fConditional = fConditional;
@@ -1781,8 +1763,6 @@ class FaultForbidHolder
 
     DEBUG_NOINLINE ~FaultForbidHolder()
     {
-        SCAN_SCOPE_END;
-
         if (m_fConditional)
         {
             *m_pClrDebugState = m_oldClrDebugState;
@@ -1923,7 +1903,6 @@ class ClrTryMarkerHolder
 public:
     DEBUG_NOINLINE ClrTryMarkerHolder()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_THROWS;
 
         m_pClrDebugState = GetClrDebugState();
@@ -1933,8 +1912,6 @@ public:
 
     DEBUG_NOINLINE ~ClrTryMarkerHolder()
     {
-        SCAN_SCOPE_END;
-
         m_pClrDebugState->SetOkToThrow( m_oldOkayToThrowValue );
     }
 

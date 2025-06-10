@@ -17,6 +17,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 #endif
 	[SkipKeptItemsValidation]
 	[LogDoesNotContain ("TriggerUnrecognizedPattern()")]
+	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targeted at AOT scenarios")]
 	public class SuppressWarningsInMembersAndTypesUsingTarget
 	{
 		/// <summary>
@@ -83,6 +84,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 	}
 
 	[ExpectedNoWarnings]
+	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targeted at AOT scenarios")]
 	public class WarningsInMembers
 	{
 		public void Method ()

@@ -71,7 +71,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // Explicitly waits for 5 seconds
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Shutdown_TCP_CLOSED_Success()
         {
             // NOTE: this value should technically be at least as long as the amount

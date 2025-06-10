@@ -282,7 +282,7 @@ namespace System.Diagnostics
 
             while (true)
             {
-                void* bufferPtr = NativeMemory.Alloc(bufferSize); // some platforms require the buffer to be 64-bit aligned and NativeLibrary.Alloc guarantees sufficient alignment.
+                void* bufferPtr = NativeMemory.Alloc(bufferSize); // some platforms require the buffer to be 64-bit aligned and NativeMemory.Alloc guarantees sufficient alignment.
 
                 try
                 {

@@ -165,6 +165,10 @@ namespace ILCompiler.ObjectWriter
                     // Normal registers are directly mapped
                     return regNum;
 
+                case TargetArchitecture.RiscV64:
+                    // Normal registers are directly mapped
+                    return regNum;
+
                 default:
                     throw new NotSupportedException();
             }

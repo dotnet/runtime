@@ -92,8 +92,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="CryptographicException"><paramref name="cborPayload"/> could not be decoded as a COSE_Sign1 message.</exception>
         public static CoseSign1Message DecodeSign1(byte[] cborPayload)
         {
-            if (cborPayload is null)
-                throw new ArgumentNullException(nameof(cborPayload));
+            ArgumentNullException.ThrowIfNull(cborPayload);
 
             return DecodeCoseSign1Core(new CborReader(cborPayload));
         }
@@ -178,8 +177,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="CryptographicException"><paramref name="cborPayload"/> could not be decoded as a COSE_Sign message.</exception>
         public static CoseMultiSignMessage DecodeMultiSign(byte[] cborPayload)
         {
-            if (cborPayload is null)
-                throw new ArgumentNullException(nameof(cborPayload));
+            ArgumentNullException.ThrowIfNull(cborPayload);
 
             return DecodeCoseMultiSignCore(new CborReader(cborPayload));
         }
@@ -621,7 +619,7 @@ namespace System.Security.Cryptography.Cose
         }
 
         /// <summary>
-        /// When overriden in a derived class, attempts to encode this message into the specified buffer.
+        /// When overridden in a derived class, attempts to encode this message into the specified buffer.
         /// </summary>
         /// <param name="destination">The buffer in which to write the encoded value.</param>
         /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination"/>. This parameter is treated as uninitialized.</param>
@@ -632,7 +630,7 @@ namespace System.Security.Cryptography.Cose
         public abstract bool TryEncode(Span<byte> destination, out int bytesWritten);
 
         /// <summary>
-        /// When overriden in a derived class, calculates the number of bytes produced by encoding this <see cref="CoseMessage"/>.
+        /// When overridden in a derived class, calculates the number of bytes produced by encoding this <see cref="CoseMessage"/>.
         /// </summary>
         /// <returns>The number of bytes produced by encoding this message.</returns>
         public abstract int GetEncodedLength();

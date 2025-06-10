@@ -62,6 +62,10 @@ namespace System.Collections.Tests
             IDictionary<string, string> dictionary = new SortedDictionary<string, string>();
             Assert.True(dictionary.TryAdd("key", "value"));
             Assert.Equal("value", dictionary["key"]);
+#if !NETFRAMEWORK
+            IReadOnlyDictionary<string, string> readOnlyDictionary = dictionary;
+            Assert.Equal("value", readOnlyDictionary["key"]);
+#endif
         }
 
         [Fact]
@@ -70,6 +74,10 @@ namespace System.Collections.Tests
             IDictionary<string, string> dictionary = new SortedDictionary<string, string>() { ["key"] = "value" };
             Assert.False(dictionary.TryAdd("key", "value2"));
             Assert.Equal("value", dictionary["key"]);
+#if !NETFRAMEWORK
+            IReadOnlyDictionary<string, string> readOnlyDictionary = dictionary;
+            Assert.Equal("value", readOnlyDictionary["key"]);
+#endif
         }
 
         [Fact]
@@ -97,6 +105,10 @@ namespace System.Collections.Tests
             Assert.True(dictionary.Remove("key", out var value));
             Assert.Equal("value", value);
             Assert.Throws<KeyNotFoundException>(() => dictionary["key"]);
+#if !NETFRAMEWORK
+            IReadOnlyDictionary<string, string> readOnlyDictionary = dictionary;
+            Assert.Throws<KeyNotFoundException>(() => readOnlyDictionary["key"]);
+#endif
         }
 
         [Fact]
@@ -117,6 +129,17 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public void AsReadOnly_TurnsISetIntoReadOnlySet()
+        {
+            ISet<string> set = new HashSet<string> { "A", "B" };
+            ReadOnlySet<string> readOnlySet = set.AsReadOnly();
+            Assert.NotNull(readOnlySet);
+            Assert.NotSame(set, readOnlySet);
+            Assert.NotSame(readOnlySet, set.AsReadOnly());
+            CollectionAsserts.Equal(set, readOnlySet);
+        }
+
+        [Fact]
         public void AsReadOnly_TurnsIDictionaryIntoReadOnlyDictionary()
         {
             IDictionary<string, string> dictionary = new Dictionary<string, string> { ["key1"] = "value1", ["key2"] = "value2" };
@@ -132,6 +155,13 @@ namespace System.Collections.Tests
         {
             IList<string> list = null;
             Assert.Throws<ArgumentNullException>("list", () => list.AsReadOnly());
+        }
+
+        [Fact]
+        public void AsReadOnly_NullISet_ThrowsArgumentNullException()
+        {
+            ISet<string> set = null;
+            AssertExtensions.Throws<ArgumentNullException>("set", () => set.AsReadOnly());
         }
 
         [Fact]

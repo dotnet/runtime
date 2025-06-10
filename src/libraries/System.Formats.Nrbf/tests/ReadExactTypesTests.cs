@@ -263,11 +263,11 @@ public class ReadExactTypesTests : ReadTests
             new () { Long = 5 },
         ];
 
-        SZArrayRecord<ClassRecord> arrayRecord = ((SZArrayRecord<ClassRecord>)NrbfDecoder.Decode(Serialize(input)));
+        SZArrayRecord<SerializationRecord> arrayRecord = (SZArrayRecord<SerializationRecord>)NrbfDecoder.Decode(Serialize(input));
 
         Assert.Equal(typeof(CustomTypeWithPrimitiveFields[]).FullName, arrayRecord.TypeName.FullName);
         Assert.Equal(typeof(CustomTypeWithPrimitiveFields).Assembly.FullName, arrayRecord.TypeName.GetElementType().AssemblyName!.FullName);
-        ClassRecord?[] classRecords = arrayRecord.GetArray();
+        ClassRecord?[] classRecords = arrayRecord.GetArray().OfType<ClassRecord>().ToArray();
         for (int i = 0; i < input.Length; i++)
         {
             Verify(input[i], classRecords[i]!);
@@ -298,8 +298,8 @@ public class ReadExactTypesTests : ReadTests
 
         ClassRecord classRecord = NrbfDecoder.DecodeClassRecord(Serialize(input));
 
-        SZArrayRecord<ClassRecord> classRecords = (SZArrayRecord<ClassRecord>)classRecord.GetSerializationRecord(nameof(CustomTypeWithArrayOfComplexTypes.Array))!;
-        ClassRecord?[] array = classRecords.GetArray();
+        SZArrayRecord<SerializationRecord> classRecords = (SZArrayRecord<SerializationRecord>)classRecord.GetSerializationRecord(nameof(CustomTypeWithArrayOfComplexTypes.Array))!;
+        SerializationRecord?[] array = classRecords.GetArray();
     }
 
     [Theory]
@@ -316,8 +316,8 @@ public class ReadExactTypesTests : ReadTests
 
         ClassRecord classRecord = NrbfDecoder.DecodeClassRecord(stream);
 
-        SZArrayRecord<ClassRecord> classRecords = (SZArrayRecord<ClassRecord>)classRecord.GetSerializationRecord(nameof(CustomTypeWithArrayOfComplexTypes.Array))!;
-        ClassRecord?[] array = classRecords.GetArray();
+        SZArrayRecord<SerializationRecord> classRecords = (SZArrayRecord<SerializationRecord>)classRecord.GetSerializationRecord(nameof(CustomTypeWithArrayOfComplexTypes.Array))!;
+        SerializationRecord?[] array = classRecords.GetArray();
         Assert.Equal(nullCount, array.Length);
         Assert.All(array, Assert.Null);
 
@@ -337,7 +337,10 @@ public class ReadExactTypesTests : ReadTests
 
         Assert.Equal(typeof(object[]).FullName, arrayRecord.TypeName.FullName);
         Assert.Equal("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", arrayRecord.TypeName.GetElementType().AssemblyName!.FullName);
-        Assert.Equal(input, ((SZArrayRecord<object>)arrayRecord).GetArray());
+        SerializationRecord?[] output = ((SZArrayRecord<SerializationRecord>)arrayRecord).GetArray();
+        Assert.Equal(input[0], ((PrimitiveTypeRecord)output[0]).Value);
+        Assert.Equal(input[1], ((PrimitiveTypeRecord)output[1]).Value);
+        Assert.Null(output[2]);
     }
 
     [Theory]
@@ -348,7 +351,7 @@ public class ReadExactTypesTests : ReadTests
         object?[] input = Enumerable.Repeat<object>(null!, nullCount).ToArray();
 
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
-        object?[] output = ((SZArrayRecord<object>)arrayRecord).GetArray();
+        SerializationRecord?[] output = ((SZArrayRecord<SerializationRecord>)arrayRecord).GetArray();
 
         Assert.Equal(nullCount, output.Length);
         Assert.All(output, Assert.Null);
@@ -374,9 +377,13 @@ public class ReadExactTypesTests : ReadTests
         };
 
         ClassRecord classRecord = NrbfDecoder.DecodeClassRecord(Serialize(input));
-        SZArrayRecord<object> arrayRecord = (SZArrayRecord<object>)classRecord.GetSerializationRecord(nameof(CustomTypeWithArrayOfObjects.Array))!;
+        SZArrayRecord<SerializationRecord> arrayRecord = (SZArrayRecord<SerializationRecord>)classRecord.GetSerializationRecord(nameof(CustomTypeWithArrayOfObjects.Array))!;
+        SerializationRecord?[] output = arrayRecord.GetArray();
 
-        Assert.Equal(input.Array, arrayRecord.GetArray());
+        Assert.Equal(input.Array[0], ((PrimitiveTypeRecord)output[0]).Value);
+        Assert.Equal(input.Array[1], ((PrimitiveTypeRecord)output[1]).Value);
+        Assert.Equal(input.Array[2], ((PrimitiveTypeRecord)output[2]).Value);
+        Assert.Null(output[3]);
     }
 
     [Theory]

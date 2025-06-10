@@ -521,10 +521,10 @@ SIZE_T GetStringizedItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef)
     CONTRACTL_END;
 
     MethodTable* pIntfMT = InterfaceType.GetMethodTable();
-    PREFIX_ASSUME(pIntfMT != NULL);
+    _ASSERTE(pIntfMT != NULL);
 
     IMDInternalImport* pMDImport = pIntfMT->GetMDImport();
-    PREFIX_ASSUME(pMDImport != NULL);
+    _ASSERTE(pMDImport != NULL);
 
     LPCWSTR             szName;
     ULONG               cchName;
@@ -790,21 +790,11 @@ BOOL IsComObjectClass(TypeHandle type)
     CONTRACTL_END;
 
 #ifdef FEATURE_COMINTEROP
-    if (!type.IsTypeDesc())
-    {
-        MethodTable *pMT = type.AsMethodTable();
-
-        if (pMT->IsComObjectType())
-        {
-            // May be __ComObject or typed RCW. __ComObject must have already been loaded
-            // if we see an MT marked like this so calling the *NoInit method is sufficient.
-
-            return pMT == g_pBaseCOMObject;
-        }
-    }
-#endif
-
+    // May be __ComObject or typed RCW.
+    return type == TypeHandle(g_pBaseCOMObject);
+#else
     return FALSE;
+#endif
 }
 
 VOID
@@ -1184,7 +1174,7 @@ HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk
 }
 #include <optdefault.h>
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
 
 //--------------------------------------------------------------------------------
 // Cleanup helpers
@@ -1207,12 +1197,6 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     if (pRCW)
         pRCW->MinorCleanup();
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_COMWRAPPERS
-    void* eoc;
-    if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
-        ComWrappersNative::MarkExternalComObjectContextCollected(eoc);
-#endif // FEATURE_COMWRAPPERS
 }
 
 void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
@@ -1255,20 +1239,9 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         pCCW->Cleanup();
     }
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_COMWRAPPERS
-    pInteropInfo->ClearManagedObjectComWrappers(&ComWrappersNative::DestroyManagedObjectComWrapper);
-
-    void* eoc;
-    if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
-    {
-        (void)pInteropInfo->TrySetExternalComObjectContext(NULL, eoc);
-        ComWrappersNative::DestroyExternalComObjectContext(eoc);
-    }
-#endif // FEATURE_COMWRAPPERS
 }
 
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMINTEROP
 
@@ -1414,22 +1387,8 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
     }
     CONTRACTL_END;
 
-    if (g_fComStarted == FALSE)
-    {
-        FinalizerThread::GetFinalizerThread()->SetRequiresCoInitialize();
-
-        // Attempt to set the thread's apartment model (to MTA by default). May not
-        // succeed (if someone beat us to the punch). That doesn't matter (since
-        // COM+ objects are now apartment agile), we only care that a CoInitializeEx
-        // has been performed on this thread by us.
-        if (fCoInitCurrentThread)
-            GetThread()->SetApartment(Thread::AS_InMTA);
-
-        // set the finalizer event
-        FinalizerThread::EnableFinalization();
-
-        g_fComStarted = TRUE;
-    }
+    // COM is expected to be started on finalizer thread during startup
+    _ASSERTE(g_fComStarted);
 }
 
 HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
@@ -1446,15 +1405,8 @@ HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
 
     HRESULT hr = S_OK;
 
-    if (!g_fComStarted)
-    {
-        GCX_COOP();
-        EX_TRY
-        {
-            EnsureComStarted(fCoInitCurrentThread);
-        }
-        EX_CATCH_HRESULT(hr);
-    }
+    // COM is expected to be started on finalizer thread during startup
+    _ASSERTE(g_fComStarted);
 
     return hr;
 }
@@ -1798,7 +1750,7 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
     CorClassIfaceAttr   ClassItfType;
     BOOL                bComVisible;
 
-    PREFIX_ASSUME(pClassMT != NULL);
+    _ASSERTE(pClassMT != NULL);
 
     if (pClassMT->IsComImport())
     {
@@ -2188,8 +2140,8 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
 }
 
 //--------------------------------------------------------------------------------
-// This method converts an OLE_COLOR to a System.Color.
-void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, SYSTEMCOLOR *pDestSysColor)
+// This method converts an OLE_COLOR to a boxed Color object.
+void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, OBJECTREF *pDestSysColor)
 {
     CONTRACTL
     {
@@ -2199,21 +2151,14 @@ void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, SYSTEMCOLOR *pDestSysCo
     }
     CONTRACTL_END;
 
-    // Retrieve the method desc to use for the current AD.
-    MethodDesc *pOleColorToSystemColorMD =
-        GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetOleColorMarshalingInfo()->GetOleColorToSystemColorMD();
-
-    MethodDescCallSite oleColorToSystemColor(pOleColorToSystemColorMD);
-
-    _ASSERTE(pOleColorToSystemColorMD->HasRetBuffArg());
+    MethodDescCallSite oleColorToSystemColor(METHOD__COLORMARSHALER__CONVERT_TO_MANAGED);
 
     ARG_SLOT Args[] =
     {
-        PtrToArgSlot(pDestSysColor),
-        PtrToArgSlot(SrcOleColor)
+        PtrToArgSlot(&SrcOleColor)
     };
 
-    oleColorToSystemColor.Call(Args);
+    *pDestSysColor = oleColorToSystemColor.Call_RetOBJECTREF(Args);
 }
 
 //--------------------------------------------------------------------------------
@@ -2228,14 +2173,24 @@ OLE_COLOR ConvertSystemColorToOleColor(OBJECTREF *pSrcObj)
     }
     CONTRACTL_END;
 
-    // Retrieve the method desc to use for the current AD.
-    MethodDesc *pSystemColorToOleColorMD =
-        GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetOleColorMarshalingInfo()->GetSystemColorToOleColorMD();
-    MethodDescCallSite systemColorToOleColor(pSystemColorToOleColorMD);
+    OLE_COLOR result;
+    OBJECTREF sysColor = NULL;
 
-    // Set up the args and call the method.
-    SYSTEMCOLOR *pSrcSysColor = (SYSTEMCOLOR *)(*pSrcObj)->UnBox();
-    return systemColorToOleColor.CallWithValueTypes_RetOleColor((const ARG_SLOT *)&pSrcSysColor);
+    GCPROTECT_BEGIN(sysColor);
+
+    sysColor = *pSrcObj;
+
+    MethodDescCallSite sysColorToOleColor(METHOD__COLORMARSHALER__CONVERT_TO_NATIVE);
+
+    ARG_SLOT Args[] =
+    {
+        ObjToArgSlot(sysColor)
+    };
+
+    result = (OLE_COLOR)sysColorToOleColor.Call_RetI4(Args);
+
+    GCPROTECT_END();
+    return result;
 }
 
 //--------------------------------------------------------------------------------
@@ -2256,7 +2211,7 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
     LPCWSTR             szName;
     ULONG               cchName;
     MethodTable*        pIntfMT = InterfaceType.GetMethodTable();
-    PREFIX_ASSUME(pIntfMT != NULL);
+    _ASSERTE(pIntfMT != NULL);
 
     MethodTable*        pDeclaringMT = NULL;
     DWORD               nSlots;                 // Slots on the pseudo interface.
@@ -2308,6 +2263,10 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
                 {
                     pDeclaringMT = pProps->pMeth->GetMethodTable();
                     tkMb = pProps->pMeth->GetMemberDef();
+                    // TODO: (async) revisit and examine if this needs to be supported somehow
+                    if (pProps->pMeth->IsAsyncMethod())
+                        ThrowHR(COR_E_NOTSUPPORTED);
+
                     cbCur = GetStringizedMethodDef(pDeclaringMT, tkMb, rDef, cbCur);
                 }
                 else
@@ -2518,6 +2477,10 @@ BOOL IsMethodVisibleFromCom(MethodDesc *pMD)
     mdProperty  pd;
     LPCUTF8     pPropName;
     ULONG       uSemantic;
+    // TODO: (async) revisit and examine if this needs to be supported somehow
+    if (pMD->IsAsyncMethod())
+        return false;
+
     mdMethodDef md = pMD->GetMemberDef();
 
     // See if there is property information for this member.
@@ -2674,7 +2637,7 @@ BOOL IsComTargetValidForType(REFLECTCLASSBASEREF* pRefClassObj, OBJECTREF* pTarg
 
     MethodTable* pTargetMT = (*pTarget)->GetMethodTable();
     _ASSERTE(pTargetMT);
-    PREFIX_ASSUME(pInvokedMT != NULL);
+    _ASSERTE(pInvokedMT != NULL);
 
     // If the target class and the invoke class are identical then the invoke is valid.
     if (pTargetMT == pInvokedMT)
@@ -3029,7 +2992,7 @@ static OBJECTREF ConvertEnumVariantToMngEnum(IEnumVARIANT* pNativeEnum)
 
 //--------------------------------------------------------------------------------
 // InvokeDispMethod will convert a set of managed objects and call IDispatch.  The
-// result will be returned as a CLR Variant pointed to by pRetVal.
+// result will be returned as a CLR object pointed to by pRetVal.
 void IUInvokeDispMethod(
     REFLECTCLASSBASEREF* pRefClassObj,
     OBJECTREF* pTarget,
@@ -3086,7 +3049,7 @@ void IUInvokeDispMethod(
     PTRARRAYREF* pArrByrefModifiers = (PTRARRAYREF*) pByrefModifiers;
     PTRARRAYREF* pArrNamedArgs = (PTRARRAYREF*) pNamedArgs;
     MethodTable* pInvokedMT = (*pRefClassObj)->GetType().GetMethodTable();
-    PREFIX_ASSUME(pInvokedMT != NULL);
+    _ASSERTE(pInvokedMT != NULL);
 
     // Retrieve the total count of arguments.
     if (*pArrArgs != NULL)
@@ -3395,7 +3358,7 @@ void IUInvokeDispMethod(
                 DispParams.cNamedArgs = cNamedArgs;
                 DispParams.rgdispidNamedArgs = (cNamedArgs == 0) ? NULL : &aDispID[1];
 
-                // Convert the named arguments from COM+ to OLE. These arguments are in the same order
+                // Convert the named arguments from CLR to OLE. These arguments are in the same order
                 // on both sides.
                 for (i = 0; i < cNamedArgs; i++)
                 {
@@ -3430,7 +3393,7 @@ void IUInvokeDispMethod(
                 TmpObj = ((OBJECTREF*)(*pArrArgs)->GetDataPtr())[iSrcArg];
                 DispInvokeConvertObjectToVariant(&TmpObj, &DispParams.rgvarg[iDestArg], &aByrefArgInfos[iSrcArg]);
 
-                // Convert the named arguments from COM+ to OLE. These arguments are in the same order
+                // Convert the named arguments from CLR to OLE. These arguments are in the same order
                 // on both sides.
                 for (i = 0; i < cNamedArgs; i++)
                 {
@@ -3516,7 +3479,7 @@ void IUInvokeDispMethod(
         }
         else
         {
-            // Convert the return variant to a COR variant.
+            // Convert the return variant to a CLR object.
             OleVariant::MarshalObjectForOleVariant(&VarResult, pRetVal);
         }
     }
@@ -3699,11 +3662,7 @@ void InitializeComInterop()
     }
     CONTRACTL_END;
 
-    InitializeSListHead(&RCW::s_RCWStandbyList);
     ComCall::Init();
-#ifdef TARGET_X86
-    CLRToCOMCall::Init();
-#endif
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();
 #ifdef _DEBUG
@@ -3920,8 +3879,7 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg
     LPVOID              pCurrCtx    = NULL;
     HRESULT             hr          = S_OK;
     SafeComHolder<IUnknown> pUnk        = NULL;
-    int                 cch         = 0;
-    CHAR                szIID[GUID_STR_BUFFER_LEN];
+    CHAR                szIID[MINIPAL_GUID_BUFFER_LEN];
 
     hr = SafeQueryInterface(pItf, IID_IUnknown, &pUnk);
 
@@ -3929,8 +3887,7 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg
     {
         pCurrCtx = GetCurrentCtxCookie();
 
-        cch = GuidToLPSTR(iid, szIID);
-        _ASSERTE(cch > 0);
+        minipal_guid_as_string(iid, szIID, MINIPAL_GUID_BUFFER_LEN);
 
         if (SUCCEEDED(hrArg))
         {

@@ -361,7 +361,6 @@ GVAL_DECL(DWORD,            g_TlsIndex);
 GPTR_DECL(MethodTable,      g_pEHClass);
 GPTR_DECL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_DECL(MethodTable,      g_pStackFrameIteratorClass);
-GVAL_DECL(bool,             g_isNewExceptionHandlingEnabled);
 #endif
 
 // Full path to the managed entry assembly - stored for ease of identifying the entry asssembly for diagnostics
@@ -405,12 +404,18 @@ GPTR_DECL(StressLog, g_pStressLog);
 
 
 //
-// Support for the COM+ Debugger.
+// Support for the CLR Debugger.
 //
 GPTR_DECL(DebugInterface,     g_pDebugInterface);
 GVAL_DECL(DWORD,              g_CORDebuggerControlFlags);
 #ifdef DEBUGGING_SUPPORTED
 GPTR_DECL(EEDbgInterfaceImpl, g_pEEDbgInterfaceImpl);
+
+#ifndef DACCESS_COMPILE
+GVAL_DECL(DWORD, g_multicastDelegateTraceActiveCount);
+GVAL_DECL(DWORD, g_externalMethodFixupTraceActiveCount);
+#endif // DACCESS_COMPILE
+
 #endif // DEBUGGING_SUPPORTED
 
 #ifdef PROFILING_SUPPORTED
@@ -495,12 +500,6 @@ EXTERN const char g_psBaseLibrarySatelliteAssemblyName[];
 //
 EXTERN bool g_fWeControlLifetime;
 
-#ifdef _DEBUG
-// The following should only be used for assertions.  (Famous last words).
-EXTERN bool dbg_fDrasticShutdown;
-#endif
-EXTERN bool g_fInControlC;
-
 // There is a global table of prime numbers that's available for e.g. hashing
 extern const DWORD g_rgPrimes[71];
 
@@ -527,6 +526,9 @@ inline bool CORDebuggerAttached()
     return (g_CORDebuggerControlFlags & DBCF_ATTACHED) && !IsAtProcessExit();
 }
 
+// This only check debugger bits. However JIT optimizations can be disabled by other ways on a module
+// In most cases Module::AreJITOptimizationsDisabled() should be the prefered for checking if JIT optimizations
+// are disabled for a module (it does check both debugger bits and profiler jit deoptimization flag)
 #define CORDebuggerAllowJITOpts(dwDebuggerBits)           \
     (((dwDebuggerBits) & DACF_ALLOW_JIT_OPTS)             \
      ||                                                   \
@@ -538,45 +540,6 @@ inline bool CORDebuggerAttached()
 
 #define CORDebuggerTraceCall() \
     (CORDebuggerAttached() && GetThread()->IsTraceCall())
-
-
-
-//
-// Define stuff for precedence between profiling and debugging
-// flags that can both be set.
-//
-
-#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
-
-#ifdef DEBUGGING_SUPPORTED
-
-#define CORDisableJITOptimizations(dwDebuggerBits)        \
-         (CORProfilerDisableOptimizations() ||            \
-          !CORDebuggerAllowJITOpts(dwDebuggerBits))
-
-#else // !DEBUGGING_SUPPORTED
-
-#define CORDisableJITOptimizations(dwDebuggerBits)        \
-         CORProfilerDisableOptimizations()
-
-#endif// DEBUGGING_SUPPORTED
-
-#else // !defined(PROFILING_SUPPORTED) && !defined(PROFILING_SUPPORTED_DATA)
-
-#ifdef DEBUGGING_SUPPORTED
-
-#define CORDisableJITOptimizations(dwDebuggerBits)        \
-          !CORDebuggerAllowJITOpts(dwDebuggerBits)
-
-#else // DEBUGGING_SUPPORTED
-
-#define CORDisableJITOptimizations(dwDebuggerBits) FALSE
-
-#endif// DEBUGGING_SUPPORTED
-
-#endif// defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
-
-
 
 #ifndef TARGET_UNIX
 GVAL_DECL(SIZE_T, g_runtimeLoadedBaseAddress);

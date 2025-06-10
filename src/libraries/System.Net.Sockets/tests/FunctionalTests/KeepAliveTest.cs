@@ -128,7 +128,7 @@ namespace System.Net.Sockets.Tests
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                if (PlatformDetection.IsWindows)
+                if (PlatformDetection.IsWindows || PlatformDetection.IsWasi)
                 {
                     Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 0));
                 }
@@ -153,7 +153,7 @@ namespace System.Net.Sockets.Tests
 
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                if (PlatformDetection.IsWindows)
+                if (PlatformDetection.IsWindows || PlatformDetection.IsWasi)
                 {
                     Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, buffer));
                 }

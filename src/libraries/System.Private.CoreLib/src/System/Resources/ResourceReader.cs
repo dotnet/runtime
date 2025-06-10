@@ -119,10 +119,7 @@ namespace System.Resources
 #endif
         {
 #if RESOURCES_EXTENSIONS
-            if (stream is null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
 #else
             ArgumentNullException.ThrowIfNull(stream);
 #endif
@@ -140,6 +137,7 @@ namespace System.Resources
             ReadResources();
         }
 
+        [FeatureSwitchDefinition("System.Resources.ResourceManager.AllowCustomResourceTypes")]
         internal static bool AllowCustomResourceTypes { get; } = AppContext.TryGetSwitch("System.Resources.ResourceManager.AllowCustomResourceTypes", out bool allowReflection) ? allowReflection : true;
 
         public void Close()

@@ -97,6 +97,7 @@ namespace System.Text.Json
         private bool _writeIndented;
         private char _indentCharacter = JsonConstants.DefaultIndentCharacter;
         private int _indentSize = JsonConstants.DefaultIndentSize;
+        private bool _allowDuplicateProperties = true;
 
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
@@ -115,10 +116,7 @@ namespace System.Text.Json
         /// </exception>
         public JsonSerializerOptions(JsonSerializerOptions options)
         {
-            if (options is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             // The following fields are not copied intentionally:
             // 1. _cachingContext can only be set in immutable options instances.
@@ -152,6 +150,7 @@ namespace System.Text.Json
             _writeIndented = options._writeIndented;
             _indentCharacter = options._indentCharacter;
             _indentSize = options._indentSize;
+            _allowDuplicateProperties = options._allowDuplicateProperties;
             _typeInfoResolver = options._typeInfoResolver;
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
@@ -234,9 +233,9 @@ namespace System.Text.Json
 
                 if (_typeInfoResolverChain is { } resolverChain && !ReferenceEquals(resolverChain, value))
                 {
-                    // User is setting a new resolver; invalidate the resolver chain if already created.
-                    resolverChain.Clear();
-                    resolverChain.AddFlattened(value);
+                    // User is setting a new resolver; detach the resolver chain if already created.
+                    resolverChain.DetachFromOptions();
+                    _typeInfoResolverChain = null;
                 }
 
                 _typeInfoResolver = value;
@@ -753,7 +752,7 @@ namespace System.Text.Json
             {
                 VerifyMutable();
                 _referenceHandler = value;
-                ReferenceHandlingStrategy = value?.HandlingStrategy ?? ReferenceHandlingStrategy.None;
+                ReferenceHandlingStrategy = value?.HandlingStrategy ?? JsonKnownReferenceHandler.Unspecified;
             }
         }
 
@@ -837,6 +836,31 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Defines whether duplicate property names are allowed when deserializing JSON objects.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// By default, it's set to true. If set to false, <see cref="JsonException"/> is thrown
+        /// when a duplicate property name is encountered during deserialization.
+        /// </para>
+        /// <para>
+        /// Duplicate property names are not allowed in serialization.
+        /// </para>
+        /// </remarks>
+        public bool AllowDuplicateProperties
+        {
+            get => _allowDuplicateProperties;
+            set
+            {
+                VerifyMutable();
+                _allowDuplicateProperties = value;
+            }
+        }
+
+        /// <summary>
         /// Returns true if options uses compatible built-in resolvers or a combination of compatible built-in resolvers.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -853,7 +877,7 @@ namespace System.Text.Json
         private bool? _canUseFastPathSerializationLogic;
 
         // The cached value used to determine if ReferenceHandler should use Preserve or IgnoreCycles semantics or None of them.
-        internal ReferenceHandlingStrategy ReferenceHandlingStrategy = ReferenceHandlingStrategy.None;
+        internal JsonKnownReferenceHandler ReferenceHandlingStrategy = JsonKnownReferenceHandler.Unspecified;
 
         /// <summary>
         /// Specifies whether the current instance has been locked for user modification.
@@ -1023,9 +1047,10 @@ namespace System.Text.Json
         {
             return new JsonDocumentOptions
             {
+                AllowDuplicateProperties = AllowDuplicateProperties,
                 AllowTrailingCommas = AllowTrailingCommas,
                 CommentHandling = ReadCommentHandling,
-                MaxDepth = MaxDepth
+                MaxDepth = MaxDepth,
             };
         }
 
@@ -1087,7 +1112,7 @@ namespace System.Text.Json
 
         private sealed class OptionsBoundJsonTypeInfoResolverChain : JsonTypeInfoResolverChain
         {
-            private readonly JsonSerializerOptions _options;
+            private JsonSerializerOptions? _options;
 
             public OptionsBoundJsonTypeInfoResolverChain(JsonSerializerOptions options)
             {
@@ -1095,11 +1120,18 @@ namespace System.Text.Json
                 AddFlattened(options._typeInfoResolver);
             }
 
-            public override bool IsReadOnly => _options.IsReadOnly;
+            public void DetachFromOptions()
+            {
+                _options = null;
+            }
+
+            public override bool IsReadOnly => _options?.IsReadOnly is true;
 
             protected override void ValidateAddedValue(IJsonTypeInfoResolver item)
             {
-                if (ReferenceEquals(item, this) || ReferenceEquals(item, _options._typeInfoResolver))
+                Debug.Assert(item is not null);
+
+                if (ReferenceEquals(item, this) || ReferenceEquals(item, _options?._typeInfoResolver))
                 {
                     // Cannot add the instances in TypeInfoResolver or TypeInfoResolverChain to the chain itself.
                     ThrowHelper.ThrowInvalidOperationException_InvalidChainedResolver();
@@ -1108,14 +1140,17 @@ namespace System.Text.Json
 
             protected override void OnCollectionModifying()
             {
-                _options.VerifyMutable();
+                _options?.VerifyMutable();
             }
 
             protected override void OnCollectionModified()
             {
                 // Collection modified by the user: replace the main
                 // resolver with the resolver chain as our source of truth.
-                _options._typeInfoResolver = this;
+                if (_options is not null)
+                {
+                    _options._typeInfoResolver = this;
+                }
             }
         }
 

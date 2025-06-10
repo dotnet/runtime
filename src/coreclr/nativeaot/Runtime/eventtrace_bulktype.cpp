@@ -354,7 +354,7 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
 //
 // Arguments:
 //      * thAsAddr - MethodTable to log
-//      * typeLogBehavior - Ignored in Redhawk builds
+//      * typeLogBehavior - Ignored in NativeAOT builds
 //
 
 void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr)
@@ -384,7 +384,7 @@ void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr)
     }
     else if (cTypeParams > 1)
     {
-        
+
         ASSERT_UNCONDITIONALLY("unexpected value of cTypeParams greater than 1");
     }
 }

@@ -791,12 +791,12 @@ namespace Mono.Linker.Dataflow
 				if (typeReference is IGenericInstance instance && resolvedDefinition.IsTypeOf (WellKnownType.System_Nullable_T)) {
 					switch (instance.GenericArguments[0]) {
 					case GenericParameter genericParam:
-						var nullableDam = new RuntimeTypeHandleForNullableValueWithDynamicallyAccessedMembers (new TypeProxy (resolvedDefinition),
+						var nullableDam = new RuntimeTypeHandleForNullableValueWithDynamicallyAccessedMembers (new TypeProxy (resolvedDefinition, _context),
 							new RuntimeTypeHandleForGenericParameterValue (genericParam));
 						currentStack.Push (new StackSlot (nullableDam));
 						return;
 					case TypeReference underlyingTypeReference when ResolveToTypeDefinition (underlyingTypeReference) is TypeDefinition underlyingType:
-						var nullableType = new RuntimeTypeHandleForNullableSystemTypeValue (new TypeProxy (resolvedDefinition), new SystemTypeValue (underlyingType));
+						var nullableType = new RuntimeTypeHandleForNullableSystemTypeValue (new TypeProxy (resolvedDefinition, _context), new SystemTypeValue (new (underlyingType, _context)));
 						currentStack.Push (new StackSlot (nullableType));
 						return;
 					default:
@@ -804,7 +804,7 @@ namespace Mono.Linker.Dataflow
 						return;
 					}
 				} else {
-					var typeHandle = new RuntimeTypeHandleValue (new TypeProxy (resolvedDefinition));
+					var typeHandle = new RuntimeTypeHandleValue (new TypeProxy (resolvedDefinition, _context));
 					currentStack.Push (new StackSlot (typeHandle));
 					return;
 				}
@@ -1109,6 +1109,8 @@ namespace Mono.Linker.Dataflow
 				foreach (var v in param.AsEnumerable ()) {
 					if (v is ArrayValue arr) {
 						MarkArrayValuesAsUnknown (arr, curBasicBlock);
+					} else if (v is ArrayOfAnnotatedSystemTypeValue arrayOfAnnotated) {
+						arrayOfAnnotated.MarkModified ();
 					}
 				}
 			}
@@ -1153,6 +1155,8 @@ namespace Mono.Linker.Dataflow
 						// When we know the index, we can record the value at that index.
 						StoreMethodLocalValue (arrValue.IndexValues, ArrayValue.SanitizeArrayElementValue (valueToStore.Value), indexToStoreAtInt.Value, curBasicBlock, MaxTrackedArrayValues);
 					}
+				} else if (array is ArrayOfAnnotatedSystemTypeValue arrayOfAnnotated) {
+					arrayOfAnnotated.MarkModified ();
 				}
 			}
 		}
@@ -1165,12 +1169,22 @@ namespace Mono.Linker.Dataflow
 		{
 			StackSlot indexToLoadFrom = PopUnknown (currentStack, 1, methodBody, operation.Offset);
 			StackSlot arrayToLoadFrom = PopUnknown (currentStack, 1, methodBody, operation.Offset);
+
+			bool isByRef = operation.OpCode.Code == Code.Ldelema;
+
+			if (arrayToLoadFrom.Value.AsSingleValue () is ArrayOfAnnotatedSystemTypeValue arrayOfAnnotated) {
+				if (isByRef) {
+					arrayOfAnnotated.MarkModified ();
+				} else if (!arrayOfAnnotated.IsModified) {
+					currentStack.Push (new StackSlot (arrayOfAnnotated.GetAnyElementValue ()));
+					return;
+				}
+			}
+
 			if (arrayToLoadFrom.Value.AsSingleValue () is not ArrayValue arr) {
 				PushUnknown (currentStack);
 				return;
 			}
-			// We don't yet handle arrays of references or pointers
-			bool isByRef = operation.OpCode.Code == Code.Ldelema;
 
 			int? index = indexToLoadFrom.Value.AsConstInt ();
 			if (index == null) {

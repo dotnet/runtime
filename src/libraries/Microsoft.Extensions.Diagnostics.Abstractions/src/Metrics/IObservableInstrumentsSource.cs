@@ -6,13 +6,15 @@ using System.Diagnostics.Metrics;
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
     /// <summary>
-    /// An interface registered with each IMetricsListener using <see cref="IMetricsListener.Initialize(IObservableInstrumentsSource)"/>. The listener
-    /// can call <see cref="RecordObservableInstruments"/> to receive the current set of measurements for enabled observable instruments.
+    /// An interface registered with each IMetricsListener using <see cref="IMetricsListener.Initialize(IObservableInstrumentsSource)"/>.
     /// </summary>
+    /// <remarks>
+    /// The listener can call <see cref="RecordObservableInstruments"/> to receive the current set of measurements for enabled observable instruments.
+    /// </remarks>
     public interface IObservableInstrumentsSource
     {
         /// <summary>
-        /// Requests that the current set of metrics for enabled instruments be sent to the listener's <see cref="MeasurementCallback{T}"/>'s.
+        /// Requests that the current set of metrics for enabled instruments be sent to the listener's <see cref="MeasurementCallback{T}"/> objects.
         /// </summary>
         public void RecordObservableInstruments();
     }

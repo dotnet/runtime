@@ -200,14 +200,35 @@
 #  define ALIGNED_(x) __attribute__ ((aligned(x)))
 #elif defined(_MSC_VER)
 #  define ALIGNED_(x) __declspec(align(x))
+#else
+/* TODO: Define ALIGNED_ for your compiler */
+#  define ALIGNED_(x)
 #endif
+
+#ifdef HAVE_BUILTIN_ASSUME_ALIGNED
+#  define HINT_ALIGNED(p,n) __builtin_assume_aligned((void *)(p),(n))
+#else
+#  define HINT_ALIGNED(p,n) (p)
+#endif
+#define HINT_ALIGNED_16(p) HINT_ALIGNED((p),16)
+#define HINT_ALIGNED_64(p) HINT_ALIGNED((p),64)
+#define HINT_ALIGNED_4096(p) HINT_ALIGNED((p),4096)
+
+/* PADSZ returns needed bytes to pad bpos to pad size
+ * PAD_NN calculates pad size and adds it to bpos, returning the result.
+ * All take an integer or a pointer as bpos input.
+ */
+#define PADSZ(bpos, pad) (((pad) - ((uintptr_t)(bpos) % (pad))) % (pad))
+#define PAD_16(bpos) ((bpos) + PADSZ((bpos),16))
+#define PAD_64(bpos) ((bpos) + PADSZ((bpos),64))
+#define PAD_4096(bpos) ((bpos) + PADSZ((bpos),4096))
 
 /* Diagnostic functions */
 #ifdef ZLIB_DEBUG
 #  include <stdio.h>
    extern int Z_INTERNAL z_verbose;
    extern void Z_INTERNAL z_error(const char *m);
-#  define Assert(cond, msg) {if (!(cond)) z_error(msg);}
+#  define Assert(cond, msg) {int _cond = (cond); if (!_cond) z_error(msg);}
 #  define Trace(x) {if (z_verbose >= 0) fprintf x;}
 #  define Tracev(x) {if (z_verbose > 0) fprintf x;}
 #  define Tracevv(x) {if (z_verbose > 1) fprintf x;}
@@ -222,28 +243,66 @@
 #  define Tracecv(c, x)
 #endif
 
-#ifndef NO_UNALIGNED
+/* OPTIMAL_CMP values determine the comparison width:
+ * 64: Best for 64-bit architectures with unaligned access
+ * 32: Best for 32-bit architectures with unaligned access
+ * 16: Safe default for unknown architectures
+ * 8:  Safe fallback for architectures without unaligned access
+ * Note: The unaligned access mentioned is cpu-support, this allows compiler or
+ *       separate unaligned intrinsics to utilize safe unaligned access, without
+ *       utilizing unaligned C pointers that are known to have undefined behavior.
+ */
+#if !defined(OPTIMAL_CMP)
 #  if defined(__x86_64__) || defined(_M_X64) || defined(__amd64__) || defined(_M_AMD64)
-#    define UNALIGNED_OK
-#    define UNALIGNED64_OK
+#    define OPTIMAL_CMP 64
 #  elif defined(__i386__) || defined(__i486__) || defined(__i586__) || \
         defined(__i686__) || defined(_X86_) || defined(_M_IX86)
-#    define UNALIGNED_OK
+#    define OPTIMAL_CMP 32
 #  elif defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC)
-#    if (defined(__GNUC__) && defined(__ARM_FEATURE_UNALIGNED)) || !defined(__GNUC__)
-#      define UNALIGNED_OK
-#      define UNALIGNED64_OK
+#    if defined(__ARM_FEATURE_UNALIGNED) || defined(_WIN32)
+#      define OPTIMAL_CMP 64
+#    else
+#      define OPTIMAL_CMP 8
 #    endif
-#  elif defined(__arm__) || (_M_ARM >= 7)
-#    if (defined(__GNUC__) && defined(__ARM_FEATURE_UNALIGNED)) || !defined(__GNUC__)
-#      define UNALIGNED_OK
+#  elif defined(__arm__) || defined(_M_ARM)
+#    if defined(__ARM_FEATURE_UNALIGNED) || defined(_WIN32)
+#      define OPTIMAL_CMP 32
+#    else
+#      define OPTIMAL_CMP 8
 #    endif
 #  elif defined(__powerpc64__) || defined(__ppc64__)
-#    if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-#      define UNALIGNED_OK
-#      define UNALIGNED64_OK
-#    endif
+#    define OPTIMAL_CMP 64
+#  elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)
+#    define OPTIMAL_CMP 32
 #  endif
+#endif
+#if !defined(OPTIMAL_CMP)
+#  define OPTIMAL_CMP 16
+#endif
+
+#if defined(__has_feature)
+#  if __has_feature(address_sanitizer)
+#    define Z_ADDRESS_SANITIZER 1
+#  endif
+#elif defined(__SANITIZE_ADDRESS__)
+#  define Z_ADDRESS_SANITIZER 1
+#endif
+
+/*
+ * __asan_loadN() and __asan_storeN() calls are inserted by compilers in order to check memory accesses.
+ * They can be called manually too, with the following caveats:
+ * gcc says: "warning: implicit declaration of function '...'"
+ * g++ says: "error: new declaration '...' ambiguates built-in declaration '...'"
+ * Accommodate both.
+ */
+#ifdef Z_ADDRESS_SANITIZER
+#ifndef __cplusplus
+void __asan_loadN(void *, long);
+void __asan_storeN(void *, long);
+#endif
+#else
+#  define __asan_loadN(a, size) do { Z_UNUSED(a); Z_UNUSED(size); } while (0)
+#  define __asan_storeN(a, size) do { Z_UNUSED(a); Z_UNUSED(size); } while (0)
 #endif
 
 #if defined(__has_feature)
@@ -254,7 +313,31 @@
 #endif
 
 #ifndef Z_MEMORY_SANITIZER
+#  define __msan_check_mem_is_initialized(a, size) do { Z_UNUSED(a); Z_UNUSED(size); } while (0)
 #  define __msan_unpoison(a, size) do { Z_UNUSED(a); Z_UNUSED(size); } while (0)
 #endif
+
+/* Notify sanitizer runtime about an upcoming read access. */
+#define instrument_read(a, size) do {             \
+    void *__a = (void *)(a);                      \
+    long __size = size;                           \
+    __asan_loadN(__a, __size);                    \
+    __msan_check_mem_is_initialized(__a, __size); \
+} while (0)
+
+/* Notify sanitizer runtime about an upcoming write access. */
+#define instrument_write(a, size) do { \
+   void *__a = (void *)(a);            \
+   long __size = size;                 \
+   __asan_storeN(__a, __size);         \
+} while (0)
+
+/* Notify sanitizer runtime about an upcoming read/write access. */
+#define instrument_read_write(a, size) do {       \
+    void *__a = (void *)(a);                      \
+    long __size = size;                           \
+    __asan_storeN(__a, __size);                   \
+    __msan_check_mem_is_initialized(__a, __size); \
+} while (0)
 
 #endif

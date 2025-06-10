@@ -15,6 +15,7 @@ using VerifyCS = System.Text.RegularExpressions.Tests.CSharpCodeFixVerifier<
 namespace System.Text.RegularExpressions.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/69823", TestRuntimes.Mono)]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class UpgradeToGeneratedRegexAnalyzerTests
     {
         private const string UseRegexSourceGeneratorDiagnosticId = @"SYSLIB1045";
@@ -85,9 +86,7 @@ public class Program
             string test = @"using System.Text.RegularExpressions;
 var isMatch = [|" + ConstructRegexInvocation(invocationType, pattern: "\"\"") + @"|]" + isMatchInvocation + ";";
             string fixedCode = @"using System.Text.RegularExpressions;
-var isMatch = MyRegex().IsMatch("""");
-
-partial class Program
+var isMatch = MyRegex().IsMatch(""""); partial class Program
 {
     [GeneratedRegex("""")]
     private static partial Regex MyRegex();
@@ -850,9 +849,7 @@ partial class Program
                 },
                 FixedState =
                 {
-                    Sources = { "public class C { }", @"var r = MyRegex();
-
-partial class Program
+                    Sources = { "public class C { }", @"var r = MyRegex(); partial class Program
 {
     [System.Text.RegularExpressions.GeneratedRegex("""")]
     private static partial System.Text.RegularExpressions.Regex MyRegex();
@@ -907,6 +904,48 @@ static partial class Class
 }";
 
             await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
+        }
+
+        [Fact]
+        public async Task CodeFixForConstantPatternExpressionWithQuote()
+        {
+            // From https://github.com/dotnet/runtime/issues/104371
+            // When constant expression patterns need to be escaped, we generate
+            // a verbatim string literal. However, we still need to escape quotes.
+            string expression = """
+                "[" + @"\/:<>|" + "\"]"
+                """;
+
+            string test = $@"using System.Text;
+using System.Text.RegularExpressions;
+
+public class Program
+{{
+    public static void Main(string[] args)
+    {{
+        var isMatch = [|Regex.IsMatch("""", {expression})|];
+    }}
+}}";
+
+            string verbatimPattern = """
+                @"[\/:<>|""]"
+                """;
+
+            string fixedSource = @$"using System.Text;
+using System.Text.RegularExpressions;
+
+public partial class Program
+{{
+    public static void Main(string[] args)
+    {{
+        var isMatch = MyRegex().IsMatch("""");
+    }}
+
+    [GeneratedRegex({verbatimPattern})]
+    private static partial Regex MyRegex();
+}}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
         }
 
         [Fact]

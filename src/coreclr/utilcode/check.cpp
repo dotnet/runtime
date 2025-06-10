@@ -11,6 +11,8 @@
 #include <ex.h>
 #include <contract.h>
 
+#include <minipal/debugger.h>
+
 #ifdef _DEBUG
 size_t CHECK::s_cLeakedBytes = 0;
 size_t CHECK::s_cNumFailures = 0;
@@ -34,16 +36,12 @@ BOOL BaseContract::s_alwaysEnforceContracts = 1;
 #define SPECIALIZE_CONTRACT_VIOLATION_HOLDER(mask)                              \
 template<> void ContractViolationHolder<mask>::Enter()                          \
 {                                                                               \
-    SCAN_SCOPE_BEGIN;                                                           \
-    ANNOTATION_VIOLATION(mask);                                                 \
     EnterInternal(mask);                                                        \
 };
 
 #define SPECIALIZE_AUTO_CLEANUP_CONTRACT_VIOLATION_HOLDER(mask)                                                 \
 template<> AutoCleanupContractViolationHolder<mask>::AutoCleanupContractViolationHolder(BOOL fEnterViolation)   \
 {                                                                                                               \
-    SCAN_SCOPE_BEGIN;                                                                                           \
-    ANNOTATION_VIOLATION(mask);                                                                                 \
     EnterInternal(fEnterViolation ? mask : 0);                                                                  \
 };
 
@@ -119,7 +117,7 @@ void CHECK::Trigger(LPCSTR reason)
             pMessage->AppendASCII((m_message != (LPCSTR)1) ? m_message : "<runtime check failure>");
 
 #if _DEBUG
-        pMessage->AppendASCII("FAILED: ");
+        pMessage->AppendASCII("\nFAILED: ");
         pMessage->AppendASCII(m_condition);
 #endif
 
@@ -189,7 +187,7 @@ void CHECK::Setup(LPCSTR message, LPCSTR condition, LPCSTR file, INT line)
 #endif
 
 #if defined(_DEBUG_IMPL)
-    if (IsInAssert() && IsDebuggerPresent())
+    if (IsInAssert() && minipal_is_native_debugger_present())
     {
         DebugBreak();
     }

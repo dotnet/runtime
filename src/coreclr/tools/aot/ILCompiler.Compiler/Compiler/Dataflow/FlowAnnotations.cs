@@ -440,6 +440,7 @@ namespace ILLink.Shared.TrimAnalysis
                             returnAnnotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, parameter.GetCustomAttributes());
                             if (returnAnnotation != DynamicallyAccessedMemberTypes.None && !IsTypeInterestingForDataflow(signature.ReturnType))
                             {
+                                returnAnnotation = DynamicallyAccessedMemberTypes.None;
                                 _logger.LogWarning(method, DiagnosticId.DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings, method.GetDisplayName());
                             }
                         }

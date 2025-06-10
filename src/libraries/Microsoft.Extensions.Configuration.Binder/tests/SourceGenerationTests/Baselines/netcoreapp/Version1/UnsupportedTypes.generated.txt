@@ -137,7 +137,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            if (configuration["Age"] is string value3)
+            if (configuration["Age"] is string value3 && !string.IsNullOrEmpty(value3))
             {
                 instance.Age = ParseInt(value3, configuration.GetSection("Age").Path);
             }
@@ -153,6 +153,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 BindCore(section4, ref temp6, defaultValueIfNotFound: false, binderOptions);
                 instance.List = temp6;
             }
+            else
+            {
+                instance.List = instance.List;
+            }
 
             if (AsConfigWithChildren(configuration.GetSection("Array")) is IConfigurationSection section7)
             {
@@ -160,6 +164,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 temp9 ??= new string[0];
                 BindCore(section7, ref temp9, defaultValueIfNotFound: false, binderOptions);
                 instance.Array = temp9;
+            }
+            else
+            {
+                instance.Array = instance.Array;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("Record")) is IConfigurationSection section10)
@@ -169,12 +177,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 BindCore(section10, ref temp12, defaultValueIfNotFound: false, binderOptions);
                 instance.Record = temp12;
             }
+            else
+            {
+                instance.Record = instance.Record;
+            }
         }
 
         public static global::Record<global::System.Action> InitializeRecordAction(IConfiguration configuration, BinderOptions? binderOptions)
         {
             int x = (int)(10);
-            if (configuration["x"] is string value13)
+            if (configuration["x"] is string value13 && !string.IsNullOrEmpty(value13))
             {
                 x = ParseInt(value13, configuration.GetSection("x").Path);
             }

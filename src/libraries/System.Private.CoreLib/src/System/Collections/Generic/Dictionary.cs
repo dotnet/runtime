@@ -98,7 +98,7 @@ namespace System.Collections.Generic
         public Dictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection) : this(collection, null) { }
 
         public Dictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer) :
-            this((collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0, comparer)
+            this((collection as IReadOnlyCollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0, comparer)
         {
             if (collection == null)
             {
@@ -745,6 +745,7 @@ namespace System.Collections.Generic
             /// When this method returns, contains the value associated with the specified key, if the key is found;
             /// otherwise, the default value for the type of the value parameter.
             /// </param>
+            /// <returns><see langword="true"/> if an entry was found; otherwise, <see langword="false"/>.</returns>
             /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
             public bool TryGetValue(TAlternateKey key, [MaybeNullWhen(false)] out TValue value)
             {
@@ -769,6 +770,7 @@ namespace System.Collections.Generic
             /// When this method returns, contains the value associated with the specified key, if the key is found;
             /// otherwise, the default value for the type of the value parameter.
             /// </param>
+            /// <returns><see langword="true"/> if an entry was found; otherwise, <see langword="false"/>.</returns>
             /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
             public bool TryGetValue(TAlternateKey key, [MaybeNullWhen(false)] out TKey actualKey, [MaybeNullWhen(false)] out TValue value)
             {

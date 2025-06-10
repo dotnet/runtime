@@ -2,6 +2,73 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #ifndef DACCESS_COMPILE
+
+#include "eventtracebase.h"
+
+const uint32_t SamplingDistributionMean = (100 * 1024);
+
+inline gc_alloc_context* ee_alloc_context::GetGCAllocContext()
+{
+    return (gc_alloc_context*)&m_rgbAllocContextBuffer;
+}
+
+inline uint8_t* ee_alloc_context::GetCombinedLimit()
+{
+    return combined_limit;
+}
+
+// Workaround for https://github.com/dotnet/runtime/issues/96081
+struct _thread_inl_gc_alloc_context
+{
+    uint8_t* alloc_ptr;
+    uint8_t* alloc_limit;
+};
+
+
+inline bool ee_alloc_context::IsRandomizedSamplingEnabled()
+{
+#ifdef FEATURE_EVENT_TRACE
+    return IsRuntimeProviderEnabled(TRACE_LEVEL_INFORMATION, CLR_ALLOCATIONSAMPLING_KEYWORD);
+#else
+    return false;
+#endif // FEATURE_EVENT_TRACE
+}
+
+inline void ee_alloc_context::UpdateCombinedLimit(bool samplingEnabled)
+{
+    _thread_inl_gc_alloc_context* gc_alloc_context = (_thread_inl_gc_alloc_context*)GetGCAllocContext();
+    if (!samplingEnabled)
+    {
+        combined_limit = gc_alloc_context->alloc_limit;
+    }
+    else
+    {
+        // compute the next sampling budget based on a geometric distribution
+        size_t samplingBudget = ComputeGeometricRandom();
+
+        // if the sampling limit is larger than the allocation context, no sampling will occur in this AC
+        // We do Min() prior to adding to alloc_ptr to ensure alloc_ptr+samplingBudget doesn't cause an overflow.
+        
+        size_t size = gc_alloc_context->alloc_limit - gc_alloc_context->alloc_ptr;
+        combined_limit = gc_alloc_context->alloc_ptr + min(samplingBudget, size);
+    }
+}
+
+inline uint32_t ee_alloc_context::ComputeGeometricRandom()
+{
+    // compute a random sample from the Geometric distribution.
+    double probability = t_random.NextDouble();
+    uint32_t threshold = (uint32_t)(-log(1 - probability) * SamplingDistributionMean);
+    return threshold;
+}
+
+// Returns a random double in the range [0, 1).
+inline double ee_alloc_context::PerThreadRandom::NextDouble()
+{
+    uint32_t value = minipal_xoshiro128pp_next(&random_state);
+    return value * (1.0/(UINT32_MAX+1.0));
+}
+
 // Set the m_pDeferredTransitionFrame field for GC allocation helpers that setup transition frame
 // in assembly code. Do not use anywhere else.
 inline void Thread::SetDeferredTransitionFrame(PInvokeTransitionFrame* pTransitionFrame)
@@ -59,9 +126,14 @@ inline void Thread::PopGCFrameRegistration(GCFrameRegistration* pRegistration)
     m_pGCFrameRegistrations = pRegistration->m_pNext;
 }
 
+inline ee_alloc_context* Thread::GetEEAllocContext()
+{
+    return &m_eeAllocContext;
+}
+
 inline gc_alloc_context* Thread::GetAllocContext()
 {
-    return (gc_alloc_context*)m_rgbAllocContextBuffer;
+    return GetEEAllocContext()->GetGCAllocContext();
 }
 
 inline bool Thread::IsStateSet(ThreadStateFlags flags)

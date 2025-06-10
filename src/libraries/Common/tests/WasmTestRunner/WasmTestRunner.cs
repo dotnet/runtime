@@ -20,7 +20,7 @@ public class WasmTestRunner : WasmApplicationEntryPoint
         return PollWasiEventLoopUntilResolved((Thread)null!, MainAsync(args));
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "PollWasiEventLoopUntilResolved")]
-        static extern int PollWasiEventLoopUntilResolved(Thread t, Task<int> mainTask);
+        static extern T PollWasiEventLoopUntilResolved<T>(Thread t, Task<T> mainTask);
     }
 
 

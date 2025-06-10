@@ -15,13 +15,12 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is ICollection<TSource> gc)
+            if (source is IReadOnlyCollection<TSource> gc)
             {
                 return gc.Count != 0;
             }
 
-#if !OPTIMIZE_FOR_SIZE
-            if (source is Iterator<TSource> iterator)
+            if (!IsSizeOptimized && source is Iterator<TSource> iterator)
             {
                 int count = iterator.GetCount(onlyIfCheap: true);
                 if (count >= 0)
@@ -32,7 +31,6 @@ namespace System.Linq
                 iterator.TryGetFirst(out bool found);
                 return found;
             }
-#endif
 
             if (source is ICollection ngc)
             {

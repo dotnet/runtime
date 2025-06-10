@@ -4,6 +4,7 @@
 // Tests KeepAlive() in Recursive method
 
 using System;
+using Xunit;
 
 public class Test_KeepAliveRecur
 {
@@ -34,7 +35,8 @@ public class Test_KeepAliveRecur
         GC.KeepAlive(o);    // Keeping object alive 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Dummy obj = new Dummy();
 

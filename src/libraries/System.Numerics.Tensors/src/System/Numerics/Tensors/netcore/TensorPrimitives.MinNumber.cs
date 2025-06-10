@@ -11,13 +11,13 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
-        /// <summary>Searches for the largest number in the specified tensor.</summary>
+        /// <summary>Searches for the smallest number in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
-        /// <returns>The maximum element in <paramref name="x"/>.</returns>
+        /// <returns>The minimum element in <paramref name="x"/>.</returns>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be greater than zero.</exception>
         /// <remarks>
         /// <para>
-        /// The determination of the maximum element matches the IEEE 754:2019 `maximumNumber` function. Positive 0 is considered greater than negative 0.
+        /// The determination of the minimum element matches the IEEE 754:2019 `minimumNumber` function. Positive 0 is considered greater than negative 0.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -28,7 +28,7 @@ namespace System.Numerics.Tensors
             where T : INumber<T> =>
             MinMaxCore<T, MinNumberOperator<T>>(x);
 
-        /// <summary>Computes the element-wise maximum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
@@ -41,7 +41,7 @@ namespace System.Numerics.Tensors
         /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T"/>.MinNumber(<paramref name="x" />[i], <paramref name="y" />[i])</c>.
         /// </para>
         /// <para>
-        /// The determination of the maximum element matches the IEEE 754:2019 `maximumNumber` function. If either value is <see cref="IFloatingPointIeee754{TSelf}.NaN"/>
+        /// The determination of the minimum element matches the IEEE 754:2019 `minimumNumber` function. If either value is <see cref="IFloatingPointIeee754{TSelf}.NaN"/>
         /// the other is returned. Positive 0 is considered greater than negative 0.
         /// </para>
         /// <para>
@@ -53,7 +53,7 @@ namespace System.Numerics.Tensors
             where T : INumber<T> =>
             InvokeSpanSpanIntoSpan<T, MinNumberOperator<T>>(x, y, destination);
 
-        /// <summary>Computes the element-wise maximum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a scalar.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
@@ -64,7 +64,7 @@ namespace System.Numerics.Tensors
         /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T"/>.MinNumber(<paramref name="x" />[i], <paramref name="y" />)</c>.
         /// </para>
         /// <para>
-        /// The determination of the maximum element matches the IEEE 754:2019 `maximumNumber` function. If either value is <see cref="IFloatingPointIeee754{TSelf}.NaN"/>
+        /// The determination of the minimum element matches the IEEE 754:2019 `minimumNumber` function. If either value is <see cref="IFloatingPointIeee754{TSelf}.NaN"/>
         /// the other is returned. Positive 0 is considered greater than negative 0.
         /// </para>
         /// <para>

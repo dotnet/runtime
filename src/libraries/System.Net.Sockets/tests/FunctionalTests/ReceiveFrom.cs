@@ -62,13 +62,21 @@ namespace System.Net.Sockets.Tests
             }   
         }
 
-        [Fact]
-        public async Task NullSocketAddress_Throws_ArgumentException()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void NullSocketAddress_Throws_ArgumentException()
         {
             using Socket socket = CreateSocket();
             SocketAddress socketAddress = null;
 
             Assert.Throws<ArgumentNullException>(() => socket.ReceiveFrom(new byte[1], SocketFlags.None, socketAddress));
+        }
+
+        [Fact]
+        public async Task NullSocketAddress_Throws_ArgumentExceptionAsync()
+        {
+            using Socket socket = CreateSocket();
+            SocketAddress socketAddress = null;
+
             await Assert.ThrowsAsync<ArgumentNullException>(() => socket.ReceiveFromAsync(new Memory<byte>(new byte[1]), SocketFlags.None, socketAddress).AsTask());
         }
 
@@ -94,6 +102,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task ReceiveSent_TCP_Success(bool ipv6)
         {
             if (ipv6 && PlatformDetection.IsApplePlatform)
@@ -151,7 +160,7 @@ namespace System.Net.Sockets.Tests
             for (int i = 0; i < DatagramsToSend; i++)
             {
                 rnd.NextBytes(sendBuffer);
-                sender.SendTo(sendBuffer, receiver.LocalEndPoint);
+                await sender.SendToAsync(sendBuffer, receiver.LocalEndPoint);
 
                 SocketReceiveFromResult result = await ReceiveFromAsync(receiver, receiveBuffer, remoteEp);
 
@@ -171,6 +180,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
         public async Task ReceiveSent_DualMode_Success(bool ipv4)
         {
             const int Offset = 10;
@@ -217,7 +227,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void ReceiveSent_SocketAddress_Success(bool ipv4)
+        public async Task ReceiveSent_SocketAddress_Success(bool ipv4)
         {
             const int DatagramSize = 256;
             const int DatagramsToSend = 16;
@@ -241,17 +251,17 @@ namespace System.Net.Sockets.Tests
             for (int i = 0; i < DatagramsToSend; i++)
             {
                 rnd.NextBytes(sendBuffer);
-                client.SendTo(sendBuffer.AsSpan(), SocketFlags.None, serverSA);
+                await client.SendToAsync(sendBuffer, SocketFlags.None, serverSA);
 
-                int readBytes = server.ReceiveFrom(receiveBuffer, SocketFlags.None, sa);
+                int readBytes = await server.ReceiveFromAsync(receiveBuffer, SocketFlags.None, sa);
                 Assert.Equal(sa, clientSA);
                 Assert.Equal(client.LocalEndPoint, client.LocalEndPoint.Create(sa));
                 Assert.True(new Span<byte>(receiveBuffer, 0, readBytes).SequenceEqual(sendBuffer));
 
                 // and send it back to make sure it works.
                 rnd.NextBytes(sendBuffer);
-                server.SendTo(sendBuffer, SocketFlags.None, sa);
-                readBytes = client.ReceiveFrom(receiveBuffer, SocketFlags.None, sa);
+                await server.SendToAsync(sendBuffer, SocketFlags.None, sa);
+                readBytes = await client.ReceiveFromAsync(receiveBuffer, SocketFlags.None, sa);
                 Assert.Equal(sa, serverSA);
                 Assert.Equal(server.LocalEndPoint, server.LocalEndPoint.Create(sa));
                 Assert.True(new Span<byte>(receiveBuffer, 0, readBytes).SequenceEqual(sendBuffer));
@@ -303,7 +313,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void ReceiveSent_SmallSocketAddress_Throws()
+        public async Task ReceiveSent_SmallSocketAddress_Throws()
         {
             using Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             server.BindToAnonymousPort(IPAddress.Loopback);
@@ -313,7 +323,7 @@ namespace System.Net.Sockets.Tests
             SocketAddress serverSA = server.LocalEndPoint.Serialize();
 
             SocketAddress sa = new SocketAddress(AddressFamily.InterNetwork, 2);
-           Assert.Throws<ArgumentOutOfRangeException>(() => server.ReceiveFrom(receiveBuffer, SocketFlags.None, sa));
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await server.ReceiveFromAsync(receiveBuffer, SocketFlags.None, sa));
         }
 
         [Theory]
@@ -333,6 +343,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task ClosedDuringOperation_Throws_ObjectDisposedExceptionOrSocketException(bool closeOrDispose)
         {
             if (UsesSync && PlatformDetection.IsOSX)
@@ -403,23 +414,26 @@ namespace System.Net.Sockets.Tests
 
             using var sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             sender.BindToAnonymousPort(IPAddress.Loopback);
-            sender.SendTo(new byte[1], receiver.LocalEndPoint);
+            await sender.SendToAsync(new byte[1], receiver.LocalEndPoint);
 
             var r = await ReceiveFromAsync(receiver, new byte[1], sender.LocalEndPoint);
             Assert.Equal(1, r.ReceivedBytes);
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ReceiveFrom_Sync : ReceiveFrom<SocketHelperArraySync>
     {
         public ReceiveFrom_Sync(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ReceiveFrom_SyncForceNonBlocking : ReceiveFrom<SocketHelperSyncForceNonBlocking>
     {
         public ReceiveFrom_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ReceiveFrom_Apm : ReceiveFrom<SocketHelperApm>
     {
         public ReceiveFrom_Apm(ITestOutputHelper output) : base(output) { }
@@ -463,7 +477,7 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ArgumentException>("endPoint", () => socket.EndReceiveFrom(iar, ref invalidEndPoint));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/54418", TestPlatforms.MacCatalyst)]
         public void BeginReceiveFrom_RemoteEpIsReturnedWhenCompletedSynchronously()
         {
@@ -532,11 +546,13 @@ namespace System.Net.Sockets.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ReceiveFrom_SpanSync : ReceiveFrom<SocketHelperSpanSync>
     {
         public ReceiveFrom_SpanSync(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ReceiveFrom_SpanSyncForceNonBlocking : ReceiveFrom<SocketHelperSpanSyncForceNonBlocking>
     {
         public ReceiveFrom_SpanSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }

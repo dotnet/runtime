@@ -14,6 +14,14 @@ public class BasicObjectTests : Common.BasicObjectTests<FormattedObjectSerialize
     [MemberData(nameof(SerializableObjects))]
     public void BasicObjectsRoundTripAndMatch(object value, TypeSerializableValue[] _)
     {
+        if (value is WeakReference || (value.GetType().IsGenericType && value.GetType().GetGenericTypeDefinition() == typeof(WeakReference<>)))
+        {
+            // We can root the provided value, but we can't root the deserialized value:
+            // GC can free the target of WeakReference after it gets deserialized,
+            // but before it gets returned from BinaryFormatter.Deserialize.
+            return;
+        }
+
         // We need to round trip through the BinaryFormatter as a few objects in tests remove
         // serialized data on deserialization.
         BinaryFormatter formatter = new();

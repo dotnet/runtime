@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Http.Logging
         /// <exception cref="ArgumentNullException"><paramref name="logger"/> is <see langword="null"/>.</exception>
         public LoggingScopeHttpMessageHandler(ILogger logger)
         {
-            ThrowHelper.ThrowIfNull(logger);
+            ArgumentNullException.ThrowIfNull(logger);
 
             _logger = logger;
         }
@@ -38,8 +38,8 @@ namespace Microsoft.Extensions.Http.Logging
         /// <exception cref="ArgumentNullException"><paramref name="logger"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
         public LoggingScopeHttpMessageHandler(ILogger logger, HttpClientFactoryOptions options)
         {
-            ThrowHelper.ThrowIfNull(logger);
-            ThrowHelper.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(logger);
+            ArgumentNullException.ThrowIfNull(options);
 
             _logger = logger;
             _options = options;
@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Http.Logging
 
         private Task<HttpResponseMessage> SendCoreAsync(HttpRequestMessage request, bool useAsync, CancellationToken cancellationToken)
         {
-            ThrowHelper.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(request);
             return Core(request, useAsync, cancellationToken);
 
             async Task<HttpResponseMessage> Core(HttpRequestMessage request, bool useAsync, CancellationToken cancellationToken)
@@ -59,16 +59,25 @@ namespace Microsoft.Extensions.Http.Logging
                 using (_logger.BeginRequestPipelineScope(request, out string? formattedUri))
                 {
                     _logger.LogRequestPipelineStart(request, formattedUri, shouldRedactHeaderValue);
-                    HttpResponseMessage response = useAsync
-                        ? await base.SendAsync(request, cancellationToken).ConfigureAwait(false)
-#if NET
-                        : base.Send(request, cancellationToken);
-#else
-                        : throw new NotImplementedException("Unreachable code");
-#endif
-                    _logger.LogRequestPipelineEnd(response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
 
-                    return response;
+                    try
+                    {
+                        HttpResponseMessage response = useAsync
+                            ? await base.SendAsync(request, cancellationToken).ConfigureAwait(false)
+#if NET
+                            : base.Send(request, cancellationToken);
+#else
+                            : throw new NotImplementedException("Unreachable code");
+#endif
+                        _logger.LogRequestPipelineEnd(response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
+
+                        return response;
+                    }
+                    catch (HttpRequestException ex)
+                    {
+                        _logger.LogRequestPipelineFailed(stopwatch.GetElapsedTime(), ex);
+                        throw;
+                    }
                 }
             }
         }

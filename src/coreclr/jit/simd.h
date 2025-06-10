@@ -330,18 +330,26 @@ struct simdmask_t
         return !(*this == other);
     }
 
-    static simdmask_t AllBitsSet()
+    static simdmask_t AllBitsSet(unsigned elementCount)
     {
+        assert((elementCount >= 1) && (elementCount <= 64));
         simdmask_t result;
 
-        result.u64[0] = 0xFFFFFFFFFFFFFFFF;
+        if (elementCount == 64)
+        {
+            result.u64[0] = 0xFFFFFFFFFFFFFFFF;
+        }
+        else
+        {
+            result.u64[0] = (1ULL << elementCount) - 1;
+        }
 
         return result;
     }
 
     bool IsAllBitsSet() const
     {
-        return *this == AllBitsSet();
+        return *this == AllBitsSet(64);
     }
 
     bool IsZero() const
@@ -362,6 +370,11 @@ typedef simd64_t simd_t;
 #else
 typedef simd16_t simd_t;
 #endif
+
+inline bool IsUnaryBitwiseOperation(genTreeOps oper)
+{
+    return (oper == GT_LZCNT) || (oper == GT_NOT);
+}
 
 template <typename TBase>
 TBase EvaluateUnaryScalarSpecialized(genTreeOps oper, TBase arg0)
@@ -404,27 +417,35 @@ TBase EvaluateUnaryScalarSpecialized(genTreeOps oper, TBase arg0)
 template <>
 inline float EvaluateUnaryScalarSpecialized<float>(genTreeOps oper, float arg0)
 {
-    if (oper == GT_NEG)
+    switch (oper)
     {
-        return -arg0;
-    }
+        case GT_NEG:
+        {
+            return -arg0;
+        }
 
-    uint32_t arg0Bits   = BitOperations::SingleToUInt32Bits(arg0);
-    uint32_t resultBits = EvaluateUnaryScalarSpecialized<uint32_t>(oper, arg0Bits);
-    return BitOperations::UInt32BitsToSingle(resultBits);
+        default:
+        {
+            unreached();
+        }
+    }
 }
 
 template <>
 inline double EvaluateUnaryScalarSpecialized<double>(genTreeOps oper, double arg0)
 {
-    if (oper == GT_NEG)
+    switch (oper)
     {
-        return -arg0;
-    }
+        case GT_NEG:
+        {
+            return -arg0;
+        }
 
-    uint64_t arg0Bits   = BitOperations::DoubleToUInt64Bits(arg0);
-    uint64_t resultBits = EvaluateUnaryScalarSpecialized<uint64_t>(oper, arg0Bits);
-    return BitOperations::UInt64BitsToDouble(resultBits);
+        default:
+        {
+            unreached();
+        }
+    }
 }
 
 template <typename TBase>
@@ -600,13 +621,37 @@ void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* 
     {
         case TYP_FLOAT:
         {
-            EvaluateUnarySimd<TSimd, float>(oper, scalar, result, arg0);
+            // Some operations are bitwise and we want to ensure inputs like
+            // sNaN are preserved rather than being converted to a qNaN when
+            // the CPU encounters them. So we check for and handle that early
+            // prior to extracting the element out of the vector value.
+
+            if (IsUnaryBitwiseOperation(oper))
+            {
+                EvaluateUnarySimd<TSimd, int32_t>(oper, scalar, result, arg0);
+            }
+            else
+            {
+                EvaluateUnarySimd<TSimd, float>(oper, scalar, result, arg0);
+            }
             break;
         }
 
         case TYP_DOUBLE:
         {
-            EvaluateUnarySimd<TSimd, double>(oper, scalar, result, arg0);
+            // Some operations are bitwise and we want to ensure inputs like
+            // sNaN are preserved rather than being converted to a qNaN when
+            // the CPU encounters them. So we check for and handle that early
+            // prior to extracting the element out of the vector value.
+
+            if (IsUnaryBitwiseOperation(oper))
+            {
+                EvaluateUnarySimd<TSimd, int64_t>(oper, scalar, result, arg0);
+            }
+            else
+            {
+                EvaluateUnarySimd<TSimd, double>(oper, scalar, result, arg0);
+            }
             break;
         }
 
@@ -663,6 +708,13 @@ void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* 
             unreached();
         }
     }
+}
+
+inline bool IsBinaryBitwiseOperation(genTreeOps oper)
+{
+    return (oper == GT_AND) || (oper == GT_AND_NOT) || (oper == GT_LSH) || (oper == GT_OR) || (oper == GT_OR_NOT) ||
+           (oper == GT_ROL) || (oper == GT_ROR) || (oper == GT_RSH) || (oper == GT_RSZ) || (oper == GT_XOR) ||
+           (oper == GT_XOR_NOT);
 }
 
 template <typename TBase>
@@ -799,6 +851,11 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
             return arg0 | arg1;
         }
 
+        case GT_OR_NOT:
+        {
+            return arg0 | ~arg1;
+        }
+
         case GT_ROL:
         {
             // Normalize the "rotate by" value
@@ -858,6 +915,11 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
             return arg0 ^ arg1;
         }
 
+        case GT_XOR_NOT:
+        {
+            return arg0 ^ ~arg1;
+        }
+
         default:
         {
             unreached();
@@ -902,11 +964,7 @@ inline float EvaluateBinaryScalarSpecialized<float>(genTreeOps oper, float arg0,
 
         default:
         {
-            uint32_t arg0Bits = BitOperations::SingleToUInt32Bits(arg0);
-            uint32_t arg1Bits = BitOperations::SingleToUInt32Bits(arg1);
-
-            uint32_t resultBits = EvaluateBinaryScalarSpecialized<uint32_t>(oper, arg0Bits, arg1Bits);
-            return BitOperations::UInt32BitsToSingle(resultBits);
+            unreached();
         }
     }
 }
@@ -948,11 +1006,7 @@ inline double EvaluateBinaryScalarSpecialized<double>(genTreeOps oper, double ar
 
         default:
         {
-            uint64_t arg0Bits = BitOperations::DoubleToUInt64Bits(arg0);
-            uint64_t arg1Bits = BitOperations::DoubleToUInt64Bits(arg1);
-
-            uint64_t resultBits = EvaluateBinaryScalarSpecialized<uint64_t>(oper, arg0Bits, arg1Bits);
-            return BitOperations::UInt64BitsToDouble(resultBits);
+            unreached();
         }
     }
 }
@@ -1188,13 +1242,37 @@ void EvaluateBinarySimd(
     {
         case TYP_FLOAT:
         {
-            EvaluateBinarySimd<TSimd, float>(oper, scalar, result, arg0, arg1);
+            // Some operations are bitwise and we want to ensure inputs like
+            // sNaN are preserved rather than being converted to a qNaN when
+            // the CPU encounters them. So we check for and handle that early
+            // prior to extracting the element out of the vector value.
+
+            if (IsBinaryBitwiseOperation(oper))
+            {
+                EvaluateBinarySimd<TSimd, int32_t>(oper, scalar, result, arg0, arg1);
+            }
+            else
+            {
+                EvaluateBinarySimd<TSimd, float>(oper, scalar, result, arg0, arg1);
+            }
             break;
         }
 
         case TYP_DOUBLE:
         {
-            EvaluateBinarySimd<TSimd, double>(oper, scalar, result, arg0, arg1);
+            // Some operations are bitwise and we want to ensure inputs like
+            // sNaN are preserved rather than being converted to a qNaN when
+            // the CPU encounters them. So we check for and handle that early
+            // prior to extracting the element out of the vector value.
+
+            if (IsBinaryBitwiseOperation(oper))
+            {
+                EvaluateBinarySimd<TSimd, int64_t>(oper, scalar, result, arg0, arg1);
+            }
+            else
+            {
+                EvaluateBinarySimd<TSimd, double>(oper, scalar, result, arg0, arg1);
+            }
             break;
         }
 
@@ -1342,7 +1420,7 @@ void EvaluateWithElementFloating(var_types simdBaseType, TSimd* result, const TS
 
         case TYP_DOUBLE:
         {
-            result->f64[arg1] = static_cast<float>(arg2);
+            result->f64[arg1] = arg2;
             break;
         }
 

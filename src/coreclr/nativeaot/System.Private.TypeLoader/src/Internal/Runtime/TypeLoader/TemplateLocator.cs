@@ -56,10 +56,6 @@ namespace Internal.Runtime.TypeLoader
                             continue;
                         }
 
-                        Debug.Assert(
-                            (kind != CanonicalFormKind.Universal) ||
-                            (kind == CanonicalFormKind.Universal && candidateTemplate == candidateTemplate.ConvertToCanonForm(kind)));
-
                         nativeLayoutInfoModule = moduleInfo;
                         return candidateTemplate;
                     }
@@ -125,10 +121,6 @@ namespace Internal.Runtime.TypeLoader
                             TypeLoaderLogger.WriteLine("ERROR: template not fixed up, skipping");
                             continue;
                         }
-
-                        Debug.Assert(
-                            (kind != CanonicalFormKind.Universal) ||
-                            (kind == CanonicalFormKind.Universal && candidateTemplate == candidateTemplate.GetCanonMethodTarget(kind)));
 
                         return candidateTemplate;
                     }

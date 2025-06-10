@@ -14,7 +14,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>Gets the system's page size.</summary>
         protected static Lazy<int> s_pageSize = new Lazy<int>(() =>
         {
-            if (OperatingSystem.IsBrowser())
+            if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                 return Environment.SystemPageSize;
 
             int pageSize;

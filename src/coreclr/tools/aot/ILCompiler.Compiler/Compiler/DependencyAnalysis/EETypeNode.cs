@@ -253,7 +253,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (!_type.HasInstantiation)
+                if (_type.IsArrayTypeWithoutGenericInterfaces())
                     return false;
 
                 if (!_type.Context.SupportsCanon)
@@ -263,16 +263,12 @@ namespace ILCompiler.DependencyAnalysis
                 if (_type.IsCanonicalSubtype(CanonicalFormKind.Any))
                     return false;
 
-                // If we reach here, a universal canon variant can exist (if universal canon is supported)
-                if (_type.Context.SupportsUniversalCanon)
-                    return true;
-
                 // Attempt to convert to canon. If the type changes, then the CanonForm exists
                 return (_type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type);
             }
         }
 
-        public sealed override bool HasConditionalStaticDependencies
+        public override bool HasConditionalStaticDependencies
         {
             get
             {
@@ -323,7 +319,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public sealed override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
             List<CombinedDependencyListEntry> result = new List<CombinedDependencyListEntry>();
 
@@ -337,9 +333,6 @@ namespace ILCompiler.DependencyAnalysis
                 if (CanonFormTypeMayExist)
                 {
                     result.Add(new CombinedDependencyListEntry(maximallyConstructableType, factory.MaximallyConstructableType(_type.ConvertToCanonForm(CanonicalFormKind.Specific)), "Trigger full type generation if canonical form exists"));
-
-                    if (_type.Context.SupportsUniversalCanon)
-                        result.Add(new CombinedDependencyListEntry(maximallyConstructableType, factory.MaximallyConstructableType(_type.ConvertToCanonForm(CanonicalFormKind.Universal)), "Trigger full type generation if universal canonical form exists"));
                 }
                 return result;
             }
@@ -353,7 +346,7 @@ namespace ILCompiler.DependencyAnalysis
                     "Information about static bases for type with template"));
             }
 
-            if (!_type.IsGenericDefinition && !_type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            if (!_type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 foreach (DefType iface in _type.RuntimeInterfaces)
                 {
@@ -400,10 +393,10 @@ namespace ILCompiler.DependencyAnalysis
 
                         // If this is an abstract type, only request a tentative entrypoint (whose body
                         // might just be stubbed out). This lets us avoid generating method bodies for
-                        // virtual method on abstract types that are overriden in all their children.
+                        // virtual method on abstract types that are overridden in all their children.
                         //
                         // We don't do this if the method can be placed in the sealed vtable since
-                        // those can never be overriden by children anyway.
+                        // those can never be overridden by children anyway.
                         bool canUseTentativeMethod = isNonInterfaceAbstractType
                             && !decl.CanMethodBeInSealedVTable(factory)
                             && factory.CompilationModuleGroup.AllowVirtualMethodOnAbstractTypeOptimization(canonImpl);
@@ -539,10 +532,10 @@ namespace ILCompiler.DependencyAnalysis
                                 if (!isStaticInterfaceMethod && defaultIntfMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                                 {
                                     // Canonical instance default methods need to go through a thunk that adds the right generic context
-                                    defaultIntfMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(defaultIntfMethod, defType.ConvertToCanonForm(CanonicalFormKind.Specific), providingInterfaceDefinitionType);
+                                    defaultIntfMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(defaultIntfMethod, defType.ConvertToCanonForm(CanonicalFormKind.Specific), providingInterfaceDefinitionType, out int providingInterfaceIndex);
 
                                     // The above thunk will index into interface list to find the right context. Make sure to keep all interfaces prior to this one
-                                    for (int i = 0; i < interfaceIndex; i++)
+                                    for (int i = 0; i <= providingInterfaceIndex; i++)
                                     {
                                         result.Add(new CombinedDependencyListEntry(
                                             factory.InterfaceUse(defTypeRuntimeInterfaces[i].GetTypeDefinition()),
@@ -635,8 +628,6 @@ namespace ILCompiler.DependencyAnalysis
                 if ((_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.NeedsGvmEntries) != 0)
                 {
                     dependencies.Add(new DependencyListEntry(factory.TypeGVMEntries(_type.GetTypeDefinition()), "Type with generic virtual methods"));
-
-                    AddDependenciesForUniversalGVMSupport(factory, _type, ref dependencies);
 
                     TypeDesc canonicalType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
                     if (canonicalType != _type)
@@ -805,16 +796,9 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.IsArray)
             {
                 TypeDesc elementType = ((ArrayType)_type).ElementType;
-                if (elementType == elementType.Context.UniversalCanonType)
-                {
-                    // elementSize == 0
-                }
-                else
-                {
-                    int elementSize = elementType.GetElementSize().AsInt;
-                    // We validated that this will fit the short when the node was constructed. No need for nice messages.
-                    flags |= (uint)checked((ushort)elementSize);
-                }
+                int elementSize = elementType.GetElementSize().AsInt;
+                // We validated that this will fit the short when the node was constructed. No need for nice messages.
+                flags |= (uint)checked((ushort)elementSize);
             }
             else if (_type.IsString)
             {
@@ -943,9 +927,7 @@ namespace ILCompiler.DependencyAnalysis
                     declType.ConvertToCanonForm(CanonicalFormKind.Specific) == declType;
 
                 // Note: Canonical type instantiations always have a generic dictionary vtable slot, but it's empty
-                // Note: If the current EETypeNode represents a universal canonical type, any dictionary slot must be empty
                 if (declType.IsCanonicalSubtype(CanonicalFormKind.Any)
-                    || implType.IsCanonicalSubtype(CanonicalFormKind.Universal)
                     || factory.LazyGenericsPolicy.UsesLazyGenerics(declType)
                     || isInterfaceWithAnEmptySlot)
                 {
@@ -1031,7 +1013,7 @@ namespace ILCompiler.DependencyAnalysis
                     // If the type we're generating now is abstract, and the implementation comes from an abstract type,
                     // only use a tentative method entrypoint that can have its body replaced by a throwing stub
                     // if no "hard" reference to that entrypoint exists in the program.
-                    // This helps us to eliminate method bodies for virtual methods on abstract types that are fully overriden
+                    // This helps us to eliminate method bodies for virtual methods on abstract types that are fully overridden
                     // in the children of that abstract type.
                     bool canUseTentativeEntrypoint = implType is MetadataType mdImplType && mdImplType.IsAbstract && !mdImplType.IsInterface
                         && implMethod.OwningType is MetadataType mdImplMethodType && mdImplMethodType.IsAbstract
@@ -1135,7 +1117,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (!_type.IsTypeDefinition)
                 {
-                    IEETypeNode typeDefNode = factory.NecessaryTypeSymbol(_type.GetTypeDefinition());
+                    IEETypeNode typeDefNode = factory.MaximallyConstructableType(_type) == this ?
+                        factory.ConstructedTypeSymbol(_type.GetTypeDefinition()) : factory.NecessaryTypeSymbol(_type.GetTypeDefinition());
                     if (factory.Target.SupportsRelativePointers)
                         objData.EmitReloc(typeDefNode, RelocType.IMAGE_REL_BASED_RELPTR32);
                     else
@@ -1231,32 +1214,6 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> MethodTable");
         }
 
-        protected static void AddDependenciesForUniversalGVMSupport(NodeFactory factory, TypeDesc type, ref DependencyList dependencies)
-        {
-            if (factory.TypeSystemContext.SupportsUniversalCanon)
-            {
-                foreach (MethodDesc method in type.GetVirtualMethods())
-                {
-                    if (!method.HasInstantiation)
-                        continue;
-
-                    if (method.IsAbstract)
-                        continue;
-
-                    TypeDesc[] universalCanonArray = new TypeDesc[method.Instantiation.Length];
-                    for (int i = 0; i < universalCanonArray.Length; i++)
-                        universalCanonArray[i] = factory.TypeSystemContext.UniversalCanonType;
-
-                    InstantiatedMethod universalCanonMethodNonCanonicalized = method.MakeInstantiatedMethod(new Instantiation(universalCanonArray));
-                    MethodDesc universalCanonGVMMethod = universalCanonMethodNonCanonicalized.GetCanonMethodTarget(CanonicalFormKind.Universal);
-
-                    dependencies ??= new DependencyList();
-
-                    dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(universalCanonGVMMethod), "USG GVM Method"));
-                }
-            }
-        }
-
         public override int ClassCode => 1521789141;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
@@ -1312,7 +1269,8 @@ namespace ILCompiler.DependencyAnalysis
                 // If the whole program view contains a reference to a preallocated RuntimeType
                 // instance for this type, generate a reference to it.
                 // Otherwise, generate as zero to save size.
-                if (!_type.Type.IsCanonicalSubtype(CanonicalFormKind.Any)
+                if (!relocsOnly
+                    && !_type.Type.IsCanonicalSubtype(CanonicalFormKind.Any)
                     && _type.GetFrozenRuntimeTypeNode(factory) is { Marked: true } runtimeTypeObject)
                 {
                     builder.EmitPointerReloc(runtimeTypeObject);

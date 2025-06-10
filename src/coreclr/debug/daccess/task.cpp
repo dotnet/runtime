@@ -11,20 +11,6 @@
 
 #include "stdafx.h"
 
-// XXX Microsoft - Why aren't these extra MD APIs in a header?
-STDAPI GetMDPublicInterfaceFromInternal(
-   void        *pIUnkPublic,           // [IN] Given scope.
-   REFIID      riid,                   // [in] The interface desired.
-   void        **ppIUnkInternal);      // [out] Return interface on success.
-
-STDAPI  GetMetaDataPublicInterfaceFromInternal(
-    void        *pv,                    // [IN] Given interface.
-    REFIID      riid,                   // [IN] desired interface.
-    void        **ppv)                  // [OUT] returned interface
-{
-    return GetMDPublicInterfaceFromInternal(pv, riid, ppv);
-}
-
 //----------------------------------------------------------------------------
 //
 // ClrDataTask.
@@ -713,30 +699,21 @@ ClrDataAppDomain::GetName(
 
     EX_TRY
     {
-        bool isUtf8;
-        PVOID rawName = m_appDomain->GetFriendlyNameNoSet(&isUtf8);
+        LPCWSTR rawName = m_appDomain->GetFriendlyName();
         if (rawName)
         {
-            if (isUtf8)
+            status = StringCchCopy(name, bufLen, rawName) == S_OK ?
+                S_OK : S_FALSE;
+            if (nameLen)
             {
-                status = ConvertUtf8((LPCUTF8)rawName,
-                                     bufLen, nameLen, name);
-            }
-            else
-            {
-                status = StringCchCopy(name, bufLen, (PCWSTR)rawName) == S_OK ?
-                    S_OK : S_FALSE;
-                if (nameLen)
+                size_t cchName = u16_strlen(rawName) + 1;
+                if (FitsIn<ULONG32>(cchName))
                 {
-                    size_t cchName = u16_strlen((PCWSTR)rawName) + 1;
-                    if (FitsIn<ULONG32>(cchName))
-                    {
-                        *nameLen = (ULONG32) cchName;
-                    }
-                    else
-                    {
-                        status = COR_E_OVERFLOW;
-                    }
+                    *nameLen = (ULONG32) cchName;
+                }
+                else
+                {
+                    status = COR_E_OVERFLOW;
                 }
             }
         }
@@ -3645,7 +3622,7 @@ ClrDataMethodDefinition::NewFromModule(ClrDataAccess* dac,
         return E_OUTOFMEMORY;
     }
 
-    PREFIX_ASSUME(methDef || pubMethDef);
+    _ASSERTE(methDef || pubMethDef);
 
     if (methDef)
     {
@@ -4457,7 +4434,7 @@ ClrDataMethodInstance::NewFromModule(ClrDataAccess* dac,
         return E_OUTOFMEMORY;
     }
 
-    PREFIX_ASSUME(methInst || pubMethInst);
+    _ASSERTE(methInst || pubMethInst);
 
     if (methInst)
     {
@@ -4965,7 +4942,7 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
         return E_OUTOFMEMORY;
     }
 
-    PREFIX_ASSUME(exception || pubException);
+    _ASSERTE(exception || pubException);
 
     if (exception)
     {
@@ -5205,8 +5182,8 @@ EnumMethodInstances::Next(ClrDataAccess* dac,
  NextMethod:
     {
         // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        if (!m_methodIter.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        if (!m_methodIter.Next(pAssembly.This()))
         {
             return S_FALSE;
         }

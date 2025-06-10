@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Configuration.CommandLine
 {
     /// <summary>
-    /// Represents command line arguments as an <see cref="IConfigurationSource"/>.
+    /// Represents command-line arguments as an <see cref="IConfigurationSource"/>.
     /// </summary>
     public class CommandLineConfigurationSource : IConfigurationSource
     {
@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
         public IDictionary<string, string>? SwitchMappings { get; set; }
 
         /// <summary>
-        /// Gets or sets the command line args.
+        /// Gets or sets the command line arguments.
         /// </summary>
         public IEnumerable<string> Args { get; set; } = Array.Empty<string>();
 
@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
         /// Builds the <see cref="CommandLineConfigurationProvider"/> for this source.
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
-        /// <returns>A <see cref="CommandLineConfigurationProvider"/></returns>
+        /// <returns>A <see cref="CommandLineConfigurationProvider"/>.</returns>
         public IConfigurationProvider Build(IConfigurationBuilder builder)
         {
             return new CommandLineConfigurationProvider(Args, SwitchMappings);

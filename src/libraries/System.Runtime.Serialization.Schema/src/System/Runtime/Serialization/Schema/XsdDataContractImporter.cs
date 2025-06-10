@@ -88,7 +88,7 @@ namespace System.Runtime.Serialization
         /// Transforms the specified set of schema types contained in an <see cref="XmlSchemaSet"/> into CLR types generated into a <see cref="System.CodeDom.CodeCompileUnit"/>.
         /// </summary>
         /// <param name="schemas">A <see cref="XmlSchemaSet"/> that contains the schema representations.</param>
-        /// <param name="typeNames">A <see cref="ICollection{T}"/> (of <see cref="XmlQualifiedName"/>) that represents the set of schema types to import.</param>
+        /// <param name="typeNames">The set of schema types to import.</param>
         [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         public void Import(XmlSchemaSet schemas, ICollection<XmlQualifiedName> typeNames)
         {
@@ -145,7 +145,7 @@ namespace System.Runtime.Serialization
         /// Gets a value that indicates whether the schemas contained in an <see cref="XmlSchemaSet"/> can be transformed into a <see cref="System.CodeDom.CodeCompileUnit"/>.
         /// </summary>
         /// <param name="schemas">A <see cref="XmlSchemaSet"/> that contains the schemas to transform.</param>
-        /// <returns>true if the schemas can be transformed to data contract types; otherwise, false.</returns>
+        /// <returns><see langword="true" /> if the schemas can be transformed to data contract types; otherwise, <see langword="false" />.</returns>
         [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         public bool CanImport(XmlSchemaSet schemas)
         {
@@ -158,9 +158,9 @@ namespace System.Runtime.Serialization
         /// <summary>
         /// Gets a value that indicates whether the specified set of types contained in an <see cref="XmlSchemaSet"/> can be transformed into CLR types generated into a <see cref="System.CodeDom.CodeCompileUnit"/>.
         /// </summary>
-        /// <param name="schemas">A <see cref="XmlSchemaSet"/> that contains the schemas to transform.</param>
-        /// <param name="typeNames">An <see cref="ICollection{T}"/> of <see cref="XmlQualifiedName"/> that represents the set of schema types to import.</param>
-        /// <returns>true if the schemas can be transformed; otherwise, false.</returns>
+        /// <param name="schemas">The schemas to transform.</param>
+        /// <param name="typeNames">The set of schema types to import.</param>
+        /// <returns><see langword="true" /> if the schemas can be transformed; otherwise, <see langword="false" />.</returns>
         [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         public bool CanImport(XmlSchemaSet schemas, ICollection<XmlQualifiedName> typeNames)
         {
@@ -176,9 +176,9 @@ namespace System.Runtime.Serialization
         /// <summary>
         /// Gets a value that indicates whether the schemas contained in an <see cref="XmlSchemaSet"/> can be transformed into a <see cref="System.CodeDom.CodeCompileUnit"/>.
         /// </summary>
-        /// <param name="schemas">A <see cref="XmlSchemaSet"/> that contains the schema representations.</param>
-        /// <param name="typeName">An <see cref="XmlQualifiedName"/> that specifies the names of the schema types that need to be imported from the <see cref="XmlSchemaSet"/>.</param>
-        /// <returns>true if the schemas can be transformed to data contract types; otherwise, false.</returns>
+        /// <param name="schemas">The schema representations.</param>
+        /// <param name="typeName">The names of the schema types that need to be imported from the <see cref="XmlSchemaSet"/>.</param>
+        /// <returns><see langword="true" /> if the schemas can be transformed to data contract types; otherwise, <see langword="false" />.</returns>
         [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         public bool CanImport(XmlSchemaSet schemas, XmlQualifiedName typeName)
         {
@@ -196,7 +196,7 @@ namespace System.Runtime.Serialization
         /// </summary>
         /// <param name="schemas">An <see cref="XmlSchemaSet"/> to import.</param>
         /// <param name="element">A specific <see cref="XmlSchemaElement"/> to check in the set of schemas.</param>
-        /// <returns>true if the element can be imported; otherwise, false.</returns>
+        /// <returns><see langword="true" /> if the element can be imported; otherwise, <see langword="false" />.</returns>
         [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         public bool CanImport(XmlSchemaSet schemas, XmlSchemaElement element)
         {

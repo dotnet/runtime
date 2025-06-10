@@ -3,9 +3,7 @@
 
 #include "dfltcc_common.h"
 
-struct inflate_state Z_INTERNAL *PREFIX(dfltcc_alloc_inflate_state)(PREFIX3(streamp) strm);
 void Z_INTERNAL PREFIX(dfltcc_reset_inflate_state)(PREFIX3(streamp) strm);
-void Z_INTERNAL PREFIX(dfltcc_copy_inflate_state)(struct inflate_state *dst, const struct inflate_state *src);
 int Z_INTERNAL PREFIX(dfltcc_can_inflate)(PREFIX3(streamp) strm);
 typedef enum {
     DFLTCC_INFLATE_CONTINUE,
@@ -19,9 +17,6 @@ int Z_INTERNAL PREFIX(dfltcc_inflate_set_dictionary)(PREFIX3(streamp) strm,
                                                      const unsigned char *dictionary, uInt dict_length);
 int Z_INTERNAL PREFIX(dfltcc_inflate_get_dictionary)(PREFIX3(streamp) strm,
                                                      unsigned char *dictionary, uInt* dict_length);
-
-#define ZALLOC_INFLATE_STATE PREFIX(dfltcc_alloc_inflate_state)
-#define ZCOPY_INFLATE_STATE PREFIX(dfltcc_copy_inflate_state)
 
 #define INFLATE_RESET_KEEP_HOOK PREFIX(dfltcc_reset_inflate_state)
 
@@ -66,5 +61,7 @@ int Z_INTERNAL PREFIX(dfltcc_inflate_get_dictionary)(PREFIX3(streamp) strm,
         if (PREFIX(dfltcc_can_inflate)((strm))) \
             return PREFIX(dfltcc_inflate_get_dictionary)((strm), (dict), (dict_len)); \
     } while (0)
+
+#define INFLATE_ADJUST_WINDOW_SIZE(n) MAX(n, HB_SIZE)
 
 #endif

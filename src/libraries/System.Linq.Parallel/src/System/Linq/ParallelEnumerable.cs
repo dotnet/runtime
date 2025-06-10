@@ -66,7 +66,7 @@ namespace System.Linq
         // be executed in parallel, but will retain PLINQ semantics (exceptions wrapped as aggregates, etc).
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.SupportedOSPlatformGuard("browser")]
-        internal static bool SinglePartitionMode => OperatingSystem.IsBrowser();
+        internal static bool SinglePartitionMode => OperatingSystem.IsBrowser() || OperatingSystem.IsWasi();
 #else
         internal static bool SinglePartitionMode => false;
 #endif
@@ -1852,7 +1852,7 @@ namespace System.Linq
             // If the data source is a collection, we can just return the count right away.
             if (source is ParallelEnumerableWrapper<TSource> sourceAsWrapper)
             {
-                if (sourceAsWrapper.WrappedEnumerable is ICollection<TSource> sourceAsCollection)
+                if (sourceAsWrapper.WrappedEnumerable is IReadOnlyCollection<TSource> sourceAsCollection)
                 {
                     return sourceAsCollection.Count;
                 }
@@ -1923,7 +1923,7 @@ namespace System.Linq
             // If the data source is a collection, we can just return the count right away.
             if (source is ParallelEnumerableWrapper<TSource> sourceAsWrapper)
             {
-                if (sourceAsWrapper.WrappedEnumerable is ICollection<TSource> sourceAsCollection)
+                if (sourceAsWrapper.WrappedEnumerable is IReadOnlyCollection<TSource> sourceAsCollection)
                 {
                     return sourceAsCollection.Count;
                 }

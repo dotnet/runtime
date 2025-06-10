@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     throw new InvalidOperationException();
                 }
-                if (section.Value is string value)
+                if (section.Value is string value && !string.IsNullOrEmpty(value))
                 {
                     return ParseInt(value, section.Path);
                 }
@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     throw new InvalidOperationException();
                 }
-                if (section.Value is string value)
+                if (section.Value is string value && !string.IsNullOrEmpty(value))
                 {
                     return ParseFloat(value, section.Path);
                 }
@@ -101,7 +101,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     throw new InvalidOperationException();
                 }
-                if (section.Value is string value)
+                if (section.Value is string value && !string.IsNullOrEmpty(value))
                 {
                     return ParseDouble(value, section.Path);
                 }

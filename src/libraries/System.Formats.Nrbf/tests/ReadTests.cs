@@ -8,6 +8,40 @@ namespace System.Formats.Nrbf.Tests;
 [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
 public abstract class ReadTests
 {
+    public static bool IsPatched
+#if NET
+        => true;
+#else
+        => s_isPatched.Value;
+
+    private static readonly Lazy<bool> s_isPatched = new(GetIsPatched);
+
+    private static bool GetIsPatched()
+    {
+        Tuple<IComparable, object> tuple = new Tuple<IComparable, object>(42, new byte[] { 1, 2, 3, 4 });
+#pragma warning disable SYSLIB0011 // Type or member is obsolete
+        BinaryFormatter formatter = new();
+#pragma warning restore SYSLIB0011 // Type or member is obsolete
+        using MemoryStream stream = new();
+
+        // This particular scenario is going to throw on Full Framework
+        // if given machine has not installed the July 2024 cumulative update preview:
+        // https://learn.microsoft.com/dotnet/framework/release-notes/2024/07-25-july-preview-cumulative-update
+
+        try
+        {
+            formatter.Serialize(stream, tuple);
+            stream.Position = 0;
+            Tuple<IComparable, object> deserialized = (Tuple<IComparable, object>)formatter.Deserialize(stream);
+            return tuple.Item1.Equals(deserialized.Item1);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+#endif
+
     protected static MemoryStream Serialize<T>(T instance) where T : notnull
     {
         MemoryStream ms = new();
@@ -45,10 +79,10 @@ public abstract class ReadTests
         };
 #pragma warning restore SYSLIB0011 // Type or member is obsolete
 
-    protected static void WriteSerializedStreamHeader(BinaryWriter writer, int major = 1, int minor = 0)
+    protected static void WriteSerializedStreamHeader(BinaryWriter writer, int major = 1, int minor = 0, int rootId = 1)
     {
         writer.Write((byte)SerializationRecordType.SerializedStreamHeader);
-        writer.Write(1); // root ID
+        writer.Write(rootId); // root ID
         writer.Write(1); // header ID
         writer.Write(major); // major version
         writer.Write(minor); // minor version

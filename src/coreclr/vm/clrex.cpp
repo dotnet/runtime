@@ -648,7 +648,6 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
         GCPROTECT_BEGIN (throwable);
         EX_TRY
         {
-            SCAN_IGNORE_FAULT;
             if (throwable != NULL  && !CLRException::IsPreallocatedExceptionObject(throwable))
             {
                 _ASSERTE(IsException(throwable->GetMethodTable()));
@@ -844,16 +843,6 @@ void CLRException::HandlerState::SetupCatch(INDEBUG_COMMA(_In_z_ const char * sz
             }
         }
     }
-
-#ifdef FEATURE_EH_FUNCLETS
-    if (!DidCatchCxx() && !g_isNewExceptionHandlingEnabled)
-    {
-        // this must be done after the second pass has run, it does not
-        // reference anything on the stack, so it is safe to run in an
-        // SEH __except clause as well as a C++ catch clause.
-        ExceptionTracker::PopTrackers(this);
-    }
-#endif // FEATURE_EH_FUNCLETS
 }
 
 #ifdef LOGGING

@@ -10,7 +10,7 @@ using System.IO;
 namespace System.Text.RegularExpressions.Symbolic
 {
 #if DEBUG
-    /// <summary>Utility for generating unicode category ranges and corresponing binary decision diagrams.</summary>
+    /// <summary>Utility for generating unicode category ranges and corresponding binary decision diagrams.</summary>
     [ExcludeFromCodeCoverage(Justification = "Used from tests to generate src data files")]
     internal static class UnicodeCategoryRangesGenerator
     {
@@ -96,12 +96,15 @@ namespace {namespacename}
 
             static void WriteByteArrayInitSyntax(StreamWriter sw, byte[] values)
             {
-                sw.Write("new byte[] {");
-                for (int i = 0; i < values.Length; i++)
+                sw.Write("[");
+                sw.Write($"0x{values[0]:X}");
+
+                for (int i = 1; i < values.Length; i++)
                 {
-                    sw.Write($" 0x{values[i]:X},");
+                    sw.Write($", 0x{values[i]:X}");
                 }
-                sw.Write(" }");
+
+                sw.Write("]");
             }
         }
 

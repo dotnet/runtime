@@ -7,6 +7,7 @@
 #include "stdafx.h"
 
 #include "corerror.h"
+#include "stgpool.h"
 
 
 //*****************************************************************************
@@ -106,21 +107,6 @@ STDMETHODIMP CCeeGen::EmitString (_In_ LPWSTR lpString, ULONG *RVA)
         IfFailGo(E_POINTER);
     hr = getStringSection().getEmittedStringRef(lpString, RVA);
 ErrExit:
-    return hr;
-}
-
-STDMETHODIMP CCeeGen::GetString(ULONG RVA, __inout LPWSTR *lpString)
-{
-    HRESULT hr = E_FAIL;
-
-    if (! lpString)
-        IfFailGo(E_POINTER);
-    *lpString = (LPWSTR)getStringSection().computePointer(RVA);
-
-
-ErrExit:
-    if (*lpString)
-        return S_OK;
     return hr;
 }
 
@@ -399,9 +385,10 @@ HRESULT CCeeGen::emitMetaData(IMetaDataEmit *emitter, CeeSection* section, DWORD
 {
     HRESULT hr = S_OK;
 
-    ReleaseHolder<IStream> metaStream(NULL);
+    ReleaseHolder<IStream> metaStream(new(std::nothrow) CGrowableStream());
 
-    IfFailRet((HRESULT)CreateStreamOnHGlobal(NULL, TRUE, &metaStream));
+    if (metaStream == NULL)
+        return E_OUTOFMEMORY;
 
     if (! m_fTokenMapSupported) {
         IUnknown *pMapTokenIface;
@@ -437,7 +424,7 @@ HRESULT CCeeGen::emitMetaData(IMetaDataEmit *emitter, CeeSection* section, DWORD
         IfFailGoto((HRESULT)metaStream->Seek(disp, STREAM_SEEK_SET, NULL), Exit);
     }
     ULONG metaDataLen;
-    IfFailGoto((HRESULT)metaStream->Read(buffer, buffLen+1, &metaDataLen), Exit);
+    IfFailGoto((HRESULT)metaStream->Read(buffer, buffLen, &metaDataLen), Exit);
 
     _ASSERTE(metaDataLen <= buffLen);
 

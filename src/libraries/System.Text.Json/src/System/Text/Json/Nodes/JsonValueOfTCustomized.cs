@@ -28,10 +28,7 @@ namespace System.Text.Json.Nodes
 
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
-            if (writer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             JsonTypeInfo<TValue> jsonTypeInfo = _jsonTypeInfo;
 
@@ -54,7 +51,7 @@ namespace System.Text.Json.Nodes
             {
                 WriteTo(writer);
                 writer.Flush();
-                Utf8JsonReader reader = new(output.WrittenMemory.Span);
+                Utf8JsonReader reader = new(output.WrittenSpan);
                 bool success = reader.Read();
                 Debug.Assert(success);
                 return JsonReaderHelper.ToValueKind(reader.TokenType);

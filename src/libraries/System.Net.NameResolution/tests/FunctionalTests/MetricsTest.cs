@@ -12,6 +12,7 @@ using Xunit;
 
 namespace System.Net.NameResolution.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Wasi, "WASI doesn't have event source yet")]
     public class MetricsTest
     {
         private const string DnsLookupDuration = "dns.lookup.duration";

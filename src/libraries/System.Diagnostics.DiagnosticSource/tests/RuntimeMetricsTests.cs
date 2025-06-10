@@ -49,7 +49,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         private readonly ITestOutputHelper _output = output;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         public void GcCollectionsCount()
         {
             using InstrumentRecorder<long> instrumentRecorder = new("dotnet.gc.collections");
@@ -158,7 +158,7 @@ namespace System.Diagnostics.Metrics.Tests
            }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         public void ExceptionsCount()
         {
             // We inject an exception into the MeterListener callback here, so we can test that we don't recursively record exceptions.
@@ -271,7 +271,7 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Theory]
         [InlineData("dotnet.gc.last_collection.heap.size")]
         [InlineData("dotnet.gc.last_collection.heap.fragmentation.size")]
         public void HeapTags(string metricName) => EnsureAllHeapTags(metricName);
@@ -287,13 +287,6 @@ namespace System.Diagnostics.Metrics.Tests
 
             instrumentRecorder.RecordObservableInstruments();
             var measurements = instrumentRecorder.GetMeasurements();
-
-            if (GC.GetGCMemoryInfo().Index == 0)
-            {
-                // No GC has occurred which can be the case on some platforms.
-                Assert.Empty(measurements);
-                return;
-            }
 
             bool[] foundGenerations = new bool[s_genNames.Length];
             for (int i = 0; i < 5; i++)

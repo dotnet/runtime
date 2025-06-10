@@ -69,7 +69,7 @@ namespace System.Collections.Generic
                 // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
                 // hash buckets become unbalanced.
                 if (typeof(T) == typeof(string) &&
-                    NonRandomizedStringEqualityComparer.GetStringComparer(_comparer!) is IEqualityComparer<string> stringComparer)
+                    NonRandomizedStringEqualityComparer.GetStringComparer(_comparer) is IEqualityComparer<string> stringComparer)
                 {
                     _comparer = (IEqualityComparer<T>)stringComparer;
                 }
@@ -92,7 +92,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
             }
 
-            if (collection is HashSet<T> otherAsHashSet && EqualityComparersAreEqual(this, otherAsHashSet))
+            if (collection is HashSet<T> otherAsHashSet && EffectiveEqualityComparersAreEqual(this, otherAsHashSet))
             {
                 ConstructFrom(otherAsHashSet);
             }
@@ -100,7 +100,7 @@ namespace System.Collections.Generic
             {
                 // To avoid excess resizes, first set size based on collection's count. The collection may
                 // contain duplicates, so call TrimExcess if resulting HashSet is larger than the threshold.
-                if (collection is ICollection<T> coll)
+                if (collection is IReadOnlyCollection<T> coll)
                 {
                     int count = coll.Count;
                     if (count > 0)
@@ -145,6 +145,8 @@ namespace System.Collections.Generic
         /// <summary>Initializes the HashSet from another HashSet with the same element type and equality comparer.</summary>
         private void ConstructFrom(HashSet<T> source)
         {
+            Debug.Assert(EffectiveEqualityComparersAreEqual(this, source), "must use identical effective comparers.");
+
             if (source.Count == 0)
             {
                 // As well as short-circuiting on the rest of the work done,
@@ -827,7 +829,7 @@ namespace System.Collections.Generic
             }
 
             // If other is known to be empty, intersection is empty set; remove all elements, and we're done.
-            if (other is ICollection<T> otherAsCollection)
+            if (other is IReadOnlyCollection<T> otherAsCollection)
             {
                 if (otherAsCollection.Count == 0)
                 {
@@ -931,7 +933,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            if (other is ICollection<T> otherAsCollection)
+            if (other is IReadOnlyCollection<T> otherAsCollection)
             {
                 // If this has more elements then it can't be a subset.
                 if (Count > otherAsCollection.Count)
@@ -967,7 +969,7 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            if (other is ICollection<T> otherAsCollection)
+            if (other is IReadOnlyCollection<T> otherAsCollection)
             {
                 // No set is a proper subset of a set with less or equal number of elements.
                 if (otherAsCollection.Count <= Count)
@@ -1012,7 +1014,7 @@ namespace System.Collections.Generic
             }
 
             // Try to fall out early based on counts.
-            if (other is ICollection<T> otherAsCollection)
+            if (other is IReadOnlyCollection<T> otherAsCollection)
             {
                 // If other is the empty set then this is a superset.
                 if (otherAsCollection.Count == 0)
@@ -1056,7 +1058,7 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            if (other is ICollection<T> otherAsCollection)
+            if (other is IReadOnlyCollection<T> otherAsCollection)
             {
                 // If other is the empty set then this is a superset.
                 if (otherAsCollection.Count == 0)
@@ -1131,7 +1133,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            if (other is ICollection<T> otherAsCollection)
+            if (other is IReadOnlyCollection<T> otherAsCollection)
             {
                 // If this is empty, they are equal iff other is empty.
                 if (Count == 0)
@@ -1249,6 +1251,11 @@ namespace System.Collections.Generic
                 }
             }
         }
+
+        /// <summary>
+        /// Similar to <see cref="Comparer"/> but surfaces the actual comparer being used to hash entries.
+        /// </summary>
+        internal IEqualityComparer<T> EffectiveComparer => _comparer ?? EqualityComparer<T>.Default;
 
         /// <summary>Ensures that this hash set can hold the specified number of elements without growing.</summary>
         public int EnsureCapacity(int capacity)
@@ -1563,7 +1570,7 @@ namespace System.Collections.Generic
         ///
         /// This attempts to allocate on the stack, if below StackAllocThreshold.
         /// </summary>
-        private unsafe void IntersectWithEnumerable(IEnumerable<T> other)
+        private void IntersectWithEnumerable(IEnumerable<T> other)
         {
             Debug.Assert(_buckets != null, "_buckets shouldn't be null; callers should check first");
 
@@ -1573,7 +1580,7 @@ namespace System.Collections.Generic
             int intArrayLength = BitHelper.ToIntArrayLength(originalCount);
 
             Span<int> span = stackalloc int[StackAllocThreshold];
-            BitHelper bitHelper = intArrayLength <= StackAllocThreshold ?
+            BitHelper bitHelper = (uint)intArrayLength <= StackAllocThreshold ?
                 new BitHelper(span.Slice(0, intArrayLength), clear: true) :
                 new BitHelper(new int[intArrayLength], clear: false);
 
@@ -1635,7 +1642,7 @@ namespace System.Collections.Generic
         ///
         /// </summary>
         /// <param name="other"></param>
-        private unsafe void SymmetricExceptWithEnumerable(IEnumerable<T> other)
+        private void SymmetricExceptWithEnumerable(IEnumerable<T> other)
         {
             int originalCount = _count;
             int intArrayLength = BitHelper.ToIntArrayLength(originalCount);
@@ -1768,7 +1775,13 @@ namespace System.Collections.Generic
         /// </summary>
         internal static bool EqualityComparersAreEqual(HashSet<T> set1, HashSet<T> set2) => set1.Comparer.Equals(set2.Comparer);
 
-#endregion
+        /// <summary>
+        /// Checks if effective equality comparers are equal. This is used for algorithms that
+        /// require that both collections use identical hashing implementations for their entries.
+        /// </summary>
+        internal static bool EffectiveEqualityComparersAreEqual(HashSet<T> set1, HashSet<T> set2) => set1.EffectiveComparer.Equals(set2.EffectiveComparer);
+
+        #endregion
 
         private struct Entry
         {

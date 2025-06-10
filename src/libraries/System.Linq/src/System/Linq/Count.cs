@@ -15,17 +15,15 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is ICollection<TSource> collectionoft)
+            if (source is IReadOnlyCollection<TSource> collectionoft)
             {
                 return collectionoft.Count;
             }
 
-#if !OPTIMIZE_FOR_SIZE
-            if (source is Iterator<TSource> iterator)
+            if (!IsSizeOptimized && source is Iterator<TSource> iterator)
             {
                 return iterator.GetCount(onlyIfCheap: false);
             }
-#endif
 
             if (source is ICollection collection)
             {
@@ -33,14 +31,12 @@ namespace System.Linq
             }
 
             int count = 0;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            checked
             {
-                checked
+                while (e.MoveNext())
                 {
-                    while (e.MoveNext())
-                    {
-                        count++;
-                    }
+                    count++;
                 }
             }
 
@@ -111,14 +107,13 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is ICollection<TSource> collectionoft)
+            if (source is IReadOnlyCollection<TSource> collectionoft)
             {
                 count = collectionoft.Count;
                 return true;
             }
 
-#if !OPTIMIZE_FOR_SIZE
-            if (source is Iterator<TSource> iterator)
+            if (!IsSizeOptimized && source is Iterator<TSource> iterator)
             {
                 int c = iterator.GetCount(onlyIfCheap: true);
                 if (c >= 0)
@@ -127,7 +122,6 @@ namespace System.Linq
                     return true;
                 }
             }
-#endif
 
             if (source is ICollection collection)
             {
@@ -150,12 +144,10 @@ namespace System.Linq
             // the source can't possibly be something from which we can extract a span.
 
             long count = 0;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            while (e.MoveNext())
             {
-                while (e.MoveNext())
-                {
-                    checked { count++; }
-                }
+                checked { count++; }
             }
 
             return count;

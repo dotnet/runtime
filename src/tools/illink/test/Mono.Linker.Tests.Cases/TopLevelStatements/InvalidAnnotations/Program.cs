@@ -8,7 +8,6 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 Test ();
 
-[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 [Kept]
 static void Test () {
     RequireAll (GetUnsupportedType ());

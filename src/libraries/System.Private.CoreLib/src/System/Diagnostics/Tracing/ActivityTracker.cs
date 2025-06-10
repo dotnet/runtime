@@ -144,7 +144,7 @@ namespace System.Diagnostics.Tracing
                 ActivityInfo? currentActivity = m_current.Value;
                 ActivityInfo? newCurrentActivity = null;               // if we have seen any live activities (orphans), at he first one we have seen.
 
-                // Search to find the activity to stop in one pass.   This insures that we don't let one mistake
+                // Search to find the activity to stop in one pass.   This ensures that we don't let one mistake
                 // (stopping something that was not started) cause all active starts to be stopped
                 // By first finding the target start to stop we are more robust.
                 ActivityInfo? activityToStop = FindActiveActivity(fullActivityName, currentActivity);
@@ -464,6 +464,7 @@ namespace System.Diagnostics.Tracing
                         {
                             // Indicate this is a 1 byte multicode with 4 high order bits in the lower nibble.
                             *ptr = (byte)(((uint)NumberListCodes.MultiByte1 << 4) + (id >> 8));
+                            len--;          // The id's 4 high order bits were written into the multicode byte, so update the length.
                             id &= 0xFF;     // Now we only want the low order bits.
                         }
                         ptr++;

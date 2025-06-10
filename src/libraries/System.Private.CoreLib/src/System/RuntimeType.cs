@@ -93,7 +93,7 @@ namespace System
             return members ?? Array.Empty<MemberInfo>();
         }
 
-        public override Type GetElementType() => RuntimeTypeHandle.GetElementType(this);
+        public override Type? GetElementType() => RuntimeTypeHandle.GetElementType(this);
 
         public override string? GetEnumName(object value)
         {
@@ -254,10 +254,6 @@ namespace System
 
         protected override bool IsPointerImpl() => RuntimeTypeHandle.IsPointer(this);
 
-        protected override bool IsCOMObjectImpl() => RuntimeTypeHandle.IsComObject(this, false);
-
-        public override bool IsInstanceOfType([NotNullWhen(true)] object? o) => RuntimeTypeHandle.IsInstanceOfType(this, o);
-
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
             => typeInfo != null && IsAssignableFrom(typeInfo.AsType());
 
@@ -272,7 +268,6 @@ namespace System
             // For runtime type, let the VM decide.
             if (c.UnderlyingSystemType is RuntimeType fromType)
             {
-                // both this and c (or their underlying system types) are runtime types
                 return RuntimeTypeHandle.CanCastTo(fromType, this);
             }
 
@@ -304,7 +299,7 @@ namespace System
 
         [DebuggerStepThrough]
         [DebuggerHidden]
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object? InvokeMember(
             string name, BindingFlags bindingFlags, Binder? binder, object? target,
             object?[]? providedArgs, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParams)
@@ -452,7 +447,12 @@ namespace System
 
                 // Lookup Field
                 FieldInfo? selFld = null;
-                FieldInfo[]? flds = GetMember(name, MemberTypes.Field, bindingFlags) as FieldInfo[];
+                FieldInfo[]? flds = GetFields(this, name, bindingFlags);
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070",
+                    Justification = $"MemberTypes.Field is satisfied by ({nameof(InvokeMemberMembers)}) on this method")]
+                static FieldInfo[]? GetFields(RuntimeType thisType, string name, BindingFlags bindingFlags)
+                    => thisType.GetMember(name, MemberTypes.Field, bindingFlags) as FieldInfo[];
 
                 Debug.Assert(flds != null);
 
@@ -564,7 +564,13 @@ namespace System
             if ((bindingFlags & BindingFlags.InvokeMethod) != 0)
             {
                 // Lookup Methods
-                MethodInfo[] semiFinalists = (GetMember(name, MemberTypes.Method, bindingFlags) as MethodInfo[])!;
+                MethodInfo[] semiFinalists = GetMethods(this, name, bindingFlags)!;
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070",
+                    Justification = $"MemberTypes.Method is satisfied by ({nameof(InvokeMemberMembers)}) on this method")]
+                static MethodInfo[]? GetMethods(RuntimeType thisType, string name, BindingFlags bindingFlags)
+                    => thisType.GetMember(name, MemberTypes.Method, bindingFlags) as MethodInfo[];
+
                 List<MethodInfo>? results = null;
 
                 for (int i = 0; i < semiFinalists.Length; i++)
@@ -599,7 +605,13 @@ namespace System
             if (finalist == null && isGetProperty || isSetProperty)
             {
                 // Lookup Property
-                PropertyInfo[] semiFinalists = (GetMember(name, MemberTypes.Property, bindingFlags) as PropertyInfo[])!;
+                PropertyInfo[] semiFinalists = GetProperties(this, name, bindingFlags)!;
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070",
+                    Justification = $"MemberTypes.Property is satisfied by ({nameof(InvokeMemberMembers)}) on this method")]
+                static PropertyInfo[]? GetProperties(RuntimeType thisType, string name, BindingFlags bindingFlags)
+                    => thisType.GetMember(name, MemberTypes.Property, bindingFlags) as PropertyInfo[];
+
                 List<MethodInfo>? results = null;
 
                 for (int i = 0; i < semiFinalists.Length; i++)
@@ -672,6 +684,12 @@ namespace System
             throw new MissingMethodException(FullName, name);
         }
 
+        // Returns the type from which the current type directly inherits from with reflection quirks.
+        // The base type is null for interfaces, pointers, byrefs.
+        // The base type of a generic argument with a direct class constraint is the class constrain type, `System.Object` otherwise. For example:
+        // `class G1<T> where T:Stream`: `typeof(G1<>).GetGenericArguments()[0].BaseType` is Stream
+        // `class G2<T> where T:IDisposable`: typeof(G2<>).GetGenericArguments()[0].BaseType is Object
+        // `class G3<T,U> where T:U where U:Stream`: typeof(G3<,>).GetGenericArguments()[0].BaseType is Object (!)
         private RuntimeType? GetBaseType()
         {
             if (IsInterface)
@@ -712,7 +730,7 @@ namespace System
                 return baseType;
             }
 
-            return RuntimeTypeHandle.GetBaseType(this);
+            return GetParentType();
         }
 
         private static void ThrowIfTypeNeverValidGenericArgument(RuntimeType type)
@@ -737,25 +755,25 @@ namespace System
                     SR.Format(SR.Argument_NotEnoughGenArguments, genericArguments.Length, genericParameters.Length));
         }
 
-        internal static CorElementType GetUnderlyingType(RuntimeType type)
+        internal CorElementType GetUnderlyingCorElementType()
         {
+            RuntimeType type = this;
             if (type.IsActualEnum)
             {
                 type = (RuntimeType)Enum.GetUnderlyingType(type);
             }
 
-            return RuntimeTypeHandle.GetCorElementType(type);
+            return type.GetCorElementType();
         }
-
 
         // AggressiveInlining used since on hot path for reflection.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool TryGetByRefElementType(RuntimeType type, [NotNullWhen(true)] out RuntimeType? elementType)
         {
-            CorElementType corElemType = RuntimeTypeHandle.GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             if (corElemType == CorElementType.ELEMENT_TYPE_BYREF)
             {
-                elementType = RuntimeTypeHandle.GetElementType(type);
+                elementType = RuntimeTypeHandle.GetElementType(type)!;
                 return true;
             }
 

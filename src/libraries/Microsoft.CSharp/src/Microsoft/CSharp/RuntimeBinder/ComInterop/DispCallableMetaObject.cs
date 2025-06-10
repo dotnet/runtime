@@ -7,11 +7,12 @@ using System.Linq.Expressions;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
+    [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class DispCallableMetaObject : DynamicMetaObject
     {
         private readonly DispCallable _callable;
 
-        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal DispCallableMetaObject(Expression expression, DispCallable callable)
             : base(expression, BindingRestrictions.Empty, callable)
         {
@@ -30,8 +31,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 base.BindInvoke(binder, args);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         private DynamicMetaObject BindGetOrInvoke(DynamicMetaObject[] args, CallInfo callInfo)
         {
             IDispatchComObject target = _callable.DispatchComObject;
@@ -47,8 +46,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return null;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value)
         {
             IDispatchComObject target = _callable.DispatchComObject;
@@ -73,7 +70,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return base.BindSetIndex(binder, indexes, value);
         }
 
-        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private DynamicMetaObject BindComInvoke(ComMethodDesc method, DynamicMetaObject[] indexes, CallInfo callInfo, bool[] isByRef)
         {
             Expression callable = Expression;
@@ -93,7 +89,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             ).Invoke();
         }
 
-        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private BindingRestrictions DispCallableRestrictions()
         {
             Expression callable = Expression;

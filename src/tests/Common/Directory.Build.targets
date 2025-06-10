@@ -9,6 +9,7 @@
           Condition="'$(DisableVersionCheckImported)' != 'true'" />
 
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
+  <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
 
   <PropertyGroup>
     <GCStressDependsOnCoreDisTools>false</GCStressDependsOnCoreDisTools>
@@ -34,7 +35,7 @@
   </ItemDefinitionGroup>
 
   <Target Name="CopyDependencyToCoreRoot"
-          DependsOnTargets="ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
+    DependsOnTargets="ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
 
     <ItemGroup>
       <RunTimeDependencyCopyLocal Include="@(RuntimeCopyLocalItems)" />
@@ -81,7 +82,7 @@
       <RunTimeArtifactsIncludeFolders Include="IL/" TargetDir="IL/" />
 
       <!-- Used for Crossgen2 R2R tests -->
-      <RunTimeArtifactsIncludeFolders Include="crossgen2/" TargetDir="crossgen2/">
+      <RunTimeArtifactsIncludeFolders Include="crossgen2-published/" TargetDir="crossgen2/">
         <IncludeSubFolders>True</IncludeSubFolders>
       </RunTimeArtifactsIncludeFolders>
 
@@ -135,7 +136,7 @@
 
       <RunTimeDependencyCopyLocal
           Condition="'%(RuntimeArtifactsIncludeFolders.IncludeSubFolders)' == 'True'"
-          Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)**/*"
+          Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)**\*"
           Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
           TargetDir="%(RunTimeArtifactsIncludeFolders.TargetDir)" />
     </ItemGroup>
@@ -223,7 +224,7 @@
 
     <Copy
       SourceFiles="@(RunTimeDependencyCopyLocal)"
-      DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)/%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
+      DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)\%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
       SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
       OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
       Retries="$(CopyRetryCount)"

@@ -190,7 +190,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			class UnsupportedType
 			{
-				[UnexpectedWarning ("IL2082", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 				public UnsupportedType () {
 					RequirePublicFields (this);
 				}
@@ -199,9 +198,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static UnsupportedType GetUnsupportedTypeInstance () => null;
 
 			[ExpectedWarning ("IL2106")]
-			// Linker and NativeAot should not produce IL2073
-			// They produce dataflow warnings despite the invalid annotations.
-			[UnexpectedWarning ("IL2073", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101211")]
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			static UnsupportedType GetWithPublicMethods () {
 				return GetUnsupportedTypeInstance ();
@@ -214,13 +210,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 			static void TestMethodReturnValue () {
 				var t = GetWithPublicMethods ();
 				RequirePublicFields (t);
 			}
 
-			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 			static void TestCtorReturnValue () {
 				var t = new UnsupportedType ();
 				RequirePublicFields (t);
@@ -239,7 +233,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				{
 				}
 
-				[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 				public static void Test ()
 				{
 					var instance = new StringRefReturnValue ();

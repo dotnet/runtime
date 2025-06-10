@@ -25,11 +25,6 @@
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/abi-details.h>
 
-#ifndef HOST_WIN32
-#include <external/libunwind/include/remote/freebsd-elf32.h>
-#include <external/libunwind/include/remote/freebsd-elf64.h>
-#endif
-
 #include <mono/utils/freebsd-dwarf.h>
 
 #define DW_AT_MIPS_linkage_name 0x2007

@@ -41,19 +41,21 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of elements in the collection.</typeparam>
         /// <param name="sequence">The collection.</param>
         /// <returns>An ordered collection.  May not be thread-safe.  Never null.</returns>
-        internal static IOrderedCollection<T> AsOrderedCollection<T>(this IEnumerable<T> sequence)
+        internal static IReadOnlyList<T> AsReadOnlyList<T>(this IEnumerable<T> sequence)
         {
             Requires.NotNull(sequence, nameof(sequence));
 
-            if (sequence is IOrderedCollection<T> orderedCollection)
+            if (sequence is IReadOnlyList<T> orderedCollection)
             {
                 return orderedCollection;
             }
 
+#if !NET10_0_OR_GREATER // ICollection<T> : IReadOnlyCollection<T> on .NET 10+
             if (sequence is IList<T> listOfT)
             {
                 return new ListOfTWrapper<T>(listOfT);
             }
+#endif
 
             // It would be great if SortedSet<T> and SortedDictionary<T> provided indexers into their collections,
             // but since they don't we have to clone them to an array.
@@ -101,11 +103,12 @@ namespace System.Collections.Immutable
             }
         }
 
+#if !NET10_0_OR_GREATER // ICollection<T> : IReadOnlyCollection<T> on .NET 10+
         /// <summary>
         /// Wraps a <see cref="IList{T}"/> as an ordered collection.
         /// </summary>
         /// <typeparam name="T">The type of element in the collection.</typeparam>
-        private sealed class ListOfTWrapper<T> : IOrderedCollection<T>
+        private sealed class ListOfTWrapper<T> : IReadOnlyList<T>
         {
             /// <summary>
             /// The list being exposed.
@@ -160,12 +163,13 @@ namespace System.Collections.Immutable
                 return this.GetEnumerator();
             }
         }
+#endif
 
         /// <summary>
         /// Wraps any <see cref="IEnumerable{T}"/> as an ordered, indexable list.
         /// </summary>
         /// <typeparam name="T">The type of element in the collection.</typeparam>
-        private sealed class FallbackWrapper<T> : IOrderedCollection<T>
+        private sealed class FallbackWrapper<T> : IReadOnlyList<T>
         {
             /// <summary>
             /// The original sequence.
