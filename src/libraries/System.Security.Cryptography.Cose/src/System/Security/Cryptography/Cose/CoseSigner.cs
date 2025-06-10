@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Cose
         /// Gets the private key to use during signing.
         /// </summary>
         /// <value>The private key to use during signing.</value>
-        public CoseKey CoseKey { get; }
+        internal CoseKey CoseKey { get; }
 
         /// <summary>
         /// Gets the hash algorithm to use to create the hash value for signing.

@@ -168,7 +168,6 @@ namespace System.Security.Cryptography.Cose
         public CoseSigner(System.Security.Cryptography.AsymmetricAlgorithm key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null) { }
         public CoseSigner(System.Security.Cryptography.Cose.CoseKey key, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null) { }
         public CoseSigner(System.Security.Cryptography.RSA key, System.Security.Cryptography.RSASignaturePadding signaturePadding, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null) { }
-        public System.Security.Cryptography.Cose.CoseKey CoseKey { get { throw null; } }
         public System.Security.Cryptography.HashAlgorithmName HashAlgorithm { get { throw null; } }
         public System.Security.Cryptography.AsymmetricAlgorithm? Key { get { throw null; } }
         public System.Security.Cryptography.Cose.CoseHeaderMap ProtectedHeaders { get { throw null; } }

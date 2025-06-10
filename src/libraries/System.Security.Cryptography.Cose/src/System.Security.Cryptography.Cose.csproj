@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
@@ -9,12 +9,16 @@
     <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
     <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
-  
+
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Experimentals.cs" Link="Common\Experimentals.cs" />
-    <Compile Include="$(CommonPath)System\HashCodeRandomization.cs" Link="Common\System\HashCodeRandomization.cs" />
-    <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
-    <Compile Include="$(LibrariesProjectRoot)System.Formats.Cbor\src\System\Formats\Cbor\CborInitialByte.cs" Link="System\Formats\Cbor\CborInitialByte.cs" />
+    <Compile Include="$(CommonPath)System\Experimentals.cs"
+             Link="Common\Experimentals.cs" />
+    <Compile Include="$(CommonPath)System\HashCodeRandomization.cs"
+             Link="Common\System\HashCodeRandomization.cs" />
+    <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
+             Link="Common\System\Memory\PointerMemoryManager.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Formats.Cbor\src\System\Formats\Cbor\CborInitialByte.cs"
+             Link="System\Formats\Cbor\CborInitialByte.cs" />
 
     <Compile Include="System\Security\Cryptography\Cose\CoseHeaderLabel.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseHeaderMap.cs" />
@@ -36,7 +40,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <Compile Include="$(CommonPath)System\Security\Cryptography\IncrementalHash.netfx.cs" Link="Common\System\Security\Cryptography\IncrementalHash.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\IncrementalHash.netfx.cs"
+             Link="Common\System\Security\Cryptography\IncrementalHash.cs" />
   </ItemGroup>
   
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">

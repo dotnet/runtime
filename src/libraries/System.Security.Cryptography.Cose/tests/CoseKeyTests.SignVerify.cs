@@ -27,11 +27,11 @@ namespace System.Security.Cryptography.Cose.Tests
 
         [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         [MemberData(nameof(AllMLDsaCoseDraftExamples))]
-        public static void DecodeSign1MLDsaCoseDraftExamples(MLDsaAlgorithm algorithm, byte[] mldsaPkHex, byte[] sign1Hex)
+        public static void DecodeSign1MLDsaCoseDraftExamples(MLDsaAlgorithm algorithm, byte[] mldsaPk, byte[] sign1)
         {
-            using MLDsa pubKey = MLDsa.ImportMLDsaPublicKey(algorithm, mldsaPkHex);
+            using MLDsa pubKey = MLDsa.ImportMLDsaPublicKey(algorithm, mldsaPk);
 
-            CoseSign1Message msg = CoseMessage.DecodeSign1(sign1Hex);
+            CoseSign1Message msg = CoseMessage.DecodeSign1(sign1);
             Assert.NotNull(msg.Content);
             Assert.True(msg.VerifyEmbedded(CoseKey.FromKey(pubKey)));
 
@@ -54,15 +54,15 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             if (algorithm == MLDsaAlgorithm.MLDsa44)
             {
-                return (int)CoseAlgorithm.MLDsa44;
+                return (int)CoseTestHelpers.CoseAlgorithm.MLDsa44;
             }
             else if (algorithm == MLDsaAlgorithm.MLDsa65)
             {
-                return (int)CoseAlgorithm.MLDsa65;
+                return (int)CoseTestHelpers.CoseAlgorithm.MLDsa65;
             }
             else if (algorithm == MLDsaAlgorithm.MLDsa87)
             {
-                return (int)CoseAlgorithm.MLDsa87;
+                return (int)CoseTestHelpers.CoseAlgorithm.MLDsa87;
             }
             else
             {
@@ -145,6 +145,10 @@ namespace System.Security.Cryptography.Cose.Tests
 
             static string[] PickNKeys(int n, int atIndex, string[] keys)
             {
+                Assert.True(keys.Length >= 1);
+
+                // If n is larger than the number of keys, we just wrap around and use same key multiple times.
+
                 string[] ret = new string[n];
                 for (int i = 0; i < n; i++)
                 {
@@ -226,6 +230,7 @@ namespace System.Security.Cryptography.Cose.Tests
             "7db42db39877f01d674558f7b59b0e0f10363e3f505d82a7c0c7cadd1618233541424f5759647677" +
             "7d80a6b8dfe6eefcfd0515196c8e99c3cfd2ebf2020b0c16202b3337484e525657a4b5bec3cad2d4" +
             "d5d6dd00000000000000000000000e232e45";
+
         private const string MLDsa44PkHex =
             "ba71f9f64e11baeb58fa9c6fbb6e14e61f18643dab495b47539a9166ca0198131c44f826bbd56e34" +
             "e55db5e5e2d733485e39ea260fc6000c5ea4ba80d3455cde53b46f34482aedfd5450fc2e1ba4f25d" +
@@ -260,6 +265,7 @@ namespace System.Security.Cryptography.Cose.Tests
             "905ecaa82e553916d94d1a7c1ec652aa08897083daa2ebb1775fbc471ae27777d7904ea9f1b92bca" +
             "c3d8a3158426087b645b1108f0d65fec93789c053743ca14fd63d05e98b652df2b9c2ff9ce05f194" +
             "0703ffb273f80e0e2732eca9960d981b4cfd3b7bb8045b3c3830546b9dd8db0d";
+
         private const string MLDsa65Sign1Hex =
             "d2845827a2013830045820b788acf242f1f1d6532926d816e76e1636874267f2a48c84c4e65789ab" +
             "80cc02a0581d68656c6c6f20706f7374207175616e74756d207369676e617475726573590cedd5bd" +
@@ -346,6 +352,7 @@ namespace System.Security.Cryptography.Cose.Tests
             "fdc014cdfaf2e7749e056f195f1eefc1949420e5569c461bc26f888b1aca0418552ad2dc1c5b62e6" +
             "c972b60ba643344d52cbdade3286497595a5adc1c40d0f10366cc9dbf9fb0e22445d5e7ba14c759f" +
             "bfd1d400000000000000000000000000000000000006080f181f25";
+
         private const string MLDsa65PkHex =
             "424b2f267e58d5b3b44d71acfc6a656bb26950d57c61db1c880bcfa1feab443f0942ab8bdbad7d70" +
             "8abbc356078f6d99a252271fe62c74091eb94afb9b9264c50a888e0dfed80cd5fb2cbd3667e60d53" +
@@ -396,6 +403,7 @@ namespace System.Security.Cryptography.Cose.Tests
             "d7ac2393d93177f79ee5606c9df176f025ce49a6e5ff51a2a412ebf86ac0f40471c96ad4c119df23" +
             "0be6173df530ed656cbd8069214741ecdd0271c603fb6c4a8614ff878d33e726cac6693e938ca3fb" +
             "a82c4995c14a2d4af9014fe4c4c50b794cac596b52189f66a7106fb325b526ea";
+
         private const string MLDsa87Sign1Hex =
             "d2845827a2013831045820d9bc439f97bd6d4093e68f0f3fcf09c9a97adf888ed7308dd565247a16" +
             "6cb4faa0581d68656c6c6f20706f7374207175616e74756d207369676e617475726573591213e132" +
@@ -515,6 +523,7 @@ namespace System.Security.Cryptography.Cose.Tests
             "f01a941ce512504c25d552e8863afa3c89bdb53d757d09161a5e65b4c1d6f4fe00879d1e247d8a93" +
             "f30b252d5d6d7308676a76c4d9ee11131b2c2f7f8092b0d2e417225f6d7c82a4eff0f7204765a4bc" +
             "d2dafd00000000000000000000000000000a0d1319202b353d";
+
         private const string MLDsa87PkHex =
             "e45ffc8cc73db885dc662e62a18cd8e3803297117fa5658814a985b5ff1db7b468cfc82bb929f1d8" +
             "6b77ed14f5ae16a65368772ce51912410105e0456975ae91fdb643b512f124d5e60bd68b8c7e31fe" +

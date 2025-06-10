@@ -32,9 +32,10 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             CoseTestKeyManager keyManager = new();
 
-            WithTestKeysInfo((keyId, keyType, hashAlgorithm) =>
+            WithTestKeysInfo((keyId, createKeyData) =>
             {
-                keyManager.AddKey(keyId, keyType, hashAlgorithm);
+                (IDisposable key, CoseKey coseKey) = createKeyData();
+                keyManager.AddKey(keyId, key, coseKey);
             });
 
             return keyManager;
@@ -43,7 +44,7 @@ namespace System.Security.Cryptography.Cose.Tests
         public static string[] GetAllKeyIds()
         {
             List<string> keyIds = new();
-            WithTestKeysInfo((keyId, _, _) =>
+            WithTestKeysInfo((keyId, _) =>
             {
                 keyIds.Add(keyId);
             });
@@ -51,29 +52,36 @@ namespace System.Security.Cryptography.Cose.Tests
             return keyIds.ToArray();
         }
 
-        private static void WithTestKeysInfo(Action<string, IDisposable, CoseKey> action)
+        private static void WithTestKeysInfo(Action<string, Func<(IDisposable, CoseKey)>> createKeyData)
         {
-            Let(ECDsa.Create(), (key) => action(ECDsaIdentifier, key, CoseKey.FromKey(key, HashAlgorithmName.SHA256)));
-            Let(RSA.Create(), (key) => action(RSAPkcs1Identifier, key, CoseKey.FromKey(key, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA256)));
+            createKeyData(ECDsaIdentifier, CreateKeyFunc(() => ECDsa.Create(), (key) => CoseKey.FromKey(key, HashAlgorithmName.SHA256)));
+            createKeyData(RSAPkcs1Identifier, CreateKeyFunc(() => RSA.Create(), (key) => CoseKey.FromKey(key, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA256)));
 
             if (PlatformSupport.IsRsaPssSupported)
             {
-                Let(RSA.Create(), (key) => action(RSAPssIdentifier, key, CoseKey.FromKey(key, RSASignaturePadding.Pss, HashAlgorithmName.SHA256)));
+                createKeyData(RSAPssIdentifier, CreateKeyFunc(() => RSA.Create(), (key) => CoseKey.FromKey(key, RSASignaturePadding.Pss, HashAlgorithmName.SHA256)));
             }
 
             if (MLDsa.IsSupported)
             {
-                Let(MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa44), (key) => action(MLDSA44Identifier, key, CoseKey.FromKey(key)));
-                Let(MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65), (key) => action(MLDSA65Identifier, key, CoseKey.FromKey(key)));
-                Let(MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa87), (key) => action(MLDSA87Identifier, key, CoseKey.FromKey(key)));
+                createKeyData(MLDSA44Identifier, CreateKeyFunc(() => MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa44), (key) => CoseKey.FromKey(key)));
+                createKeyData(MLDSA65Identifier, CreateKeyFunc(() => MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65), (key) => CoseKey.FromKey(key)));
+                createKeyData(MLDSA87Identifier, CreateKeyFunc(() => MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa87), (key) => CoseKey.FromKey(key)));
             }
 
-            static void Let<KeyType>(KeyType key, Action<KeyType> action) => action(key);
+            static Func<(IDisposable, CoseKey)> CreateKeyFunc<TKeyType>(Func<TKeyType> createKey, Func<TKeyType, CoseKey> createCoseKey) where TKeyType : IDisposable
+            {
+                return () =>
+                {
+                    TKeyType key = createKey();
+                    return (key, createCoseKey(key));
+                };
+            }
         }
 
         public IEnumerable<CoseTestKey> AllKeys()
         {
-            foreach (var key in _coseKeys.Values)
+            foreach (CoseTestKey key in _coseKeys.Values)
             {
                 yield return key;
             }
@@ -81,13 +89,13 @@ namespace System.Security.Cryptography.Cose.Tests
 
         public CoseTestKey GetKey(string keyId)
         {
-            Assert.True(_coseKeys.TryGetValue(keyId, out var key), $"Key {keyId} not found");
+            Assert.True(_coseKeys.TryGetValue(keyId, out CoseTestKey? key), $"Key {keyId} not found");
             return key;
         }
 
         public CoseTestKey GetDifferentKey(string notWantedKeyId)
         {
-            foreach (var key in _coseKeys.Values)
+            foreach (CoseTestKey key in _coseKeys.Values)
             {
                 if (key.Id != notWantedKeyId)
                 {
@@ -103,7 +111,7 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             if (_coseKeys != null)
             {
-                foreach (var key in _coseKeys.Values)
+                foreach (CoseTestKey key in _coseKeys.Values)
                 {
                     key.Dispose();
                 }

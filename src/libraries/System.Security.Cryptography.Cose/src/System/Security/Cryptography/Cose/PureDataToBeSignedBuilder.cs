@@ -32,17 +32,10 @@ namespace System.Security.Cryptography.Cose
 #if NETSTANDARD2_0 || NETFRAMEWORK
             operation(arg, _stream.ToArray());
 #else
-            if (_stream.Length <= 128)
-            {
-                Span<byte> data = stackalloc byte[(int)_stream.Length];
-                _stream.Position = 0;
-                _stream.ReadExactly(data);
-                operation(arg, data);
-            }
-            else
-            {
-                operation(arg, _stream.ToArray());
-            }
+            // Current implementation of MemoryStream allows only int.MaxValue but Length is long.
+            // In case this changes in the far future using checked cast.
+            Debug.Assert(_stream.Length <= int.MaxValue);
+            operation(arg, new ReadOnlySpan<byte>(_stream.GetBuffer(), 0, checked((int)_stream.Length)));
 #endif
 
             _stream.Position = 0;

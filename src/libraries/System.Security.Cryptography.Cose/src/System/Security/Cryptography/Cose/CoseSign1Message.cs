@@ -405,7 +405,8 @@ namespace System.Security.Cryptography.Cose
         /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
-        /// <exception cref="InvalidOperationException">The content is detached from this message, use an overload that accepts a detached content.</exception>        /// <exception cref="CryptographicException">
+        /// <exception cref="InvalidOperationException">The content is detached from this message, use an overload that accepts a detached content.</exception>
+        /// <exception cref="CryptographicException">
         ///   <para>
         ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
         ///   </para>
@@ -447,7 +448,8 @@ namespace System.Security.Cryptography.Cose
         /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
-        /// <exception cref="InvalidOperationException">The content is detached from this message, use an overload that accepts a detached content.</exception>        /// <exception cref="CryptographicException">
+        /// <exception cref="InvalidOperationException">The content is detached from this message, use an overload that accepts a detached content.</exception>
+        /// <exception cref="CryptographicException">
         ///   <para>
         ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
         ///   </para>

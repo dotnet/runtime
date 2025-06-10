@@ -102,7 +102,7 @@ namespace System.Security.Cryptography.Tests
                 ExportMLDsaPublicKeyHook = d => d.Clear(),
                 ExportMLDsaSecretKeyHook = d => d.Clear(),
                 SignDataHook = (data, context, destination) => destination.Clear(),
-                VerifyDataHook = (data, context, signature) => { return false; },
+                VerifyDataHook = (data, context, signature) => false,
                 DisposeHook = _ => { },
 
                 TryExportPkcs8PrivateKeyHook = (Span<byte> destination, out int bytesWritten) =>

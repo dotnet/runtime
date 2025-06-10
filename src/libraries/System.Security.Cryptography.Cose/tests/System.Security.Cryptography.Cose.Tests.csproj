@@ -19,7 +19,6 @@
       <Link>Common\Experimentals.cs</Link>
     </Compile>
 
-    <Compile Include="..\src\System\Security\Cryptography\Cose\CoseAlgorithm.cs" />
     <Compile Include="CoseHeaderValueTests.cs" />
     <Compile Include="CoseKeyTests.ArgumentValidation.cs" />
     <Compile Include="CoseMessageTests.Verify.cs" />

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Cbor;
 using System.IO;
 using System.Linq;
@@ -39,6 +40,22 @@ namespace System.Security.Cryptography.Cose.Tests
             RS256 = -257,
             RS384 = -258,
             RS512 = -259
+        }
+
+        internal enum CoseAlgorithm
+        {
+            ES256 = -7,
+            ES384 = -35,
+            ES512 = -36,
+            PS256 = -37,
+            PS384 = -38,
+            PS512 = -39,
+            RS256 = -257,
+            RS384 = -258,
+            RS512 = -259,
+            MLDsa44 = -48,
+            MLDsa65 = -49,
+            MLDsa87 = -50,
         }
 
         public enum ContentTestCase

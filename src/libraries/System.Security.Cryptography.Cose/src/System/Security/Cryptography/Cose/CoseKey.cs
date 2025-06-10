@@ -153,6 +153,7 @@ namespace System.Security.Cryptography.Cose
 
         internal static CoseAlgorithm CoseAlgorithmFromString(string algString)
         {
+            // https://www.iana.org/assignments/cose/cose.xhtml#algorithms
             return algString switch
             {
                 nameof(CoseAlgorithm.ES256) => CoseAlgorithm.ES256,
