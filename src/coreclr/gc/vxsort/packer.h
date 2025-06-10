@@ -8,7 +8,9 @@
 #include "alignment.h"
 #include "machine_traits.h"
 
+#if defined(TARGET_AMD64)
 #include <immintrin.h>
+#endif
 
 namespace vxsort {
 
