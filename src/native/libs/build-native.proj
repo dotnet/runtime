@@ -99,8 +99,9 @@
     <PropertyGroup>
         <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) msbuild</_BuildNativeArgs>
         <_MonoCMakeArgs Condition="'$(RuntimeFlavor)' == 'Mono'">-DMONO_RUNTIME=1</_MonoCMakeArgs>
+        <_MonoCMakeArgs Condition="'$(CMakeArgs)' != ''"> $(_MonoCMakeArgs)</_MonoCMakeArgs>
         <_MonoWasmMTCMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">-DMONO_WASM_MT=1</_MonoWasmMTCMakeArgs>
-        <_MonoWasmMTCMakeArgs Condition="'$(CMakeArgs)' != ''"> $(_MonoWasmMTCMakeArgs)</_MonoWasmMTCMakeArgs>
+        <_MonoWasmMTCMakeArgs Condition="'$(CMakeArgs)' != '' or '$(_MonoCMakeArgs)' != ''"> $(_MonoWasmMTCMakeArgs)</_MonoWasmMTCMakeArgs>
         <_BuildNativeArgs Condition="'$(CMakeArgs)' != '' or '$(_MonoWasmMTCMakeArgs)' != '' or '$(_MonoCMakeArgs)' != ''">$(_BuildNativeArgs) -cmakeargs "$(CMakeArgs)$(_MonoCMakeArgs)$(_MonoWasmMTCMakeArgs)"</_BuildNativeArgs>
     </PropertyGroup>
     <!-- Run script that uses CMake to generate and build the native files. -->
