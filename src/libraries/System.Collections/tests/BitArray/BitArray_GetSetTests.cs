@@ -384,6 +384,38 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public static void AsBytes_ExtraBitsDontAffectReadOperations()
+        {
+            BitArray ba = new(4);
+            Span<byte> bytes = CollectionsMarshal.AsBytes(ba);
+            Assert.Equal(0, bytes[0]);
+
+            bytes[0] = 0xFF;
+
+            Assert.True(ba[0]);
+            Assert.True(ba[1]);
+            Assert.True(ba[2]);
+            Assert.True(ba[3]);
+
+            Assert.True(ba.HasAllSet());
+            Assert.True(ba.HasAnySet());
+
+            ba[0] = false;
+
+            Assert.False(ba.HasAllSet());
+            Assert.True(ba.HasAnySet());
+
+            ba[1] = false;
+            ba[2] = false;
+            ba[3] = false;
+
+            Assert.False(ba.HasAllSet());
+            Assert.False(ba.HasAnySet());
+
+            Assert.Equal(0b11110000, bytes[0]);
+        }
+
+        [Fact]
         public static void CopyToByteArray()
         {
             for (int size = 4; size < 100; size++)

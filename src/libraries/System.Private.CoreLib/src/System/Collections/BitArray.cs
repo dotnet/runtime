@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Serialization;
 
 namespace System.Collections
 {
@@ -17,8 +18,10 @@ namespace System.Collections
     /// <see langword="true"/> indicates that the bit is on (1) and <see langword="false"/> indicates
     /// the bit is off (0).
     /// </summary>
-    [Serializable] // leaving it serializable, but no longer compatible with pre-.NET 10 serialization format
-    public sealed class BitArray : ICollection, ICloneable
+    [Serializable]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public sealed class BitArray : ICollection, ICloneable,
+        ISerializable // introduced in .NET 10 for compat with existing serialized assets, not exposed in the ref assembly
     {
         /// <summary>sizeof(int) * 8</summary>
         private const int BitsPerInt32 = 32;
@@ -69,6 +72,44 @@ namespace System.Collections
                 Array.Fill(_array, (byte)0xFF);
                 ClearHighExtraBits();
             }
+        }
+
+        /// <summary>Deserializes BitArray in a way that's compatible with the original .NET Framework implementation.</summary>
+        private BitArray(SerializationInfo info, StreamingContext context)
+        {
+            ArgumentNullException.ThrowIfNull(info);
+
+            var array = (int[]?)info.GetValue("m_array", typeof(int[]));
+            _bitLength = info.GetInt32("m_length");
+            _version = info.GetInt32("_version");
+
+            if (array is null || (uint)_bitLength > checked((uint)array.Length * BitsPerInt32))
+            {
+                throw new SerializationException(SR.Serialization_InvalidData);
+            }
+
+            _array = AllocateByteArray(_bitLength);
+            if (BitConverter.IsLittleEndian)
+            {
+                MemoryMarshal.AsBytes(array).CopyTo(_array);
+            }
+            else
+            {
+                BinaryPrimitives.ReverseEndianness(array, MemoryMarshal.Cast<byte, int>((Span<byte>)_array));
+            }
+        }
+
+        /// <summary>Generates serialization data for the BitArray in a way that's compatible with the original .NET Framework implementation.</summary>
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            ArgumentNullException.ThrowIfNull(info);
+
+            var m_array = new int[GetInt32ArrayLengthFromBitLength(_bitLength)];
+            CopyTo(m_array, 0);
+
+            info.AddValue("m_array", m_array);
+            info.AddValue("m_length", _bitLength);
+            info.AddValue("_version", _version);
         }
 
         private void ClearHighExtraBits()
@@ -204,7 +245,7 @@ namespace System.Collections
 
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.AsBytes(values.AsSpan()).CopyTo(_array);
+                MemoryMarshal.AsBytes(values).CopyTo(_array);
             }
             else
             {
@@ -304,7 +345,7 @@ namespace System.Collections
             }
             else
             {
-                MemoryMarshal.Cast<byte, int>((Span<byte>)_array).Slice(0, GetInt32ArrayLengthFromBitLength(_bitLength)).Clear();
+                _array.AsSpan(0, GetByteArrayLengthFromBitLength(_bitLength)).Clear();
             }
 
             _version++;
@@ -472,14 +513,14 @@ namespace System.Collections
                 return this;
             }
 
-            Span<int> array = MemoryMarshal.Cast<byte, int>((Span<byte>)_array);
+            Span<int> intSpan = MemoryMarshal.Cast<byte, int>((Span<byte>)_array);
 
             int toIndex = 0;
             int ints = GetInt32ArrayLengthFromBitLength(_bitLength);
             if (count < _bitLength)
             {
                 // We can not use Math.DivRem without taking a dependency on System.Runtime.Extensions
-                (int fromIndex, int shiftCount) = Math.DivRem((int)count, 32);
+                (int fromIndex, int shiftCount) = Math.DivRem(count, 32);
                 int extraBits = (int)((uint)_bitLength % 32);
                 if (shiftCount == 0)
                 {
@@ -492,10 +533,10 @@ namespace System.Collections
                     // However, the compiler protects us from undefined behaviour by constraining the
                     // right operand to between 0 and width - 1 (inclusive), i.e. right_operand = (right_operand % width).
                     uint mask = uint.MaxValue >> (BitsPerInt32 - extraBits);
-                    array[ints - 1] &= (int)mask;
+                    intSpan[ints - 1] &= ReverseIfBE((int)mask);
 
-                    array.Slice((int)fromIndex, ints - fromIndex).CopyTo(array);
-                    toIndex = ints - (int)fromIndex;
+                    intSpan.Slice((int)fromIndex, ints - fromIndex).CopyTo(intSpan);
+                    toIndex = ints - fromIndex;
                 }
                 else
                 {
@@ -503,18 +544,18 @@ namespace System.Collections
 
                     while (fromIndex < lastIndex)
                     {
-                        uint right = (uint)array[fromIndex] >> shiftCount;
-                        int left = array[++fromIndex] << (BitsPerInt32 - shiftCount);
-                        array[toIndex++] = left | (int)right;
+                        uint right = (uint)ReverseIfBE(intSpan[fromIndex]) >> shiftCount;
+                        int left = ReverseIfBE(intSpan[++fromIndex]) << (BitsPerInt32 - shiftCount);
+                        intSpan[toIndex++] = ReverseIfBE(left | (int)right);
                     }
 
                     uint mask = uint.MaxValue >> (BitsPerInt32 - extraBits);
-                    mask &= (uint)array[fromIndex];
-                    array[toIndex++] = (int)(mask >> shiftCount);
+                    mask &= (uint)ReverseIfBE(intSpan[fromIndex]);
+                    intSpan[toIndex++] = ReverseIfBE((int)(mask >> shiftCount));
                 }
             }
 
-            array.Slice(toIndex, ints - toIndex).Clear();
+            intSpan.Slice(toIndex, ints - toIndex).Clear();
             _version++;
             return this;
         }
@@ -535,7 +576,7 @@ namespace System.Collections
                 return this;
             }
 
-            Span<int> span = MemoryMarshal.Cast<byte, int>((Span<byte>)_array);
+            Span<int> intSpan = MemoryMarshal.Cast<byte, int>((Span<byte>)_array);
 
             int lengthToClear;
             if (count < _bitLength)
@@ -546,7 +587,7 @@ namespace System.Collections
 
                 if (shiftCount == 0)
                 {
-                    span.Slice(0, lastIndex + 1 - lengthToClear).CopyTo(span.Slice(lengthToClear));
+                    intSpan.Slice(0, lastIndex + 1 - lengthToClear).CopyTo(intSpan.Slice(lengthToClear));
                 }
                 else
                 {
@@ -554,12 +595,12 @@ namespace System.Collections
 
                     while (fromindex > 0)
                     {
-                        int left = ReverseIfBE(span[fromindex]) << shiftCount;
-                        uint right = (uint)ReverseIfBE(span[--fromindex]) >> (BitsPerInt32 - shiftCount);
-                        span[lastIndex] = ReverseIfBE(left | (int)right);
+                        int left = ReverseIfBE(intSpan[fromindex]) << shiftCount;
+                        uint right = (uint)ReverseIfBE(intSpan[--fromindex]) >> (BitsPerInt32 - shiftCount);
+                        intSpan[lastIndex] = ReverseIfBE(left | (int)right);
                         lastIndex--;
                     }
-                    span[lastIndex] = ReverseIfBE(ReverseIfBE(span[fromindex]) << shiftCount);
+                    intSpan[lastIndex] = ReverseIfBE(ReverseIfBE(intSpan[fromindex]) << shiftCount);
                 }
             }
             else
@@ -567,7 +608,7 @@ namespace System.Collections
                 lengthToClear = GetInt32ArrayLengthFromBitLength(_bitLength); // Clear all
             }
 
-            span.Slice(0, lengthToClear).Clear();
+            intSpan.Slice(0, lengthToClear).Clear();
             _version++;
             return this;
         }
@@ -627,21 +668,30 @@ namespace System.Collections
 
             if (array is int[] intArray)
             {
-                int int32Length = GetInt32ArrayLengthFromBitLength(_bitLength);
+                int intLength = GetInt32ArrayLengthFromBitLength(_bitLength);
 
-                if (array.Length - index < int32Length)
+                if (array.Length - index < intLength)
                 {
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
                 }
 
-                Span<int> source = MemoryMarshal.Cast<byte, int>((Span<byte>)_array).Slice(0, int32Length);
-                if (BitConverter.IsLittleEndian)
+                if (intLength > 0)
                 {
-                    source.CopyTo(intArray.AsSpan(index));
-                }
-                else
-                {
-                    BinaryPrimitives.ReverseEndianness(source, intArray.AsSpan(index));
+                    Span<int> source = MemoryMarshal.Cast<byte, int>((Span<byte>)_array).Slice(0, intLength);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        source.CopyTo(intArray.AsSpan(index));
+                    }
+                    else
+                    {
+                        BinaryPrimitives.ReverseEndianness(source, intArray.AsSpan(index));
+                    }
+
+                    uint extraBits = (uint)_bitLength % BitsPerInt32;
+                    if (extraBits != 0)
+                    {
+                        intArray[index + intLength - 1] = ReverseIfBE(source[^1]) & ((1 << (int)extraBits) - 1);
+                    }
                 }
             }
             else if (array is byte[] byteArray)
@@ -653,7 +703,17 @@ namespace System.Collections
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
                 }
 
-                _array.AsSpan(0, byteLength).CopyTo(byteArray.AsSpan(index));
+                if (byteLength > 0)
+                {
+                    ReadOnlySpan<byte> source = _array.AsSpan(0, byteLength);
+                    source.CopyTo(byteArray.AsSpan(index));
+
+                    uint extraBits = (uint)_bitLength % BitsPerByte;
+                    if (extraBits != 0)
+                    {
+                        byteArray[index + byteLength - 1] = (byte)(source[^1] & ((1 << (int)extraBits) - 1));
+                    }
+                }
             }
             else if (array is bool[] boolArray)
             {
@@ -808,7 +868,7 @@ namespace System.Collections
         /// <returns><c>true</c> if every bit in the <see cref="BitArray"/> is set to <c>true</c>, or if <see cref="BitArray"/> is empty; otherwise, <c>false</c>.</returns>
         public bool HasAllSet()
         {
-            int extraBits = (int)((uint)_bitLength % BitsPerByte);
+            uint extraBits = (uint)_bitLength % BitsPerByte;
             int byteCount = GetByteArrayLengthFromBitLength(_bitLength);
             if (extraBits != 0)
             {
@@ -825,7 +885,7 @@ namespace System.Collections
                 return true;
             }
 
-            byte mask = (byte)((1 << extraBits) - 1);
+            byte mask = (byte)((1 << (int)extraBits) - 1);
             return (_array[byteCount] & mask) == mask;
         }
 
@@ -833,8 +893,28 @@ namespace System.Collections
         /// Determines whether any bit in the <see cref="BitArray"/> is set to <c>true</c>.
         /// </summary>
         /// <returns><c>true</c> if <see cref="BitArray"/> is not empty and at least one of its bit is set to <c>true</c>; otherwise, <c>false</c>.</returns>
-        public bool HasAnySet() =>
-            _array.AsSpan(0, GetByteArrayLengthFromBitLength(_bitLength)).ContainsAnyExcept((byte)0);
+        public bool HasAnySet()
+        {
+            uint extraBits = (uint)_bitLength % BitsPerByte;
+            int byteCount = GetByteArrayLengthFromBitLength(_bitLength);
+            if (extraBits != 0)
+            {
+                byteCount--;
+            }
+
+            if (_array.AsSpan(0, byteCount).ContainsAnyExcept((byte)0))
+            {
+                return true;
+            }
+
+            if (extraBits == 0)
+            {
+                return false;
+            }
+
+            byte mask = (byte)((1 << (int)extraBits) - 1);
+            return (_array[byteCount] & mask) != 0;
+        }
 
         /// <summary>Gets the number of elements contained in the <see cref="BitArray"/>.</summary>
         public int Count => _bitLength;
