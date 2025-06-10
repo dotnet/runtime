@@ -550,15 +550,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         }
     }
 
-    public interface ICustomAttributeMetadataRecord
-    {
-        IList<CustomAttribute> GetCustomAttributes();
-    }
-
-    public abstract partial class Blob : MetadataRecord
-    {
-    }
-
     /// <summary>
     /// Supplements generated class with convenient coversion operators
     /// </summary>
@@ -973,53 +964,6 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return "[" + string.Join(" | ", flags.Select(Enum.GetName<T>)) + "] ";
             else
                 return "";
-        }
-    }
-
-    public static class ListExtensions
-    {
-        public static T FirstOrDefault<T>(this List<T> list)
-        {
-            if (list.Count != 0)
-                return list[0];
-            return default(T);
-        }
-        public static T First<T>(this List<T> list) where T : class
-        {
-            if (list.Count != 0)
-                return list[0];
-            return null;
-        }
-    }
-
-    public static partial class DictionaryExtensions
-    {
-        internal static T FirstOrDefault<T>(this Dictionary<string, T> dict)
-        {
-            if (dict.Count != 0)
-                foreach (var value in dict.Values)
-                    return value;
-            return default(T);
-        }
-        internal static T First<T>(this Dictionary<string, T> dict) where T : class
-        {
-            if (dict.Count != 0)
-                foreach (var value in dict.Values)
-                    return value;
-            return null;
-        }
-
-        internal static IEnumerable<T> AsSingleEnumerable<T>(this T value)
-        {
-            yield return value;
-        }
-    }
-
-    public static partial class SignatureHelpers
-    {
-        public static SZArraySignature AsSZArray(this MetadataRecord record)
-        {
-            return new SZArraySignature() { ElementType = record };
         }
     }
 
