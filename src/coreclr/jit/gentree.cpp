@@ -5978,7 +5978,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             {
                 // pinvoke-calli cookie is a constant, or constant indirection
                 // or a non-tree if this is a managed call.
-                assert(call->gtCallCookie == nullptr || call->gtCallCookie->OperIs(GT_CNS_INT, GT_IND) || call->IsVirtualStub());
+                assert(call->gtCallCookie == nullptr || call->gtCallCookie->OperIs(GT_CNS_INT, GT_IND) ||
+                       call->IsVirtualStub());
 
                 GenTree* indirect = call->gtCallAddr;
 
