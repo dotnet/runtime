@@ -130,7 +130,7 @@ namespace ILLink.RoslynAnalyzer
 					foreach (var interfaceType in type.Interfaces)
 						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (typeNameResolver, location, interfaceType, context.ReportDiagnostic);
 
-					DynamicallyAccessedMembersTypeHierarchy.ApplyDynamicallyAccessedMembersToTypeHierarchy (location, type, context.ReportDiagnostic);
+					DynamicallyAccessedMembersTypeHierarchy.ApplyDynamicallyAccessedMembersToTypeHierarchy (typeNameResolver, location, type, context.ReportDiagnostic);
 				}, SymbolKind.NamedType);
 				context.RegisterSymbolAction (context => {
 					VerifyMemberOnlyApplyToTypesOrStrings (context, context.Symbol);
