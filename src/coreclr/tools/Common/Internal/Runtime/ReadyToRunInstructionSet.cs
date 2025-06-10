@@ -90,6 +90,10 @@ namespace Internal.ReadyToRunConstants
         Avx512Vp2intersect_VL=81,
         Avx512Vpopcntdq=82,
         Avx512Vpopcntdq_VL=83,
+        AvxVnniInt8=84,
+        AvxVnniInt8_V512=85,
+        AvxVnniInt16=86,
+        AvxVnniInt16_V512=87,
 
     }
 }

@@ -942,6 +942,10 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      VectorT128
     { NI_Illegal, NI_Illegal },                                 //      VectorT256
     { NI_Illegal, NI_Illegal },                                 //      VectorT512
+    { FIRST_NI_AVXVNNIINT8, LAST_NI_AVXVNNIINT8 },              //      AVXVNNIINT8
+    { FIRST_NI_AVXVNNIINT8_V512, LAST_NI_AVXVNNIINT8_V512 },    //      AVXVNNIINT8V512
+    { FIRST_NI_AVXVNNIINT16, LAST_NI_AVXVNNIINT16 },            //      AVXVNNIINT16
+    { FIRST_NI_AVXVNNIINT16_V512, LAST_NI_AVXVNNIINT16_V512 },  //      AVXVNNIINT16V512
 
     { FIRST_NI_X86Base_X64, LAST_NI_X86Base_X64 },              // X86Base_X64
     { NI_Illegal, NI_Illegal },                                 //      SSE3_X64
