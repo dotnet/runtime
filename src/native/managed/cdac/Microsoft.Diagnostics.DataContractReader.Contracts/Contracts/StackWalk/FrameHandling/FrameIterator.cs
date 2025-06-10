@@ -39,7 +39,6 @@ internal sealed class FrameIterator
         ComMethodFrame,
         ComPrestubMethodFrame,
         TailCallFrame,
-        ProtectByRefsFrame,
         ProtectValueClassFrame,
         DebuggerClassInitMarkFrame,
         DebuggerExitFrame,

@@ -719,7 +719,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     regNumber rAddr;
-    regNumber rCnt = REG_NA; // Invalid
     regMaskTP regMask;
 
     regMaskTP availMask = regSet.rsGetModifiedRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
@@ -748,84 +747,77 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         *pInitRegZeroed = false;
     }
 
-    bool     useLoop   = false;
-    unsigned uCntBytes = untrLclHi - untrLclLo;
-    assert((uCntBytes % sizeof(int)) == 0); // The smallest stack slot is always 4 bytes.
-    unsigned int padding = untrLclLo & 0x7;
+    ssize_t uLclBytes = untrLclHi - untrLclLo;
+    assert((uLclBytes % 4) == 0); // The smallest stack slot is always 4 bytes.
+    ssize_t padding = untrLclLo & 0x7;
 
     if (padding)
     {
         assert(padding == 4);
         GetEmitter()->emitIns_R_R_I(INS_sw, EA_4BYTE, REG_R0, rAddr, 0);
-        uCntBytes -= 4;
+        uLclBytes -= 4;
     }
 
-    unsigned uCntSlots = uCntBytes / REGSIZE_BYTES; // How many register sized stack slots we're going to use.
+    ssize_t uRegSlots = uLclBytes / REGSIZE_BYTES;
+    ssize_t uAddrCurr = 0;
 
-    // When uCntSlots is 9 or less, we will emit a sequence of sd instructions inline.
-    // When it is 10 or greater, we will emit a loop containing a sd instruction.
-    // In both of these cases the sd instruction will write two zeros to memory
-    // and we will use a single str instruction at the end whenever we have an odd count.
-    if (uCntSlots >= 10)
-        useLoop = true;
-
-    if (useLoop)
+    if (uRegSlots >= 12)
     {
-        // We pick the next lowest register number for rCnt
+        regNumber rEndAddr;
         noway_assert(availMask != RBM_NONE);
-        regMask = genFindLowestBit(availMask);
-        rCnt    = genRegNumFromMask(regMask);
+        regMask  = genFindLowestBit(availMask);
+        rEndAddr = genRegNumFromMask(regMask);
         availMask &= ~regMask;
 
-        noway_assert(uCntSlots >= 2);
-        assert((genRegMask(rCnt) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // rCnt is not a live incoming
-                                                                                // argument reg
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 2);
+        // rEndAddr is not a live incoming argument reg
+        assert((genRegMask(rEndAddr) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
 
-        // TODO-RISCV64: maybe optimize further
-        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
-        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
-        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rCnt, rCnt, -1);
+        ssize_t uLoopBytes = (uRegSlots & ~0x3) * REGSIZE_BYTES;
 
-        // bne rCnt, zero, -4 * 4
-        ssize_t imm = -16;
-        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES);
-        GetEmitter()->emitIns_R_R_I(INS_bne, EA_PTRSIZE, rCnt, REG_R0, imm);
-
-        uCntBytes %= REGSIZE_BYTES * 2;
-    }
-    else
-    {
-        while (uCntBytes >= REGSIZE_BYTES * 2)
+        if (uLoopBytes)
         {
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 2 * REGSIZE_BYTES + padding);
-            uCntBytes -= REGSIZE_BYTES * 2;
-            padding = 0;
-        }
-    }
+            if (emitter::isValidSimm12(uLoopBytes))
+            {
+                GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rEndAddr, rAddr, uLoopBytes);
+            }
+            else
+            {
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, rEndAddr, uLoopBytes);
+                GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, rEndAddr, rEndAddr, rAddr);
+            }
 
-    if (uCntBytes >= REGSIZE_BYTES) // check and zero the last register-sized stack slot (odd number)
-    {
-        if ((uCntBytes - REGSIZE_BYTES) == 0)
-        {
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + REGSIZE_BYTES);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + 2 * REGSIZE_BYTES);
+            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + 3 * REGSIZE_BYTES);
+
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 4 * REGSIZE_BYTES);
+            GetEmitter()->emitIns_R_R_I(INS_bltu, EA_PTRSIZE, rAddr, rEndAddr, -5 << 2);
+
+            uLclBytes -= uLoopBytes;
+            uAddrCurr = 0;
         }
-        else
-        {
-            GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, REGSIZE_BYTES);
-        }
-        uCntBytes -= REGSIZE_BYTES;
     }
-    if (uCntBytes > 0)
+
+    while (uLclBytes >= REGSIZE_BYTES)
     {
-        assert(uCntBytes == sizeof(int));
-        GetEmitter()->emitIns_R_R_I(INS_sw, EA_4BYTE, REG_R0, rAddr, padding);
-        uCntBytes -= sizeof(int);
+        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, uAddrCurr + padding);
+        uLclBytes -= REGSIZE_BYTES;
+        uAddrCurr += REGSIZE_BYTES;
     }
-    noway_assert(uCntBytes == 0);
+
+    if (uAddrCurr != 0)
+    {
+        uAddrCurr -= REGSIZE_BYTES;
+    }
+
+    if (uLclBytes != 0)
+    {
+        assert(uLclBytes == 4);
+        GetEmitter()->emitIns_R_R_I(INS_sw, EA_4BYTE, REG_R0, rAddr, uAddrCurr + padding);
+        uLclBytes -= 4;
+    }
+    noway_assert(uLclBytes == 0);
 }
 
 void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)

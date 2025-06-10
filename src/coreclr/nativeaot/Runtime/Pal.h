@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// Provides declarations for external resources consumed by Redhawk. This comprises functionality
+// Provides declarations for external resources consumed by NativeAOT. This comprises functionality
 // normally exported from Win32 libraries such as KERNEL32 and MSVCRT. When hosted on Win32 calls to these
 // functions become simple pass throughs to the native implementation via export forwarding entries in a PAL
 // (Platform Abstraction Layer) library. On other platforms the PAL library has actual code to emulate the
 // functionality of these same APIs.
 //
-// In order to make it both obvious and intentional where Redhawk consumes an external API, such functions are
+// In order to make it both obvious and intentional where NativeAOT consumes an external API, such functions are
 // decorated with an 'Pal' prefix. Ideally the associated supporting types, constants etc. would be
 // similarly isolated from their concrete Win32 definitions, making the extent of platform dependence within
 // the core explicit. For now that is too big a work item and we'll settle for manually restricting the use of
@@ -25,11 +25,11 @@
 
 #include "CommonTypes.h"
 #include "CommonMacros.h"
+#include "PalLimitedContext.h"
 #include "gcenv.structs.h" // EEThreadId
-#include "PalRedhawkCommon.h"
 
-#ifndef PAL_REDHAWK_INCLUDED
-#define PAL_REDHAWK_INCLUDED
+#ifndef PAL_INCLUDED
+#define PAL_INCLUDED
 
 /* Adapted from intrin.h - For compatibility with <winnt.h>, some intrinsics are __cdecl except on x64 */
 #if defined (_M_X64)
@@ -64,8 +64,6 @@
 #endif // TARGET_UNIX
 
 #ifdef TARGET_UNIX
-// There are some fairly primitive type definitions below but don't pull them into the rest of Redhawk unless
-// we have to (in which case these definitions will move to CommonTypes.h).
 typedef int32_t             HRESULT;
 
 #define S_OK  0x0
@@ -102,8 +100,8 @@ typedef struct _EXCEPTION_RECORD EXCEPTION_RECORD, *PEXCEPTION_RECORD;
 
 #endif // TARGET_UNIX
 
-#define STATUS_REDHAWK_NULL_REFERENCE                  ((uint32_t   )0x00000000L)
-#define STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE ((uint32_t   )0x00000042L)
+#define STATUS_NATIVEAOT_NULL_REFERENCE                  ((uint32_t   )0x00000000L)
+#define STATUS_NATIVEAOT_UNMANAGED_HELPER_NULL_REFERENCE ((uint32_t   )0x00000042L)
 
 #ifdef TARGET_UNIX
 #define NULL_AREA_SIZE                   (4*1024)
@@ -154,11 +152,7 @@ typedef char TCHAR;
 
 extern uint32_t g_RhNumberOfProcessors;
 
-#ifndef DACCESS_COMPILE
-#include "PalRedhawkFunctions.h"
-#endif // !DACCESS_COMPILE
-
-// The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
+// The NativeAOT PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
 bool PalInit();
 
@@ -240,6 +234,7 @@ HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer);
 
 #ifdef TARGET_UNIX
 uint32_t PalGetOsPageSize();
+typedef int32_t (*PHARDWARE_EXCEPTION_HANDLER)(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
 void PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
 #endif
 
@@ -289,6 +284,29 @@ void* PalGetProcAddress(HANDLE module, const char* functionName);
 int32_t _stricmp(const char *string1, const char *string2);
 #endif // TARGET_UNIX
 
-#include "PalRedhawkInline.h"
+uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint32_t* arg4);
+UInt32_BOOL PalCloseHandle(HANDLE arg1);
+void PalFlushProcessWriteBuffers();
+uint32_t PalGetCurrentProcessId();
 
-#endif // !PAL_REDHAWK_INCLUDED
+#ifdef UNICODE
+uint32_t PalGetEnvironmentVariable(_In_opt_ LPCWSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPWSTR lpBuffer, _In_ uint32_t nSize);
+#else
+uint32_t PalGetEnvironmentVariable(_In_opt_ LPCSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPSTR lpBuffer, _In_ uint32_t nSize);
+#endif
+
+UInt32_BOOL PalResetEvent(HANDLE arg1);
+UInt32_BOOL PalSetEvent(HANDLE arg1);
+uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3);
+
+void PalGetSystemTimeAsFileTime(FILETIME * arg1);
+
+void RuntimeThreadShutdown(void* thread);
+
+typedef void (*ThreadExitCallback)();
+
+extern ThreadExitCallback g_threadExitCallback;
+
+#include "PalInline.h"
+
+#endif // !PAL_INCLUDED

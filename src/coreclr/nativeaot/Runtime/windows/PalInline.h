@@ -5,7 +5,7 @@
 #include <arm64intr.h>
 #endif
 
-// Implementation of Redhawk PAL inline functions
+// Implementation of NativeAOT PAL inline functions
 
 EXTERN_C long __cdecl _InterlockedIncrement(long volatile *);
 #pragma intrinsic(_InterlockedIncrement)

@@ -188,26 +188,31 @@ namespace System.CommandLine
                 // the presence of those makes otherwise acceptable code be unusable on hardware which does not support VEX encodings.
                 //
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2"); // Lower SSE versions included by implication
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("movbe");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("serialize");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("waitpkg");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("x86serialize");
 
                 // If AVX was enabled, we can opportunistically enable instruction sets which use the VEX encodings
                 Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
                 Debug.Assert(InstructionSet.X64_AVX2 == InstructionSet.X86_AVX2);
+
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
                 {
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx2");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("movbe");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxifma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v256");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vaes");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul");
 
                     // If AVX2 is not in the supported set, we need to restrict the optimistic Vector<T> size, because
                     // 256-bit Vector<T> cannot be fully accelerated based on AVX2 being in the optimistic set only.
@@ -221,11 +226,15 @@ namespace System.CommandLine
                 Debug.Assert(InstructionSet.X64_AVX512 == InstructionSet.X86_AVX512);
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512))
                 {
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512v2");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512v3");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vp2intersect");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v512");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vaes_v512");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul_v512");
+
                 }
             }
             else if (allowOptimistic && targetArchitecture is TargetArchitecture.ARM64)

@@ -23,7 +23,7 @@
     <EnableBlobArtifacts Condition="'$(MonoAOTEnableLLVM)' == 'true'">false</EnableBlobArtifacts>
 
     <!-- The final stage of the runtime official build should publish everything. -->
-    <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == '' and '$(DotNetBuildOrchestrator)' != 'true'">true</EnableDefaultRidSpecificArtifacts>
+    <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == '' and '$(DotNetBuildFromVMR)' != 'true'">true</EnableDefaultRidSpecificArtifacts>
 
     <UseDotNetCertificate>true</UseDotNetCertificate>
   </PropertyGroup>
@@ -41,7 +41,7 @@
 
     <!-- On MacOS, we need to sign a number of our executables with the Mac developer cert with hardening enabled.
          Avoid doing this on Linux, which has the same executable names -->
-    <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="dotnet;apphost;corerun;createdump;singlefilehost;crossgen2;ilasm;ilc;ildasm;llc;mono-aot-cross;opt;Mono" CertificateName="MacDeveloperHarden" />
+    <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="dotnet;apphost;createdump;singlefilehost;crossgen2" CertificateName="MacDeveloperHarden" />
     <!-- Additionally, we need to notarize any .pkg files -->
     <MacOSPkg Include="$(ArtifactsPackagesDir)**/dotnet-runtime*.pkg" Exclude="$(ArtifactsPackagesDir)**/dotnet-runtime-internal*.pkg" />
     <FileSignInfo Include="@(MacOSPkg->'%(Filename)%(Extension)')" CertificateName="MacDeveloperWithNotarization" />

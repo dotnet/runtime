@@ -966,16 +966,16 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
-            # postBuildSteps:
-            #   - template: /eng/pipelines/libraries/helix.yml
-            #     parameters:
-            #       creator: dotnet-bot
-            #       testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-            #       condition: >-
-            #         or(
-            #         eq(variables['librariesContainsChange'], true),
-            #         eq(variables['coreclrContainsChange'], true),
-            #         eq(variables['isRollingBuild'], true))
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  condition: >-
+                    or(
+                    eq(variables['librariesContainsChange'], true),
+                    eq(variables['coreclrContainsChange'], true),
+                    eq(variables['isRollingBuild'], true))
 
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
