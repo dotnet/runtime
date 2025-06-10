@@ -2298,14 +2298,23 @@ namespace JIT.HardwareIntrinsics.Arm
             uint lsb;
             ulong res;
 
+            if (i < 0 || i >= op1.Length || i >= op2.Length || i >= op3.Length)
+                throw new ArgumentOutOfRangeException(nameof(i), "Index i is out of range");
+
             if (i % 2 == 0)
             {
+                if (i + 1 >= op3.Length)
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range for op3.");
+
                 lsb = op3[i + 1] & 1u;
                 res = (ulong)op1[i] + op2[i] + lsb;
                 return (uint)res;
             }
             else
             {
+                if (i - 1 < 0)
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
+
                 lsb = op3[i] & 1u;
                 res = (ulong)op1[i - 1] + op2[i - 1] + lsb;
 
@@ -2319,14 +2328,23 @@ namespace JIT.HardwareIntrinsics.Arm
             uint lsb;
             ulong res;
 
+            if (i < 0 || i >= op1.Length || i >= op2.Length || i >= op3.Length)
+                throw new ArgumentOutOfRangeException(nameof(i), "Index i is out of range");
+
             if (i % 2 == 0)
             {
+                if (i + 1 >= op3.Length)
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range for op3.");
+
                 lsb = op3[i + 1] & 1u;
                 res = (ulong)op1[i] + op2[i + 1] + lsb;
                 return (uint)res;
             }
             else
             {
+                if (i - 1 < 0)
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
+
                 lsb = op3[i] & 1u;
                 res = (ulong)op1[i - 1] + op2[i] + lsb;
 
@@ -2463,14 +2481,23 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong lsb;
             ulong res;
 
+            if (i < 0 || i >= op1.Length || i >= op2.Length || i >= op3.Length)
+                throw new ArgumentOutOfRangeException(nameof(i), "Index i is out of range");
+
             if (i % 2 == 0)
             {
+                if (i + 1 >= op3.Length)
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range for op3.");
+
                 lsb = op3[i + 1] & 1UL;
                 res = op1[i] + op2[i] + lsb;
                 return res;
             }
             else
             {
+                if (i - 1 < 0)
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
+
                 lsb = op3[i] & 1UL;
 
                 // Look for an overflow in the addition to get the carry bit
@@ -2489,14 +2516,23 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong lsb;
             ulong res;
 
+            if (i < 0 || i >= op1.Length || i >= op2.Length || i >= op3.Length)
+                throw new ArgumentOutOfRangeException(nameof(i), "Index i is out of range");
+
             if (i % 2 == 0)
             {
+                if (i + 1 >= op3.Length)
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range for op3.");
+
                 lsb = op3[i + 1] & 1UL;
                 res = op1[i] + op2[i + 1] + lsb;
                 return res;
             }
             else
             {
+                if (i - 1 < 0)
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
+
                 lsb = op3[i] & 1UL;
 
                 // Look for an overflow in the addition to get the carry bit
