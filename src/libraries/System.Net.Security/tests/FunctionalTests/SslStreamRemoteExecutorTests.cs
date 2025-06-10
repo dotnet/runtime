@@ -34,6 +34,13 @@ namespace System.Net.Security.Tests
                 return;
             }
 
+            if (PlatformDetection.IsOpenSslSupported && PlatformDetection.OpenSslVersion >= new Version(3, 5, 0))
+            {
+                // OpenSSL 3.5 and later versions log into file in SSLKEYLOGFILE environment variable by default,
+                // regardless of AppContext switch.
+                return;
+            }
+
             var psi = new ProcessStartInfo();
             var tempFile = Path.GetTempFileName();
             psi.Environment.Add("SSLKEYLOGFILE", tempFile);
