@@ -622,7 +622,7 @@ eventpipe_collect_tracing_command_try_parse_payload (
 	instance->rundown_requested = true;
 	instance->stackwalk_requested = true;
 	instance->rundown_keyword = ep_default_rundown_keyword;
-	instance->session_type = EP_IPC_SESSION_TYPE_STREAMING;
+	instance->session_type = EP_SESSION_TYPE_IPCSTREAM;
 
 ep_on_exit:
 	return (uint8_t *)instance;
@@ -658,7 +658,7 @@ eventpipe_collect_tracing2_command_try_parse_payload (
 	instance->rundown_keyword = instance->rundown_requested ? ep_default_rundown_keyword : 0;
 
 	instance->stackwalk_requested = true;
-	instance->session_type = EP_IPC_SESSION_TYPE_STREAMING;
+	instance->session_type = EP_SESSION_TYPE_IPCSTREAM;
 
 ep_on_exit:
 	return (uint8_t *)instance;
@@ -693,7 +693,7 @@ eventpipe_collect_tracing3_command_try_parse_payload (
 		ep_raise_error ();
 
 	instance->rundown_keyword = instance->rundown_requested ? ep_default_rundown_keyword : 0;
-	instance->session_type = EP_IPC_SESSION_TYPE_STREAMING;
+	instance->session_type = EP_SESSION_TYPE_IPCSTREAM;
 
 ep_on_exit:
 	return (uint8_t *)instance;
@@ -728,7 +728,7 @@ eventpipe_collect_tracing4_command_try_parse_payload (
 		ep_raise_error ();
 
 	instance->rundown_requested = instance->rundown_keyword != 0;
-	instance->session_type = EP_IPC_SESSION_TYPE_STREAMING;
+	instance->session_type = EP_SESSION_TYPE_IPCSTREAM;
 
 ep_on_exit:
 	return (uint8_t *)instance;
@@ -757,6 +757,7 @@ eventpipe_collect_tracing5_command_try_parse_payload (
 	uint8_t * buffer_cursor = buffer;
 	uint32_t buffer_cursor_len = buffer_len;
 
+	uint32_t session_type = 0;
 	EventPipeProviderOptionalFieldFlags optional_field_flags = EP_PROVIDER_OPTFIELD_EVENT_FILTER;
 
 	EventPipeCollectTracingCommandPayload *instance = ds_eventpipe_collect_tracing_command_payload_alloc ();
@@ -764,26 +765,35 @@ eventpipe_collect_tracing5_command_try_parse_payload (
 
 	instance->incoming_buffer = buffer;
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->session_type));
-	ep_raise_error_if_nok (instance->session_type < EP_IPC_SESSION_TYPE_COUNT);
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &session_type));
+	switch (session_type) {
+	case 0:
+		instance->session_type = EP_SESSION_TYPE_IPCSTREAM;
+		break;
+	case 1:
+		instance->session_type = EP_SESSION_TYPE_USEREVENTS;
+		break;
+	default:
+		ep_raise_error ();
+	}
 
-	if (instance->session_type == EP_IPC_SESSION_TYPE_STREAMING) {
+	if (instance->session_type == EP_SESSION_TYPE_IPCSTREAM) {
 		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_circular_buffer_size (&buffer_cursor, &buffer_cursor_len, &instance->circular_buffer_size_in_mb));
 		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_serialization_format (&buffer_cursor, &buffer_cursor_len, &instance->serialization_format));
-	} else if (instance->session_type == EP_IPC_SESSION_TYPE_USEREVENTS) {
+	} else if (instance->session_type == EP_SESSION_TYPE_USEREVENTS) {
 		instance->circular_buffer_size_in_mb = 0;
 		instance->serialization_format = EP_SERIALIZATION_FORMAT_NETTRACE_V4; // Serialization format isn't used for user_events sessions, default for check_options_valid.
 	}
 
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint64_t (&buffer_cursor, &buffer_cursor_len, &instance->rundown_keyword));
 
-	if (instance->session_type == EP_IPC_SESSION_TYPE_STREAMING) {
+	if (instance->session_type == EP_SESSION_TYPE_IPCSTREAM) {
 		ep_raise_error_if_nok (ds_ipc_message_try_parse_bool (&buffer_cursor, &buffer_cursor_len, &instance->stackwalk_requested));
-	} else if (instance->session_type == EP_IPC_SESSION_TYPE_USEREVENTS) {
+	} else if (instance->session_type == EP_SESSION_TYPE_USEREVENTS) {
 		instance->stackwalk_requested = false;
 	}
 
-	if (instance->session_type == EP_IPC_SESSION_TYPE_USEREVENTS)
+	if (instance->session_type == EP_SESSION_TYPE_USEREVENTS)
 		optional_field_flags = (EventPipeProviderOptionalFieldFlags)(optional_field_flags | EP_PROVIDER_OPTFIELD_TRACEPOINT_CONFIG);
 
 	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, optional_field_flags, &instance->provider_configs));
@@ -889,7 +899,7 @@ eventpipe_protocol_helper_collect_tracing (
 	}
 
 	int user_events_data_fd = 0;
-	if (payload->session_type == EP_IPC_SESSION_TYPE_USEREVENTS) {
+	if (payload->session_type == EP_SESSION_TYPE_USEREVENTS) {
 		if (!ds_ipc_stream_read_fd (stream, &user_events_data_fd)) {
 			ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
 			return false;
@@ -903,11 +913,11 @@ eventpipe_protocol_helper_collect_tracing (
 		payload->circular_buffer_size_in_mb,
 		dn_vector_data_t (payload->provider_configs, EventPipeProviderConfiguration),
 		dn_vector_size (payload->provider_configs),
-		payload->session_type == EP_IPC_SESSION_TYPE_USEREVENTS ? EP_SESSION_TYPE_USEREVENTS : EP_SESSION_TYPE_IPCSTREAM,
+		payload->session_type == EP_SESSION_TYPE_USEREVENTS ? EP_SESSION_TYPE_USEREVENTS : EP_SESSION_TYPE_IPCSTREAM,
 		payload->serialization_format,
 		payload->rundown_keyword,
 		payload->stackwalk_requested,
-		payload->session_type == EP_IPC_SESSION_TYPE_STREAMING ? ds_ipc_stream_get_stream_ref (stream) : NULL,
+		payload->session_type == EP_SESSION_TYPE_IPCSTREAM ? ds_ipc_stream_get_stream_ref (stream) : NULL,
 		NULL,
 		NULL,
 		user_events_data_fd);
