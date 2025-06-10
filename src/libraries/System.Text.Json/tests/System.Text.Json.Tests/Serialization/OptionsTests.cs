@@ -1302,6 +1302,54 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => new JsonContext(optionsSingleton));
         }
 
+        [Fact]
+        public static void JsonSerializerOptions_Strict_MatchesConstructorWithJsonSerializerDefaults()
+        {
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Strict)
+            {
+                TypeInfoResolver = JsonSerializerOptions.Default.TypeInfoResolver
+            };
+
+            JsonSerializerOptions optionsSingleton = JsonSerializerOptions.Strict;
+
+            AssertExtensions.FalseExpression(options.AllowDuplicateProperties);
+            AssertExtensions.FalseExpression(options.PropertyNameCaseInsensitive);
+            AssertExtensions.TrueExpression(options.RespectNullableAnnotations);
+            AssertExtensions.TrueExpression(options.RespectRequiredConstructorParameters);
+            Assert.Equal(JsonUnmappedMemberHandling.Disallow, options.UnmappedMemberHandling);
+
+            JsonTestHelper.AssertOptionsEqual(options, optionsSingleton);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Strict_SerializesWithExpectedSettings()
+        {
+            JsonSerializerOptions options = JsonSerializerOptions.Strict;
+            AssertExtensions.ThrowsContains<JsonException>(
+                () => JsonSerializer.Deserialize<Dictionary<string, int>>("""{"foo":1, "foo":2}""", options),
+                "Duplicate");
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Strict_ReturnsSameInstance()
+        {
+            Assert.Same(JsonSerializerOptions.Strict, JsonSerializerOptions.Strict);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Strict_IsReadOnly()
+        {
+            var optionsSingleton = JsonSerializerOptions.Strict;
+            Assert.True(optionsSingleton.IsReadOnly);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.AllowDuplicateProperties = true);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.PropertyNameCaseInsensitive = true);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.RespectNullableAnnotations = false);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.RespectRequiredConstructorParameters = false);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip);
+
+            Assert.Throws<InvalidOperationException>(() => new JsonContext(optionsSingleton));
+        }
+
         [Theory]
         [MemberData(nameof(GetInitialTypeInfoResolversAndExpectedChains))]
         public static void TypeInfoResolverChain_SetTypeInfoResolver_ReturnsExpectedChain(
