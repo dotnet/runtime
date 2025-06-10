@@ -194,7 +194,6 @@ template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t
         minValue = (double)std::numeric_limits<TResult>::lowest() - 1,
         maxValue = (double)std::numeric_limits<TResult>::max() + 1;
 
-    // (src != src) checks for NaN, then we check whether the min and max values properly bound the source value
     // We assume that we are in round-towards-zero mode
     bool inRange = (src > minValue) && (src < maxValue);
 
@@ -224,7 +223,6 @@ template <typename TSource> static void ConvOvfFpHelperI64(int8_t *stack, const 
         COMPlusThrow(kOverflowException);
 
     int64_t truncated = (int64_t)src;
-    // According to spec, for result types smaller than int32, we store them on the stack as int32
     LOCAL_VAR(ip[1], int64_t) = truncated;
 }
 
@@ -243,7 +241,6 @@ template <typename TSource> static void ConvOvfFpHelperU64(int8_t *stack, const 
         COMPlusThrow(kOverflowException);
 
     uint64_t truncated = (uint64_t)src;
-    // According to spec, for result types smaller than int32, we store them on the stack as int32
     LOCAL_VAR(ip[1], uint64_t) = truncated;
 }
 
