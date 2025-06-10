@@ -193,10 +193,24 @@ std::filesystem::path GetResultFileName(const std::filesystem::path& folderPath,
     minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&randomNumber, sizeof(randomNumber));
     std::stringstream ss;
     ss << std::hex << std::setw(8) << std::setfill('0') << randomNumber;
+    std::string suffix = ss.str() + extension;
+
+    // Limit the total file name length to MAX_PATH - 50
+    int usableLength = MAX_PATH - 50 - (int)folderPath.native().size() - (int)suffix.size();
+    if (usableLength < 0)
+    {
+        LogError("GetResultFileName - folder path '%ws' length + minimal file name exceeds limit %d", folderPath.u16string().c_str(), MAX_PATH - 50);
+        return "";
+    }
 
     std::string copy = fileName;
+    if (copy.size() > usableLength)
+    {
+        copy = copy.substr(0, usableLength);
+    }
+
     ReplaceIllegalCharacters(copy);
-    return folderPath / (copy + ss.str() + extension);
+    return folderPath / (copy + suffix);
 }
 
 #ifdef TARGET_AMD64
