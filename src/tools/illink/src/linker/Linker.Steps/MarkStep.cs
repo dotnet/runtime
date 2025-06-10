@@ -73,6 +73,8 @@ namespace Mono.Linker.Steps
 		// method body scanner.
 		readonly Dictionary<MethodBody, bool> _compilerGeneratedMethodRequiresScanner;
 
+		TypeMapHandler _typeMapHandler;
+
 		MarkStepContext? _markContext;
 		MarkStepContext MarkContext {
 			get {
@@ -89,6 +91,8 @@ namespace Mono.Linker.Steps
 				return _dynamicallyAccessedMembersTypeHierarchy;
 			}
 		}
+
+		internal TypeMapHandler TypeMapHandler => _typeMapHandler;
 
 #if DEBUG
 		static readonly DependencyKind[] _entireTypeReasons = new DependencyKind[] {
@@ -221,6 +225,7 @@ namespace Mono.Linker.Steps
 			_pending_isinst_instr = new List<(TypeDefinition, MethodBody, Instruction)> ();
 			_entireTypesMarked = new HashSet<TypeDefinition> ();
 			_compilerGeneratedMethodRequiresScanner = new Dictionary<MethodBody, bool> ();
+			_typeMapHandler = new TypeMapHandler ();
 		}
 
 		public AnnotationStore Annotations => Context.Annotations;
@@ -243,6 +248,12 @@ namespace Mono.Linker.Steps
 		{
 			InitializeCorelibAttributeXml ();
 			Context.Pipeline.InitializeMarkHandlers (Context, MarkContext);
+
+			if (Annotations.GetEntryPointAssembly() is AssemblyDefinition entryPoint) {
+				_typeMapHandler = new TypeMapHandler (entryPoint);
+			}
+
+			_typeMapHandler.Initialize (Context, this);
 
 			ProcessMarkedPending ();
 		}
@@ -1059,7 +1070,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		protected virtual void MarkCustomAttribute (CustomAttribute ca, in DependencyInfo reason, MessageOrigin origin)
+		protected internal virtual void MarkCustomAttribute (CustomAttribute ca, in DependencyInfo reason, MessageOrigin origin)
 		{
 			Annotations.Mark (ca, reason);
 			MarkMethod (ca.Constructor, new DependencyInfo (DependencyKind.AttributeConstructor, ca), origin);
@@ -1917,6 +1928,8 @@ namespace Mono.Linker.Steps
 				Annotations.Mark (type, reason, origin);
 				break;
 			}
+
+			_typeMapHandler.ProcessType (type);
 
 			// Treat cctors triggered by a called method specially and mark this case up-front.
 			if (type.HasMethods && ShouldMarkTypeStaticConstructor (type) && reason.Kind == DependencyKind.DeclaringTypeOfCalledMethod)
@@ -3233,6 +3246,8 @@ namespace Mono.Linker.Steps
 
 			MarkImplicitlyUsedFields (type, typeOrigin);
 
+			_typeMapHandler.ProcessInstantiated (type);
+
 			DoAdditionalInstantiatedTypeProcessing (type);
 		}
 
@@ -3667,6 +3682,8 @@ namespace Mono.Linker.Steps
 
 					if (type.IsInterface)
 						break;
+
+					_typeMapHandler.ProcessType (type);
 
 					if (!Annotations.IsInstantiated (type)) {
 						_pending_isinst_instr.Add ((type, method.Body, instruction));

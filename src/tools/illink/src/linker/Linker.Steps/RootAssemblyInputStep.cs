@@ -51,7 +51,7 @@ namespace Mono.Linker.Steps
 
 				Annotations.Mark (ep.DeclaringType, di, origin);
 				Annotations.AddPreservedMethod (ep.DeclaringType, ep);
-				Context.Pipeline.AppendMarkHandler (new TypeMapHandler (assembly));
+				Annotations.SetEntryPointAssembly (assembly);
 				break;
 			case AssemblyRootMode.VisibleMembers:
 				var preserve_visible = TypePreserveMembers.Visible;
