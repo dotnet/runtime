@@ -44,7 +44,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			var sources = new List<SyntaxTree> () { src };
 			sources.AddRange (additionalSources ?? Array.Empty<SyntaxTree> ());
 			var comp = CSharpCompilation.Create (
-				assemblyName: Guid.NewGuid ().ToString ("N"),
+				assemblyName: "test",
 				syntaxTrees: sources,
 				references: SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences().Add(mdRef).AddRange(additionalReferences),
 				new CSharpCompilationOptions (consoleApplication ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary));
