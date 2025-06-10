@@ -551,10 +551,17 @@ internal static partial class Interop
                 0x081a => "ecdsa_brainpoolP256r1_sha256",
                 0x081b => "ecdsa_brainpoolP384r1_sha384",
                 0x081c => "ecdsa_brainpoolP512r1_sha512",
-                _ => $"{Tls12SignatureName((byte)rawAlg)}+{Tls12HashName((byte)(rawAlg >> 8))}"
+                0x0904 => "mldsa44",
+                0x0905 => "mldsa65",
+                0x0906 => "mldsa87",
+                _ =>
+                    Tls12HashName((byte)(rawAlg >> 8)) is string hashName &&
+                    Tls12SignatureName((byte)rawAlg) is string sigName
+                        ? $"{sigName}+{hashName}"
+                        : $"0x{rawAlg:x4}" // this will cause the setter to fail, but at least we get a string representation in the log.
             };
 
-            static string Tls12HashName(byte raw) => raw switch
+            static string? Tls12HashName(byte raw) => raw switch
             {
                 0x00 => "none",
                 0x01 => "MD5",
@@ -563,19 +570,25 @@ internal static partial class Interop
                 0x04 => "SHA256",
                 0x05 => "SHA384",
                 0x06 => "SHA512",
-                _ => $"unknown(0x{raw:x2})"
+                _ => null
             };
 
-            static string Tls12SignatureName(byte raw) => raw switch
+            static string? Tls12SignatureName(byte raw) => raw switch
             {
                 0x00 => "anonymous",
                 0x01 => "RSA",
                 0x02 => "DSA",
                 0x03 => "ECDSA",
-                _ => $"unknown(0x{raw:x2})"
+                _ => null
             };
 
-            return Array.ConvertAll(rawAlgs, ConvertAlg);
+            string[] result = Array.ConvertAll(rawAlgs, ConvertAlg);
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(null, $"Default signature algorithms: {string.Join(":", result)}");
+            }
+
+            return result;
         }
 
         internal static unsafe void ConfigureSignatureAlgorithms(SafeSslHandle sslHandle, bool enablePss, bool enablePkcs1)
