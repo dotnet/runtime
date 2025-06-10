@@ -1049,31 +1049,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
             return true;
         }
-
-        public static bool SequenceEqual<T>(this T[] first, T[] second)
-        {
-            return first.SequenceEqual(second, null);
-        }
-
-        public static bool SequenceEqual<T>(this T[] first, T[] second, IEqualityComparer<T> comparer)
-        {
-            if (first.Length != second.Length)
-            {
-                return false;
-            }
-
-            comparer ??= EqualityComparer<T>.Default;
-
-            for (int i = 0; i < first.Length; i++)
-            {
-                if (!comparer.Equals(first[i], second[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
     }
 
     // Distinguishes positive and negative zeros for float and double values
