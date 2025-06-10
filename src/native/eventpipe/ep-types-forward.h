@@ -49,7 +49,7 @@ typedef struct _EventPipeSystemTime EventPipeSystemTime;
 typedef struct _EventPipeThread EventPipeThread;
 typedef struct _EventPipeThreadHolder EventPipeThreadHolder;
 typedef struct _EventPipeThreadSessionState EventPipeThreadSessionState;
-typedef struct _EventPipeTracepoint EventPipeTracepoint;
+typedef struct _EventPipeTracepoint EventPipeSessionProviderTracepoint;
 typedef struct _FastSerializableObject FastSerializableObject;
 typedef struct _FastSerializableObjectVtable FastSerializableObjectVtable;
 typedef struct _FastSerializer FastSerializer;

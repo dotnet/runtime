@@ -13,14 +13,6 @@
 #include "ep-event-payload.h"
 #include "ep-rt.h"
 
-#if HAVE_LINUX_USER_EVENTS_H
-#include <linux/user_events.h> // DIAG_IOCSREG
-#endif // HAVE_LINUX_USER_EVENTS_H
-
-#if HAVE_SYS_IOCTL_H
-#include <sys/ioctl.h> // session_register_tracepoint
-#endif // HAVE_SYS_IOCTL_H
-
 #if HAVE_UNISTD_H
 #include <unistd.h> // close
 #endif // HAVE_UNISTD_H
@@ -52,18 +44,6 @@ ep_session_remove_dangling_session_states (EventPipeSession *session);
 
 static
 bool
-session_register_tracepoint (
-	EventPipeSession *session,
-	EventPipeTracepoint *tracepoint);
-
-static
-bool
-session_unregister_tracepoint (
-	EventPipeSession *session,
-	EventPipeTracepoint *tracepoint);
-
-static
-void
 session_user_events_tracepoints_init (
 	EventPipeSession *session,
 	int user_events_data_fd);
@@ -71,12 +51,6 @@ session_user_events_tracepoints_init (
 static
 void
 session_disable_user_events (EventPipeSession *session);
-
-static
-EventPipeTracepoint *
-session_get_tracepoint_for_event (
-	EventPipeSession *session,
-	EventPipeEvent* ep_event);
 
 static
 bool
@@ -227,83 +201,22 @@ session_disable_streaming_thread (EventPipeSession *session)
 	ep_rt_wait_event_free (rt_thread_shutdown_event);
 }
 
-#if HAVE_LINUX_USER_EVENTS_H && HAVE_SYS_IOCTL_H
-static
-bool
-session_register_tracepoint (
-	EventPipeSession *session,
-	EventPipeTracepoint *tracepoint)
-{
-	struct user_reg reg = {0};
-
-	reg.size = sizeof(reg);
-	reg.enable_bit = EP_TRACEPOINT_ENABLE_BIT;
-	reg.enable_size = sizeof(tracepoint->enabled);
-	reg.enable_addr = (uint64_t)&tracepoint->enabled;
-
-	reg.name_args = (uint64_t)tracepoint->tracepoint_format;
-
-	if (ioctl(session->user_events_data_fd, DIAG_IOCSREG, &reg) == -1)
-		return false;
-
-	tracepoint->write_index = reg.write_index;
-
-	return true;
-}
-
-static
-bool
-session_unregister_tracepoint (
-	EventPipeSession *session,
-	EventPipeTracepoint *tracepoint)
-{
-	struct user_unreg unreg = {0};
-
-	unreg.size = sizeof(unreg);
-	unreg.disable_bit = EP_TRACEPOINT_ENABLE_BIT;
-	unreg.disable_addr = (uint64_t)&tracepoint->enabled;
-
-	if (ioctl(session->user_events_data_fd, DIAG_IOCSUNREG, &unreg) == -1)
-		return false;
-
-	return true;
-}
-#else // HAVE_LINUX_USER_EVENTS_H && HAVE_SYS_IOCTL_H
-static
-bool
-session_register_tracepoint (
-	EventPipeSession *session,
-	EventPipeTracepoint *tracepoint)
-{
-	// Not Supported
-	return false;
-}
-
-static
-bool
-session_unregister_tracepoint (
-	EventPipeSession *session,
-	EventPipeTracepoint *tracepoint)
-{
-	// Not Supported
-	return false;
-}
-#endif // HAVE_LINUX_USER_EVENTS_H && HAVE_SYS_IOCTL_H
-
 /*
  *  session_user_events_tracepoints_init
  *
  *  Registers all configured tracepoints for the user_events eventpipe session.
  */
 static
-void
+bool
 session_user_events_tracepoints_init (
 	EventPipeSession *session,
 	int user_events_data_fd)
 {
 	EP_ASSERT (session != NULL);
 	EP_ASSERT (session->session_type == EP_SESSION_TYPE_USEREVENTS);
-	EP_ASSERT (user_events_data_fd != 0);
+
+	if (user_events_data_fd <= 0)
+		return false;
 
 	session->user_events_data_fd = user_events_data_fd;
 
@@ -314,27 +227,11 @@ session_user_events_tracepoints_init (
 		EventPipeSessionProvider *session_provider = *dn_list_it_data_t (it, EventPipeSessionProvider *);
 		EP_ASSERT (session_provider != NULL);
 
-		EventPipeSessionProviderTracepointConfiguration *tracepoint_config = ep_session_provider_get_tracepoint_config (session_provider);
-		EP_ASSERT (tracepoint_config != NULL);
-		EP_ASSERT (tracepoint_config->default_tracepoint.tracepoint_format[0] != '\0' || tracepoint_config->tracepoints != NULL);
-
-		if (tracepoint_config->default_tracepoint.tracepoint_format[0] != '\0') {
-			ep_raise_error_if_nok (session_register_tracepoint (session, &tracepoint_config->default_tracepoint));
-		}
-
-		if (tracepoint_config->tracepoints != NULL) {
-			DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeTracepoint *, tracepoint, tracepoint_config->tracepoints) {
-				EP_ASSERT (tracepoint != NULL);
-				ep_raise_error_if_nok (session_register_tracepoint (session, tracepoint));
-			} DN_VECTOR_PTR_FOREACH_END;
-		}
+		if (!ep_session_provider_register_tracepoints (session_provider, session->user_events_data_fd))
+			return false;
 	}
-
-ep_on_exit:
-	return;
-
-ep_on_error:
-	ep_exit_error_handler ();
+	
+	return true;
 }
 
 EventPipeSession *
@@ -416,9 +313,8 @@ ep_session_alloc (
 		break;
 
 	case EP_SESSION_TYPE_USEREVENTS:
-		ep_raise_error_if_nok (user_events_data_fd != 0);
 		// With the user_events_data file, register tracepoints for each provider's tracepoint configurations
-		session_user_events_tracepoints_init (instance, user_events_data_fd);
+		ep_raise_error_if_nok (session_user_events_tracepoints_init (instance, user_events_data_fd));
 		break;
 
 	default:
@@ -728,21 +624,11 @@ session_disable_user_events (EventPipeSession *session)
 
 	ep_requires_lock_held ();
 
-	// Unregister all tracepoints.
 	EventPipeSessionProviderList *providers = ep_session_get_providers (session);
 	EP_ASSERT (providers != NULL);
 	for (dn_list_it_t it = dn_list_begin (ep_session_provider_list_get_providers (providers)); !dn_list_it_end (it); it = dn_list_it_next (it)) {
 		EventPipeSessionProvider *session_provider = *dn_list_it_data_t (it, EventPipeSessionProvider *);
-		EventPipeSessionProviderTracepointConfiguration *tracepoint_config = ep_session_provider_get_tracepoint_config (session_provider);
-		if (tracepoint_config->default_tracepoint.tracepoint_format[0] != '\0')
-			session_unregister_tracepoint (session, &tracepoint_config->default_tracepoint);
-
-		if (tracepoint_config->tracepoints != NULL) {
-			DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeTracepoint *, tracepoint, tracepoint_config->tracepoints) {
-				EP_ASSERT (tracepoint != NULL);
-				session_unregister_tracepoint (session, tracepoint);
-			} DN_VECTOR_PTR_FOREACH_END;
-		}
+		ep_session_provider_unregister_tracepoints (session_provider, session->user_events_data_fd);
 	}
 
 	if (session->user_events_data_fd != 0) {
@@ -751,38 +637,6 @@ session_disable_user_events (EventPipeSession *session)
 #endif // HAVE_UNISTD_H
 		session->user_events_data_fd = 0;
 	}
-}
-
-static
-EventPipeTracepoint *
-session_get_tracepoint_for_event (
-	EventPipeSession *session,
-	EventPipeEvent* ep_event)
-{
-	EP_ASSERT (session != NULL);
-	EP_ASSERT (ep_event != NULL);
-	EP_ASSERT (session->session_type == EP_SESSION_TYPE_USEREVENTS);
-
-	EventPipeTracepoint *tracepoint = NULL;
-
-	EventPipeProvider *provider = ep_event_get_provider (ep_event);
-	EventPipeSessionProviderList *session_provider_list = ep_session_get_providers (session);
-	EventPipeSessionProvider *session_provider = ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (session_provider_list), ep_provider_get_provider_name (provider));
-	EventPipeSessionProviderTracepointConfiguration *tracepoint_config = ep_session_provider_get_tracepoint_config (session_provider);
-
-	if (tracepoint_config->default_tracepoint.tracepoint_format[0] != '\0')
-		tracepoint = &tracepoint_config->default_tracepoint;
-
-	dn_umap_t *event_id_to_tracepoint_map = tracepoint_config->event_id_to_tracepoint_map;
-	if (event_id_to_tracepoint_map == NULL)
-		return tracepoint;
-
-	uint32_t event_id = ep_event_get_event_id (ep_event);
-	dn_umap_it_t tracepoint_found = dn_umap_find (event_id_to_tracepoint_map, (void *)(uintptr_t)event_id);
-	if (!dn_umap_it_end (tracepoint_found))
-		tracepoint = dn_umap_it_value_t (tracepoint_found, EventPipeTracepoint *);
-
-	return tracepoint;
 }
 
 static
@@ -852,7 +706,10 @@ session_tracepoint_write_event (
 	EP_ASSERT (session != NULL);
 	EP_ASSERT (ep_event != NULL);
 
-	EventPipeTracepoint *tracepoint = session_get_tracepoint_for_event (session, ep_event);
+	EventPipeProvider *provider = ep_event_get_provider (ep_event);
+	EventPipeSessionProviderList *session_provider_list = ep_session_get_providers (session);
+	EventPipeSessionProvider *session_provider = ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (session_provider_list), ep_provider_get_provider_name (provider));
+	const EventPipeSessionProviderTracepoint *tracepoint = ep_session_provider_get_tracepoint_for_event (session_provider, ep_event);
 	if (tracepoint == NULL)
 		return false;
 
@@ -907,7 +764,6 @@ session_tracepoint_write_event (
 			if (io == NULL)
 				return false;
 		}
-
 		for (uint32_t i = 0; i < ep_event_payload->event_data_len; ++i) {
 			io[index + i].iov_base = (void *)ep_event_data_get_ptr (&event_data[i]);
 			io[index + i].iov_len = ep_event_data_get_size (&event_data[i]);
@@ -915,7 +771,7 @@ session_tracepoint_write_event (
 		index += ep_event_payload->event_data_len;
 	}
 
-	io[0].iov_base = &tracepoint->write_index;
+	io[0].iov_base = (void *)&tracepoint->write_index;
 	io[0].iov_len = sizeof(tracepoint->write_index);
 
 	io[1].iov_base = &version;

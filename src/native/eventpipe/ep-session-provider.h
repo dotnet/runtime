@@ -12,7 +12,7 @@
 #include "ep-getter-setter.h"
 
 /*
- * EventPipeTracepoint.
+ * EventPipeSessionProviderTracepoint.
  */
 
 #if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
@@ -31,6 +31,20 @@ struct _EventPipeTracepoint {
 };
 #endif
 
+bool
+ep_session_provider_register_tracepoints (
+	EventPipeSessionProvider *session_provider,
+	int user_events_data_fd);
+
+void
+ep_session_provider_unregister_tracepoints (
+	EventPipeSessionProvider *session_provider,
+	int user_events_data_fd);
+
+const EventPipeSessionProviderTracepoint *
+ep_session_provider_get_tracepoint_for_event (
+	const EventPipeSessionProvider *session_provider,
+	const EventPipeEvent *ep_event);
 
 /*
  * EventPipeSessionProviderEventFilter.
@@ -63,7 +77,7 @@ struct _EventPipeSessionProviderTracepointConfiguration {
 #else
 struct _EventPipeSessionProviderTracepointConfiguration_Internal {
 #endif
-	EventPipeTracepoint default_tracepoint;
+	EventPipeSessionProviderTracepoint default_tracepoint;
 	dn_vector_ptr_t *tracepoints;
 	dn_umap_t *event_id_to_tracepoint_map;
 };
@@ -101,8 +115,6 @@ EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, const ep_char8_t 
 EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, uint64_t, keywords)
 EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, EventPipeEventLevel, logging_level)
 EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, const ep_char8_t *, filter_data)
-EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, const EventPipeSessionProviderEventFilter *, event_filter)
-EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, EventPipeSessionProviderTracepointConfiguration *, tracepoint_config)
 
 EventPipeSessionProvider *
 ep_session_provider_alloc (
