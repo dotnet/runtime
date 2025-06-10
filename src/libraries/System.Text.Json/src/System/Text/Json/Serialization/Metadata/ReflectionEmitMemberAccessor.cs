@@ -153,6 +153,10 @@ namespace System.Text.Json.Serialization.Metadata
             return dynamicMethod;
         }
 
+#if !NET9_0_OR_GREATER
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2046",
+            Justification = "The type is annotated with RequiresUnreferencedCode, so the trimmer will warn at construction time.")]
+#endif
         public override Action<TCollection, object?> CreateAddMethodDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TCollection>() =>
             CreateDelegate<Action<TCollection, object?>>(CreateAddMethodDelegate(typeof(TCollection)));
 
