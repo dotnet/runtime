@@ -37,11 +37,5 @@ namespace Internal.LowLevelLinq
                     yield return value;
             }
         }
-
-        public static IEnumerable<T> AsEnumerable<T>(this IEnumerable<T> source)
-        {
-            Debug.Assert(source != null);
-            return source;
-        }
     }
 }

@@ -336,8 +336,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             _visitor = new RecordVisitor();
 
-            _visitor.Run(ScopeDefinitions.AsEnumerable());
-            _visitor.Run(AdditionalRootRecords.AsEnumerable());
+            _visitor.Run(ScopeDefinitions);
+            _visitor.Run(AdditionalRootRecords);
 
             IEnumerable<MetadataRecord> records = _visitor.Graph.Vertices.Where(v => v != _visitor.MetaSourceVertex);
 
