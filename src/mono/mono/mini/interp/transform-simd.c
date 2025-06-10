@@ -779,6 +779,24 @@ opcode_added:
 }
 
 #if HOST_BROWSER
+static MonoTypeEnum
+resolve_native_size (MonoTypeEnum type)
+{
+	if (type == MONO_TYPE_I)
+#if TARGET_SIZEOF_VOID_P == 4
+		return MONO_TYPE_I4;
+#else
+		return MONO_TYPE_I8;
+#endif
+	else if (type == MONO_TYPE_U)
+#if TARGET_SIZEOF_VOID_P == 4
+		return MONO_TYPE_U4;
+#else
+		return MONO_TYPE_U8;
+#endif
+	return type;
+
+}
 
 #define PSIMD_ARGTYPE_I1 MONO_TYPE_I1
 #define PSIMD_ARGTYPE_I2 MONO_TYPE_I2
@@ -803,6 +821,7 @@ opcode_added:
 static gboolean
 packedsimd_type_matches (MonoTypeEnum type, int expected_type)
 {
+	type = resolve_native_size (type);
 	if (expected_type == PSIMD_ARGTYPE_ANY)
 		return TRUE;
 	else if (type == expected_type)
@@ -906,6 +925,8 @@ lookup_packedsimd_intrinsic (const char *name, MonoType *arg1)
 		arg_type = mono_class_get_context (vector_klass)->class_inst->type_argv [0];
 	} else if (arg1->type == MONO_TYPE_PTR) {
 		arg_type = arg1->data.type;
+	} else if (MONO_TYPE_IS_VECTOR_PRIMITIVE(arg1)) {
+		arg_type = arg1;
 	} else {
 		// g_printf ("%s arg1 type was not pointer or simd type: %s\n", name, m_class_get_name (vector_klass));
 		return FALSE;
@@ -989,7 +1010,13 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	int id = lookup_intrins (sri_packedsimd_methods, sizeof (sri_packedsimd_methods), cmethod->name);
 	// We don't early-out for an unrecognized method, we will generate an NIY later
 
-	MonoClass *vector_klass = mono_class_from_mono_type_internal (csignature->ret);
+	MonoClass *vector_klass = NULL;
+	if (csignature->ret->type == MONO_TYPE_VOID && csignature->param_count > 1 && mono_type_is_pointer (csignature->params [0])) {
+		// The Store* methods have a more complicated signature
+		vector_klass = mono_class_from_mono_type_internal (csignature->params [1]);
+	} else {
+		vector_klass = mono_class_from_mono_type_internal (csignature->ret);
+	}
 	MonoTypeEnum atype;
 	int vector_size = -1, arg_size, scalar_arg;
 
