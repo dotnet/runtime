@@ -24,6 +24,7 @@ std::filesystem::path g_DefaultRealJitPath{""};
 std::unique_ptr<MethodCallSummarizer> g_globalContext = nullptr;
 
 // RAII holder for logger
+// Global deconstructors are unreliable. We only use it for superpmi shim.
 class LoggerHolder
 {
 public:

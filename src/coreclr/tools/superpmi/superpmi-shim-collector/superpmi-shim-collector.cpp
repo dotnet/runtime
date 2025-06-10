@@ -28,6 +28,7 @@ bool                  g_initialized      = false;
 char*                 g_collectionFilter = nullptr;
 
 // RAII holder for logger
+// Global deconstructors are unreliable. We only use it for superpmi shim.
 class LoggerHolder
 {
 public:

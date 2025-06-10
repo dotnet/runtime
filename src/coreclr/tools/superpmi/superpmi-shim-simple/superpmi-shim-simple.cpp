@@ -22,6 +22,7 @@ std::filesystem::path g_HomeDirectory{""};
 std::filesystem::path g_DefaultRealJitPath{""};
 
 // RAII holder for logger
+// Global deconstructors are unreliable. We only use it for superpmi shim.
 class LoggerHolder
 {
 public:
