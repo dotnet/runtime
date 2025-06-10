@@ -984,7 +984,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     // Distinguishes positive and negative zeros for float and double values
     public static class CustomComparer
     {
-        public static unsafe bool Equals(float x, float y)
+        public static bool Equals(float x, float y)
         {
             return BitConverter.SingleToInt32Bits(x) == BitConverter.SingleToInt32Bits(y);
         }
