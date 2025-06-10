@@ -106,6 +106,7 @@ struct ProfilingScanContext;
 #define CLR_GCHEAPANDTYPENAMES_KEYWORD 0x1000000
 #define CLR_ALLOCATIONSAMPLING_KEYWORD 0x80000000000
 #define CLR_RUNDOWNLOADER_KEYWORD 0x8
+#define CLR_RUNDOWNEND_KEYWORD 0x100
 
 //
 // Using KEYWORDZERO means when checking the events category ignore the keyword
@@ -149,32 +150,27 @@ namespace ETW
     // Class to wrap all the enumeration logic for ETW
     class EnumerationLog
     {
-        public:
-            static void EndRundown();
+    public:
+        typedef union _EnumerationStructs
+        {
+            typedef enum _EnumerationOptions
+            {
+                None=                               0x00000000,
+                DomainAssemblyModuleLoad=           0x00000001,
+                DomainAssemblyModuleDCEnd=          0x00000008,
+            }EnumerationOptions;
+        }EnumerationStructs;
+        static void EndRundown();
     };
 
     // Class to wrap all Loader logic for ETW
     class LoaderLog
     {
+        friend class ETW::EnumerationLog;
+        static void SendModuleEvent(HANDLE pModule, DWORD dwEventOptions);
     public:
         typedef union _LoaderStructs
         {
-            typedef enum _AppDomainFlags
-            {
-                DefaultDomain=0x1,
-                ExecutableDomain=0x2,
-                SharedDomain=0x4
-            }AppDomainFlags;
-
-            typedef enum _AssemblyFlags
-            {
-                DomainNeutralAssembly=0x1,
-                DynamicAssembly=0x2,
-                NativeAssembly=0x4,
-                CollectibleAssembly=0x8,
-                ReadyToRunAssembly=0x10,
-            }AssemblyFlags;
-
             typedef enum _ModuleFlags
             {
                 DomainNeutralModule=0x1,
@@ -185,12 +181,6 @@ namespace ETW
                 ReadyToRunModule=0x20,
                 PartialReadyToRunModule=0x40,
             }ModuleFlags;
-
-            typedef enum _RangeFlags
-            {
-                HotRange=0x0
-            }RangeFlags;
-
         }LoaderStructs;
     };
 }

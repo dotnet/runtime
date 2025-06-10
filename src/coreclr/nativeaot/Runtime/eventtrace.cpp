@@ -315,39 +315,69 @@ void EtwCallback(
 
     EtwCallbackCommon(providerIndex, IsEnabled, Level, MatchAnyKeyword, FilterData, EtwSessionChangeUnknown);
 
-    if (IsEnabled &&
-        (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle) &&
-        GCHeapUtilities::IsGCHeapInitialized())
+    if (IsEnabled)
     {
-        FireEtwGCSettings_V1(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
-                          GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(TRUE),
-                          GCHeapUtilities::IsServerHeap(), GetClrInstanceId());
-        GCHeapUtilities::GetGCHeap()->DiagTraceGCSegments();
+        if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle &&
+            GCHeapUtilities::IsGCHeapInitialized())
+        {
+            FireEtwGCSettings_V1(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
+                              GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(TRUE),
+                              GCHeapUtilities::IsServerHeap(), GetClrInstanceId());
+            GCHeapUtilities::GetGCHeap()->DiagTraceGCSegments();
+        }
+
+        if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimeRundownHandle)
+        {
+            if (IsRuntimeRundownProviderEnabled(TRACE_LEVEL_INFORMATION, CLR_RUNDOWNEND_KEYWORD))
+                ETW::EnumerationLog::EndRundown();
+        }
     }
 }
 
 #endif // FEATURE_ETW
 
-/**************************************************************************************/
-/* Called when ETW is turned OFF on an existing process .Will be used by the controller for end rundown*/
-/**************************************************************************************/
-void ETW::EnumerationLog::EndRundown()
+//---------------------------------------------------------------------------------------
+//
+// send a module load/unload or rundown event and domainmodule load and rundown event
+//
+// Arguments:
+//      * pModule - Module loading or unloading
+//      * dwEventOptions - Bitmask of which events to fire
+//
+void ETW::LoaderLog::SendModuleEvent(HANDLE pModule, DWORD dwEventOptions)
 {
-    if (IsRuntimeRundownProviderEnabled(TRACE_LEVEL_INFORMATION, CLR_RUNDOWNLOADER_KEYWORD))
+    const WCHAR * wszModuleFileName = NULL;
+    const WCHAR * wszModuleILFileName = W("");
+
+    PalGetModuleFileName(&wszModuleFileName, pModule);
+
+    GUID nativeGuid;
+    uint32_t dwAge;
+    WCHAR wszPath[1024];
+    PalGetPDBInfo(pModule, &nativeGuid, &dwAge, wszPath, ARRAY_SIZE(wszPath));
+
+    GUID zeroGuid = { 0 };
+
+    if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad)
     {
-        HANDLE pModule = PalGetModuleHandleFromPointer((void*)&EndRundown);
-
-        const TCHAR * wszModuleFileName = NULL;
-        const TCHAR * wszModuleILFileName = _T("");
-
-        PalGetModuleFileName(&wszModuleFileName, pModule);
-
-        GUID nativeGuid;
-        uint32_t dwAge;
-        TCHAR wszPath[1024];
-        PalGetPDBInfo(pModule, &nativeGuid, &dwAge, wszPath, ARRAY_SIZE(wszPath));
-
-        GUID zeroGuid = { 0 };
+        FireEtwModuleLoad_V2(
+            ULONGLONG(pModule),
+            0,                      // AssemblyID
+            ETW::LoaderLog::LoaderStructs::NativeModule, // Module Flags
+            0,                      // Reserved1, 
+            wszModuleILFileName,    // ModuleILPath, 
+            wszModuleFileName,      // ModuleNativePath, 
+            GetClrInstanceId(),
+            &zeroGuid,              // ManagedPdbSignature,
+            0,                      // ManagedPdbAge, 
+            NULL,                   // ManagedPdbBuildPath, 
+            &nativeGuid,            // NativePdbSignature,
+            dwAge,                  // NativePdbAge, 
+            wszPath                 // NativePdbBuildPath, 
+            );
+    }
+    else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd)
+    {
         FireEtwModuleDCEnd_V2(
             ULONGLONG(pModule),
             0,                      // AssemblyID
@@ -363,6 +393,29 @@ void ETW::EnumerationLog::EndRundown()
             dwAge,                  // NativePdbAge, 
             wszPath                 // NativePdbBuildPath, 
             );
+    }
+    else
+    {
+        ASSERT(0);
+    }
+}
+
+/**************************************************************************************/
+/* Called when ETW is turned OFF on an existing process .Will be used by the controller for end rundown*/
+/**************************************************************************************/
+void ETW::EnumerationLog::EndRundown()
+{
+    if (IsRuntimeRundownProviderEnabled(TRACE_LEVEL_INFORMATION, CLR_RUNDOWNLOADER_KEYWORD))
+    {
+        // begin marker event will go to the rundown provider
+        FireEtwDCEndInit_V1(GetClrInstanceId());
+
+        HANDLE pModule = PalGetModuleHandleFromPointer((void*)&EndRundown);
+
+        LoaderLog::SendModuleEvent(pModule, EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd);
+
+        // end marker event will go to the rundown provider
+        FireEtwDCEndComplete_V1(GetClrInstanceId());
     }
 }
 
