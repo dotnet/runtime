@@ -91,21 +91,21 @@ class CallStubGenerator
     static const int NoRange = -1;
 
     // Current sequential range of general purpose registers used to pass arguments.
-    int m_r1;
-    int m_r2;
+    int m_r1 = NoRange;
+    int m_r2 = NoRange;
     // Current sequential range of floating point registers used to pass arguments.
-    int m_x1;
-    int m_x2;
+    int m_x1 = NoRange;
+    int m_x2 = NoRange;
     // Current sequential range of offsets of stack arguments used to pass arguments.
-    int m_s1;
-    int m_s2;
+    int m_s1 = NoRange;
+    int m_s2 = NoRange;
     // The index of the next routine to store in the Routines array.
-    int m_routineIndex;
+    int m_routineIndex = 0;
     // The total stack size used for the arguments.
-    int m_totalStackSize;
+    int m_totalStackSize = 0;
 
     CallStubHeader::InvokeFunctionPtr m_pInvokeFunction = NULL;
-    bool m_interpreterToNative;
+    bool m_interpreterToNative = false;
 
 #ifndef UNIX_AMD64_ABI
     PCODE GetGPRegRefRoutine(int r);

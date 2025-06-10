@@ -29,10 +29,10 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
     }
     CONTRACTL_END
 
-    CallStubGenerator callStubGenerator;
     CallStubHeader *pHeader = pMD->GetCallStub();
     if (pHeader == NULL)
     {
+        CallStubGenerator callStubGenerator;
         GCX_PREEMP();
 
         AllocMemTracker amTracker;

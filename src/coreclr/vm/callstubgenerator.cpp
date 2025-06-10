@@ -1288,6 +1288,8 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
     // plus one slot for the target pointer and reallocated to the real size at the end.
     PCODE *pRoutines = (PCODE*)alloca(ComputeTempStorageSize(sig));
 
+    m_interpreterToNative = true; // We always generate the interpreter to native call stub here
+
     ComputeCallStub(sig, pRoutines);
 
     xxHash hashState;
