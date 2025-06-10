@@ -25,7 +25,6 @@ internal sealed class MdBinaryWriterGen : CsWriter
         WriteLine("using System.Collections.Generic;");
         WriteLine("using System.IO;");
         WriteLine("using System.Reflection;");
-        WriteLine("using Internal.LowLevelLinq;");
         WriteLine("using Internal.NativeFormat;");
         WriteLine("using Debug = System.Diagnostics.Debug;");
         WriteLine();

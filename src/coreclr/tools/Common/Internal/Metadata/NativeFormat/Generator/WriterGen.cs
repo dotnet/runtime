@@ -20,7 +20,6 @@ internal sealed class WriterGen : CsWriter
         WriteLine("using System.Collections.Generic;");
         WriteLine("using System.Reflection;");
         WriteLine("using System.Threading;");
-        WriteLine("using Internal.LowLevelLinq;");
         WriteLine("using Internal.Metadata.NativeFormat.Writer;");
         WriteLine("using Internal.NativeFormat;");
         WriteLine("using HandleType = Internal.Metadata.NativeFormat.HandleType;");
