@@ -196,9 +196,9 @@ template <typename TResult, typename TSource> static void ConvOvfFpHelper(int8_t
 
     // (src != src) checks for NaN, then we check whether the min and max values properly bound the source value
     // We assume that we are in round-towards-zero mode
-    bool outOfRange = (src != src) || (src <= minValue) || (src >= maxValue);
+    bool inRange = (src > minValue) && (src < maxValue);
 
-    if (outOfRange)
+    if (!inRange)
         COMPlusThrow(kOverflowException);
 
     TResult truncated = (TResult)src;
@@ -212,7 +212,7 @@ template <typename TSource> static void ConvOvfFpHelperI64(int8_t *stack, const 
 {
     static_assert(!std::numeric_limits<TSource>::is_integer, "ConvOvfFpHelper is only for use on floats and doubles");
 
-    const double two63  = 2147483648.0 * 4294967296.0;
+    const double two63 = 2147483648.0 * 4294967296.0;
     // First, promote the source value to double
     double src = LOCAL_VAR(ip[2], TSource),
         // Define the boundary values we need to be between (see System.Math.ConvertToInt64Checked)
