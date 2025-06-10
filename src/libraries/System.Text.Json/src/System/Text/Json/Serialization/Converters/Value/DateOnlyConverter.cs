@@ -44,17 +44,22 @@ namespace System.Text.Json.Serialization.Converters
             {
                 Span<byte> stackSpan = stackalloc byte[MaxEscapedFormatLength];
                 int bytesWritten = reader.CopyString(stackSpan);
+
+                // CopyString can unescape which can change the length, so we need to perform the range check again.
+                if (!JsonHelpers.IsInRangeInclusive(bytesWritten, FormatLength, MaxEscapedFormatLength))
+                {
+                    ThrowHelper.ThrowFormatException(DataType.DateOnly);
+                }
+
                 source = stackSpan.Slice(0, bytesWritten);
             }
 
-            if (JsonHelpers.IsInRangeInclusive(source.Length, FormatLength, MaxEscapedFormatLength) &&
-                JsonHelpers.TryParseAsIso(source, out DateOnly value))
+            if (!JsonHelpers.TryParseAsIso(source, out DateOnly value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException(DataType.DateOnly);
             }
 
-            ThrowHelper.ThrowFormatException(DataType.DateOnly);
-            return default;
+            return value;
         }
 
         public override void Write(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options)
