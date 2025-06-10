@@ -350,8 +350,6 @@ DEBUG_NOINLINE void ClrEnterCriticalSection(CRITSEC_COOKIE cookie) {
     }
     CONTRACTL_END;
 
-    ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-
     Crst *pCrst = CookieToCrst(cookie);
     _ASSERTE(pCrst);
 
@@ -366,8 +364,6 @@ DEBUG_NOINLINE void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-    ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
 
     Crst *pCrst = CookieToCrst(cookie);
     _ASSERTE(pCrst);

@@ -311,7 +311,6 @@ set(VM_SOURCES_WKS
     cachelinealloc.cpp
     callconvbuilder.cpp
     callhelpers.cpp
-    callsiteinspect.cpp
     callstubgenerator.cpp
     clrconfignative.cpp
     clrex.cpp
@@ -594,6 +593,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 
     # COM interop scenarios
     list(APPEND VM_SOURCES_WKS
+        callsiteinspect.cpp
         classcompat.cpp
         comcache.cpp
         comcallablewrapper.cpp

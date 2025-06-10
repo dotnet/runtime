@@ -437,6 +437,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
             amt.SuppressRelease();
             pCode = PINSTRToPCODE(pPrecode->GetEntryPoint());
             SetNativeCodeInterlocked(pCode);
+            SetInterpreterCode(dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr));
         }
 #endif // FEATURE_INTERPRETER
     }
@@ -1990,7 +1991,8 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 }
 
 #ifdef FEATURE_INTERPRETER
-extern "C" void STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, int8_t* pArgs, size_t size, int8_t *pReturnValue, size_t returnValueSize)
+extern "C" void STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, int8_t* pArgs, size_t size, void* retBuff)
+extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, )
 {
     // Argument registers are in the TransitionBlock
     // The stack arguments are right after the pTransitionBlock
@@ -2022,21 +2024,15 @@ extern "C" void STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTrans
     }
     frames(pTransitionBlock);
 
-    StackVal retVal;
-
-    frames.interpMethodContextFrame.startIp = (int32_t*)byteCodeAddr;
+    frames.interpMethodContextFrame.startIp = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
     frames.interpMethodContextFrame.pStack = sp;
-    frames.interpMethodContextFrame.pRetVal = (int8_t*)&retVal;
+    frames.interpMethodContextFrame.pRetVal = (retBuff != NULL) ? (int8_t*)retBuff : sp;
 
     InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
 
-    if (pReturnValue != nullptr && returnValueSize > 0)
-    {
-        // Copy the return value from the stack to the returnValue pointer
-        memcpy(pReturnValue, &retVal, returnValueSize);
-    }
-
     frames.interpreterFrame.Pop();
+
+    return frames.interpMethodContextFrame.pRetVal;
 }
 
 extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr)
@@ -2197,12 +2193,15 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 
         if (doBackpatch)
         {
-            RETURN DoBackpatch(pMT, pDispatchingMT, doFullBackpatch);
+            pCode = DoBackpatch(pMT, pDispatchingMT, doFullBackpatch);
+        }
+        else
+        {
+            _ASSERTE(!doFullBackpatch);
         }
 
         _ASSERTE(pCode != (PCODE)NULL);
-        _ASSERTE(!doFullBackpatch);
-        RETURN pCode;
+        goto Return;
     }
 #endif
 
@@ -2214,7 +2213,8 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             MarkMethodNotPitchingCandidate(this);
         #endif
 
-        RETURN DoBackpatch(pMT, pDispatchingMT, TRUE);
+        pCode = DoBackpatch(pMT, pDispatchingMT, TRUE);
+        goto Return;
     }
 
     /**************************   CODE CREATION  *************************/
@@ -2336,7 +2336,19 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     _ASSERTE(!IsPointingToPrestub());
     _ASSERTE(HasStableEntryPoint());
 
-    RETURN DoBackpatch(pMT, pDispatchingMT, FALSE);
+
+    pCode = DoBackpatch(pMT, pDispatchingMT, FALSE);
+
+Return:
+#ifdef FEATURE_INTERPRETER
+    InterpByteCodeStart *pInterpreterCode = GetInterpreterCode();
+    if (pInterpreterCode != NULL)
+    {
+        CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
+    }
+#endif // FEATURE_INTERPRETER
+
+    RETURN pCode;
 }
 
 #endif // !DACCESS_COMPILE
