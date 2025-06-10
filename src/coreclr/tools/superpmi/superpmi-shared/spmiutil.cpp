@@ -194,9 +194,9 @@ std::filesystem::path GetResultFileName(const std::filesystem::path& folderPath,
     std::stringstream ss;
     ss << std::hex << std::setw(8) << std::setfill('0') << randomNumber;
 
-    std::string nameAndExtension = fileName + ss.str() + extension;
-    ReplaceIllegalCharacters(nameAndExtension);
-    return folderPath / nameAndExtension;
+    std::string copy = fileName;
+    ReplaceIllegalCharacters(copy);
+    return folderPath / (copy + ss.str() + extension);
 }
 
 #ifdef TARGET_AMD64
