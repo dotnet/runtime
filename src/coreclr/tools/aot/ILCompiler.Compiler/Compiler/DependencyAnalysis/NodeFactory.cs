@@ -598,11 +598,6 @@ namespace ILCompiler.DependencyAnalysis
                 return new ProxyTypeMapRequestNode(type);
             });
 
-            _scannedCastTarget = new NodeCache<TypeDesc, ScannedCastTargetNode>(type =>
-            {
-                return new ScannedCastTargetNode(type);
-            });
-
             NativeLayout = new NativeLayoutHelper(this);
         }
 
@@ -1498,13 +1493,6 @@ namespace ILCompiler.DependencyAnalysis
         public ProxyTypeMapRequestNode ProxyTypeMapRequest(TypeDesc type)
         {
             return _proxyTypeMapRequests.GetOrAdd(type);
-        }
-
-        private NodeCache<TypeDesc, ScannedCastTargetNode> _scannedCastTarget;
-
-        public ScannedCastTargetNode ScannedCastTarget(TypeDesc type)
-        {
-            return _scannedCastTarget.GetOrAdd(type);
         }
 
         /// <summary>

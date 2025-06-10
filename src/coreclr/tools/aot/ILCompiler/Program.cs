@@ -192,7 +192,7 @@ namespace ILCompiler
 
             CompilationModuleGroup compilationGroup;
             List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
-            TypeMapManager typeMapManager = new UsageBasedTypeMapManager(TypeMapStates.Empty);
+            TypeMapManager typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.Empty);
             bool multiFile = Get(_command.MultiFile);
             if (singleMethod != null)
             {
@@ -201,7 +201,7 @@ namespace ILCompiler
                 compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
                 if (singleMethod.OwningType is MetadataType { Module.Assembly: EcmaAssembly assembly })
                 {
-                    typeMapManager = new UsageBasedTypeMapManager(TypeMapStates.CreateFromAssembly(assembly));
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(assembly));
                 }
             }
             else
@@ -315,7 +315,7 @@ namespace ILCompiler
 
                 if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
                 {
-                    typeMapManager = new UsageBasedTypeMapManager(TypeMapStates.CreateFromAssembly(entryAssembly));
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly));
                 }
             }
 
@@ -478,7 +478,8 @@ namespace ILCompiler
             var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitPolicy, new StaticReadOnlyFieldPolicy(), flowAnnotations);
             builder
                 .UseILProvider(ilProvider)
-                .UsePreinitializationManager(preinitManager);
+                .UsePreinitializationManager(preinitManager)
+                .UseTypeMapManager(typeMapManager);
 
 #if DEBUG
             List<TypeDesc> scannerConstructedTypes = null;
@@ -525,7 +526,7 @@ namespace ILCompiler
 
                 metadataManager = ((UsageBasedMetadataManager)metadataManager).ToAnalysisBasedMetadataManager();
 
-                typeMapManager = ((UsageBasedTypeMapManager)typeMapManager).ToAnalysisBasedTypeMapManager();
+                builder.UseTypeMapManager(scanResults.GetTypeMapManager());
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
 
@@ -557,9 +558,6 @@ namespace ILCompiler
                 // compilation, but before RyuJIT gets there, it might ask questions that we don't
                 // have answers for because we didn't scan the entire method.
                 builder.UseMethodImportationErrorProvider(scanResults.GetMethodImportationErrorProvider());
-
-                // Root any observations that we may optimize out from whole program analysis
-                compilationRoots.Add(scanResults.GetOptimizedAwayObservationsProvider(devirtualizationManager));
 
                 // If we're doing preinitialization, use a new preinitialization manager that
                 // has the whole program view.
@@ -616,8 +614,7 @@ namespace ILCompiler
                 .UseSecurityMitigationOptions(securityMitigationOptions)
                 .UseDebugInfoProvider(debugInfoProvider)
                 .UseDwarf5(Get(_command.UseDwarf5))
-                .UseResilience(resilient)
-                .UseTypeMapManager(typeMapManager);
+                .UseResilience(resilient);
 
             ICompilation compilation = builder.ToCompilation();
 

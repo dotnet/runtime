@@ -22,7 +22,6 @@ namespace ILCompiler
         void RootReadOnlyDataBlob(byte[] data, int alignment, string reason, string exportName, bool exportHidden);
         void RootDelegateMarshallingData(DefType type, string reason);
         void RootStructMarshallingData(DefType type, string reason);
-        void RootPossibleCastTarget(TypeDesc type, string reason);
         void AddCompilationRoot(object o, string reason);
     }
 }

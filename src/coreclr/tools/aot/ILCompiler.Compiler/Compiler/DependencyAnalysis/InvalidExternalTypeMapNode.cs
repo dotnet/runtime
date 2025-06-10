@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.NativeFormat;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -35,14 +36,17 @@ namespace ILCompiler.DependencyAnalysis
 
         public int ClassCode => 36910224;
 
-        public int CompareToImpl(ISortableNode other, CompilerComparer comparer)
-        {
-            var otherNode = (InvalidExternalTypeMapNode)other;
+        public int CompareToImpl(ISortableNode other, CompilerComparer comparer) => comparer.Compare(TypeMapGroup, ((InvalidExternalTypeMapNode)other).TypeMapGroup);
 
-            int result = comparer.Compare(TypeMapGroup, otherNode.TypeMapGroup);
-            if (result != 0)
-                return result;
-            return comparer.Compare(ThrowingMethodStub, otherNode.ThrowingMethodStub);
+        public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, ExternalReferencesTableNode externalReferences)
+        {
+            Vertex typeMapStateVertex = writer.GetUnsignedConstant(0); // Invalid type map state
+            Vertex typeMapGroupVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.NecessaryTypeSymbol(TypeMapGroup)));
+            Vertex throwingMethodStubVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MethodEntrypoint(ThrowingMethodStub)));
+            Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, throwingMethodStubVertex);
+            return section.Place(tuple);
         }
+
+        public IExternalTypeMapNode ToAnalysisBasedNode(NodeFactory factory) => this;
     }
 }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.NativeFormat;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -12,5 +13,9 @@ namespace ILCompiler.DependencyAnalysis
     public interface IProxyTypeMapNode : IDependencyNode, ISortableNode
     {
         TypeDesc TypeMapGroup { get; }
+
+        Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, ExternalReferencesTableNode externalReferences);
+
+        IProxyTypeMapNode ToAnalysisBasedNode(NodeFactory factor);
     }
 }

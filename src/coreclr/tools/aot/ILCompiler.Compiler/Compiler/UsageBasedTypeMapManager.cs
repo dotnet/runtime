@@ -6,14 +6,16 @@ using System.Collections.Generic;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
-    public sealed class UsageBasedTypeMapManager(TypeMapStates state) : TypeMapManager(state)
+    public sealed class UsageBasedTypeMapManager : TypeMapManager
     {
-        private sealed class TypeMapsNode(TypeMapStates typeMapState) : DependencyNodeCore<NodeFactory>
+        private sealed class AllTypeMapsNode(TypeMapMetadata typeMapState) : DependencyNodeCore<NodeFactory>
         {
             public override bool InterestingForDynamicDependencyAnalysis => false;
 
@@ -26,10 +28,10 @@ namespace ILCompiler
             public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
             {
                 List<CombinedDependencyListEntry> entries = [];
-                foreach ((TypeDesc typeMapGroup, TypeMapState typeMapState) in typeMapState.States)
+                foreach ((TypeDesc typeMapGroup, TypeMapMetadata.Map typeMap) in typeMapState.Maps)
                 {
-                    entries.Add(new CombinedDependencyListEntry(typeMapState.GetExternalTypeMapNode(typeMapGroup), context.ExternalTypeMapRequest(typeMapGroup), "ExternalTypeMap"));
-                    entries.Add(new CombinedDependencyListEntry(typeMapState.GetProxyTypeMapNode(typeMapGroup), context.ProxyTypeMapRequest(typeMapGroup), "ProxyTypeMap"));
+                    entries.Add(new CombinedDependencyListEntry(typeMap.GetExternalTypeMapNode(), context.ExternalTypeMapRequest(typeMapGroup), "ExternalTypeMap"));
+                    entries.Add(new CombinedDependencyListEntry(typeMap.GetProxyTypeMapNode(), context.ProxyTypeMapRequest(typeMapGroup), "ProxyTypeMap"));
                 }
 
                 return entries;
@@ -37,14 +39,20 @@ namespace ILCompiler
 
             public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => Array.Empty<DependencyListEntry>();
             public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
-            protected override string GetName(NodeFactory context) => "TypeMapsNode";
+            protected override string GetName(NodeFactory context) => $"Type maps root node: {typeMapState.DiagnosticName}";
         }
-
-        private readonly List<TypeDesc> _usedExternalTypeMap = new List<TypeDesc>();
-        private readonly List<TypeDesc> _usedProxyTypeMap = new List<TypeDesc>();
 
         private readonly SortedSet<IExternalTypeMapNode> _externalTypeMaps = new SortedSet<IExternalTypeMapNode>(CompilerComparer.Instance);
         private readonly SortedSet<IProxyTypeMapNode> _proxyTypeMaps = new SortedSet<IProxyTypeMapNode>(CompilerComparer.Instance);
+
+        private readonly TypeMapMetadata _typeMaps;
+
+        public UsageBasedTypeMapManager(TypeMapMetadata state)
+        {
+            _typeMaps = state;
+        }
+
+        protected override bool IsEmpty => _typeMaps.IsEmpty;
 
         public override void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
@@ -55,16 +63,6 @@ namespace ILCompiler
 
         private void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
         {
-            if (obj is ExternalTypeMapRequestNode externalTypeMapRequest)
-            {
-                _usedExternalTypeMap.Add(externalTypeMapRequest.TypeMapGroup);
-            }
-
-            if (obj is ProxyTypeMapRequestNode proxyTypeMapRequestNode)
-            {
-                _usedProxyTypeMap.Add(proxyTypeMapRequestNode.TypeMapGroup);
-            }
-
             if (obj is IExternalTypeMapNode externalTypeMapNode)
             {
                 _externalTypeMaps.Add(externalTypeMapNode);
@@ -93,12 +91,7 @@ namespace ILCompiler
                 return; // No type maps to process
             }
 
-            rootProvider.AddCompilationRoot(new TypeMapsNode(_typeMaps), "TypeMapManager");
-        }
-
-        public AnalysisBasedTypeMapManager ToAnalysisBasedTypeMapManager()
-        {
-            return new AnalysisBasedTypeMapManager(_typeMaps, _usedExternalTypeMap, _usedProxyTypeMap);
+            rootProvider.AddCompilationRoot(new AllTypeMapsNode(_typeMaps), "TypeMapManager");
         }
     }
 }

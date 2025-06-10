@@ -343,10 +343,11 @@
 
     <Compile Include="Compiler\AnalysisBasedInteropStubManager.cs" />
     <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
-    <Compile Include="Compiler\AnalysisBasedTypeMapManager.cs" />
     <Compile Include="Compiler\BodySubstitution.cs" />
     <Compile Include="Compiler\BodySubstitutionParser.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AddressTakenMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AnalyzedExternalTypeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AnalyzedProxyTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ByRefTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DehydratableObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DehydratedDataNode.cs" />
@@ -414,7 +415,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ExternalTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ProxyTypeMapObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternalTypeMapObjectNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ScannedCastTargetNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />
@@ -635,7 +635,7 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64UnboxingStubNode.cs" />
-    <Compile Include="Compiler\TypeMapStates.cs" />
+    <Compile Include="Compiler\TypeMapMetadata.cs" />
     <Compile Include="Compiler\UnmanagedEntryPointsRootProvider.cs" />
     <Compile Include="Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />

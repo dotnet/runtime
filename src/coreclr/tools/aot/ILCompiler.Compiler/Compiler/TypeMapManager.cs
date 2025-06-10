@@ -22,98 +22,6 @@ namespace ILCompiler
     /// </summary>
     public abstract class TypeMapManager : ICompilationRootProvider
     {
-        protected internal sealed class TypeMapState
-        {
-            private readonly Dictionary<TypeDesc, TypeDesc> _associatedTypeMap = [];
-            private readonly Dictionary<string, (TypeDesc type, TypeDesc trimmingTarget)> _externalTypeMap = [];
-            private ThrowingMethodStub _externalTypeMapExceptionStub;
-            private ThrowingMethodStub _associatedTypeMapExceptionStub;
-
-            public void AddAssociatedTypeMapEntry(TypeDesc type, TypeDesc associatedType)
-            {
-                if (!_associatedTypeMap.TryAdd(type, associatedType))
-                {
-                    ThrowHelper.ThrowBadImageFormatException();
-                }
-            }
-            public void AddExternalTypeMapEntry(string typeName, TypeDesc type, TypeDesc trimmingTarget)
-            {
-                if (!_externalTypeMap.TryAdd(typeName, (type, trimmingTarget)))
-                {
-                    ThrowHelper.ThrowBadImageFormatException();
-                }
-            }
-
-            public void SetExternalTypeMapStub(ThrowingMethodStub stub)
-            {
-                if (_externalTypeMapExceptionStub?.Exception is TypeSystemException.FileNotFoundException)
-                {
-                    // FileNotFound exception takes precedence.
-                    return;
-                }
-                _externalTypeMapExceptionStub ??= stub;
-            }
-
-            public void SetAssociatedTypeMapStub(ThrowingMethodStub stub)
-            {
-                if (_associatedTypeMapExceptionStub?.Exception is TypeSystemException.FileNotFoundException)
-                {
-                    // FileNotFound exception takes precedence.
-                    return;
-                }
-                _associatedTypeMapExceptionStub ??= stub;
-            }
-
-            public IExternalTypeMapNode GetExternalTypeMapNode(TypeDesc group)
-            {
-                if (_externalTypeMapExceptionStub is not null)
-                {
-                    return new InvalidExternalTypeMapNode(group, _externalTypeMapExceptionStub);
-                }
-                return new ExternalTypeMapNode(group, _externalTypeMap);
-            }
-
-            public IProxyTypeMapNode GetProxyTypeMapNode(TypeDesc group)
-            {
-                if (_associatedTypeMapExceptionStub is not null)
-                {
-                    return new InvalidProxyTypeMapNode(group, _associatedTypeMapExceptionStub);
-                }
-                return new ProxyTypeMapNode(group, _associatedTypeMap);
-            }
-        }
-
-        protected internal sealed class ThrowingMethodStub(TypeDesc owningType, TypeDesc typeMapGroup, bool externalTypeMap, TypeSystemException ex) : ILStubMethod
-        {
-            public TypeSystemException Exception => ex;
-            public override string Name => $"InvalidTypeMapStub_{typeMapGroup}_{(externalTypeMap ? "External" : "Proxy")}";
-            public override MethodIL EmitIL()
-            {
-                return TypeSystemThrowingILEmitter.EmitIL(this, Exception);
-            }
-
-            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer) => other is ThrowingMethodStub otherStub ? Name.CompareTo(otherStub.Name, StringComparison.Ordinal) : -1;
-
-            public override bool IsPInvoke => false;
-
-            public override string DiagnosticName => Name;
-
-            protected override int ClassCode => 1744789196;
-
-            public override TypeDesc OwningType => owningType;
-
-            public override MethodSignature Signature => new MethodSignature(MethodSignatureFlags.Static, 0, Context.GetWellKnownType(WellKnownType.Void), []);
-
-            public override TypeSystemContext Context => owningType.Context;
-        }
-
-        protected readonly TypeMapStates _typeMaps;
-
-        protected TypeMapManager(TypeMapStates typeMapStates)
-        {
-            _typeMaps = typeMapStates;
-        }
-
         public enum TypeMapAttributeKind
         {
             None,
@@ -144,9 +52,11 @@ namespace ILCompiler
 
         public abstract void AddCompilationRoots(IRootingServiceProvider rootProvider);
 
+        protected abstract bool IsEmpty { get; }
+
         public void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
         {
-            if (_typeMaps.IsEmpty)
+            if (IsEmpty)
             {
                 return; // No type maps to emit
             }

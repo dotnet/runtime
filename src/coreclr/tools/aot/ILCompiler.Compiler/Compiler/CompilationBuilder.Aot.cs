@@ -26,7 +26,7 @@ namespace ILCompiler
         protected SecurityMitigationOptions _mitigationOptions;
         protected bool _dehydrate;
         protected bool _useDwarf5;
-        protected TypeMapManager _typeMapManager = new UsageBasedTypeMapManager(TypeMapStates.Empty);
+        protected TypeMapManager _typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.Empty);
 
         partial void InitializePartial()
         {

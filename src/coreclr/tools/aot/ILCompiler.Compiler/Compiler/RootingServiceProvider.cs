@@ -157,10 +157,5 @@ namespace ILCompiler
         {
             _rootAdder(_factory.StructMarshallingData(type), reason);
         }
-
-        public void RootPossibleCastTarget(TypeDesc type, string reason)
-        {
-            _rootAdder(_factory.ScannedCastTarget(type), reason);
-        }
     }
 }

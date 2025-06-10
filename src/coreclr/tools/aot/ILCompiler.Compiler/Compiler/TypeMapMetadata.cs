@@ -1,35 +1,130 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
+using ILCompiler.DependencyAnalysis;
+using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using static ILCompiler.TypeMapManager;
+using static ILCompiler.UsageBasedTypeMapManager;
 
 namespace ILCompiler
 {
-    public sealed class TypeMapStates
+    public sealed class TypeMapMetadata
     {
-        public static readonly TypeMapStates Empty = new TypeMapStates(new Dictionary<TypeDesc, TypeMapState>());
-
-        private readonly IReadOnlyDictionary<TypeDesc, TypeMapState> _states;
-
-        internal TypeMapStates(IReadOnlyDictionary<TypeDesc, TypeMapState> states)
+        internal sealed class Map(TypeDesc typeMapGroup)
         {
-            _states = states;
+            private sealed class ThrowingMethodStub(TypeDesc owningType, TypeDesc typeMapGroup, bool externalTypeMap, TypeSystemException ex) : ILStubMethod
+            {
+                public TypeSystemException Exception => ex;
+                public override string Name => $"InvalidTypeMapStub_{typeMapGroup}_{(externalTypeMap ? "External" : "Proxy")}";
+                public override MethodIL EmitIL()
+                {
+                    return TypeSystemThrowingILEmitter.EmitIL(this, Exception);
+                }
+
+                protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer) => other is ThrowingMethodStub otherStub ? Name.CompareTo(otherStub.Name, StringComparison.Ordinal) : -1;
+
+                public override bool IsPInvoke => false;
+
+                public override string DiagnosticName => Name;
+
+                protected override int ClassCode => 1744789196;
+
+                public override TypeDesc OwningType => owningType;
+
+                public override MethodSignature Signature => new MethodSignature(MethodSignatureFlags.Static, 0, Context.GetWellKnownType(WellKnownType.Void), []);
+
+                public override TypeSystemContext Context => owningType.Context;
+            }
+
+            private readonly Dictionary<TypeDesc, TypeDesc> _associatedTypeMap = [];
+            private readonly Dictionary<string, (TypeDesc type, TypeDesc trimmingTarget)> _externalTypeMap = [];
+            private ThrowingMethodStub _externalTypeMapExceptionStub;
+            private ThrowingMethodStub _associatedTypeMapExceptionStub;
+
+            public TypeDesc TypeMapGroup { get; } = typeMapGroup;
+
+            public void AddAssociatedTypeMapEntry(TypeDesc type, TypeDesc associatedType)
+            {
+                if (!_associatedTypeMap.TryAdd(type, associatedType))
+                {
+                    ThrowHelper.ThrowBadImageFormatException();
+                }
+            }
+            public void AddExternalTypeMapEntry(string typeName, TypeDesc type, TypeDesc trimmingTarget)
+            {
+                if (!_externalTypeMap.TryAdd(typeName, (type, trimmingTarget)))
+                {
+                    ThrowHelper.ThrowBadImageFormatException();
+                }
+            }
+
+            public void SetExternalTypeMapStub(ModuleDesc stubModule, TypeSystemException exception)
+            {
+                if (_externalTypeMapExceptionStub?.Exception is TypeSystemException.FileNotFoundException)
+                {
+                    // FileNotFound exception takes precedence.
+                    return;
+                }
+                _externalTypeMapExceptionStub ??= new ThrowingMethodStub(stubModule.GetGlobalModuleType(), TypeMapGroup, externalTypeMap: true, exception);
+            }
+
+            public void SetAssociatedTypeMapStub(ModuleDesc stubModule, TypeSystemException exception)
+            {
+                if (_associatedTypeMapExceptionStub?.Exception is TypeSystemException.FileNotFoundException)
+                {
+                    // FileNotFound exception takes precedence.
+                    return;
+                }
+                _associatedTypeMapExceptionStub ??= new ThrowingMethodStub(stubModule.GetGlobalModuleType(), TypeMapGroup, externalTypeMap: true, exception);
+            }
+
+            public IExternalTypeMapNode GetExternalTypeMapNode()
+            {
+                if (_externalTypeMapExceptionStub is not null)
+                {
+                    return new InvalidExternalTypeMapNode(TypeMapGroup, _externalTypeMapExceptionStub);
+                }
+                return new ExternalTypeMapNode(TypeMapGroup, _externalTypeMap);
+            }
+
+            public IProxyTypeMapNode GetProxyTypeMapNode()
+            {
+                if (_associatedTypeMapExceptionStub is not null)
+                {
+                    return new InvalidProxyTypeMapNode(TypeMapGroup, _associatedTypeMapExceptionStub);
+                }
+                return new ProxyTypeMapNode(TypeMapGroup, _associatedTypeMap);
+            }
         }
 
-        internal TypeMapState this[TypeDesc typeMapGroup] => _states[typeMapGroup];
+        public static readonly TypeMapMetadata Empty = new TypeMapMetadata(new Dictionary<TypeDesc, Map>(), "No type maps");
+
+        private readonly IReadOnlyDictionary<TypeDesc, Map> _states;
+
+        internal TypeMapMetadata(IReadOnlyDictionary<TypeDesc, Map> states, string diagnosticName)
+        {
+            _states = states;
+            DiagnosticName = diagnosticName;
+        }
+
+        internal Map this[TypeDesc typeMapGroup] => _states[typeMapGroup];
 
         public bool IsEmpty => _states.Count == 0;
 
-        internal IEnumerable<KeyValuePair<TypeDesc, TypeMapState>> States => _states;
+        internal IEnumerable<KeyValuePair<TypeDesc, Map>> Maps => _states;
 
-        public static TypeMapStates CreateFromAssembly(EcmaAssembly assembly)
+        public string DiagnosticName { get; }
+
+        public static TypeMapMetadata CreateFromAssembly(EcmaAssembly assembly)
         {
-            Dictionary<TypeDesc, TypeMapState> typeMapStates = [];
+            Dictionary<TypeDesc, Map> typeMapStates = [];
             HashSet<EcmaAssembly> scannedAssemblies = [];
 
             Queue<EcmaAssembly> assembliesToScan = new Queue<EcmaAssembly>();
@@ -89,20 +184,20 @@ namespace ILCompiler
                     }
                     catch (TypeSystemException ex)
                     {
-                        if (!typeMapStates.TryGetValue(typeMapGroup, out TypeMapState value))
+                        if (!typeMapStates.TryGetValue(typeMapGroup, out Map value))
                         {
-                            value = new TypeMapState();
+                            value = new Map(typeMapGroup);
                             typeMapStates[typeMapGroup] = value;
                         }
 
                         if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget or TypeMapAttributeKind.TypeMap)
                         {
-                            value.SetExternalTypeMapStub(new ThrowingMethodStub(assembly.GetGlobalModuleType(), typeMapGroup, externalTypeMap: true, ex));
+                            value.SetExternalTypeMapStub(assembly, ex);
                         }
 
                         if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget or TypeMapAttributeKind.TypeMapAssociation)
                         {
-                            value.SetAssociatedTypeMapStub(new ThrowingMethodStub(assembly.GetGlobalModuleType(), typeMapGroup, externalTypeMap: false, ex));
+                            value.SetAssociatedTypeMapStub(assembly, ex);
                         }
                     }
                 }
@@ -126,9 +221,9 @@ namespace ILCompiler
                     {
                         case [{ Value: string typeName }, { Value: TypeDesc targetType }]:
                         {
-                            if (!typeMapStates.TryGetValue(typeMapGroup, out TypeMapState typeMapState))
+                            if (!typeMapStates.TryGetValue(typeMapGroup, out Map typeMapState))
                             {
-                                typeMapStates[typeMapGroup] = typeMapState = new TypeMapState();
+                                typeMapStates[typeMapGroup] = typeMapState = new Map(typeMapGroup);
                             }
                             typeMapState.AddExternalTypeMapEntry(typeName, targetType, targetType);
                             break;
@@ -136,9 +231,9 @@ namespace ILCompiler
 
                         case [{ Value: string typeName }, { Value: TypeDesc targetType }, { Value: TypeDesc trimTargetType }]:
                         {
-                            if (!typeMapStates.TryGetValue(typeMapGroup, out TypeMapState typeMapState))
+                            if (!typeMapStates.TryGetValue(typeMapGroup, out Map typeMapState))
                             {
-                                typeMapStates[typeMapGroup] = typeMapState = new TypeMapState();
+                                typeMapStates[typeMapGroup] = typeMapState = new Map(typeMapGroup);
                             }
                             typeMapState.AddExternalTypeMapEntry(typeName, targetType, trimTargetType);
                             break;
@@ -160,16 +255,16 @@ namespace ILCompiler
                         return;
                     }
 
-                    if (!typeMapStates.TryGetValue(typeMapGroup, out TypeMapState typeMapState))
+                    if (!typeMapStates.TryGetValue(typeMapGroup, out Map typeMapState))
                     {
-                        typeMapStates[typeMapGroup] = typeMapState = new TypeMapState();
+                        typeMapStates[typeMapGroup] = typeMapState = new Map(typeMapGroup);
                     }
 
                     typeMapState.AddAssociatedTypeMapEntry(type, associatedType);
                 }
             }
 
-            return new TypeMapStates(typeMapStates);
+            return new TypeMapMetadata(typeMapStates, $"Type maps rooted at {assembly}");
         }
     }
 }

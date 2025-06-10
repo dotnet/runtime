@@ -3,10 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.NativeFormat;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -30,25 +32,21 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
         {
-            List<CombinedDependencyListEntry> entries = [];
             foreach (var (key, value) in mapEntries)
             {
-                entries.Add(new CombinedDependencyListEntry(
+                yield return new CombinedDependencyListEntry(
                     context.MaximallyConstructableType(value),
                     context.MaximallyConstructableType(key),
-                    "Proxy type map entry"));
+                    "Proxy type map entry");
             }
-
-            return entries;
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => Array.Empty<DependencyListEntry>();
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
         protected override string GetName(NodeFactory context) => $"Proxy type map: {TypeMapGroup}";
 
-        public IEnumerable<(IEETypeNode key, IEETypeNode value)> GetMarkedEntries(NodeFactory factory)
+        private IEnumerable<(IEETypeNode key, IEETypeNode value)> GetMarkedEntries(NodeFactory factory)
         {
-            List<(IEETypeNode key, IEETypeNode value)> markedEntries = [];
             foreach (var (key, value) in MapEntries)
             {
                 IEETypeNode keyNode = factory.MaximallyConstructableType(key);
@@ -56,11 +54,33 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     IEETypeNode valueNode = factory.MaximallyConstructableType(value);
                     Debug.Assert(valueNode.Marked);
-                    markedEntries.Add((keyNode, valueNode));
+                    yield return (keyNode, valueNode);
                 }
             }
-
-            return markedEntries;
         }
+
+        public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, ExternalReferencesTableNode externalReferences)
+        {
+            VertexHashtable typeMapHashTable = new VertexHashtable();
+
+            foreach ((IEETypeNode keyNode, IEETypeNode valueNode) in GetMarkedEntries(factory))
+            {
+                Vertex keyVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(keyNode));
+                Vertex valueVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(valueNode));
+                Vertex entry = writer.GetTuple(keyVertex, valueVertex);
+                typeMapHashTable.Append((uint)keyNode.Type.GetHashCode(), section.Place(entry));
+            }
+
+            Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
+            Vertex typeMapGroupVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.NecessaryTypeSymbol(TypeMapGroup)));
+            Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapHashTable);
+            return section.Place(tuple);
+        }
+
+        public IProxyTypeMapNode ToAnalysisBasedNode(NodeFactory factory)
+            => new AnalyzedProxyTypeMapNode(
+                TypeMapGroup,
+                GetMarkedEntries(factory)
+                .ToImmutableDictionary(p => p.key.Type, p => p.value.Type));
     }
 }

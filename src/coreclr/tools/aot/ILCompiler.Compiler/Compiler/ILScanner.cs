@@ -16,6 +16,7 @@ using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
 
 using Debug = System.Diagnostics.Debug;
+using Internal.NativeFormat;
 
 namespace ILCompiler
 {
@@ -275,9 +276,9 @@ namespace ILCompiler
             return new ScannedReadOnlyPolicy(MarkedNodes);
         }
 
-        public ICompilationRootProvider GetOptimizedAwayObservationsProvider(DevirtualizationManager devirtualizationManager)
+        public TypeMapManager GetTypeMapManager()
         {
-            return new OptimizedAwayObservationsRootProvider(MarkedNodes, devirtualizationManager);
+            return new ScannedTypeMapManager(_factory, MarkedNodes);
         }
 
         private sealed class ScannedVTableProvider : VTableSliceProvider
@@ -989,32 +990,50 @@ namespace ILCompiler
             }
         }
 
-        private sealed class OptimizedAwayObservationsRootProvider : ICompilationRootProvider
+        private sealed class ScannedTypeMapManager : TypeMapManager
         {
-            private HashSet<TypeDesc> _optimizedAwayCastTargets = new();
-            public OptimizedAwayObservationsRootProvider(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes, DevirtualizationManager devirtualizationManager)
+            private ImmutableArray<IExternalTypeMapNode> _externalTypeMapNodes;
+            private ImmutableArray<IProxyTypeMapNode> _proxyTypeMapNodes;
+
+            public ScannedTypeMapManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
+                ImmutableArray<IExternalTypeMapNode>.Builder externalTypeMapNodes = ImmutableArray.CreateBuilder<IExternalTypeMapNode>();
+                ImmutableArray<IProxyTypeMapNode>.Builder proxyTypeMapNodes = ImmutableArray.CreateBuilder<IProxyTypeMapNode>();
                 foreach (var node in markedNodes)
                 {
-                    if (node is ScannedCastTargetNode { Type: TypeDesc castTarget }
-                        && !devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(castTarget))
+                    if (node is IExternalTypeMapNode externalTypeMapNode)
                     {
-                        // Scanning observed a cast to castTarget, but castTarget can't be constructed.
-                        // We may completely remove the cast. If this is the only reference to castTarget,
-                        // this means that the codegen compilation would never observe castTarget.
-                        // Record it here so we can root the fact that the cast was observed.
-                        _optimizedAwayCastTargets.Add(castTarget);
+                        externalTypeMapNodes.Add(externalTypeMapNode.ToAnalysisBasedNode(factory));
                     }
+                    else if (node is IProxyTypeMapNode proxyTypeMapNode)
+                    {
+                        proxyTypeMapNodes.Add(proxyTypeMapNode.ToAnalysisBasedNode(factory));
+                    }
+                }
+
+                _externalTypeMapNodes = externalTypeMapNodes.ToImmutable();
+                _proxyTypeMapNodes = proxyTypeMapNodes.ToImmutable();
+            }
+
+            protected override bool IsEmpty => _externalTypeMapNodes.Length == 0 && _proxyTypeMapNodes.Length == 0;
+
+            public override void AddCompilationRoots(IRootingServiceProvider rootProvider)
+            {
+                const string reason = "Used Type Map Group";
+
+                foreach (IExternalTypeMapNode externalTypeMap in _externalTypeMapNodes)
+                {
+                    rootProvider.AddCompilationRoot(externalTypeMap, reason);
+                }
+
+                foreach (IProxyTypeMapNode proxyTypeMap in _proxyTypeMapNodes)
+                {
+                    rootProvider.AddCompilationRoot(proxyTypeMap, reason);
                 }
             }
 
-            public void AddCompilationRoots(IRootingServiceProvider rootProvider)
-            {
-                foreach (var target in _optimizedAwayCastTargets)
-                {
-                    rootProvider.RootPossibleCastTarget(target, "Observed cast target");
-                }
-            }
+            internal override IEnumerable<IExternalTypeMapNode> GetExternalTypeMaps() => _externalTypeMapNodes;
+            internal override IEnumerable<IProxyTypeMapNode> GetProxyTypeMaps() => _proxyTypeMapNodes;
         }
     }
 }
