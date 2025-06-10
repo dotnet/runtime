@@ -1081,7 +1081,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public static unsafe bool Equals(float x, float y)
         {
-            return *(int*)&x == *(int*)&y;
+            return BitConverter.SingleToInt32Bits(x) == BitConverter.SingleToInt32Bits(y);
         }
 
         public static bool Equals(double x, double y)
