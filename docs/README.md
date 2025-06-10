@@ -1,7 +1,6 @@
 Documents Index
 ===============
 
-This repo includes several documents that explain both high-level and low-level concepts about the .NET runtime and libraries. These are very useful for contributors, to get context that can be very difficult to acquire from just reading code.
 
 Intro to .NET
 ==================
