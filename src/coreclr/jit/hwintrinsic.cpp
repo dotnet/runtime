@@ -1628,7 +1628,7 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitTyp
     assert((isa == InstructionSet_Vector512) || (isa == InstructionSet_Vector256) || (isa == InstructionSet_Vector128));
 #endif // TARGET_XARCH
 #ifdef TARGET_ARM64
-    assert((isa == InstructionSet_Vector64) || (isa == InstructionSet_Vector128));
+    assert((isa == InstructionSet_Vector64) || (isa == InstructionSet_Vector128) || (isa == InstructionSet_Vector));
 #endif // TARGET_ARM64
 #endif // DEBUG
     return false;

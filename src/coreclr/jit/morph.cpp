@@ -9227,7 +9227,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 //    and if the call is one of these, attempt to optimize.
 //    This is post-order, meaning that it will not morph the children.
 //
-GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
+GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node ARM64_ARG(bool isScalable))
 {
     assert(opts.OptimizationEnabled());
 
@@ -9472,7 +9472,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             {
 #if defined(TARGET_ARM64)
                 // xarch doesn't have a native GT_NEG representation for integers and itself uses (Zero - v1)
-                GenTree* negNode = gtNewSimdUnOpNode(GT_NEG, retType, op2, simdBaseJitType, simdSize);
+                GenTree* negNode = gtNewSimdUnOpNode(GT_NEG, retType, op2, simdBaseJitType, simdSize, isScalable);
 
                 DEBUG_DESTROY_NODE(op1);
                 DEBUG_DESTROY_NODE(node);
@@ -9529,7 +9529,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             if (op2->IsVectorAllBitsSet())
             {
                 // xarch doesn't have a native GT_NOT representation and itself uses (v1 ^ AllBitsSet)
-                GenTree* notNode = gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize);
+                GenTree* notNode = gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize, isScalable);
 
                 DEBUG_DESTROY_NODE(op2);
                 DEBUG_DESTROY_NODE(node);
@@ -9541,7 +9541,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             if (varTypeIsFloating(simdBaseType) && op2->IsVectorNegativeZero(simdBaseType))
             {
                 // xarch doesn't have a native GT_NEG representation for floating-point and itself uses (v1 ^ -0.0)
-                GenTree* negNode = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseJitType, simdSize);
+                GenTree* negNode = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseJitType, simdSize, isScalable);
 
                 DEBUG_DESTROY_NODE(op2);
                 DEBUG_DESTROY_NODE(node);
@@ -11006,6 +11006,9 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
         CorInfoType simdBaseJitType = tree->GetSimdBaseJitType();
         var_types   simdBaseType    = tree->GetSimdBaseType();
         unsigned    simdSize        = tree->GetSimdSize();
+#if defined(TARGET_ARM64)
+        bool isScalable = (((FIRST_NI_Vector <= tree->GetHWIntrinsicId()) && (tree->GetHWIntrinsicId() <= LAST_NI_Vector)) || ((FIRST_NI_Sve <= tree->GetHWIntrinsicId()) && (tree->GetHWIntrinsicId() <= LAST_NI_Sve)));
+#endif
 
         if (tree->isCommutativeHWIntrinsic())
         {
@@ -11034,13 +11037,12 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
                 if (op1->IsCnsVec())
                 {
                     // Move constant vectors from op1 to op2 for comparison operations
-
                     genTreeOps newOper = GenTree::SwapRelop(oper);
                     var_types  lookupType =
-                        GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, newOper, retType, simdBaseType, simdSize);
+                        GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, newOper, retType, simdBaseType, simdSize ARM64_ARG(isScalable));
                     NamedIntrinsic newId =
                         GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, retType, op2, op1, simdBaseType,
-                                                                     simdSize, false);
+                                                                     simdSize, false ARM64_ARG(isScalable));
 
                     if (newId != NI_Illegal)
                     {
@@ -11076,7 +11078,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
                 }
             }
 
-            morphedTree = fgOptimizeHWIntrinsic(tree);
+            morphedTree = fgOptimizeHWIntrinsic(tree ARM64_ARG(isScalable));
         }
 
         if (retType != morphedTree->TypeGet())

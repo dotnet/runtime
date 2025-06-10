@@ -2280,6 +2280,9 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 {
                     // We ignore any differences between SIMD12 and SIMD16 here if we can broadcast the value
                     // via mvni/movi.
+                    // Also, even if UseSveForVectorT == true, we will continue generating loading in V* registers
+                    // instead of Z* registers, because their size is same if VL == 16.
+
                     const bool is8 = tree->TypeIs(TYP_SIMD8);
                     if (vecCon->IsAllBitsSet())
                     {
@@ -2298,12 +2301,12 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                             emit->emitIns_R_I(INS_movi, attr, targetReg, val.i32[0], is8 ? INS_OPTS_2S : INS_OPTS_4S);
                         }
                         else if (ElementsAreSame(val.i16, is8 ? 4 : 8) &&
-                                 emitter::emitIns_valid_imm_for_movi(val.i16[0], EA_2BYTE))
+                            emitter::emitIns_valid_imm_for_movi(val.i16[0], EA_2BYTE))
                         {
                             emit->emitIns_R_I(INS_movi, attr, targetReg, val.i16[0], is8 ? INS_OPTS_4H : INS_OPTS_8H);
                         }
                         else if (ElementsAreSame(val.i8, is8 ? 8 : 16) &&
-                                 emitter::emitIns_valid_imm_for_movi(val.i8[0], EA_1BYTE))
+                            emitter::emitIns_valid_imm_for_movi(val.i8[0], EA_1BYTE))
                         {
                             emit->emitIns_R_I(INS_movi, attr, targetReg, val.i8[0], is8 ? INS_OPTS_8B : INS_OPTS_16B);
                         }
@@ -5354,7 +5357,7 @@ void CodeGen::genSimdUpperSave(GenTreeIntrinsic* node)
     regNumber tgtReg = node->GetRegNum();
 #ifdef TARGET_ARM64
     // TODO-VL: Write a helper to do this check for LclVars*, GenTree*, etc.
-    if (Compiler::UseSveForType(op1->TypeGet()))
+    if (Compiler::UseStrictSveForType(op1->TypeGet()))
     {
         // Until we custom ABI for SVE, we will just store entire contents of Z* registers
         // on stack. If we don't do it, we will need multiple free registers to save the
@@ -5420,7 +5423,7 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
     assert((varSize == 16) || (Compiler::SizeMatchesVectorTLength(varSize)));
 
     regNumber srcReg = node->GetRegNum();
-    assert((srcReg != REG_NA) || (Compiler::UseSveForType(node->TypeGet())));
+    assert((srcReg != REG_NA) || (Compiler::UseStrictSveForType(node->TypeGet())));
 
     regNumber lclVarReg = genConsumeReg(lclNode);
     assert(lclVarReg != REG_NA);
@@ -5434,7 +5437,7 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
 
 #ifdef TARGET_ARM64
         // TODO-VL: Write a helper to do this check for LclVars*, GenTree*, etc.
-        if (Compiler::UseSveForType(op1->TypeGet()))
+        if (Compiler::UseStrictSveForType(op1->TypeGet()))
         {
             // Until we custom ABI for SVE, we will just store entire contents of Z* registers
             // on stack. If we don't do it, we will need multiple free registers to save the

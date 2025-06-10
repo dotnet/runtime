@@ -2207,9 +2207,18 @@ void emitter::emitInsSve_R_R(instruction     ins,
             {
                 assert(size == EA_8BYTE);
             }
-            else
+            else if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert(size == EA_4BYTE);
+            }
+            else if (opt == INS_OPTS_SCALABLE_H)
+            {
+                assert(size == EA_2BYTE);
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_B);
+                assert(size == EA_1BYTE);
             }
 #endif // DEBUG
             reg2 = encodingSPtoZR(reg2);
@@ -16254,9 +16263,12 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
 
         // <Zd>.<T>, <R><n|SP>
         case IF_SVE_CB_2A: // ........xx...... ......nnnnnddddd -- SVE broadcast general register
+        {
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
-            emitDispReg(encodingZRtoSP(id->idReg2()), size, false);
+            emitAttr gprSize = (size == EA_8BYTE) ? size : EA_4BYTE;
+            emitDispReg(encodingZRtoSP(id->idReg2()), gprSize, false);
             break;
+        }
 
         // <Zd>.H, <Zn>.B
         case IF_SVE_HH_2A: // ................ ......nnnnnddddd -- SVE2 FP8 upconverts

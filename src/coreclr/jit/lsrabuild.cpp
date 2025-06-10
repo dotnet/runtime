@@ -1484,7 +1484,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree*                tree,
 #ifdef TARGET_XARCH
     forceRegOptional = true;
 #elif TARGET_ARM64
-    forceRegOptional = Compiler::UseSveForType(tree->TypeGet());
+    forceRegOptional = Compiler::UseStrictSveForType(tree->TypeGet());
 #endif
     if (enregisterLocalVars && !VarSetOps::IsEmpty(compiler, largeVectorVars))
     {

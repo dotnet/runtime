@@ -3226,7 +3226,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
             instruction ins = ins_Copy(node->reg, copyType);
 #ifdef TARGET_ARM64
-            insOpts opts = Compiler::UseSveForType(copyType) ? INS_OPTS_SCALABLE_D : INS_OPTS_NONE;
+            insOpts opts = Compiler::UseStrictSveForType(copyType) ? INS_OPTS_SCALABLE_D : INS_OPTS_NONE;
             GetEmitter()->emitIns_Mov(ins, emitActualTypeSize(copyType), node->copiedReg, node->reg,
                                       /* canSkip */ false, opts);
 #else
@@ -3251,7 +3251,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             regNumber   sourceReg = edge->from->copiedReg != REG_NA ? edge->from->copiedReg : edge->from->reg;
             instruction ins       = ins_Copy(sourceReg, genActualType(edge->type));
 #ifdef TARGET_ARM64
-            insOpts opts = Compiler::UseSveForType(edge->type) ? INS_OPTS_SCALABLE_D : INS_OPTS_NONE;
+            insOpts opts = Compiler::UseStrictSveForType(edge->type) ? INS_OPTS_SCALABLE_D : INS_OPTS_NONE;
             GetEmitter()->emitIns_Mov(ins, emitActualTypeSize(edge->type), node->reg, sourceReg,
                                       /* canSkip */ true, opts);
 #else

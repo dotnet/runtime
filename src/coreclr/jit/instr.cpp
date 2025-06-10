@@ -575,7 +575,7 @@ void CodeGen::inst_Mov(var_types dstType,
 #ifdef TARGET_ARM
     GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip, flags);
 #elif defined(TARGET_ARM64)
-    bool isScalable = (size == EA_SCALABLE) || (Compiler::UseSveForType(dstType));
+    bool isScalable = (size == EA_SCALABLE) || (Compiler::UseStrictSveForType(dstType));
     GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip,
                              isScalable ? INS_OPTS_SCALABLE_B : INS_OPTS_NONE);
 #else
@@ -1930,7 +1930,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #endif
     }
 #ifdef TARGET_ARM64
-    else if (Compiler::UseSveForType(srcType))
+    else if (Compiler::UseStrictSveForType(srcType))
     {
         return INS_sve_ldr;
     }
@@ -2024,7 +2024,7 @@ instruction CodeGen::ins_Copy(var_types dstType)
 #endif
     }
 #ifdef TARGET_ARM64
-    else if (Compiler::UseSveForType(dstType))
+    else if (Compiler::UseStrictSveForType(dstType))
     {
         return INS_sve_mov;
     }
@@ -2153,7 +2153,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 #endif
     }
 #ifdef TARGET_ARM64
-    else if (Compiler::UseSveForType(dstType))
+    else if (Compiler::UseStrictSveForType(dstType))
     {
         return INS_sve_mov;
     }
@@ -2272,7 +2272,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 #endif
     }
 #ifdef TARGET_ARM64
-    else if (Compiler::UseSveForType(dstType))
+    else if (Compiler::UseStrictSveForType(dstType))
     {
         return INS_sve_str;
     }

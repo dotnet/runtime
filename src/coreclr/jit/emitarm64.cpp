@@ -1418,13 +1418,13 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) con
     {
         rn = xRegNames[reg];
     }
-    else if (size == EA_4BYTE)
+    else if ((size == EA_4BYTE))
     {
         rn = wRegNames[reg];
     }
     else if (isVectorRegister(reg))
     {
-        if ((size == EA_16BYTE) && !Compiler::UseSveForVectorT())
+        if ((size == EA_16BYTE))
         {
             rn = qRegNames[reg - REG_V0];
         }

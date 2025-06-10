@@ -6041,7 +6041,7 @@ void LinearScan::allocateRegisters()
                     lclVarInterval->isPartiallySpilled = true;
                 }
 #elif defined(TARGET_ARM64)
-                else if (Compiler::UseSveForType(lclVarInterval->registerType))
+                else if (Compiler::UseStrictSveForType(lclVarInterval->registerType))
                 {
                     // TODO-VL: Need to do this for allocateRegistersMinimal too?
                     allocate                           = false;
@@ -6061,7 +6061,7 @@ void LinearScan::allocateRegisters()
                 {
                     lclVarInterval->isPartiallySpilled = false;
 #if defined(TARGET_ARM64)
-                    if (Compiler::UseSveForType(lclVarInterval->registerType))
+                    if (Compiler::UseStrictSveForType(lclVarInterval->registerType))
                     {
                         // TODO-VL: Need to do this for allocateRegistersMinimal too?
                         allocate = false;
@@ -7543,7 +7543,7 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     // while on x86 we can spill directly to memory.
     regNumber spillReg = refPosition->assignedReg();
 #ifdef TARGET_ARM64
-    bool isVariableVL = Compiler::UseSveForType(varDsc->TypeGet());
+    bool isVariableVL = Compiler::UseStrictSveForType(varDsc->TypeGet());
     bool spillToMem   = refPosition->spillAfter || isVariableVL;
     assert((spillReg != REG_NA) || isVariableVL);
 #else
@@ -7646,7 +7646,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
         simdUpperRestore->gtFlags |= GTF_NOREG_AT_USE;
 #else
         simdUpperRestore->gtFlags |= GTF_SPILLED;
-        assert((refPosition->assignedReg() != REG_NA) || (Compiler::UseSveForType(restoreLcl->TypeGet())));
+        assert((refPosition->assignedReg() != REG_NA) || (Compiler::UseStrictSveForType(restoreLcl->TypeGet())));
         restoreReg = refPosition->assignedReg();
 #endif
     }

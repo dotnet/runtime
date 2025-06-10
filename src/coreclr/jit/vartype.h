@@ -76,6 +76,21 @@ inline bool varTypeIsSIMD(T vt)
 }
 
 template <class T>
+inline bool varTypeIsNeonSIMD(T vt)
+{
+#ifdef FEATURE_SIMD
+    bool result = varTypeIsSIMD(vt);
+#ifdef TARGET_ARM64
+    result = result && ((vt == TYP_SIMD8) || (vt == TYP_SIMD16));
+#endif // TARGET_ARM64
+    return result;
+#else
+    // Always return false if FEATURE_SIMD is not enabled
+    return false;
+#endif
+}
+
+template <class T>
 inline bool varTypeIsMask(T vt)
 {
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
