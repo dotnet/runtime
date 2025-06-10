@@ -7876,10 +7876,9 @@ GenTreeVecCon* Compiler::gtNewVconNode(var_types type, void* data)
 #endif // FEATURE_SIMD
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-GenTreeMskCon* Compiler::gtNewMskConNode(var_types type, unsigned simdSize)
+GenTreeMskCon* Compiler::gtNewMskConNode(var_types type)
 {
     GenTreeMskCon* mskCon = new (this, GT_CNS_MSK) GenTreeMskCon(type);
-    mskCon->gtSimdSize    = simdSize;
     return mskCon;
 }
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -9213,7 +9212,7 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
         case GT_CNS_MSK:
         {
-            GenTreeMskCon* mskCon = gtNewMskConNode(tree->TypeGet(), tree->AsMskCon()->gtSimdSize);
+            GenTreeMskCon* mskCon = gtNewMskConNode(tree->TypeGet());
             mskCon->gtSimdMaskVal = tree->AsMskCon()->gtSimdMaskVal;
             copy                  = mskCon;
             break;
@@ -9404,7 +9403,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
             case GT_CNS_MSK:
             {
-                GenTreeMskCon* mskCon = gtNewMskConNode(tree->TypeGet(), tree->AsMskCon()->gtSimdSize);
+                GenTreeMskCon* mskCon = gtNewMskConNode(tree->TypeGet());
                 mskCon->gtSimdMaskVal = tree->AsMskCon()->gtSimdMaskVal;
                 copy                  = mskCon;
                 goto DONE;
@@ -33308,7 +33307,7 @@ GenTreeMskCon* Compiler::gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree,
 
     var_types      retType      = tree->TypeGet();
     var_types      simdBaseType = tree->GetSimdBaseType();
-    GenTreeMskCon* mskCon       = gtNewMskConNode(retType, tree->GetSimdSize());
+    GenTreeMskCon* mskCon       = gtNewMskConNode(retType);
 
     switch (vecCon->TypeGet())
     {
@@ -33369,25 +33368,12 @@ bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
 #ifdef TARGET_ARM64
     var_types ParentSimdBaseType = JitType2PreciseVarType(parent->GetSimdBaseJitType());
 
+    // TODO-SVE: For agnostic VL, vector type may not be simd16_t
+
     if (IsCnsMsk())
     {
-        switch (AsMskCon()->gtSimdSize)
-        {
-            case 8:
-                return SveMaskPatternAll ==
-                       EvaluateSimdMaskToPattern<simd8_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
-
-            case 12:
-                return SveMaskPatternAll ==
-                       EvaluateSimdMaskToPattern<simd12_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
-
-            case 16:
-                return SveMaskPatternAll ==
-                       EvaluateSimdMaskToPattern<simd16_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
-
-            default:
-                unreached();
-        }
+        return SveMaskPatternAll ==
+               EvaluateSimdMaskToPattern<simd16_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
     }
 #endif
 

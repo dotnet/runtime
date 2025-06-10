@@ -1973,7 +1973,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
 
         bool      foundUse = BlockRange().TryGetUse(node, &use);
-        GenTree*  trueMask = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+        GenTree*  trueMask = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType);
         GenTree*  falseVal = comp->gtNewZeroConNode(simdType);
         var_types nodeType = simdType;
 

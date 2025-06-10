@@ -3028,10 +3028,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         {
             simdmask_t value = vnStore->ConstantValue<simdmask_t>(vnCns);
 
-            assert(parent->OperIsHWIntrinsic());
-            unsigned simdSize = parent->AsHWIntrinsic()->GetSimdSize();
-
-            GenTreeMskCon* mskCon = gtNewMskConNode(tree->TypeGet(), simdSize);
+            GenTreeMskCon* mskCon = gtNewMskConNode(tree->TypeGet());
             memcpy(&mskCon->gtSimdMaskVal, &value, sizeof(simdmask_t));
 
             conValTree = mskCon;

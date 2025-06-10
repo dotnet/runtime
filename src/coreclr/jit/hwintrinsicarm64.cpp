@@ -3397,45 +3397,20 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 //
 // Arguments:
 //    simdBaseJitType -- the base jit type of the nodes being masked
-//    simdSize        -- the simd size of the nodes being masked
 //
 // Return Value:
 //    The mask
 //
-GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize)
+GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType)
 {
     // Import as a constant mask
 
-    var_types      simdType     = getSIMDTypeForSize(simdSize);
     var_types      simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-    bool           found        = false;
-    GenTreeMskCon* mskCon       = gtNewMskConNode(TYP_MASK, simdSize);
+    GenTreeMskCon* mskCon       = gtNewMskConNode(TYP_MASK);
 
-    switch (simdType)
-    {
-        case TYP_SIMD8:
-        {
-            found = EvaluateSimdPatternToMask<simd8_t>(simdBaseType, &mskCon->gtSimdMaskVal, SveMaskPatternAll);
-            break;
-        }
+    // TODO-SVE: For agnostic VL, vector type may not be simd16_t
 
-        case TYP_SIMD12:
-        {
-            found = EvaluateSimdPatternToMask<simd12_t>(simdBaseType, &mskCon->gtSimdMaskVal, SveMaskPatternAll);
-            break;
-        }
-
-        case TYP_SIMD16:
-        {
-            found = EvaluateSimdPatternToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, SveMaskPatternAll);
-            break;
-        }
-
-        default:
-        {
-            unreached();
-        }
-    }
+    bool found = EvaluateSimdPatternToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, SveMaskPatternAll);
     assert(found);
 
     return mskCon;
@@ -3447,10 +3422,10 @@ GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigne
 // Return Value:
 //    The mask
 //
-GenTree* Compiler::gtNewSimdFalseMaskByteNode(unsigned simdSize)
+GenTree* Compiler::gtNewSimdFalseMaskByteNode()
 {
     // Import as a constant mask 0
-    GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK, simdSize);
+    GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
     mskCon->gtSimdMaskVal = simdmask_t::Zero();
     return mskCon;
 }
