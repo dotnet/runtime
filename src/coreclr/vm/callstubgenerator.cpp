@@ -1296,7 +1296,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         hashState.AddPointer((void*)pRoutines[i]);
     }
     hashState.Add(m_totalStackSize);
-    hashState.AddPointer(m_pInvokeFunction);
+    hashState.AddPointer((void*)m_pInvokeFunction);
 
     CachedCallStubKey cachedHeaderKey(
         hashState.ToHashCode(),
