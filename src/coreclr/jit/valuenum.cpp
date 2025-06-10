@@ -10359,6 +10359,24 @@ void ValueNumStore::vnDumpValWithExc(Compiler* comp, VNFuncApp* valWithExc)
     vnDumpExcSeq(comp, &excSeq, true);
 }
 
+// Requires vn to be VNF_ExcSetCons or VNForEmptyExcSet().
+void ValueNumStore::vnDumpExc(Compiler* comp, ValueNum vn)
+{
+    VNFuncApp funcApp;
+    if (vn == VNForEmptyExcSet())
+    {
+        printf("EmptyExcSet");
+    }
+    else if (GetVNFunc(vn, &funcApp) && (funcApp.m_func == VNF_ExcSetCons))
+    {
+        vnDumpExcSeq(comp, &funcApp, true);
+    }
+    else
+    {
+        assert(!"Invalid VN passed to vnDumpExc");
+    }
+}
+
 // Requires "excSeq" to be a ExcSetCons sequence.
 // Prints a representation of the set of exceptions on standard out.
 void ValueNumStore::vnDumpExcSeq(Compiler* comp, VNFuncApp* excSeq, bool isHead)

@@ -25,7 +25,6 @@
 
 #include "rtlfunctions.h"
 
-#include "shimload.h"
 #include "debuginfostore.h"
 #include "strsafe.h"
 
