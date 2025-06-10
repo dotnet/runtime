@@ -23,16 +23,7 @@ namespace System.Security.Cryptography
         private SafeBCryptKeyHandle _key;
 
         [MemberNotNullWhen(true, nameof(s_algHandle))]
-        internal static new bool IsSupported =>
-#if NET || NETSTANDARD2_0_OR_GREATER
-            // MLKemImplementation.Windows is used for all platforms in Microsoft.Bcl.Cryptography, so it checks that the
-            // platform is Windows.
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && s_algHandle is not null;
-#elif NETFRAMEWORK
-            s_algHandle is not null;
-#else
-#error Unhandled platform targets
-#endif
+        internal static new bool IsSupported => s_algHandle is not null;
 
         private MLKemImplementation(MLKemAlgorithm algorithm, SafeBCryptKeyHandle key, bool hasSeed, bool hasDecapsulationKey)
             : base(algorithm)
