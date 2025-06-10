@@ -488,11 +488,8 @@ public:
 
 #define CALL_ARG_STATS 0 // Collect stats about calls and call arguments.
 #define COUNT_BASIC_BLOCKS                                                                                             \
-    0 // Create a histogram of basic block sizes, and a histogram of IL sizes in the simple
-      // case of single block methods.
-#define COUNT_LOOPS                                                                                                    \
-    0                         // Collect stats about loops, such as the total number of natural loops, a histogram of
-                              // the number of loop exits, etc.
+    0                         // Create a histogram of basic block sizes, and a histogram of IL sizes in the simple
+                              // case of single block methods.
 #define DISPLAY_SIZES       0 // Display generated code, data, and GC information sizes.
 #define MEASURE_BLOCK_SIZE  0 // Collect stats about basic block and FlowEdge node sizes and memory allocations.
 #define MEASURE_FATAL       0 // Count the number of calls to fatal(), including NYIs and noway_asserts.

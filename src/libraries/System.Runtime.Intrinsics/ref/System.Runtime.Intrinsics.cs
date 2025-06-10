@@ -4928,6 +4928,46 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> DuplicateSelectedScalarToVector(System.Numerics.Vector<ushort> data, [ConstantExpected(Min = 0, Max = (byte)(31))] byte index) { throw null; }
         public static System.Numerics.Vector<uint> DuplicateSelectedScalarToVector(System.Numerics.Vector<uint> data, [ConstantExpected(Min = 0, Max = (byte)(15))] byte index) { throw null; }
         public static System.Numerics.Vector<ulong> DuplicateSelectedScalarToVector(System.Numerics.Vector<ulong> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) { throw null; }
+        public static System.Numerics.Vector<byte> ExtractAfterLastActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> data) { throw null; }
+        public static byte ExtractAfterLastActiveElementScalar(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> data) { throw null; }
+        public static System.Numerics.Vector<double> ExtractAfterLastActiveElement(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> data) { throw null; }
+        public static double ExtractAfterLastActiveElementScalar(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> data) { throw null; }
+        public static System.Numerics.Vector<short> ExtractAfterLastActiveElement(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> data) { throw null; }
+        public static short ExtractAfterLastActiveElementScalar(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> data) { throw null; }
+        public static System.Numerics.Vector<int> ExtractAfterLastActiveElement(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> data) { throw null; }
+        public static int ExtractAfterLastActiveElementScalar(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> data) { throw null; }
+        public static System.Numerics.Vector<long> ExtractAfterLastActiveElement(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> data) { throw null; }
+        public static long ExtractAfterLastActiveElementScalar(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> data) { throw null; }
+        public static System.Numerics.Vector<sbyte> ExtractAfterLastActiveElement(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static sbyte ExtractAfterLastActiveElementScalar(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static System.Numerics.Vector<float> ExtractAfterLastActiveElement(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> data) { throw null; }
+        public static float ExtractAfterLastActiveElementScalar(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> data) { throw null; }
+        public static System.Numerics.Vector<ushort> ExtractAfterLastActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> data) { throw null; }
+        public static ushort ExtractAfterLastActiveElementScalar(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> data) { throw null; }
+        public static System.Numerics.Vector<uint> ExtractAfterLastActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> data) { throw null; }
+        public static uint ExtractAfterLastActiveElementScalar(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> data) { throw null; }
+        public static System.Numerics.Vector<ulong> ExtractAfterLastActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> data) { throw null; }
+        public static ulong ExtractAfterLastActiveElementScalar(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> data) { throw null; }
+        public static System.Numerics.Vector<byte> ExtractLastActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> data) { throw null; }
+        public static byte ExtractLastActiveElementScalar(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> data) { throw null; }
+        public static System.Numerics.Vector<double> ExtractLastActiveElement(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> data) { throw null; }
+        public static double ExtractLastActiveElementScalar(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> data) { throw null; }
+        public static System.Numerics.Vector<short> ExtractLastActiveElement(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> data) { throw null; }
+        public static short ExtractLastActiveElementScalar(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> data) { throw null; }
+        public static System.Numerics.Vector<int> ExtractLastActiveElement(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> data) { throw null; }
+        public static int ExtractLastActiveElementScalar(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> data) { throw null; }
+        public static System.Numerics.Vector<long> ExtractLastActiveElement(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> data) { throw null; }
+        public static long ExtractLastActiveElementScalar(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> data) { throw null; }
+        public static System.Numerics.Vector<sbyte> ExtractLastActiveElement(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static sbyte ExtractLastActiveElementScalar(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static System.Numerics.Vector<float> ExtractLastActiveElement(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> data) { throw null; }
+        public static float ExtractLastActiveElementScalar(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> data) { throw null; }
+        public static System.Numerics.Vector<ushort> ExtractLastActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> data) { throw null; }
+        public static ushort ExtractLastActiveElementScalar(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> data) { throw null; }
+        public static System.Numerics.Vector<uint> ExtractLastActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> data) { throw null; }
+        public static uint ExtractLastActiveElementScalar(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> data) { throw null; }
+        public static System.Numerics.Vector<ulong> ExtractLastActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> data) { throw null; }
+        public static ulong ExtractLastActiveElementScalar(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> data) { throw null; }
         public static System.Numerics.Vector<byte> ExtractVector(System.Numerics.Vector<byte> upper, System.Numerics.Vector<byte> lower, [ConstantExpected] byte index) { throw null; }
         public static System.Numerics.Vector<double> ExtractVector(System.Numerics.Vector<double> upper, System.Numerics.Vector<double> lower, [ConstantExpected] byte index) { throw null; }
         public static System.Numerics.Vector<short> ExtractVector(System.Numerics.Vector<short> upper, System.Numerics.Vector<short> lower, [ConstantExpected] byte index) { throw null; }
@@ -6039,6 +6079,43 @@ namespace System.Runtime.Intrinsics.Arm
             public static new bool IsSupported { get { throw null; } }
         }
 
+        public static System.Numerics.Vector<byte> AbsoluteDifferenceAdd(System.Numerics.Vector<byte> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> AbsoluteDifferenceAdd(System.Numerics.Vector<short> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceAdd(System.Numerics.Vector<int> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceAdd(System.Numerics.Vector<long> addend, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> AbsoluteDifferenceAdd(System.Numerics.Vector<sbyte> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceAdd(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceAdd(System.Numerics.Vector<uint> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceAdd(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
+        public static System.Numerics.Vector<short> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<short> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<uint> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceAddWideningLower(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+
+        public static System.Numerics.Vector<short> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<short> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<uint> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceAddWideningUpper(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+
+        public static System.Numerics.Vector<short> AbsoluteDifferenceWideningLower(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceWideningLower(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceWideningLower(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceWideningLower(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceWideningLower(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceWideningLower(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+
+        public static System.Numerics.Vector<short> AbsoluteDifferenceWideningUpper(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceWideningUpper(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceWideningUpper(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceWideningUpper(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceWideningUpper(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceWideningUpper(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+
         public static System.Numerics.Vector<byte> BitwiseClearXor(System.Numerics.Vector<byte> xor, System.Numerics.Vector<byte> value, System.Numerics.Vector<byte> mask) { throw null; }
         public static System.Numerics.Vector<short> BitwiseClearXor(System.Numerics.Vector<short> xor, System.Numerics.Vector<short> value, System.Numerics.Vector<short> mask) { throw null; }
         public static System.Numerics.Vector<int> BitwiseClearXor(System.Numerics.Vector<int> xor, System.Numerics.Vector<int> value, System.Numerics.Vector<int> mask) { throw null; }
@@ -6071,6 +6148,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> BitwiseSelectRightInverted(System.Numerics.Vector<ushort> select, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> BitwiseSelectRightInverted(System.Numerics.Vector<uint> select, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> BitwiseSelectRightInverted(System.Numerics.Vector<ulong> select, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<short> ShiftArithmeticRounded(System.Numerics.Vector<short> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftArithmeticRounded(System.Numerics.Vector<int> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftArithmeticRounded(System.Numerics.Vector<long> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftArithmeticRounded(System.Numerics.Vector<sbyte> value, System.Numerics.Vector<sbyte> count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftArithmeticRoundedSaturate(System.Numerics.Vector<short> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftArithmeticRoundedSaturate(System.Numerics.Vector<int> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftArithmeticRoundedSaturate(System.Numerics.Vector<long> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftArithmeticRoundedSaturate(System.Numerics.Vector<sbyte> value, System.Numerics.Vector<sbyte> count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftArithmeticSaturate(System.Numerics.Vector<short> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftArithmeticSaturate(System.Numerics.Vector<int> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftArithmeticSaturate(System.Numerics.Vector<long> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftArithmeticSaturate(System.Numerics.Vector<sbyte> value, System.Numerics.Vector<sbyte> count) { throw null; }
         public static System.Numerics.Vector<byte> ShiftLeftAndInsert(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right, [ConstantExpected] byte shift) { throw null; }
         public static System.Numerics.Vector<short> ShiftLeftAndInsert(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte shift) { throw null; }
         public static System.Numerics.Vector<int> ShiftLeftAndInsert(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte shift) { throw null; }

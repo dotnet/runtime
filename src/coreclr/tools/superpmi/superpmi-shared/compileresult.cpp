@@ -854,15 +854,10 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 {
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                     {
-                        INT64 delta = (INT64)(tmp.target - fixupLocation);
-                        if (!FitsInRel28(delta))
-                        {
-                            // Assume here that we would need a jump stub for this relocation and pretend
-                            // that the jump stub is located right at the end of the method.
-                            DWORDLONG target = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
-                            delta = (INT64)(target - fixupLocation);
-                        }
-                        PutArm64Rel28((UINT32*)address, (INT32)delta);
+                        // Similar to x64's IMAGE_REL_BASED_REL32 handling we
+                        // will handle this by also hardcoding the bottom bits
+                        // of the target into the instruction.
+                        PutArm64Rel28((UINT32*)address, (INT32)tmp.target);
                     }
                     wasRelocHandled = true;
                 }

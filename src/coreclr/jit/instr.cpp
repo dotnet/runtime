@@ -357,7 +357,7 @@ bool CodeGenInterface::instIsFP(instruction ins)
 
 bool CodeGenInterface::instIsEmbeddedBroadcastCompatible(instruction ins)
 {
-    if (emitter::HasEvexEncoding(ins))
+    if (GetEmitter()->IsEvexEncodableInstruction(ins))
     {
         insTupleType tupleType = emitter::insTupleTypeInfo(ins);
         return (tupleType & INS_TT_IS_BROADCAST) != 0;
@@ -773,7 +773,7 @@ void CodeGen::inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumbe
     {
         // Is this the special case of a write-thru lclVar?
         // We mark it as SPILLED to denote that its value is valid in memory.
-        if (((tree->gtFlags & GTF_SPILL) != 0) && tree->gtOper == GT_STORE_LCL_VAR)
+        if (((tree->gtFlags & GTF_SPILL) != 0) && tree->OperIs(GT_STORE_LCL_VAR))
         {
             isValidInReg = true;
         }

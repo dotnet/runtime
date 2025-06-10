@@ -131,11 +131,11 @@ int LinearScan::BuildLclHeap(GenTree* tree)
 //
 int LinearScan::BuildShiftLongCarry(GenTree* tree)
 {
-    assert(tree->OperGet() == GT_LSH_HI || tree->OperGet() == GT_RSH_LO);
+    assert(tree->OperIs(GT_LSH_HI) || tree->OperIs(GT_RSH_LO));
 
     int      srcCount = 2;
     GenTree* source   = tree->AsOp()->gtOp1;
-    assert((source->OperGet() == GT_LONG) && source->isContained());
+    assert(source->OperIs(GT_LONG) && source->isContained());
 
     GenTree* sourceLo = source->gtGetOp1();
     GenTree* sourceHi = source->gtGetOp2();
@@ -146,7 +146,7 @@ int LinearScan::BuildShiftLongCarry(GenTree* tree)
 
     if (!tree->isContained())
     {
-        if (tree->OperGet() == GT_LSH_HI)
+        if (tree->OperIs(GT_LSH_HI))
         {
             setDelayFree(sourceLoUse);
         }
@@ -440,7 +440,7 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_CNS_DBL:
-            if (tree->TypeGet() == TYP_FLOAT)
+            if (tree->TypeIs(TYP_FLOAT))
             {
                 // An int register for float constant
                 buildInternalIntRegisterDefForNode(tree);
@@ -448,7 +448,7 @@ int LinearScan::BuildNode(GenTree* tree)
             else
             {
                 // TYP_DOUBLE
-                assert(tree->TypeGet() == TYP_DOUBLE);
+                assert(tree->TypeIs(TYP_DOUBLE));
 
                 // Two int registers for double constant
                 buildInternalIntRegisterDefForNode(tree);
@@ -474,13 +474,13 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_RETFILT:
             assert(dstCount == 0);
-            if (tree->TypeGet() == TYP_VOID)
+            if (tree->TypeIs(TYP_VOID))
             {
                 srcCount = 0;
             }
             else
             {
-                assert(tree->TypeGet() == TYP_INT);
+                assert(tree->TypeIs(TYP_INT));
                 srcCount = 1;
                 BuildUse(tree->gtGetOp1(), RBM_INTRET.GetIntRegSet());
             }
@@ -642,7 +642,7 @@ int LinearScan::BuildNode(GenTree* tree)
 #ifdef TARGET_ARM
             // This case currently only occurs for double types that are passed as TYP_LONG;
             // actual long types would have been decomposed by now.
-            if (tree->TypeGet() == TYP_LONG)
+            if (tree->TypeIs(TYP_LONG))
             {
                 dstCount = 2;
             }
@@ -653,11 +653,6 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             BuildUse(tree->gtGetOp1());
             BuildDefs(tree, dstCount);
-            break;
-
-        case GT_PUTARG_SPLIT:
-            srcCount = BuildPutArgSplit(tree->AsPutArgSplit());
-            dstCount = tree->AsPutArgSplit()->gtNumRegs;
             break;
 
         case GT_PUTARG_STK:

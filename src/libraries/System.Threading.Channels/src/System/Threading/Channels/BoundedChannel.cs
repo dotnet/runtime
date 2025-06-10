@@ -388,13 +388,7 @@ namespace System.Threading.Channels
                         // There are no items in the channel, which means we may have blocked/waiting readers.
 
                         // Try to get a blocked reader that we can transfer the item to.
-                        while (ChannelUtilities.TryDequeue(ref parent._blockedReadersHead, out blockedReader))
-                        {
-                            if (blockedReader.TryReserveCompletionIfCancelable())
-                            {
-                                break;
-                            }
-                        }
+                        blockedReader = ChannelUtilities.TryDequeueAndReserveCompletionIfCancelable(ref parent._blockedReadersHead);
 
                         // If we weren't able to get a reader, instead queue the item and get any waiters that need to be notified.
                         if (blockedReader is null)
@@ -551,13 +545,7 @@ namespace System.Threading.Channels
                         // There are no items in the channel, which means we may have blocked/waiting readers.
 
                         // Try to get a blocked reader that we can transfer the item to.
-                        while (ChannelUtilities.TryDequeue(ref parent._blockedReadersHead, out blockedReader))
-                        {
-                            if (blockedReader.TryReserveCompletionIfCancelable())
-                            {
-                                break;
-                            }
-                        }
+                        blockedReader = ChannelUtilities.TryDequeueAndReserveCompletionIfCancelable(ref parent._blockedReadersHead);
 
                         // If we weren't able to get a reader, instead queue the item and get any waiters that need to be notified.
                         if (blockedReader is null)
