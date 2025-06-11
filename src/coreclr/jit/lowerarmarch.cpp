@@ -4136,7 +4136,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 
                 // Transform:
                 //
-                // CndSel1(mask, CndSel2(AllTrue, embedded() trueValOp3), op3) to
+                // CndSel1(mask, CndSel2(AllTrue, embedded(), trueValOp3), op3) to
                 // CndSel1(mask, embedded(), op3)
                 //
                 cndSelNode->Op(2) = nestedCndSel->Op(2);
