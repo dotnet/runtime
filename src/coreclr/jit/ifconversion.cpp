@@ -928,7 +928,6 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
         bool isFalseLclVar = falseInput->OperIs(GT_LCL_VAR);
         if (isTrueLclVar != isFalseLclVar)
         {
-            GenTree* lclVar = isTrueLclVar ? trueInput : falseInput;
             GenTree* binOp  = isTrueLclVar ? falseInput : trueInput;
             assert(binOp != nullptr);
             if (binOp->OperIs(GT_ADD, GT_OR, GT_XOR) || binOp->OperIsShift())
@@ -939,6 +938,7 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
                 bool isDecrement = binOp->OperIs(GT_ADD) && (op1->IsIntegralConst(-1) || op2->IsIntegralConst(-1));
                 if ((!binOp->OperIsShift() && op1->IsIntegralConst(1)) || op2->IsIntegralConst(1) || isDecrement)
                 {
+                    GenTree* lclVar = isTrueLclVar ? trueInput : falseInput;
                     if (lclVar == nullptr)
                     {
                         assert(m_mainOper == GT_STORE_LCL_VAR && !m_doElseConversion);
@@ -974,7 +974,7 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
                 {
                     GenTree*& constOp = op1->IsIntegralConst(1) ? op1 : op2;
 
-                    constOp = isTrueLclVar ? m_comp->gtReverseCond(m_cond) : m_cond;
+                    constOp = isTrueZero ? m_comp->gtReverseCond(m_cond) : m_cond;
 
                     binOp->gtFlags |= m_cond->gtFlags & GTF_ALL_EFFECT;
                     return binOp;

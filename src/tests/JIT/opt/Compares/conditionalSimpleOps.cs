@@ -267,6 +267,18 @@ public class ConditionalSimpleOpVariableTest
     }
 
     [Theory]
+    [InlineData(44, 0)]
+    [InlineData(43, 0)]
+    [InlineData(11, 1)]
+    [InlineData(10, 0)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void and_or_zero_var_globref_reversed(uint a, uint expected)
+    {
+        uint result = (a ^ globVar) > 42 ? 0 : a & 1;
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
     [InlineData(4, 16)]
     [InlineData(6, 64)]
     [InlineData(43, 0)]
