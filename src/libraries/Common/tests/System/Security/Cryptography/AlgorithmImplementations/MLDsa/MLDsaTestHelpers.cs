@@ -474,7 +474,8 @@ namespace System.Security.Cryptography.Tests
             };
 
             byte[] byteValue = new byte[(parameterSetValue.Length + 1) * 2]; // Null terminator
-            Assert.Equal(2 * parameterSetValue.Length, Encoding.Unicode.GetBytes(parameterSetValue, byteValue));
+            int written = Encoding.Unicode.GetBytes(parameterSetValue, 0, parameterSetValue.Length, byteValue, 0);
+            Assert.Equal(byteValue.Length - 2, written);
 
             return new CngProperty(
                 "ParameterSetName",
