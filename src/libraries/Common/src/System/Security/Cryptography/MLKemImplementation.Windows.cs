@@ -204,9 +204,13 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
+                    CryptographicOperations.ZeroMemory(buffer.Slice(0, blobSize));
+
                     if (rented is not null)
                     {
-                        CryptoPool.Return(rented, blobSize);
+                        // buffer is a slice of rented which was zeroed, since it needs to be zeroed regardless of being
+                        // a rent or a stack buffer.
+                        CryptoPool.Return(rented, 0);
                     }
                 }
             }
