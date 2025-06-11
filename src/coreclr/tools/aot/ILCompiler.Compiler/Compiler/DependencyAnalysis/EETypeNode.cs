@@ -253,7 +253,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (!_type.HasInstantiation)
+                if (_type.IsArrayTypeWithoutGenericInterfaces())
                     return false;
 
                 if (!_type.Context.SupportsCanon)

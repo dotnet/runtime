@@ -11,12 +11,13 @@
 #define DN_SIMDHASH_T dn_simdhash_ptr_ptr
 #define DN_SIMDHASH_KEY_T void *
 #define DN_SIMDHASH_VALUE_T void *
-#define DN_SIMDHASH_KEY_HASHER(hash, key) (MurmurHash3_32_ptr(key, 0))
-#define DN_SIMDHASH_KEY_EQUALS(hash, lhs, rhs) (lhs == rhs)
-#if SIZEOF_VOID_P == 8
-#define DN_SIMDHASH_BUCKET_CAPACITY 11
-#else
+#define DN_SIMDHASH_KEY_HASHER(data, key) (MurmurHash3_32_ptr(key, 0))
+#define DN_SIMDHASH_KEY_EQUALS(data, lhs, rhs) (lhs == rhs)
+// perfect cache alignment. 128-byte buckets for 64-bit pointers, 64-byte buckets for 32-bit pointers
+#if SIZEOF_VOID_P == 4
 #define DN_SIMDHASH_BUCKET_CAPACITY 12
+#else
+#define DN_SIMDHASH_BUCKET_CAPACITY 11
 #endif
 
 #include "dn-simdhash-specialization.h"

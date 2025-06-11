@@ -85,13 +85,14 @@ struct ThreadLocalData
 
 typedef DPTR(ThreadLocalData) PTR_ThreadLocalData;
 
+// Using compiler specific thread local storage directives due to linkage issues.
 #ifndef DACCESS_COMPILE
 #ifdef _MSC_VER
-extern __declspec(selectany) __declspec(thread)  ThreadLocalData t_ThreadStatics;
+extern __declspec(selectany) __declspec(thread) ThreadLocalData t_ThreadStatics;
 #else
 extern __thread ThreadLocalData t_ThreadStatics;
 #endif // _MSC_VER
-#endif // DACCESS_COMPILE
+#endif // !DACCESS_COMPILE
 
 #define NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY 2
 
@@ -199,8 +200,8 @@ public:
         iterator operator++(int)
         {
             LIMITED_METHOD_CONTRACT;
-            iterator tmp = *this; 
-            ++(*this); 
+            iterator tmp = *this;
+            ++(*this);
             return tmp;
         }
     };

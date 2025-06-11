@@ -557,20 +557,20 @@ namespace
 
 bool pal::get_default_installation_dir(pal::string_t* recv)
 {
-    //  ***Used only for testing***
-    pal::string_t environmentOverride;
-    if (test_only_getenv(_X("_DOTNET_TEST_DEFAULT_INSTALL_PATH"), &environmentOverride))
-    {
-        recv->assign(environmentOverride);
-        return true;
-    }
-    //  ***************************
-
     return get_default_installation_dir_for_arch(get_current_arch(), recv);
 }
 
 bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
 {
+    //  ***Used only for testing***
+    pal::string_t environment_override;
+    if (test_only_getenv(_X("_DOTNET_TEST_DEFAULT_INSTALL_PATH"), &environment_override))
+    {
+        recv->assign(environment_override);
+        return true;
+    }
+    //  ***************************
+
     bool is_current_arch = arch == get_current_arch();
 
     // Bail out early for unsupported requests for different architectures
@@ -983,6 +983,15 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
 bool pal::file_exists(const pal::string_t& path)
 {
     return (::access(path.c_str(), F_OK) == 0);
+}
+
+bool pal::is_directory(const pal::string_t& path)
+{
+    struct stat sb;
+    if (::stat(path.c_str(), &sb) != 0)
+        return false;
+
+    return S_ISDIR(sb.st_mode);
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)

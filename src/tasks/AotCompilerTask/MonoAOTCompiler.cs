@@ -1165,17 +1165,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     }}
                     }
 
-                    {{profilers.Join(writer.NewLine, p => {
-                        var profiler = p.Split(':')[0];
-                    return $$$""""
-                    void mono_profiler_init_{{{profiler}}} (const char *desc);
-                    EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_{{{profiler}}} (const char *desc)
-                    {
-                        mono_profiler_init_{{{profiler}}} (desc);
-                    }
-                    """";})
-                    }}
-
                     {{parsedAotMode switch
                         {
                             MonoAotMode.LLVMOnly => "#define EE_MODE_LLVMONLY 1",

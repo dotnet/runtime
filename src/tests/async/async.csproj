@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="*/**/*.??proj" />
+
+    <!-- Remove manual benchmarks from the test wrapper -->
+    <MergedWrapperProjectReference Remove="eh-microbench.csproj" />
+    <MergedWrapperProjectReference Remove="gc-roots-scan.csproj" />
+    <MergedWrapperProjectReference Remove="mincallcost-microbench.csproj" />
+
+    <MergedWrapperProjectReference Remove="syncfibonacci-with-yields.csproj" />
+    <MergedWrapperProjectReference Remove="syncfibonacci-without-yields.csproj" />
+    <MergedWrapperProjectReference Remove="taskbased-asyncfibonacci-with-yields.csproj" />
+    <MergedWrapperProjectReference Remove="taskbased-asyncfibonacci-without-yields.csproj" />
+    <MergedWrapperProjectReference Remove="valuetaskbased-asyncfibonacci-without-yields.csproj" />
+    <MergedWrapperProjectReference Remove="valuetaskbased-asynfibonacci-with-yields.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

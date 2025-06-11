@@ -187,8 +187,8 @@ export function normalizeConfig () {
         config.debugLevel = -1;
     }
 
-    if (config.cachedResourcesPurgeDelay === undefined) {
-        config.cachedResourcesPurgeDelay = 10000;
+    if (!config.applicationEnvironment) {
+        config.applicationEnvironment = "Production";
     }
 
     // ActiveIssue https://github.com/dotnet/runtime/issues/75602
@@ -219,12 +219,17 @@ export function normalizeConfig () {
         config.environmentVariables!["LANG"] = `${config.applicationCulture}.UTF-8`;
     }
 
+    if (config.debugLevel !== 0 && globalThis.window?.document?.querySelector("script[src*='aspnetcore-browser-refresh']")) {
+        if (!config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"]) {
+            config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
+        }
+        if (!config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"]) {
+            config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = "true";
+        }
+    }
+
     runtimeHelpers.diagnosticTracing = loaderHelpers.diagnosticTracing = !!config.diagnosticTracing;
     runtimeHelpers.waitForDebugger = config.waitForDebugger;
-
-    runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
-        && globalThis.performance
-        && typeof globalThis.performance.measure === "function";
 
     loaderHelpers.maxParallelDownloads = config.maxParallelDownloads || loaderHelpers.maxParallelDownloads;
     loaderHelpers.enableDownloadRetry = config.enableDownloadRetry !== undefined ? config.enableDownloadRetry : loaderHelpers.enableDownloadRetry;
@@ -328,20 +333,6 @@ async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
     }
 
     deep_merge_config(loaderHelpers.config, loadedConfig);
-
-    if (!loaderHelpers.config.applicationEnvironment) {
-        loaderHelpers.config.applicationEnvironment = "Production";
-    }
-
-    if (loaderHelpers.config.debugLevel !== 0 && globalThis.window?.document?.querySelector("script[src*='aspnetcore-browser-refresh']")) {
-        loaderHelpers.config.environmentVariables = loaderHelpers.config.environmentVariables || {};
-        if (!loaderHelpers.config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"]) {
-            loaderHelpers.config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
-        }
-        if (!loaderHelpers.config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"]) {
-            loaderHelpers.config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = "true";
-        }
-    }
 
     function fetchBootConfig (url: string): Promise<Response> {
         return loaderHelpers.fetch_like(url, {

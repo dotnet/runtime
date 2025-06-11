@@ -20,7 +20,6 @@
 #include "mlinfo.h"
 #include "posterror.h"
 #include "assemblynative.hpp"
-#include "shimload.h"
 #include "stringliteralmap.h"
 #include "frozenobjectheap.h"
 #include "codeman.h"
@@ -877,25 +876,12 @@ void SystemDomain::Init()
     m_pSystemPEAssembly = NULL;
     m_pSystemAssembly = NULL;
 
-    DWORD size = 0;
-
     // Get the install directory so we can find CoreLib
-    hr = GetInternalSystemDirectory(NULL, &size);
-    if (hr != HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
-        ThrowHR(hr);
-
-    // GetInternalSystemDirectory returns a size, including the null!
-    WCHAR* buffer = m_SystemDirectory.OpenUnicodeBuffer(size - 1);
-    IfFailThrow(GetInternalSystemDirectory(buffer, &size));
-    m_SystemDirectory.CloseBuffer();
+    IfFailThrow(GetClrModuleDirectory(m_SystemDirectory));
     m_SystemDirectory.Normalize();
 
     // At this point m_SystemDirectory should already be canonicalized
     m_BaseLibrary.Append(m_SystemDirectory);
-    if (!m_BaseLibrary.EndsWith(SString{ DIRECTORY_SEPARATOR_CHAR_W }))
-    {
-        m_BaseLibrary.Append(DIRECTORY_SEPARATOR_CHAR_W);
-    }
     m_BaseLibrary.Append(g_pwBaseLibrary);
     m_BaseLibrary.Normalize();
 
@@ -922,15 +908,6 @@ void SystemDomain::Init()
         CoreLibBinder::GetField(FIELD__THREAD_BLOCKING_INFO__OFFSET_OF_LOCK_OWNER_OS_THREAD_ID)
             ->SetStaticValue32(AwareLock::GetOffsetOfHoldingOSThreadId());
     }
-
-#ifdef _DEBUG
-    BOOL fPause = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PauseOnLoad);
-
-    while (fPause)
-    {
-        ClrSleepEx(20, TRUE);
-    }
-#endif // _DEBUG
 }
 
 void SystemDomain::LazyInitGlobalStringLiteralMap()
@@ -1007,6 +984,12 @@ extern "C" PCODE g_pGetNonGCStaticBase;
 PCODE g_pGetNonGCStaticBase;
 extern "C" PCODE g_pPollGC;
 PCODE g_pPollGC;
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+extern "C" PCODE g_pThrowOverflowException;
+PCODE g_pThrowOverflowException;
+extern "C" PCODE g_pThrowDivideByZeroException;
+PCODE g_pThrowDivideByZeroException;
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
 void SystemDomain::LoadBaseSystemClasses()
 {
@@ -1142,6 +1125,10 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pGetGCStaticBase = CoreLibBinder::GetMethod(METHOD__STATICSHELPERS__GET_GC_STATIC)->GetMultiCallableAddrOfCode();
         g_pGetNonGCStaticBase = CoreLibBinder::GetMethod(METHOD__STATICSHELPERS__GET_NONGC_STATIC)->GetMultiCallableAddrOfCode();
         g_pPollGC = CoreLibBinder::GetMethod(METHOD__THREAD__POLLGC)->GetMultiCallableAddrOfCode();
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+        g_pThrowOverflowException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWOVERFLOWEXCEPTION)->GetMultiCallableAddrOfCode();
+        g_pThrowDivideByZeroException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWDIVIDEBYZEROEXCEPTION)->GetMultiCallableAddrOfCode();
+#endif // TARGET_32BIT
 
     #ifdef PROFILING_SUPPORTED
         // Note that g_profControlBlock.fBaseSystemClassesLoaded must be set to TRUE only after
@@ -3406,26 +3393,30 @@ void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
     EX_END_CATCH(SwallowAllExceptions);
 }
 
-BOOL AppDomain::OnUnhandledException(OBJECTREF *pThrowable)
+void AppDomain::OnUnhandledException(OBJECTREF* pThrowable)
 {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    BOOL retVal = FALSE;
-
-    GCX_COOP();
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(pThrowable != NULL);
+    }
+    CONTRACTL_END;
 
     EX_TRY
     {
-        retVal = GetAppDomain()->RaiseUnhandledExceptionEvent(pThrowable);
+        MethodDescCallSite raiseEvent(METHOD__APPCONTEXT__ON_UNHANDLED_EXCEPTION);
+        ARG_SLOT args[] =
+        {
+            ObjToArgSlot(*pThrowable)
+        };
+        raiseEvent.Call(args);
     }
     EX_CATCH
     {
     }
     EX_END_CATCH(SwallowAllExceptions)  // Swallow any errors.
-
-    return retVal;
 }
 
 void AppDomain::RaiseExitProcessEvent()
@@ -3445,41 +3436,6 @@ void AppDomain::RaiseExitProcessEvent()
     MethodDescCallSite onProcessExit(METHOD__APPCONTEXT__ON_PROCESS_EXIT);
     onProcessExit.Call(NULL);
 }
-
-BOOL
-AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(pThrowable != NULL && IsProtectedByGCFrame(pThrowable));
-
-    OBJECTREF orDelegate = CoreLibBinder::GetField(FIELD__APPCONTEXT__UNHANDLED_EXCEPTION)->GetStaticOBJECTREF();
-    if (orDelegate == NULL)
-        return FALSE;
-
-    struct {
-        OBJECTREF Delegate;
-        OBJECTREF Sender;
-    } gc;
-    gc.Delegate = orDelegate;
-    gc.Sender = NULL;
-
-    GCPROTECT_BEGIN(gc);
-    if (orDelegate != NULL)
-    {
-        DistributeUnhandledExceptionReliably(&gc.Delegate, &gc.Sender, pThrowable);
-    }
-    GCPROTECT_END();
-    return TRUE;
-}
-
 
 DefaultAssemblyBinder *AppDomain::CreateDefaultBinder()
 {

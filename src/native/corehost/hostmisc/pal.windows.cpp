@@ -383,6 +383,11 @@ namespace
 
 bool pal::get_default_installation_dir(pal::string_t* recv)
 {
+    return get_default_installation_dir_for_arch(get_current_arch(), recv);
+}
+
+bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
+{
     //  ***Used only for testing***
     pal::string_t environmentOverride;
     if (test_only_getenv(_X("_DOTNET_TEST_DEFAULT_INSTALL_PATH"), &environmentOverride))
@@ -392,11 +397,6 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
     //  ***************************
 
-    return get_default_installation_dir_for_arch(get_current_arch(), recv);
-}
-
-bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
-{
     bool is_current_arch = arch == get_current_arch();
 
     // Bail out early for unsupported requests for different architectures
@@ -994,6 +994,12 @@ bool pal::file_exists(const string_t& path)
 {
     string_t tmp(path);
     return pal::fullpath(&tmp, true);
+}
+
+bool pal::is_directory(const pal::string_t& path)
+{
+    DWORD attributes = ::GetFileAttributesW(path.c_str());
+    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)

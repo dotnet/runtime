@@ -7,12 +7,25 @@
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
   </PropertyGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
+
+  <PropertyGroup Condition="'$(UseBootstrapLayout)' == 'true'">
+    <!-- Keep in sync with outputs defined in Microsoft.NETCore.Platforms.csproj. -->
+    <BundledRuntimeIdentifierGraphFile>$([MSBuild]::NormalizePath('$(BootstrapRidGraphDir)', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
+    <!-- If our bootstrap build didn't add a new RID to the graph, fall back to the frozen graph. -->
+    <BundledRuntimeIdentifierGraphFile Condition="!Exists('$(BundledRuntimeIdentifierGraphFile)')">$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Microsoft.NETCore.Platforms', 'src', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
+  </PropertyGroup>
+  <!-- In-build tools use all assets from the SDK that's being used to build the product. Don't use the live RID graph for these tools. -->
+  <PropertyGroup Condition="'$(UseBootstrapLayout)' != 'true' and '$(IsInBuildToolProject)' != 'true'">
+    <!-- Keep in sync with outputs defined in Microsoft.NETCore.Platforms.csproj. -->
+    <BundledRuntimeIdentifierGraphFile>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Microsoft.NETCore.Platforms', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
+    <BundledRuntimeIdentifierGraphFile Condition="!Exists('$(BundledRuntimeIdentifierGraphFile)')">$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Microsoft.NETCore.Platforms', 'src', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)Analyzers.targets" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
-  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
   <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
   <Import Project="$(RepositoryEngineeringDir)generators.targets" />
-  <Import Project="$(RepositoryEngineeringDir)python.targets" />
   <Import Project="$(RepositoryEngineeringDir)generatorProjects.targets" Condition="'$(IsGeneratorProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" Condition="'$(IsSourceProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)packaging.targets" Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.pkgproj'" />
@@ -25,11 +38,11 @@
   <ItemGroup Condition="'$(DotNetBuildSourceOnly)' == 'true'">
     <KnownFrameworkReference Update="Microsoft.NETCore.App">
       <RuntimePackRuntimeIdentifiers
-        Condition="'%(TargetFramework)' == '$(NetCoreAppCurrent)'">%(RuntimePackRuntimeIdentifiers);$(PackageRID)</RuntimePackRuntimeIdentifiers>
+        Condition="'%(TargetFramework)' == '$(NetCoreAppCurrent)'">%(RuntimePackRuntimeIdentifiers);$(NETCoreSdkRuntimeIdentifier)</RuntimePackRuntimeIdentifiers>
     </KnownFrameworkReference>
     <KnownCrossgen2Pack Update="Microsoft.NETCore.App.Crossgen2">
       <Crossgen2RuntimeIdentifiers
-        Condition="'%(TargetFramework)' == '$(NetCoreAppCurrent)'" >%(Crossgen2RuntimeIdentifiers);$(PackageRID)</Crossgen2RuntimeIdentifiers>
+        Condition="'%(TargetFramework)' == '$(NetCoreAppCurrent)'" >%(Crossgen2RuntimeIdentifiers);$(NETCoreSdkRuntimeIdentifier)</Crossgen2RuntimeIdentifiers>
     </KnownCrossgen2Pack>
     <!-- Avoid references to Microsoft.AspNetCore.App.Runtime.<rid> -->
     <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
@@ -56,7 +69,7 @@
 
   <PropertyGroup>
     <!-- Define properties that depend on the host SDK RID here. -->
-    <BuildHostTools Condition="'$(DotNetBuildOrchestrator)' == 'true' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'">true</BuildHostTools>
+    <BuildHostTools Condition="'$(DotNetBuildFromVMR)' == 'true' and '$(TargetRid)' != '$(NETCoreSdkRuntimeIdentifier)'">true</BuildHostTools>
     <BuildHostILTools Condition="'$(BuildHostTools)' == 'true' and $([MSBuild]::IsOsPlatform(Windows))">true</BuildHostILTools>
   </PropertyGroup>
 
@@ -70,11 +83,6 @@
 
   <!-- Packaging -->
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
-    <!-- The sfxproj files add the license themselves. -->
-    <None Include="$(LicenseFile)"
-          PackagePath="$([System.IO.Path]::GetFileName('$(LicenseFile)'))"
-          Pack="true"
-          Condition="'$(MSBuildProjectExtension)' != '.sfxproj' and '$(MSBuildProjectFile)' != 'msi.csproj'" />
     <None Include="$(PackageThirdPartyNoticesFile)"
           PackagePath="$([System.IO.Path]::GetFileName('$(PackageThirdPartyNoticesFile)'))"
           Pack="true" />

@@ -97,6 +97,7 @@ namespace System.Text.Json
         private bool _writeIndented;
         private char _indentCharacter = JsonConstants.DefaultIndentCharacter;
         private int _indentSize = JsonConstants.DefaultIndentSize;
+        private bool _allowDuplicateProperties = true;
 
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
@@ -115,10 +116,7 @@ namespace System.Text.Json
         /// </exception>
         public JsonSerializerOptions(JsonSerializerOptions options)
         {
-            if (options is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             // The following fields are not copied intentionally:
             // 1. _cachingContext can only be set in immutable options instances.
@@ -152,6 +150,7 @@ namespace System.Text.Json
             _writeIndented = options._writeIndented;
             _indentCharacter = options._indentCharacter;
             _indentSize = options._indentSize;
+            _allowDuplicateProperties = options._allowDuplicateProperties;
             _typeInfoResolver = options._typeInfoResolver;
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
@@ -837,6 +836,31 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Defines whether duplicate property names are allowed when deserializing JSON objects.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// By default, it's set to true. If set to false, <see cref="JsonException"/> is thrown
+        /// when a duplicate property name is encountered during deserialization.
+        /// </para>
+        /// <para>
+        /// Duplicate property names are not allowed in serialization.
+        /// </para>
+        /// </remarks>
+        public bool AllowDuplicateProperties
+        {
+            get => _allowDuplicateProperties;
+            set
+            {
+                VerifyMutable();
+                _allowDuplicateProperties = value;
+            }
+        }
+
+        /// <summary>
         /// Returns true if options uses compatible built-in resolvers or a combination of compatible built-in resolvers.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -1023,9 +1047,10 @@ namespace System.Text.Json
         {
             return new JsonDocumentOptions
             {
+                AllowDuplicateProperties = AllowDuplicateProperties,
                 AllowTrailingCommas = AllowTrailingCommas,
                 CommentHandling = ReadCommentHandling,
-                MaxDepth = MaxDepth
+                MaxDepth = MaxDepth,
             };
         }
 

@@ -409,6 +409,12 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 
 #ifdef DEBUG
     dumpFunction = JitConfig.JitDumpFg().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
+    dumpFunction |= ((unsigned)JitConfig.JitDumpFgHash() == info.compMethodHash());
+
+    if (opts.IsTier0())
+    {
+        dumpFunction &= (JitConfig.JitDumpFgTier0() > 0);
+    }
 
     CompAllocator allocator = getAllocatorDebugOnly();
     filename                = JitConfig.JitDumpFgFile();
@@ -656,6 +662,8 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 //    Here are the config values that control it:
 //      DOTNET_JitDumpFg              A string (ala the DOTNET_JitDump string) indicating what methods to dump
 //                                     flowgraphs for.
+//      DOTNET_JitDumpFgHash          Dump flowgraphs for methods with this hash
+//      DOTNET_JitDumpFgTier0         Dump tier-0 compilations
 //      DOTNET_JitDumpFgDir           A path to a directory into which the flowgraphs will be dumped.
 //      DOTNET_JitDumpFgFile          The filename to use. The default is "default.[xml|dot]".
 //                                     Note that the new graphs will be appended to this file if it already exists.
@@ -817,10 +825,10 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             if (displayBlockFlags)
             {
                 // Don't display the `[` `]` unless we're going to display something.
-                const bool isTryEntryBlock = bbIsTryBeg(block);
+                const bool isTryEntryBlock     = bbIsTryBeg(block);
+                const bool isFuncletEntryBlock = fgFuncletsCreated && bbIsFuncletBeg(block);
 
-                if (isTryEntryBlock ||
-                    block->HasAnyFlag(BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_ALIGN))
+                if (isTryEntryBlock || isFuncletEntryBlock || block->HasAnyFlag(BBF_RUN_RARELY | BBF_LOOP_ALIGN))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");
@@ -828,17 +836,13 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     {
                         fprintf(fgxFile, "T");
                     }
-                    if (block->HasFlag(BBF_FUNCLET_BEG))
+                    if (isFuncletEntryBlock)
                     {
                         fprintf(fgxFile, "F");
                     }
                     if (block->HasFlag(BBF_RUN_RARELY))
                     {
                         fprintf(fgxFile, "R");
-                    }
-                    if (block->HasFlag(BBF_LOOP_HEAD))
-                    {
-                        fprintf(fgxFile, "L");
                     }
                     if (block->HasFlag(BBF_LOOP_ALIGN))
                     {
@@ -901,7 +905,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 if (condStmt != nullptr)
                 {
                     GenTree* const condTree = condStmt->GetRootNode();
-                    noway_assert(condTree->gtOper == GT_JTRUE);
+                    noway_assert(condTree->OperIs(GT_JTRUE));
                     GenTree* const compareTree = condTree->AsOp()->gtOp1;
                     fgDumpTree(fgxFile, compareTree);
                 }
@@ -966,10 +970,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             if (block->HasFlag(BBF_HAS_NEWARR))
             {
                 fprintf(fgxFile, "\n            callsNewArr=\"true\"");
-            }
-            if (block->HasFlag(BBF_LOOP_HEAD))
-            {
-                fprintf(fgxFile, "\n            loopHead=\"true\"");
             }
 
             const char* rootTreeOpName = "n/a";
@@ -2104,15 +2104,6 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
         printf("   ");
     }
 
-    if (flags & BBF_FUNCLET_BEG)
-    {
-        printf("F ");
-    }
-    else
-    {
-        printf("  ");
-    }
-
     int cnt = 0;
 
     switch (block->bbCatchTyp)
@@ -2563,7 +2554,7 @@ Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData
     GenTree*  tree  = *pTree;
     Compiler* pComp = data->compiler;
 
-    if (tree->gtOper != GT_MUL || tree->gtType != TYP_INT || (tree->gtOverflow()))
+    if (!tree->OperIs(GT_MUL) || !tree->TypeIs(TYP_INT) || (tree->gtOverflow()))
     {
         return WALK_CONTINUE;
     }
@@ -2714,7 +2705,15 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
-    printf("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
+    // Async resumptions are allowed to jump into try blocks at any point. They
+    // are introduced late enough that the invariant of single entry is no
+    // longer necessary.
+    if (blockPred->HasFlag(BBF_ASYNC_RESUMPTION))
+    {
+        return true;
+    }
+
+    JITDUMP("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
     assert(!"Jump into middle of try region");
     return false;
 }
@@ -2746,8 +2745,8 @@ bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
-    printf("Jump into the middle of handler region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum,
-           block->bbNum);
+    JITDUMP("Jump into the middle of handler region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum,
+            block->bbNum);
     assert(!"Jump into the middle of handler region");
     return false;
 }
@@ -2935,8 +2934,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         //
         if (fgFirstFuncletBB != nullptr)
         {
-            assert(fgFirstFuncletBB->hasHndIndex() == true);
-            assert(fgFirstFuncletBB->HasFlag(BBF_FUNCLET_BEG));
+            assert(bbIsFuncletBeg(fgFirstFuncletBB));
         }
     }
 
@@ -3016,7 +3014,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             else if (block->KindIs(BBJ_SWITCH))
             {
                 assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
-                       (block->lastNode()->gtOper == GT_SWITCH || block->lastNode()->gtOper == GT_SWITCH_TABLE));
+                       block->lastNode()->OperIs(GT_SWITCH, GT_SWITCH_TABLE));
             }
         }
 
@@ -3111,7 +3109,8 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated
         // with the finally block the BBJ_CALLFINALLY is targeting. There is one special case: if the
         // BBJ_CALLFINALLY is the first block of a `try`, then its predecessor can be outside the `try`:
-        // either a branch or fall-through to the first block.
+        // either a branch or fall-through to the first block. Similarly internal resumption blocks for
+        // async are allowed to do this as they are introduced late enough that we no longer need the invariant.
         //
         // Note that this IR condition is a choice. It naturally occurs when importing EH constructs.
         // This condition prevents flow optimizations from skipping blocks in a `try` and branching
@@ -3149,7 +3148,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 }
                 else
                 {
-                    assert(bbInTryRegions(finallyIndex, block));
+                    assert(bbInTryRegions(finallyIndex, block) || block->HasFlag(BBF_ASYNC_RESUMPTION));
                 }
             }
         }
@@ -3286,7 +3285,7 @@ void Compiler::fgDebugCheckTypes(GenTree* tree)
                     if (!node->TypeIs(TYP_VOID))
                     {
                         m_compiler->gtDispTree(node);
-                        assert("The tree is expected to be of TYP_VOID type");
+                        assert(!"The tree is expected to be of TYP_VOID type");
                     }
                     break;
 
@@ -3366,6 +3365,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
             break;
 
         case GT_CATCH_ARG:
+        case GT_ASYNC_CONTINUATION:
             expectedFlags |= GTF_ORDER_SIDEEFF;
             break;
 
@@ -3423,9 +3423,9 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                 switch (intrinsicId)
                 {
 #if defined(TARGET_XARCH)
-                    case NI_SSE_StoreFence:
-                    case NI_SSE2_LoadFence:
-                    case NI_SSE2_MemoryFence:
+                    case NI_X86Base_LoadFence:
+                    case NI_X86Base_MemoryFence:
+                    case NI_X86Base_StoreFence:
                     case NI_X86Serialize_Serialize:
                     {
                         assert(tree->OperRequiresAsgFlag());
@@ -3434,10 +3434,10 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                     }
 
                     case NI_X86Base_Pause:
-                    case NI_SSE_Prefetch0:
-                    case NI_SSE_Prefetch1:
-                    case NI_SSE_Prefetch2:
-                    case NI_SSE_PrefetchNonTemporal:
+                    case NI_X86Base_Prefetch0:
+                    case NI_X86Base_Prefetch1:
+                    case NI_X86Base_Prefetch2:
+                    case NI_X86Base_PrefetchNonTemporal:
                     {
                         assert(tree->OperRequiresCallFlag(this));
                         expectedFlags |= GTF_GLOB_REF;
@@ -3457,10 +3457,10 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                     case NI_Sve_GatherPrefetch32Bit:
                     case NI_Sve_GatherPrefetch64Bit:
                     case NI_Sve_GatherPrefetch8Bit:
-                    case NI_Sve_PrefetchBytes:
-                    case NI_Sve_PrefetchInt16:
-                    case NI_Sve_PrefetchInt32:
-                    case NI_Sve_PrefetchInt64:
+                    case NI_Sve_Prefetch16Bit:
+                    case NI_Sve_Prefetch32Bit:
+                    case NI_Sve_Prefetch64Bit:
+                    case NI_Sve_Prefetch8Bit:
                     case NI_Sve_GetFfrByte:
                     case NI_Sve_GetFfrInt16:
                     case NI_Sve_GetFfrInt32:
@@ -3515,7 +3515,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
 //
 void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags)
 {
-    if (tree->OperGet() == GT_IND)
+    if (tree->OperIs(GT_IND))
     {
         printf("%c", (dispFlags & GTF_IND_INVARIANT) ? '#' : '-');
         printf("%c", (dispFlags & GTF_IND_NONFAULTING) ? 'n' : '-');
@@ -3628,15 +3628,19 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
 
         if (tree->OperIsLeaf())
         {
-            if (tree->gtOper == GT_CATCH_ARG)
+            if (tree->OperIs(GT_CATCH_ARG))
             {
                 // The GT_CATCH_ARG should always have GTF_ORDER_SIDEEFF set
                 noway_assert(tree->gtFlags & GTF_ORDER_SIDEEFF);
                 // The GT_CATCH_ARG has to be the first thing evaluated
                 noway_assert(stmt == block->FirstNonPhiDef());
-                noway_assert(stmt->GetTreeList()->gtOper == GT_CATCH_ARG);
+                noway_assert(stmt->GetTreeList()->OperIs(GT_CATCH_ARG));
                 // The root of the tree should have GTF_ORDER_SIDEEFF set
                 noway_assert(stmt->GetRootNode()->gtFlags & GTF_ORDER_SIDEEFF);
+            }
+            else if (tree->OperIs(GT_ASYNC_CONTINUATION))
+            {
+                assert(tree->gtFlags & GTF_ORDER_SIDEEFF);
             }
         }
 
@@ -4737,7 +4741,12 @@ void Compiler::fgDebugCheckLoops()
             loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
                 for (BasicBlock* pred : exit->PredBlocks())
                 {
-                    assert(loop->ContainsBlock(pred));
+                    if (!loop->ContainsBlock(pred))
+                    {
+                        JITDUMP("Loop " FMT_LP " exit " FMT_BB " has non-loop predecessor " FMT_BB "\n",
+                                loop->GetIndex(), exit->bbNum, pred->bbNum);
+                        assert(!"Loop exit has non-loop predecessor");
+                    }
                 }
                 return BasicBlockVisit::Continue;
             });

@@ -57,6 +57,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     /// </summary>
     public ITaskItem[]? EnvVariables { get; set; }
 
+    /// <summary>
+    /// List of profilers to use.
+    /// </summary>
+    public string[]? Profilers { get; set; }
+
     protected override bool ValidateArguments()
     {
         if (!base.ValidateArguments())
@@ -392,7 +397,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 var envs = (JsonElement)valueObject!;
                 foreach (var env in envs.EnumerateObject())
                 {
-                    bootConfig.environmentVariables[env.Name] = env.Value.GetString();
+                    bootConfig.environmentVariables[env.Name] = env.Value.GetString()!;
                 }
             }
             else if (string.Equals(name, nameof(BootJsonData.diagnosticTracing), StringComparison.OrdinalIgnoreCase))
@@ -406,6 +411,21 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             {
                 extraConfiguration[name] = valueObject;
             }
+        }
+
+        Profilers ??= Array.Empty<string>();
+        var browserProfiler = Profilers.FirstOrDefault(p => p.StartsWith("browser:"));
+        if (browserProfiler != null)
+        {
+            bootConfig.environmentVariables ??= new();
+            bootConfig.environmentVariables["DOTNET_WasmPerformanceInstrumentation"] = browserProfiler.Substring("browser:".Length);
+        }
+
+        if (RuntimeConfigJsonPath != null && File.Exists(RuntimeConfigJsonPath))
+        {
+            using var fs = File.OpenRead(RuntimeConfigJsonPath);
+            var runtimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(fs, BootJsonBuilderHelper.JsonOptions);
+            bootConfig.runtimeConfig = runtimeConfig;
         }
 
         foreach (ITaskItem env in EnvVariables ?? Enumerable.Empty<ITaskItem>())

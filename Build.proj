@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
-  <ItemGroup Condition="'$(RestoreToolsetOnly)' != 'true'">
+  <ItemGroup>
     <!-- Subsets are already imported by Directory.Build.props. -->
     <ProjectReference Include="@(ProjectToBuild)" />
     <!-- Only include tasks.proj during restore and build incrementally via a target. -->
@@ -14,5 +14,41 @@
           BeforeTargets="Build">
     <MSBuild Projects="$(RepoTasksDir)tasks.proj"
              Targets="BuildIncrementally" />
+  </Target>
+
+  <Target Name="SetupBootstrapLayout"
+          AfterTargets="Build"
+          Condition="'$(Subset)' == 'bootstrap'">
+    <ItemGroup>
+      <AotSdkFile
+        Include="$(CoreCLRAotSdkDir)/*"
+        Condition="'$(UseNativeAotForComponents)' == 'true'" />
+      <AppHostFile
+        Include="$([MSBuild]::NormalizePath('$(DotNetHostBinDir)', 'apphost$(ExeSuffix)'))" />
+      <AppHostFile
+        Include="$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', 'corehost', 'singlefilehost$(ExeSuffix)'))"
+        Condition="'$(UseNativeAotForComponents)' != 'true'" />
+      <RefPackFile Include="$(MicrosoftNetCoreAppRefPackDir)/**/*" />
+      <RuntimePackFile Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*" />
+      <RidGraphFile Include="$(ArtifactsBinDir)Microsoft.NETCore.Platforms/*.json" />
+
+      <AotSdkFile
+        DestinationPath="$(BootstrapAotSdkDir)/%(Filename)%(Extension)" />
+      <AppHostFile
+        DestinationPath="$(BootstrapHostDir)/%(Filename)%(Extension)" />
+      <RefPackFile
+        DestinationPath="$(BootstrapRefPackDir)/%(RecursiveDir)%(Filename)%(Extension)" />
+      <RuntimePackFile
+        DestinationPath="$(BootstrapRuntimePackDir)/%(RecursiveDir)%(Filename)%(Extension)" />
+      <RidGraphFile
+        DestinationPath="$(BootstrapRidGraphDir)/%(RecursiveDir)%(Filename)%(Extension)" />
+      <BootstrapFile Include="@(AotSdkFile);@(AppHostFile);@(RefPackFile);@(RuntimePackFile);@(RidGraphFile)" />
+    </ItemGroup>
+
+    <Copy
+      SourceFiles="@(BootstrapFile)"
+      DestinationFiles="@(BootstrapFile->Metadata('DestinationPath'))"
+      SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Bootstrap files copied to $(ArtifactsDir)bootstrap" />
   </Target>
 </Project>

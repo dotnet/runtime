@@ -35,6 +35,15 @@
     <!-- During NoBuild pack invocations, skip project reference build. Necessary for the IncludeProjectReferencesWithPackAttributeInPackage target. -->
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
   </PropertyGroup>
+  
+  <!-- Flow these properties to consuming projects. Used by i.e. Microsoft.Internal.Runtime.WindowsDesktop.Transport. -->
+  <ItemDefinitionGroup>
+    <TargetPathWithTargetPlatformMoniker>
+      <IsPackable>true</IsPackable>
+      <PackageId>$(PackageId)</PackageId>
+      <PackageVersion>$(PackageVersion)</PackageVersion>
+    </TargetPathWithTargetPlatformMoniker>
+  </ItemDefinitionGroup>
 
   <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
     <!-- In servicing, the live package is compared against the GA version in strict mode. -->

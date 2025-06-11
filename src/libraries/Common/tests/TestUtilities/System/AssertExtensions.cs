@@ -414,6 +414,31 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Validates that the actual span is the same as the expected span.
+        /// </summary>
+        /// <param name="expected">The expected span.</param>
+        /// <param name="actual">The actual span.</param>
+        public static void Same<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual)
+        {
+            if (expected.Length != actual.Length)
+            {
+                throw new XunitException($"Expected length: {expected.Length}{Environment.NewLine}Actual length: {actual.Length}");
+            }
+
+            if (expected.Length == 0 && actual.Length == 0)
+            {
+                nint byteOffset = Unsafe.ByteOffset(
+                    ref MemoryMarshal.GetReference(expected),
+                    ref MemoryMarshal.GetReference(actual));
+                AssertExtensions.TrueExpression(byteOffset == 0);
+            }
+            else
+            {
+                AssertExtensions.TrueExpression(expected.Overlaps(actual, out int offset) && offset == 0);
+            }
+        }
+
         // NOTE: Consider using SequenceEqual below instead, as it will give more useful information about what
         // the actual differences are, especially for large arrays/spans.
         /// <summary>
@@ -568,7 +593,7 @@ namespace System
             {
                 if (!comparer.Equals(expected, actual[i]))
                 {
-                    throw new XunitException($"Expected {expected?.ToString() ?? "null"} at position {i}; actual {actual[i]?.ToString() ?? "null"}");
+                    throw new XunitException($"Expected {expected?.ToString() ?? "null"} at position {i}{Environment.NewLine}Actual {actual[i]?.ToString() ?? "null"}");
                 }
             }
         }
@@ -676,6 +701,16 @@ namespace System
             E exception = AssertThrows<E, T>(span, action);
             Assert.Equal(expectedParamName, exception.ParamName);
             return exception;
+        }
+
+        public static void FalseExpression(bool expr, [CallerArgumentExpression(nameof(expr))] string exprString = null)
+        {
+            Assert.False(expr, $"Expected \"false\" from the expression: \"{exprString}\".");
+        }
+
+        public static void TrueExpression(bool expr, [CallerArgumentExpression(nameof(expr))] string exprString = null)
+        {
+            Assert.True(expr, $"Expected \"true\" from the expression: \"{exprString}\".");
         }
 
         private class ItemCount

@@ -1642,13 +1642,6 @@ namespace System.Reflection
             if (!AttributeUsageCheck(attributeType, mustBeInheritable, ref derivedAttributes))
                 return false;
 
-            // Windows Runtime attributes aren't real types - they exist to be read as metadata only, and as such
-            // should be filtered out of the GetCustomAttributes path.
-            if ((attributeType.Attributes & TypeAttributes.WindowsRuntime) == TypeAttributes.WindowsRuntime)
-            {
-                return false;
-            }
-
             // Resolve the attribute ctor
             ConstArray ctorSig = scope.GetMethodSignature(caCtorToken);
             isVarArg = (ctorSig[0] & 0x05) != 0;

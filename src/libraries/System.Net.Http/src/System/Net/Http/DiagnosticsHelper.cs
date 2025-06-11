@@ -18,30 +18,6 @@ namespace System.Net.Http
             HistogramBucketBoundaries = [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10]
         };
 
-        internal static string GetRedactedUriString(Uri uri)
-        {
-            Debug.Assert(uri.IsAbsoluteUri);
-
-            if (GlobalHttpSettings.DiagnosticsHandler.DisableUriRedaction)
-            {
-                return uri.AbsoluteUri;
-            }
-
-            string pathAndQuery = uri.PathAndQuery;
-            int queryIndex = pathAndQuery.IndexOf('?');
-
-            bool redactQuery = queryIndex >= 0 && // Query is present.
-                queryIndex < pathAndQuery.Length - 1; // Query is not empty.
-
-            return (redactQuery, uri.IsDefaultPort) switch
-            {
-                (true, true) => $"{uri.Scheme}://{uri.Host}{pathAndQuery.AsSpan(0, queryIndex + 1)}*",
-                (true, false) => $"{uri.Scheme}://{uri.Host}:{uri.Port}{pathAndQuery.AsSpan(0, queryIndex + 1)}*",
-                (false, true) => $"{uri.Scheme}://{uri.Host}{pathAndQuery}",
-                (false, false) => $"{uri.Scheme}://{uri.Host}:{uri.Port}{pathAndQuery}"
-            };
-        }
-
         internal static KeyValuePair<string, object?> GetMethodTag(HttpMethod method, out bool isUnknownMethod)
         {
             // Return canonical names for known methods and "_OTHER" for unknown ones.

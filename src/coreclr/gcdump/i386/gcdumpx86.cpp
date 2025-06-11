@@ -13,7 +13,6 @@
 #endif
 #include "gcdump.h"
 
-
 /*****************************************************************************/
 
 #define castto(var,typ) (*(typ *)&var)
@@ -115,6 +114,17 @@ size_t            GCDump::DumpInfoHdr (PTR_CBYTE      gcInfoBlock,
         header->revPInvokeOffset = count;
     }
 
+    if (header->noGCRegionCnt == HAS_NOGCREGIONS)
+    {
+        hasArgTabOffset = TRUE;
+        table += decodeUnsigned(table, &count);
+        header->noGCRegionCnt = count;
+    }
+    else if (header->noGCRegionCnt > 0)
+    {
+        hasArgTabOffset = TRUE;
+    }
+
     //
     // First print out all the basic information
     //
@@ -157,6 +167,8 @@ size_t            GCDump::DumpInfoHdr (PTR_CBYTE      gcInfoBlock,
                                 gcPrintf("    Sync region = [%u,%u] ([0x%x,0x%x])\n",
                                           header->syncStartOffset, header->syncEndOffset,
                                           header->syncStartOffset, header->syncEndOffset);
+    if (header->noGCRegionCnt > 0)
+                                gcPrintf("    no GC region count = %2u \n", header->noGCRegionCnt);
 
     if  (header->epilogCount > 1 || (header->epilogCount != 0 &&
                                      header->epilogAtEnd == 0))
@@ -205,11 +217,6 @@ size_t            GCDump::DumpInfoHdr (PTR_CBYTE      gcInfoBlock,
 }
 
 /*****************************************************************************/
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 size_t              GCDump::DumpGCTable(PTR_CBYTE      table,
                                         const InfoHdr& header,
                                         unsigned       methodSize,
@@ -236,6 +243,23 @@ size_t              GCDump::DumpGCTable(PTR_CBYTE      table,
         if (header.ediSaved) calleeSavedRegs++;
         if (header.esiSaved) calleeSavedRegs++;
         if (header.ebxSaved) calleeSavedRegs++;
+    }
+
+    /* Dump the no GC region table */
+
+    if (header.noGCRegionCnt > 0)
+    {
+        count = header.noGCRegionCnt;
+        while (count-- > 0)
+        {
+            unsigned regionOffset;
+            unsigned regionSize;
+
+            table += decodeUnsigned(table, &regionOffset);
+            table += decodeUnsigned(table, &regionSize);
+
+            gcPrintf("[%04X-%04X) no GC region\n", regionOffset, regionOffset + regionSize);
+        }
     }
 
     /* Dump the untracked frame variable table */
@@ -323,11 +347,7 @@ size_t              GCDump::DumpGCTable(PTR_CBYTE      table,
 
         gcPrintf("%s%s pointer\n",
                     (lowBits & byref_OFFSET_FLAG) ? "byref " : "",
-#ifndef FEATURE_EH_FUNCLETS
-                    (lowBits & this_OFFSET_FLAG)  ? "this"   : ""
-#else
                     (lowBits & pinned_OFFSET_FLAG)  ? "pinned"   : ""
-#endif
            );
 
         _ASSERTE(endOffs <= methodSize);
@@ -456,10 +476,6 @@ size_t              GCDump::DumpGCTable(PTR_CBYTE      table,
                     /* non-ptr arg push */
 
                     curOffs += (val & 0x07);
-#ifndef FEATURE_EH_FUNCLETS
-                    // For funclets, non-ptr arg pushes can be reported even for EBP frames
-                    _ASSERTE(!header.ebpFrame);
-#endif // FEATURE_EH_FUNCLETS
                     argCnt++;
 
                     DumpEncoding(bp, table-bp); bp = table;
@@ -681,9 +697,6 @@ size_t              GCDump::DumpGCTable(PTR_CBYTE      table,
                 {
                     argTab += decodeUnsigned(argTab, &val);
 
-#ifndef FEATURE_EH_FUNCLETS
-                    assert((val & this_OFFSET_FLAG) == 0);
-#endif
                     unsigned  stkOffs = val & ~byref_OFFSET_FLAG;
                     unsigned  lowBit  = val &  byref_OFFSET_FLAG;
 
@@ -939,10 +952,6 @@ DONE_REGTAB:
 
     return  (table - tableStart);
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
 
 /*****************************************************************************/
 
@@ -1015,6 +1024,12 @@ void                GCDump::DumpPtrsInFrame(PTR_CBYTE   gcInfoBlock,
         table += decodeUnsigned(table, &offset);
         header.revPInvokeOffset = offset;
         _ASSERTE(offset != INVALID_REV_PINVOKE_OFFSET);
+    }
+    if (header.noGCRegionCnt == HAS_NOGCREGIONS)
+    {
+        unsigned count;
+        table += decodeUnsigned(table, &count);
+        header.noGCRegionCnt = count;
     }
 
     prologSize = header.prologSize;

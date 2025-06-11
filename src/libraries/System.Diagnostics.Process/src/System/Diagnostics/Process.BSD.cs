@@ -57,6 +57,8 @@ namespace System.Diagnostics
         /// </summary>
         private void GetWorkingSetLimits(out IntPtr minWorkingSet, out IntPtr maxWorkingSet)
         {
+            EnsureState(State.HaveNonExitedId);
+
             // We can only do this for the current process on OS X
             if (_processId != Environment.ProcessId)
                 throw new PlatformNotSupportedException(SR.OsxExternalProcessWorkingSetNotSupported);
@@ -86,6 +88,8 @@ namespace System.Diagnostics
         /// <param name="resultingMax">The resulting maximum working set limit after any changes applied.</param>
         private void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
         {
+            EnsureState(State.HaveNonExitedId);
+
             // We can only do this for the current process on OS X
             if (_processId != Environment.ProcessId)
                 throw new PlatformNotSupportedException(SR.OsxExternalProcessWorkingSetNotSupported);

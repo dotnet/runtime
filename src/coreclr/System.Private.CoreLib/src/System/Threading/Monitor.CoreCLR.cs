@@ -59,7 +59,7 @@ namespace System.Threading
             Yield = 2,
             Contention = 3,
             Error = 4,
-        };
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern EnterHelperResult TryEnter_FastPath_WithTimeout(object obj, int timeout);
@@ -92,6 +92,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static bool TryEnter_Slowpath(object obj, int timeout)
         {
+            ArgumentOutOfRangeException.ThrowIfLessThan(timeout, -1, null);
+
             if (TryEnter_Slowpath(ObjectHandleOnStack.Create(ref obj), timeout) != 0)
             {
                 return true;
@@ -170,13 +172,12 @@ namespace System.Threading
             {
                 LeaveHelperAction exitBehavior = Exit_FastPath(obj);
 
-                if (exitBehavior == LeaveHelperAction.None)
+                if (exitBehavior != LeaveHelperAction.None)
                 {
-                    lockTaken = false;
+                    Exit_Slowpath(exitBehavior, obj);
                     return;
                 }
 
-                Exit_Slowpath(exitBehavior, obj);
                 lockTaken = false;
             }
         }
