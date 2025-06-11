@@ -730,7 +730,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return Kind.FlagsToString() + " " + Name.Value + "(" + Number.ToString() + ")";
+            return Kind.ToString() + " " + Name.Value + "(" + Number.ToString() + ")";
         }
     }
 
@@ -937,7 +937,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            string flags = Flags.FlagsToString();
+            string flags = Flags.ToString();
             return string.Format("{0}{1} (Seq:{2}) {3}",
                 flags,
                 Name.ToString(),
@@ -956,14 +956,26 @@ namespace Internal.Metadata.NativeFormat.Writer
 
     public static class EnumHelpers
     {
-        public static string FlagsToString<T>(this T value) where T : struct, Enum, IConvertible
+        public static string FlagsToString(this SignatureCallingConvention value)
         {
-            var flags = Enum.GetValues<T>().Where(
-                eVal => (((IConvertible)eVal).ToInt32(null) != 0) && ((((IConvertible)value).ToInt32(null) & ((IConvertible)eVal).ToInt32(null)) == ((IConvertible)eVal).ToInt32(null)));
-            if (flags.Any())
-                return "[" + string.Join(" | ", flags.Select(Enum.GetName<T>)) + "] ";
-            else
-                return "";
+            var values = new List<string>();
+            if ((value & SignatureCallingConvention.HasThis) == SignatureCallingConvention.HasThis)
+            {
+                value &= ~SignatureCallingConvention.HasThis;
+                values.Add(nameof(SignatureCallingConvention.HasThis));
+            }
+            if ((value & SignatureCallingConvention.ExplicitThis) == SignatureCallingConvention.ExplicitThis)
+            {
+                value &= ~SignatureCallingConvention.ExplicitThis;
+                values.Add(nameof(SignatureCallingConvention.ExplicitThis));
+            }
+            if ((value & SignatureCallingConvention.UnmanagedCallingConventionMask) != default)
+            {
+                value &= ~SignatureCallingConvention.UnmanagedCallingConventionMask;
+                values.Add((value & SignatureCallingConvention.UnmanagedCallingConventionMask).ToString());
+            }
+            values.Add(value.ToString());
+            return string.Join(" | ", values);
         }
     }
 
