@@ -45,8 +45,8 @@ namespace System.Text.Json.Serialization.Converters
                 Span<byte> stackSpan = stackalloc byte[MaxEscapedFormatLength];
                 int bytesWritten = reader.CopyString(stackSpan);
 
-                // CopyString can unescape which can change the length, so we need to perform the range check again.
-                if (!JsonHelpers.IsInRangeInclusive(bytesWritten, FormatLength, MaxEscapedFormatLength))
+                // CopyString can unescape which can change the length, so we need to perform the length check again.
+                if (bytesWritten < FormatLength)
                 {
                     ThrowHelper.ThrowFormatException(DataType.DateOnly);
                 }
