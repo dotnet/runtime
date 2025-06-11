@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.Cose.Tests
     // Tests that apply to all [Try]Sign overloads using one single signer.
     public abstract class CoseMessageTests_Sign<T> where T : IDisposable
     {
+        internal virtual bool SupportsHashAlgorithm => true;
         internal virtual bool OnlySupportsDetachedContent => false;
         internal CoseAlgorithm DefaultAlgorithm => CoseAlgorithms[CoseAlgorithms.Count - 1];
         internal T DefaultKey => GetKeyHashPaddingTriplet<T>(CoseAlgorithms[CoseAlgorithms.Count - 1]).Key;
@@ -139,6 +140,11 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData("FOO")]
         public void SignWithUnsupportedHashAlgorithm(string hashAlgorithm)
         {
+            if (!SupportsHashAlgorithm)
+            {
+                return;
+            }
+
             Assert.Throws<ArgumentException>("hashAlgorithm", () => Sign(s_sampleContent, GetCoseSigner(DefaultKey, new HashAlgorithmName(hashAlgorithm))));
         }
 

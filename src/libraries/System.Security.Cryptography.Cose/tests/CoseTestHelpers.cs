@@ -66,6 +66,31 @@ namespace System.Security.Cryptography.Cose.Tests
             Large
         }
 
+        internal static string GetExpectedAlgorithmStringValue(CoseAlgorithm algorithm)
+        {
+            switch (algorithm)
+            {
+                case CoseAlgorithm.ES256:
+                case CoseAlgorithm.ES384:
+                case CoseAlgorithm.ES512:
+                case CoseAlgorithm.PS256:
+                case CoseAlgorithm.PS384:
+                case CoseAlgorithm.PS512:
+                case CoseAlgorithm.RS256:
+                case CoseAlgorithm.RS384:
+                case CoseAlgorithm.RS512:
+                    return algorithm.ToString();
+                case CoseAlgorithm.MLDsa44:
+                    return "ML-DSA-44";
+                case CoseAlgorithm.MLDsa65:
+                    return "ML-DSA-65";
+                case CoseAlgorithm.MLDsa87:
+                    return "ML-DSA-87";
+                default:
+                    throw new NotImplementedException($"Unhandled algorithm: {algorithm}");
+            }
+        }
+
         internal static HashAlgorithmName GetHashAlgorithmNameFromCoseAlgorithm(int algorithm)
             => algorithm switch
             {
@@ -607,11 +632,26 @@ namespace System.Security.Cryptography.Cose.Tests
             throw new NotImplementedException($"Unhandled key type: {key.GetType()}");
         }
 
-        internal static bool Sign1Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
+        internal static bool Sign1Verify(CoseMessage msg, IDisposable key, byte[] content, byte[]? associatedData = null)
         {
             CoseSign1Message sign1Msg = Assert.IsType<CoseSign1Message>(msg);
 
-            return sign1Msg.Content.HasValue? sign1Msg.VerifyEmbedded(key, associatedData) : sign1Msg.VerifyDetached(key, content, associatedData);
+            if (key is AsymmetricAlgorithm keyAsymmetricAlgorithm)
+            {
+                return sign1Msg.Content.HasValue ? sign1Msg.VerifyEmbedded(keyAsymmetricAlgorithm, associatedData) : sign1Msg.VerifyDetached(keyAsymmetricAlgorithm, content, associatedData);
+            }
+            else
+            {
+#pragma warning disable SYSLIB5006
+                CoseKey coseKey = key switch
+                {
+                    MLDsa mldsa => CoseKey.FromKey(mldsa),
+                    _ => throw new NotImplementedException($"Unhandled key type: {key.GetType()}")
+                };
+#pragma warning restore SYSLIB5006
+
+                return sign1Msg.Content.HasValue ? sign1Msg.VerifyEmbedded(coseKey, associatedData) : sign1Msg.VerifyDetached(coseKey, content, associatedData);
+            }
         }
 
         internal static bool MultiSignVerify(CoseMessage msg, IDisposable key, byte[] content, int expectedSignatures, byte[]? associatedData = null)
@@ -854,7 +894,7 @@ namespace System.Security.Cryptography.Cose.Tests
             writer.WriteEndMap();
 
             // signature
-            (AsymmetricAlgorithm key, HashAlgorithmName? hash, _) = GetKeyHashPaddingTriplet<AsymmetricAlgorithm>(algorithm);
+            (IDisposable key, HashAlgorithmName? hash, _) = GetKeyHashPaddingTriplet<AsymmetricAlgorithm>(algorithm);
             byte[] signatureBytes = GetSignature(key, hash, GetToBeSignedForCounterSign(msg, signature, encodedProtectedHeaders));
             writer.WriteByteString(signatureBytes);
             writer.WriteEndArray();
@@ -935,7 +975,7 @@ namespace System.Security.Cryptography.Cose.Tests
             return writer.Encode();
         }
 
-        internal static (byte[], byte[]) ReadCounterSign(CoseHeaderValue value, AsymmetricAlgorithm key)
+        internal static (byte[], byte[]) ReadCounterSign(CoseHeaderValue value, IDisposable key)
         {
             var reader = new CborReader(value.EncodedValue);
             Assert.Equal(3, reader.ReadStartArray());
