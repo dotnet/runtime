@@ -81,8 +81,7 @@ namespace ILCompiler
             public const int Vaes = (1 << 15);
             public const int WaitPkg = (1 << 16);
             public const int X86Serialize = (1 << 17);
-            public const int AvxVnniInt8 = (1 << 18);
-            public const int AvxVnniInt16 = (1 << 19);
+            public const int AvxVnniInt = (1 << 18);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -115,15 +114,13 @@ namespace ILCompiler
                 if ((flags & Avx10v1) != 0)
                     builder.AddSupportedInstructionSet("avx10v1");
                 if ((flags & Avx10v2) != 0)
+                {
                     builder.AddSupportedInstructionSet("avx10v2");
-                if ((flags & AvxVnniInt8) != 0)
-                    builder.AddSupportedInstructionSet("avxvnniint8");
-                if (((flags & AvxVnniInt8) != 0) && ((flags & Avx512) != 0))
-                    builder.AddSupportedInstructionSet("avxvnniint8_v512");
-                if ((flags & AvxVnniInt16) != 0)
-                    builder.AddSupportedInstructionSet("avxvnniint16");
-                if (((flags & AvxVnniInt16) != 0) && ((flags & Avx512) != 0))
-                    builder.AddSupportedInstructionSet("avxvnniint16_v512");
+                    builder.AddSupportedInstructionSet("avxvnniint");
+                    builder.AddSupportedInstructionSet("avxvnniint_v512");
+                }
+                if ((flags & AvxVnniInt) != 0)
+                    builder.AddSupportedInstructionSet("avxvnniint");
                 if ((flags & Apx) != 0)
                     builder.AddSupportedInstructionSet("apx");
 
@@ -239,12 +236,10 @@ namespace ILCompiler
                     InstructionSet.X64_GFNI_X64 => Gfni,
                     InstructionSet.X64_GFNI_V256 => (Gfni | Avx),
                     InstructionSet.X64_GFNI_V512 => (Gfni | Avx512),
-                    InstructionSet.X64_AVXVNNIINT8 => AvxVnniInt8,
-                    InstructionSet.X64_AVXVNNIINT8_X64 => AvxVnniInt8,
-                    InstructionSet.X64_AVXVNNIINT8_V512 => (AvxVnniInt8 | Avx10v2),
-                    InstructionSet.X64_AVXVNNIINT16 => AvxVnniInt16,
-                    InstructionSet.X64_AVXVNNIINT16_X64 => AvxVnniInt16,
-                    InstructionSet.X64_AVXVNNIINT16_V512 => (AvxVnniInt16 | Avx10v2),
+                    InstructionSet.X64_AVXVNNIINT => AvxVnniInt,
+                    InstructionSet.X64_AVXVNNIINT_X64 => AvxVnniInt,
+                    InstructionSet.X64_AVXVNNIINT_V512 => Avx10v2,
+                    InstructionSet.X64_AVXVNNIINT_V512_X64 => Avx10v2,
 
                     InstructionSet.X64_SHA => Sha,
                     InstructionSet.X64_SHA_X64 => Sha,

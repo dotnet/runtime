@@ -114,10 +114,10 @@ instructionset     ,X86   ,                     ,VectorT256         ,40 ,VectorT
 instructionset     ,X86   ,                     ,VectorT512         ,41 ,VectorT512            ,vectort512
 
 
-instructionset     ,X86   ,AvxVnniInt8          ,                   ,84 ,AVXVNNIINT8           ,avxvnniint8
-instructionset     ,X86   ,AvxVnniInt8_V512     ,                   ,85 ,AVXVNNIINT8_V512      ,avxvnniint8_v512
-instructionset     ,X86   ,AvxVnniInt16         ,                   ,86 ,AVXVNNIINT16          ,avxvnniint16
-instructionset     ,X86   ,AvxVnniInt16_V512    ,                   ,87 ,AVXVNNIINT16_V512     ,avxvnniint16_v512
+instructionset     ,X86   ,AvxVnniInt8          ,                   ,84 ,AVXVNNIINT            ,avxvnniint
+instructionset     ,X86   ,AvxVnniInt8_V512     ,                   ,85 ,AVXVNNIINT_V512       ,avxvnniint_v512
+instructionset     ,X86   ,AvxVnniInt16         ,                   ,86 ,AVXVNNIINT            ,avxvnniint
+instructionset     ,X86   ,AvxVnniInt16_V512    ,                   ,87 ,AVXVNNIINT_V512       ,avxvnniint_v512
 
 ; 64-bit Instruction Sets
 
@@ -152,8 +152,8 @@ instructionset64bit,X86   ,AVX512VP2INTERSECT
 instructionset64bit,X86   ,AVXIFMA
 instructionset64bit,X86   ,AVXVNNI
 instructionset64bit,X86   ,GFNI
-instructionset64bit,X86   ,AVXVNNIINT8
-instructionset64bit,X86   ,AVXVNNIINT16
+instructionset64bit,X86   ,AVXVNNIINT
+instructionset64bit,X86   ,AVXVNNIINT_V512
 instructionset64bit,X86   ,SHA
 instructionset64bit,X86   ,WAITPKG
 instructionset64bit,X86   ,X86Serialize
@@ -203,8 +203,6 @@ implication        ,X86   ,PCLMULQDQ            ,AES
 implication        ,X86   ,AVX512VP2INTERSECT   ,AVX512
 implication        ,X86   ,AVXIFMA              ,AVX2
 implication        ,X86   ,AVXVNNI              ,AVX2
-implication        ,X86   ,AVXVNNIINT8          ,AVX2
-implication        ,X86   ,AVXVNNIINT16         ,AVX2
 
 implication        ,X86   ,GFNI                 ,SSE42
 implication        ,X86   ,GFNI_V256            ,GFNI
@@ -212,8 +210,6 @@ implication        ,X86   ,GFNI_V256            ,AVX
 implication        ,X86   ,GFNI_V512            ,GFNI
 implication        ,X86   ,GFNI_V512            ,AVX512
 
-implication        ,X86   ,AVXVNNIINT8_V512     ,AVX10v2
-implication        ,X86   ,AVXVNNIINT16_V512    ,AVX10v2
 implication        ,X86   ,SHA                  ,X86Base
 
 implication        ,X86   ,AES_V256             ,AES
@@ -227,6 +223,9 @@ implication        ,X86   ,PCLMULQDQ_V512       ,AES_V512
 
 implication        ,X86   ,WAITPKG              ,X86Base
 implication        ,X86   ,X86Serialize         ,X86Base
+
+implication        ,X86   ,AVXVNNIINT           ,AVX2
+implication        ,X86   ,AVXVNNIINT_V512      ,AVX10v2
 
 ; These synthetic ISAs need to appear after the core ISAs
 ; as they depend on the other implications being correct first

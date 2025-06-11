@@ -1315,6 +1315,7 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_Avx10v2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v2))
     {
         CPUCompileFlags.Set(InstructionSet_AVX10v2);
+        CPUCompileFlags.Set(InstructionSet_AVXVNNIINT_V512);
     }
 
 #if defined(TARGET_AMD64)
@@ -1359,22 +1360,9 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_SHA);
     }
 
-    if ((cpuFeatures & XArchIntrinsicConstants_AvxVnniInt8) != 0)
+    if (((cpuFeatures & XArchIntrinsicConstants_AvxVnniInt) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNIINT))
     {
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNIINT8))
-        {
-            CPUCompileFlags.Set(InstructionSet_AVXVNNIINT8);
-            CPUCompileFlags.Set(InstructionSet_AVXVNNIINT8_V512);
-        }
-    }
-
-    if ((cpuFeatures & XArchIntrinsicConstants_AvxVnniInt16) != 0)
-    {
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNIINT16))
-        {
-            CPUCompileFlags.Set(InstructionSet_AVXVNNIINT16);
-            CPUCompileFlags.Set(InstructionSet_AVXVNNIINT16_V512);
-        }
+        CPUCompileFlags.Set(InstructionSet_AVXVNNIINT);
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_Vaes) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableVAES))

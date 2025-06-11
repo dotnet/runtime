@@ -2753,30 +2753,30 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             case NI_AVXVNNI_MultiplyWideningAndAdd:
             case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
-            case NI_AVXVNNIINT8_MultiplyWideningAndAddSByteSByte:
-            case NI_AVXVNNIINT8_MultiplyWideningAndAddSByteByte:
-            case NI_AVXVNNIINT8_MultiplyWideningAndAddByteByte:
-            case NI_AVXVNNIINT8_MultiplyWideningAndAddSByteSByteSaturate:
-            case NI_AVXVNNIINT8_MultiplyWideningAndAddSByteByteSaturate:
-            case NI_AVXVNNIINT8_MultiplyWideningAndAddByteByteSaturate:
-            case NI_AVXVNNIINT8_V512_MultiplyWideningAndAddSByteSByte:
-            case NI_AVXVNNIINT8_V512_MultiplyWideningAndAddSByteByte:
-            case NI_AVXVNNIINT8_V512_MultiplyWideningAndAddByteByte:
-            case NI_AVXVNNIINT8_V512_MultiplyWideningAndAddSByteSByteSaturate:
-            case NI_AVXVNNIINT8_V512_MultiplyWideningAndAddSByteByteSaturate:
-            case NI_AVXVNNIINT8_V512_MultiplyWideningAndAddByteByteSaturate:
-            case NI_AVXVNNIINT16_MultiplyWideningAndAddInt16UInt16:
-            case NI_AVXVNNIINT16_MultiplyWideningAndAddUInt16UInt16:
-            case NI_AVXVNNIINT16_MultiplyWideningAndAddUInt16Int16:
-            case NI_AVXVNNIINT16_MultiplyWideningAndAddInt16UInt16Saturate:
-            case NI_AVXVNNIINT16_MultiplyWideningAndAddUInt16UInt16Saturate:
-            case NI_AVXVNNIINT16_MultiplyWideningAndAddUInt16Int16Saturate:
-            case NI_AVXVNNIINT16_V512_MultiplyWideningAndAddInt16UInt16:
-            case NI_AVXVNNIINT16_V512_MultiplyWideningAndAddUInt16UInt16:
-            case NI_AVXVNNIINT16_V512_MultiplyWideningAndAddUInt16Int16:
-            case NI_AVXVNNIINT16_V512_MultiplyWideningAndAddInt16UInt16Saturate:
-            case NI_AVXVNNIINT16_V512_MultiplyWideningAndAddUInt16UInt16Saturate:
-            case NI_AVXVNNIINT16_V512_MultiplyWideningAndAddUInt16Int16Saturate:
+            case NI_AVXVNNIINT_MultiplyWideningAndAddSByteSByte:
+            case NI_AVXVNNIINT_MultiplyWideningAndAddSByteByte:
+            case NI_AVXVNNIINT_MultiplyWideningAndAddByteByte:
+            case NI_AVXVNNIINT_MultiplyWideningAndAddSByteSByteSaturate:
+            case NI_AVXVNNIINT_MultiplyWideningAndAddSByteByteSaturate:
+            case NI_AVXVNNIINT_MultiplyWideningAndAddByteByteSaturate:
+            case NI_AVXVNNIINT_MultiplyWideningAndAddInt16UInt16:
+            case NI_AVXVNNIINT_MultiplyWideningAndAddUInt16UInt16:
+            case NI_AVXVNNIINT_MultiplyWideningAndAddUInt16Int16:
+            case NI_AVXVNNIINT_MultiplyWideningAndAddInt16UInt16Saturate:
+            case NI_AVXVNNIINT_MultiplyWideningAndAddUInt16UInt16Saturate:
+            case NI_AVXVNNIINT_MultiplyWideningAndAddUInt16Int16Saturate:
+            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSByteSByte:
+            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSByteByte:
+            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddByteByte:
+            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSByteSByteSaturate:
+            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSByteByteSaturate:
+            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddByteByteSaturate:
+            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddInt16UInt16:
+            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddUInt16UInt16:
+            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddUInt16Int16:
+            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddInt16UInt16Saturate:
+            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddUInt16UInt16Saturate:
+            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddUInt16Int16Saturate:
             {
                 assert(numArgs == 3);
 

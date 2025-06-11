@@ -62,10 +62,10 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVXIFMA_X64;
         case InstructionSet_AVXVNNI:
             return InstructionSet_AVXVNNI_X64;
-        case InstructionSet_AVXVNNIINT8:
-            return InstructionSet_AVXVNNIINT8_X64;
-        case InstructionSet_AVXVNNIINT16:
-            return InstructionSet_AVXVNNIINT16_X64;
+        case InstructionSet_AVXVNNIINT:
+            return InstructionSet_AVXVNNIINT_X64;
+        case InstructionSet_AVXVNNIINT_V512:
+            return InstructionSet_AVXVNNIINT_V512_X64;
         case InstructionSet_GFNI:
             return InstructionSet_GFNI_X64;
         case InstructionSet_SHA:
@@ -177,14 +177,10 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_PCLMULQDQ_V512;
         }
 
-        case InstructionSet_AVXVNNIINT8:
+        case InstructionSet_AVXVNNIINT:
+        case InstructionSet_AVXVNNIINT_V512:
         {
-            return InstructionSet_AVXVNNIINT8_V512;
-        }
-
-        case InstructionSet_AVXVNNIINT16:
-        {
-            return InstructionSet_AVXVNNIINT16_V512;
+            return InstructionSet_AVXVNNIINT_V512;
         }
 
         default:
@@ -231,13 +227,9 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
             }
             else if (strncmp(className + 3, "VnniInt", 7) == 0)
             {
-                if (strcmp(className + 10, "8") == 0)
+                if ((strcmp(className + 10, "8") == 0) || (strcmp(className + 10, "16") == 0))
                 {
-                    return InstructionSet_AVXVNNIINT8;
-                }
-                else if (strcmp(className + 10, "16") == 0)
-                {
-                    return InstructionSet_AVXVNNIINT16;
+                    return InstructionSet_AVXVNNIINT;
                 }
             }
             else if (strcmp(className + 3, "2") == 0)

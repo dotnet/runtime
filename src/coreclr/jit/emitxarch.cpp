@@ -2965,8 +2965,8 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         {
             // no simd prefix for EVEX2 - AVX10.2 and above
             assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) ||
-                   emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT8) ||
-                   emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT16));
+                   emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT) ||
+                   emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT_V512));
         }
         else if (isPrefix(sizePrefix))
         {
@@ -3181,8 +3181,8 @@ emitter::code_t emitter::emitExtractVexPrefix(instruction ins, code_t& code) con
         {
             // no simd prefix for Avx-Vnni-Int* ISAs subset of instructions
             // INS_vpdpbuud[,s], INS_vpdpwuud[,s]
-            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT8) ||
-                   emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT16));
+            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT) ||
+                   emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT_V512));
         }
         else if (isPrefix(sizePrefix))
         {
