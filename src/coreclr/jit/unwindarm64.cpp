@@ -230,6 +230,11 @@ void Compiler::unwindPush(regNumber reg)
     unreached(); // use one of the unwindSaveReg* functions instead.
 }
 
+void Compiler::unwindPush2(regNumber reg1, regNumber reg2)
+{
+    unreached(); // use one of the unwindSaveReg* functions instead.
+}
+
 void Compiler::unwindAllocStack(unsigned size)
 {
 #if defined(FEATURE_CFI_SUPPORT)

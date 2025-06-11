@@ -10364,8 +10364,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 
             GetEmitter()->emitIns_R_R(INS_push2, EA_PTRSIZE, reg1, reg2,
                                       (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
-            compiler->unwindPush(reg1);
-            compiler->unwindPush(reg2);
+            compiler->unwindPush2(reg1, reg2);
         }
 
         if (regStack.Height() == 1)
