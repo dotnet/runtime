@@ -226,6 +226,9 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <inheritdoc cref="ITensor{TSelf, T}.GetDimensionSpan(int)" />
+        public TensorDimensionSpan<T> GetDimensionSpan(int dimension) => AsTensorSpan().GetDimensionSpan(dimension);
+
         /// <summary>Gets an enumerator for the readonly tensor.</summary>
         public Enumerator GetEnumerator() => new Enumerator(this);
 
@@ -358,7 +361,8 @@ namespace System.Numerics.Tensors
 
         ref readonly T IReadOnlyTensor<Tensor<T>, T>.this[params ReadOnlySpan<NIndex> indexes] => ref this[indexes];
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
+        ReadOnlyTensorDimensionSpan<T> IReadOnlyTensor<Tensor<T>, T>.GetDimensionSpan(int dimension) => AsReadOnlyTensorSpan().GetDimensionSpan(dimension);
+
         ref readonly T IReadOnlyTensor<Tensor<T>, T>.GetPinnableReference() => ref GetPinnableReference();
 
         //
@@ -451,7 +455,7 @@ namespace System.Numerics.Tensors
             // IDisposable
             //
 
-            readonly void IDisposable.Dispose() { }
+            void IDisposable.Dispose() { }
 
             //
             // IEnumerator
@@ -465,12 +469,5 @@ namespace System.Numerics.Tensors
 
             readonly T IEnumerator<T>.Current => Current;
         }
-
-        /// <summary>
-        /// Slices the tensor along the specified dimension.
-        /// </summary>
-        /// <param name="dimension">The dimension to slice along.</param>
-        /// <returns>The tensor sliced to the given <paramref name="dimension"/></returns>
-        public TensorDimensionView<T> GetDimension(int dimension) => new TensorDimensionView<T>(this, dimension);
     }
 }

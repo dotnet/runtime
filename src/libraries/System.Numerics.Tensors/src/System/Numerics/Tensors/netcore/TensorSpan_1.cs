@@ -18,6 +18,7 @@ namespace System.Numerics.Tensors
     /// Represents a contiguous region of arbitrary memory. Unlike arrays, it can point to either managed
     /// or native memory, or to memory allocated on the stack. It is type-safe and memory-safe.
     /// </summary>
+    /// <typeparam name="T">The type of the elements within the tensor span.</typeparam>
     [DebuggerTypeProxy(typeof(TensorSpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
@@ -282,6 +283,9 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <inheritdoc cref="ITensor{TSelf, T}.GetDimensionSpan(int)" />
+        public TensorDimensionSpan<T> GetDimensionSpan(int dimension) => new TensorDimensionSpan<T>(this, dimension);
+
         /// <summary>Gets an enumerator for the tensor span.</summary>
         public Enumerator GetEnumerator() => new Enumerator(this);
 
@@ -404,12 +408,5 @@ namespace System.Numerics.Tensors
 
             readonly T IEnumerator<T>.Current => Current;
         }
-
-        /// <summary>
-        /// Slices the tensor along the specified dimension.
-        /// </summary>
-        /// <param name="dimension">The dimension to slice along.</param>
-        /// <returns>The tensor sliced to the given <paramref name="dimension"/></returns>
-        public TensorDimensionView<T> GetDimension(int dimension) => new TensorDimensionView<T>(this, dimension);
     }
 }

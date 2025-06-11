@@ -37,12 +37,12 @@
     <Compile Include="System\Numerics\Tensors\netcore\IReadOnlyTensor_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ITensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ITensor_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorDimensionSpan_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorSpan_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorDimensionSpan_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorOperation.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorDimensionView_1.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorDimensionView_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Abs.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Acos.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Acosh.cs" />
