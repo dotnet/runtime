@@ -924,36 +924,36 @@ namespace System.Security.Cryptography.Pkcs
             {
                 return VerifyHashedMessage(
                     compatMode,
-                    (@this: this, signatureProcessor, certificate),
+                    (info: this, signatureProcessor, certificate),
                     static (state, contentToVerify) =>
                         state.signatureProcessor.VerifySignature(
 #if NET || NETSTANDARD2_1
                             contentToVerify,
-                            state.@this._signature,
+                            state.info._signature,
 #else
                             contentToVerify.ToArray(),
-                            state.@this._signature.ToArray(),
+                            state.info._signature.ToArray(),
 #endif
-                            state.@this.DigestAlgorithm.Value,
-                            state.@this._signatureAlgorithmParameters,
+                            state.info.DigestAlgorithm.Value,
+                            state.info._signatureAlgorithmParameters,
                             state.certificate));
             }
             else
             {
                 return VerifyPureMessage(
                     compatMode,
-                    (@this: this, signatureProcessor, certificate),
+                    (info: this, signatureProcessor, certificate),
                     static (state, contentToVerify) =>
                         state.signatureProcessor.VerifySignature(
 #if NET || NETSTANDARD2_1
                             contentToVerify,
-                            state.@this._signature,
+                            state.info._signature,
 #else
                             contentToVerify.ToArray(),
-                            state.@this._signature.ToArray(),
+                            state.info._signature.ToArray(),
 #endif
-                            state.@this.DigestAlgorithm.Value,
-                            state.@this._signatureAlgorithmParameters,
+                            state.info.DigestAlgorithm.Value,
+                            state.info._signatureAlgorithmParameters,
                             state.certificate));
             }
         }

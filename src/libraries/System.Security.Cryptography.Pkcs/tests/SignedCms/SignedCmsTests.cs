@@ -1738,7 +1738,12 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             SignedCms cmsNoCert = new SignedCms(new ContentInfo(message));
             cmsNoCert.Decode(cms.Encode());
+
+            // Assert.NoThrow
             cmsNoCert.SignerInfos[0].CheckHash();
+
+            // Assert.NoThrow
+            cmsNoCert.CheckHash();
         }
 
         [Fact]
