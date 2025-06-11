@@ -62,6 +62,7 @@ namespace System.Linq
                 case ExceptionArgument.other: return nameof(ExceptionArgument.other);
                 case ExceptionArgument.start: return nameof(ExceptionArgument.start);
                 case ExceptionArgument.step: return nameof(ExceptionArgument.step);
+                case ExceptionArgument.endInclusive: return nameof(ExceptionArgument.endInclusive);
                 default:
                     Debug.Fail("The ExceptionArgument value is not defined.");
                     return string.Empty;
@@ -94,5 +95,6 @@ namespace System.Linq
         other,
         start,
         step,
+        endInclusive,
     }
 }

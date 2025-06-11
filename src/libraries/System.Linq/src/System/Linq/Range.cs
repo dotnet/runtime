@@ -31,7 +31,7 @@ namespace System.Linq
         /// An iterator that yields a range of consecutive integers.
         /// </summary>
         [DebuggerDisplay("Count = {CountForDebugger}")]
-        private sealed partial class RangeIterator<T> : Iterator<T> where T : struct, INumber<T>
+        private sealed partial class RangeIterator<T> : Iterator<T> where T : INumber<T>
         {
             private readonly T _start;
             private readonly T _endExclusive;
@@ -77,7 +77,7 @@ namespace System.Linq
         }
 
         /// <summary>Fills the <paramref name="destination"/> with incrementing numbers, starting from <paramref name="value"/>.</summary>
-        private static void FillIncrementing<T>(Span<T> destination, T value) where T : struct, INumber<T>
+        private static void FillIncrementing<T>(Span<T> destination, T value) where T : INumber<T>
         {
             ref T pos = ref MemoryMarshal.GetReference(destination);
             ref T end = ref Unsafe.Add(ref pos, destination.Length);

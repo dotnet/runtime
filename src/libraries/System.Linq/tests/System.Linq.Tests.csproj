@@ -51,6 +51,7 @@
     <Compile Include="OrderDescendingTests.cs" />
     <Compile Include="OrderedSubsetting.cs" />
     <Compile Include="OrderTests.cs" />
+    <Compile Include="SequenceTests.cs" />
     <Compile Include="RangeTests.cs" />
     <Compile Include="RepeatTests.cs" />
     <Compile Include="ReverseTests.cs" />

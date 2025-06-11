@@ -247,7 +247,7 @@ namespace System.Linq
             }
         }
 
-        private sealed class RangeSelectIterator<T, TResult> : Iterator<TResult> where T : struct, INumber<T>
+        private sealed class RangeSelectIterator<T, TResult> : Iterator<TResult> where T : INumber<T>
         {
             private readonly T _start;
             private readonly T _end;
@@ -255,8 +255,10 @@ namespace System.Linq
 
             public RangeSelectIterator(T start, T end, Func<T, TResult> selector)
             {
-                Debug.Assert(uint.CreateTruncating(_end - _start) <= (uint)int.MaxValue);
+                Debug.Assert(start is not null);
+                Debug.Assert(end is not null);
                 Debug.Assert(selector is not null);
+                Debug.Assert(uint.CreateTruncating(end - start) <= (uint)int.MaxValue);
 
                 _start = start;
                 _end = end;

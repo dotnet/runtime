@@ -8,7 +8,7 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private sealed partial class RangeIterator<T> : IList<T>, IReadOnlyList<T> where T : struct, INumber<T>
+        private sealed partial class RangeIterator<T> : IList<T>, IReadOnlyList<T> where T : INumber<T>
         {
             public override IEnumerable<TResult> Select<TResult>(Func<T, TResult> selector)
             {
