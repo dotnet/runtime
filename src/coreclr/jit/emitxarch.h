@@ -849,7 +849,8 @@ void emitIns_R_I(instruction ins,
                  insOpts instOptions = INS_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
                      DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
-bool emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srgReg, bool canSkip, bool useApxNdd = false);
+bool emitIns_Mov(
+    instruction ins, emitAttr attr, regNumber dstReg, regNumber srgReg, bool canSkip, bool useApxNdd = false);
 
 void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts instOptions = INS_OPTS_NONE);
 

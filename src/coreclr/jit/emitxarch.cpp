@@ -3864,7 +3864,7 @@ inline emitter::insFormat emitter::emitNddInsModeFormat(instruction ins, insForm
 
         case IF_RRD_RRD_ARD:
             return IF_RWR_RRD_ARD;
-        
+
         case IF_RRD_RRD_SRD:
             return IF_RWR_RRD_SRD;
         default:
@@ -6492,7 +6492,8 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                         }
                         else
                         {
-                            fmt = useNDD ? emitNddInsModeFormat(ins, IF_RRD_RRD_ARD) : emitInsModeFormat(ins, IF_RRD_ARD);
+                            fmt =
+                                useNDD ? emitNddInsModeFormat(ins, IF_RRD_RRD_ARD) : emitInsModeFormat(ins, IF_RRD_ARD);
                         }
                     }
                     else
@@ -7805,7 +7806,8 @@ bool emitter::EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, reg
 //    srcReg    -- The source register
 //    canSkip   -- true if the move can be elided when dstReg == srcReg, otherwise false
 //
-bool emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, bool useApxNdd)
+bool emitter::emitIns_Mov(
+    instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, bool useApxNdd)
 {
     // Only move instructions can use emitIns_Mov
     assert(IsMovInstruction(ins));
@@ -10667,7 +10669,8 @@ regNumber emitter::emitIns_BASE_R_R_RM(
         return emitInsBinary(ins, attr, regOp, rmOp, targetReg);
     }
 
-    return emitInsBinary(ins, attr, treeNode, rmOp);;
+    return emitInsBinary(ins, attr, treeNode, rmOp);
+    ;
 }
 
 //----------------------------------------------------------------------------------------
