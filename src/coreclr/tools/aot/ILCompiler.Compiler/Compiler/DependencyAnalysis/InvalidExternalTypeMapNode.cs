@@ -47,6 +47,6 @@ namespace ILCompiler.DependencyAnalysis
             return section.Place(tuple);
         }
 
-        public IExternalTypeMapNode ToAnalysisBasedNode(NodeFactory factory) => this;
+        public IExternalTypeMapNode ToAnalysisBasedNode(NodeFactory factory) => new InvalidExternalTypeMapNode(TypeMapGroup, ThrowingMethodStub);
     }
 }

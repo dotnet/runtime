@@ -46,6 +46,6 @@ namespace ILCompiler.DependencyAnalysis
             return section.Place(tuple);
         }
 
-        public IProxyTypeMapNode ToAnalysisBasedNode(NodeFactory factory) => this;
+        public IProxyTypeMapNode ToAnalysisBasedNode(NodeFactory factory) => new InvalidProxyTypeMapNode(TypeMapGroup, ThrowingMethodStub);
     }
 }

@@ -28,7 +28,10 @@ namespace ILCompiler
                     return TypeSystemThrowingILEmitter.EmitIL(this, Exception);
                 }
 
-                protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer) => other is ThrowingMethodStub otherStub ? Name.CompareTo(otherStub.Name, StringComparison.Ordinal) : -1;
+                protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+                {
+                    return Name.CompareTo(other.Name, StringComparison.Ordinal);
+                }
 
                 public override bool IsPInvoke => false;
 
@@ -82,7 +85,7 @@ namespace ILCompiler
                     // FileNotFound exception takes precedence.
                     return;
                 }
-                _associatedTypeMapExceptionStub ??= new ThrowingMethodStub(stubModule.GetGlobalModuleType(), TypeMapGroup, externalTypeMap: true, exception);
+                _associatedTypeMapExceptionStub ??= new ThrowingMethodStub(stubModule.GetGlobalModuleType(), TypeMapGroup, externalTypeMap: false, exception);
             }
 
             public IExternalTypeMapNode GetExternalTypeMapNode()
@@ -108,7 +111,7 @@ namespace ILCompiler
 
         private readonly IReadOnlyDictionary<TypeDesc, Map> _states;
 
-        internal TypeMapMetadata(IReadOnlyDictionary<TypeDesc, Map> states, string diagnosticName)
+        private TypeMapMetadata(IReadOnlyDictionary<TypeDesc, Map> states, string diagnosticName)
         {
             _states = states;
             DiagnosticName = diagnosticName;
