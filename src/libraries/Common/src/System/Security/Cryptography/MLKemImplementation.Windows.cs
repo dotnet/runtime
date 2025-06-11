@@ -235,11 +235,18 @@ namespace System.Security.Cryptography
 
                         int blobHeaderSize = Marshal.SizeOf<BCRYPT_MLKEM_KEY_BLOB>();
                         int keySize = checked((int)blob->cbKey);
-                        int paramSetSize = checked((int)blob->cbParameterSet);
-                        string paramSet = Marshal.PtrToStringUni((nint)(pExportedSpan + blobHeaderSize))!;
-                        string expectedParamSet = PqcBlobHelpers.GetMLKemParameterSet(Algorithm);
 
-                        if (paramSet != expectedParamSet)
+                        if (keySize != destination.Length)
+                        {
+                            throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
+                        }
+
+                        int paramSetSize = checked((int)blob->cbParameterSet);
+                        ReadOnlySpan<char> paramSetWithNull = new(pExportedSpan + blobHeaderSize, paramSetSize / sizeof(char));
+                        ReadOnlySpan<char> paramSet = paramSetWithNull[0..^1];
+                        ReadOnlySpan<char> expectedParamSet = PqcBlobHelpers.GetMLKemParameterSet(Algorithm);
+
+                        if (!paramSet.SequenceEqual(expectedParamSet) || paramSetWithNull[^1] != '\0')
                         {
                             throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
                         }
@@ -253,5 +260,7 @@ namespace System.Security.Cryptography
                 CryptoPool.Return(exported);
             }
         }
+
+
     }
 }
