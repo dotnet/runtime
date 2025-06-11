@@ -3848,6 +3848,35 @@ inline emitter::insFormat emitter::emitInsModeFormat(instruction ins, insFormat 
     return (insFormat)(base + emitInsUpdateMode(ins));
 }
 
+/*****************************************************************************
+ *
+ *  Combine the given base format with the update mode of the APX-NDD instruction.
+ */
+
+inline emitter::insFormat emitter::emitNddInsModeFormat(instruction ins, insFormat base)
+{
+#ifdef TARGET_AMD64
+    assert(IsApxNDDEncodableInstruction(ins));
+    switch (base)
+    {
+        case IF_RRD_RRD_RRD:
+            return IF_RWR_RRD_RRD;
+
+        case IF_RRD_RRD_ARD:
+            return IF_RWR_RRD_ARD;
+        
+        case IF_RRD_RRD_SRD:
+            return IF_RWR_RRD_SRD;
+        default:
+            unreached();
+    }
+#else
+    // We should never reach here on non-AMD64 targets.
+    assert(!"emitNddInsModeFormat called on non-AMD64 target");
+    unreached();
+#endif
+}
+
 // This is a helper we need due to Vs Whidbey #254016 in order to distinguish
 // if we can not possibly be updating an integer register. This is not the best
 // solution, but the other ones (see bug) are going to be much more complicated.
@@ -6463,7 +6492,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                         }
                         else
                         {
-                            fmt = useNDD ? IF_RWR_RRD_ARD : emitInsModeFormat(ins, IF_RRD_ARD);
+                            fmt = useNDD ? emitNddInsModeFormat(ins, IF_RRD_RRD_ARD) : emitInsModeFormat(ins, IF_RRD_ARD);
                         }
                     }
                     else
@@ -7776,7 +7805,7 @@ bool emitter::EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, reg
 //    srcReg    -- The source register
 //    canSkip   -- true if the move can be elided when dstReg == srcReg, otherwise false
 //
-void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
+bool emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, bool useApxNdd)
 {
     // Only move instructions can use emitIns_Mov
     assert(IsMovInstruction(ins));
@@ -7865,13 +7894,23 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
 
     if (IsRedundantMov(ins, fmt, attr, dstReg, srcReg, canSkip))
     {
-        return;
+        // Move is redundant, no need to emit anything
+        return false;
     }
 
     if (EmitMovsxAsCwde(ins, size, dstReg, srcReg))
     {
-        return;
+        // Move is redundant, no need to emit anything
+        return false;
     }
+
+#ifdef TARGET_AMD64
+    if (useApxNdd)
+    {
+        // Move is required, but the caller is APX NDD aware
+        return true;
+    }
+#endif // TARGET_AMD64
 
     instrDesc* id = emitNewInstrSmall(attr);
     id->idIns(ins);
@@ -7884,6 +7923,9 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
 
     dispIns(id);
     emitCurIGsize += sz;
+
+    // Move is required and the caller is not APX NDD aware, we emitted the move
+    return true;
 }
 
 /*****************************************************************************
@@ -10618,18 +10660,14 @@ regNumber emitter::emitIns_BASE_R_R_RM(
     regNumber r                     = REG_NA;
     assert(regOp->isUsedFromReg());
 
-    if (DoJitUseApxNDD(ins) && regOp->GetRegNum() != targetReg &&
-        !IsRedundantMov(INS_mov, IF_RWR_RRD, attr, targetReg, regOp->GetRegNum(), false))
+    bool useApxNdd = DoJitUseApxNDD(ins);
+
+    if (emitIns_Mov(INS_mov, attr, targetReg, regOp->GetRegNum(), true, useApxNdd) && useApxNdd)
     {
-        r = emitInsBinary(ins, attr, regOp, rmOp, targetReg);
-    }
-    else
-    {
-        emitIns_Mov(INS_mov, attr, targetReg, regOp->GetRegNum(), /*canSkip*/ true);
-        r = emitInsBinary(ins, attr, treeNode, rmOp);
+        return emitInsBinary(ins, attr, regOp, rmOp, targetReg);
     }
 
-    return r;
+    return emitInsBinary(ins, attr, treeNode, rmOp);;
 }
 
 //----------------------------------------------------------------------------------------

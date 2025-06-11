@@ -2357,6 +2357,7 @@ protected:
 
     insUpdateModes emitInsUpdateMode(instruction ins);
     insFormat      emitInsModeFormat(instruction ins, insFormat base);
+    insFormat      emitNddInsModeFormat(instruction ins, insFormat base);
 
     static const BYTE emitInsModeFmtTab[];
 #ifdef DEBUG
