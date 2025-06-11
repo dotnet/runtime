@@ -962,9 +962,9 @@ namespace System.Collections
         private static byte[] AllocateByteArray(int bitLength)
         {
             int byteLength = GetAlignedByteArrayLength(bitLength);
-            Debug.Assert(byteLength > 0, "byteLength should be positive.");
+            Debug.Assert(byteLength >= 0, "byteLength should be non-negative.");
             Debug.Assert(byteLength % sizeof(int) == 0, "byteLength should be a multiple of sizeof(int).");
-            return new byte[byteLength];
+            return bitLength != 0 ? new byte[byteLength] : [];
         }
 
         /// <summary>Nop on little endian, reverses the endianness of <paramref name="value"/> on big endian.</summary>
