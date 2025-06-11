@@ -747,15 +747,10 @@ namespace System.Net.NetworkInformation.Tests
         [OuterLoop] // Depends on external host and assumption that successful ping takes long enough for cancellation to go through first
         public async Task CancelSendPingAsync(bool useIPAddress, bool useCancellationToken)
         {
-            if (PlatformDetection.IsOSX && useIPAddress && !useCancellationToken)
-            {
-                throw new SkipTestException("[ActiveIssue(https://github.com/dotnet/runtime/issues/114782)]");
-            }
-
             using CancellationTokenSource source = new();
 
             using Ping ping = new();
-            Task pingTask = useIPAddress
+            Task<PingReply> pingTask = useIPAddress
                 ? ping.SendPingAsync((await Dns.GetHostAddressesAsync(Test.Common.Configuration.Ping.PingHost))[0], TimeSpan.FromSeconds(5), cancellationToken: source.Token)
                 : ping.SendPingAsync(Test.Common.Configuration.Ping.PingHost, TimeSpan.FromSeconds(5), cancellationToken: source.Token);
             if (useCancellationToken)
@@ -766,7 +761,12 @@ namespace System.Net.NetworkInformation.Tests
             {
                 ping.SendAsyncCancel();
             }
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pingTask);
+            try
+            {
+                PingReply reply = await pingTask;
+                Assert.Fail(reply.Status.ToString());
+            }
+            catch (OperationCanceledException) { }
             Assert.True(pingTask.IsCanceled);
         }
 
