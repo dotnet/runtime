@@ -24,6 +24,7 @@ typedef enum
     InterpOpClassHandle,
     InterpOpGenericLookup,
     InterpOpLdPtr,
+    InterpOpHelperFtn,
 } InterpOpArgType;
 
 extern const uint8_t g_interpOpLen[];

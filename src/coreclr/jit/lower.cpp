@@ -3338,10 +3338,12 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     GenTree* startNonGCNode = nullptr;
     if (!putargs.Empty())
     {
-        GenTree* firstPutargStk = putargs.Bottom(0);
+        GenTree* firstPutargStk   = putargs.Bottom(0);
+        GenTree* firstPutargStkOp = firstPutargStk->gtGetOp1();
         for (int i = 1; i < putargs.Height(); i++)
         {
-            firstPutargStk = LIR::FirstNode(firstPutargStk, putargs.Bottom(i));
+            firstPutargStk   = LIR::FirstNode(firstPutargStk, putargs.Bottom(i));
+            firstPutargStkOp = LIR::FirstNode(firstPutargStkOp, putargs.Bottom(i)->gtGetOp1());
         }
         // Since this is a fast tailcall each PUTARG_STK will place the argument in the
         // _incoming_ arg space area. This will effectively overwrite our already existing
@@ -3389,10 +3391,10 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 GenTree* lookForUsesFrom = put->gtNext;
                 if (overwrittenStart != argStart)
                 {
-                    lookForUsesFrom = firstPutargStk;
+                    lookForUsesFrom = firstPutargStkOp;
                 }
 
-                RehomeArgForFastTailCall(callerArgLclNum, firstPutargStk, lookForUsesFrom, call);
+                RehomeArgForFastTailCall(callerArgLclNum, firstPutargStkOp, lookForUsesFrom, call);
                 // The above call can introduce temps and invalidate the pointer.
                 callerArgDsc = comp->lvaGetDesc(callerArgLclNum);
 
@@ -3406,7 +3408,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 unsigned int fieldsEnd   = fieldsFirst + callerArgDsc->lvFieldCnt;
                 for (unsigned int j = fieldsFirst; j < fieldsEnd; j++)
                 {
-                    RehomeArgForFastTailCall(j, firstPutargStk, lookForUsesFrom, call);
+                    RehomeArgForFastTailCall(j, firstPutargStkOp, lookForUsesFrom, call);
                 }
             }
         }
