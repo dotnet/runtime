@@ -4525,7 +4525,7 @@ retry_emit:
                     {
                         CORINFO_RESOLVED_TOKEN resolvedToken;
                         uint32_t token = getU4LittleEndian(m_ip + 1);
-                        ResolveToken(token, CORINFO_TOKENKIND_Ldtoken, &resolvedToken);
+                        ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
 
                         CORINFO_CALL_INFO callInfo;
                         m_compHnd->getCallInfo(&resolvedToken, constrainedClass, m_methodInfo->ftn, (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS| CORINFO_CALLINFO_LDFTN), &callInfo);
