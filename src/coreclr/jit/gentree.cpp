@@ -7230,8 +7230,17 @@ bool GenTree::OperMayThrow(Compiler* comp)
         // If this node is embedding another node, then check that instead.
         if (IsEmbeddingMaskOp())
         {
-            assert(this->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect);
-            return this->AsHWIntrinsic()->Op(2)->OperMayThrow(comp);
+            assert(AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect);
+
+            for (size_t i = 1; i <= AsHWIntrinsic()->GetOperandCount(); i++)
+            {
+                if (AsHWIntrinsic()->Op(i)->OperMayThrow(comp))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 #endif // TARGET_XARCH
     }
