@@ -679,16 +679,8 @@ bool OptIfConversionDsc::optIfConvert()
     GenTree*  selectFalseInput;
     if (m_mainOper == GT_STORE_LCL_VAR)
     {
-        if (m_doElseConversion)
-        {
-            selectTrueInput  = m_elseOperation.node->AsLclVar()->Data();
-            selectFalseInput = m_thenOperation.node->AsLclVar()->Data();
-        }
-        else // Duplicate the destination of the Then store.
-        {
-            selectTrueInput  = nullptr;
-            selectFalseInput = m_thenOperation.node->AsLclVar()->Data();
-        }
+        selectFalseInput = m_thenOperation.node->AsLclVar()->Data();
+        selectTrueInput  = m_doElseConversion ? m_elseOperation.node->AsLclVar()->Data() : nullptr;
 
         // Pick the type as the type of the local, which should always be compatible even for implicit coercions.
         selectType = genActualType(m_thenOperation.node);
@@ -713,6 +705,7 @@ bool OptIfConversionDsc::optIfConvert()
 #endif
         if (selectTrueInput == nullptr)
         {
+            // Duplicate the destination of the Then store.
             assert(m_mainOper == GT_STORE_LCL_VAR && !m_doElseConversion);
             GenTreeLclVar* store = m_thenOperation.node->AsLclVar();
             selectTrueInput      = m_comp->gtNewLclVarNode(store->GetLclNum(), store->TypeGet());
@@ -928,7 +921,7 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
         bool isFalseLclVar = falseInput->OperIs(GT_LCL_VAR);
         if (isTrueLclVar != isFalseLclVar)
         {
-            GenTree* binOp  = isTrueLclVar ? falseInput : trueInput;
+            GenTree* binOp = isTrueLclVar ? falseInput : trueInput;
             assert(binOp != nullptr);
             if (binOp->OperIs(GT_ADD, GT_OR, GT_XOR) || binOp->OperIsShift())
             {
