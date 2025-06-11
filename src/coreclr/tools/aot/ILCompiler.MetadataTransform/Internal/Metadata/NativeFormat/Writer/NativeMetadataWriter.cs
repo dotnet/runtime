@@ -802,7 +802,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return this.GenericType.ToString() + "<" + string.Join(", ", this.GenericTypeArguments.Select(ga => ga.ToString())) + ">";
+            return this.GenericType.ToString() + "<" + string.Join(", ", this.GenericTypeArguments) + ">";
         }
     }
 
@@ -822,7 +822,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             return Method.ToString()
                 + "(Arguments: "
                 + "<"
-                + string.Join(", ", this.GenericTypeArguments.Select(ga => ga.ToString()))
+                + string.Join(", ", this.GenericTypeArguments)
                 + ">";
         }
     }
@@ -840,8 +840,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         public override string ToString()
         {
             string str = Constructor.ToString();
-            str += "(" + string.Join(", ", FixedArguments.Select(fa => fa.ToString()))
-                + string.Join(", ", NamedArguments.Select(na => na.ToString())) + ")";
+            str += "(" + string.Join(", ", FixedArguments)
+                + string.Join(", ", NamedArguments) + ")";
             str += "(ctor: " + Constructor.Handle.ToString();
             return str;
         }
