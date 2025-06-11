@@ -43,7 +43,7 @@ struct _EventPipeCollectTracingCommandPayload_Internal {
 	bool rundown_requested;
 	bool stackwalk_requested;
 	uint64_t rundown_keyword;
-	uint32_t session_type;
+	EventPipeSessionType session_type;
 };
 
 #if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_EVENTPIPE_PROTOCOL_GETTER_SETTER)

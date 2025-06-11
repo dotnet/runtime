@@ -61,7 +61,7 @@ void
 session_provider_tracepoint_config_free (EventPipeSessionProviderTracepointConfiguration *tracepoint_config);
 
 static
-ep_char8_t *
+const ep_char8_t *
 tracepoint_format_alloc (const ep_char8_t *tracepoint_name);
 
 static
@@ -70,7 +70,7 @@ session_provider_tracepoint_config_alloc (const EventPipeProviderTracepointConfi
 
 static
 bool
-event_filter_allows_event_id (
+event_filter_enables_event_id (
 	const EventPipeSessionProviderEventFilter *event_filter,
 	uint32_t event_id);
 
@@ -127,7 +127,7 @@ session_provider_event_filter_alloc (const EventPipeProviderEventFilter *event_f
 		ep_raise_error_if_nok (instance->event_ids != NULL);
 
 		for (uint32_t i = 0; i < event_filter->length; ++i) {
-			dn_umap_result_t insert_result = dn_umap_ptr_uint32_insert (instance->event_ids, (void *)(uintptr_t)event_filter->event_ids[i], 0);
+			dn_umap_result_t insert_result = dn_umap_uint32_ptr_insert (instance->event_ids, event_filter->event_ids[i], NULL);
 			ep_raise_error_if_nok (insert_result.result);
 		}
 	}
@@ -308,7 +308,7 @@ ep_session_provider_get_tracepoint_for_event (
 		return tracepoint;
 
 	uint32_t event_id = ep_event_get_event_id (ep_event);
-	dn_umap_it_t tracepoint_found = dn_umap_find (tracepoint_config->event_id_to_tracepoint_map, (void *)(uintptr_t)event_id);
+	dn_umap_it_t tracepoint_found = dn_umap_uint32_ptr_find (tracepoint_config->event_id_to_tracepoint_map, event_id);
 	if (!dn_umap_it_end (tracepoint_found))
 		tracepoint = dn_umap_it_value_t (tracepoint_found, EventPipeSessionProviderTracepoint *);
 
@@ -320,6 +320,7 @@ void
 DN_CALLBACK_CALLTYPE
 tracepoint_free_func (void *tracepoint)
 {
+	EP_ASSERT (tracepoint != NULL);
 	EventPipeSessionProviderTracepoint *tp = *(EventPipeSessionProviderTracepoint **)tracepoint;
 	ep_rt_utf8_string_free ((ep_char8_t *)tp->tracepoint_format);
 	ep_rt_object_free (tp);
@@ -347,26 +348,15 @@ session_provider_tracepoint_config_free (EventPipeSessionProviderTracepointConfi
 }
 
 static
-ep_char8_t *
+const ep_char8_t *
 tracepoint_format_alloc (const ep_char8_t *tracepoint_name)
 {
-	ep_return_null_if_nok (tracepoint_name != NULL && tracepoint_name[0] != '\0');
+	ep_return_null_if_nok (tracepoint_name != NULL);
+	
+	if (strlen(tracepoint_name) > EP_TRACEPOINT_NAME_MAX_SIZE)
+		return NULL;
 
-	int32_t res = 0;
-	size_t tracepoint_format_len = strlen(tracepoint_name) + strlen(EP_TRACEPOINT_FORMAT_V1) + 2; // +2 for space and null terminator
-	ep_char8_t *tracepoint_format = ep_rt_utf8_string_alloc (tracepoint_format_len);
-	ep_raise_error_if_nok (tracepoint_format != NULL);
-
-	res = snprintf(tracepoint_format, tracepoint_format_len, "%s %s", tracepoint_name, EP_TRACEPOINT_FORMAT_V1);
-	ep_raise_error_if_nok (res >= 0 && (size_t)res < tracepoint_format_len);
-
-ep_on_exit:
-	return tracepoint_format;
-
-ep_on_error:
-	ep_rt_utf8_string_free (tracepoint_format);
-	tracepoint_format = NULL;
-	ep_exit_error_handler ();
+	return ep_rt_utf8_string_printf_alloc ("%s %s", tracepoint_name, EP_TRACEPOINT_FORMAT_V1);
 }
 
 static
@@ -405,7 +395,7 @@ session_provider_tracepoint_config_alloc (const EventPipeProviderTracepointConfi
 			for (uint32_t j = 0; j < tracepoint_set->event_ids_length; ++j) {
 				uint32_t event_id = tracepoint_set->event_ids[j];
 
-				dn_umap_result_t insert_result = dn_umap_insert (instance->event_id_to_tracepoint_map, (void *)(uintptr_t)event_id, tracepoint);
+				dn_umap_result_t insert_result = dn_umap_uint32_ptr_insert (instance->event_id_to_tracepoint_map, event_id, tracepoint);
 				ep_raise_error_if_nok (insert_result.result);
 			}
 
@@ -481,7 +471,7 @@ ep_session_provider_free (EventPipeSessionProvider * session_provider)
 	ep_return_void_if_nok (session_provider != NULL);
 
 	session_provider_tracepoint_config_free (session_provider->tracepoint_config);
-	session_provider_event_filter_free ((EventPipeSessionProviderEventFilter *)session_provider->event_filter);
+	session_provider_event_filter_free (session_provider->event_filter);
 	ep_rt_utf8_string_free (session_provider->filter_data);
 	ep_rt_utf8_string_free (session_provider->provider_name);
 	ep_rt_object_free (session_provider);
@@ -489,7 +479,7 @@ ep_session_provider_free (EventPipeSessionProvider * session_provider)
 
 static
 bool
-event_filter_allows_event_id (
+event_filter_enables_event_id (
 	const EventPipeSessionProviderEventFilter *event_filter,
 	uint32_t event_id)
 {
@@ -499,7 +489,10 @@ event_filter_allows_event_id (
 	if (event_filter->event_ids == NULL)
 		return !event_filter->enable;
 
-	return event_filter->enable == dn_umap_contains (event_filter->event_ids, (void*)(uintptr_t)event_id);
+	dn_umap_it_t it = dn_umap_uint32_ptr_find (event_filter->event_ids, event_id);
+	bool contains_event_id = !dn_umap_it_end (it);
+
+	return event_filter->enable == contains_event_id;
 }
 
 bool
@@ -522,7 +515,7 @@ ep_session_provider_allows_event (
 		return false;
 
 	uint32_t event_id = ep_event_get_event_id (ep_event);
-	return event_filter_allows_event_id (session_provider->event_filter, event_id);
+	return event_filter_enables_event_id (session_provider->event_filter, event_id);
 }
 
 /*

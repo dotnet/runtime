@@ -358,6 +358,41 @@ ep_provider_callback_data_free (EventPipeProviderCallbackData *provider_callback
 	ep_rt_object_free (provider_callback_data);
 }
 
+void
+eventpipe_collect_tracing_command_free_event_filter (EventPipeProviderEventFilter *event_filter)
+{
+	ep_return_void_if_nok (event_filter != NULL);
+
+	ep_rt_object_array_free ((uint32_t *)event_filter->event_ids);
+
+	ep_rt_object_free (event_filter);
+}
+
+void
+eventpipe_collect_tracing_command_free_tracepoint_sets (EventPipeProviderTracepointSet *tracepoint_set, uint32_t length)
+{
+	ep_return_void_if_nok (tracepoint_set != NULL);
+
+	for (uint32_t i = 0; i < length; ++i) {
+		ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_set->tracepoint_name);
+		ep_rt_object_array_free ((uint32_t *)tracepoint_set->event_ids);
+	}
+
+	ep_rt_object_array_free (tracepoint_set);
+}
+
+void
+eventpipe_collect_tracing_command_free_tracepoint_config (EventPipeProviderTracepointConfiguration *tracepoint_config)
+{
+	ep_return_void_if_nok (tracepoint_config != NULL);
+
+	ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_config->default_tracepoint_name);
+
+	eventpipe_collect_tracing_command_free_tracepoint_sets ((EventPipeProviderTracepointSet *)tracepoint_config->non_default_tracepoints, tracepoint_config->non_default_tracepoints_length);
+
+	ep_rt_object_free (tracepoint_config);
+}
+
 /*
  * EventPipeProviderConfiguration.
  */
@@ -391,7 +426,12 @@ ep_provider_config_init (
 void
 ep_provider_config_fini (EventPipeProviderConfiguration *provider_config)
 {
-	;
+	ep_return_void_if_nok (provider_config != NULL);
+
+	ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (provider_config));
+	ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (provider_config));
+	eventpipe_collect_tracing_command_free_event_filter ((EventPipeProviderEventFilter *)ep_provider_config_get_event_filter (provider_config));
+	eventpipe_collect_tracing_command_free_tracepoint_config ((EventPipeProviderTracepointConfiguration *)ep_provider_config_get_tracepoint_config (provider_config));
 }
 
 /*

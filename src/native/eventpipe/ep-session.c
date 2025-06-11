@@ -58,8 +58,9 @@ is_guid_empty(const uint8_t *guid);
 
 static
 uint16_t
-construct_extension_buffer (
+construct_extension_activity_ids_buffer (
 	uint8_t *extension,
+	size_t extension_size,
 	const uint8_t *activity_id,
 	const uint8_t *related_activity_id);
 
@@ -215,23 +216,29 @@ session_user_events_tracepoints_init (
 	EP_ASSERT (session != NULL);
 	EP_ASSERT (session->session_type == EP_SESSION_TYPE_USEREVENTS);
 
-	if (user_events_data_fd <= 0)
-		return false;
+	bool result = false;
 
-	session->user_events_data_fd = user_events_data_fd;
-
-	EventPipeSessionProviderList *providers = ep_session_get_providers (session);
+	EventPipeSessionProviderList *providers = ep_session_get_providers (session);;
 	EP_ASSERT (providers != NULL);
 
-	for (dn_list_it_t it = dn_list_begin (ep_session_provider_list_get_providers (providers)); !dn_list_it_end (it); it = dn_list_it_next (it)) {
-		EventPipeSessionProvider *session_provider = *dn_list_it_data_t (it, EventPipeSessionProvider *);
+	ep_raise_error_if_nok (user_events_data_fd > 0);
+	session->user_events_data_fd = user_events_data_fd;
+
+	DN_LIST_FOREACH_BEGIN (EventPipeSessionProvider *, session_provider, ep_session_provider_list_get_providers (providers)) {
 		EP_ASSERT (session_provider != NULL);
 
-		if (!ep_session_provider_register_tracepoints (session_provider, session->user_events_data_fd))
-			return false;
-	}
+		ep_raise_error_if_nok (ep_session_provider_register_tracepoints (session_provider, session->user_events_data_fd));
+	} DN_LIST_FOREACH_END;
 	
-	return true;
+	result = true;
+
+ep_on_exit:
+	return result;
+
+ep_on_error:
+	session_disable_user_events (session);
+	session->user_events_data_fd = 0;
+	ep_exit_error_handler ();
 }
 
 EventPipeSession *
@@ -591,7 +598,7 @@ ep_session_disable (EventPipeSession *session)
 	if (session->session_type == EP_SESSION_TYPE_USEREVENTS)
 		session_disable_user_events (session);
 
-	if (session->file != NULL && ep_session_type_uses_buffer_manager (session->session_type)) {
+	if (session->file != NULL) {
 		bool ignored;
 		ep_session_write_all_buffers_to_file (session, &ignored);
 	}
@@ -620,16 +627,15 @@ void
 session_disable_user_events (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
-	ep_return_void_if_nok (session->session_type == EP_SESSION_TYPE_USEREVENTS);
+	ep_return_void_if_nok (session->session_type == EP_SESSION_TYPE_USEREVENTS && session->user_events_data_fd > 0);
 
 	ep_requires_lock_held ();
 
 	EventPipeSessionProviderList *providers = ep_session_get_providers (session);
 	EP_ASSERT (providers != NULL);
-	for (dn_list_it_t it = dn_list_begin (ep_session_provider_list_get_providers (providers)); !dn_list_it_end (it); it = dn_list_it_next (it)) {
-		EventPipeSessionProvider *session_provider = *dn_list_it_data_t (it, EventPipeSessionProvider *);
+	DN_LIST_FOREACH_BEGIN (EventPipeSessionProvider *, session_provider, ep_session_provider_list_get_providers (providers)) {
 		ep_session_provider_unregister_tracepoints (session_provider, session->user_events_data_fd);
-	}
+	} DN_LIST_FOREACH_END;
 
 	if (session->user_events_data_fd != 0) {
 #if HAVE_UNISTD_H
@@ -655,41 +661,51 @@ is_guid_empty(const uint8_t *guid)
 }
 
 /*
- *  construct_extension_buffer
+ *  construct_extension_activity_ids_buffer
  *
- *  EventPipe Tracepoints include an extension buffer
- *  that encodes other optional information.
+ *  Encodes non-empty activity ID and related activity ID.
  */
 static
 uint16_t
-construct_extension_buffer (
+construct_extension_activity_ids_buffer (
 	uint8_t *extension,
+	size_t extension_size,
 	const uint8_t *activity_id,
 	const uint8_t *related_activity_id)
 {
 	uint16_t offset = 0;
 
-	memset(extension, 0, EP_MAX_EXTENSION_SIZE);
+	memset (extension, 0, extension_size);
 
 	bool activity_id_is_empty = is_guid_empty (activity_id);
 	bool related_activity_id_is_empty = is_guid_empty (related_activity_id);
 
+	EP_ASSERT ((size_t)(offset + 1 + EP_ACTIVITY_ID_SIZE) <= extension_size);
 	if (!activity_id_is_empty) {
 		extension[offset] = 0x02;
-		memcpy(extension + offset + 1, activity_id, EP_ACTIVITY_ID_SIZE);
-		offset += 1 + EP_ACTIVITY_ID_SIZE;
+		++offset;
+		memcpy (extension + offset, activity_id, EP_ACTIVITY_ID_SIZE);
+		offset += EP_ACTIVITY_ID_SIZE;
 	}
-
+	
+	EP_ASSERT ((size_t)(offset + 1 + EP_ACTIVITY_ID_SIZE) <= extension_size);
 	if (!related_activity_id_is_empty) {
 		extension[offset] = 0x03;
-		memcpy(extension + offset + 1, related_activity_id, EP_ACTIVITY_ID_SIZE);
-		offset += 1 + EP_ACTIVITY_ID_SIZE;
+		++offset;
+		memcpy (extension + offset, related_activity_id, EP_ACTIVITY_ID_SIZE);
+		offset += EP_ACTIVITY_ID_SIZE;
 	}
 
 	return offset;
 }
 
 #if HAVE_SYS_UIO_H && HAVE_ERRNO_H
+/*
+ *  session_tracepoint_write_event
+ *
+ *  Writes the event data to the corresponding tracepoint, as configured by the session provider.
+ *  For minimum performance overhead, this function prefers static buffers over dynamic allocations.
+ */
 static
 bool
 session_tracepoint_write_event (
@@ -720,16 +736,16 @@ session_tracepoint_write_event (
 	uint32_t event_id = ep_event_get_event_id (ep_event);
 	uint16_t truncated_event_id = event_id & 0xFFFF; // For parity with EventSource, there shouldn't be any that need more than 16 bits. 
 
-	uint8_t extension_metadata[5];
+	uint8_t extension_metadata[EP_EXTENSION_METADATA_PREFIX_SIZE];
 	extension_metadata[0] = 0x01; // label
 	uint32_t metadata_len = ep_event_get_metadata_len (ep_event);
 	memcpy (extension_metadata + 1, &metadata_len, sizeof (metadata_len));
 
-	uint8_t extension_activity_ids[EP_MAX_EXTENSION_SIZE];
-	uint16_t extension_activity_ids_len = construct_extension_buffer (extension_activity_ids, activity_id, related_activity_id);
-	EP_ASSERT(extension_activity_ids_len <= EP_MAX_EXTENSION_SIZE);
+	uint8_t extension_activity_ids[EP_EXTENSION_ACTIVITIES_SIZE];
+	uint16_t extension_activity_ids_len = construct_extension_activity_ids_buffer (extension_activity_ids, EP_EXTENSION_ACTIVITIES_SIZE, activity_id, related_activity_id);
+	EP_ASSERT(extension_activity_ids_len <= EP_EXTENSION_ACTIVITIES_SIZE);
 
-	uint32_t extension_len = 5 + metadata_len + extension_activity_ids_len;
+	uint32_t extension_len = EP_EXTENSION_METADATA_PREFIX_SIZE + metadata_len + extension_activity_ids_len;
 	if (extension_len & 0xFFFF0000)
 		return false;
 
@@ -843,6 +859,22 @@ ep_session_write_event (
 	// Filter events specific to "this" session based on precomputed flag on provider/events.
 	if (ep_event_is_enabled_by_mask (ep_event, ep_session_get_mask (session))) {
 		switch (session->session_type) {
+		case EP_SESSION_TYPE_FILE:
+		case EP_SESSION_TYPE_LISTENER:
+		case EP_SESSION_TYPE_IPCSTREAM:
+		case EP_SESSION_TYPE_FILESTREAM:
+			EP_ASSERT (session->buffer_manager != NULL);
+			result = ep_buffer_manager_write_event (
+				session->buffer_manager,
+				thread,
+				session,
+				ep_event,
+				payload,
+				activity_id,
+				related_activity_id,
+				event_thread,
+				stack);
+			break;
 		case EP_SESSION_TYPE_SYNCHRONOUS:
 			EP_ASSERT (session->synchronous_callback != NULL);
 			session->synchronous_callback (
@@ -874,17 +906,7 @@ ep_session_write_event (
 				stack);
 			break;
 		default:
-			EP_ASSERT (session->buffer_manager != NULL);
-			result = ep_buffer_manager_write_event (
-				session->buffer_manager,
-				thread,
-				session,
-				ep_event,
-				payload,
-				activity_id,
-				related_activity_id,
-				event_thread,
-				stack);
+			EP_UNREACHABLE ("Unknown session type.");
 			break;
 		}
 	}

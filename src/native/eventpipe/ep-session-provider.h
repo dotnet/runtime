@@ -101,7 +101,7 @@ struct _EventPipeSessionProvider_Internal {
 	uint64_t keywords;
 	EventPipeEventLevel logging_level;
 	ep_char8_t *filter_data;
-	const EventPipeSessionProviderEventFilter *event_filter;
+	EventPipeSessionProviderEventFilter *event_filter;
 	EventPipeSessionProviderTracepointConfiguration *tracepoint_config;
 };
 
