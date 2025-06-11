@@ -1820,7 +1820,7 @@ public:
     inline bool IsVectorBroadcast(var_types simdBaseType) const;
 
 #ifdef FEATURE_HW_INTRINSICS
-    bool IsTrueMask(GenTreeHWIntrinsic* parent) const;
+    bool IsTrueMask(var_types simdBaseType) const;
     bool IsFalseMask() const;
 #endif
 

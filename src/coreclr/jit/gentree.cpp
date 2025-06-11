@@ -33233,7 +33233,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     break;
                 }
 
-                if (op1->IsVectorAllBitsSet() || op1->IsTrueMask(tree))
+                if (op1->IsVectorAllBitsSet() || op1->IsTrueMask(simdBaseType))
                 {
                     if ((op3->gtFlags & GTF_SIDE_EFFECT) != 0)
                     {
@@ -33356,23 +33356,22 @@ GenTreeMskCon* Compiler::gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree,
 // IsTrueMask: Is the given node a true mask
 //
 // Arguments:
-//   parent - parent of the node
+//   simdBaseType - the base type of the mask
 //
-// Returns true if the node is a true mask for the given parent.
+// Returns true if the node is a true mask for the given simdBaseType.
 //
-// Note that a byte true mask is different to an int true mask, therefore
-// the usage of the mask (ie the type of the parent) needs to be taken into account.
+// Note that a byte true mask (1111...) is different to an int true mask
+// (10001000...), therefore the simdBaseType of the mask needs to be
+// taken into account.
 //
-bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
+bool GenTree::IsTrueMask(var_types simdBaseType) const
 {
 #ifdef TARGET_ARM64
-    var_types ParentSimdBaseType = JitType2PreciseVarType(parent->GetSimdBaseJitType());
-
     // TODO-SVE: For agnostic VL, vector type may not be simd16_t
 
     if (IsCnsMsk())
     {
-        return SveMaskPatternAll == EvaluateSimdMaskToPattern<simd16_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
+        return SveMaskPatternAll == EvaluateSimdMaskToPattern<simd16_t>(simdBaseType, AsMskCon()->gtSimdMaskVal);
     }
 #endif
 
