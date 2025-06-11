@@ -168,13 +168,8 @@ CDAC_TYPE_END(Exception)
 
 CDAC_TYPE_BEGIN(ExceptionInfo)
 CDAC_TYPE_INDETERMINATE(ExceptionInfo)
-#if FEATURE_EH_FUNCLETS
-CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObject, offsetof(ExceptionTrackerBase, m_hThrowable))
-CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExceptionTrackerBase, m_pPrevNestedInfo))
-#else
 CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObject, offsetof(ExInfo, m_hThrowable))
 CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExInfo, m_pPrevNestedInfo))
-#endif
 CDAC_TYPE_END(ExceptionInfo)
 
 
@@ -223,6 +218,7 @@ CDAC_TYPE_END(SyncTableEntry)
 CDAC_TYPE_BEGIN(Module)
 CDAC_TYPE_INDETERMINATE(Module)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Assembly, cdac_data<Module>::Assembly)
+CDAC_TYPE_FIELD(Module, /*pointer*/, PEAssembly, cdac_data<Module>::PEAssembly)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Base, cdac_data<Module>::Base)
 CDAC_TYPE_FIELD(Module, /*uint32*/, Flags, cdac_data<Module>::Flags)
 CDAC_TYPE_FIELD(Module, /*pointer*/, LoaderAllocator, cdac_data<Module>::LoaderAllocator)
@@ -230,6 +226,7 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicMetadata, cdac_data<Module>::Dynamic
 CDAC_TYPE_FIELD(Module, /*pointer*/, Path, cdac_data<Module>::Path)
 CDAC_TYPE_FIELD(Module, /*pointer*/, FileName, cdac_data<Module>::FileName)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ReadyToRunInfo, cdac_data<Module>::ReadyToRunInfo)
+CDAC_TYPE_FIELD(Module, /*pointer*/, GrowableSymbolStream, cdac_data<Module>::GrowableSymbolStream)
 
 CDAC_TYPE_FIELD(Module, /*pointer*/, FieldDefToDescMap, cdac_data<Module>::FieldDefToDescMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ManifestModuleReferencesMap, cdac_data<Module>::ManifestModuleReferencesMap)
@@ -252,7 +249,63 @@ CDAC_TYPE_INDETERMINATE(Assembly)
 #ifdef FEATURE_COLLECTIBLE_TYPES
 CDAC_TYPE_FIELD(Assembly, /*uint8*/, IsCollectible, cdac_data<Assembly>::IsCollectible)
 #endif
+CDAC_TYPE_FIELD(Assembly, /*pointer*/, Module, cdac_data<Assembly>::Module)
+CDAC_TYPE_FIELD(Assembly, /*pointer*/, Error, cdac_data<Assembly>::Error)
+CDAC_TYPE_FIELD(Assembly, /*uint32*/, NotifyFlags, cdac_data<Assembly>::NotifyFlags)
+CDAC_TYPE_FIELD(Assembly, /*uint32*/, Level, cdac_data<Assembly>::Level)
 CDAC_TYPE_END(Assembly)
+
+CDAC_TYPE_BEGIN(LoaderAllocator)
+CDAC_TYPE_INDETERMINATE(LoaderAllocator)
+CDAC_TYPE_FIELD(LoaderAllocator, /*uint32*/, ReferenceCount, cdac_data<LoaderAllocator>::ReferenceCount)
+CDAC_TYPE_END(LoaderAllocator)
+
+CDAC_TYPE_BEGIN(PEAssembly)
+CDAC_TYPE_INDETERMINATE(PEAssembly)
+CDAC_TYPE_FIELD(PEAssembly, /*pointer*/, PEImage, cdac_data<PEAssembly>::PEImage)
+CDAC_TYPE_END(PEAssembly)
+
+CDAC_TYPE_BEGIN(PEImage)
+CDAC_TYPE_INDETERMINATE(PEImage)
+CDAC_TYPE_FIELD(PEImage, /*pointer*/, LoadedImageLayout, cdac_data<PEImage>::LoadedImageLayout)
+CDAC_TYPE_FIELD(PEImage, /*ProbeExtensionResult*/, ProbeExtensionResult, cdac_data<PEImage>::ProbeExtensionResult)
+CDAC_TYPE_END(PEImage)
+
+CDAC_TYPE_BEGIN(PEImageLayout)
+CDAC_TYPE_FIELD(PEImageLayout, /*pointer*/, Base, cdac_data<PEImageLayout>::Base)
+CDAC_TYPE_FIELD(PEImageLayout, /*uint32*/, Size, cdac_data<PEImageLayout>::Size)
+CDAC_TYPE_FIELD(PEImageLayout, /*uint32*/, Flags, cdac_data<PEImageLayout>::Flags)
+CDAC_TYPE_END(PEImageLayout)
+
+CDAC_TYPE_BEGIN(CGrowableSymbolStream)
+CDAC_TYPE_INDETERMINATE(CGrowableSymbolStream)
+CDAC_TYPE_FIELD(CGrowableSymbolStream, /*pointer*/, Buffer, cdac_data<CGrowableStream>::Buffer)
+CDAC_TYPE_FIELD(CGrowableSymbolStream, /*uint32*/, Size, cdac_data<CGrowableStream>::Size)
+CDAC_TYPE_END(CGrowableSymbolStream)
+
+CDAC_TYPE_BEGIN(ProbeExtensionResult)
+CDAC_TYPE_INDETERMINATE(ProbeExtensionResult)
+CDAC_TYPE_FIELD(ProbeExtensionResult, /*int32*/, Type, offsetof(ProbeExtensionResult, Type))
+CDAC_TYPE_END(ProbeExtensionResult)
+
+CDAC_TYPE_BEGIN(AppDomain)
+CDAC_TYPE_INDETERMINATE(AppDomain)
+CDAC_TYPE_FIELD(AppDomain, /*pointer*/, RootAssembly, cdac_data<AppDomain>::RootAssembly)
+CDAC_TYPE_FIELD(AppDomain, /*DomainAssemblyList*/, DomainAssemblyList, cdac_data<AppDomain>::DomainAssemblyList)
+CDAC_TYPE_END(AppDomain)
+
+CDAC_TYPE_BEGIN(ArrayListBase)
+CDAC_TYPE_INDETERMINATE(ArrayListBase)
+CDAC_TYPE_FIELD(ArrayListBase, /*uint32*/, Count, cdac_data<ArrayListBase>::Count)
+CDAC_TYPE_FIELD(ArrayListBase, /*pointer*/, FirstBlock, cdac_data<ArrayListBase>::FirstBlock)
+CDAC_TYPE_END(ArrayListBase)
+
+CDAC_TYPE_BEGIN(ArrayListBlock)
+CDAC_TYPE_INDETERMINATE(ArrayListBlock)
+CDAC_TYPE_FIELD(ArrayListBlock, /*pointer*/, Next, cdac_data<ArrayListBase>::Next)
+CDAC_TYPE_FIELD(ArrayListBlock, /*uint32*/, Size, cdac_data<ArrayListBase>::Size)
+CDAC_TYPE_FIELD(ArrayListBlock, /*pointer*/, ArrayStart, cdac_data<ArrayListBase>::ArrayStart)
+CDAC_TYPE_END(ArrayListBlock)
 
 // RuntimeTypeSystem
 
@@ -647,13 +700,11 @@ CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CallerReturnAddress, offsetof(Inl
 CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CalleeSavedFP, offsetof(InlinedCallFrame, m_pCalleeSavedFP))
 CDAC_TYPE_END(InlinedCallFrame)
 
-#ifdef FEATURE_EH_FUNCLETS
 CDAC_TYPE_BEGIN(SoftwareExceptionFrame)
 CDAC_TYPE_SIZE(sizeof(SoftwareExceptionFrame))
 CDAC_TYPE_FIELD(SoftwareExceptionFrame, /*T_CONTEXT*/, TargetContext, cdac_data<SoftwareExceptionFrame>::TargetContext)
 CDAC_TYPE_FIELD(SoftwareExceptionFrame, /*pointer*/, ReturnAddress, cdac_data<SoftwareExceptionFrame>::ReturnAddress)
 CDAC_TYPE_END(SoftwareExceptionFrame)
-#endif // FEATURE_EH_FUNCLETS
 
 CDAC_TYPE_BEGIN(FramedMethodFrame)
 CDAC_TYPE_SIZE(sizeof(FramedMethodFrame))
@@ -788,6 +839,7 @@ CDAC_GLOBAL_STRING(Architecture, riscv64)
 CDAC_GLOBAL_STRING(RID, RID_STRING)
 
 CDAC_GLOBAL_POINTER(AppDomain, &AppDomain::m_pTheAppDomain)
+CDAC_GLOBAL_POINTER(SystemDomain, cdac_data<SystemDomain>::SystemDomain)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)

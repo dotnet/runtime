@@ -48,10 +48,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal sealed override void WriteAsPropertyNameCore(Utf8JsonWriter writer, object value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
-            if (value is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             Type runtimeType = value.GetType();
             if (runtimeType == Type)
@@ -101,7 +98,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonElement)
             {
-                return JsonElement.ParseValue(ref reader);
+                return JsonElement.ParseValue(ref reader, options.AllowDuplicateProperties);
             }
 
             Debug.Assert(options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonNode);
@@ -114,7 +111,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonElement)
             {
-                JsonElement element = JsonElement.ParseValue(ref reader);
+                JsonElement element = JsonElement.ParseValue(ref reader, options.AllowDuplicateProperties);
 
                 // Edge case where we want to lookup for a reference when parsing into typeof(object)
                 if (options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.Preserve &&

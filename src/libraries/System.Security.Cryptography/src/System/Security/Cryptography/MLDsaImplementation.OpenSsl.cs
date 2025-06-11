@@ -10,7 +10,14 @@ namespace System.Security.Cryptography
     {
         private SafeEvpPKeyHandle _key = null!;
 
-        private MLDsaImplementation(MLDsaAlgorithm algorithm, SafeEvpPKeyHandle key)
+        private readonly bool _hasSeed;
+        private readonly bool _hasSecretKey;
+
+        private MLDsaImplementation(
+            MLDsaAlgorithm algorithm,
+            SafeEvpPKeyHandle key,
+            bool hasSeed,
+            bool hasSecretKey)
             : base(algorithm)
         {
             Debug.Assert(key is not null);
@@ -18,6 +25,8 @@ namespace System.Security.Cryptography
             Debug.Assert(SupportsAny());
 
             _key = key;
+            _hasSeed = hasSeed;
+            _hasSecretKey = hasSecretKey;
         }
 
         protected override void Dispose(bool disposing)
@@ -36,25 +45,9 @@ namespace System.Security.Cryptography
             Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa65 != null ||
             Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa87 != null;
 
-        internal MLDsaImplementation Duplicate()
-        {
-            return new MLDsaImplementation(Algorithm, _key.DuplicateHandle());
-        }
-
         internal SafeEvpPKeyHandle DuplicateHandle()
         {
             return _key.DuplicateHandle();
-        }
-
-        // TODO: Delete this when public MLDsaOpenSsl is added.
-        internal static MLDsaImplementation FromHandle(MLDsaAlgorithm algorithm, SafeEvpPKeyHandle key)
-        {
-            Debug.Assert(key is not null);
-            Debug.Assert(!key.IsInvalid);
-            Debug.Assert(algorithm is not null);
-
-            ThrowIfNotSupported();
-            return new MLDsaImplementation(algorithm, key.DuplicateHandle());
         }
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
@@ -72,34 +65,41 @@ namespace System.Security.Cryptography
         protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination) =>
             Interop.Crypto.MLDsaExportSeed(_key, destination);
 
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        {
+            return MLDsaPkcs8.TryExportPkcs8PrivateKey(
+                this,
+                _hasSeed,
+                _hasSecretKey,
+                destination,
+                out bytesWritten);
+        }
+
         internal static partial MLDsaImplementation GenerateKeyImpl(MLDsaAlgorithm algorithm)
         {
             SafeEvpPKeyHandle key = Interop.Crypto.MLDsaGenerateKey(algorithm.Name, ReadOnlySpan<byte>.Empty);
-            return new MLDsaImplementation(algorithm, key);
+            return new MLDsaImplementation(algorithm, key, hasSeed: true, hasSecretKey: true);
         }
 
         internal static partial MLDsaImplementation ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(source.Length == algorithm.PublicKeySizeInBytes, $"Public key was expected to be {algorithm.PublicKeySizeInBytes} bytes, but was {source.Length} bytes.");
             SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(algorithm.Name, source, privateKey: false);
-            return new MLDsaImplementation(algorithm, key);
+            return new MLDsaImplementation(algorithm, key, hasSeed: false, hasSecretKey: false);
         }
-
-        internal static partial MLDsaImplementation ImportPkcs8PrivateKeyValue(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
-            throw new PlatformNotSupportedException();
 
         internal static partial MLDsaImplementation ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(source.Length == algorithm.SecretKeySizeInBytes, $"Secret key was expected to be {algorithm.SecretKeySizeInBytes} bytes, but was {source.Length} bytes.");
             SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(algorithm.Name, source, privateKey: true);
-            return new MLDsaImplementation(algorithm, key);
+            return new MLDsaImplementation(algorithm, key, hasSeed: false, hasSecretKey: true);
         }
 
         internal static partial MLDsaImplementation ImportSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(source.Length == algorithm.PrivateSeedSizeInBytes, $"Seed was expected to be {algorithm.PrivateSeedSizeInBytes} bytes, but was {source.Length} bytes.");
             SafeEvpPKeyHandle key = Interop.Crypto.MLDsaGenerateKey(algorithm.Name, source);
-            return new MLDsaImplementation(algorithm, key);
+            return new MLDsaImplementation(algorithm, key, hasSeed: true, hasSecretKey: true);
         }
     }
 }

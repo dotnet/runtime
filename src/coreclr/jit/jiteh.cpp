@@ -1537,6 +1537,8 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
     assert(XTnum < compHndBBtabCount);
     assert(!ehTableFinalized);
 
+    JITDUMP("\nRemoving EH#%u\n", XTnum);
+
     EHblkDsc* HBtab;
 
     /* Reduce the number of entries in the EH table by one */
@@ -1646,6 +1648,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
     }
     else
     {
+        JITDUMP("Updating ACD entries after EH removal\n");
         // There are three possibilities for each ACD entry
         //
         // 1. remains as is (stays in same region with same indices)
@@ -1718,6 +1721,8 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
                 JITDUMPEXEC(add->Dump());
             }
         }
+
+        JITDUMP("... done updating ACD entries after EH removal\n");
     }
 }
 
@@ -3192,8 +3197,8 @@ void Compiler::dispOutgoingEHClause(unsigned num, const CORINFO_EH_CLAUSE& claus
 
     // Note: the flags field is kind of weird. It should be compared for equality
     // to determine the type of clause, even though it looks like a bitfield. In
-    // Particular, CORINFO_EH_CLAUSE_NONE is zero, so you can "&" to check it.
-    // You do need to mask off the bits, though, because CORINFO_EH_CLAUSE_DUPLICATE
+    // particular, CORINFO_EH_CLAUSE_NONE is zero, so you cannot "&" to check it.
+    // You do need to mask off the bits, though, because CORINFO_EH_CLAUSE_SAMETRY
     // is and'ed in.
     const DWORD CORINFO_EH_CLAUSE_TYPE_MASK = 0x7;
     switch (clause.Flags & CORINFO_EH_CLAUSE_TYPE_MASK)
@@ -3226,17 +3231,7 @@ void Compiler::dispOutgoingEHClause(unsigned num, const CORINFO_EH_CLAUSE& claus
             break;
     }
 
-    if ((clause.TryOffset == clause.TryLength) && (clause.TryOffset == clause.HandlerOffset) &&
-        ((clause.Flags & (CORINFO_EH_CLAUSE_DUPLICATE | CORINFO_EH_CLAUSE_FINALLY)) ==
-         (CORINFO_EH_CLAUSE_DUPLICATE | CORINFO_EH_CLAUSE_FINALLY)))
-    {
-        printf(" cloned finally");
-    }
-    else if (clause.Flags & CORINFO_EH_CLAUSE_DUPLICATE)
-    {
-        printf(" duplicated");
-    }
-    else if (clause.Flags & CORINFO_EH_CLAUSE_SAMETRY)
+    if (clause.Flags & CORINFO_EH_CLAUSE_SAMETRY)
     {
         printf(" same try");
     }

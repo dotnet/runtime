@@ -455,7 +455,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             if ((peReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
             {
-                return peReader.TryGetReadyToRunHeader(out _);
+                return peReader.TryGetCompositeReadyToRunHeader(out _);
             }
             else
             {
@@ -611,7 +611,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         private bool TryLocateNativeReadyToRunHeader()
         {
-            _composite = CompositeReader.TryGetReadyToRunHeader(out _readyToRunHeaderRVA);
+            _composite = CompositeReader.TryGetCompositeReadyToRunHeader(out _readyToRunHeaderRVA);
 
             return _composite;
         }

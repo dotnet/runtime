@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// THREADS.H -
-//
-
 
 //
 //
@@ -135,13 +132,13 @@ class     ThreadBaseObject;
 class     AppDomainStack;
 class     DomainAssembly;
 class     DeadlockAwareLock;
-struct    HelperMethodFrameCallerList;
 class     EECodeInfo;
 class     DebuggerPatchSkip;
 class     FaultingExceptionFrame;
 enum      BinderMethodID : int;
 class     PrepareCodeConfig;
 class     NativeCodeVersion;
+struct    InterpThreadContext;
 
 typedef void(*ADCallBackFcnType)(LPVOID);
 
@@ -391,15 +388,6 @@ BOOL MatchThreadHandleToOsId ( HANDLE h, DWORD osId );
 // unstarted System.Thread), then this instance can be found in the TLS
 // of that physical thread.
 
-// FEATURE_MULTIREG_RETURN is set for platforms where a struct return value
-//                         can be returned in multiple registers
-//                         ex: Windows/Unix ARM/ARM64, Unix-AMD64.
-//
-//
-// UNIX_AMD64_ABI is a specific kind of FEATURE_MULTIREG_RETURN
-//                         specified by SystemV ABI for AMD64
-//
-
 #ifdef FEATURE_HIJACK                                                    // Hijack function returning
 EXTERN_C void STDCALL OnHijackWorker(HijackArgs * pArgs);
 #endif // FEATURE_HIJACK
@@ -445,11 +433,11 @@ struct RuntimeThreadLocals
 
 #ifdef _MSC_VER
 // use selectany to avoid initialization de-optimization issues in the compiler
-__declspec(selectany)
+__declspec(selectany) thread_local
 #else
-extern
+extern __thread
 #endif
-thread_local RuntimeThreadLocals t_runtime_thread_locals;
+RuntimeThreadLocals t_runtime_thread_locals;
 
 typedef DPTR(struct RuntimeThreadLocals) PTR_RuntimeThreadLocals;
 typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
@@ -496,7 +484,6 @@ class Thread
 #endif // DACCESS_COMPILE
     friend class ProfToEEInterfaceImpl;     // HRESULT ProfToEEInterfaceImpl::GetHandleFromThread(ThreadID threadId, HANDLE *phThread);
 
-    friend class ExceptionTracker;
     friend class ThreadExceptionState;
 
     friend class StackFrameIterator;
@@ -1218,7 +1205,7 @@ public:
         {
             void* curSP;
             curSP = (void *)GetCurrentSP();
-            _ASSERTE((m_pGCFrame == NULL) || (curSP <= m_pGCFrame && m_pGCFrame < m_CacheStackBase));
+            _ASSERTE((m_pGCFrame == (GCFrame*)-1) || (curSP <= m_pGCFrame && m_pGCFrame < m_CacheStackBase));
         }
 #endif
 
@@ -2670,7 +2657,7 @@ public:
 
 private:
 #ifdef FEATURE_HIJACK
-    void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind));
+    void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet));
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
@@ -3514,14 +3501,6 @@ public:
     }
 #endif // _DEBUG
 
-#ifdef _DEBUG
-private:
-    friend class FCallTransitionState;
-    friend class PermitHelperMethodFrameState;
-    friend class CompletedFCallTransitionState;
-    HelperMethodFrameCallerList *m_pHelperMethodFrameCallerList;
-#endif // _DEBUG
-
 private:
     // If HasStarted fails, we cache the exception here, and rethrow on the thread which
     // calls Thread.Start.
@@ -3698,7 +3677,7 @@ private:
 private:
     // At the end of a catch, we may raise ThreadAbortException.  If catch clause set IP to resume in the
     // corresponding try block, our exception system will execute the same catch clause again and again.
-    // So we save reference to the clause post which TA was reraised, which is used in ExceptionTracker::ProcessManagedCallFrame
+    // So we save reference to the clause post which TA was reraised, which is used in ExInfo::ProcessManagedCallFrame
     // to make ThreadAbort proceed ahead instead of going in a loop.
     // This problem only happens on Win64 due to JIT64.  The common scenario is VB's "On error resume next"
 #ifdef FEATURE_EH_FUNCLETS
@@ -3847,20 +3826,23 @@ private:
     // By the time a frame is scanned by the runtime, m_pHijackReturnKind always
     // identifies the gc-ness of the return register(s)
     ReturnKind m_HijackReturnKind;
+    bool m_HijackHasAsyncRet;
 
 public:
-    ReturnKind GetHijackReturnKind()
+    ReturnKind GetHijackReturnKind(bool* hasAsyncRet)
     {
         LIMITED_METHOD_CONTRACT;
 
+        *hasAsyncRet = m_HijackHasAsyncRet;
         return m_HijackReturnKind;
     }
 
-    void SetHijackReturnKind(ReturnKind returnKind)
+    void SetHijackReturnKind(ReturnKind returnKind, bool hasAsyncRet)
     {
         LIMITED_METHOD_CONTRACT;
 
         m_HijackReturnKind = returnKind;
+        m_HijackHasAsyncRet = hasAsyncRet;
     }
 #endif
 #endif // FEATURE_HIJACK
@@ -3980,6 +3962,12 @@ private:
     bool m_hasPendingActivation;
 
     friend struct ::cdac_data<Thread>;
+
+#ifdef FEATURE_INTERPRETER
+public:
+    InterpThreadContext *m_pInterpThreadContext;
+    InterpThreadContext* GetInterpThreadContext();
+#endif // FEATURE_INTERPRETER
 };
 
 template<>
@@ -4032,7 +4020,6 @@ typedef SList<Thread, false, PTR_Thread> ThreadList;
 #define CHECK_ONE_STORE()       _ASSERTE(this == ThreadStore::s_pThreadStore);
 
 typedef DPTR(class ThreadStore) PTR_ThreadStore;
-typedef DPTR(class ExceptionTracker) PTR_ExceptionTracker;
 
 class ThreadStore
 {
@@ -4057,8 +4044,6 @@ public:
 
     // RemoveThread finds the thread in the ThreadStore and discards it.
     static BOOL RemoveThread(Thread *target);
-
-    static BOOL CanAcquireLock();
 
     // Transfer a thread from the unstarted to the started list.
     static void TransferStartedThread(Thread *target);
@@ -4581,7 +4566,6 @@ protected:
     FORCEINLINE_NONDEBUG
     void PopInternal()
     {
-        SCAN_SCOPE_END;
         WRAPPER_NO_CONTRACT;
 
 #ifdef ENABLE_CONTRACTS_IMPL
@@ -4764,7 +4748,6 @@ public:
     void Enter(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
         WRAPPER_NO_CONTRACT;
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4777,7 +4760,6 @@ public:
     void Leave()
     {
         WRAPPER_NO_CONTRACT;
-        SCAN_SCOPE_BEGIN;
         this->PopInternal<TRUE>();  // Thread must be non-NULL
     }
 };
@@ -4788,7 +4770,6 @@ public:
     DEBUG_NOINLINE
     void Enter(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -4800,7 +4781,6 @@ public:
     DEBUG_NOINLINE
     void Enter(Thread * pThreadNullOk, bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -4813,7 +4793,6 @@ public:
     DEBUG_NOINLINE
     void Leave()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<FALSE>(); // Thread may be NULL
     }
 };
@@ -4824,7 +4803,6 @@ public:
     DEBUG_NOINLINE
     GCCoop(GCHOLDER_DECLARE_CONTRACT_ARGS_BARE)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         // The thread must be non-null to enter MODE_COOP
@@ -4834,7 +4812,6 @@ public:
     DEBUG_NOINLINE
     GCCoop(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4847,7 +4824,6 @@ public:
     DEBUG_NOINLINE
     ~GCCoop()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<TRUE>();  // Thread must be non-NULL
     }
 };
@@ -4861,7 +4837,6 @@ public:
     DEBUG_NOINLINE
     GCCoopHackNoThread(GCHOLDER_DECLARE_CONTRACT_ARGS_BARE)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         this->EnterInternalCoop_HackNoThread(true GCHOLDER_CONTRACT_ARGS_HasDtor);
@@ -4870,7 +4845,6 @@ public:
     DEBUG_NOINLINE
     GCCoopHackNoThread(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4882,7 +4856,6 @@ public:
     DEBUG_NOINLINE
     ~GCCoopHackNoThread()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<FALSE>();  // Thread might be NULL
     }
 };
@@ -4893,7 +4866,6 @@ public:
     DEBUG_NOINLINE
     GCCoopThreadExists(Thread * pThread GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         this->EnterInternalCoop(pThread, true GCHOLDER_CONTRACT_ARGS_HasDtor);
@@ -4902,7 +4874,6 @@ public:
     DEBUG_NOINLINE
     GCCoopThreadExists(Thread * pThread, bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4914,7 +4885,6 @@ public:
     DEBUG_NOINLINE
     ~GCCoopThreadExists()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<TRUE>();  // Thread must be non-NULL
     }
 };
@@ -4925,7 +4895,6 @@ public:
     DEBUG_NOINLINE
     GCPreemp(GCHOLDER_DECLARE_CONTRACT_ARGS_BARE)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
 
         this->EnterInternalPreemp(true GCHOLDER_CONTRACT_ARGS_HasDtor);
@@ -4934,7 +4903,6 @@ public:
     DEBUG_NOINLINE
     GCPreemp(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -4946,7 +4914,6 @@ public:
     DEBUG_NOINLINE
     ~GCPreemp()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<FALSE>(); // Thread may be NULL
     }
 };
@@ -4957,7 +4924,6 @@ public:
     DEBUG_NOINLINE
     GCPreempThreadExists(Thread * pThread GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
 
         this->EnterInternalPreemp<TRUE>(    // Thread must be non-NULL
@@ -4967,7 +4933,6 @@ public:
     DEBUG_NOINLINE
     GCPreempThreadExists(Thread * pThread, bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -4980,7 +4945,6 @@ public:
     DEBUG_NOINLINE
     ~GCPreempThreadExists()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<TRUE>();  // Thread must be non-NULL
     }
 };
@@ -5005,7 +4969,6 @@ class GCAssert
     DEBUG_NOINLINE void BeginGCAssert();
     DEBUG_NOINLINE void EndGCAssert()
     {
-        SCAN_SCOPE_END;
     }
 };
 
@@ -5018,7 +4981,6 @@ public:
 
     DEBUG_NOINLINE ~AutoCleanupGCAssert()
     {
-        SCAN_SCOPE_END;
         WRAPPER_NO_CONTRACT;
         // This is currently disabled; we currently have a lot of code which doesn't
         // back out the GC mode properly (instead relying on the EX_TRY macros.)
@@ -5061,7 +5023,6 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
  public:
     DEBUG_NOINLINE GCForbid(BOOL fConditional, const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         if (fConditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -5089,7 +5050,6 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
 
     DEBUG_NOINLINE GCForbid(const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
         STATIC_CONTRACT_GC_NOTRIGGER;
 
@@ -5112,8 +5072,6 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
 
     DEBUG_NOINLINE ~GCForbid()
     {
-        SCAN_SCOPE_END;
-
         if (m_fConditional)
         {
             GetThread()->EndForbidGC();
@@ -5143,7 +5101,6 @@ class GCNoTrigger
  public:
     DEBUG_NOINLINE GCNoTrigger(BOOL fConditional, const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         if (fConditional)
         {
             STATIC_CONTRACT_GC_NOTRIGGER;
@@ -5175,7 +5132,6 @@ class GCNoTrigger
 
     DEBUG_NOINLINE GCNoTrigger(const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_GC_NOTRIGGER;
 
         m_fConditional = TRUE;
@@ -5201,8 +5157,6 @@ class GCNoTrigger
 
     DEBUG_NOINLINE ~GCNoTrigger()
     {
-        SCAN_SCOPE_END;
-
         if (m_fConditional)
         {
             Thread * pThread = GetThreadNULLOk();
@@ -5285,7 +5239,6 @@ class FCallGCCanTrigger
 public:
     static DEBUG_NOINLINE void Enter()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_GC_TRIGGERS;
         Thread * pThread = GetThreadNULLOk();
         if (pThread != NULL)
@@ -5296,14 +5249,12 @@ public:
 
     static DEBUG_NOINLINE void Enter(Thread* pThread)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_GC_TRIGGERS;
         pThread->EndForbidGC();
     }
 
     static DEBUG_NOINLINE void Leave(const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_END;
         Thread * pThread = GetThreadNULLOk();
         if (pThread != NULL)
         {
@@ -5313,13 +5264,11 @@ public:
 
     static DEBUG_NOINLINE void Leave(Thread* pThread, const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_END;
         pThread->BeginForbidGC(szFile, lineNum);
     }
 };
 
-#define TRIGGERSGC_NOSTOMP()  do {                                           \
-                            ANNOTATION_GC_TRIGGERS;                         \
+#define TRIGGERSGC_NOSTOMP()  do {                                          \
                             Thread* curThread = GetThread();                \
                             if(curThread->GCNoTrigger())                    \
                             {                                               \
@@ -5337,8 +5286,8 @@ public:
 
 #define BEGINFORBIDGC()
 #define ENDFORBIDGC()
-#define TRIGGERSGC_NOSTOMP() ANNOTATION_GC_TRIGGERS
-#define TRIGGERSGC() ANNOTATION_GC_TRIGGERS
+#define TRIGGERSGC_NOSTOMP()
+#define TRIGGERSGC()
 
 #endif // ENABLE_CONTRACTS_IMPL
 
@@ -5448,13 +5397,6 @@ class GCForbidLoaderUseHolder
 // coverage.
 #if defined(DACCESS_COMPILE)
 
-// Disable (<non-zero constant> || <expression>) is always a non-zero constant.
-// <expression> is never evaluated and might have side effects, because
-// FORBIDGC_LOADER_USE_ENABLED is used in that pattern and additionally the rule
-// has little value.
-#ifdef _PREFAST_
-#pragma warning(disable:6286)
-#endif
 #define FORBIDGC_LOADER_USE_ENABLED() true
 
 #else // DACCESS_COMPILE
@@ -5664,11 +5606,7 @@ inline BOOL IsWriteBarrierCopyEnabled()
 #ifdef DACCESS_COMPILE
     return FALSE;
 #else // DACCESS_COMPILE
-#ifdef HOST_APPLE
-    return TRUE;
-#else
-    return ExecutableAllocator::IsWXORXEnabled();
-#endif
+    return g_pConfig->IsWriteBarrierCopyEnabled();
 #endif // DACCESS_COMPILE
 }
 

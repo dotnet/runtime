@@ -642,7 +642,7 @@ UINT OleVariant::GetElementSizeForVarType(VARTYPE vt, MethodTable *pInterfaceMT)
 
     if (vt == VTHACK_NONBLITTABLERECORD || vt == VTHACK_BLITTABLERECORD || vt == VT_RECORD)
     {
-        PREFIX_ASSUME(pInterfaceMT != NULL);
+        _ASSERTE(pInterfaceMT != NULL);
         return pInterfaceMT->GetNativeSize();
     }
     else if (vt > VT_LPWSTR)
@@ -705,7 +705,7 @@ MethodTable* OleVariant::GetNativeMethodTableForVarType(VARTYPE vt, MethodTable*
         case VT_DECIMAL:
             return CoreLibBinder::GetClass(CLASS__DECIMAL);
         default:
-            PREFIX_ASSUME(pManagedMT != NULL);
+            _ASSERTE(pManagedMT != NULL);
             return pManagedMT;
     }
 }

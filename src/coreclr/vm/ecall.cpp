@@ -98,9 +98,6 @@ void ECall::PopulateManagedStringConstructors()
 
 static CrstStatic gFCallLock;
 
-// This variable is used to force the compiler not to tailcall a function.
-RAW_KEYWORD(volatile) int FC_NO_TAILCALL;
-
 #endif // !DACCESS_COMPILE
 
 // To provide a quick check, this is the lowest and highest
@@ -336,12 +333,9 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
         return CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE)->GetMultiCallableAddrOfCode();
     }
 
-    // COM imported classes have special constructors
-    if (pMT->IsComObjectType()
 #ifdef FEATURE_COMINTEROP
-        && (g_pBaseCOMObject == NULL || pMT != g_pBaseCOMObject)
-#endif // FEATURE_COMINTEROP
-    )
+    // COM imported classes have special constructors
+    if (pMT->IsComObjectType() && pMT != g_pBaseCOMObject)
     {
         if (pfSharedOrDynamicFCallImpl)
             *pfSharedOrDynamicFCallImpl = TRUE;
@@ -352,6 +346,12 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
         // FCComCtor does not need to be in the fcall hashtable since it does not erect frame.
         return GetEEFuncEntryPoint(FCComCtor);
     }
+#else // !FEATURE_COMINTEROP
+    // This code path is taken when a class marked with ComImport is being created.
+    // If we get here and COM interop isn't suppported, throw.
+    if (pMT->IsComObjectType())
+        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_ERROR_COM);
+#endif // FEATURE_COMINTEROP
 
     if (!pMD->GetModule()->IsSystem())
         COMPlusThrow(kSecurityException, BFA_ECALLS_MUST_BE_IN_SYS_MOD);
@@ -527,11 +527,6 @@ void ECall::Init()
     CONTRACTL_END;
 
     gFCallLock.Init(CrstFCall);
-
-    // It is important to do an explicit increment here instead of just in-place initialization
-    // so that the global optimizer cannot figure out the value and remove the side-effect that
-    // we depend on in FC_INNER_RETURN macros and other places
-    FC_NO_TAILCALL++;
 }
 #endif // !DACCESS_COMPILE
 

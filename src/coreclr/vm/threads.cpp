@@ -31,6 +31,7 @@
 #include "appdomain.inl"
 #include "vmholder.h"
 #include "exceptmacros.h"
+#include "minipal/time.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -52,6 +53,14 @@
 #include "perfmap.h"
 #endif
 
+#ifdef FEATURE_EH_FUNCLETS
+#include "exinfo.h"
+#endif
+
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
 TailCallTls::TailCallTls()
@@ -63,7 +72,7 @@ TailCallTls::TailCallTls()
 }
 
 #ifndef _MSC_VER
-thread_local RuntimeThreadLocals t_runtime_thread_locals;
+__thread RuntimeThreadLocals t_runtime_thread_locals;
 #endif
 
 Thread* STDCALL GetThreadHelper()
@@ -106,7 +115,7 @@ TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size, void* gcDesc)
     return m_argBuffer;
 }
 
-#if defined (_DEBUG_IMPL) || defined(_PREFAST_)
+#if defined (_DEBUG_IMPL)
 thread_local int t_ForbidGCLoaderUseCount;
 #endif
 
@@ -163,25 +172,21 @@ BOOL MatchThreadHandleToOsId ( HANDLE h, DWORD osId )
 #ifdef _DEBUG_IMPL
 template<> AutoCleanupGCAssert<TRUE>::AutoCleanupGCAssert()
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 }
 
 template<> AutoCleanupGCAssert<FALSE>::AutoCleanupGCAssert()
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_MODE_PREEMPTIVE;
 }
 
 template<> void GCAssert<TRUE>::BeginGCAssert()
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 }
 
 template<> void GCAssert<FALSE>::BeginGCAssert()
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_MODE_PREEMPTIVE;
 }
 #endif
@@ -282,18 +287,15 @@ static StackWalkAction DetectHandleILStubsForDebugger_StackWalkCallback(CrawlFra
     return SWA_CONTINUE;
 }
 
-// This is really just a heuristic to detect if we are executing in an M2U IL stub or
-// one of the marshaling methods it calls.  It doesn't deal with U2M IL stubs.
-// We loop through the frame chain looking for an uninitialized TransitionFrame.
-// If there is one, then we are executing in an M2U IL stub or one of the methods it calls.
-// On the other hand, if there is an initialized TransitionFrame, then we are not.
-// Also, if there is an HMF on the stack, then we stop.  This could be the case where
-// an IL stub calls an FCALL which ends up in a managed method, and the debugger wants to
-// stop in those cases.  Some examples are COMException..ctor and custom marshalers.
+// This is a heuristic to detect if we are executing in an M2U IL stub or one of its marshaling methods.
+// It does not handle U2M IL stubs.
 //
-// X86 IL stubs use InlinedCallFrame and are indistinguishable from ordinary methods with
-// inlined P/Invoke when judging just from the frame chain. We use stack walk to decide
-// this case.
+// We walk the frame chain looking for an uninitialized TransitionFrame.
+// If found, we are in an M2U IL stub or one of its called methods.
+// If a TransitionFrame is initialized, then we are not.
+//
+// On x86, IL stubs use InlinedCallFrame, which looks like regular methods with inlined P/Invoke calls,
+// so we rely on stack walking to detect this scenario.
 bool Thread::DetectHandleILStubsForDebugger()
 {
     CONTRACTL {
@@ -308,13 +310,8 @@ bool Thread::DetectHandleILStubsForDebugger()
     {
         while (pFrame != FRAME_TOP)
         {
-            // Check for HMF's.  See the comment at the beginning of this function.
-            if (pFrame->GetFrameIdentifier() == FrameIdentifier::HelperMethodFrame)
-            {
-                break;
-            }
             // If there is an entry frame (i.e. U2M managed), we should break.
-            else if (pFrame->GetFrameType() == Frame::TYPE_ENTRY)
+            if (pFrame->GetFrameType() == Frame::TYPE_ENTRY)
             {
                 break;
             }
@@ -348,8 +345,8 @@ bool Thread::DetectHandleILStubsForDebugger()
 }
 
 #ifndef _MSC_VER
-__thread ThreadLocalInfo gCurrentThreadInfo;
-#endif
+__thread ThreadLocalInfo t_CurrentThreadInfo;
+#endif // _MSC_VER
 
 #ifndef DACCESS_COMPILE
 
@@ -357,8 +354,8 @@ void SetThread(Thread* t)
 {
     LIMITED_METHOD_CONTRACT
 
-    Thread* origThread = gCurrentThreadInfo.m_pThread;
-    gCurrentThreadInfo.m_pThread = t;
+    Thread* origThread = t_CurrentThreadInfo.m_pThread;
+    t_CurrentThreadInfo.m_pThread = t;
     if (t != NULL)
     {
         _ASSERTE(origThread == NULL);
@@ -376,7 +373,7 @@ void SetThread(Thread* t)
 #endif
 
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
-    gCurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
+    t_CurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
 }
 
 BOOL Thread::Alert ()
@@ -1124,43 +1121,36 @@ void InitThreadManager()
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), W("@ByRefWriteBarrier"));
 #endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 
+#if defined(TARGET_AMD64)
+        // On AMD64 the Checked/ByRef variants of the helpers jump through an indirection
+        // to the patched barrier, but are not part of the patched set of helpers.
+        SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, (void*)JIT_CheckedWriteBarrier);
+        SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, (void*)JIT_ByRefWriteBarrier);
+#endif // TARGET_AMD64
+
     }
     else
     {
-        // I am using virtual protect to cover the entire range that this code falls in.
-        //
-
-        // We could reset it to non-writeable inbetween GCs and such, but then we'd have to keep on re-writing back and forth,
-        // so instead we'll leave it writable from here forward.
-
-        DWORD oldProt;
-        if (!ClrVirtualProtect((void *)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart,
-                            PAGE_EXECUTE_READWRITE, &oldProt))
-        {
-            _ASSERTE(!"ClrVirtualProtect of code page failed");
-            COMPlusThrowWin32();
-        }
-
 #ifdef TARGET_X86
-        JIT_WriteBarrierEAX_Loc = (void*)JIT_WriteBarrierEAX;
+        JIT_WriteBarrierEAX_Loc = (void*)RhpAssignRefEAX;
 #else
-        JIT_WriteBarrier_Loc = (void*)JIT_WriteBarrier;
+        JIT_WriteBarrier_Loc = (void*)RhpAssignRef;
 #endif
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
-        JIT_WriteBarrier_Table_Loc = (void*)&JIT_WriteBarrier_Table;
+        JIT_WriteBarrier_Table_Loc = NULL;
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 
 #ifndef TARGET_UNIX
     _ASSERTE(GetThreadNULLOk() == NULL);
 
-    size_t offsetOfCurrentThreadInfo = Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo);
+    size_t offsetOfCurrentThreadInfo = Thread::GetOffsetOfThreadStatic(&t_CurrentThreadInfo);
 
     _ASSERTE(offsetOfCurrentThreadInfo < 0x8000);
     _ASSERTE(_tls_index < 0x10000);
 
-    // Save gCurrentThreadInfo location for debugger
+    // Save t_CurrentThreadInfo location for debugger
     SetIlsIndex((DWORD)(_tls_index + (offsetOfCurrentThreadInfo << 16) + 0x80000000));
 
     _ASSERTE(g_TrapReturningThreads == 0);
@@ -1322,7 +1312,7 @@ Thread::Thread()
     CONTRACTL_END;
 
     m_pFrame                = FRAME_TOP;
-    m_pGCFrame              = NULL;
+    m_pGCFrame              = GCFRAME_TOP;
 
     m_fPreemptiveGCDisabled = 0;
 
@@ -1469,10 +1459,6 @@ Thread::Thread()
 
     m_dwAVInRuntimeImplOkayCount = 0;
 
-#ifdef _DEBUG
-    m_pHelperMethodFrameCallerList = (HelperMethodFrameCallerList*)-1;
-#endif
-
     m_pExceptionDuringStartup = NULL;
 
 #ifdef HAVE_GCCOVER
@@ -1534,6 +1520,7 @@ Thread::Thread()
 
 #ifdef TARGET_X86
     m_HijackReturnKind = RT_Illegal;
+    m_HijackHasAsyncRet = false;
 #endif
 
     m_currentPrepareCodeConfig = nullptr;
@@ -1545,6 +1532,10 @@ Thread::Thread()
 #ifdef _DEBUG
     memset(dangerousObjRefs, 0, sizeof(dangerousObjRefs));
 #endif // _DEBUG
+
+#ifdef FEATURE_INTERPRETER
+    m_pInterpThreadContext = nullptr;
+#endif // FEATURE_INTERPRETER
 }
 
 //--------------------------------------------------------------------
@@ -2739,7 +2730,7 @@ void Thread::CooperativeCleanup()
 
     // Clear any outstanding stale EH state that maybe still active on the thread.
 #ifdef FEATURE_EH_FUNCLETS
-    ExceptionTracker::PopTrackers((void*)-1);
+    ExInfo::PopTrackers((void*)-1);
 #else // !FEATURE_EH_FUNCLETS
     PTR_ThreadExceptionState pExState = GetExceptionState();
     if (pExState->IsExceptionInProgress())
@@ -2797,6 +2788,13 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     Thread *pCurrentThread = GetThreadNULLOk();
     DWORD CurrentThreadID = pCurrentThread?pCurrentThread->GetThreadId():0;
     DWORD ThisThreadID = GetThreadId();
+
+#ifdef FEATURE_INTERPRETER
+    if (m_pInterpThreadContext != nullptr)
+    {
+        delete m_pInterpThreadContext;
+    }
+#endif // FEATURE_INTERPRETER
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // If the currently running thread is the thread that died and it is an STA thread, then we
@@ -2890,6 +2888,12 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
             LOG((LF_SYNC, INFO3, "OnThreadTerminate obtain lock\n"));
             ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
 
+        }
+
+        if (m_State & TS_DebugWillSync)
+        {
+            ResetThreadState(TS_DebugWillSync);
+            InterlockedDecrement(&m_DebugWillSyncCount);
         }
 
         SetThreadState(TS_Dead);
@@ -3310,7 +3314,7 @@ DWORD Thread::DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL wa
 retry:
     if (millis != INFINITE)
     {
-        dwStart = CLRGetTickCount64();
+        dwStart = minipal_lowres_ticks();
     }
 
     if (tryNonblockingWaitFirst)
@@ -3336,7 +3340,7 @@ retry:
         // in the thread state bits. Otherwise we just go back to sleep again.
         if (millis != INFINITE)
         {
-            dwEnd = CLRGetTickCount64();
+            dwEnd = minipal_lowres_ticks();
             if (dwEnd - dwStart >= millis)
             {
                 ret = WAIT_TIMEOUT;
@@ -3419,7 +3423,7 @@ retry:
 
             // Compute the new timeout value by assume that the timeout
             // is not large enough for more than one wrap
-            dwEnd = CLRGetTickCount64();
+            dwEnd = minipal_lowres_ticks();
             if (millis != INFINITE)
             {
                 if (dwEnd - dwStart >= millis)
@@ -3547,7 +3551,7 @@ DWORD Thread::DoSignalAndWaitWorker(HANDLE* pHandles, DWORD millis,BOOL alertabl
 
     if (INFINITE != millis)
     {
-        dwStart = CLRGetTickCount64();
+        dwStart = minipal_lowres_ticks();
     }
 
     ret = SignalObjectAndWait(pHandles[0], pHandles[1], millis, alertable);
@@ -3566,7 +3570,7 @@ retry:
         }
         if (INFINITE != millis)
         {
-            dwEnd = CLRGetTickCount64();
+            dwEnd = minipal_lowres_ticks();
             if (dwStart + millis <= dwEnd)
             {
                 ret = WAIT_TIMEOUT;
@@ -3576,7 +3580,7 @@ retry:
             {
                 millis -= (DWORD)(dwEnd - dwStart);
             }
-            dwStart = CLRGetTickCount64();
+            dwStart = minipal_lowres_ticks();
         }
         //Retry case we don't want to signal again so only do the wait...
         ret = WaitForSingleObjectEx(pHandles[1],millis,TRUE);
@@ -3938,7 +3942,7 @@ void Thread::UserSleep(INT32 time)
     DWORD dwTime = (DWORD)time;
 retry:
 
-    ULONGLONG start = CLRGetTickCount64();
+    ULONGLONG start = minipal_lowres_ticks();
 
     res = ClrSleepEx (dwTime, TRUE);
 
@@ -3958,7 +3962,7 @@ retry:
         }
         else
         {
-            ULONGLONG actDuration = CLRGetTickCount64() - start;
+            ULONGLONG actDuration = minipal_lowres_ticks() - start;
 
             if (dwTime > actDuration)
             {
@@ -4894,7 +4898,6 @@ DEBUG_NOINLINE void ThreadStore::Enter()
     }
     CONTRACTL_END;
 
-    ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
     CHECK_ONE_STORE();
     m_Crst.Enter();
 }
@@ -4907,7 +4910,6 @@ DEBUG_NOINLINE void ThreadStore::Leave()
     }
     CONTRACTL_END;
 
-    ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
     CHECK_ONE_STORE();
     m_Crst.Leave();
 }
@@ -4957,15 +4959,6 @@ void ThreadStore::AddThread(Thread *newThread)
 
     _ASSERTE(!newThread->IsBackground());
     _ASSERTE(!newThread->IsDead());
-}
-
-// this function is just desgined to avoid deadlocks during abnormal process termination, and should not be used for any other purpose
-BOOL ThreadStore::CanAcquireLock()
-{
-    WRAPPER_NO_CONTRACT;
-    {
-        return (s_pThreadStore->m_Crst.m_criticalsection.LockCount == -1 || (size_t)s_pThreadStore->m_Crst.m_criticalsection.OwningThread == (size_t)GetCurrentThreadId());
-    }
 }
 
 // Whenever one of the components of OtherThreadsComplete() has changed in the
@@ -6841,14 +6834,6 @@ void Thread::DoExtraWorkForFinalizer()
 
     if (RequireSyncBlockCleanup())
     {
-#ifndef TARGET_UNIX
-        InteropSyncBlockInfo::FlushStandbyList();
-#endif // !TARGET_UNIX
-
-#ifdef FEATURE_COMINTEROP
-        RCW::FlushStandbyList();
-#endif // FEATURE_COMINTEROP
-
         SyncBlockCache::GetSyncBlockCache()->CleanupSyncBlocks();
     }
     if (SystemDomain::System()->RequireAppDomainCleanup())
@@ -7138,7 +7123,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
             // this must be done after the second pass has run, it does not
             // reference anything on the stack, so it is safe to run in an
             // SEH __except clause as well as a C++ catch clause.
-            ExceptionTracker::PopTrackers(pArgs->pFrame);
+            ExInfo::PopTrackers(pArgs->pFrame);
     #endif // FEATURE_EH_FUNCLETS
 
             _ASSERTE(!pArgs->pThread->IsAbortRequested());
@@ -7702,7 +7687,11 @@ void Thread::StaticInitialize()
     InitializeSpecialUserModeApc();
 
     // When shadow stacks are enabled, support for special user-mode APCs with the necessary functionality is required
-    _ASSERTE_ALL_BUILDS(!AreShadowStacksEnabled() || UseSpecialUserModeApc());
+    if (AreShadowStacksEnabled() && !UseSpecialUserModeApc())
+    {
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE,
+            W("Your Windows doesn't fully support CET. Please install all available Windows updates."));
+    }
 #endif
 }
 
@@ -7779,6 +7768,20 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
     RtlRestoreContext(ContextRecord, NULL);
 #endif
 }
+
+#ifdef FEATURE_INTERPRETER
+InterpThreadContext* Thread::GetInterpThreadContext()
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (m_pInterpThreadContext == nullptr)
+    {
+        m_pInterpThreadContext = new (nothrow) InterpThreadContext();
+    }
+
+    return m_pInterpThreadContext;
+}
+#endif // FEATURE_INTERPRETER
 
 #endif // #ifndef DACCESS_COMPILE
 

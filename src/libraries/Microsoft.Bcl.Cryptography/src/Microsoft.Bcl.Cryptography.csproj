@@ -23,7 +23,11 @@
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(BuildX509Loader)' == 'true' or '$(BuildPqc)' == 'true' " />
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\Experimentals.cs"
+             Link="Common\Experimentals.cs" />
+
     <Compile Include="Microsoft.Bcl.Cryptography.Forwards.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateKeyAccessors.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -112,6 +116,14 @@
       <Link>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml</DependentUpon>
     </Compile>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\MLDsaPrivateKeyAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\MLDsaPrivateKeyAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\MLDsaPrivateKeyAsn.xml</DependentUpon>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\MLDsaPrivateKeyBothAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\MLDsaPrivateKeyBothAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\MLDsaPrivateKeyBothAsn.xml</DependentUpon>
+    </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\PBEParameter.xml">
       <Link>Common\System\Security\Cryptography\Asn1\PBEParameter.xml</Link>
     </AsnXml>
@@ -181,6 +193,8 @@
              Link="Common\System\Security\Cryptography\PasswordBasedEncryption.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"
              Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs" />
+
+    <Compile Include="System\Security\Cryptography\Helpers.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildX509Loader)' == 'true'">
@@ -255,8 +269,6 @@
              Link="Common\System\Security\Cryptography\X509Certificates\X509CertificateLoader.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\X509CertificateLoader.Pkcs12.cs"
              Link="Common\System\Security\Cryptography\X509Certificates\X509CertificateLoader.Pkcs12.cs" />
-
-    <Compile Include="System\Security\Cryptography\Helpers.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildX509Loader)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETFramework'">
@@ -350,8 +362,6 @@
       <Link>System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml.cs</Link>
       <DependentUpon>System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)System\Experimentals.cs"
-             Link="Common\Experimentals.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKem.cs"
@@ -372,6 +382,14 @@
              Link="Common\System\Security\Cryptography\SlhDsaImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaImplementation.NotSupported.cs"
              Link="Common\System\Security\Cryptography\SlhDsaImplementation.NotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsa.cs"
+             Link="Common\System\Security\Cryptography\MLDsa.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaAlgorithm.cs"
+             Link="Common\System\Security\Cryptography\MLDsaAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.cs"
+             Link="Common\System\Security\Cryptography\MLDsaImplementation.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.NotSupported.cs"
+             Link="Common\System\Security\Cryptography\MLDsaImplementation.NotSupported.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

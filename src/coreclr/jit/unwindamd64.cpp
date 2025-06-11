@@ -95,6 +95,30 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
         case REG_R23:
             dwarfReg = 23;
             break;
+        case REG_R24:
+            dwarfReg = 24;
+            break;
+        case REG_R25:
+            dwarfReg = 25;
+            break;
+        case REG_R26:
+            dwarfReg = 26;
+            break;
+        case REG_R27:
+            dwarfReg = 27;
+            break;
+        case REG_R28:
+            dwarfReg = 28;
+            break;
+        case REG_R29:
+            dwarfReg = 29;
+            break;
+        case REG_R30:
+            dwarfReg = 30;
+            break;
+        case REG_R31:
+            dwarfReg = 31;
+            break;
         default:
             noway_assert(!"unexpected REG_NUM");
     }

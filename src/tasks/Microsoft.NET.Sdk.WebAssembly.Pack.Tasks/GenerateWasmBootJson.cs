@@ -62,7 +62,7 @@ public class GenerateWasmBootJson : Task
 
     public string[]? Profilers { get; set; }
 
-    public string StartupMemoryCache { get; set; }
+    public string? RuntimeConfigJsonPath { get; set; }
 
     public string Jiterpreter { get; set; }
 
@@ -90,6 +90,8 @@ public class GenerateWasmBootJson : Task
 
     public string ApplicationEnvironment { get; set; }
 
+    public string MergeWith { get; set; }
+
     public override bool Execute()
     {
         var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
@@ -113,7 +115,6 @@ public class GenerateWasmBootJson : Task
         var result = new BootJsonData
         {
             resources = new ResourcesData(),
-            startupMemoryCache = helper.ParseOptionalBool(StartupMemoryCache)
         };
 
         if (IsTargeting100OrLater())
@@ -126,8 +127,11 @@ public class GenerateWasmBootJson : Task
             result.mainAssemblyName = entryAssemblyName;
             result.globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant();
 
-            if (CacheBootResources)
-                result.cacheBootResources = CacheBootResources;
+            if (!IsTargeting100OrLater())
+            {
+                if (CacheBootResources)
+                    result.cacheBootResources = CacheBootResources;
+            }
 
             if (LinkerEnabled)
                 result.linkerEnabled = LinkerEnabled;
@@ -433,16 +437,24 @@ public class GenerateWasmBootJson : Task
                 result.extensions[key] = config;
             }
         }
+
+        if (RuntimeConfigJsonPath != null && File.Exists(RuntimeConfigJsonPath))
+        {
+            using var fs = File.OpenRead(RuntimeConfigJsonPath);
+            var runtimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(fs, BootJsonBuilderHelper.JsonOptions);
+            result.runtimeConfig = runtimeConfig;
+        }
+
         Profilers ??= Array.Empty<string>();
         var browserProfiler = Profilers.FirstOrDefault(p => p.StartsWith("browser:"));
         if (browserProfiler != null)
         {
             result.environmentVariables ??= new();
-            result.environmentVariables["DOTNET_WasmPerfInstrumentation"] = browserProfiler.Substring("browser:".Length);
+            result.environmentVariables["DOTNET_WasmPerformanceInstrumentation"] = browserProfiler.Substring("browser:".Length);
         }
 
         helper.ComputeResourcesHash(result);
-        helper.WriteConfigToFile(result, OutputPath);
+        helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith);
 
         void AddResourceToList(ITaskItem resource, ResourceHashesByNameDictionary resourceList, string resourceKey)
         {

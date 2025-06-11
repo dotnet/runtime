@@ -26,7 +26,11 @@ namespace System.Net
             if (!chainBuildResult       // Build failed on handle or on policy.
                 && chain.SafeHandle!.DangerousGetHandle() == IntPtr.Zero)   // Build failed to generate a valid handle.
             {
+#if NETFRAMEWORK
+                throw new CryptographicException(Marshal.GetLastWin32Error());
+#else
                 throw new CryptographicException(Marshal.GetLastPInvokeError());
+#endif
             }
 
             if (checkCertName)

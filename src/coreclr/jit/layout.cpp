@@ -414,17 +414,48 @@ ClassLayout* Compiler::typGetBlkLayout(unsigned blockSize)
     return typGetCustomLayout(ClassLayoutBuilder(this, blockSize));
 }
 
-unsigned Compiler::typGetArrayLayoutNum(CORINFO_CLASS_HANDLE classHandle, unsigned length)
-{
-    ClassLayoutBuilder b = ClassLayoutBuilder::BuildArray(this, classHandle, length);
-    return typGetCustomLayoutNum(b);
-}
-
 ClassLayout* Compiler::typGetArrayLayout(CORINFO_CLASS_HANDLE classHandle, unsigned length)
 {
     ClassLayoutBuilder b = ClassLayoutBuilder::BuildArray(this, classHandle, length);
     return typGetCustomLayout(b);
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// CopyNameFrom: Copy layout names, with optional prefix.
+//
+// Parameters:
+//   layout      - layout to copy from
+//   prefix      - prefix to add (or nullptr)
+//
+void ClassLayoutBuilder::CopyNameFrom(ClassLayout* layout, const char* prefix)
+{
+    const char* layoutName      = layout->GetClassName();
+    const char* layoutShortName = layout->GetShortClassName();
+
+    if (prefix != nullptr)
+    {
+        const char* newName      = nullptr;
+        const char* newShortName = nullptr;
+
+        if (layoutName != nullptr)
+        {
+            newName = m_compiler->printfAlloc("%s%.100s", prefix, layoutName);
+        }
+
+        if (layoutShortName != nullptr)
+        {
+            newShortName = m_compiler->printfAlloc("%s%.100s", prefix, layoutShortName);
+        }
+
+        SetName(newName, newShortName);
+    }
+    else
+    {
+        SetName(layoutName, layoutShortName);
+    }
+}
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // Create: Create a ClassLayout from an EE side class handle.
@@ -537,6 +568,31 @@ ClassLayout* ClassLayout::Create(Compiler* compiler, const ClassLayoutBuilder& b
 }
 
 //------------------------------------------------------------------------
+// HasGCByRef: //   Check if this classlayout has a TYP_BYREF GC pointer in it.
+//
+// Return value:
+//   True if so.
+//
+bool ClassLayout::HasGCByRef() const
+{
+    if (!HasGCPtr())
+    {
+        return false;
+    }
+
+    unsigned numSlots = GetSlotCount();
+    for (unsigned i = 0; i < numSlots; i++)
+    {
+        if (GetGCPtrType(i) == TYP_BYREF)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // IsStackOnly: does the layout represent a block that can never be on the heap?
 //
 // Parameters:
@@ -646,8 +702,8 @@ const SegmentList& ClassLayout::GetNonPadding(Compiler* comp)
 // AreCompatible: check if 2 layouts are the same for copying.
 //
 // Arguments:
-//    layout1 - the first layout;
-//    layout2 - the second layout.
+//    layout1 - the first layout
+//    layout2 - the second layout
 //
 // Return value:
 //    true if compatible, false otherwise.
@@ -658,6 +714,8 @@ const SegmentList& ClassLayout::GetNonPadding(Compiler* comp)
 //
 //    This is an equivalence relation:
 //      AreCompatible(a, b) == AreCompatible(b, a)
+//      AreCompatible(a, a) == true
+//      AreCompatible(a, b) && AreCompatible(b, c) ==> AreCompatible(a, c)
 //
 // static
 bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2)
@@ -709,8 +767,6 @@ bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* l
         return true;
     }
 
-    assert(clsHnd1 != NO_CLASS_HANDLE);
-    assert(clsHnd2 != NO_CLASS_HANDLE);
     assert(layout1->HasGCPtr() && layout2->HasGCPtr());
 
     if (layout1->GetGCPtrCount() != layout2->GetGCPtrCount())
@@ -746,9 +802,89 @@ bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* l
 //
 bool ClassLayout::CanAssignFrom(const ClassLayout* layout)
 {
-    // Currently this is the same as compatability
+    if (this == layout)
+    {
+        return true;
+    }
+
+    // Do the normal compatibility check first
     //
-    return AreCompatible(this, layout);
+    const bool areCompatible = AreCompatible(this, layout);
+
+    if (areCompatible)
+    {
+        return true;
+    }
+
+    // Must be same size
+    //
+    if (GetSize() != layout->GetSize())
+    {
+        return false;
+    }
+
+    // Must be same IR type
+    //
+    if (GetType() != layout->GetType())
+    {
+        return false;
+    }
+
+    // Dest is GC, source is GC. Allow, slotwise:
+    //
+    //   byref <- ref, byref, nint
+    //   ref   <- ref
+    //   nint  <- nint
+    //
+    if (HasGCPtr() && layout->HasGCPtr())
+    {
+        const unsigned slotsCount = GetSlotCount();
+        assert(slotsCount == layout->GetSlotCount());
+
+        for (unsigned i = 0; i < slotsCount; ++i)
+        {
+            var_types slotType       = GetGCPtrType(i);
+            var_types layoutSlotType = layout->GetGCPtrType(i);
+
+            if ((slotType != TYP_BYREF) && (slotType != layoutSlotType))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Dest is GC, source is noGC. Allow, slotwise:
+    //
+    //    byref <- nint
+    //    nint  <- nint
+    //
+    if (HasGCPtr() && !layout->HasGCPtr())
+    {
+        const unsigned slotsCount = GetSlotCount();
+
+        for (unsigned i = 0; i < slotsCount; ++i)
+        {
+            var_types slotType = GetGCPtrType(i);
+            if (slotType == TYP_REF)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Dest is noGC, source is GC. Disallow.
+    //
+    if (!HasGCPtr() && layout->HasGCPtr())
+    {
+        assert(!HasGCPtr());
+        return false;
+    }
+
+    // Dest is noGC, source is noGC, and they're not compatible.
+    //
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -814,7 +950,7 @@ ClassLayoutBuilder ClassLayoutBuilder::BuildArray(Compiler* compiler, CORINFO_CL
             unsigned offset = OFFSETOF__CORINFO_Array__data;
             for (unsigned i = 0; i < length; i++)
             {
-                builder.CopyInfoFrom(offset, elementLayout, /* copy padding */ false);
+                builder.CopyGCInfoFrom(offset, elementLayout);
                 offset += elementSize;
             }
         }
@@ -919,14 +1055,13 @@ void ClassLayoutBuilder::SetGCPtrType(unsigned slot, var_types type)
 }
 
 //------------------------------------------------------------------------
-// CopyInfoFrom: Copy GC pointers and padding information from another layout.
+// CopyInfoGCFrom: Copy GC pointers from another layout.
 //
 // Arguments:
 //   offset      - Offset in this builder to start copy information into.
 //   layout      - Layout to get information from.
-//   copyPadding - Whether padding info should also be copied from the layout.
 //
-void ClassLayoutBuilder::CopyInfoFrom(unsigned offset, ClassLayout* layout, bool copyPadding)
+void ClassLayoutBuilder::CopyGCInfoFrom(unsigned offset, ClassLayout* layout)
 {
     assert(offset + layout->GetSize() <= m_size);
 
@@ -939,15 +1074,22 @@ void ClassLayoutBuilder::CopyInfoFrom(unsigned offset, ClassLayout* layout, bool
             SetGCPtr(startSlot + slot, layout->GetGCPtr(slot));
         }
     }
+}
 
-    if (copyPadding)
+//------------------------------------------------------------------------
+// CopyInfoPaddingFrom: Copy padding from another layout.
+//
+// Arguments:
+//   offset      - Offset in this builder to start copy information into.
+//   layout      - Layout to get information from.
+//
+void ClassLayoutBuilder::CopyPaddingFrom(unsigned offset, ClassLayout* layout)
+{
+    AddPadding(SegmentList::Segment(offset, offset + layout->GetSize()));
+
+    for (const SegmentList::Segment& nonPadding : layout->GetNonPadding(m_compiler))
     {
-        AddPadding(SegmentList::Segment(offset, offset + layout->GetSize()));
-
-        for (const SegmentList::Segment& nonPadding : layout->GetNonPadding(m_compiler))
-        {
-            RemovePadding(SegmentList::Segment(offset + nonPadding.Start, offset + nonPadding.End));
-        }
+        RemovePadding(SegmentList::Segment(offset + nonPadding.Start, offset + nonPadding.End));
     }
 }
 

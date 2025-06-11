@@ -510,7 +510,7 @@ CHECK CheckValue(TYPENAME &val)
 // in a free build they are passed through to the compiler to use in optimization.
 //--------------------------------------------------------------------------------
 
-#if defined(_PREFAST_) || defined(_PREFIX_) || defined(__clang_analyzer__)
+#if defined(__clang_analyzer__)
 #define COMPILER_ASSUME_MSG(_condition, _message) if (!(_condition)) __UNREACHABLE();
 #define COMPILER_ASSUME_MSGF(_condition, args) if (!(_condition)) __UNREACHABLE();
 #else
@@ -532,35 +532,9 @@ CHECK CheckValue(TYPENAME &val)
 
 #endif // DACCESS_COMPILE
 
-#endif // _PREFAST_ || _PREFIX_
+#endif
 
 #define COMPILER_ASSUME(_condition) \
-    COMPILER_ASSUME_MSG(_condition, "")
-
-//--------------------------------------------------------------------------------
-// PREFIX_ASSUME_MSG and PREFAST_ASSUME_MSG are just another name
-// for COMPILER_ASSUME_MSG
-// In a checked build these turn into asserts; in a free build
-// they are passed through to the compiler to use in optimization;
-//  via an __assume(_condition) optimization hint.
-//--------------------------------------------------------------------------------
-
-#define PREFIX_ASSUME_MSG(_condition, _message) \
-    COMPILER_ASSUME_MSG(_condition, _message)
-
-#define PREFIX_ASSUME_MSGF(_condition, args) \
-    COMPILER_ASSUME_MSGF(_condition, args)
-
-#define PREFIX_ASSUME(_condition) \
-    COMPILER_ASSUME_MSG(_condition, "")
-
-#define PREFAST_ASSUME_MSG(_condition, _message) \
-    COMPILER_ASSUME_MSG(_condition, _message)
-
-#define PREFAST_ASSUME_MSGF(_condition, args) \
-    COMPILER_ASSUME_MSGF(_condition, args)
-
-#define PREFAST_ASSUME(_condition) \
     COMPILER_ASSUME_MSG(_condition, "")
 
 //--------------------------------------------------------------------------------

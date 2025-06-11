@@ -157,7 +157,6 @@ private:
 public:
     DEBUG_NOINLINE GCHolderEEInterface()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         if (IFTHREAD && g_pEEInterface->GetThread() == NULL)
@@ -182,8 +181,6 @@ public:
 
     DEBUG_NOINLINE ~GCHolderEEInterface()
     {
-        SCAN_SCOPE_END;
-
         if (IFTHREAD && g_pEEInterface->GetThread() == NULL)
         {
             return;
@@ -279,7 +276,6 @@ private:
 public:
     DEBUG_NOINLINE GCHolderEEInterface()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
 
         this->EnterInternal(false, true);
@@ -287,7 +283,6 @@ public:
 
     DEBUG_NOINLINE GCHolderEEInterface(bool bConditional)
     {
-        SCAN_SCOPE_BEGIN;
         if (bConditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -298,8 +293,6 @@ public:
 
     DEBUG_NOINLINE ~GCHolderEEInterface()
     {
-        SCAN_SCOPE_END;
-
         this->LeaveInternal();
     };
 };
@@ -3063,7 +3056,7 @@ public:
     BOOL IsOutOfProcessSetContextEnabled();
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
     void SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext);
-#endif // FEATURE_SPECIAL_USER_MODE_APC        
+#endif // FEATURE_SPECIAL_USER_MODE_APC
 };
 
 
@@ -3159,7 +3152,7 @@ public:
         DebuggerHeap* pHeap = g_pDebugger->GetInteropSafeHeap_NoThrow();
         _ASSERTE(pHeap != NULL); // should already exist
 
-        PREFIX_ASSUME( iCurSize >= 0 );
+        _ASSERTE( iCurSize >= 0 );
         S_UINT32 iNewSize = S_UINT32( iCurSize ) + S_UINT32( GrowSize(iCurSize) );
         if( iNewSize.IsOverflow() )
         {

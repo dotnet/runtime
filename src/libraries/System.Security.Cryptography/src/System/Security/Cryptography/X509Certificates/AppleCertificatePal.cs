@@ -370,6 +370,28 @@ namespace System.Security.Cryptography.X509Certificates
             return null;
         }
 
+        public MLKem? GetMLKemPrivateKey()
+        {
+            // MLKem is not supported on Apple platforms.
+            return null;
+        }
+
+        public ICertificatePal CopyWithPrivateKey(MLKem privateKey)
+        {
+            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLKem)));
+        }
+
+        public SlhDsa? GetSlhDsaPrivateKey()
+        {
+            // SlhDsa is not supported on Apple platforms.
+            return null;
+        }
+
+        public ICertificatePal CopyWithPrivateKey(SlhDsa privateKey)
+        {
+            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
+        }
+
         public string GetNameInfo(X509NameType nameType, bool forIssuer)
         {
             EnsureCertData();

@@ -31,6 +31,7 @@
 #include "finalizerthread.h"
 #include "clrversion.h"
 #include "typestring.h"
+#include "exinfo.h"
 
 #define Win32EventWrite EventWrite
 
@@ -1011,7 +1012,7 @@ void ETW::TypeSystemLog::SendObjectAllocatedEvent(Object * pObject)
     }
 
     SIZE_T nTotalSizeForTypeSample = size;
-    DWORD dwTickNow = GetTickCount();
+    DWORD dwTickNow = (DWORD)minipal_lowres_ticks();
     DWORD dwObjectCountForTypeSample = 0;
 
     // Get stats for type
@@ -2836,11 +2837,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         gc.innerExceptionObj = ((EXCEPTIONREF)gc.exceptionObj)->GetInnerException();
 
         ThreadExceptionState *pExState = pThread->GetExceptionState();
-#ifndef FEATURE_EH_FUNCLETS
         PTR_ExInfo pExInfo = NULL;
-#else
-        PTR_ExceptionTrackerBase pExInfo = NULL;
-#endif //!FEATURE_EH_FUNCLETS
         pExInfo = pExState->GetCurrentExceptionTracker();
         _ASSERTE(pExInfo != NULL);
         bIsNestedException = (pExInfo->GetPreviousExceptionTracker() != NULL);
@@ -3668,27 +3665,6 @@ VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pH
             ETW::MethodLog::SendHelperEvent(ullHelperStartAddress, dwHelperSize, pHelperName);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
-}
-
-/**********************************************************/
-/* This is called by the runtime when helpers with stubs are initialized */
-/**********************************************************/
-VOID ETW::MethodLog::StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG lNoOfHelpers)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                    TRACE_LEVEL_INFORMATION,
-                                    CLR_JIT_KEYWORD))
-    {
-        for(int i=0; i<lNoOfHelpers; i++)
-        {
-            if(pHelperStartAddress[i])
-            {
-                StubInitialized((ULONGLONG)pHelperStartAddress[i], (LPCWSTR)pHelperNames[i]);
-            }
-        }
-    }
 }
 
 /****************************************************************************/

@@ -129,7 +129,10 @@ static size_t log_write_line(minipal_log_flags flags, const char* msg, size_t ms
 
 int minipal_log_write(minipal_log_flags flags, const char* msg)
 {
-    assert(msg != NULL && msg[0] != '\0');
+    assert(msg != NULL);
+
+    if (msg[0] == '\0')
+        return 0;
 
     size_t msg_len = strlen(msg);
     const char* msg_end = msg + msg_len;
@@ -224,33 +227,43 @@ void minipal_log_flush_all(void)
 
 typedef ptrdiff_t ssize_t;
 
-static int sync_file(minipal_log_flags flags)
+static HANDLE get_std_handle(minipal_log_flags flags)
 {
     switch(flags)
     {
     case minipal_log_flags_fatal:
     case minipal_log_flags_error:
-        FlushFileBuffers(GetStdHandle(STD_ERROR_HANDLE));
-        break;
+        return GetStdHandle(STD_ERROR_HANDLE);
     case minipal_log_flags_warning:
     case minipal_log_flags_info:
     case minipal_log_flags_debug:
     case minipal_log_flags_verbose:
-    default:
-        FlushFileBuffers(GetStdHandle(STD_OUTPUT_HANDLE));
-        break;
+        return GetStdHandle(STD_OUTPUT_HANDLE);
     }
 
+    return INVALID_HANDLE_VALUE;
+}
+
+
+static int sync_file(minipal_log_flags flags)
+{
+    FlushFileBuffers(get_std_handle(flags));
     return 0;
 }
 
-static ssize_t write_file(int fd, const char* msg, size_t bytes_to_write)
+static ssize_t write_file_binary(minipal_log_flags flags, const char* msg, size_t bytes_to_write)
 {
     assert(bytes_to_write < INT_MAX);
-    return _write(fd, msg, (unsigned int)bytes_to_write);
+
+    DWORD bytes_written = 0;
+    return WriteFile(get_std_handle(flags), msg, (DWORD)bytes_to_write, &bytes_written, NULL) ? (ssize_t)bytes_written : (ssize_t)-1;
 }
 
-#define fileno _fileno
+static ssize_t write_file(minipal_log_flags flags, const char* msg, size_t bytes_to_write)
+{
+    assert(bytes_to_write < INT_MAX);
+    return _write(_fileno(get_std_file(flags)), msg, (unsigned int)bytes_to_write);
+}
 #else
 #if defined(__APPLE__)
 #include <fcntl.h>
@@ -280,25 +293,50 @@ static int sync_file(minipal_log_flags flags)
 }
 #endif
 
-static ssize_t write_file(int fd, const char* msg, size_t bytes_to_write)
+static ssize_t write_file(minipal_log_flags flags, const char* msg, size_t bytes_to_write)
 {
     ssize_t ret = 0;
-    while ((ret = write(fd, msg, bytes_to_write)) < 0 && errno == EINTR);
+    while ((ret = write(fileno(get_std_file(flags)), msg, bytes_to_write)) < 0 && errno == EINTR);
     return ret;
 }
 #endif
 
+typedef ssize_t (*write_file_fnptr)(minipal_log_flags flags, const char* msg, size_t bytes_to_write);
+
 int minipal_log_write(minipal_log_flags flags, const char* msg)
 {
-    assert(msg != NULL && msg[0] != '\0');
+    assert(msg != NULL);
 
-    size_t bytes_to_write = strlen(msg);
+    if (msg[0] == '\0')
+        return 0;
+
+    size_t bytes_to_write = 0;
     size_t bytes_written = 0;
 
-    int fd = fileno(get_std_file(flags));
+    write_file_fnptr write_fnptr = write_file;
+
+#ifdef HOST_WINDOWS
+    const char* msg_char = msg;
+    while (*msg_char)
+    {   if (msg_char[0] == '\r' && msg_char[1] == '\n')
+        {
+            write_fnptr = write_file_binary;
+            break;
+        }
+        msg_char++;
+    }
+
+    while (*msg_char)
+        msg_char++;
+
+    bytes_to_write = msg_char - msg;
+#else
+    bytes_to_write = strlen(msg);
+#endif
+
     while (bytes_to_write > 0)
     {
-        ssize_t chunk_written = write_file(fd, msg, bytes_to_write < MINIPAL_LOG_MAX_PAYLOAD ? bytes_to_write : MINIPAL_LOG_MAX_PAYLOAD);
+        ssize_t chunk_written = write_fnptr(flags, msg, bytes_to_write < MINIPAL_LOG_MAX_PAYLOAD ? bytes_to_write : MINIPAL_LOG_MAX_PAYLOAD);
         if (chunk_written <= 0)
             break;
 
