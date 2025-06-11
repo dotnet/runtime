@@ -1794,13 +1794,13 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // add as a non-standard arg.
         }
     }
-    else if (call->gtCallType == CT_INDIRECT && (call->gtCallCookie != nullptr))
+    else if ((call->gtCallType == CT_INDIRECT) && call->HasCallCookie())
     {
         assert(!call->IsUnmanaged());
 
-        GenTree* arg = call->gtCallCookie;
+        GenTree* arg = call->GetCallCookie();
         noway_assert(arg != nullptr);
-        call->gtCallCookie = nullptr;
+        call->ClearUD();
 
         // All architectures pass the cookie in a register.
         InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeCookie));
@@ -5774,7 +5774,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
 
     // Check for PInvoke call types that we don't handle in codegen yet.
     assert(!call->IsUnmanaged());
-    assert(call->IsVirtual() || (call->gtCallType != CT_INDIRECT) || (call->gtCallCookie == nullptr));
+    assert(call->IsVirtual() || (call->gtCallType != CT_INDIRECT) || !call->HasCallCookie());
 
     // Don't support tail calling helper methods
     assert(!call->IsHelperCall());

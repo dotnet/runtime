@@ -697,7 +697,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         cookie->gtFlags |= GTF_DONT_CSE;
         cookieConst->gtFlags |= GTF_DONT_CSE;
 
-        call->AsCall()->gtCallCookie = cookie;
+        call->AsCall()->SetCallCookie(cookie);
 
         if (canTailCall)
         {
@@ -1362,9 +1362,9 @@ DONE_CALL:
                 // We might want to instrument it for optimized versions too, but we don't currently.
                 HandleHistogramProfileCandidateInfo* pInfo =
                     new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
-                pInfo->ilOffset                                       = rawILOffset;
-                pInfo->probeIndex                                     = 0;
-                call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
+                pInfo->ilOffset   = rawILOffset;
+                pInfo->probeIndex = 0;
+                call->AsCall()->SetHandleHistogramProfileCandidateInfo(pInfo);
                 compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
             }
             impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
@@ -1530,9 +1530,9 @@ DONE_CALL:
                         // We might want to instrument it for optimized versions too, but we don't currently.
                         HandleHistogramProfileCandidateInfo* pInfo =
                             new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
-                        pInfo->ilOffset                                       = rawILOffset;
-                        pInfo->probeIndex                                     = 0;
-                        call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
+                        pInfo->ilOffset   = rawILOffset;
+                        pInfo->probeIndex = 0;
+                        call->AsCall()->SetHandleHistogramProfileCandidateInfo(pInfo);
                         compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
                     }
                 }
@@ -2680,13 +2680,14 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
             return nullptr;
     }
 
-    CORINFO_CLASS_HANDLE arrayClsHnd = (CORINFO_CLASS_HANDLE)newArrayCall->AsCall()->compileTimeHelperArgumentHandle;
+    CORINFO_CLASS_HANDLE arrayClsHnd =
+        (CORINFO_CLASS_HANDLE)newArrayCall->AsCall()->GetCompileTimeHelperArgumentHandle();
 
     //
     // Make sure we found a compile time handle to the array
     //
 
-    if (!arrayClsHnd)
+    if (arrayClsHnd == NO_CLASS_HANDLE)
     {
         return nullptr;
     }
@@ -6565,7 +6566,7 @@ void Compiler::impCheckForPInvokeCall(
 
         unmanagedCallConv = info.compCompHnd->getUnmanagedCallConv(nullptr, sig, &suppressGCTransition);
 
-        assert(!call->gtCallCookie);
+        assert(!call->HasCallCookie());
     }
 
     if (suppressGCTransition)
@@ -7442,7 +7443,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
     //
     // If transforming these provides a benefit, we could save this off in the same way
     // we save the stub address below.
-    if ((call->gtCallType == CT_INDIRECT) && (call->AsCall()->gtCallCookie != nullptr))
+    if ((call->gtCallType == CT_INDIRECT) && (call->AsCall()->HasCallCookie()))
     {
         JITDUMP("NOT Marking call [%06u] as guarded devirtualization candidate -- CT_INDIRECT with cookie\n",
                 dspTreeID(call));
@@ -8920,9 +8921,9 @@ bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 
     // Record some info needed for the class profiling probe.
     //
-    pInfo->ilOffset                             = ilOffset;
-    pInfo->probeIndex                           = info.compHandleHistogramProbeCount++;
-    call->gtHandleHistogramProfileCandidateInfo = pInfo;
+    pInfo->ilOffset   = ilOffset;
+    pInfo->probeIndex = info.compHandleHistogramProbeCount++;
+    call->SetHandleHistogramProfileCandidateInfo(pInfo);
 
     // Flag block as needing scrutiny
     //
@@ -8962,7 +8963,7 @@ Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
         // function to classify the probe type until after we have decided on
         // whether we probe them or not.
         createTypeHistogram = createTypeHistogram || (impIsCastHelperEligibleForClassProbe(call) &&
-                                                      (call->gtHandleHistogramProfileCandidateInfo != nullptr));
+                                                      call->HasHandleHistogramProfileCandidateInfo());
     }
 
     bool createMethodHistogram = ((JitConfig.JitDelegateProfiling() > 0) && call->IsDelegateInvoke()) ||

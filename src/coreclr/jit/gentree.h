@@ -5605,6 +5605,114 @@ struct GenTreeCall final : public GenTree
         IL_OFFSET            gtCastHelperILOffset; // Used by cast helpers to save corresponding IL offset
     };
 
+    void ClearUD()
+    {
+        ud           = UD::UD_INVALID;
+        gtCallCookie = nullptr;
+    }
+    void CopyUD(GenTreeCall* call, Compiler* comp);
+
+    void SetCallCookie(GenTree* cookie)
+    {
+        assert(cookie != nullptr);
+        gtCallCookie = cookie;
+        ud           = UD::UD_COOKIE;
+    }
+    bool HasCallCookie() const
+    {
+        return ud == UD::UD_COOKIE;
+    }
+    GenTree* GetCallCookie() const
+    {
+        assert(ud == UD::UD_COOKIE);
+        assert(gtCallCookie != nullptr);
+        return gtCallCookie;
+    }
+    GenTree** GetCallCookiePtr()
+    {
+        assert(ud == UD::UD_COOKIE);
+        return &gtCallCookie;
+    }
+
+    void SetInlineCandidateInfo(InlineCandidateInfo* info)
+    {
+        gtInlineCandidateInfo = info;
+        ud                    = UD::UD_INLINE_INFO;
+    }
+    InlineCandidateInfo* GetInlineCandidateInfo() const
+    {
+        assert(ud == UD::UD_INLINE_INFO);
+        return gtInlineCandidateInfo;
+    }
+
+    void SetInlineCandidateInfos(jitstd::vector<InlineCandidateInfo*>* info)
+    {
+        gtInlineCandidateInfoList = info;
+        ud                        = UD::UD_INLINE_INFOS;
+    }
+    jitstd::vector<InlineCandidateInfo*>* GetInlineCandidateInfos() const
+    {
+        assert(ud == UD::UD_INLINE_INFOS);
+        return gtInlineCandidateInfoList;
+    }
+
+    void SetHandleHistogramProfileCandidateInfo(HandleHistogramProfileCandidateInfo* info)
+    {
+        assert(info != nullptr);
+        gtHandleHistogramProfileCandidateInfo = info;
+        ud                                    = UD::UD_HISTOGRAM_INFO;
+    }
+    bool HasHandleHistogramProfileCandidateInfo() const
+    {
+        return ud == UD::UD_HISTOGRAM_INFO;
+    }
+    HandleHistogramProfileCandidateInfo* GetHandleHistogramProfileCandidateInfo() const
+    {
+        assert(ud == UD::UD_HISTOGRAM_INFO);
+        return gtHandleHistogramProfileCandidateInfo;
+    }
+
+    void SetCompileTimeHelperArgumentHandle(CORINFO_GENERIC_HANDLE handle)
+    {
+        compileTimeHelperArgumentHandle = handle;
+        ud                              = UD::UD_HANDLE;
+    }
+    bool HasCompileTimeHelperArgumentHandle() const
+    {
+        return ud == UD::UD_HANDLE;
+    }
+    CORINFO_GENERIC_HANDLE GetCompileTimeHelperArgumentHandle() const
+    {
+        assert(ud == UD::UD_HANDLE);
+        return compileTimeHelperArgumentHandle;
+    }
+
+    void SetDirectCallAddress(void* address)
+    {
+        gtDirectCallAddress = address;
+        ud                  = UD::UD_CALL_ADDR;
+    }
+    void* GetDirectCallAddress() const
+    {
+        assert(ud == UD::UD_CALL_ADDR);
+        return gtDirectCallAddress;
+    }
+
+private:
+
+    enum class UD
+    {
+        UD_INVALID,
+        UD_COOKIE,
+        UD_INLINE_INFO,
+        UD_INLINE_INFOS,
+        UD_HISTOGRAM_INFO,
+        UD_HANDLE,
+        UD_CALL_ADDR
+    };
+
+    UD ud;
+
     union
     {
         // only used for CALLI unmanaged calls (CT_INDIRECT)
@@ -5620,6 +5728,8 @@ struct GenTreeCall final : public GenTree
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
+
+public:
 
     LateDevirtualizationInfo* gtLateDevirtualizationInfo; // Always available for user virtual calls
 

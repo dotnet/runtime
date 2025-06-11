@@ -11943,17 +11943,17 @@ public:
                     }
                 }
 
+                if (call->HasCallCookie())
+                {
+                    result = WalkTree(call->GetCallCookiePtr(), call);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+
                 if (call->gtCallType == CT_INDIRECT)
                 {
-                    if (call->gtCallCookie != nullptr)
-                    {
-                        result = WalkTree(&call->gtCallCookie, call);
-                        if (result == fgWalkResult::WALK_ABORT)
-                        {
-                            return result;
-                        }
-                    }
-
                     result = WalkTree(&call->gtCallAddr, call);
                     if (result == fgWalkResult::WALK_ABORT)
                     {
