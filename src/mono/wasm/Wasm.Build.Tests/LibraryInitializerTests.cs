@@ -24,7 +24,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     {
     }
 
-    [Fact]
+    [Fact, TestCategory("bundler-friendly")]
     public async Task LoadLibraryInitializer()
     {
         Configuration config = Configuration.Debug;
