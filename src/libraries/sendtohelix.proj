@@ -101,7 +101,7 @@
         <Fingerprinting>%(_TestUsingFingerprintingValues.Identity)</Fingerprinting>
       </_TestUsingCrossProductValuesTemp3>
       <_TestUsingCrossProductValues Include="@(_TestUsingCrossProductValuesTemp3)">
-        <BundlerFriendly>%(_TestUsingJavascriptBundlerValues.Identity)</Fingerprinting>
+        <BundlerFriendly>%(_TestUsingJavascriptBundlerValues.Identity)</BundlerFriendly>
       </_TestUsingCrossProductValues>
 
       <!-- There no tests without (fingerprinting or BundlerFriendly) and without workloads -->
