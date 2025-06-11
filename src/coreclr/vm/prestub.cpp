@@ -2864,7 +2864,7 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
         pModule->GetLoaderAllocator()->GetHighFrequencyHeap()->
             AllocMem(S_SIZE_T(sizeof(StaticFieldAddressArgs))));
 
-    pArgs->staticBaseHelper = (FnStaticBaseHelper)CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)helpFunc);
+    pArgs->staticBaseHelper = CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)helpFunc);
 
     switch(helpFunc)
     {

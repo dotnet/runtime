@@ -1049,7 +1049,7 @@ struct VirtualFunctionPointerArgs
 
 struct StaticFieldAddressArgs
 {
-    FnStaticBaseHelper staticBaseHelper;
+    PCODE staticBaseHelper;
     TADDR arg0;
     SIZE_T offset;
 };
