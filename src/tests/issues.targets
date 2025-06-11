@@ -30,6 +30,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/2164/foreground-shutdown/*">
             <Issue>https://github.com/dotnet/runtime/issues/83658</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/115178/115178/*">
+            <Issue>https://github.com/dotnet/runtime/issues/116060</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Coverage/271010/**">
             <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
         </ExcludeList>
@@ -617,13 +620,6 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- Crossgen2 arm64 specific excludes -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'arm64'">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/*">
-            <Issue>https://github.com/dotnet/runtime/issues/104927</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
     <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/beta2/437017/**">
@@ -959,6 +955,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_90219/Runtime_90219/**">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Assembly.Load</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_115667/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Assembly.Load</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/reflection\DefaultInterfaceMethods\Emit\*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit</Issue>
         </ExcludeList>
@@ -1087,9 +1086,6 @@
 
     <!-- NativeAOT x86 specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'x86'">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/perf/doublealign/Arrays/**">
-            <Issue>https://github.com/dotnet/runtime/issues/101284</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/IL/Tailcall/ExplicitTailCallNoSO/**">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Tailcalls</Issue>
         </ExcludeList>
@@ -3070,6 +3066,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_90219/Runtime_90219/*">
             <Issue>Loads an assembly from file</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_115667/**">
+          <Issue>Loads an assembly from file</Issue>
         </ExcludeList>
     </ItemGroup>
 

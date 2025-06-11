@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Cose.Tests
     // Tests that apply only to custom header scenarios.
     public abstract class CoseMessageTests_Sign_CustomHeaderMaps : CoseMessageTests_Sign<AsymmetricAlgorithm>
     {
-        internal override List<CoseAlgorithm> CoseAlgorithms => Enum.GetValues(typeof(CoseAlgorithm)).Cast<CoseAlgorithm>().ToList();
+        internal override List<CoseAlgorithm> CoseAlgorithms => Enum.GetValues(typeof(CoseAlgorithm)).Cast<CoseAlgorithm>().Where(AlgorithmNeedsHashAlgorithm).ToList();
 
         // This method always uses the specified headers for signing.
         // That is, sign headers for MultiSign and body headers for Sign1.

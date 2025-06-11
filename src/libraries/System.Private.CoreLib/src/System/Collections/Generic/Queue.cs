@@ -59,7 +59,7 @@ namespace System.Collections.Generic
         /// </summary>
         public int Capacity => _array.Length;
 
-        /// <inheritdoc cref="ICollection{T}"/>
+        /// <inheritdoc cref="ICollection.IsSynchronized" />
         bool ICollection.IsSynchronized => false;
 
         object ICollection.SyncRoot => this;

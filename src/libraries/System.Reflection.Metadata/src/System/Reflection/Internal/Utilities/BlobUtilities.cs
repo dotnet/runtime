@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection
 {
-    internal static unsafe class BlobUtilities
+    internal static class BlobUtilities
     {
         public static void WriteBytes(this byte[] buffer, int start, byte value, int byteCount)
         {
@@ -23,7 +23,10 @@ namespace System.Reflection
 #if NET
             WriteUInt64(buffer, start, BitConverter.DoubleToUInt64Bits(value));
 #else
-            WriteUInt64(buffer, start, *(ulong*)&value);
+            unsafe
+            {
+                WriteUInt64(buffer, start, *(ulong*)&value);
+            }
 #endif
         }
 
@@ -32,7 +35,10 @@ namespace System.Reflection
 #if NET
             WriteUInt32(buffer, start, BitConverter.SingleToUInt32Bits(value));
 #else
-            WriteUInt32(buffer, start, *(uint*)&value);
+            unsafe
+            {
+                WriteUInt32(buffer, start, *(uint*)&value);
+            }
 #endif
         }
 
@@ -81,40 +87,43 @@ namespace System.Reflection
             // This function is not public, callers have to ensure that enough space is available.
             Debug.Assert(written);
 #else
-            fixed (byte* dst = &buffer[start])
+            unsafe
             {
-                byte* src = (byte*)&value;
-
-                uint a = *(uint*)(src + 0);
-                unchecked
+                fixed (byte* dst = &buffer[start])
                 {
-                    dst[0] = (byte)a;
-                    dst[1] = (byte)(a >> 8);
-                    dst[2] = (byte)(a >> 16);
-                    dst[3] = (byte)(a >> 24);
+                    byte* src = (byte*)&value;
 
-                    ushort b = *(ushort*)(src + 4);
-                    dst[4] = (byte)b;
-                    dst[5] = (byte)(b >> 8);
+                    uint a = *(uint*)(src + 0);
+                    unchecked
+                    {
+                        dst[0] = (byte)a;
+                        dst[1] = (byte)(a >> 8);
+                        dst[2] = (byte)(a >> 16);
+                        dst[3] = (byte)(a >> 24);
 
-                    ushort c = *(ushort*)(src + 6);
-                    dst[6] = (byte)c;
-                    dst[7] = (byte)(c >> 8);
+                        ushort b = *(ushort*)(src + 4);
+                        dst[4] = (byte)b;
+                        dst[5] = (byte)(b >> 8);
+
+                        ushort c = *(ushort*)(src + 6);
+                        dst[6] = (byte)c;
+                        dst[7] = (byte)(c >> 8);
+                    }
+
+                    dst[8] = src[8];
+                    dst[9] = src[9];
+                    dst[10] = src[10];
+                    dst[11] = src[11];
+                    dst[12] = src[12];
+                    dst[13] = src[13];
+                    dst[14] = src[14];
+                    dst[15] = src[15];
                 }
-
-                dst[8] = src[8];
-                dst[9] = src[9];
-                dst[10] = src[10];
-                dst[11] = src[11];
-                dst[12] = src[12];
-                dst[13] = src[13];
-                dst[14] = src[14];
-                dst[15] = src[15];
             }
 #endif
         }
 
-        public static void WriteUTF8(this byte[] buffer, int start, char* charPtr, int charCount, int byteCount, bool allowUnpairedSurrogates)
+        public static unsafe void WriteUTF8(this byte[] buffer, int start, char* charPtr, int charCount, int byteCount, bool allowUnpairedSurrogates)
         {
             Debug.Assert(byteCount >= charCount);
             const char ReplacementCharacter = '\uFFFD';
@@ -200,7 +209,7 @@ namespace System.Reflection
             return GetUTF8ByteCount(str, charCount, int.MaxValue, out _);
         }
 
-        internal static int GetUTF8ByteCount(char* str, int charCount, int byteLimit, out char* remainder)
+        internal static unsafe int GetUTF8ByteCount(char* str, int charCount, int byteLimit, out char* remainder)
         {
             char* end = str + charCount;
 

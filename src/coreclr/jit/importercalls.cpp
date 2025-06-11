@@ -685,11 +685,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // an indirection of a GT_CNS_INT
         //
         GenTree* cookieConst = cookie;
-        if (cookie->gtOper == GT_IND)
+        if (cookie->OperIs(GT_IND))
         {
             cookieConst = cookie->AsOp()->gtOp1;
         }
-        assert(cookieConst->gtOper == GT_CNS_INT);
+        assert(cookieConst->OperIs(GT_CNS_INT));
 
         // Setting GTF_DONT_CSE on the GT_CNS_INT as well as on the GT_IND (if it exists) will ensure that
         // we won't allow this tree to participate in any CSE logic
@@ -965,7 +965,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // See if we can devirt if we aren't probing.
     if (!probing && opts.OptimizationEnabled())
     {
-        if (call->AsCall()->IsVirtual())
+        if (call->AsCall()->IsDevirtualizationCandidate(this))
         {
             // only true object pointers can be virtual
             assert(call->AsCall()->gtArgs.HasThisPointer() &&
@@ -981,7 +981,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                 // inlinees.
                                 rawILOffset);
 
-            const bool wasDevirtualized = !call->AsCall()->IsVirtual();
+            const bool wasDevirtualized = !call->AsCall()->IsDevirtualizationCandidate(this);
 
             if (wasDevirtualized)
             {
@@ -1065,13 +1065,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             }
             else
             {
-                if (newobjThis->gtOper == GT_COMMA)
+                if (newobjThis->OperIs(GT_COMMA))
                 {
                     // We must have inserted the callout. Get the real newobj.
                     newobjThis = newobjThis->AsOp()->gtOp2;
                 }
 
-                assert(newobjThis->gtOper == GT_LCL_VAR);
+                assert(newobjThis->OperIs(GT_LCL_VAR));
                 impPushOnStack(gtNewLclvNode(newobjThis->AsLclVarCommon()->GetLclNum(), TYP_REF), typeInfo(clsHnd));
             }
         }
@@ -1233,7 +1233,7 @@ DONE:
         // Things needed to be checked when bIntrinsicImported is false.
         //
 
-        assert(call->gtOper == GT_CALL);
+        assert(call->OperIs(GT_CALL));
         assert(callInfo != nullptr);
 
         if (compIsForInlining() && opcode == CEE_CALLVIRT)
@@ -1258,7 +1258,7 @@ DONE:
         // If the call is virtual, record the inliner's context for possible use during late devirt inlining.
         // Also record the generics context if there is any.
         //
-        if (call->AsCall()->IsVirtual() && (call->AsCall()->gtCallType != CT_INDIRECT))
+        if (call->AsCall()->IsDevirtualizationCandidate(this))
         {
             JITDUMP("\nSaving generic context %p and inline context %p for call [%06u]\n", dspPtr(exactContextHnd),
                     dspPtr(compInlineContext), dspTreeID(call->AsCall()));
@@ -1830,7 +1830,7 @@ var_types Compiler::impImportJitTestLabelMark(int numArgs)
         // a GT_IND of a static field address, which should be the sum of a (hoistable) helper call and possibly some
         // offset within the static field block whose address is returned by the helper call.
         // The annotation is saying that this address calculation, but not the entire access, should be hoisted.
-        assert(node->OperGet() == GT_IND);
+        assert(node->OperIs(GT_IND));
         tlAndN.m_num -= 100;
         GetNodeTestData()->Set(node->AsOp()->gtOp1, tlAndN);
         GetNodeTestData()->Remove(node);
@@ -1964,7 +1964,7 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
     // because that can introduce a call to the cast helper after the
     // arguments have already been evaluated.
 
-    if (fptr->OperGet() == GT_LCL_VAR)
+    if (fptr->OperIs(GT_LCL_VAR))
     {
         lvaTable[fptr->AsLclVarCommon()->GetLclNum()].lvKeepType = 1;
     }
@@ -2067,7 +2067,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
     {
         GenTree* thisPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
         impBashVarAddrsToI(thisPtr);
-        assert(thisPtr->TypeGet() == TYP_I_IMPL || thisPtr->TypeGet() == TYP_BYREF);
+        assert(thisPtr->TypeIs(TYP_I_IMPL, TYP_BYREF));
     }
 
     impRetypeUnmanagedCallArgs(call);
@@ -2098,7 +2098,7 @@ void Compiler::impRetypeUnmanagedCallArgs(GenTreeCall* call)
             // for this arg at the call site (gc info says byref,
             // pinvoke sig says native int).
             //
-            if (argNode->TypeGet() == TYP_BYREF)
+            if (argNode->TypeIs(TYP_BYREF))
             {
                 GenTree* cast = gtNewCastNode(TYP_I_IMPL, argNode, false, TYP_I_IMPL);
                 arg.SetEarlyNode(cast);
@@ -2583,13 +2583,13 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     // Strip helper call away
     fieldTokenNode = fieldTokenNode->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode();
 
-    if (fieldTokenNode->gtOper == GT_IND)
+    if (fieldTokenNode->OperIs(GT_IND))
     {
         fieldTokenNode = fieldTokenNode->AsOp()->gtOp1;
     }
 
     // Check for constant
-    if (fieldTokenNode->gtOper != GT_CNS_INT)
+    if (!fieldTokenNode->OperIs(GT_CNS_INT))
     {
         return nullptr;
     }
@@ -2662,7 +2662,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     switch (newArrayCall->AsCall()->GetHelperNum())
     {
         case CORINFO_HELP_NEWARR_1_DIRECT:
-        case CORINFO_HELP_NEWARR_1_OBJ:
+        case CORINFO_HELP_NEWARR_1_PTR:
         case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
         case CORINFO_HELP_NEWARR_1_VC:
         case CORINFO_HELP_NEWARR_1_ALIGN8:
@@ -2763,7 +2763,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 
             static bool IsComma(GenTree* tree)
             {
-                return (tree != nullptr) && (tree->OperGet() == GT_COMMA);
+                return (tree != nullptr) && tree->OperIs(GT_COMMA);
             }
         };
 
@@ -2844,7 +2844,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         //
         // This optimization is only valid for a constant array size.
         //
-        if (arrayLengthNode->gtOper != GT_CNS_INT)
+        if (!arrayLengthNode->OperIs(GT_CNS_INT))
         {
             return nullptr;
         }
@@ -2946,13 +2946,13 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
 
     // Strip helper call away
     fieldTokenNode = fieldTokenNode->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
-    if (fieldTokenNode->gtOper == GT_IND)
+    if (fieldTokenNode->OperIs(GT_IND))
     {
         fieldTokenNode = fieldTokenNode->AsOp()->gtOp1;
     }
 
     // Check for constant
-    if (fieldTokenNode->gtOper != GT_CNS_INT)
+    if (!fieldTokenNode->OperIs(GT_CNS_INT))
     {
         return nullptr;
     }
@@ -3333,7 +3333,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         return node;
     }
 
-    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_AsyncSuspend)
+    if (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend)
     {
         GenTree* node = gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, impPopStack().val);
         node->SetHasOrderingSideEffect();
@@ -3341,7 +3341,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         return node;
     }
 
-    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_Await)
+    if (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_Await)
     {
         // These are marked intrinsics simply to match them by name in
         // the Await pattern optimization. Make sure we keep pIntrinsicName assigned
@@ -3749,7 +3749,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 GenTree* indexClone     = nullptr;
                 GenTree* ptrToSpanClone = nullptr;
                 assert(genActualType(index) == TYP_INT);
-                assert(ptrToSpan->TypeGet() == TYP_BYREF || ptrToSpan->TypeGet() == TYP_I_IMPL);
+                assert(ptrToSpan->TypeIs(TYP_BYREF, TYP_I_IMPL));
 
 #if defined(DEBUG)
                 if (verbose)
@@ -3899,7 +3899,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             {
                 GenTree*        op1 = impStackTop(0).val;
                 CorInfoHelpFunc typeHandleHelper;
-                if (op1->gtOper == GT_CALL && op1->AsCall()->IsHelperCall() &&
+                if (op1->OperIs(GT_CALL) && op1->AsCall()->IsHelperCall() &&
                     gtIsTypeHandleToRuntimeTypeHandleHelper(op1->AsCall(), &typeHandleHelper))
                 {
                     op1 = impPopStack().val;
@@ -4296,11 +4296,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #ifdef FEATURE_HW_INTRINSICS
             case NI_System_Math_FusedMultiplyAdd:
             {
+                assert(varTypeIsFloating(callType));
 #ifdef TARGET_XARCH
-                if (IsAvx10OrIsaSupportedOpportunistically(InstructionSet_FMA))
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
-                    assert(varTypeIsFloating(callType));
-
                     // We are constructing a chain of intrinsics similar to:
                     //    return FMA.MultiplyAddScalar(
                     //        Vector128.CreateScalarUnsafe(x),
@@ -4317,45 +4316,40 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, callJitType, 16);
 
                     retNode =
-                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_FMA_MultiplyAddScalar, callJitType, 16);
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_AVX2_MultiplyAddScalar, callJitType, 16);
 
                     retNode = gtNewSimdToScalarNode(callType, retNode, callJitType, 16);
                     break;
                 }
 #elif defined(TARGET_ARM64)
-                if (compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
-                {
-                    assert(varTypeIsFloating(callType));
+                // We are constructing a chain of intrinsics similar to:
+                //    return AdvSimd.FusedMultiplyAddScalar(
+                //        Vector64.Create{ScalarUnsafe}(z),
+                //        Vector64.Create{ScalarUnsafe}(y),
+                //        Vector64.Create{ScalarUnsafe}(x)
+                //    ).ToScalar();
 
-                    // We are constructing a chain of intrinsics similar to:
-                    //    return AdvSimd.FusedMultiplyAddScalar(
-                    //        Vector64.Create{ScalarUnsafe}(z),
-                    //        Vector64.Create{ScalarUnsafe}(y),
-                    //        Vector64.Create{ScalarUnsafe}(x)
-                    //    ).ToScalar();
+                impSpillSideEffect(true, stackState.esStackDepth -
+                                             3 DEBUGARG("Spilling op1 side effects for FusedMultiplyAdd"));
 
-                    impSpillSideEffect(true, stackState.esStackDepth -
-                                                 3 DEBUGARG("Spilling op1 side effects for FusedMultiplyAdd"));
+                impSpillSideEffect(true, stackState.esStackDepth -
+                                             2 DEBUGARG("Spilling op2 side effects for FusedMultiplyAdd"));
 
-                    impSpillSideEffect(true, stackState.esStackDepth -
-                                                 2 DEBUGARG("Spilling op2 side effects for FusedMultiplyAdd"));
+                GenTree* op3 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
 
-                    GenTree* op3 = impImplicitR4orR8Cast(impPopStack().val, callType);
-                    GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
-                    GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                op3 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op3, callJitType, 8);
+                op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op2, callJitType, 8);
+                op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op1, callJitType, 8);
 
-                    op3 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op3, callJitType, 8);
-                    op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op2, callJitType, 8);
-                    op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op1, callJitType, 8);
+                // Note that AdvSimd.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 + op2 * op3
+                // while Math{F}.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 * op2 + op3
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op3, op2, op1, NI_AdvSimd_FusedMultiplyAddScalar,
+                                                   callJitType, 8);
 
-                    // Note that AdvSimd.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 + op2 * op3
-                    // while Math{F}.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 * op2 + op3
-                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op3, op2, op1, NI_AdvSimd_FusedMultiplyAddScalar,
-                                                       callJitType, 8);
-
-                    retNode = gtNewSimdToScalarNode(callType, retNode, callJitType, 8);
-                    break;
-                }
+                retNode = gtNewSimdToScalarNode(callType, retNode, callJitType, 8);
+                break;
 #endif
 
                 // TODO-CQ-XArch: Ideally we would create a GT_INTRINSIC node for fma, however, that currently
@@ -5093,11 +5087,9 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             ClassLayout*         toLayout  = nullptr;
             var_types            toType    = TypeHandleToVarType(toTypeHnd, &toLayout);
 
-            if (fromType == TYP_REF || info.compCompHnd->isNullableType(fromTypeHnd) != TypeCompareState::MustNot ||
-                toType == TYP_REF || info.compCompHnd->isNullableType(toTypeHnd) != TypeCompareState::MustNot)
+            if (fromType == TYP_REF || toType == TYP_REF)
             {
-                // Fallback to the software implementation to throw when the types fail a "default(T) is not null"
-                // check.
+                // Fallback to the software implementation to throw for reference types
                 return nullptr;
             }
 
@@ -5571,7 +5563,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* op1 = nullptr;
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-            if ((intrinsic == NI_PRIMITIVE_ConvertToIntegerNative) && IsBaselineSimdIsaSupported())
+            if (intrinsic == NI_PRIMITIVE_ConvertToIntegerNative)
             {
                 NamedIntrinsic hwIntrinsicId = NI_Illegal;
 
@@ -5581,15 +5573,11 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         if (!uns)
                         {
-                            hwIntrinsicId = NI_SSE_ConvertToInt32WithTruncation;
+                            hwIntrinsicId = NI_X86Base_ConvertToInt32WithTruncation;
                         }
-                        else if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                        else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
                         {
-                            hwIntrinsicId = NI_AVX10v1_ConvertToUInt32WithTruncation;
-                        }
-                        else if (IsBaselineVector512IsaSupportedOpportunistically())
-                        {
-                            hwIntrinsicId = NI_AVX512F_ConvertToUInt32WithTruncation;
+                            hwIntrinsicId = NI_AVX512_ConvertToUInt32WithTruncation;
                         }
                     }
                     else
@@ -5598,15 +5586,11 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                         if (!uns)
                         {
-                            hwIntrinsicId = NI_SSE2_ConvertToInt32WithTruncation;
+                            hwIntrinsicId = NI_X86Base_ConvertToInt32WithTruncation;
                         }
-                        else if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                        else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
                         {
-                            hwIntrinsicId = NI_AVX10v1_ConvertToUInt32WithTruncation;
-                        }
-                        else if (IsBaselineVector512IsaSupportedOpportunistically())
-                        {
-                            hwIntrinsicId = NI_AVX512F_ConvertToUInt32WithTruncation;
+                            hwIntrinsicId = NI_AVX512_ConvertToUInt32WithTruncation;
                         }
                     }
                 }
@@ -5619,15 +5603,11 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         if (!uns)
                         {
-                            hwIntrinsicId = NI_SSE_X64_ConvertToInt64WithTruncation;
+                            hwIntrinsicId = NI_X86Base_X64_ConvertToInt64WithTruncation;
                         }
-                        else if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                        else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
                         {
-                            hwIntrinsicId = NI_AVX10v1_X64_ConvertToUInt64WithTruncation;
-                        }
-                        else if (IsBaselineVector512IsaSupportedOpportunistically())
-                        {
-                            hwIntrinsicId = NI_AVX512F_X64_ConvertToUInt64WithTruncation;
+                            hwIntrinsicId = NI_AVX512_X64_ConvertToUInt64WithTruncation;
                         }
                     }
                     else
@@ -5636,15 +5616,11 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                         if (!uns)
                         {
-                            hwIntrinsicId = NI_SSE2_X64_ConvertToInt64WithTruncation;
+                            hwIntrinsicId = NI_X86Base_X64_ConvertToInt64WithTruncation;
                         }
-                        else if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                        else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
                         {
-                            hwIntrinsicId = NI_AVX10v1_X64_ConvertToUInt64WithTruncation;
-                        }
-                        else if (IsBaselineVector512IsaSupportedOpportunistically())
-                        {
-                            hwIntrinsicId = NI_AVX512F_X64_ConvertToUInt64WithTruncation;
+                            hwIntrinsicId = NI_AVX512_X64_ConvertToUInt64WithTruncation;
                         }
                     }
                 }
@@ -5791,15 +5767,15 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
-            if (compOpportunisticallyDependsOn(InstructionSet_LZCNT))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
                 // Pop the value from the stack
                 impPopStack();
 
-                hwintrinsic = varTypeIsLong(baseType) ? NI_LZCNT_X64_LeadingZeroCount : NI_LZCNT_LeadingZeroCount;
+                hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_LeadingZeroCount : NI_AVX2_LeadingZeroCount;
                 result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
             }
-            else if (compOpportunisticallyDependsOn(InstructionSet_X86Base))
+            else
             {
                 // Pop the value from the stack
                 impPopStack();
@@ -5840,15 +5816,12 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 result = gtNewLclvNode(tmp, baseType);
             }
 #elif defined(TARGET_ARM64)
-            if (compOpportunisticallyDependsOn(InstructionSet_ArmBase))
-            {
-                // Pop the value from the stack
-                impPopStack();
+            // Pop the value from the stack
+            impPopStack();
 
-                hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
-                result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
-                baseType    = TYP_INT;
-            }
+            hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
+            result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
+            baseType    = TYP_INT;
 #endif // TARGET_*
 #endif // FEATURE_HW_INTRINSICS
 
@@ -5974,19 +5947,16 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
-            if (compOpportunisticallyDependsOn(InstructionSet_POPCNT))
+            if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
             {
                 // Pop the value from the stack
                 impPopStack();
 
-                hwintrinsic = varTypeIsLong(baseType) ? NI_POPCNT_X64_PopCount : NI_POPCNT_PopCount;
+                hwintrinsic = varTypeIsLong(baseType) ? NI_SSE42_X64_PopCount : NI_SSE42_PopCount;
                 result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
             }
 #elif defined(TARGET_ARM64)
-            if (compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
-            {
-                // TODO-ARM64-CQ: PopCount should be handled as an intrinsic for non-constant cases
-            }
+            // TODO-ARM64-CQ: PopCount should be handled as an intrinsic for non-constant cases
 #endif // TARGET_*
 #endif // FEATURE_HW_INTRINSICS
 
@@ -6138,15 +6108,15 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
-            if (compOpportunisticallyDependsOn(InstructionSet_BMI1))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
                 // Pop the value from the stack
                 impPopStack();
 
-                hwintrinsic = varTypeIsLong(baseType) ? NI_BMI1_X64_TrailingZeroCount : NI_BMI1_TrailingZeroCount;
+                hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_TrailingZeroCount : NI_AVX2_TrailingZeroCount;
                 result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
             }
-            else if (compOpportunisticallyDependsOn(InstructionSet_X86Base))
+            else
             {
                 // Pop the value from the stack
                 impPopStack();
@@ -6185,19 +6155,15 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 result = gtNewLclvNode(tmp, baseType);
             }
 #elif defined(TARGET_ARM64)
-            if (compOpportunisticallyDependsOn(InstructionSet_ArmBase))
-            {
-                // Pop the value from the stack
-                impPopStack();
+            // Pop the value from the stack
+            impPopStack();
 
-                hwintrinsic =
-                    varTypeIsLong(baseType) ? NI_ArmBase_Arm64_ReverseElementBits : NI_ArmBase_ReverseElementBits;
-                op1 = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+            hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_ReverseElementBits : NI_ArmBase_ReverseElementBits;
+            op1         = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
 
-                hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
-                result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
-                baseType    = TYP_INT;
-            }
+            hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
+            result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
+            baseType    = TYP_INT;
 #endif // TARGET_*
 #endif // FEATURE_HW_INTRINSICS
 
@@ -6341,7 +6307,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         NewCallArg arg;
         if (varTypeIsStruct(jitSigType))
         {
-            arg = NewCallArg::Struct(argNode, jitSigType, classHnd);
+            arg = NewCallArg::Struct(argNode, jitSigType, typGetObjLayout(classHnd));
         }
         else
         {
@@ -6385,7 +6351,7 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
 
             // This does a LDIND on the obj, which should be a byref. pointing to a ref
             impBashVarAddrsToI(obj);
-            assert(genActualType(obj->gtType) == TYP_I_IMPL || obj->gtType == TYP_BYREF);
+            assert(genActualType(obj->gtType) == TYP_I_IMPL || obj->TypeIs(TYP_BYREF));
             CorInfoType constraintTyp = info.compCompHnd->asCorInfoType(pConstrainedResolvedToken->hClass);
 
             obj = gtNewIndir(JITtype2varType(constraintTyp), obj);
@@ -6403,7 +6369,7 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
 
             GenTree* obj = thisPtr;
 
-            assert(obj->TypeGet() == TYP_BYREF || obj->TypeGet() == TYP_I_IMPL);
+            assert(obj->TypeIs(TYP_BYREF, TYP_I_IMPL));
             ClassLayout* layout;
             var_types    objType = TypeHandleToVarType(pConstrainedResolvedToken->hClass, &layout);
             obj                  = (objType == TYP_STRUCT) ? gtNewBlkIndir(layout, obj) : gtNewIndir(objType, obj);
@@ -6703,7 +6669,7 @@ private:
             // Trees with ret_expr are marked as GTF_CALL.
             return Compiler::WALK_SKIP_SUBTREES;
         }
-        if (tree->OperGet() == GT_RET_EXPR)
+        if (tree->OperIs(GT_RET_EXPR))
         {
             SpillRetExprHelper* walker = static_cast<SpillRetExprHelper*>(fgWalkPre->pCallbackData);
             walker->StoreRetExprAsLocalVar(pTree);
@@ -6714,7 +6680,7 @@ private:
     void StoreRetExprAsLocalVar(GenTree** pRetExpr)
     {
         GenTree* retExpr = *pRetExpr;
-        assert(retExpr->OperGet() == GT_RET_EXPR);
+        assert(retExpr->OperIs(GT_RET_EXPR));
         const unsigned tmp = comp->lvaGrabTemp(true DEBUGARG("spilling ret_expr"));
         JITDUMP("Storing return expression [%06u] to a local var V%02u.\n", comp->dspTreeID(retExpr), tmp);
         comp->impStoreToTemp(tmp, retExpr, Compiler::CHECK_SPILL_NONE);
@@ -6723,7 +6689,7 @@ private:
         assert(comp->lvaTable[tmp].lvSingleDef == 0);
         comp->lvaTable[tmp].lvSingleDef = 1;
         JITDUMP("Marked V%02u as a single def temp\n", tmp);
-        if (retExpr->TypeGet() == TYP_REF)
+        if (retExpr->TypeIs(TYP_REF))
         {
             bool                 isExact   = false;
             bool                 isNonNull = false;
@@ -6766,6 +6732,7 @@ void Compiler::addFatPointerCandidate(GenTreeCall* call)
 //    methodGuesses   - [out] the methods to guess for (mutually exclusive with classGuess)
 //    candidatesCount - [out] number of guesses
 //    likelihoods     - [out] estimates of the likelihoods that the guesses will succeed
+//    verboseLogging  - whether or not to do verbose logging
 //
 void Compiler::pickGDV(GenTreeCall*           call,
                        IL_OFFSET              ilOffset,
@@ -6773,17 +6740,22 @@ void Compiler::pickGDV(GenTreeCall*           call,
                        CORINFO_CLASS_HANDLE*  classGuesses,
                        CORINFO_METHOD_HANDLE* methodGuesses,
                        int*                   candidatesCount,
-                       unsigned*              likelihoods)
+                       unsigned*              likelihoods,
+                       bool                   verboseLogging)
 {
     *candidatesCount = 0;
+
+    // Get the relevant pgo info for this call
+    //
+    PgoInfo pgoInfo(call->gtInlineContext);
 
     const int               maxLikelyClasses = MAX_GDV_TYPE_CHECKS;
     LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
     unsigned                numberOfClasses = 0;
     if (call->IsVirtualStub() || call->IsVirtualVtable() || call->IsHelperCall())
     {
-        numberOfClasses =
-            getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+        numberOfClasses = getLikelyClasses(likelyClasses, maxLikelyClasses, pgoInfo.PgoSchema, pgoInfo.PgoSchemaCount,
+                                           pgoInfo.PgoData, ilOffset);
     }
 
     const int               maxLikelyMethods = MAX_GDV_TYPE_CHECKS;
@@ -6799,18 +6771,21 @@ void Compiler::pickGDV(GenTreeCall*           call,
     if (!IsAot() && (call->IsVirtualVtable() || call->IsDelegateInvoke()))
     {
         assert(!call->IsHelperCall());
-        numberOfMethods =
-            getLikelyMethods(likelyMethods, maxLikelyMethods, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+        numberOfMethods = getLikelyMethods(likelyMethods, maxLikelyMethods, pgoInfo.PgoSchema, pgoInfo.PgoSchemaCount,
+                                           pgoInfo.PgoData, ilOffset);
     }
 
     if ((numberOfClasses < 1) && (numberOfMethods < 1))
     {
-        JITDUMP("No likely class or method, sorry\n");
+        if (verboseLogging)
+        {
+            JITDUMP("No likely class or method, sorry\n");
+        }
         return;
     }
 
 #ifdef DEBUG
-    if ((verbose || JitConfig.EnableExtraSuperPmiQueries()) && (numberOfClasses > 0))
+    if ((verbose || JitConfig.EnableExtraSuperPmiQueries()) && (numberOfClasses > 0) && verboseLogging)
     {
         JITDUMP("Likely classes for call [%06u]", dspTreeID(call));
         if (!call->IsHelperCall())
@@ -6980,8 +6955,12 @@ void Compiler::pickGDV(GenTreeCall*           call,
                 classGuesses[guessIdx] = (CORINFO_CLASS_HANDLE)likelyClasses[guessIdx].handle;
                 likelihoods[guessIdx]  = likelyClasses[guessIdx].likelihood;
                 *candidatesCount       = *candidatesCount + 1;
-                JITDUMP("Accepting type %s with likelihood %u as a candidate\n", eeGetClassName(classGuesses[guessIdx]),
-                        likelihoods[guessIdx])
+
+                if (verboseLogging)
+                {
+                    JITDUMP("Accepting type %s with likelihood %u as a candidate\n",
+                            eeGetClassName(classGuesses[guessIdx]), likelihoods[guessIdx])
+                }
             }
             else
             {
@@ -7004,8 +6983,11 @@ void Compiler::pickGDV(GenTreeCall*           call,
             return;
         }
 
-        JITDUMP("Not guessing for method; likelihood is below %s call threshold %u\n",
-                call->IsDelegateInvoke() ? "delegate" : "virtual", likelihoodThreshold);
+        if (verboseLogging)
+        {
+            JITDUMP("Not guessing for method; likelihood is below %s call threshold %u\n",
+                    call->IsDelegateInvoke() ? "delegate" : "virtual", likelihoodThreshold);
+        }
     }
 }
 
@@ -7936,10 +7918,10 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Floor:
         case NI_System_Math_Round:
         case NI_System_Math_Truncate:
-            return compOpportunisticallyDependsOn(InstructionSet_SSE41);
+            return compOpportunisticallyDependsOn(InstructionSet_SSE42);
 
         case NI_System_Math_FusedMultiplyAdd:
-            return compOpportunisticallyDependsOn(InstructionSet_FMA);
+            return compOpportunisticallyDependsOn(InstructionSet_AVX2);
 
         default:
             return false;
@@ -7950,6 +7932,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Abs:
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
+        case NI_System_Math_FusedMultiplyAdd:
         case NI_System_Math_Max:
         case NI_System_Math_Min:
         case NI_System_Math_MultiplyAddEstimate:
@@ -7959,9 +7942,6 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Sqrt:
         case NI_System_Math_Truncate:
             return true;
-
-        case NI_System_Math_FusedMultiplyAdd:
-            return compOpportunisticallyDependsOn(InstructionSet_AdvSimd);
 
         default:
             return false;
@@ -8177,9 +8157,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     assert(methodFlags != nullptr);
     assert(pContextHandle != nullptr);
 
-    // This should be a virtual vtable or virtual stub call.
+    // This should be a devirtualization candidate.
     //
-    assert(call->IsVirtual());
+    assert(call->IsDevirtualizationCandidate(this));
     assert(opts.OptimizationEnabled());
 
 #if defined(DEBUG)
@@ -8519,8 +8499,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         // Note different embedding would be needed for NAOT/R2R,
         // but we have ruled those out above.
         //
-        GenTree* const instParam =
-            gtNewIconEmbHndNode(instantiatingStub, nullptr, GTF_ICON_METHOD_HDL, instantiatingStub);
+        GenTree* const instParam = gtNewIconEmbMethHndNode(instantiatingStub);
         call->gtArgs.InsertInstParam(this, instParam);
     }
 
@@ -9464,10 +9443,10 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             assert(sig->numArgs == 3);
 
 #if defined(TARGET_XARCH)
-            if (compExactlyDependsOn(InstructionSet_FMA))
+            if (compExactlyDependsOn(InstructionSet_AVX2))
             {
                 simdType    = TYP_SIMD16;
-                intrinsicId = NI_FMA_MultiplyAddScalar;
+                intrinsicId = NI_AVX2_MultiplyAddScalar;
             }
 #elif defined(TARGET_ARM64)
             if (compExactlyDependsOn(InstructionSet_AdvSimd))
@@ -9494,30 +9473,15 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             assert(sig->numArgs == 1);
 
 #if defined(TARGET_XARCH)
-            if (compExactlyDependsOn(InstructionSet_AVX10v1))
+            if (compExactlyDependsOn(InstructionSet_AVX512))
             {
                 simdType    = TYP_SIMD16;
-                intrinsicId = NI_AVX10v1_Reciprocal14Scalar;
+                intrinsicId = NI_AVX512_Reciprocal14Scalar;
             }
-            else if (compExactlyDependsOn(InstructionSet_AVX512F))
+            else if ((callType == TYP_FLOAT) && compExactlyDependsOn(InstructionSet_X86Base))
             {
                 simdType    = TYP_SIMD16;
-                intrinsicId = NI_AVX512F_Reciprocal14Scalar;
-            }
-            else if ((callType == TYP_FLOAT) && compExactlyDependsOn(InstructionSet_SSE))
-            {
-                if (!IsBaselineSimdIsaSupported())
-                {
-                    // While the actual intrinsic only requires SSE, the
-                    // ToScalar intrinsic asserts that the BaselineSimdIsa
-                    // (SSE2) is supported to help simplify the overall logic
-                    // it has to maintain
-                    assert(intrinsicId == NI_Illegal);
-                    break;
-                }
-
-                simdType    = TYP_SIMD16;
-                intrinsicId = NI_SSE_ReciprocalScalar;
+                intrinsicId = NI_X86Base_ReciprocalScalar;
             }
 #elif defined(TARGET_ARM64)
             if (compExactlyDependsOn(InstructionSet_AdvSimd_Arm64))
@@ -9534,25 +9498,15 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             assert(sig->numArgs == 1);
 
 #if defined(TARGET_XARCH)
-            if (compExactlyDependsOn(InstructionSet_AVX512F))
+            if (compExactlyDependsOn(InstructionSet_AVX512))
             {
                 simdType    = TYP_SIMD16;
-                intrinsicId = NI_AVX512F_ReciprocalSqrt14Scalar;
+                intrinsicId = NI_AVX512_ReciprocalSqrt14Scalar;
             }
-            else if ((callType == TYP_FLOAT) && compExactlyDependsOn(InstructionSet_SSE))
+            else if ((callType == TYP_FLOAT) && compExactlyDependsOn(InstructionSet_X86Base))
             {
-                if (!IsBaselineSimdIsaSupported())
-                {
-                    // While the actual intrinsic only requires SSE, the
-                    // ToScalar intrinsic asserts that the BaselineSimdIsa
-                    // (SSE2) is supported to help simplify the overall logic
-                    // it has to maintain
-                    assert(intrinsicId == NI_Illegal);
-                    break;
-                }
-
                 simdType    = TYP_SIMD16;
-                intrinsicId = NI_SSE_ReciprocalSqrtScalar;
+                intrinsicId = NI_X86Base_ReciprocalSqrtScalar;
             }
 #elif defined(TARGET_ARM64)
             if (compExactlyDependsOn(InstructionSet_AdvSimd_Arm64))
@@ -9942,11 +9896,10 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
             }
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-            if (!isMagnitude && compOpportunisticallyDependsOn(InstructionSet_SSE2))
+            if (!isMagnitude)
             {
-                bool needsFixup      = false;
-                bool canHandle       = false;
-                bool isV512Supported = false;
+                bool needsFixup = false;
+                bool canHandle  = false;
 
                 if (isMax)
                 {
@@ -9975,11 +9928,11 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                         needsFixup = cnsNode->IsFloatPositiveZero();
                     }
 
-                    if (!needsFixup || compIsEvexOpportunisticallySupported(isV512Supported))
+                    if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512))
                     {
                         // Given the checks, op1 can safely be the cns and op2 the other node
 
-                        intrinsicName = (callType == TYP_DOUBLE) ? NI_SSE2_MaxScalar : NI_SSE_MaxScalar;
+                        intrinsicName = NI_X86Base_MaxScalar;
 
                         // one is constant and we know its something we can handle, so pop both peeked values
 
@@ -10016,11 +9969,11 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                         needsFixup = cnsNode->IsFloatNegativeZero();
                     }
 
-                    if (!needsFixup || compIsEvexOpportunisticallySupported(isV512Supported))
+                    if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512))
                     {
                         // Given the checks, op1 can safely be the cns and op2 the other node
 
-                        intrinsicName = (callType == TYP_DOUBLE) ? NI_SSE2_MinScalar : NI_SSE_MinScalar;
+                        intrinsicName = NI_X86Base_MinScalar;
 
                         // one is constant and we know its something we can handle, so pop both peeked values
 
@@ -10100,8 +10053,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                             tbl->gtSimdVal.i32[0] = 0x0700;
                         }
 
-                        NamedIntrinsic fixupScalarId =
-                            isV512Supported ? NI_AVX512F_FixupScalar : NI_AVX10v1_FixupScalar;
+                        NamedIntrinsic fixupScalarId = NI_AVX512_FixupScalar;
 
                         retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, retNode, op2Clone, tbl, gtNewIconNode(0),
                                                            fixupScalarId, callJitType, 16);
@@ -10123,8 +10075,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
         }
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        bool isV512Supported = false;
-        if (compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512DQ))
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
         {
             // We are constructing a chain of intrinsics similar to:
             //    var op1 = Vector128.CreateScalarUnsafe(x);
@@ -10178,10 +10129,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
             GenTree* op1Clone;
             op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op1 for Math.Max/Min"));
 
-            GenTree* tmp =
-                !isV512Supported
-                    ? gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_AVX10v1_RangeScalar, callJitType, 16)
-                    : gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_AVX512DQ_RangeScalar, callJitType, 16);
+            GenTree* tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_AVX512_RangeScalar, callJitType, 16);
 
             // FixupScalar(left, right, table, control) computes the input type of right
             // adjusts it based on the table and then returns
@@ -10200,7 +10148,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
             // * qnan, norm = norm
             // * norm, norm = norm
 
-            NamedIntrinsic fixupHwIntrinsicID = !isV512Supported ? NI_AVX10v1_FixupScalar : NI_AVX512F_FixupScalar;
+            NamedIntrinsic fixupHwIntrinsicID = NI_AVX512_FixupScalar;
             if (isNumber)
             {
                 // We need to fixup the case of:
@@ -11059,13 +11007,16 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
                             }
+                        }
+                        else if (strcmp(className, "AsyncHelpers") == 0)
+                        {
+                            if (strcmp(methodName, "AsyncSuspend") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend;
+                            }
                             else if (strcmp(methodName, "Await") == 0)
                             {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_Await;
-                            }
-                            else if (strcmp(methodName, "AsyncSuspend") == 0)
-                            {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_AsyncSuspend;
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_Await;
                             }
                         }
                         else if (strcmp(className, "StaticsHelpers") == 0)
@@ -11977,9 +11928,8 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
         val = impPopStack().val;
         assert((genActualType(elemType) == genActualType(val->gtType)) ||
-               (elemType == TYP_FLOAT && val->gtType == TYP_DOUBLE) ||
-               (elemType == TYP_INT && val->gtType == TYP_BYREF) ||
-               (elemType == TYP_DOUBLE && val->gtType == TYP_FLOAT));
+               (elemType == TYP_FLOAT && val->TypeIs(TYP_DOUBLE)) || (elemType == TYP_INT && val->TypeIs(TYP_BYREF)) ||
+               (elemType == TYP_DOUBLE && val->TypeIs(TYP_FLOAT)));
     }
 
     // Here, we're committed to expanding the intrinsic and creating a GT_ARR_ELEM node.
@@ -11998,7 +11948,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     }
 
     GenTree* arr = impPopStack().val;
-    assert(arr->gtType == TYP_REF);
+    assert(arr->TypeIs(TYP_REF));
 
     GenTree* arrElem = new (this, GT_ARR_ELEM) GenTreeArrElem(TYP_BYREF, arr, static_cast<unsigned char>(rank),
                                                               static_cast<unsigned char>(arrayElemSize), &inds[0]);

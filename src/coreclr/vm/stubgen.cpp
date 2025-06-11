@@ -1049,6 +1049,8 @@ LPCSTR ILCodeStream::GetStreamDescription(ILStubLinker::CodeStreamType streamTyp
         "ExceptionCleanup",
         "Cleanup",
         "ExceptionHandler",
+        "TypeCheckAndCallMethod",
+        "UpdateByRefsAndReturn"
     };
 
 #ifdef _DEBUG
@@ -3232,16 +3234,16 @@ int ILStubLinker::GetToken(MethodDesc* pMD, mdToken typeSignature, mdToken metho
     return m_tokenMap.GetToken(pMD, typeSignature, methodSignature);
 }
 
-int ILStubLinker::GetToken(MethodTable* pMT)
-{
-    STANDARD_VM_CONTRACT;
-    return m_tokenMap.GetToken(TypeHandle(pMT));
-}
-
 int ILStubLinker::GetToken(TypeHandle th)
 {
     STANDARD_VM_CONTRACT;
     return m_tokenMap.GetToken(th);
+}
+
+int ILStubLinker::GetToken(TypeHandle th, mdToken typeSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_tokenMap.GetToken(th, typeSignature);
 }
 
 int ILStubLinker::GetToken(FieldDesc* pFD)
@@ -3351,6 +3353,11 @@ int ILCodeStream::GetToken(TypeHandle th)
 {
     STANDARD_VM_CONTRACT;
     return m_pOwner->GetToken(th);
+}
+int ILCodeStream::GetToken(TypeHandle th, mdToken typeSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_pOwner->GetToken(th, typeSignature);
 }
 int ILCodeStream::GetToken(FieldDesc* pFD)
 {

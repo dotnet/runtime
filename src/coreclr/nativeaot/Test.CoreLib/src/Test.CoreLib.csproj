@@ -22,8 +22,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(InPlaceRuntime)' == 'true'">
     <DefineConstants>INPLACE_RUNTIME;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(Platform)' == 'arm'">FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(Platform)' == 'armel'">FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
 
     <IntermediatesDir>$(ArtifactsObjDir)\coreclr\$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)</IntermediatesDir>
     <IntermediatesDir Condition="'$(Ninja)' == 'false' and $([MSBuild]::IsOsPlatform('Windows'))">$(IntermediatesDir)\ide</IntermediatesDir>
@@ -61,9 +59,6 @@
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\TypeCast.cs">
       <Link>Runtime.Base\src\System\Runtime\TypeCast.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime.Base\src\RhBaseName.cs">
-      <Link>Runtime.Base\src\RhBaseName.cs</Link>
     </Compile>
     <Compile Include="$(AotCommonPath)\Internal\Runtime\TransitionBlock.cs">
       <Link>Common\TransitionBlock.cs</Link>

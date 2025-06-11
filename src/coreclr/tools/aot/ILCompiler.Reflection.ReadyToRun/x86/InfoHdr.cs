@@ -14,6 +14,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
     {
         private const uint INVALID_GS_COOKIE_OFFSET = 0;
         private const uint INVALID_SYNC_OFFSET = 0;
+        private const uint INVALID_REV_PINVOKE_OFFSET = 0xFFFFFFFF;
 
         public uint PrologSize { get; set; }
         public uint EpilogSize { get; set; }
@@ -44,6 +45,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         public uint SyncStartOffset { get; set; }
         public uint SyncEndOffset { get; set; }
         public uint RevPInvokeOffset { get; set; }
+        public uint NoGCRegionCnt { get; set; }
 
         public bool HasArgTabOffset { get; set; }
         public uint ArgTabOffset { get; set; }
@@ -81,7 +83,8 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
             GsCookieOffset = 0;
             SyncStartOffset = 0;
             SyncEndOffset = 0;
-            RevPInvokeOffset = 0;
+            RevPInvokeOffset = INVALID_REV_PINVOKE_OFFSET;
+            NoGCRegionCnt = 0;
 
             HasArgTabOffset = false;
             ArgTabOffset = 0;
@@ -138,6 +141,10 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
             {
                 sb.AppendLine($"        Sync region = [{SyncStartOffset},{SyncEndOffset}]");
             }
+            if (NoGCRegionCnt > 0)
+            {
+                sb.AppendLine($"        No GC region count = {NoGCRegionCnt}");
+            }
 
             sb.Append($"        Epilogs:");
             foreach (int epilog in Epilogs)
@@ -157,7 +164,9 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         private const uint HAS_UNTRACKED = 0xFFFFFFFF;
         private const uint HAS_GS_COOKIE_OFFSET = 0xFFFFFFFF;
         private const uint HAS_SYNC_OFFSET = 0xFFFFFFFF;
-        private const uint HAS_REV_PINVOKE_FRAME_OFFSET = 0xFFFFFFFF;
+        private const uint INVALID_REV_PINVOKE_OFFSET = 0xFFFFFFFF;
+        private const uint HAS_REV_PINVOKE_FRAME_OFFSET = 0xFFFFFFFE;
+        private const uint HAS_NOGCREGIONS = 0xFFFFFFFF;
         private const uint YES = HAS_VARPTR;
 
         /// <summary>
@@ -271,17 +280,24 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                                 header.SyncStartOffset ^= HAS_SYNC_OFFSET;
                                 break;
                             case (byte)InfoHdrAdjust.FLIP_REV_PINVOKE_FRAME:
-                                header.RevPInvokeOffset ^= HAS_REV_PINVOKE_FRAME_OFFSET;
+                                header.RevPInvokeOffset ^= (INVALID_REV_PINVOKE_OFFSET ^ HAS_REV_PINVOKE_FRAME_OFFSET);
                                 break;
 
                             case (byte)InfoHdrAdjust.NEXT_OPCODE:
                                 nextByte = image[offset++];
                                 encoding = (byte)(nextByte & (int)InfoHdrAdjustConstants.ADJ_ENCODING_MAX);
                                 // encoding here always corresponds to codes in InfoHdrAdjust2 set
-
-                                if (encoding < (int)InfoHdrAdjustConstants.SET_RET_KIND_MAX)
+                                if (encoding <= (int)InfoHdrAdjustConstants.SET_RET_KIND_MAX)
                                 {
                                     header.ReturnKind = (ReturnKinds)encoding;
+                                }
+                                else if (encoding < (int)InfoHdrAdjust2.FFFF_NOGCREGION_CNT)
+                                {
+                                    header.NoGCRegionCnt = (uint)encoding - (uint)InfoHdrAdjust2.SET_NOGCREGIONS_CNT;
+                                }
+                                else if (encoding == (int)InfoHdrAdjust2.FFFF_NOGCREGION_CNT)
+                                {
+                                    header.NoGCRegionCnt = HAS_NOGCREGIONS;
                                 }
                                 else
                                 {
@@ -350,6 +366,10 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
             if (header.RevPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET)
             {
                 header.RevPInvokeOffset = NativeReader.DecodeUnsignedGc(image, ref offset);
+            }
+            if (header.NoGCRegionCnt == HAS_NOGCREGIONS)
+            {
+                header.NoGCRegionCnt = NativeReader.DecodeUnsignedGc(image, ref offset);
             }
 
             header.Epilogs = new List<int>();

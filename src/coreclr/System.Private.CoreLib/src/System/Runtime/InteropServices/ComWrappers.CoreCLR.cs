@@ -19,12 +19,21 @@ namespace System.Runtime.InteropServices
         /// <param name="fpQueryInterface">Function pointer to QueryInterface.</param>
         /// <param name="fpAddRef">Function pointer to AddRef.</param>
         /// <param name="fpRelease">Function pointer to Release.</param>
-        public static unsafe void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
+        public static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
             => GetIUnknownImplInternal(out fpQueryInterface, out fpAddRef, out fpRelease);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetIUnknownImpl")]
         [SuppressGCTransition]
         private static partial void GetIUnknownImplInternal(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
+
+        internal static unsafe void GetUntrackedIUnknownImpl(out delegate* unmanaged[MemberFunction]<IntPtr, uint> fpAddRef, out delegate* unmanaged[MemberFunction]<IntPtr, uint> fpRelease)
+        {
+            fpAddRef = fpRelease = GetUntrackedAddRefRelease();
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetUntrackedAddRefRelease")]
+        [SuppressGCTransition]
+        private static unsafe partial delegate* unmanaged[MemberFunction]<IntPtr, uint> GetUntrackedAddRefRelease();
 
         internal static IntPtr DefaultIUnknownVftblPtr { get; } = CreateDefaultIUnknownVftbl();
         internal static IntPtr TaggedImplVftblPtr { get; } = CreateTaggedImplVftbl();

@@ -19,10 +19,10 @@ namespace System.Runtime.InteropServices
             IReferenceTrackerManager.SetReferenceTrackerHost(trackerManager, (IntPtr)Unsafe.AsPointer(in s_globalHostServices));
         }
 
-#pragma warning disable IDE0060
-        [UnmanagedCallersOnly]
-        internal static unsafe int IReferenceTrackerHost_DisconnectUnusedReferenceSources(IntPtr pThis, uint flags)
-#pragma warning restore IDE0060
+#pragma warning disable IDE0060, CS3016
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+        internal static int IReferenceTrackerHost_DisconnectUnusedReferenceSources(IntPtr pThis, uint flags)
+#pragma warning restore IDE0060, CS3016
         {
             try
             {
@@ -45,10 +45,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
-#pragma warning disable IDE0060
-        [UnmanagedCallersOnly]
-        internal static unsafe int IReferenceTrackerHost_ReleaseDisconnectedReferenceSources(IntPtr pThis)
-#pragma warning restore IDE0060
+#pragma warning disable IDE0060, CS3016
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+        internal static int IReferenceTrackerHost_ReleaseDisconnectedReferenceSources(IntPtr pThis)
+#pragma warning restore IDE0060, CS3016
         {
             // We'd like to call GC.WaitForPendingFinalizers() here, but this could lead to deadlock
             // if the finalizer thread is trying to get back to this thread, because we are not pumping
@@ -56,10 +56,10 @@ namespace System.Runtime.InteropServices
             return HResults.S_OK;
         }
 
-#pragma warning disable IDE0060
-        [UnmanagedCallersOnly]
-        internal static unsafe int IReferenceTrackerHost_NotifyEndOfReferenceTrackingOnThread(IntPtr pThis)
-#pragma warning restore IDE0060
+#pragma warning disable IDE0060, CS3016
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+        internal static int IReferenceTrackerHost_NotifyEndOfReferenceTrackingOnThread(IntPtr pThis)
+#pragma warning restore IDE0060, CS3016
         {
             try
             {
@@ -72,10 +72,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
-#pragma warning disable IDE0060
-        [UnmanagedCallersOnly]
+#pragma warning disable IDE0060, CS3016
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
         internal static unsafe int IReferenceTrackerHost_GetTrackerTarget(IntPtr pThis, IntPtr punk, IntPtr* ppNewReference)
-#pragma warning restore IDE0060
+#pragma warning restore IDE0060, CS3016
         {
             if (punk == IntPtr.Zero)
             {
@@ -99,10 +99,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
-#pragma warning disable IDE0060
-        [UnmanagedCallersOnly]
-        internal static unsafe int IReferenceTrackerHost_AddMemoryPressure(IntPtr pThis, long bytesAllocated)
-#pragma warning restore IDE0060
+#pragma warning disable IDE0060, CS3016
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+        internal static int IReferenceTrackerHost_AddMemoryPressure(IntPtr pThis, long bytesAllocated)
+#pragma warning restore IDE0060, CS3016
         {
             try
             {
@@ -115,10 +115,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
-#pragma warning disable IDE0060
-        [UnmanagedCallersOnly]
-        internal static unsafe int IReferenceTrackerHost_RemoveMemoryPressure(IntPtr pThis, long bytesAllocated)
-#pragma warning restore IDE0060
+#pragma warning disable IDE0060, CS3016
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+        internal static int IReferenceTrackerHost_RemoveMemoryPressure(IntPtr pThis, long bytesAllocated)
+#pragma warning restore IDE0060, CS3016
         {
             try
             {
@@ -131,8 +131,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [UnmanagedCallersOnly]
+#pragma warning disable CS3016
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
         internal static unsafe int IReferenceTrackerHost_QueryInterface(IntPtr pThis, Guid* guid, IntPtr* ppObject)
+#pragma warning restore CS3016
         {
             if (*guid == ComWrappers.IID_IReferenceTrackerHost || *guid == ComWrappers.IID_IUnknown)
             {
@@ -148,15 +150,15 @@ namespace System.Runtime.InteropServices
 
         private unsafe struct IReferenceTrackerHostVftbl
         {
-            public delegate* unmanaged<IntPtr, Guid*, IntPtr*, int> QueryInterface;
-            public delegate* unmanaged<IntPtr, uint> AddRef;
-            public delegate* unmanaged<IntPtr, uint> Release;
-            public delegate* unmanaged<IntPtr, uint, int> DisconnectUnusedReferenceSources;
-            public delegate* unmanaged<IntPtr, int> ReleaseDisconnectedReferenceSources;
-            public delegate* unmanaged<IntPtr, int> NotifyEndOfReferenceTrackingOnThread;
-            public delegate* unmanaged<IntPtr, IntPtr, IntPtr*, int> GetTrackerTarget;
-            public delegate* unmanaged<IntPtr, long, int> AddMemoryPressure;
-            public delegate* unmanaged<IntPtr, long, int> RemoveMemoryPressure;
+            public delegate* unmanaged[MemberFunction]<IntPtr, Guid*, IntPtr*, int> QueryInterface;
+            public delegate* unmanaged[MemberFunction]<IntPtr, uint> AddRef;
+            public delegate* unmanaged[MemberFunction]<IntPtr, uint> Release;
+            public delegate* unmanaged[MemberFunction]<IntPtr, uint, int> DisconnectUnusedReferenceSources;
+            public delegate* unmanaged[MemberFunction]<IntPtr, int> ReleaseDisconnectedReferenceSources;
+            public delegate* unmanaged[MemberFunction]<IntPtr, int> NotifyEndOfReferenceTrackingOnThread;
+            public delegate* unmanaged[MemberFunction]<IntPtr, IntPtr, IntPtr*, int> GetTrackerTarget;
+            public delegate* unmanaged[MemberFunction]<IntPtr, long, int> AddMemoryPressure;
+            public delegate* unmanaged[MemberFunction]<IntPtr, long, int> RemoveMemoryPressure;
         }
 
         private static class HostServices
@@ -167,8 +169,7 @@ namespace System.Runtime.InteropServices
             static unsafe HostServices()
             {
                 Vftbl.QueryInterface = &IReferenceTrackerHost_QueryInterface;
-                Vftbl.AddRef = &ComWrappers.Untracked_AddRef;
-                Vftbl.Release = &ComWrappers.Untracked_Release;
+                ComWrappers.GetUntrackedIUnknownImpl(out Vftbl.AddRef, out Vftbl.Release);
                 Vftbl.DisconnectUnusedReferenceSources = &IReferenceTrackerHost_DisconnectUnusedReferenceSources;
                 Vftbl.ReleaseDisconnectedReferenceSources = &IReferenceTrackerHost_ReleaseDisconnectedReferenceSources;
                 Vftbl.NotifyEndOfReferenceTrackingOnThread = &IReferenceTrackerHost_NotifyEndOfReferenceTrackingOnThread;

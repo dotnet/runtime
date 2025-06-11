@@ -1817,8 +1817,6 @@ namespace System.Text.RegularExpressions.Generator
                             writer.Indent++;
 
                             // Emit the code for the branch, without the first character that was already matched in the switch.
-                            RegexNode? remainder = null;
-                            HandleChild:
                             switch (child.Kind)
                             {
                                 case RegexNodeKind.One:
@@ -1830,9 +1828,7 @@ namespace System.Text.RegularExpressions.Generator
                                 case RegexNodeKind.Multi:
                                     // First character was handled by the switch. Emit matching code for the remainder of the multi string.
                                     sliceStaticPos++;
-                                    EmitNode(child.Str!.Length == 2 ?
-                                        new RegexNode(RegexNodeKind.One, child.Options, child.Str![1]) :
-                                        new RegexNode(RegexNodeKind.Multi, child.Options, child.Str!.Substring(1)));
+                                    EmitNode(SliceOffMultiFirstChar(child));
                                     writer.WriteLine();
                                     break;
 
@@ -1840,25 +1836,31 @@ namespace System.Text.RegularExpressions.Generator
                                     // This is a concatenation where its first node is the starting literal we found and that starting literal
                                     // is one of the nodes above that we know how to handle completely. This is a common
                                     // enough case that we want to special-case it to avoid duplicating the processing for that character
-                                    // unnecessarily. So, we'll shave off that first node from the concatenation and then handle the remainder.
-                                    // Note that it's critical startingLiteralNode is something we can fully handle above: if it's not,
-                                    // we'll end up losing some of the pattern due to overwriting `remainder`.
-                                    remainder = child;
-                                    child = child.Child(0);
-                                    remainder.ReplaceChild(0, new RegexNode(RegexNodeKind.Empty, remainder.Options));
-                                    goto HandleChild; // reprocess just the first node that was saved; the remainder will then be processed below
+                                    // unnecessarily. First slice off the first character that was already handled. If that child is a multi, temporarily
+                                    // replace it with a node that doesn't have the already-matched first character; otherwise, replace it with an empty node
+                                    // that'll be ignored when rendered. Then emit the new tree, and subsequently restore the original child.
+                                    sliceStaticPos++;
+                                    RegexNode originalFirst = child.Child(0);
+                                    child.ReplaceChild(0,
+                                        child.Child(0).Kind is RegexNodeKind.Multi ?
+                                            SliceOffMultiFirstChar(child.Child(0)) : // multi, so slice off the first character
+                                            new RegexNode(RegexNodeKind.Empty, child.Options)); // single, so removing it yields empty
+                                    try
+                                    {
+
+                                        EmitNode(child);
+                                    }
+                                    finally
+                                    {
+                                        child.ReplaceChild(0, originalFirst);
+                                    }
+                                    writer.WriteLine();
+                                    break;
 
                                 default:
-                                    Debug.Assert(remainder is null);
-                                    remainder = child;
+                                    EmitNode(child);
+                                    writer.WriteLine();
                                     break;
-                            }
-
-                            if (remainder is not null)
-                            {
-                                // Emit a full match for whatever part of the child we haven't yet handled.
-                                EmitNode(remainder);
-                                writer.WriteLine();
                             }
 
                             // This is only ever used for atomic alternations, so we can simply reset the doneLabel
@@ -1880,6 +1882,14 @@ namespace System.Text.RegularExpressions.Generator
                         // Default branch if the character didn't match the start of any branches.
                         CaseGoto("default:", doneLabel);
                     }
+                }
+
+                static RegexNode SliceOffMultiFirstChar(RegexNode multi)
+                {
+                    Debug.Assert(multi.Kind is RegexNodeKind.Multi, $"Expected a Multi node, got {multi.Kind}");
+                    return multi.Str!.Length == 2 ?
+                        new(RegexNodeKind.One, multi.Options, multi.Str[1]) :
+                        new(RegexNodeKind.Multi, multi.Options, multi.Str.Substring(1));
                 }
 
                 void EmitAllBranches()

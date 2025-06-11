@@ -183,14 +183,13 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
             Contracts.ModuleHandle handle = contract.GetModuleHandle(_address);
 
             ModuleFlags moduleFlags = contract.GetFlags(handle);
-            if ((moduleFlags & ModuleFlags.EditAndContinue) != 0)
+            if ((moduleFlags & ModuleFlags.ReflectionEmit) != 0)
             {
                 *flags |= 0x1; // CLRDATA_MODULE_IS_DYNAMIC
             }
 
             if (contract.GetAssembly(handle) == contract.GetRootAssembly())
             {
-
                 *flags |= 0x4; // CLRDATA_MODULE_FLAGS_ROOT_ASSEMBLY
             }
         }
@@ -235,7 +234,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
                 {
                     if (contract.TryGetLoadedImageContents(moduleHandle, out TargetPointer baseAddress, out uint size, out _))
                     {
-                        _extents[0].baseAddress = baseAddress;
+                        _extents[0].baseAddress = baseAddress.ToClrDataAddress(_target);
                         _extents[0].length = size;
                         _extents[0].type = 0x0; // CLRDATA_MODULE_PE_FILE
                     }
@@ -350,7 +349,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
 
         bool isReflectionEmit = (contract.GetFlags(moduleHandle) & ModuleFlags.ReflectionEmit) != 0;
 
-        getModuleData->PEAssembly = _address;
+        getModuleData->PEAssembly = _address.ToClrDataAddress(_target);
         getModuleData->IsDynamic = isReflectionEmit ? 1u : 0u;
 
         if (peAssembly != TargetPointer.Null)
@@ -366,7 +365,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
             }
 
             contract.TryGetLoadedImageContents(moduleHandle, out TargetPointer baseAddress, out uint size, out uint flags);
-            getModuleData->LoadedPEAddress = baseAddress;
+            getModuleData->LoadedPEAddress = baseAddress.ToClrDataAddress(_target);
             getModuleData->LoadedPESize = size;
 
             // Can not get the assembly layout for a dynamic module
@@ -378,7 +377,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
 
         if (contract.TryGetSymbolStream(moduleHandle, out TargetPointer symbolBuffer, out uint symbolBufferSize))
         {
-            getModuleData->InMemoryPdbAddress = symbolBuffer;
+            getModuleData->InMemoryPdbAddress = symbolBuffer.ToClrDataAddress(_target);
             getModuleData->InMemoryPdbSize = symbolBufferSize;
         }
 

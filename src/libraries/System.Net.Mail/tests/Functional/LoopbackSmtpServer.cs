@@ -63,10 +63,11 @@ namespace System.Net.Mail.Tests
         {
             _output = output;
             _socketsToDispose = new ConcurrentBag<Socket>();
-            _listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            _listenSocket = new Socket(SocketType.Stream, ProtocolType.Tcp);
             _socketsToDispose.Add(_listenSocket);
 
-            _listenSocket.Bind(new IPEndPoint(IPAddress.Any, 0));
+            // if dual socket supported, bind to Ipv6Any, otherwise Any
+            _listenSocket.Bind(new IPEndPoint(_listenSocket.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any, 0));
             Port = ((IPEndPoint)_listenSocket.LocalEndPoint).Port;
             _listenSocket.Listen(1);
 

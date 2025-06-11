@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
@@ -1173,25 +1171,20 @@ namespace System.Security.Cryptography
             ThrowIfTrailingData(source);
             ThrowIfNotSupported();
 
-            unsafe
+            KeyFormatHelper.ReadSubjectPublicKeyInfo(s_knownOids, source, SubjectPublicKeyReader, out int read, out MLKem kem);
+            Debug.Assert(read == source.Length);
+            return kem;
+
+            static void SubjectPublicKeyReader(ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn identifier, out MLKem kem)
             {
-                fixed (byte* pointer = source)
+                MLKemAlgorithm algorithm = GetAlgorithmIdentifier(in identifier);
+
+                if (key.Length != algorithm.EncapsulationKeySizeInBytes)
                 {
-                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
-                    {
-                        AsnValueReader reader = new(source, AsnEncodingRules.DER);
-                        SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
-                        MLKemAlgorithm algorithm = GetAlgorithmIdentifier(ref spki.Algorithm);
-                        ReadOnlySpan<byte> subjectPublicKey = spki.SubjectPublicKey.Span;
-
-                        if (subjectPublicKey.Length != algorithm.EncapsulationKeySizeInBytes)
-                        {
-                            throw new CryptographicException(SR.Argument_KemInvalidEncapsulationKeyLength);
-                        }
-
-                        return MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, subjectPublicKey);
-                    }
+                    throw new CryptographicException(SR.Argument_KemInvalidEncapsulationKeyLength);
                 }
+
+                kem = MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, key.Span);
             }
         }
 
@@ -1669,9 +1662,8 @@ namespace System.Security.Cryptography
 
         private static MLKemAlgorithm GetAlgorithmIdentifier(ref readonly AlgorithmIdentifierAsn identifier)
         {
-            MLKemAlgorithm algorithm = MLKemAlgorithm.FromOid(identifier.Algorithm) ??
-                throw new CryptographicException(
-                    SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, identifier.Algorithm));
+            MLKemAlgorithm? algorithm = MLKemAlgorithm.FromOid(identifier.Algorithm);
+            Debug.Assert(algorithm is not null, "Algorithm identifier should have been pre-validated by KeyFormatHelper.");
 
             if (identifier.Parameters.HasValue)
             {
@@ -1767,14 +1759,7 @@ namespace System.Security.Cryptography
 
         private protected void ThrowIfDisposed()
         {
-#if NET
             ObjectDisposedException.ThrowIf(_disposed, typeof(MLKem));
-#else
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(typeof(MLKem).FullName);
-            }
-#endif
         }
 
         private AsnWriter ExportEncryptedPkcs8PrivateKeyCore<TChar>(
@@ -1822,7 +1807,7 @@ namespace System.Security.Cryptography
             {
                 CryptoPool.Return(buffer);
                 size = checked(size * 2);
-                buffer = ArrayPool<byte>.Shared.Rent(size);
+                buffer = CryptoPool.Rent(size);
             }
 
             if (written < 0 || written > buffer.Length)

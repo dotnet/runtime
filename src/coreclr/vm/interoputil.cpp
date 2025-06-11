@@ -3662,7 +3662,6 @@ void InitializeComInterop()
     }
     CONTRACTL_END;
 
-    InitializeSListHead(&RCW::s_RCWStandbyList);
     ComCall::Init();
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();
