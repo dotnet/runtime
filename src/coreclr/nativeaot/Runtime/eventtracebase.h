@@ -167,7 +167,7 @@ namespace ETW
     class LoaderLog
     {
         friend class ETW::EnumerationLog;
-        static void SendModuleEvent(HANDLE pModule, DWORD dwEventOptions);
+        static void SendModuleEvent(HANDLE pModule, uint32_t dwEventOptions);
     public:
         typedef union _LoaderStructs
         {
@@ -182,6 +182,7 @@ namespace ETW
                 PartialReadyToRunModule=0x40,
             }ModuleFlags;
         }LoaderStructs;
+        static void ModuleLoad(HANDLE pModule);
     };
 }
 

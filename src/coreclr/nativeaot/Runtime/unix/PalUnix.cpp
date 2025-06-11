@@ -95,7 +95,7 @@ void RhFailFast()
     abort();
 }
 
-void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) TCHAR * wszPath, int32_t cchPath)
+void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) WCHAR * wszPath, int32_t cchPath)
 {
     memset(pGuidSignature, 0, sizeof(*pGuidSignature));
     *pdwAge = 0;

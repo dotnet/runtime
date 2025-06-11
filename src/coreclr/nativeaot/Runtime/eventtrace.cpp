@@ -21,6 +21,8 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 
+#include <minipal/utf8.h>
+
 EVENTPIPE_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context = { W("Microsoft-Windows-DotNETRuntime"), 0, false, 0 };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = {
 #ifdef FEATURE_ETW
@@ -281,7 +283,7 @@ void EtwCallbackCommon(
 
 void EtwCallback(
     const GUID * /*SourceId*/,
-    uint32_t IsEnabled,
+    uint32_t ControlCode,
     uint8_t Level,
     uint64_t MatchAnyKeyword,
     uint64_t MatchAllKeyword,
@@ -292,10 +294,18 @@ void EtwCallback(
     if (context == NULL)
         return;
 
+    // A manifest based provider can be enabled to multiple event tracing sessions
+    // As long as there is atleast 1 enabled session, IsEnabled will be TRUE
+    // Since classic providers can be enabled to only a single session,
+    // IsEnabled will be TRUE when it is enabled and FALSE when disabled
+    BOOL bEnabled =
+        ((ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER) ||
+            (ControlCode == EVENT_CONTROL_CODE_CAPTURE_STATE));
+
     context->Level = Level;
     context->MatchAnyKeyword = MatchAnyKeyword;
     context->MatchAllKeyword = MatchAllKeyword;
-    context->IsEnabled = IsEnabled;
+    context->IsEnabled = bEnabled;
 
     CallbackProviderIndex providerIndex = DotNETRuntime;
     DOTNET_TRACE_CONTEXT providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
@@ -313,9 +323,9 @@ void EtwCallback(
         return;
     }
 
-    EtwCallbackCommon(providerIndex, IsEnabled, Level, MatchAnyKeyword, FilterData, EtwSessionChangeUnknown);
+    EtwCallbackCommon(providerIndex, ControlCode, Level, MatchAnyKeyword, FilterData, EtwSessionChangeUnknown);
 
-    if (IsEnabled)
+    if (bEnabled)
     {
         if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle &&
             GCHeapUtilities::IsGCHeapInitialized())
@@ -336,6 +346,14 @@ void EtwCallback(
 
 #endif // FEATURE_ETW
 
+void ETW::LoaderLog::ModuleLoad(HANDLE pModule)
+{
+    if (IsRuntimeProviderEnabled(TRACE_LEVEL_INFORMATION, KEYWORDZERO))
+    {
+        SendModuleEvent(pModule, ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad);
+    }
+}
+
 //---------------------------------------------------------------------------------------
 //
 // send a module load/unload or rundown event and domainmodule load and rundown event
@@ -344,12 +362,20 @@ void EtwCallback(
 //      * pModule - Module loading or unloading
 //      * dwEventOptions - Bitmask of which events to fire
 //
-void ETW::LoaderLog::SendModuleEvent(HANDLE pModule, DWORD dwEventOptions)
+void ETW::LoaderLog::SendModuleEvent(HANDLE pModule, uint32_t dwEventOptions)
 {
     const WCHAR * wszModuleFileName = NULL;
     const WCHAR * wszModuleILFileName = W("");
 
+#if TARGET_WINDOWS
     PalGetModuleFileName(&wszModuleFileName, pModule);
+#else
+    const char * wszModuleFileNameUtf8 = NULL;
+    uint32_t moduleFileNameCharCount = PalGetModuleFileName(&wszModuleFileNameUtf8, pModule);
+    CHAR16_T wszModuleFileNameUnicode[1024];
+    minipal_convert_utf8_to_utf16(wszModuleFileNameUtf8, moduleFileNameCharCount, &wszModuleFileNameUnicode[0], ARRAY_SIZE(wszModuleFileNameUnicode), MINIPAL_MB_NO_REPLACE_INVALID_CHARS);
+    wszModuleFileName = (const WCHAR *)&wszModuleFileNameUnicode[0];
+#endif
 
     GUID nativeGuid;
     uint32_t dwAge;
