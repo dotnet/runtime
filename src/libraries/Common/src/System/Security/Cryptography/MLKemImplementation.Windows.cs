@@ -260,7 +260,5 @@ namespace System.Security.Cryptography
                 CryptoPool.Return(exported);
             }
         }
-
-
     }
 }
