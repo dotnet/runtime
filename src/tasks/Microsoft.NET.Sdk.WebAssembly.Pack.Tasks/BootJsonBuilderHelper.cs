@@ -265,6 +265,16 @@ namespace Microsoft.NET.Sdk.WebAssembly
             assets.coreVfs = MapVfsAssets(resources.coreVfs);
             assets.vfs = MapVfsAssets(resources.vfs);
 
+            if (bundlerFriendly && config.appsettings != null)
+            {
+                config.appsettings = config.appsettings.Select(a =>
+                {
+                    string escaped = EscapeName(a);
+                    imports.Add($"import {escaped} from \"./{a}\";");
+                    return EncodeJavascriptVariableInJson(escaped);
+                }).ToList();
+            }
+
             string EscapeName(string name) => Utils.FixupSymbolName(name);
             string EncodeJavascriptVariableInJson(string name) => $"$#[{name}]#$";
 
@@ -306,11 +316,23 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 return asset;
             }).ToList();
 
-            List<VfsAsset>? MapVfsAssets(Dictionary<string, Dictionary<string, string>>? assets) => assets?.Select(a => new VfsAsset()
+            List<VfsAsset>? MapVfsAssets(Dictionary<string, Dictionary<string, string>>? assets) => assets?.Select(a =>
             {
-                virtualPath = a.Key,
-                name = a.Value.Keys.First(),
-                integrity = a.Value.Values.First()
+                var asset = new VfsAsset()
+                {
+                    virtualPath = a.Key,
+                    name = a.Value.Keys.First(),
+                    integrity = a.Value.Values.First()
+                };
+
+                if (bundlerFriendly)
+                {
+                    string escaped = EscapeName(string.Concat(asset.name));
+                    imports.Add($"import * as {escaped} from \"./{asset.name}\";");
+                    asset.resolvedUrl = EncodeJavascriptVariableInJson(escaped);
+                }
+
+                return asset;
             }).ToList();
 
             config.resources = assets;

@@ -375,6 +375,7 @@ public class VfsAsset
     public string virtualPath { get; set; }
     public string name { get; set; }
     public string integrity { get; set; }
+    public string resolvedUrl { get; set; }
 }
 
 public enum GlobalizationMode : int
