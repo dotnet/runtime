@@ -555,7 +555,7 @@ namespace Microsoft.Interop
             const string vtableLocalName = "vtable";
             var interfaceType = interfaceMethods.Interface.Info.Type;
 
-            // void** vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(<interfaceType>, sizeof(void*) * <max(vtableIndex) + 1>);
+            // void** vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(<interfaceType>, sizeof(void*) * <vtableSize>);
             var vtableDeclarationStatement =
                 Declare(
                     TypeSyntaxes.VoidStarStar,
@@ -569,9 +569,7 @@ namespace Microsoft.Interop
                                 BinaryExpression(
                                     SyntaxKind.MultiplyExpression,
                                     SizeOfExpression(TypeSyntaxes.VoidStar),
-                                    IntLiteral(1 + (interfaceMethods.Methods.Length == 0 ?
-                                        2 :
-                                        interfaceMethods.Methods.Max(m => m.GenerationContext.VtableIndexData.Index))))))));
+                                    IntLiteral(interfaceMethods.VTableSize))))));
 
             BlockSyntax fillBaseInterfaceSlots;
 
@@ -599,24 +597,24 @@ namespace Microsoft.Interop
                         AssignmentStatement(
                             IndexExpression(
                                 IdentifierName(vtableLocalName),
-                                Argument(IntLiteral(0))),
+                                Argument(IntLiteral(IUnknownConstants.QueryInterfaceIndex))),
                             CastExpression(TypeSyntaxes.VoidStar, IdentifierName("v0"))),
                         // m_vtable[1] = (void*)v1;
                         AssignmentStatement(
                             IndexExpression(
                                 IdentifierName(vtableLocalName),
-                                Argument(IntLiteral(1))),
+                                Argument(IntLiteral(IUnknownConstants.AddRefIndex))),
                             CastExpression(TypeSyntaxes.VoidStar, IdentifierName("v1"))),
                         // m_vtable[2] = (void*)v2;
                         AssignmentStatement(
                             IndexExpression(
                                 IdentifierName(vtableLocalName),
-                                Argument(IntLiteral(2))),
+                                Argument(IntLiteral(IUnknownConstants.ReleaseIndex))),
                             CastExpression(TypeSyntaxes.VoidStar, IdentifierName("v2"))));
             }
             else
             {
-                // NativeMemory.Copy(StrategyBasedComWrappers.DefaultIUnknownInteraceDetailsStrategy.GetIUnknownDerivedDetails(typeof(<baseInterfaceType>).TypeHandle).ManagedVirtualMethodTable, vtable, (nuint)(sizeof(void*) * <startingOffset>));
+                // NativeMemory.Copy(StrategyBasedComWrappers.DefaultIUnknownInteraceDetailsStrategy.GetIUnknownDerivedDetails(typeof(<baseInterfaceType>).TypeHandle).ManagedVirtualMethodTable, vtable, (nuint)(sizeof(void*) * <baseVTableSize>));
                 fillBaseInterfaceSlots = Block(
                         MethodInvocationStatement(
                             TypeSyntaxes.System_Runtime_InteropServices_NativeMemory,
@@ -635,7 +633,7 @@ namespace Microsoft.Interop
                                 ParenthesizedExpression(
                                     BinaryExpression(SyntaxKind.MultiplyExpression,
                                         SizeOfExpression(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword)))),
-                                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(interfaceMethods.InheritedMethods.Count() + 3))))))));
+                                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(interfaceMethods.BaseVTableSize))))))));
             }
 
             var vtableSlotAssignments = VirtualMethodPointerStubGenerator.GenerateVirtualMethodTableSlotAssignments(
