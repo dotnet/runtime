@@ -220,6 +220,19 @@ public class ConditionalSimpleOpVariableTest
     }
 
     [Theory]
+    [InlineData(-12, -24)]
+    [InlineData(12, 24)]
+    [InlineData(43, 3)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void shift_left_var_no_else_different_var(long a, long expected)
+    {
+        long result = 3;
+        if (a <= 42)
+            result = a * 2;
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
     [InlineData(12, 6)]
     [InlineData(-25, -13)]
     [InlineData(45, 45)]
