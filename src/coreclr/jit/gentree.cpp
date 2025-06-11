@@ -7279,7 +7279,7 @@ private:
 };
 
 //------------------------------------------------------------------------------
-// OperOrContainedChildrenMayThrow : Check whether the operation or any contained
+// NodeOrContainedOperandsMayThrow : Check whether the operation or any contained
 //                                   children will throw
 //
 // Arguments:
@@ -7288,7 +7288,7 @@ private:
 // Return Value:
 //    True if the given operator may cause an exception
 //
-bool GenTree::OperOrContainedChildrenMayThrow(Compiler* comp)
+bool GenTree::NodeOrContainedOperandsMayThrow(Compiler* comp)
 {
     // Recursively parse all contained children.
     ContainedChildrenMayThrow ev(comp, this);
