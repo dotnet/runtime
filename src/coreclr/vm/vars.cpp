@@ -199,12 +199,6 @@ bool g_fManagedAttach = false;
 //
 bool g_fWeControlLifetime = false;
 
-#ifdef _DEBUG
-// The following should only be used for assertions.  (Famous last words).
-bool dbg_fDrasticShutdown = false;
-#endif
-bool g_fInControlC = false;
-
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE

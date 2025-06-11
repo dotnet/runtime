@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.DotNet.Helix.Sdk">
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
 
   <PropertyGroup>
     <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
@@ -6,6 +6,7 @@
     <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
     <HelixConfiguration>$(Configuration)</HelixConfiguration>
     <HelixType>test/host</HelixType>
+    <TestRunNamePrefix>host-$(TargetOS)-$(TargetArchitecture)-$(Configuration) @ </TestRunNamePrefix>
 
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
@@ -46,7 +47,7 @@
     </MSBuild>
     <ItemGroup>
       <HostTestProject>
-        <Command>dotnet test $([System.IO.Path]::GetFileName($(_TargetPath))) $(TestRunnerAdditionalArguments)</Command>
+        <Command>dotnet test $([System.IO.Path]::GetFileName($(_TargetPath))) $(TestRunnerAdditionalArguments) --logger trx --results-directory .</Command>
         <PayloadDirectory>$(_PayloadDirectory)</PayloadDirectory>
       </HostTestProject>
     </ItemGroup>
@@ -58,6 +59,7 @@
         <PayloadDirectory>%(HostTestProject.PayloadDirectory)</PayloadDirectory>
         <Command>%(HostTestProject.Command)</Command>
         <PreCommands>@(_HelixPreCommands)</PreCommands>
+        <Timeout>00:30:00</Timeout>
       </HelixWorkItem>
     </ItemGroup>
   </Target>

@@ -336,7 +336,9 @@ enum CorInfoHelpFunc
     CORINFO_HELP_LMOD,
     CORINFO_HELP_ULDIV,
     CORINFO_HELP_ULMOD,
+    CORINFO_HELP_LNG2FLT,               // Convert a signed int64 to a float
     CORINFO_HELP_LNG2DBL,               // Convert a signed int64 to a double
+    CORINFO_HELP_ULNG2FLT,              // Convert a unsigned int64 to a float
     CORINFO_HELP_ULNG2DBL,              // Convert a unsigned int64 to a double
     CORINFO_HELP_DBL2INT,
     CORINFO_HELP_DBL2INT_OVF,
@@ -363,7 +365,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEW_MDARR_RARE,// rare multi-dim array helper (Rank == 1)
     CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
     CORINFO_HELP_NEWARR_1_MAYBEFROZEN, // allocator for arrays that *might* allocate them on a frozen segment
-    CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
+    CORINFO_HELP_NEWARR_1_PTR,      // optimized 1-D arrays with pointer sized elements
     CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
     CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
@@ -1357,7 +1359,7 @@ enum CORINFO_CALLINFO_FLAGS
     CORINFO_CALLINFO_ALLOWINSTPARAM = 0x0001,   // Can the compiler generate code to pass an instantiation parameters? Simple compilers should not use this flag
     CORINFO_CALLINFO_CALLVIRT       = 0x0002,   // Is it a virtual call?
     // UNUSED                       = 0x0004,
-    // UNUSED                       = 0x0008,
+    CORINFO_CALLINFO_DISALLOW_STUB  = 0x0008,   // Do not use a stub for this call, even if it is a virtual call.
     CORINFO_CALLINFO_SECURITYCHECKS = 0x0010,   // Perform security checks.
     CORINFO_CALLINFO_LDFTN          = 0x0020,   // Resolving target of LDFTN
     // UNUSED                       = 0x0040,

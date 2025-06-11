@@ -33,6 +33,17 @@ internal sealed class FrameIterator
         FaultingExceptionFrame,
 
         HijackFrame,
+
+        /* Other Frame Types not handled by the iterator */
+        UnmanagedToManagedFrame,
+        ComMethodFrame,
+        ComPrestubMethodFrame,
+        TailCallFrame,
+        ProtectValueClassFrame,
+        DebuggerClassInitMarkFrame,
+        DebuggerExitFrame,
+        DebuggerU2MCatchHandlerFrame,
+        ExceptionFilterFrame,
     }
 
     private readonly Target target;

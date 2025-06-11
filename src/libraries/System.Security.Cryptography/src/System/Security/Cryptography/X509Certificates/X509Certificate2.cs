@@ -791,7 +791,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   The public key was invalid, or otherwise could not be imported.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public MLKem? GetMLKemPublicKey()
         {
             if (MLKemAlgorithm.FromOid(GetKeyAlgorithm()) is null)
@@ -812,7 +812,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   An error occurred accessing the private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public MLKem? GetMLKemPrivateKey()
         {
             MLKemAlgorithm? algorithm = MLKemAlgorithm.FromOid(GetKeyAlgorithm());
@@ -845,7 +845,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="InvalidOperationException">
         ///   The certificate already has an associated private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public X509Certificate2 CopyWithPrivateKey(MLKem privateKey)
         {
             ArgumentNullException.ThrowIfNull(privateKey);
@@ -890,7 +890,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   The public key was invalid, or otherwise could not be imported.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public MLDsa? GetMLDsaPublicKey()
         {
             MLDsaAlgorithm? algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(GetKeyAlgorithm());
@@ -913,7 +913,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   An error occurred accessing the private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public MLDsa? GetMLDsaPrivateKey()
         {
             MLDsaAlgorithm? algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(GetKeyAlgorithm());
@@ -946,7 +946,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="InvalidOperationException">
         ///   The certificate already has an associated private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public X509Certificate2 CopyWithPrivateKey(MLDsa privateKey)
         {
             ArgumentNullException.ThrowIfNull(privateKey);
@@ -994,7 +994,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   The public key was invalid, or otherwise could not be imported.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public SlhDsa? GetSlhDsaPublicKey()
         {
             if (!Helpers.IsSlhDsaOid(GetKeyAlgorithm()))
@@ -1015,7 +1015,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   An error occurred accessing the private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public SlhDsa? GetSlhDsaPrivateKey() =>
             Helpers.IsSlhDsaOid(GetKeyAlgorithm())
                 ? Pal.GetSlhDsaPrivateKey()
@@ -1041,7 +1041,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="InvalidOperationException">
         ///   The certificate already has an associated private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public X509Certificate2 CopyWithPrivateKey(SlhDsa privateKey)
         {
             ArgumentNullException.ThrowIfNull(privateKey);
@@ -1282,6 +1282,12 @@ namespace System.Security.Cryptography.X509Certificates
                             [PemLabels.Pkcs8PrivateKey],
                             MLKem.ImportFromPem,
                             certificate.CopyWithPrivateKey),
+                    Oids.MLDsa44 or Oids.MLDsa65 or Oids.MLDsa87 =>
+                        ExtractKeyFromPem<MLDsa>(
+                            keyPem,
+                            [PemLabels.Pkcs8PrivateKey],
+                            MLDsa.ImportFromPem,
+                            certificate.CopyWithPrivateKey),
                     _ when Helpers.IsSlhDsaOid(keyAlgorithm) =>
                         ExtractKeyFromPem<SlhDsa>(
                             keyPem,
@@ -1374,6 +1380,12 @@ namespace System.Security.Cryptography.X509Certificates
                             keyPem,
                             password,
                             MLKem.ImportFromEncryptedPem,
+                            certificate.CopyWithPrivateKey),
+                    Oids.MLDsa44 or Oids.MLDsa65 or Oids.MLDsa87 =>
+                        ExtractKeyFromEncryptedPem<MLDsa>(
+                            keyPem,
+                            password,
+                            MLDsa.ImportFromEncryptedPem,
                             certificate.CopyWithPrivateKey),
                     _ when Helpers.IsSlhDsaOid(keyAlgorithm) =>
                         ExtractKeyFromEncryptedPem<SlhDsa>(

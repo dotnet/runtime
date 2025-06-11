@@ -381,15 +381,15 @@ See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045
 ```xml
 <PropertyGroup>
   <!-- enables diagnostic server -->
-  <WasmPerfTracing>true</WasmPerfTracing>
+  <EnableDiagnostics>true</EnableDiagnostics>
 
   <!-- enables perf instrumentation for sampling CPU profiler for methods matching callspec
-  Only when WasmPerfInstrumentation is true
+  Only when WasmPerformanceInstrumentation is not empty or none.
   See callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
   -->
-  <WasmPerfInstrumentation>N:Sample</WasmPerfInstrumentation>
+  <WasmPerformanceInstrumentation>N:Sample</WasmPerformanceInstrumentation>
   <!-- alternatively all methods -->
-  <WasmPerfInstrumentation>all</WasmPerfInstrumentation>
+  <WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>
 
   <!-- enables metrics https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.metrics -->
   <!-- this is existing switch also on other targets -->
@@ -411,7 +411,7 @@ globalThis.getDotnetRuntime(0).collectGcDump()
 
 The .nettrace file could be converted for VS via `dotnet-gcdump convert` or opened in `PerfView.exe` as is.
 ```js
-globalThis.getDotnetRuntime(0).collectPerfCounters({durationSeconds: 60})
+globalThis.getDotnetRuntime(0).collectMetrics({durationSeconds: 60})
 ```
 
 The counters could be opened in VS, `PerfView.exe` tools or via `dotnet-trace report xxx.nettrace topN -n 10`

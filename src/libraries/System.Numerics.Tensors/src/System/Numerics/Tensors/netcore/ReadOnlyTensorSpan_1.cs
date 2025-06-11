@@ -48,10 +48,10 @@ namespace System.Numerics.Tensors
         /// <param name="lengths">The lengths of the dimensions. If an empty span is provided, the created tensor will have a single dimension that is the same length as <paramref name="array" />.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   Thrown when one of the following conditions is met:
-        ///   * <paramref name="array" /> is null and <paramref name="lengths" /> is not empty
-        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative
-        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="array" />.Length
+        ///   One of the following conditions is met:
+        ///   * <paramref name="array" /> is null and <paramref name="lengths" /> is not empty.
+        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative.
+        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="array" />.Length.
         /// </exception>
         public ReadOnlyTensorSpan(T[]? array, scoped ReadOnlySpan<nint> lengths)
         {
@@ -67,13 +67,13 @@ namespace System.Numerics.Tensors
         /// <param name="strides">The strides of each dimension. If an empty span is provided, then strides will be automatically calculated from <paramref name="lengths" />.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   Thrown when one of the following conditions is met:
-        ///   * <paramref name="array" /> is null and <paramref name="lengths" /> or <paramref name="strides" /> is not empty
-        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative
-        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="array" />.Length
-        ///   * <paramref name="strides" /> is not empty and has a length different from <paramref name="lengths"/>
-        ///   * <paramref name="strides" /> is not empty and contains an element that is negative
-        ///   * <paramref name="strides" /> is not empty and contains an element that is zero in a non leading position
+        ///   One of the following conditions is met:
+        ///   * <paramref name="array" /> is null and <paramref name="lengths" /> or <paramref name="strides" /> is not empty.
+        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative.
+        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="array" />.Length.
+        ///   * <paramref name="strides" /> is not empty and has a length different from <paramref name="lengths"/>.
+        ///   * <paramref name="strides" /> is not empty and contains an element that is negative.
+        ///   * <paramref name="strides" /> is not empty and contains an element that is zero in a non leading position.
         /// </exception>
         public ReadOnlyTensorSpan(T[]? array, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
@@ -90,14 +90,14 @@ namespace System.Numerics.Tensors
         /// <param name="strides">The strides of each dimension. If an empty span is provided, then strides will be automatically calculated from <paramref name="lengths" />.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   Thrown when one of the following conditions is met:
-        ///   * <paramref name="array" /> is null and <paramref name="lengths" /> or <paramref name="strides" /> is not empty
-        ///   * <paramref name="start" /> is not in range of <paramref name="array" />
-        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative
-        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="array" />.Length
-        ///   * <paramref name="strides" /> is not empty and has a length different from <paramref name="lengths"/>
-        ///   * <paramref name="strides" /> is not empty and contains an element that is negative
-        ///   * <paramref name="strides" /> is not empty and contains an element that is zero in a non leading position
+        ///   One of the following conditions is met:
+        ///   * <paramref name="array" /> is null and <paramref name="lengths" /> or <paramref name="strides" /> is not empty.
+        ///   * <paramref name="start" /> is not in range of <paramref name="array" />.
+        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative.
+        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="array" />.Length.
+        ///   * <paramref name="strides" /> is not empty and has a length different from <paramref name="lengths"/>.
+        ///   * <paramref name="strides" /> is not empty and contains an element that is negative.
+        ///   * <paramref name="strides" /> is not empty and contains an element that is zero in a non leading position.
         /// </exception>
         public ReadOnlyTensorSpan(T[]? array, int start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
@@ -121,9 +121,9 @@ namespace System.Numerics.Tensors
         /// <param name="span">The target span.</param>
         /// <param name="lengths">The lengths of the dimensions. If an empty span is provided, the created tensor span will have a single dimension that is the same length as <paramref name="span" />.</param>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   Thrown when one of the following conditions is met:
-        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative
-        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="span" />.Length
+        ///   One of the following conditions is met:
+        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative.
+        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="span" />.Length.
         /// </exception>
         public ReadOnlyTensorSpan(ReadOnlySpan<T> span, scoped ReadOnlySpan<nint> lengths)
         {
@@ -137,12 +137,12 @@ namespace System.Numerics.Tensors
         /// <param name="lengths">The lengths of the dimensions. If an empty span is provided, the created tensor span will have a single dimension that is the same length as <paramref name="span" />.</param>
         /// <param name="strides">The strides of each dimension. If an empty span is provided, then strides will be automatically calculated from <paramref name="lengths" />.</param>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   Thrown when one of the following conditions is met:
-        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative
-        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="span" />.Length
-        ///   * <paramref name="strides" /> is not empty and has a length different from <paramref name="lengths"/>
-        ///   * <paramref name="strides" /> is not empty and contains an element that is negative
-        ///   * <paramref name="strides" /> is not empty and contains an element that is zero in a non leading position
+        ///   One of the following conditions is met:
+        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative.
+        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="span" />.Length.
+        ///   * <paramref name="strides" /> is not empty and has a length different from <paramref name="lengths"/>.
+        ///   * <paramref name="strides" /> is not empty and contains an element that is negative.
+        ///   * <paramref name="strides" /> is not empty and contains an element that is zero in a non leading position.
         /// </exception>
         public ReadOnlyTensorSpan(ReadOnlySpan<T> span, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
@@ -175,14 +175,14 @@ namespace System.Numerics.Tensors
         ///   <para></para>
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   Thrown when one of the following conditions is met:
-        ///   * <paramref name="array" /> is null and <paramref name="lengths" /> or <paramref name="strides" /> is not empty
-        ///   * <paramref name="start" /> is not in range of <paramref name="array" />
-        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative
-        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="array" />.Length
-        ///   * <paramref name="strides" /> is not empty and has a length different from <paramref name="lengths"/>
-        ///   * <paramref name="strides" /> is not empty and contains an element that is negative
-        ///   * <paramref name="strides" /> is not empty and contains an element that is zero in a non leading position
+        ///   One of the following conditions is met:
+        ///   * <paramref name="array" /> is null and <paramref name="lengths" /> or <paramref name="strides" /> is not empty.
+        ///   * <paramref name="start" /> is not in range of <paramref name="array" />.
+        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative.
+        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="array" />.Length.
+        ///   * <paramref name="strides" /> is not empty and has a length different from <paramref name="lengths"/>.
+        ///   * <paramref name="strides" /> is not empty and contains an element that is negative.
+        ///   * <paramref name="strides" /> is not empty and contains an element that is zero in a non leading position.
         /// </exception>
         public ReadOnlyTensorSpan(Array? array, scoped ReadOnlySpan<int> start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
@@ -211,11 +211,11 @@ namespace System.Numerics.Tensors
         /// <param name="lengths">The lengths of the dimensions. If an empty span is provided, the created tensor span will have a single dimension that is the same length as <paramref name="dataLength" />.</param>
         /// <remarks>Returns default when <paramref name="data" /> is null.</remarks>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   Thrown when one of the following conditions is met:
-        ///   * <paramref name="data" /> is <c>null</c> and <paramref name="dataLength" /> is not zero
-        ///   * <paramref name="data" /> is null and <paramref name="lengths" />
-        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative
-        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="dataLength" />
+        ///   One of the following conditions is met:
+        ///   * <paramref name="data" /> is <c>null</c> and <paramref name="dataLength" /> is not zero.
+        ///   * <paramref name="data" /> is null and <paramref name="lengths" />.
+        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative.
+        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="dataLength" />.
         /// </exception>
         [CLSCompliant(false)]
         public unsafe ReadOnlyTensorSpan(T* data, nint dataLength, scoped ReadOnlySpan<nint> lengths)
@@ -231,14 +231,14 @@ namespace System.Numerics.Tensors
         /// <param name="strides">The strides of each dimension. If an empty span is provided, then strides will be automatically calculated from <paramref name="lengths" />.</param>
         /// <remarks>Returns default when <paramref name="data" /> is null.</remarks>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   Thrown when one of the following conditions is met:
-        ///   * <paramref name="data" /> is <c>null</c> and <paramref name="dataLength" /> is not zero
-        ///   * <paramref name="data" /> is null and <paramref name="lengths" /> or <paramref name="strides" /> is not empty
-        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative
-        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="dataLength" />
-        ///   * <paramref name="strides" /> is not empty and has a length different from <paramref name="lengths"/>
-        ///   * <paramref name="strides" /> is not empty and contains an element that is negative
-        ///   * <paramref name="strides" /> is not empty and contains an element that is zero in a non leading position
+        ///   One of the following conditions is met:
+        ///   * <paramref name="data" /> is <c>null</c> and <paramref name="dataLength" /> is not zero.
+        ///   * <paramref name="data" /> is null and <paramref name="lengths" /> or <paramref name="strides" /> is not empty.
+        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative.
+        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="dataLength" />.
+        ///   * <paramref name="strides" /> is not empty and has a length different from <paramref name="lengths"/>.
+        ///   * <paramref name="strides" /> is not empty and contains an element that is negative.
+        ///   * <paramref name="strides" /> is not empty and contains an element that is zero in a non leading position.
         /// </exception>
         [CLSCompliant(false)]
         public unsafe ReadOnlyTensorSpan(T* data, nint dataLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
@@ -299,7 +299,11 @@ namespace System.Numerics.Tensors
         /// <inheritdoc cref="IReadOnlyTensor.FlattenedLength" />
         public nint FlattenedLength => _shape.FlattenedLength;
 
-        internal bool IsContiguousAndDense => _shape.IsContiguousAndDense;
+        /// <inheritdoc cref="IReadOnlyTensor.HasAnyDenseDimensions" />
+        public bool HasAnyDenseDimensions => _shape.HasAnyDenseDimensions;
+
+        /// <inheritdoc cref="IReadOnlyTensor.IsDense" />
+        public bool IsDense => _shape.IsDense;
 
         /// <inheritdoc cref="IReadOnlyTensor.IsEmpty" />
         public bool IsEmpty => _shape.IsEmpty;

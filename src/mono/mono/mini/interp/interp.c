@@ -3960,9 +3960,12 @@ mono_interp_profiler_raise_tail_call (InterpFrame *frame, MonoMethod *new_method
 			(frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ ## name_upper ## _CONTEXT ))) { \
 		if (flag & TRACING_FLAG) \
 			mono_interp_trace_with_ctx (frame, mono_trace_ ## name_lower ## _method); \
-		if (flag & PROFILING_FLAG) \
+		if (flag & PROFILING_FLAG) { \
+			frame->state.ip = ip; \
 			mono_interp_profiler_raise_with_ctx (frame, mono_profiler_raise_method_ ## name_lower); \
+		} \
 	} else if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_ ## name_lower)) { \
+		frame->state.ip = ip; \
 		mono_interp_profiler_raise (frame, mono_profiler_raise_method_ ## name_lower); \
 	}
 
@@ -9036,6 +9039,10 @@ mono_ee_interp_init (const char *opts)
 	set_context (NULL);
 
 	interp_parse_options (opts);
+
+	const char *env_opts = g_getenv ("MONO_INTERPRETER_OPTIONS");
+	if (env_opts)
+		interp_parse_options (env_opts);
 	/* Don't do any optimizations if running under debugger */
 	if (mini_get_debug_options ()->mdb_optimizations)
 		mono_interp_opt = 0;

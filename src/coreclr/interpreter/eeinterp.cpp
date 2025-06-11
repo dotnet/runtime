@@ -9,12 +9,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#ifdef _MSC_VER
-#define INTERP_API
-#else
-#define INTERP_API __attribute__ ((visibility ("default")))
-#endif // _MSC_VER
-
 /*****************************************************************************/
 ICorJitHost* g_interpHost        = nullptr;
 bool         g_interpInitialized = false;
@@ -66,10 +60,13 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
     else
     {
         const char *methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, nullptr, nullptr, nullptr, 0);
+#ifdef TARGET_WASM
+        // interpret everything on wasm
+        doInterpret = true;
+#else
+        doInterpret = (InterpConfig.Interpreter().contains(compHnd, methodInfo->ftn, compHnd->getMethodClass(methodInfo->ftn), &methodInfo->args));
+#endif
 
-        // TODO: replace this by something like the JIT does to support multiple methods being specified
-        const char *methodToInterpret = InterpConfig.Interpreter();
-        doInterpret = (methodName != NULL && strcmp(methodName, methodToInterpret) == 0);
         if (doInterpret)
             g_interpModule = methodInfo->scope;
     }
@@ -108,6 +105,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 
     // We can't do this until we've called allocMem
     compiler.BuildGCInfo(pMethod);
+    compiler.BuildEHInfo();
 
     return CORJIT_OK;
 }

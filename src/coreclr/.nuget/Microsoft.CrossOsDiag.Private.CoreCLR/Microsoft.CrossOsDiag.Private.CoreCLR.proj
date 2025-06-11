@@ -8,7 +8,7 @@
     In dotnet/runtime's official build, we'll extract the runtime packs to a specific directory and pass that here.
     In the VMR, we'll restore the runtime packs as NuGet packages.
   -->
-  <PropertyGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
+  <PropertyGroup Condition="'$(DotNetBuildFromVMR)' == 'true'">
     <CrossRuntimeExtractionRoot>$(NuGetPackageRoot)</CrossRuntimeExtractionRoot>
   </PropertyGroup>
 
@@ -24,7 +24,7 @@
 
     <TargetRuntimePacks Include="@(SupportedRid->'Microsoft.NETCore.App.Runtime.%(Rid)')" />
 
-    <PackageDownload Condition="'$(DotNetBuildOrchestrator)' == 'true'" Include="@(TargetRuntimePacks)" Version="[$(Version)]" />
+    <PackageDownload Condition="'$(DotNetBuildFromVMR)' == 'true'" Include="@(TargetRuntimePacks)" Version="[$(Version)]" />
   </ItemGroup>
 
   <Target Name="BuildCrossOSDacs">

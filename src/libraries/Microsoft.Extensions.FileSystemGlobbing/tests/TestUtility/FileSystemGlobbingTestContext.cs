@@ -16,11 +16,11 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests.TestUtility
 
         public PatternMatchingResult Result { get; private set; }
 
-        public FileSystemGlobbingTestContext(string basePath, Matcher matcher)
+        public FileSystemGlobbingTestContext(string basePath, bool preserveFilterOrder)
         {
             _basePath = basePath;
             _recorder = new FileSystemOperationRecorder();
-            _patternMatching = matcher;
+            _patternMatching = new Matcher(preserveFilterOrder: preserveFilterOrder);
 
             _directoryInfo = new MockDirectoryInfo(
                 recorder: _recorder,

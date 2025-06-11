@@ -23,7 +23,7 @@ class Thread;
 
 BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord);
 BOOL IsIPinVirtualStub(PCODE f_IP);
-bool IsIPInMarkedJitHelper(UINT_PTR uControlPc);
+bool IsIPInMarkedJitHelper(PCODE uControlPc);
 
 BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable);
 
@@ -416,7 +416,6 @@ public:
                                       const char *szFile,
                                       int         linenum)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_NOTHROW;
 
         m_fCond = fCond;
@@ -440,8 +439,6 @@ public:
 
     DEBUG_NOINLINE ~COMPlusCannotThrowExceptionHelper()
     {
-        SCAN_SCOPE_END;
-
         if (m_fCond)
         {
             *m_pClrDebugState = m_oldClrDebugState;

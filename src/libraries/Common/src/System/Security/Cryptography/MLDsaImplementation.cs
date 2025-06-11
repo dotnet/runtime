@@ -6,20 +6,13 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
 {
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     internal sealed partial class MLDsaImplementation : MLDsa
     {
-        private MLDsaImplementation(MLDsaAlgorithm algorithm)
-            : base(algorithm)
-        {
-            ThrowIfNotSupported();
-        }
-
         internal static partial bool SupportsAny();
 
         internal static partial MLDsaImplementation GenerateKeyImpl(MLDsaAlgorithm algorithm);
         internal static partial MLDsaImplementation ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
-        internal static partial MLDsaImplementation ImportPkcs8PrivateKeyValue(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
         internal static partial MLDsaImplementation ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
         internal static partial MLDsaImplementation ImportSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
 

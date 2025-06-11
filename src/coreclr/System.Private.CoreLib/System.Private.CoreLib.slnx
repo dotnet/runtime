@@ -1,0 +1,81 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Checked" />
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <Platform Name="amd64" />
+    <Platform Name="Any CPU" />
+    <Platform Name="arm" />
+    <Platform Name="arm64" />
+    <Platform Name="wasm" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/gen/">
+    <Project Path="../../libraries/System.Private.CoreLib/gen/System.Private.CoreLib.Generators.csproj">
+      <BuildType Solution="Checked|amd64" Project="Debug" />
+      <BuildType Solution="Checked|Any CPU" Project="Debug" />
+      <BuildType Solution="Checked|arm" Project="Debug" />
+      <BuildType Solution="Checked|arm64" Project="Debug" />
+      <BuildType Solution="Checked|wasm" Project="Debug" />
+      <BuildType Solution="Checked|x64" Project="Release" />
+      <BuildType Solution="Checked|x86" Project="Debug" />
+    </Project>
+    <Project Path="../../libraries/System.Runtime.InteropServices/gen/LibraryImportGenerator/LibraryImportGenerator.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+    </Project>
+    <Project Path="../../libraries/System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/Microsoft.Interop.SourceGeneration.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/ref/">
+    <Project Path="../../libraries/System.Private.CoreLib/ref/System.Private.CoreLib.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="../../libraries/System.Private.CoreLib/src/System.Private.CoreLib.Shared.shproj" />
+    <Project Path="System.Private.CoreLib.csproj">
+      <Platform Solution="*|amd64" Project="x64" />
+      <Platform Solution="*|Any CPU" Project="x86" />
+      <Platform Solution="*|arm" Project="arm" />
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|wasm" Project="wasm" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+      <Build Solution="*|Any CPU" Project="false" />
+    </Project>
+  </Folder>
+  <Folder Name="/tools/" />
+  <Folder Name="/tools/gen/">
+    <Project Path="../../tools/illink/src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+    </Project>
+    <Project Path="../../tools/illink/src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/tools/ref/">
+    <Project Path="../../tools/illink/src/linker/ref/Mono.Linker.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/tools/src/">
+    <Project Path="../../tools/illink/src/ILLink.Shared/ILLink.Shared.shproj" />
+    <Project Path="../../tools/illink/src/ILLink.Tasks/ILLink.Tasks.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+    </Project>
+    <Project Path="../../tools/illink/src/linker/Mono.Linker.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+    </Project>
+    <Project Path="../tools/aot/ILCompiler.DependencyAnalysisFramework/ILCompiler.DependencyAnalysisFramework.csproj">
+      <Platform Solution="*|amd64" Project="x64" />
+      <Platform Solution="*|Any CPU" Project="x64" />
+      <Platform Solution="*|arm" Project="x64" />
+      <Platform Solution="*|arm64" Project="x64" />
+      <Platform Solution="*|wasm" Project="x64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
+  </Folder>
+</Solution>

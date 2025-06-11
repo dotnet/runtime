@@ -12395,22 +12395,38 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #endif
-#ifdef TARGET_WASM
-		case OP_WASM_ONESCOMPLEMENT: {
-			LLVMTypeRef i4v128_t = LLVMVectorType (i4_t, 4);
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
+		case OP_ONES_COMPLEMENT: {
 			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
-			LLVMValueRef cast = LLVMBuildBitCast (builder, lhs, i4v128_t, "");
-			LLVMValueRef result = LLVMBuildNot (builder, cast, "wasm_not");
-			values [ins->dreg] = LLVMBuildBitCast (builder, result, ret_t, "");
+			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
+			result = LLVMBuildNot (builder, result, "v128_not");
+			result = convert (ctx, result, ret_t);
+			values [ins->dreg] = result;
 			break;
 		}
+#if defined(TARGET_WASM)
+		case OP_WASM_BITSELECT: // Fall through to OP_BSL:
 #endif
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		case OP_BSL: {
+			LLVMValueRef select;
+			LLVMValueRef left;
+			LLVMValueRef right;
+
+			if (ins->opcode == OP_BSL) {
+				// OP_BSL: Vector128.ConditionalSelect
+				// (mask, left, right)
+				select = bitcast_to_integral (ctx, lhs);
+				left = bitcast_to_integral (ctx, rhs);
+				right = bitcast_to_integral (ctx, arg3);
+			} else {
+				// OP_WASM_BITSELECT: PackedSimd.BitwiseSelect
+				// (left, right, mask)
+				select = bitcast_to_integral (ctx, arg3);
+				left = bitcast_to_integral (ctx, lhs);
+				right = bitcast_to_integral (ctx, rhs);
+			}
+
 			LLVMTypeRef ret_t = LLVMTypeOf (rhs);
-			LLVMValueRef select = bitcast_to_integral (ctx, lhs);
-			LLVMValueRef left = bitcast_to_integral (ctx, rhs);
-			LLVMValueRef right = bitcast_to_integral (ctx, arg3);
 			LLVMValueRef result1 = LLVMBuildAnd (builder, select, left, "bit_select");
 			LLVMValueRef result2 = LLVMBuildAnd (builder, LLVMBuildNot (builder, select, ""), right, "");
 			LLVMValueRef result = LLVMBuildOr (builder, result1, result2, "");
@@ -12488,16 +12504,7 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #endif
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
-		case OP_ONES_COMPLEMENT: {
-			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
-			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
-			result = LLVMBuildNot (builder, result, "");
-			result = convert (ctx, result, ret_t);
-			values [ins->dreg] = result;
-			break;
-		}
-#endif
+
 		case OP_DUMMY_USE:
 			break;
 

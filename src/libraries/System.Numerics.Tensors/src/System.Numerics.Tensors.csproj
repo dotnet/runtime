@@ -170,7 +170,7 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Truncate.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Xor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorShape.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorSpan.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorSpan_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorSpanDebugView.cs" />
   </ItemGroup>
 

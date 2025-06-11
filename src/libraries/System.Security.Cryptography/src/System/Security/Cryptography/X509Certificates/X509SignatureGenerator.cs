@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="key" /> is <see langword="null" />.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static X509SignatureGenerator CreateForMLDsa(MLDsa key)
         {
             ArgumentNullException.ThrowIfNull(key);
@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="key" /> is <see langword="null" />.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static X509SignatureGenerator CreateForSlhDsa(SlhDsa key)
         {
             ArgumentNullException.ThrowIfNull(key);
