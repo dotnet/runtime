@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
+    <DefineConstants>$(DefineConstants);EXCLUDE_PEM_ENCODING_FROM_TEST_DATA</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,8 +16,23 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs">
       <Link>CommonTest\System\Security\Cryptography\CngKeyWrapper.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Experimentals.cs">
       <Link>Common\Experimentals.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs">
+      <Link>Common\System\Runtime\CompilerServices\IsExternalInit.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs">
+      <Link>Common\System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\RequiredMemberAttribute.cs">
+      <Link>Common\System\Runtime\CompilerServices\RequiredMemberAttribute.cs</Link>
     </Compile>
 
     <Compile Include="CoseHeaderValueTests.cs" />
