@@ -825,8 +825,12 @@ BgkqhkiG9w0BAQsFAAMBAA==
             }
         }
 
-        [Fact]
-        public static void LoadCreate_MatchesCreate_RSAPss()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(4)]
+        [InlineData(RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]
+        public static void LoadCreate_MatchesCreate_RSAPss(int saltLength)
         {
             using (RSA key = RSA.Create(2048))
             {
@@ -835,9 +839,9 @@ BgkqhkiG9w0BAQsFAAMBAA==
                         "CN=Roundtrip, O=RSA, OU=PSS",
                         key,
                         HashAlgorithmName.SHA256,
-                        RSASignaturePadding.Pss),
-                    X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.Pss),
-                    deterministicSignature: false);
+                        RSASignaturePadding.CreatePss(saltLength)),
+                    X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.CreatePss(saltLength)),
+                    deterministicSignature: saltLength == 0);
             }
         }
 

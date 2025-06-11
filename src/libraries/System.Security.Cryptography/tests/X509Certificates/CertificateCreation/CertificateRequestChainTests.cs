@@ -486,8 +486,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalFact(nameof(PlatformSupportsPss))]
-        public static void CreateChain_RSAPSS()
+        [ConditionalTheory(nameof(PlatformSupportsPss))]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]
+        public static void CreateChain_RSAPSS(int saltLength)
         {
             using (RSA rootKey = RSA.Create())
             using (RSA intermedKey = RSA.Create())
@@ -498,7 +502,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 X509Certificate2 leafCert = null;
                 CertificateRequest request;
 
-                RSASignaturePadding padding = RSASignaturePadding.Pss;
+                RSASignaturePadding padding = RSASignaturePadding.CreatePss(saltLength); ;
 
                 DateTimeOffset notBefore = DateTimeOffset.UtcNow;
                 DateTimeOffset notAfter = notBefore.AddHours(1);
