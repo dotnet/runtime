@@ -3,7 +3,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Security;
 
 using ZErrorCode = System.IO.Compression.ZLibNative.ErrorCode;
 using ZFlushCode = System.IO.Compression.ZLibNative.FlushCode;
@@ -32,32 +31,22 @@ namespace System.IO.Compression
         {
             Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
 
-            ZErrorCode errC;
             try
             {
-                errC = ZLibNative.CreateZLibStreamForDeflate(out _zlibStream, compressionLevel, windowBits, memLevel, strategy);
+                _zlibStream = ZLibNative.CreateZLibStreamForDeflate(compressionLevel, windowBits, memLevel, strategy);
             }
-            catch (Exception cause)
+            catch (ZLibNative.ZLibNativeException ex)
             {
-                throw new ZLibException(SR.ZLibErrorDLLLoadError, cause);
-            }
+                GC.SuppressFinalize(this);
 
-            switch (errC)
-            {
-                case ZErrorCode.Ok:
-                    return;
-
-                case ZErrorCode.MemError:
-                    throw new ZLibException(SR.ZLibErrorNotEnoughMemory, "deflateInit2_", (int)errC, _zlibStream.GetErrorMessage());
-
-                case ZErrorCode.VersionError:
-                    throw new ZLibException(SR.ZLibErrorVersionMismatch, "deflateInit2_", (int)errC, _zlibStream.GetErrorMessage());
-
-                case ZErrorCode.StreamError:
-                    throw new ZLibException(SR.ZLibErrorIncorrectInitParameters, "deflateInit2_", (int)errC, _zlibStream.GetErrorMessage());
-
-                default:
-                    throw new ZLibException(SR.ZLibErrorUnexpected, "deflateInit2_", (int)errC, _zlibStream.GetErrorMessage());
+                if (ex.InnerException is not null)
+                {
+                    throw new ZLibException(ex.Message, ex.InnerException);
+                }
+                else
+                {
+                    throw new ZLibException(ex.Message, ex.Context, (int)ex.NativeErrorCode, ex.NativeMessage);
+                }
             }
         }
 
@@ -77,9 +66,12 @@ namespace System.IO.Compression
             if (!_isDisposed)
             {
                 if (disposing)
+                {
                     _zlibStream.Dispose();
+                }
 
-                DeallocateInputBufferHandle();
+                // Unpin the input buffer, but avoid modifying the ZLibStreamHandle (which may have been disposed of.)
+                DeallocateInputBufferHandle(resetStreamHandle: false);
                 _isDisposed = true;
             }
         }
@@ -129,7 +121,7 @@ namespace System.IO.Compression
                 // Before returning, make sure to release input buffer if necessary:
                 if (0 == _zlibStream.AvailIn)
                 {
-                    DeallocateInputBufferHandle();
+                    DeallocateInputBufferHandle(resetStreamHandle: true);
                 }
             }
         }
@@ -179,12 +171,15 @@ namespace System.IO.Compression
             return ReadDeflateOutput(outputBuffer, ZFlushCode.SyncFlush, out bytesRead) == ZErrorCode.Ok;
         }
 
-        private void DeallocateInputBufferHandle()
+        private void DeallocateInputBufferHandle(bool resetStreamHandle)
         {
             lock (SyncLock)
             {
-                _zlibStream.AvailIn = 0;
-                _zlibStream.NextIn = ZLibNative.ZNullPtr;
+                if (resetStreamHandle)
+                {
+                    _zlibStream.AvailIn = 0;
+                    _zlibStream.NextIn = ZLibNative.ZNullPtr;
+                }
                 _inputBufferHandle.Dispose();
             }
         }
