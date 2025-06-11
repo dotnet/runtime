@@ -144,7 +144,7 @@ namespace System.Tests
                 semaphore.Release();
             });
 
-            using var _ = PosixSignalRegistration.Create(signal, ctx =>
+            using var second = PosixSignalRegistration.Create(signal, ctx =>
             {
                 Assert.Equal(signal, ctx.Signal);
 
