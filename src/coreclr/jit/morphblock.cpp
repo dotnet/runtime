@@ -250,8 +250,6 @@ void MorphInitBlockHelper::PropagateBlockAssertions()
 //
 void MorphInitBlockHelper::PropagateExpansionAssertions()
 {
-    // Consider doing this for FieldByField as well
-    //
     if (m_comp->optLocalAssertionProp && (m_transformationDecision == BlockTransformation::OneStoreBlock))
     {
         m_comp->fgAssertionGen(m_store);
@@ -408,6 +406,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
         if (m_comp->fgGlobalMorph && m_dstLclNode->IsLastUse(i))
         {
             JITDUMP("Field-by-field init skipping write to dead field V%02u\n", fieldLclNum);
+            m_comp->fgKillDependentAssertionsSingle(m_dstLclNum DEBUGARG(m_store));
             continue;
         }
 
@@ -1236,6 +1235,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         {
             INDEBUG(unsigned dstFieldLclNum = m_comp->lvaGetDesc(m_dstLclNum)->lvFieldLclStart + i);
             JITDUMP("Field-by-field copy skipping write to dead field V%02u\n", dstFieldLclNum);
+            m_comp->fgKillDependentAssertionsSingle(m_dstLclNum DEBUGARG(m_store));
             continue;
         }
 
