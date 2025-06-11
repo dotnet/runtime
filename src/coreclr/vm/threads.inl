@@ -27,7 +27,7 @@ EXTERN_C UINT32 _tls_index;
 #endif
 
 #ifdef _MSC_VER
-__declspec(selectany) thread_local
+__declspec(selectany) __declspec(thread)
 #else
 EXTERN_C __thread
 #endif
