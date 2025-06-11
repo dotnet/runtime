@@ -944,10 +944,10 @@ namespace System.Text.Json.Serialization.Tests
         public async Task NestedClassWithJsonElementExtensionDataProperty()
         {
             var child = new ChildClassWithJsonElement { Number = 4 };
-            child.ExtensionData.Add("SpecialInformation", JsonDocument.Parse(await Serializer.SerializeWrapper("I am child class")).RootElement);
+            child.ExtensionData.Add("SpecialInformation", JsonElement.Parse(await Serializer.SerializeWrapper("I am child class")));
 
             var parent = new ParentClassWithJsonElement { Text = "Hello World" };
-            parent.ExtensionData.Add("SpecialInformation", JsonDocument.Parse(await Serializer.SerializeWrapper("I am parent class")).RootElement);
+            parent.ExtensionData.Add("SpecialInformation", JsonElement.Parse(await Serializer.SerializeWrapper("I am parent class")));
             parent.Children.Add(child);
 
             Verify();
