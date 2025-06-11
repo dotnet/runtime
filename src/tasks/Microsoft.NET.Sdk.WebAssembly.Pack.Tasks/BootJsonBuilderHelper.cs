@@ -252,11 +252,11 @@ namespace Microsoft.NET.Sdk.WebAssembly
             {
                 assets.satelliteResources = resources.satelliteResources.ToDictionary(
                     kvp => kvp.Key,
-                    kvp => MapGeneralAssets(kvp.Value, variableNamePrefix: kvp.Key)
+                    kvp => MapGeneralAssets(kvp.Value, variableNamePrefix: kvp.Key, subFolder: kvp.Key)
                 );
             }
 
-            assets.libraryInitializers = MapJsAssets(resources.libraryInitializers);
+            assets.libraryInitializers = MapJsAssets(resources.libraryInitializers, subFolder: "..");
             assets.modulesAfterConfigLoaded = MapJsAssets(resources.modulesAfterConfigLoaded);
             assets.modulesAfterRuntimeReady = MapJsAssets(resources.modulesAfterRuntimeReady);
 
@@ -268,10 +268,8 @@ namespace Microsoft.NET.Sdk.WebAssembly
             string EscapeName(string name) => Utils.FixupSymbolName(name);
             string EncodeJavascriptVariableInJson(string name) => $"$#[{name}]#$";
 
-            List<GeneralAsset>? MapGeneralAssets(Dictionary<string, string>? assets, string? variableNamePrefix = null) => assets?.Select(a =>
+            List<GeneralAsset>? MapGeneralAssets(Dictionary<string, string>? assets, string? variableNamePrefix = null, string? subFolder = null) => assets?.Select(a =>
             {
-                Debugger.Launch();
-
                 var asset = new GeneralAsset()
                 {
                     virtualPath = resources.fingerprinting?[a.Key] ?? a.Key,
@@ -281,15 +279,16 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
                 if (bundlerFriendly)
                 {
-                    string escaped = EscapeName(string.Concat(variableNamePrefix, a.Key));
-                    imports.Add($"import {escaped} from \"./{a.Key}\";");
+                    string escaped = EscapeName(string.Concat(subFolder, a.Key));
+                    string subFolderWithSeparator = subFolder != null ? $"{subFolder}/" : string.Empty;
+                    imports.Add($"import {escaped} from \"./{subFolderWithSeparator}{a.Key}\";");
                     asset.resolvedUrl = EncodeJavascriptVariableInJson(escaped);
                 }
 
                 return asset;
             }).ToList();
 
-            List<JsAsset>? MapJsAssets(Dictionary<string, string>? assets) => assets?.Select(a =>
+            List<JsAsset>? MapJsAssets(Dictionary<string, string>? assets, string? variableNamePrefix = null, string? subFolder = null) => assets?.Select(a =>
             {
                 var asset = new JsAsset()
                 {
@@ -298,8 +297,9 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
                 if (bundlerFriendly)
                 {
-                    string escaped = EscapeName(a.Key);
-                    imports.Add($"import * as {escaped} from \"./{a.Key}\";");
+                    string escaped = EscapeName(string.Concat(subFolder, a.Key));
+                    string subFolderWithSeparator = subFolder != null ? $"{subFolder}/" : string.Empty;
+                    imports.Add($"import * as {escaped} from \"./{subFolderWithSeparator}{a.Key}\";");
                     asset.moduleExports = EncodeJavascriptVariableInJson(escaped);
                 }
 
