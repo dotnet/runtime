@@ -1942,8 +1942,11 @@ namespace Mono.Linker.Steps
 				// or because of a copy assembly with a reference and so on) then we should not spam the warnings due to the type itself.
 				// Also don't warn when the type is marked due to an assembly being rooted.
 				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type) &&
-					reason.Kind is not DependencyKind.TypeInAssembly)
-					Context.LogWarning (origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName ());
+					reason.Kind is not DependencyKind.TypeInAssembly) {
+					// Don't warn for type map attribute types. They're marked as "remove attributes" but we explicitly keep the ones needed.
+					if (type is not { Namespace: "System.Runtime.InteropServices", Name: "TypeMapAttribute`1" or "TypeMapAssociationAttribute`1" or "TypeMapAssemblyTargetAttribute`1"})
+						Context.LogWarning (origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName ());
+				}
 			}
 
 			if (CheckProcessed (type))

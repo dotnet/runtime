@@ -10,22 +10,24 @@ using Mono.Cecil;
 using Mono.CompilerServices.SymbolWriter;
 using Mono.Linker.Steps;
 
+using CustomAttributeWithOrigin = (Mono.Cecil.CustomAttribute Attribute, Mono.Cecil.AssemblyDefinition Origin);
+
 namespace Mono.Linker
 {
 	sealed class TypeMapHandler
 	{
 		readonly TypeMapResolver _lazyTypeMapResolver;
 
-		// [trim target: [type map group: custom attributes]]
-		readonly Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttribute>>> _unmarkedExternalTypeMapEntries = [];
+		// [trim target: [type map group: custom attributes with assembly origin]]
+		readonly Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttributeWithOrigin>>> _unmarkedExternalTypeMapEntries = [];
 
 		// [source type: [type map group: custom attributes]]
-		readonly Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttribute>>> _unmarkedProxyTypeMapEntries = [];
+		readonly Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttributeWithOrigin>>> _unmarkedProxyTypeMapEntries = [];
 
 		// CustomAttributes that we want to mark when the type mapping APIs are used.
 		// [type map group: custom attributes]
-		Dictionary<TypeReference, List<CustomAttribute>> _pendingExternalTypeMapEntries = [];
-		Dictionary<TypeReference, List<CustomAttribute>> _pendingProxyTypeMapEntries = [];
+		Dictionary<TypeReference, List<CustomAttributeWithOrigin>> _pendingExternalTypeMapEntries = [];
+		Dictionary<TypeReference, List<CustomAttributeWithOrigin>> _pendingProxyTypeMapEntries = [];
 		HashSet<TypeReference> _referencedExternalTypeMaps = [];
 		HashSet<TypeReference> _referencedProxyTypeMaps = [];
 
@@ -70,34 +72,34 @@ namespace Mono.Linker
 
 		public void ProcessExternalTypeMapGroupSeen (MethodDefinition callingMethod, TypeReference typeMapGroup)
 		{
-			_referencedExternalTypeMaps.Add (typeMapGroup);
-			if (!_pendingExternalTypeMapEntries.Remove (typeMapGroup, out List<CustomAttribute>? pendingEntries)) {
+			_referencedExternalTypeMaps.Add(typeMapGroup);
+			if (!_pendingExternalTypeMapEntries.Remove (typeMapGroup, out List<CustomAttributeWithOrigin>? pendingEntries)) {
 				return;
 			}
 
 			foreach (var entry in pendingEntries) {
-				MarkTypeMapAttribute (entry, new DependencyInfo (DependencyKind.TypeMapEntry, callingMethod), new MessageOrigin (callingMethod));
+				MarkTypeMapAttribute (entry, new DependencyInfo (DependencyKind.TypeMapEntry, callingMethod));
 			}
 		}
 
 		public void ProcessProxyTypeMapGroupSeen (MethodDefinition callingMethod, TypeReference typeMapGroup)
 		{
 			_referencedProxyTypeMaps.Add (typeMapGroup);
-			if (!_pendingProxyTypeMapEntries.Remove (typeMapGroup, out List<CustomAttribute>? pendingEntries)) {
+			if (!_pendingProxyTypeMapEntries.Remove (typeMapGroup, out List<CustomAttributeWithOrigin>? pendingEntries)) {
 				return;
 			}
 
 			foreach (var entry in pendingEntries) {
-				MarkTypeMapAttribute (entry, new DependencyInfo (DependencyKind.TypeMapEntry, callingMethod), new MessageOrigin (callingMethod));
+				MarkTypeMapAttribute (entry, new DependencyInfo (DependencyKind.TypeMapEntry, callingMethod));
 			}
 		}
 
-		void MarkTypeMapAttribute (CustomAttribute entry, DependencyInfo info, MessageOrigin origin)
+		void MarkTypeMapAttribute (CustomAttributeWithOrigin entry, DependencyInfo info)
 		{
-			_markStep.MarkCustomAttribute (entry, info, new MessageOrigin (origin));
+			_markStep.MarkCustomAttribute (entry.Attribute, info, new MessageOrigin (entry.Origin));
 
 			// Mark the target type as instantiated
-			TypeReference targetType = (TypeReference) entry.ConstructorArguments[1].Value;
+			TypeReference targetType = (TypeReference) entry.Attribute.ConstructorArguments[1].Value;
 			if (targetType is not null && _context.Resolve (targetType) is TypeDefinition targetTypeDef)
 				_context.Annotations.MarkInstantiated (targetTypeDef);
 		}
@@ -107,18 +109,18 @@ namespace Mono.Linker
 			RecordTargetTypeSeen (definition, _unmarkedExternalTypeMapEntries, _referencedExternalTypeMaps, _pendingExternalTypeMapEntries);
 		}
 
-		void RecordTargetTypeSeen (TypeDefinition definition, Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttribute>>> unmarked, HashSet<TypeReference> referenced, Dictionary<TypeReference, List<CustomAttribute>> pending)
+		void RecordTargetTypeSeen (TypeDefinition definition, Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttributeWithOrigin>>> unmarked, HashSet<TypeReference> referenced, Dictionary<TypeReference, List<CustomAttributeWithOrigin>> pending)
 		{
-			if (unmarked.Remove (definition, out Dictionary<TypeReference, List<CustomAttribute>>? entries)) {
+			if (unmarked.Remove (definition, out Dictionary<TypeReference, List<CustomAttributeWithOrigin>>? entries)) {
 				foreach (var (key, attributes) in entries) {
 
 					if (referenced.Contains (key)) {
 						foreach (var attr in attributes) {
-							MarkTypeMapAttribute (attr, new DependencyInfo (DependencyKind.TypeMapEntry, definition), new MessageOrigin (definition));
+							MarkTypeMapAttribute (attr, new DependencyInfo (DependencyKind.TypeMapEntry, definition));
 						}
 					}
 
-					if (!pending.TryGetValue (key, out List<CustomAttribute>? value)) {
+					if (!pending.TryGetValue (key, out List<CustomAttributeWithOrigin>? value)) {
 						pending[key] = [.. attributes];
 					} else {
 						value.AddRange (attributes);
@@ -133,13 +135,13 @@ namespace Mono.Linker
 			RecordTargetTypeSeen (definition, _unmarkedProxyTypeMapEntries, _referencedProxyTypeMaps, _pendingProxyTypeMapEntries);
 		}
 
-		void AddExternalTypeMapEntry (TypeReference group, CustomAttribute attr)
+		void AddExternalTypeMapEntry (TypeReference group, CustomAttributeWithOrigin attr)
 		{
-			if (attr.ConstructorArguments is [_, _, { Value: TypeReference trimTarget }]) {
+			if (attr.Attribute.ConstructorArguments is [_, _, { Value: TypeReference trimTarget }]) {
 				RecordTypeMapEntry (attr, group, trimTarget, _unmarkedExternalTypeMapEntries);
 				return;
 			}
-			if (attr.ConstructorArguments is [_, { Value: TypeReference target }]) {
+			if (attr.Attribute.ConstructorArguments is [_, { Value: TypeReference target }]) {
 				// This is a TypeMapAssemblyTargetAttribute, which has a single type argument.
 				RecordTypeMapEntry (attr, group, target, _unmarkedExternalTypeMapEntries);
 				return;
@@ -148,9 +150,9 @@ namespace Mono.Linker
 			// Let the runtime handle the failure.
 		}
 
-		void AddProxyTypeMapEntry (TypeReference group, CustomAttribute attr)
+		void AddProxyTypeMapEntry (TypeReference group, CustomAttributeWithOrigin attr)
 		{
-			if (attr.ConstructorArguments is [{ Value: TypeReference sourceType }, _]) {
+			if (attr.Attribute.ConstructorArguments is [{ Value: TypeReference sourceType }, _]) {
 				// This is a TypeMapAssociationAttribute, which has a single type argument.
 				RecordTypeMapEntry (attr, group, sourceType, _unmarkedProxyTypeMapEntries);
 				return;
@@ -159,7 +161,7 @@ namespace Mono.Linker
 			// Let the runtime handle the failure.
 		}
 
-		void RecordTypeMapEntry (CustomAttribute attr, TypeReference group, TypeReference trimTarget, Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttribute>>> unmarkedEntryList)
+		void RecordTypeMapEntry (CustomAttributeWithOrigin attr, TypeReference group, TypeReference trimTarget, Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttributeWithOrigin>>> unmarkedEntryList)
 		{
 			TypeDefinition? typeDef = _context.Resolve (trimTarget);
 			if (typeDef is null) {
@@ -167,17 +169,17 @@ namespace Mono.Linker
 			}
 
 			if (_context.Annotations.IsMarked (typeDef)) {
-				MarkTypeMapAttribute (attr, new DependencyInfo (DependencyKind.TypeMapEntry, trimTarget), new MessageOrigin(typeDef));
+				MarkTypeMapAttribute (attr, new DependencyInfo (DependencyKind.TypeMapEntry, trimTarget));
 			} else {
 
-				if (!unmarkedEntryList.TryGetValue (typeDef, out Dictionary<TypeReference, List<CustomAttribute>>? entries)) {
+				if (!unmarkedEntryList.TryGetValue (typeDef, out Dictionary<TypeReference, List<CustomAttributeWithOrigin>>? entries)) {
 					entries = new () {
 						{ group, [] }
 					};
 					unmarkedEntryList[typeDef] = entries;
 				}
 
-				if (!entries.TryGetValue(group, out List<CustomAttribute>? attrs)) {
+				if (!entries.TryGetValue(group, out List<CustomAttributeWithOrigin>? attrs)) {
 					entries[group] = [attr];
 				} else {
 					attrs.Add (attr);
@@ -204,9 +206,9 @@ namespace Mono.Linker
 						}
 
 						if (attr.AttributeType.Name is "TypeMapAttribute`1") {
-							manager.AddExternalTypeMapEntry (typeMapGroup, attr);
+							manager.AddExternalTypeMapEntry (typeMapGroup, (attr, assembly));
 						} else if (attr.AttributeType.Name is "TypeMapAssociationAttribute`1") {
-							manager.AddProxyTypeMapEntry (typeMapGroup, attr);
+							manager.AddProxyTypeMapEntry (typeMapGroup, (attr, assembly));
 						}
 					}
 				}
