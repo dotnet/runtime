@@ -1141,6 +1141,7 @@ namespace System.Net.Security.Tests
         [InlineData(true, true)]
         [InlineData(true, false)]
         [InlineData(false, true)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task DisableUnusedRsaPadding_Connects(bool clientDisable, bool serverDisable)
         {
             (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
@@ -1176,6 +1177,7 @@ namespace System.Net.Security.Tests
         [InlineData(true, true)]
         [InlineData(true, false)]
         [InlineData(false, true)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task DisableUsedRsaPadding_Throws(bool clientDisable, bool serverDisable)
         {
             (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
