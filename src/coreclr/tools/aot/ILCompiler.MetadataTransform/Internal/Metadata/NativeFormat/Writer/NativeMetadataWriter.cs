@@ -440,7 +440,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             {
                 foreach (var elem in dst)
                     Log(elem);
-                return dst.ToList();
+                return dst;
             }
 
             private bool _notFirst;           // The first child should not have a space before it.  This tracks this
