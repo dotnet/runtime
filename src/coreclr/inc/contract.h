@@ -233,7 +233,6 @@
 #include "specstrings.h"
 #include "clrtypes.h"
 #include "check.h"
-#include "debugreturn.h"
 #include "staticcontract.h"
 
 #ifdef ENABLE_CONTRACTS_DATA

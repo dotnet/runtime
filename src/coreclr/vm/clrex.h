@@ -61,7 +61,7 @@ class StackTraceInfo
         // Stores the current stack trace array. This array may be accessed by multiple threads
         // during exception handling, and needs to be protected from concurrent modifications.
         StackTraceArray m_pStackTraceArray;
-        
+
         // Used as a temporary buffer when resizing the stack trace array.
         // This allows atomic replacement of the original array with the newly sized array.
         StackTraceArray m_pStackTraceArrayNew;
@@ -182,7 +182,6 @@ public:
 #ifdef LOGGING // Use parent implementation that inlines into nothing in retail build
         void SucceedCatch();
 #endif
-        void SetupFinally();
     };
 };
 

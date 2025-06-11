@@ -44,6 +44,8 @@ And here is the big difference from C++ exceptions: the CLR developer doesn't ge
 
 It bears repeating that the EX_CATCH macro catches everything. This behaviour is frequently not what a function needs. The next two sections discuss more about how to deal with exceptions that shouldn't have been caught.
 
+A function should not return from between an `EX_CATCH` usage and an `EX_END_CATCH` usage. Doing so will effectively swallow the exception.
+
 GET_EXCEPTION() & GET_THROWABLE()
 ---------------------------------
 

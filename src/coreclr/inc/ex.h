@@ -814,14 +814,10 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             {                                                                           \
                 CAutoTryCleanup<STATETYPE> __autoCleanupTry(__state);                   \
                 {                                                                       \
-                    /* Disallow returns to make exception handling work. */             \
-                    /* Some work is done after the catch, see EX_ENDTRY. */             \
-                    DEBUG_ASSURE_NO_RETURN_BEGIN(EX_TRY)                                \
                     EX_TRY_HOLDER                                                       \
 
 
 #define EX_CATCH_IMPL_EX(DerivedExceptionClass)                                         \
-                    DEBUG_ASSURE_NO_RETURN_END(EX_TRY)                                  \
                 }                                                                       \
             }                                                                           \
             PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                     \
@@ -845,7 +841,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             ExceptionHolder __pException(__state.m_pExceptionPtr);                      \
             /* work around unreachable code warning */                                  \
             if (true) {                                                                 \
-                DEBUG_ASSURE_NO_RETURN_BEGIN(EX_CATCH)                                  \
                 /* don't embed file names in retail to save space and avoid IP */       \
                 /* a findstr /n will allow you to locate it in a pinch */               \
                 __state.SetupCatch(INDEBUG_COMMA(__FILE__) __LINE__);                   \
@@ -862,12 +857,8 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             {                                                                       \
                 CAutoTryCleanup<STATETYPE> __autoCleanupTry(__state);               \
                 {                                                                   \
-                    /* Disallow returns to make exception handling work. */         \
-                   /* Some work is done after the catch, see EX_ENDTRY. */          \
-                    DEBUG_ASSURE_NO_RETURN_BEGIN(EX_TRY)                            \
 
 #define EX_CATCH_IMPL_CPP_ONLY                                                      \
-                    DEBUG_ASSURE_NO_RETURN_END(EX_TRY)                              \
                 }                                                                   \
             }                                                                       \
             PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                 \
@@ -887,7 +878,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             ExceptionHolder __pException(__state.m_pExceptionPtr);                  \
             /* work around unreachable code warning */                              \
             if (true) {                                                             \
-                DEBUG_ASSURE_NO_RETURN_BEGIN(EX_CATCH)                              \
                 /* don't embed file names in retail to save space and avoid IP */   \
                 /* a findstr /n will allow you to locate it in a pinch */           \
                 __state.SetupCatch(INDEBUG_COMMA(__FILE__) __LINE__);               \
@@ -920,7 +910,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 #endif
 
 #define EX_END_CATCH_UNREACHABLE                                                        \
-                DEBUG_ASSURE_NO_RETURN_END(EX_CATCH)                                    \
             }                                                                           \
             UNREACHABLE();                                                              \
         }                                                                               \
@@ -934,7 +923,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 #define EX_END_CATCH(terminalexceptionpolicy)                                           \
                 terminalexceptionpolicy;                                                \
                 __state.SucceedCatch();                                                 \
-                DEBUG_ASSURE_NO_RETURN_END(EX_CATCH)                                    \
             }                                                                           \
         }                                                                               \
         EX_ENDTRY                                                                       \
@@ -943,7 +931,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 
 #define EX_END_CATCH_FOR_HOOK                                                           \
                 __state.SucceedCatch();                                                 \
-                DEBUG_ASSURE_NO_RETURN_END(EX_CATCH)                                    \
             }                                                                           \
         }                                                                               \
         EX_ENDTRY
