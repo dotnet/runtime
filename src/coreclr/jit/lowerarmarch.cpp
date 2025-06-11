@@ -1993,7 +1993,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             node->ClearUnusedValue();
             condSelNode->SetUnusedValue();
         }
-        condSelNode->MakeEmbeddingMaskOp();
 
         LABELEDDISPTREERANGE("Embedded HWIntrinisic inside conditional select", BlockRange(), condSelNode);
     }
@@ -4143,12 +4142,6 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 cndSelNode->Op(2) = nestedCndSel->Op(2);
                 nestedOp3->SetUnusedValue();
 
-                // Ensure the embedding op flag is carried across
-                if (nestedCndSel->IsEmbeddingMaskOp())
-                {
-                    cndSelNode->MakeEmbeddingMaskOp();
-                }
-
                 BlockRange().Remove(nestedOp1);
                 BlockRange().Remove(nestedCndSel);
 
@@ -4157,35 +4150,40 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             }
         }
     }
-    else if (op1->IsMaskAllBitsSet() && !cndSelNode->IsEmbeddingMaskOp())
+    else if (op1->IsMaskAllBitsSet())
     {
-        LABELEDDISPTREERANGE("Lowered ConditionalSelect(True, op2, op3) to op2 (before)", BlockRange(), cndSelNode);
-
-        assert(!op2->OperIsHWIntrinsic() ||
-               !HWIntrinsicInfo::IsEmbeddedMaskedOperation(op2->AsHWIntrinsic()->GetHWIntrinsicId()));
-
-        // Transform
-        // CndSel(AllTrue, op2, op3) to
-        // op2
-
-        LIR::Use use;
-        if (BlockRange().TryGetUse(cndSelNode, &use))
+        // Any case where op2 is not an embedded HWIntrinsic
+        if (!op2->OperIsHWIntrinsic() ||
+            !HWIntrinsicInfo::IsEmbeddedMaskedOperation(op2->AsHWIntrinsic()->GetHWIntrinsicId()))
         {
-            use.ReplaceWith(op2);
+            LABELEDDISPTREERANGE("Lowered ConditionalSelect(True, op2, op3) to op2 (before)", BlockRange(), cndSelNode);
+
+            assert(!op2->OperIsHWIntrinsic() ||
+                   !HWIntrinsicInfo::IsEmbeddedMaskedOperation(op2->AsHWIntrinsic()->GetHWIntrinsicId()));
+
+            // Transform
+            // CndSel(AllTrue, op2, op3) to
+            // op2
+
+            LIR::Use use;
+            if (BlockRange().TryGetUse(cndSelNode, &use))
+            {
+                use.ReplaceWith(op2);
+            }
+            else
+            {
+                op2->SetUnusedValue();
+            }
+
+            op3->SetUnusedValue();
+            op1->SetUnusedValue();
+
+            GenTree* next = cndSelNode->gtNext;
+            BlockRange().Remove(cndSelNode);
+
+            LABELEDDISPTREERANGE("Lowered ConditionalSelect(True, op2, op3) to op2 (after)", BlockRange(), op2);
+            return next;
         }
-        else
-        {
-            op2->SetUnusedValue();
-        }
-
-        op3->SetUnusedValue();
-        op1->SetUnusedValue();
-
-        GenTree* next = cndSelNode->gtNext;
-        BlockRange().Remove(cndSelNode);
-
-        LABELEDDISPTREERANGE("Lowered ConditionalSelect(True, op2, op3) to op2 (after)", BlockRange(), op2);
-        return next;
     }
 
     ContainCheckHWIntrinsic(cndSelNode);

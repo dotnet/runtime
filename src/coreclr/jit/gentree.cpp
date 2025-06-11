@@ -7233,10 +7233,54 @@ bool GenTree::OperMayThrow(Compiler* comp)
     return OperExceptions(comp) != ExceptionSetFlags::None;
 }
 
-//------------------------------------------------------------------------------
-// OperOrEmbeddedChildrenMayThrow : Check whether the operation or any embedded
-//                                  children will throw
+
+
+//-----------------------------------------------------------------------------
+// ContainedChildrenMayThrow: Find if any of the contained children of a node may throw
 //
+class ContainedChildrenMayThrow final : public GenTreeVisitor<ContainedChildrenMayThrow>
+{
+public:
+    enum
+    {
+        DoPreOrder = true
+    };
+
+    ContainedChildrenMayThrow(Compiler* compiler, GenTree* firstNode)
+        : GenTreeVisitor<ContainedChildrenMayThrow>(compiler)
+        , firstNode(firstNode)
+    {
+    }
+
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* node = *use;
+
+        if (node != firstNode && !node->isContained())
+        {
+            // Ignore children of nodes that are not contained (execpt for the first node)
+            return fgWalkResult::WALK_SKIP_SUBTREES;
+        }
+        else if(node->OperMayThrow(m_compiler))
+        {
+            mayThrow = true;
+
+            // Stop parsing any more entries
+            return fgWalkResult::WALK_ABORT;
+        }
+        return fgWalkResult::WALK_CONTINUE;
+    }
+
+    // Set if a contained child may throw
+    bool mayThrow = false;
+
+private:
+    GenTree* firstNode = nullptr;
+};
+
+//------------------------------------------------------------------------------
+// OperOrContainedChildrenMayThrow : Check whether the operation or any contained
+//                                   children will throw
 //
 // Arguments:
 //    comp      -  Compiler instance
@@ -7244,30 +7288,13 @@ bool GenTree::OperMayThrow(Compiler* comp)
 // Return Value:
 //    True if the given operator may cause an exception
 //
-bool GenTree::OperOrEmbeddedChildrenMayThrow(Compiler* comp)
+bool GenTree::OperOrContainedChildrenMayThrow(Compiler* comp)
 {
-    if (OperMayThrow(comp))
-    {
-        return true;
-    }
-
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
-    // If this node is embedding another node, then check that instead.
-    if (IsEmbeddingMaskOp())
-    {
-        assert(AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect);
-
-        for (size_t i = 1; i <= AsHWIntrinsic()->GetOperandCount(); i++)
-        {
-            if (AsHWIntrinsic()->Op(i)->OperOrEmbeddedChildrenMayThrow(comp))
-            {
-                return true;
-            }
-        }
-    }
-#endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
-
-    return false;
+    // Recursively parse all contained children.
+    ContainedChildrenMayThrow ev(comp, this);
+    GenTree *firstNode = this;
+    ev.WalkTree(&firstNode, nullptr);
+    return ev.mayThrow;
 }
 
 //------------------------------------------------------------------------------

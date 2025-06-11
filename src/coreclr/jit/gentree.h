@@ -554,7 +554,6 @@ enum GenTreeFlags : unsigned int
 #ifdef FEATURE_HW_INTRINSICS
     GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
     GTF_HW_USER_CALL              = 0x20000000, // GT_HWINTRINSIC -- node is implemented via a user call
-    GTF_HW_EMBEDDING_OP           = 0x40000000, // GT_HWINTRINSIC -- node is being used to embed a mask and operand
 #endif // FEATURE_HW_INTRINSICS
 };
 
@@ -1911,7 +1910,7 @@ public:
 
     ExceptionSetFlags OperExceptions(Compiler* comp);
     bool              OperMayThrow(Compiler* comp);
-    bool              OperOrEmbeddedChildrenMayThrow(Compiler* comp);
+    bool              OperOrContainedChildrenMayThrow(Compiler* comp);
 
     bool OperRequiresGlobRefFlag(Compiler* comp) const;
 
@@ -2298,20 +2297,6 @@ public:
         assert(OperIsHWIntrinsic());
         assert(!IsEmbMaskOp());
         gtFlags |= GTF_HW_EM_OP;
-    }
-
-    // The embedding op holds the embedded op.
-
-    bool IsEmbeddingMaskOp()
-    {
-        return OperIsHWIntrinsic() && ((gtFlags & GTF_HW_EMBEDDING_OP) != 0);
-    }
-
-    void MakeEmbeddingMaskOp()
-    {
-        assert(OperIsHWIntrinsic());
-        assert(!IsEmbeddingMaskOp());
-        gtFlags |= GTF_HW_EMBEDDING_OP;
     }
 
 #endif // FEATURE_HW_INTRINSICS
