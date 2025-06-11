@@ -7233,51 +7233,6 @@ bool GenTree::OperMayThrow(Compiler* comp)
     return OperExceptions(comp) != ExceptionSetFlags::None;
 }
 
-
-
-//-----------------------------------------------------------------------------
-// ContainedChildrenMayThrow: Find if any of the contained children of a node may throw
-//
-class ContainedChildrenMayThrow final : public GenTreeVisitor<ContainedChildrenMayThrow>
-{
-public:
-    enum
-    {
-        DoPreOrder = true
-    };
-
-    ContainedChildrenMayThrow(Compiler* compiler, GenTree* firstNode)
-        : GenTreeVisitor<ContainedChildrenMayThrow>(compiler)
-        , firstNode(firstNode)
-    {
-    }
-
-    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-    {
-        GenTree* node = *use;
-
-        if (node != firstNode && !node->isContained())
-        {
-            // Ignore children of nodes that are not contained (execpt for the first node)
-            return fgWalkResult::WALK_SKIP_SUBTREES;
-        }
-        else if(node->OperMayThrow(m_compiler))
-        {
-            mayThrow = true;
-
-            // Stop parsing any more entries
-            return fgWalkResult::WALK_ABORT;
-        }
-        return fgWalkResult::WALK_CONTINUE;
-    }
-
-    // Set if a contained child may throw
-    bool mayThrow = false;
-
-private:
-    GenTree* firstNode = nullptr;
-};
-
 //------------------------------------------------------------------------------
 // NodeOrContainedOperandsMayThrow : Check whether the operation or any contained
 //                                   children will throw
@@ -7286,15 +7241,24 @@ private:
 //    comp      -  Compiler instance
 //
 // Return Value:
-//    True if the given operator may cause an exception
+//    True if the given operator or contained children may cause an exception
 //
 bool GenTree::NodeOrContainedOperandsMayThrow(Compiler* comp)
 {
-    // Recursively parse all contained children.
-    ContainedChildrenMayThrow ev(comp, this);
-    GenTree *firstNode = this;
-    ev.WalkTree(&firstNode, nullptr);
-    return ev.mayThrow;
+    if (OperMayThrow(comp))
+    {
+        return true;
+    }
+
+    // Check all contained children
+    for (GenTree* operand : Operands())
+    {
+        if (operand->isContained() && operand->NodeOrContainedOperandsMayThrow(comp))
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------------
