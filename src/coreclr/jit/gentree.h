@@ -1911,6 +1911,7 @@ public:
 
     ExceptionSetFlags OperExceptions(Compiler* comp);
     bool              OperMayThrow(Compiler* comp);
+    bool              OperOrEmbeddedChildrenMayThrow(Compiler* comp);
 
     bool OperRequiresGlobRefFlag(Compiler* comp) const;
 

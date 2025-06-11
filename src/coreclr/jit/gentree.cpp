@@ -7226,27 +7226,48 @@ bool GenTree::OperMayThrow(Compiler* comp)
             assert(varTypeIsInt(AsHWIntrinsic()->GetSimdBaseType()));
             return true;
         }
-#elif defined(TARGET_ARM64)
-        // If this node is embedding another node, then check that instead.
-        if (IsEmbeddingMaskOp())
-        {
-            assert(AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect);
-
-            for (size_t i = 1; i <= AsHWIntrinsic()->GetOperandCount(); i++)
-            {
-                if (AsHWIntrinsic()->Op(i)->OperMayThrow(comp))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
 #endif // TARGET_XARCH
     }
 #endif // FEATURE_HW_INTRINSICS
 
     return OperExceptions(comp) != ExceptionSetFlags::None;
+}
+
+//------------------------------------------------------------------------------
+// OperOrEmbeddedChildrenMayThrow : Check whether the operation or any embedded
+//                                  children will throw
+//
+//
+// Arguments:
+//    comp      -  Compiler instance
+//
+// Return Value:
+//    True if the given operator may cause an exception
+//
+bool GenTree::OperOrEmbeddedChildrenMayThrow(Compiler* comp)
+{
+    if (OperMayThrow(comp))
+    {
+        return true;
+    }
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
+    // If this node is embedding another node, then check that instead.
+    if (IsEmbeddingMaskOp())
+    {
+        assert(AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect);
+
+        for (size_t i = 1; i <= AsHWIntrinsic()->GetOperandCount(); i++)
+        {
+            if (AsHWIntrinsic()->Op(i)->OperOrEmbeddedChildrenMayThrow(comp))
+            {
+                return true;
+            }
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
+
+    return false;
 }
 
 //------------------------------------------------------------------------------
