@@ -756,13 +756,13 @@ namespace System.Net.NetworkInformation.Tests
             PingReply reply = await sendPing(sender, TestSettings.UnreachableAddress);
             if (reply.Status == IPStatus.DestinationNetworkUnreachable)
             {
-                // The network has dropped the packet towards UnreachableAddress. Repeat the PING attempt on another address.
+                // A network middleware has dropped the packed and replied with DestinationNetworkUnreachable. Repeat the PING attempt on another address.
                 reply = await sendPing(sender, TestSettings.UnreachableAddress2);
             }
 
             if (reply.Status == IPStatus.DestinationNetworkUnreachable)
             {
-                // Do another attempt.
+                // Do yet another attempt.
                 reply = await sendPing(sender, TestSettings.UnreachableAddress3);
             }
 
