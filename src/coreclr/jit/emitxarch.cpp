@@ -26,12 +26,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 bool emitter::IsSSEInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_SSE_INSTRUCTION);
+    return (ins >= FIRST_SSE_INSTRUCTION) && (ins <= LAST_SSE_INSTRUCTION);
 }
 
 bool emitter::IsSSEOrAVXInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
+    return (ins >= FIRST_SSE_INSTRUCTION) && (ins <= LAST_AVX_INSTRUCTION);
 }
 
 //------------------------------------------------------------------------
@@ -68,7 +68,7 @@ bool emitter::IsKInstructionWithLBit(instruction ins)
 
 bool emitter::IsAVXOnlyInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_AVX_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
+    return (ins >= FIRST_AVX_INSTRUCTION) && (ins <= LAST_AVX_INSTRUCTION);
 }
 
 //------------------------------------------------------------------------
@@ -82,12 +82,12 @@ bool emitter::IsAVXOnlyInstruction(instruction ins)
 //
 bool emitter::IsAvx512OnlyInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_AVX512_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION);
+    return (ins >= FIRST_AVX512_INSTRUCTION) && (ins <= LAST_AVX512_INSTRUCTION);
 }
 
 bool emitter::IsApxOnlyInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_APX_INSTRUCTION) && (ins <= INS_LAST_APX_INSTRUCTION);
+    return (ins >= FIRST_APX_INSTRUCTION) && (ins <= LAST_APX_INSTRUCTION);
 }
 
 bool emitter::IsAVXVNNIInstruction(instruction ins)
@@ -141,7 +141,7 @@ bool emitter::Is3OpRmwInstruction(instruction ins)
 
 bool emitter::IsBMIInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_BMI_INSTRUCTION) && (ins <= INS_LAST_BMI_INSTRUCTION);
+    return (ins >= FIRST_BMI_INSTRUCTION) && (ins <= LAST_BMI_INSTRUCTION);
 }
 
 //------------------------------------------------------------------------
@@ -340,13 +340,9 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         case INS_aesdeclast:
         case INS_aesenc:
         case INS_aesenclast:
-        {
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_AES_V256);
-        }
-
         case INS_pclmulqdq:
         {
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_PCLMULQDQ_V256);
+            return emitComp->compSupportsHWIntrinsic(InstructionSet_AES_V512);
         }
 
         case INS_vpdpwsud:
@@ -378,7 +374,7 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         case INS_vpmadd52huq:
         case INS_vpmadd52luq:
         {
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVX512VBMI);
+            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVX512v2);
         }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -896,7 +892,7 @@ bool emitter::DoJitUseApxNDD(instruction ins) const
 
 inline bool emitter::IsCCMP(instruction ins)
 {
-    return (ins > INS_FIRST_CCMP_INSTRUCTION && ins < INS_LAST_CCMP_INSTRUCTION);
+    return (ins >= FIRST_CCMP_INSTRUCTION && ins <= LAST_CCMP_INSTRUCTION);
 }
 
 //------------------------------------------------------------------------
@@ -3944,7 +3940,7 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_pextrd:
         case INS_pextrq:
         case INS_pextrw:
-        case INS_pextrw_sse41:
+        case INS_pextrw_sse42:
         case INS_rorx:
         case INS_shlx:
         case INS_sarx:
@@ -6987,7 +6983,7 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
     // Store lower 8 bytes
     emitIns_S_R(INS_movsd_simd, EA_8BYTE, dataReg, varNum, offset);
 
-    if (emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    if (emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         // Extract and store upper 4 bytes
         emitIns_S_R_I(INS_extractps, EA_16BYTE, varNum, offset + 8, dataReg, 2);
@@ -13690,7 +13686,7 @@ void emitter::emitDispIns(
                 case INS_extractps:
                 case INS_pextrb:
                 case INS_pextrw:
-                case INS_pextrw_sse41:
+                case INS_pextrw_sse42:
                 case INS_pextrd:
                 {
                     tgtAttr = EA_4BYTE;
@@ -21686,7 +21682,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pextrd:
         case INS_pextrw:
         case INS_pextrq:
-        case INS_pextrw_sse41:
+        case INS_pextrw_sse42:
         case INS_addsubps:
         case INS_addsubpd:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;

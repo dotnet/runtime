@@ -1852,7 +1852,7 @@ namespace System.Linq
             // If the data source is a collection, we can just return the count right away.
             if (source is ParallelEnumerableWrapper<TSource> sourceAsWrapper)
             {
-                if (sourceAsWrapper.WrappedEnumerable is IReadOnlyCollection<TSource> sourceAsCollection)
+                if (sourceAsWrapper.WrappedEnumerable is ICollection<TSource> sourceAsCollection)
                 {
                     return sourceAsCollection.Count;
                 }
@@ -1923,7 +1923,7 @@ namespace System.Linq
             // If the data source is a collection, we can just return the count right away.
             if (source is ParallelEnumerableWrapper<TSource> sourceAsWrapper)
             {
-                if (sourceAsWrapper.WrappedEnumerable is IReadOnlyCollection<TSource> sourceAsCollection)
+                if (sourceAsWrapper.WrappedEnumerable is ICollection<TSource> sourceAsCollection)
                 {
                     return sourceAsCollection.Count;
                 }

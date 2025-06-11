@@ -469,6 +469,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - thaystg
+            - dotnet/dotnet-diag
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -492,7 +493,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - tommcdon
+            - steveisok
+            - dotnet/dotnet-diag
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -986,7 +988,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - tommcdon
+            - steveisok
+            - dotnet/dotnet-diag
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1060,6 +1063,7 @@ configuration:
             mentionees:
             - tarekgh
             - tommcdon
+            - steveisok
             - pjanotti
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
