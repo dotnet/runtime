@@ -85,6 +85,14 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        public override bool IsAutoLayout
+        {
+            get
+            {
+                return ManagedStructType.IsAutoLayout;
+            }
+        }
+
         public override bool IsBeforeFieldInit
         {
             get
@@ -180,7 +188,7 @@ namespace Internal.TypeSystem.Interop
             Module = owningModule;
             ManagedStructType = managedStructType;
             _interopStateManager = interopStateManager;
-            _hasInvalidLayout = !managedStructType.HasLayout();
+            _hasInvalidLayout = managedStructType.IsAutoLayout;
             _typeForFieldIteration = managedStructType.IsInlineArray ? new TypeWithRepeatedFields(managedStructType) : managedStructType;
 
             Stack<MetadataType> typesBeingLookedAt = (s_typesBeingLookedAt ??= new Stack<MetadataType>());

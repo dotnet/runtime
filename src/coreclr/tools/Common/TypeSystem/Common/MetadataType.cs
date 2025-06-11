@@ -40,6 +40,12 @@ namespace Internal.TypeSystem
         public abstract bool IsExtendedLayout { get; }
 
         /// <summary>
+        /// If true, the type layout is dictated by the auto layout rules provided by the runtime.
+        /// Corresponds to the definition of autolayout semantic defined in the ECMA-335 specification.
+        /// </summary>
+        public abstract bool IsAutoLayout { get; }
+
+        /// <summary>
         /// If true, the type initializer of this type has a relaxed semantic. Corresponds
         /// to the definition of beforefieldinit semantic defined in the ECMA-335 specification.
         /// </summary>

@@ -31,6 +31,8 @@ namespace Internal.TypeSystem
 
         public override bool IsExtendedLayout => false;
 
+        public override bool IsAutoLayout => true;
+
         public override ModuleDesc Module => _context.SystemModule;
 
         public override bool IsModuleType => false;

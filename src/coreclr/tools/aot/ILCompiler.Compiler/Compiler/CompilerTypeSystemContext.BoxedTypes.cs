@@ -265,6 +265,7 @@ namespace ILCompiler
             public override bool IsExplicitLayout => false;
             public override bool IsSequentialLayout => true;
             public override bool IsExtendedLayout => true;
+            public override bool IsAutoLayout => false;
             public override bool IsBeforeFieldInit => false;
             public override MetadataType MetadataBaseType => (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
             public override DefType BaseType => MetadataBaseType;

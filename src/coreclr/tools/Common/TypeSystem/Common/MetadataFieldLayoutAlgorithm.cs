@@ -64,8 +64,8 @@ namespace Internal.TypeSystem
             // If the current type isn't ValueType or System.Object and has a layout and the parent type isn't
             // ValueType or System.Object then both need to have layout.
             //
-            // ExtendedLayout is not supported on non value-types.
-            if (!type.IsValueType && type.HasLayout())
+            // ExtendedLayout is not supported on non-value types.
+            if (!type.IsValueType && !type.IsAutoLayout)
             {
                 if (type.IsExtendedLayout)
                 {
@@ -73,7 +73,7 @@ namespace Internal.TypeSystem
                 }
 
                 MetadataType baseType = type.MetadataBaseType;
-                if (!baseType.IsObject && !baseType.HasLayout())
+                if (!baseType.IsObject && !baseType.IsAutoLayout)
                 {
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
                 }
@@ -626,7 +626,7 @@ namespace Internal.TypeSystem
         {
             TypeSystemContext context = type.Context;
 
-            bool hasLayout = type.HasLayout();
+            bool hasLayout = !type.IsAutoLayout;
 
             // Auto-layout in CoreCLR does not respect packing size.
             int packingSize = type.Context.Target.MaximumAlignment;
@@ -995,7 +995,7 @@ namespace Internal.TypeSystem
                 cumulativeInstanceFieldPos = type.BaseType.InstanceByteCountUnaligned;
                 if (!cumulativeInstanceFieldPos.IsIndeterminate)
                 {
-                    if (requiresAlignedBase && type.BaseType.IsZeroSizedReferenceType && ((MetadataType)type.BaseType).HasLayout())
+                    if (requiresAlignedBase && type.BaseType.IsZeroSizedReferenceType && !((MetadataType)type.BaseType).IsAutoLayout)
                     {
                         cumulativeInstanceFieldPos += LayoutInt.One;
                     }

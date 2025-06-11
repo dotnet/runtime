@@ -216,6 +216,14 @@ namespace ILCompiler
                 }
             }
 
+            public override bool IsAutoLayout
+            {
+                get
+                {
+                    return true;
+                }
+            }
+
             public override bool IsBeforeFieldInit
             {
                 get

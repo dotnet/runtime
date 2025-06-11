@@ -568,15 +568,15 @@ namespace Internal.TypeSystem.Ecma
             }
 
             MetadataLayoutKind layoutKind = MetadataLayoutKind.Auto;
-            if (IsSequentialLayout)
+            if ((Attributes & TypeAttributes.LayoutMask) == TypeAttributes.SequentialLayout)
             {
                 layoutKind = MetadataLayoutKind.Sequential;
             }
-            else if (IsExplicitLayout)
+            else if ((Attributes & TypeAttributes.LayoutMask) == TypeAttributes.ExplicitLayout)
             {
                 layoutKind = MetadataLayoutKind.Explicit;
             }
-            else if (IsExtendedLayout)
+            else if ((Attributes & TypeAttributes.LayoutMask) == TypeAttributesExtendedLayout)
             {
                 var attrHandle = MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
                     "System.Runtime.InteropServices", "ExtendedLayoutAttribute");
@@ -635,6 +635,14 @@ namespace Internal.TypeSystem.Ecma
         public override bool IsExtendedLayout
         {
             get => (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributesExtendedLayout;
+        }
+
+        public override bool IsAutoLayout
+        {
+            get
+            {
+                return (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributes.AutoLayout;
+            }
         }
 
         public override bool IsBeforeFieldInit

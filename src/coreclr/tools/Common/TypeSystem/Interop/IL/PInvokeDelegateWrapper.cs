@@ -87,6 +87,14 @@ namespace Internal.TypeSystem.Interop
             get => false;
         }
 
+        public override bool IsAutoLayout
+        {
+            get
+            {
+                return true;
+            }
+        }
+
         public override bool IsBeforeFieldInit
         {
             get
