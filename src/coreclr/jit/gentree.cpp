@@ -2143,6 +2143,7 @@ void GenTreeCall::RemoveGDVCandidateInfo(Compiler* comp, uint8_t index)
     if (gtInlineInfoCount == 1)
     {
         gtInlineCandidateInfo = gtInlineCandidateInfoList->at(0);
+        ud                    = UD::UD_INLINE_INFO;
     }
 }
 

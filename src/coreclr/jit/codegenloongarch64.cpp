@@ -5800,7 +5800,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 else
                 {
                     // Direct call to a non-virtual user function.
-                    params.addr = call->gtDirectCallAddress;
+                    params.addr = call->GetDirectCallAddress();
                 }
 
             assert(params.addr != nullptr);
