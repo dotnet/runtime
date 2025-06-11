@@ -170,15 +170,15 @@
     <MicrosoftNetCoreAppRefPackRefDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'ref', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRefPackRefDir>
     <MicrosoftNetCoreAppRefPackDataDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'data'))</MicrosoftNetCoreAppRefPackDataDir>
 
-    <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.$(OutputRID)', '$(LibrariesConfiguration)'))</MicrosoftNetCoreAppRuntimePackDir>
-    <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'runtimes', '$(OutputRID)'))</MicrosoftNetCoreAppRuntimePackRidDir>
+    <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.$(TargetRid)', '$(LibrariesConfiguration)'))</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'runtimes', '$(TargetRid)'))</MicrosoftNetCoreAppRuntimePackRidDir>
     <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'lib', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
   </PropertyGroup>
 
   <PropertyGroup>
-    <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(OutputRID).$(HostConfiguration)', 'corehost'))</DotNetHostBinDir>
-    <DotNetCdacBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mscordaccore_universal', '$(Configuration)', '$(NetCoreAppCurrent)', '$(OutputRID)', 'publish'))</DotNetCdacBinDir>
+    <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(TargetRid).$(HostConfiguration)', 'corehost'))</DotNetHostBinDir>
+    <DotNetCdacBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mscordaccore_universal', '$(Configuration)', '$(NetCoreAppCurrent)', '$(TargetRid)', 'publish'))</DotNetCdacBinDir>
   </PropertyGroup>
 
   <!--Feature switches -->
@@ -192,6 +192,8 @@
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <!-- Turn off workload support until we support them. -->
     <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
+    <!-- Turn off producing Windows PDBs from our portable PDBs. No one uses them and they slow down publishing. -->
+    <PublishWindowsPdb>false</PublishWindowsPdb>
     <!-- Disable source link when building locally. -->
     <DisableSourceLink Condition="'$(DisableSourceLink)' == '' and
                                   '$(ContinuousIntegrationBuild)' != 'true' and

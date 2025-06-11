@@ -38,6 +38,7 @@ namespace System.Text.Json
     public partial struct JsonDocumentOptions
     {
         private int _dummyPrimitive;
+        public bool AllowDuplicateProperties { get { throw null; } set { } }
         public bool AllowTrailingCommas { readonly get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling CommentHandling { readonly get { throw null; } set { } }
         public int MaxDepth { readonly get { throw null; } set { } }
@@ -79,6 +80,9 @@ namespace System.Text.Json
         public uint GetUInt32() { throw null; }
         [System.CLSCompliantAttribute(false)]
         public ulong GetUInt64() { throw null; }
+        public static System.Text.Json.JsonElement Parse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Json)] System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonDocumentOptions options = default) { throw null; }
+        public static System.Text.Json.JsonElement Parse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Json)] System.ReadOnlySpan<char> json, System.Text.Json.JsonDocumentOptions options = default) { throw null; }
+        public static System.Text.Json.JsonElement Parse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Json)] string json, System.Text.Json.JsonDocumentOptions options = default) { throw null; }
         public static System.Text.Json.JsonElement ParseValue(ref System.Text.Json.Utf8JsonReader reader) { throw null; }
         public override string ToString() { throw null; }
         public bool TryGetByte(out byte value) { throw null; }
@@ -393,6 +397,7 @@ namespace System.Text.Json
         public JsonSerializerOptions() { }
         public JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults defaults) { }
         public JsonSerializerOptions(System.Text.Json.JsonSerializerOptions options) { }
+        public bool AllowDuplicateProperties { get { throw null; } set { } }
         public bool AllowOutOfOrderMetadataProperties { get { throw null; } set { } }
         public bool AllowTrailingCommas { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.JsonConverter> Converters { get { throw null; } }
@@ -1139,6 +1144,7 @@ namespace System.Text.Json.Serialization
     {
         public JsonSourceGenerationOptionsAttribute() { }
         public JsonSourceGenerationOptionsAttribute(System.Text.Json.JsonSerializerDefaults defaults) { }
+        public bool AllowDuplicateProperties { get { throw null; } set { } }
         public bool AllowOutOfOrderMetadataProperties { get { throw null; } set { } }
         public bool AllowTrailingCommas { get { throw null; } set { } }
         public System.Type[]? Converters { get { throw null; } set { } }

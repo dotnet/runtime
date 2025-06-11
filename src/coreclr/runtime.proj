@@ -46,9 +46,9 @@
       <_CoreClrBuildArg Condition="'$(HostArchitecture)' != ''" Include="-hostarch $(HostArchitecture)" />
       <_CoreClrBuildArg Condition="'$(EnableNativeSanitizers)' != ''" Include="-fsanitize $(EnableNativeSanitizers)" />
       <_CoreClrBuildArg Condition="'$(HostCrossOS)' != ''" Include="-hostos $(HostCrossOS)" />
-      <_CoreClrBuildArg Include="-outputrid $(OutputRID)" />
-      <!-- Set CLR_DOTNET_RID to be the portable RID value. When $(BaseRid) is set, it will be the portable RID and $(OutputRID) may be non-portable. -->
-      <_CoreClrBuildArg Condition="'$(BaseRid)' == ''" Include="-cmakeargs &quot;-DCLR_DOTNET_RID=$(OutputRID)&quot;" />
+      <_CoreClrBuildArg Include="-targetrid $(TargetRid)" />
+      <!-- Set CLR_DOTNET_RID to be the portable RID value. When $(BaseRid) is set, it will be the portable RID and $(TargetRid) may be non-portable. -->
+      <_CoreClrBuildArg Condition="'$(BaseRid)' == ''" Include="-cmakeargs &quot;-DCLR_DOTNET_RID=$(TargetRid)&quot;" />
       <_CoreClrBuildArg Condition="'$(BaseRid)' != ''" Include="-cmakeargs &quot;-DCLR_DOTNET_RID=$(BaseRid)&quot;" />
       <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH=$(DOTNET_HOST_PATH)&quot;" />

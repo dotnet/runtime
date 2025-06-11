@@ -1181,26 +1181,26 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             case NI_AdvSimd_AddWideningLower:
                 assert(varTypeIsIntegral(intrin.baseType));
-                if (intrin.op1->TypeGet() == TYP_SIMD8)
+                if (intrin.op1->TypeIs(TYP_SIMD8))
                 {
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_uaddl : INS_saddl;
                 }
                 else
                 {
-                    assert(intrin.op1->TypeGet() == TYP_SIMD16);
+                    assert(intrin.op1->TypeIs(TYP_SIMD16));
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_uaddw : INS_saddw;
                 }
                 break;
 
             case NI_AdvSimd_SubtractWideningLower:
                 assert(varTypeIsIntegral(intrin.baseType));
-                if (intrin.op1->TypeGet() == TYP_SIMD8)
+                if (intrin.op1->TypeIs(TYP_SIMD8))
                 {
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_usubl : INS_ssubl;
                 }
                 else
                 {
-                    assert(intrin.op1->TypeGet() == TYP_SIMD16);
+                    assert(intrin.op1->TypeIs(TYP_SIMD16));
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_usubw : INS_ssubw;
                 }
                 break;
@@ -1801,10 +1801,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Sve_PrefetchBytes:
-            case NI_Sve_PrefetchInt16:
-            case NI_Sve_PrefetchInt32:
-            case NI_Sve_PrefetchInt64:
+            case NI_Sve_Prefetch16Bit:
+            case NI_Sve_Prefetch32Bit:
+            case NI_Sve_Prefetch64Bit:
+            case NI_Sve_Prefetch8Bit:
             {
                 assert(hasImmediateOperand);
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
@@ -2592,6 +2592,35 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_ExtractAfterLastActiveElementScalar:
+            case NI_Sve_ExtractLastActiveElementScalar:
+            {
+                opt = emitter::optGetSveInsOpt(emitTypeSize(node->GetSimdBaseType()));
+
+                if (emitter::isGeneralRegisterOrZR(targetReg))
+                {
+                    assert(varTypeIsIntegralOrI(intrin.baseType));
+
+                    emitSize = emitTypeSize(node);
+                    GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
+                                                   INS_SCALABLE_OPTS_NONE);
+                    break;
+                }
+
+                // FP scalars are processed by the INS_SCALABLE_OPTS_WITH_SIMD_SCALAR variant of the instructions
+                FALLTHROUGH;
+            }
+            case NI_Sve_ExtractAfterLastActiveElement:
+            case NI_Sve_ExtractLastActiveElement:
+            {
+                assert(emitter::isFloatReg(targetReg));
+                assert(varTypeIsFloating(node->gtType) || varTypeIsSIMD(node->gtType));
+
+                GetEmitter()->emitInsSve_R_R_R(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg, opt,
+                                               INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
+                break;
+            }
+
             case NI_Sve_TrigonometricMultiplyAddCoefficient:
             {
                 assert(isRMW);
@@ -2730,6 +2759,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             case NI_Sve2_BitwiseClearXor:
+            case NI_Sve2_Xor:
                 if (targetReg != op1Reg)
                 {
                     assert(targetReg != op2Reg && targetReg != op3Reg);

@@ -670,7 +670,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             from ietfVector in ietfVectorWrapped
             select new object[] { storageFlag, ietfVector };
 
-        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.CertificatesAreSupported))]
         [MemberData(nameof(ReadMLDsa_Pfx_Ietf_Data))]
         public static void ReadMLDsa512PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags, MLDsaKeyInfo info)
         {
@@ -690,7 +690,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.CertificatesAreSupported))]
         [MemberData(nameof(ReadMLDsa_Pfx_Ietf_Data))]
         public static void ReadMLDsa512PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags, MLDsaKeyInfo info)
         {
@@ -711,7 +711,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.CertificatesAreSupported))]
         [MemberData(nameof(ReadMLDsa_Pfx_Ietf_Data))]
         public static void ReadMLDsa512PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags, MLDsaKeyInfo info)
         {
