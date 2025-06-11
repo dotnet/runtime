@@ -38,6 +38,9 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Gets the key that will be used by the <see cref="MLDsaCng"/> object for any cryptographic operation that it performs.
         /// </summary>
+        /// <value>
+        ///   The key that will be used by the <see cref="MLDsaCng"/> object for any cryptographic operation that it performs.
+        /// </value>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
         /// </exception>
