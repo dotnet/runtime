@@ -433,9 +433,9 @@ struct RuntimeThreadLocals
 
 #ifdef _MSC_VER
 // use selectany to avoid initialization de-optimization issues in the compiler
-__declspec(selectany) thread_local
+__declspec(selectany) PLATFORM_THREAD_LOCAL
 #else
-extern __thread
+extern PLATFORM_THREAD_LOCAL
 #endif
 RuntimeThreadLocals t_runtime_thread_locals;
 
