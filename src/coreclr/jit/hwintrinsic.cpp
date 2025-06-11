@@ -903,26 +903,18 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
     { FIRST_NI_X86Base, LAST_NI_X86Base },                      // X86Base
-    { FIRST_NI_SSE3, LAST_NI_SSE3 },                            // SSE3
-    { FIRST_NI_SSSE3, LAST_NI_SSSE3 },                          // SSSE3
-    { FIRST_NI_SSE41, LAST_NI_SSE41 },                          // SSE41
     { FIRST_NI_SSE42, LAST_NI_SSE42 },                          // SSE42
-    { FIRST_NI_POPCNT, LAST_NI_POPCNT },                        // POPCNT
     { FIRST_NI_AVX, LAST_NI_AVX },                              // AVX
     { FIRST_NI_AVX2, LAST_NI_AVX2 },                            // AVX2
-    { FIRST_NI_BMI1, LAST_NI_BMI1 },                            // BMI1
-    { FIRST_NI_BMI2, LAST_NI_BMI2 },                            // BMI2
-    { FIRST_NI_FMA, LAST_NI_FMA },                              // FMA
-    { FIRST_NI_LZCNT, LAST_NI_LZCNT },                          // LZCNT
-    { NI_Illegal, NI_Illegal },                                 //      MOVBE
     { FIRST_NI_AVX512, LAST_NI_AVX512 },                        // AVX512
-    { FIRST_NI_AVX512VBMI, LAST_NI_AVX512VBMI },                // AVX512VBMI
+    { FIRST_NI_AVX512v2, LAST_NI_AVX512v2 },                    // AVX512v2
     { NI_Illegal, NI_Illegal },                                 //      AVX512v3
     { NI_Illegal, NI_Illegal },                                 //      AVX10v1
     { FIRST_NI_AVX10v2, LAST_NI_AVX10v2 },                      //      AVX10v2
     { NI_Illegal, NI_Illegal },                                 //      APX
     { FIRST_NI_AES, LAST_NI_AES },                              // AES
-    { FIRST_NI_PCLMULQDQ, LAST_NI_PCLMULQDQ },                  // PCLMULQDQ
+    { FIRST_NI_AES_V256, LAST_NI_AES_V256 },                    // AES_V256
+    { FIRST_NI_AES_V512, LAST_NI_AES_V512 },                    // AES_V512
     { NI_Illegal, NI_Illegal },                                 //      AVX512VP2INTERSECT
     { NI_Illegal, NI_Illegal },                                 //      AVXIFMA
     { FIRST_NI_AVXVNNI, LAST_NI_AVXVNNI },                      // AVXVNNI
@@ -930,10 +922,6 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_GFNI_V256, LAST_NI_GFNI_V256 },                  // GFNI_V256
     { FIRST_NI_GFNI_V512, LAST_NI_GFNI_V512 },                  // GFNI_V512
     { NI_Illegal, NI_Illegal },                                 //      SHA
-    { NI_Illegal, NI_Illegal },                                 //      AES_V256
-    { NI_Illegal, NI_Illegal },                                 //      AES_V512
-    { FIRST_NI_PCLMULQDQ_V256, LAST_NI_PCLMULQDQ_V256 },        // PCLMULQDQ_V256
-    { FIRST_NI_PCLMULQDQ_V512, LAST_NI_PCLMULQDQ_V512 },        // PCLMULQDQ_V512
     { NI_Illegal, NI_Illegal },                                 //      WAITPKG
     { FIRST_NI_X86Serialize, LAST_NI_X86Serialize },            // X86Serialize
     { FIRST_NI_Vector128, LAST_NI_Vector128 },                  // Vector128
@@ -944,24 +932,15 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      VectorT512
 
     { FIRST_NI_X86Base_X64, LAST_NI_X86Base_X64 },              // X86Base_X64
-    { NI_Illegal, NI_Illegal },                                 //      SSE3_X64
-    { NI_Illegal, NI_Illegal },                                 //      SSSE3_X64
-    { FIRST_NI_SSE41_X64, LAST_NI_SSE41_X64 },                  // SSE41_X64
     { FIRST_NI_SSE42_X64, LAST_NI_SSE42_X64 },                  // SSE42_X64
-    { FIRST_NI_POPCNT_X64, LAST_NI_POPCNT_X64 },                // POPCNT_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX_X64
-    { NI_Illegal, NI_Illegal },                                 //      AVX2_X64
-    { FIRST_NI_BMI1_X64, LAST_NI_BMI1_X64 },                    // BMI1_X64
-    { FIRST_NI_BMI2_X64, LAST_NI_BMI2_X64 },                    // BMI2_X64
-    { NI_Illegal, NI_Illegal },                                 //      FMA_X64
-    { FIRST_NI_LZCNT_X64, LAST_NI_LZCNT_X64 },                  // LZCNT_X64
+    { FIRST_NI_AVX2_X64, LAST_NI_AVX2_X64 },                    // AVX2_X64
     { FIRST_NI_AVX512_X64, LAST_NI_AVX512_X64 },                // AVX512_X64
-    { NI_Illegal, NI_Illegal },                                 //      AVX512VBMI_X64
+    { NI_Illegal, NI_Illegal },                                 //      AVX512v2_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX512v3_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX10v1_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX10v2_X64
     { NI_Illegal, NI_Illegal },                                 //      AES_X64
-    { NI_Illegal, NI_Illegal },                                 //      PCLMULQDQ_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX512VP2INTERSECT_X64
     { NI_Illegal, NI_Illegal },                                 //      AVXIFMA_X64
     { NI_Illegal, NI_Illegal },                                 //      AVXVNNI_X64
@@ -1365,7 +1344,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         {
             return ni;
         }
-        return binarySearchId(InstructionSet_AVX512VBMI, sig, methodName, isLimitedVector256Isa);
+        return binarySearchId(InstructionSet_AVX512v2, sig, methodName, isLimitedVector256Isa);
     }
     else if (isa == InstructionSet_AVX10v1_X64)
     {
@@ -1592,11 +1571,7 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
 //    true iff the given instruction set is enabled via configuration (environment variables, etc.).
 bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
 {
-    return compHWIntrinsicDependsOn(isa) && (
-#ifdef DEBUG
-                                                JitConfig.EnableIncompleteISAClass() ||
-#endif
-                                                HWIntrinsicInfo::isFullyImplementedIsa(isa));
+    return compHWIntrinsicDependsOn(isa);
 }
 
 //------------------------------------------------------------------------
@@ -1940,7 +1915,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     if (simdBaseJitType == CORINFO_TYPE_UNDEF)
     {
-        if ((category == HW_Category_Scalar) || HWIntrinsicInfo::isScalarIsa(isa))
+        if ((category == HW_Category_Scalar) || (category == HW_Category_Special))
         {
             simdBaseJitType = sig->retType;
 
@@ -2005,7 +1980,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #endif // TARGET_ARM64
 
     // Immediately return if the category is other than scalar/special and this is not a supported base type.
-    if ((category != HW_Category_Special) && (category != HW_Category_Scalar) && !HWIntrinsicInfo::isScalarIsa(isa) &&
+    if ((category != HW_Category_Special) && (category != HW_Category_Scalar) &&
         !isSupportedBaseType(intrinsic, simdBaseJitType))
     {
         return nullptr;
@@ -2244,9 +2219,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #if defined(TARGET_XARCH)
                 switch (intrinsic)
                 {
-                    case NI_SSE41_ConvertToVector128Int16:
-                    case NI_SSE41_ConvertToVector128Int32:
-                    case NI_SSE41_ConvertToVector128Int64:
+                    case NI_SSE42_ConvertToVector128Int16:
+                    case NI_SSE42_ConvertToVector128Int32:
+                    case NI_SSE42_ConvertToVector128Int64:
                     case NI_AVX2_BroadcastScalarToVector128:
                     case NI_AVX2_BroadcastScalarToVector256:
                     case NI_AVX2_ConvertToVector256Int16:
