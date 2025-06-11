@@ -1948,6 +1948,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId))
     {
         LIR::Use use;
+        LABELEDDISPTREERANGE("lowering EmbeddedMasked HWIntrinisic (before)", BlockRange(), node);
 
         // Use lastOp to verify if it's a ConditionlSelectNode.
         size_t lastOpNum = node->GetOperandCount();
@@ -4137,7 +4138,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 // Transform:
                 //
                 // CndSel1(mask, CndSel2(AllTrue, embedded() trueValOp3), op3) to
-                // CndSel1(mask, embedded() op3)
+                // CndSel1(mask, embedded(), op3)
                 //
                 cndSelNode->Op(2) = nestedCndSel->Op(2);
                 nestedOp3->SetUnusedValue();
