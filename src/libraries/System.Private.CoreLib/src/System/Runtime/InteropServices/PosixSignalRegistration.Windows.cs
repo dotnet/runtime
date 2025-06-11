@@ -103,11 +103,6 @@ namespace System.Runtime.InteropServices
                 Token token = tokens[i];
                 context.Signal = token.Signal;
                 token.Handler(context);
-                if (context.Cancel)
-                {
-                    // If any handler sets Cancel, we stop processing further handlers.
-                    break;
-                }
             }
 
             return context.Cancel ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
