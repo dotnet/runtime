@@ -20,8 +20,6 @@ namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
-        private static readonly ConcurrentDictionary<string, MethodInfo?> s_cachedMethods = new();
-
         private readonly HttpMessageHandler? _nativeUnderlyingHandler;
         private IMeterFactory? _nativeMeterFactory;
         private HttpMessageHandler? _nativeFirstHandler; // DiagnosticsHandler or MetricsHandler, depending on global configuration.

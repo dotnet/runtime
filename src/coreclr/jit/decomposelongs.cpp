@@ -1961,7 +1961,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicToScalar(LIR::Use& use, GenTreeHWIn
     Range().InsertAfter(loResult, simdTmpVar);
 
     GenTree* hiResult;
-    if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         GenTree* one = m_compiler->gtNewIconNode(1);
         hiResult     = m_compiler->gtNewSimdGetElementNode(TYP_INT, simdTmpVar, one, CORINFO_TYPE_INT, simdSize);
