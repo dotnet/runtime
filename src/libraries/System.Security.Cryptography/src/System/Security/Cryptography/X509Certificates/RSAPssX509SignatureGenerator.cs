@@ -18,7 +18,6 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(padding != null);
             Debug.Assert(padding.Mode == RSASignaturePaddingMode.Pss);
 
-            // Currently we don't accept options in PSS mode, but we could, so store the padding here.
             _key = key;
             _padding = padding;
         }
@@ -64,7 +63,6 @@ namespace System.Security.Cryptography.X509Certificates
             //  * don't support SHA-1 in this class
             //  * only support MGF-1
             //  * don't support the MGF PRF being different than hashAlgorithm
-            //  * use saltLength==hashLength
             //  * don't allow custom trailer
             // we don't have to worry about any of the DEFAULTs. (specify, specify, specify, omit).
 

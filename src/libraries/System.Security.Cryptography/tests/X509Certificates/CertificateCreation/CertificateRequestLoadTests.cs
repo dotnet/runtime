@@ -375,21 +375,34 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
         }
 
         [Theory]
-        [InlineData("SHA256")]
-        [InlineData("SHA384")]
-        [InlineData("SHA512")]
-        [InlineData("SHA1")]
-        public static void VerifySignature_RSA_PSS(string hashAlgorithm)
+        [InlineData("SHA256", 0)]
+        [InlineData("SHA384", 0)]
+        [InlineData("SHA512", 0)]
+        //[InlineData("SHA1", 0)] // The current implementation for CertificateRequest does not support SHA-1 with PSS. If this is required, the RSASha1PssSignatureGenerator and the RSAPssX509SignatureGenerator class needs updates.
+        [InlineData("SHA256", 1)]
+        [InlineData("SHA384", 1)]
+        [InlineData("SHA512", 1)]
+        //[InlineData("SHA1", 1)] // The current implementation for CertificateRequest does not support SHA-1 with PSS. If this is required, the RSASha1PssSignatureGenerator and the RSAPssX509SignatureGenerator class needs updates.
+        [InlineData("SHA256", RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData("SHA384", RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData("SHA512", RSASignaturePadding.PssSaltLengthMax)]
+        //[InlineData("SHA1", RSASignaturePadding.PssSaltLengthMax)] // The current implementation for CertificateRequest does not support SHA-1 with PSS. If this is required, the RSASha1PssSignatureGenerator and the RSAPssX509SignatureGenerator class needs updates.
+        [InlineData("SHA256", RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [InlineData("SHA384", RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [InlineData("SHA512", RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [InlineData("SHA1", RSASignaturePadding.PssSaltLengthIsHashLength)]
+        public static void VerifySignature_RSA_PSS(string hashAlgorithm, int saltLength)
         {
             HashAlgorithmName hashAlgorithmName = new HashAlgorithmName(hashAlgorithm);
 
             using (RSA key = RSA.Create())
             {
+                RSASignaturePadding padding = RSASignaturePadding.CreatePss(saltLength);
                 CertificateRequest first = new CertificateRequest(
                     "CN=Test",
                     key,
                     hashAlgorithmName,
-                    RSASignaturePadding.Pss);
+                    padding);
 
                 byte[] pkcs10;
 
@@ -397,11 +410,11 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
                 {
                     if (SignatureSupport.SupportsX509Sha1Signatures)
                     {
-                        pkcs10 = first.CreateSigningRequest(new RSASha1PssSignatureGenerator(key));
+                        pkcs10 = first.CreateSigningRequest(new RSASha1PssSignatureGenerator(key, padding));
                     }
                     else
                     {
-                        Assert.ThrowsAny<CryptographicException>(() => first.CreateSigningRequest(new RSASha1PssSignatureGenerator(key)));
+                        Assert.ThrowsAny<CryptographicException>(() => first.CreateSigningRequest(new RSASha1PssSignatureGenerator(key, padding)));
                         return;
                     }
                 }
@@ -411,19 +424,19 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
                 }
 
                 // Assert.NoThrow
-                CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _);
+                CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _, signerSignaturePadding: padding);
 
                 pkcs10[^1] ^= 0xFF;
 
                 Assert.Throws<CryptographicException>(
-                    () => CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _));
+                    () => CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _, signerSignaturePadding: padding));
 
                 // Assert.NoThrow
                 CertificateRequest.LoadSigningRequest(
                     pkcs10,
                     hashAlgorithmName,
                     out _,
-                    CertificateRequestLoadOptions.SkipSignatureValidation);
+                    CertificateRequestLoadOptions.SkipSignatureValidation, signerSignaturePadding: padding);
             }
         }
 
