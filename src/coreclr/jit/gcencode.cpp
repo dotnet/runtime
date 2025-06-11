@@ -21,6 +21,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "gcinfotypes.h"
 #include "patchpointinfo.h"
 
+#ifdef JIT32_GCENCODER
+
 ReturnKind VarTypeToReturnKind(var_types type)
 {
     switch (type)
@@ -29,11 +31,9 @@ ReturnKind VarTypeToReturnKind(var_types type)
             return RT_Object;
         case TYP_BYREF:
             return RT_ByRef;
-#ifdef TARGET_X86
         case TYP_FLOAT:
         case TYP_DOUBLE:
             return RT_Float;
-#endif // TARGET_X86
         default:
             return RT_Scalar;
     }
@@ -41,27 +41,27 @@ ReturnKind VarTypeToReturnKind(var_types type)
 
 ReturnKind GCInfo::getReturnKind()
 {
-    // Note the GCInfo representation only supports structs with up to 2 GC pointers.
+    // Note the JIT32 GCInfo representation only supports structs with 1 GC pointer.
     ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
     const unsigned regCount    = retTypeDesc.GetReturnRegCount();
 
-    switch (regCount)
+    if (regCount == 1)
     {
-        case 1:
-            return VarTypeToReturnKind(retTypeDesc.GetReturnRegType(0));
-        case 2:
-            return GetStructReturnKind(VarTypeToReturnKind(retTypeDesc.GetReturnRegType(0)),
-                                       VarTypeToReturnKind(retTypeDesc.GetReturnRegType(1)));
-        default:
+        return VarTypeToReturnKind(retTypeDesc.GetReturnRegType(0));
+    }
+    else
+    {
 #ifdef DEBUG
-            for (unsigned i = 0; i < regCount; i++)
-            {
-                assert(!varTypeIsGC(retTypeDesc.GetReturnRegType(i)));
-            }
+        for (unsigned i = 0; i < regCount; i++)
+        {
+            assert(!varTypeIsGC(retTypeDesc.GetReturnRegType(i)));
+        }
 #endif // DEBUG
-            return RT_Scalar;
+        return RT_Scalar;
     }
 }
+
+#endif // JIT32_GCENCODER
 
 // gcMarkFilterVarsPinned - Walk all lifetimes and make it so that anything
 //     live in a filter is marked as pinned (often by splitting the lifetime

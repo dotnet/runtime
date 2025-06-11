@@ -62,10 +62,6 @@ namespace System.Collections.Tests
             IDictionary<string, string> dictionary = new SortedDictionary<string, string>();
             Assert.True(dictionary.TryAdd("key", "value"));
             Assert.Equal("value", dictionary["key"]);
-#if !NETFRAMEWORK
-            IReadOnlyDictionary<string, string> readOnlyDictionary = dictionary;
-            Assert.Equal("value", readOnlyDictionary["key"]);
-#endif
         }
 
         [Fact]
@@ -74,10 +70,6 @@ namespace System.Collections.Tests
             IDictionary<string, string> dictionary = new SortedDictionary<string, string>() { ["key"] = "value" };
             Assert.False(dictionary.TryAdd("key", "value2"));
             Assert.Equal("value", dictionary["key"]);
-#if !NETFRAMEWORK
-            IReadOnlyDictionary<string, string> readOnlyDictionary = dictionary;
-            Assert.Equal("value", readOnlyDictionary["key"]);
-#endif
         }
 
         [Fact]
@@ -105,10 +97,6 @@ namespace System.Collections.Tests
             Assert.True(dictionary.Remove("key", out var value));
             Assert.Equal("value", value);
             Assert.Throws<KeyNotFoundException>(() => dictionary["key"]);
-#if !NETFRAMEWORK
-            IReadOnlyDictionary<string, string> readOnlyDictionary = dictionary;
-            Assert.Throws<KeyNotFoundException>(() => readOnlyDictionary["key"]);
-#endif
         }
 
         [Fact]

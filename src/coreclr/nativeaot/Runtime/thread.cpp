@@ -68,6 +68,12 @@ PInvokeTransitionFrame* Thread::GetTransitionFrameForStackTrace()
     return m_pDeferredTransitionFrame;
 }
 
+PInvokeTransitionFrame* Thread::GetTransitionFrameForSampling()
+{
+    CrossThreadUnhijack();
+    return GetTransitionFrame();
+}
+
 void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
 {
     ASSERT(!IsDoNotTriggerGcSet());
