@@ -10,6 +10,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
+using Internal.LowLevelLinq;
 using Internal.Metadata.NativeFormat.Writer;
 using Internal.NativeFormat;
 using HandleType = Internal.Metadata.NativeFormat.HandleType;

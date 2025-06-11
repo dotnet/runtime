@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.MetadataTransform</AssemblyName>
@@ -24,6 +24,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonSourcePath)Internal\LowLevelLinq\LowLevelEnumerable.cs" />
+    <Compile Include="$(CommonSourcePath)Internal\LowLevelLinq\LowLevelEnumerable.ToList.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />

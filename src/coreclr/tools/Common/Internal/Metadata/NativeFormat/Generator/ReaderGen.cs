@@ -151,7 +151,7 @@ internal sealed class ReaderGen : CsWriter
 
         WriteLineIfNeeded();
         WriteLine("public override int GetHashCode() => (int)_value;");
-
+ 
         WriteLineIfNeeded();
         WriteLine($"public static implicit operator Handle({handleName} handle)");
         WriteLine("    => new Handle(handle._value);");
@@ -165,7 +165,7 @@ internal sealed class ReaderGen : CsWriter
 
         WriteLineIfNeeded();
         WriteLine("public bool IsNil => (_value & 0x01FFFFFF) == 0;");
-
+ 
         WriteScopeAttribute("[System.Diagnostics.Conditional(\"DEBUG\")]");
         OpenScope("internal void _Validate()");
         WriteLine($"if ((HandleType)((uint)_value >> 25) != HandleType.{record.Name})");

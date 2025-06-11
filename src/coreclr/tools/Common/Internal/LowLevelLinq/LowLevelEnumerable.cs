@@ -26,5 +26,16 @@ namespace Internal.LowLevelLinq
                 yield return func(value);
             }
         }
+        public static IEnumerable<T> Where<T>(this IEnumerable<T> source, Func<T, bool> filter)
+        {
+            Debug.Assert(source != null);
+            Debug.Assert(filter != null);
+
+            foreach (T value in source)
+            {
+                if (filter(value))
+                    yield return value;
+            }
+        }
     }
 }

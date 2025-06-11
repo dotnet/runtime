@@ -4,10 +4,10 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Debug = System.Diagnostics.Debug;
 using ConditionalAttribute = System.Diagnostics.ConditionalAttribute;
+using Internal.LowLevelLinq;
 using Internal.NativeFormat;
 using Graph = Internal.Metadata.NativeFormat.Writer.AdjacencyGraph;
 using System.Runtime.InteropServices;
