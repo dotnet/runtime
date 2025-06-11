@@ -712,22 +712,32 @@ namespace System.Net.NetworkInformation.Tests
             "10.255.255.1"
         };
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(CancelSendPingExperiment_Data))]
         public Task _CancelSendPingExperiment1(string host) => CancelSendPingExperimentImpl(host);
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(CancelSendPingExperiment_Data))]
         public Task _CancelSendPingExperiment2(string host) => CancelSendPingExperimentImpl(host);
 
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(CancelSendPingExperiment_Data))]
         public Task _CancelSendPingExperiment3(string host) => CancelSendPingExperimentImpl(host);
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(CancelSendPingExperiment_Data))]
         public Task _CancelSendPingExperiment4(string host) => CancelSendPingExperimentImpl(host);
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(CancelSendPingExperiment_Data))]
+        [OuterLoop]
+        public Task _CancelSendPingExperiment_Outer1(string host) => CancelSendPingExperimentImpl(host);
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(CancelSendPingExperiment_Data))]
+        [OuterLoop]
+        public Task _CancelSendPingExperiment_Outer2(string host) => CancelSendPingExperimentImpl(host);
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false, false)]
