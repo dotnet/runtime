@@ -277,21 +277,19 @@ namespace System.Security.Cryptography.Tests
             AssertExportPkcs8PrivateKey(exportPkcs8 =>
                 indirectCallback(mldsa =>
                     DecodeExpandedKey(
-#if WINDOWS // TODO remove this when windows supports draft 10 PKCS#8 format
                         mldsa,
-#endif
                         PrivateKeyInfoAsn.Decode(
                             exportPkcs8(mldsa), AsnEncodingRules.DER).PrivateKey, AsnEncodingRules.DER).ExpandedKey?.ToArray()));
         }
 
-#if WINDOWS // TODO remove this when windows supports draft 10 PKCS#8 format
+        // TODO remove this when windows supports draft 10 PKCS#8 format
         internal static MLDsaPrivateKeyAsn DecodeExpandedKey(MLDsa mldsa, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
             try
             {
                 return MLDsaPrivateKeyAsn.Decode(encoded, ruleSet);
             }
-            catch (CryptographicException)
+            catch (CryptographicException) when (!SupportsDraft10Pkcs8)
             {
                 return new MLDsaPrivateKeyAsn
                 {
@@ -299,12 +297,6 @@ namespace System.Security.Cryptography.Tests
                 };
             }
         }
-#else
-        internal static MLDsaPrivateKeyAsn DecodeExpandedKey(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
-        {
-            return MLDsaPrivateKeyAsn.Decode(encoded, ruleSet);
-        }
-#endif
 
         internal static void AssertExportMLDsaPrivateSeed(Action<Func<MLDsa, byte[]>> callback) =>
             AssertExportMLDsaPrivateSeed(callback, callback);
@@ -321,21 +313,19 @@ namespace System.Security.Cryptography.Tests
             AssertExportPkcs8PrivateKey(exportPkcs8 =>
                 indirectCallback(mldsa =>
                     DecodePrivateSeed(
-#if WINDOWS // TODO remove this when windows supports draft 10 PKCS#8 format
                         mldsa,
-#endif
                         PrivateKeyInfoAsn.Decode(
                             exportPkcs8(mldsa), AsnEncodingRules.DER).PrivateKey, AsnEncodingRules.DER).Seed?.ToArray()));
         }
 
-#if WINDOWS // TODO remove this when windows supports draft 10 PKCS#8 format
+        // TODO remove this when windows supports draft 10 PKCS#8 format
         internal static MLDsaPrivateKeyAsn DecodePrivateSeed(MLDsa mldsa, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
             try
             {
                 return MLDsaPrivateKeyAsn.Decode(encoded, ruleSet);
             }
-            catch (CryptographicException)
+            catch (CryptographicException) when (!SupportsDraft10Pkcs8)
             {
                 return new MLDsaPrivateKeyAsn
                 {
@@ -343,12 +333,6 @@ namespace System.Security.Cryptography.Tests
                 };
             }
         }
-#else
-        internal static MLDsaPrivateKeyAsn DecodePrivateSeed(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
-        {
-            return MLDsaPrivateKeyAsn.Decode(encoded, ruleSet);
-        }
-#endif
 
         internal static void AssertExportPkcs8PrivateKey(MLDsa mldsa, Action<byte[]> callback) =>
             AssertExportPkcs8PrivateKey(export => callback(export(mldsa)));

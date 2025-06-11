@@ -390,7 +390,7 @@ namespace System.Security.Cryptography
         private static partial MLDsaAlgorithm AlgorithmFromHandle(CngKey key, out CngKey duplicateKey) =>
             throw new PlatformNotSupportedException();
 
-        public partial CngKey GetCngKey() =>
+        public partial CngKey Key =>
             throw new PlatformNotSupportedException();
 
         protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination) =>

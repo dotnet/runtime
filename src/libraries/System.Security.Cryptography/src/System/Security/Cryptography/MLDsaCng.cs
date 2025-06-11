@@ -38,9 +38,6 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Gets the key that will be used by the <see cref="MLDsaCng"/> object for any cryptographic operation that it performs.
         /// </summary>
-        /// <returns>
-        ///   The key used by the <see cref="MLDsaCng"/> object to perform cryptographic operations.
-        /// </returns>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
         /// </exception>
@@ -48,6 +45,6 @@ namespace System.Security.Cryptography
         ///   This <see cref="CngKey"/> object is not the same as the one passed to the <see cref="MLDsaCng"/> constructor,
         ///   if that constructor was used. However, it will point to the same CNG key.
         /// </remarks>
-        public partial CngKey GetCngKey();
+        public partial CngKey Key { get; }
     }
 }

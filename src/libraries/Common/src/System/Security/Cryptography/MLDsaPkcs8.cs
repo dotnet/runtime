@@ -121,6 +121,7 @@ namespace System.Security.Cryptography
                     ReadOnlyMemory<byte> key = privateKeyInfo.PrivateKey;
 
                     MLDsaPrivateKeyAsn mldsaPrivateKeyAsn = default;
+
                     if (key.Length == seedSize)
                     {
                         mldsaPrivateKeyAsn.Seed = key;

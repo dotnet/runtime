@@ -1041,6 +1041,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             CngKeyCreationParameters creationParameters = new CngKeyCreationParameters();
             CngProperty parameterSet = MLDsaTestHelpers.GetCngProperty(MLDsaAlgorithm.MLDsa44);
             creationParameters.Parameters.Add(parameterSet);
+            creationParameters.ExportPolicy = CngExportPolicies.AllowPlaintextExport;
 
             byte[] signature = new byte[MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes];
 
@@ -1060,6 +1061,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         mldsa.SignData("test"u8, signature);
                         Assert.True(mldsaCng.VerifyData("test"u8, signature));
                     }
+
+                    // Run a few iterations to catch nondeterministic use-after-dispose issues
+                    for (int i = 0; i < 5; i++)
+                    {
+                        using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1))) { }
+                    }
+
+                    mldsaCng.SignData("test"u8, signature);
                 }
 
                 // Some certs have disposed, did they delete the key?

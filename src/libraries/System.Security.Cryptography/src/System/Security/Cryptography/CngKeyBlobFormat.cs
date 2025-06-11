@@ -134,12 +134,15 @@ namespace System.Security.Cryptography
             }
         }
 
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngKeyBlobFormat PQDsaPublicBlob =>
             field ??= new CngKeyBlobFormat("PQDSAPUBLICBLOB"); // BCRYPT_PQDSA_PUBLIC_BLOB
 
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngKeyBlobFormat PQDsaPrivateBlob =>
             field ??= new CngKeyBlobFormat("PQDSAPRIVATEBLOB"); // BCRYPT_PQDSA_PRIVATE_BLOB
 
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngKeyBlobFormat PQDsaPrivateSeedBlob =>
             field ??= new CngKeyBlobFormat("PQDSAPRIVATESEEDBLOB"); // BCRYPT_PQDSA_PRIVATE_SEED_BLOB
 

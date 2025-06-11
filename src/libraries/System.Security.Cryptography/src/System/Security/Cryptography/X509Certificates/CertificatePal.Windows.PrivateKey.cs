@@ -196,21 +196,13 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (privateKey is MLDsaCng mldsaCng)
             {
-                CngKey key = mldsaCng.GetCngKey();
+                CngKey key = mldsaCng.Key;
 
                 ICertificatePal? clone = CopyWithPersistedCngKey(key);
 
                 if (clone != null)
                 {
                     return clone;
-                }
-
-                // TODO why are the other keys (ECDsa, Dsa, etc.) copying via export/import
-                // instead of doing the following? Maybe this fails if key isn't exportable
-                // (the export/import method can handle it by exporting encrypted pkcs#8)?
-                using (MLDsaCng clonedKey = new MLDsaCng(key))
-                {
-                    return CopyWithEphemeralKey(clonedKey.GetCngKey());
                 }
             }
 
@@ -222,14 +214,16 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            // MLDsa other: either export pkcs#8 or do the dance with export seed -> export secret key
-            // Note for pkcs#8, implementors may give us only a private key even when there's a seed, but
-            // we don't care.
+            // MLDsaCng and third-party implementations can be copied by exporting the PKCS#8 and importing it into
+            // a new MLDsaCng. An alternative to PKCS#8 would be to try the private seed and fall back to secret key,
+            // but that potentially requires two calls and wouldn't allow implementations to do anything smarter internally.
+            // Blobs may also be an option for MLDsaCng, but for now we will stick with PKCS#8.
             byte[] exportedPkcs8 = privateKey.ExportPkcs8PrivateKey();
 
+            using (PinAndClear.Track(exportedPkcs8))
             using (MLDsaCng clonedKey = MLDsaCng.ImportPkcs8PrivateKey(exportedPkcs8, out _))
             {
-                CngKey clonedCngKey = clonedKey.GetCngKey();
+                CngKey clonedCngKey = clonedKey.Key;
 
                 if (clonedCngKey.AlgorithmGroup != CngAlgorithmGroup.MLDsa)
                 {

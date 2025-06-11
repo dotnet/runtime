@@ -81,14 +81,14 @@ namespace System.Security.Cryptography
             }
         }
 
-        public partial CngKey GetCngKey()
+        public partial CngKey Key
         {
-            ThrowIfDisposed();
+            get
+            {
+                ThrowIfDisposed();
 
-            // TODO Should this duplicate the key? Other algos don't seem to in their
-            // Key property, but making this a method might imply to users that this
-            // a new copy that we made for them
-            return _key;
+                return _key;
+            }
         }
 
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
@@ -103,7 +103,6 @@ namespace System.Security.Cryptography
                 ExportKeyWithEncryptedOnlyExport(
                     static (ref readonly mldsaPrivateKeyAsn, algorithm, destination) =>
                     {
-                        // TODO If we get Both: can we trust that Windows will guarantee Seed and ExpandedKey match?
                         ReadOnlyMemory<byte>? seed = mldsaPrivateKeyAsn.Seed ?? mldsaPrivateKeyAsn.Both?.Seed;
 
                         if (seed is ReadOnlyMemory<byte> seedValue)
@@ -136,7 +135,6 @@ namespace System.Security.Cryptography
             {
                 ExportKeyWithEncryptedOnlyExport(static (ref readonly mldsaPrivateKeyAsn, algorithm, destination) =>
                 {
-                    // TODO If we get Both: can we trust that Windows will guarantee Seed and ExpandedKey match?
                     ReadOnlyMemory<byte>? expandedKey = mldsaPrivateKeyAsn.ExpandedKey ?? mldsaPrivateKeyAsn.Both?.ExpandedKey;
 
                     if (expandedKey is ReadOnlyMemory<byte> expandedKeyValue)
@@ -184,13 +182,7 @@ namespace System.Security.Cryptography
 
             if (encryptedOnlyExport)
             {
-                const string TemporaryExportPassword = "DotnetExportPhrase";
-                byte[] exported = _key.ExportPkcs8KeyBlob(TemporaryExportPassword, 1);
-
-                ArraySegment<byte> pkcs8 = KeyFormatHelper.DecryptPkcs8(
-                    TemporaryExportPassword,
-                    exported,
-                    out _);
+                ArraySegment<byte> pkcs8 = GetRentedPkcs8ForEncryptedOnlyExport();
 
                 try
                 {
@@ -283,8 +275,12 @@ namespace System.Security.Cryptography
             catch (CryptographicException)
             {
                 // TODO: Once Windows moves to new PKCS#8 format, we can remove this conversion.
-                ReadOnlySpan<byte> newPkcs8Source = MLDsaPkcs8.ConvertToOldChoicelessFormat(pkcs8Source);
-                key = CngKey.Import(newPkcs8Source, CngKeyBlobFormat.Pkcs8PrivateBlob);
+                byte[] newPkcs8Source = MLDsaPkcs8.ConvertToOldChoicelessFormat(pkcs8Source);
+
+                using (PinAndClear.Track(newPkcs8Source))
+                {
+                    key = CngKey.Import(newPkcs8Source, CngKeyBlobFormat.Pkcs8PrivateBlob);
+                }
             }
             catch (AsnContentException e)
             {
@@ -307,22 +303,27 @@ namespace System.Security.Cryptography
             Span<byte> destination)
         {
             byte[] blob = _key.Export(blobFormat);
-            ReadOnlySpan<byte> keyBytes = PqcBlobHelpers.DecodeMLDsaBlob(blob, out ReadOnlySpan<char> parameterSet, out string blobType);
-            string expectedParameterSet = PqcBlobHelpers.GetParameterSet(Algorithm);
 
-            if (blobType != blobFormat.Format ||
-                keyBytes.Length != expectedKeySize ||
-                !parameterSet.SequenceEqual(expectedParameterSet))
+            using (PinAndClear.Track(blob))
             {
-                Debug.Fail(
-                    $"{nameof(blobType)}: {blobType}, " +
-                    $"{nameof(parameterSet)}: {parameterSet}, " +
-                    $"{nameof(keyBytes)}.Length: {keyBytes.Length} / {expectedKeySize}");
+                ReadOnlySpan<byte> keyBytes = PqcBlobHelpers.DecodeMLDsaBlob(blob, out ReadOnlySpan<char> parameterSet, out string blobType);
 
-                throw new CryptographicException();
+                string expectedParameterSet = PqcBlobHelpers.GetParameterSet(Algorithm);
+
+                if (blobType != blobFormat.Format ||
+                    keyBytes.Length != expectedKeySize ||
+                    !parameterSet.SequenceEqual(expectedParameterSet))
+                {
+                    Debug.Fail(
+                        $"{nameof(blobType)}: {blobType}, " +
+                        $"{nameof(parameterSet)}: {parameterSet}, " +
+                        $"{nameof(keyBytes)}.Length: {keyBytes.Length} / {expectedKeySize}");
+
+                    throw new CryptographicException();
+                }
+
+                keyBytes.CopyTo(destination);
             }
-
-            keyBytes.CopyTo(destination);
         }
 
         private delegate void KeySelectorFunc(
@@ -332,13 +333,8 @@ namespace System.Security.Cryptography
 
         private void ExportKeyWithEncryptedOnlyExport(KeySelectorFunc keySelector, MLDsaAlgorithm algorithm, Span<byte> destination)
         {
-            const string TemporaryExportPassword = "DotnetExportPhrase";
-            byte[] exported = _key.ExportPkcs8KeyBlob(TemporaryExportPassword, 1);
-
-            ArraySegment<byte> pkcs8 = KeyFormatHelper.DecryptPkcs8(
-                TemporaryExportPassword,
-                exported,
-                out _);
+            ArraySegment<byte> pkcs8 = GetRentedPkcs8ForEncryptedOnlyExport();
+            byte[]? newPkcs8 = null;
 
             try
             {
@@ -349,19 +345,42 @@ namespace System.Security.Cryptography
                 {
                     mldsaPrivateKeyAsn = MLDsaPrivateKeyAsn.Decode(privateKey, AsnEncodingRules.BER);
                 }
-                catch
+                catch (CryptographicException)
                 {
                     // TODO: Once Windows moves to new PKCS#8 format, we can remove this conversion.
-                    byte[] newPkcs8 = MLDsaPkcs8.ConvertFromOldChoicelessFormat(pkcs8);
+                    newPkcs8 = MLDsaPkcs8.ConvertFromOldChoicelessFormat(pkcs8);
                     ReadOnlyMemory<byte> newPrivateKey = KeyFormatHelper.ReadPkcs8(KnownOids, newPkcs8, out _);
                     mldsaPrivateKeyAsn = MLDsaPrivateKeyAsn.Decode(newPrivateKey, AsnEncodingRules.BER);
+                }
+                catch (AsnContentException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
                 }
 
                 keySelector(ref mldsaPrivateKeyAsn, algorithm, destination);
             }
             finally
             {
+                if (newPkcs8 is not null)
+                {
+                    Array.Clear(newPkcs8);
+                }
+
                 CryptoPool.Return(pkcs8);
+            }
+        }
+
+        private ArraySegment<byte> GetRentedPkcs8ForEncryptedOnlyExport()
+        {
+            const string TemporaryExportPassword = "DotnetExportPhrase";
+            byte[] exported = _key.ExportPkcs8KeyBlob(TemporaryExportPassword, 1);
+
+            using (PinAndClear.Track(exported))
+            {
+                return KeyFormatHelper.DecryptPkcs8(
+                    TemporaryExportPassword,
+                    exported,
+                    out _);
             }
         }
     }
