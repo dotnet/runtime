@@ -132,7 +132,7 @@ namespace System.Tests
             bool secondHandlerCalled = false;
 
             using SemaphoreSlim semaphore = new(0);
-            using var _ = PosixSignalRegistration.Create(signal, ctx =>
+            using var first = PosixSignalRegistration.Create(signal, ctx =>
             {
                 Assert.Equal(signal, ctx.Signal);
 
