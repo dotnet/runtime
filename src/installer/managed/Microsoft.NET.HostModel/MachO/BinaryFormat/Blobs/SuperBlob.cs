@@ -1,14 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #nullable enable
+
 using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
-using System.IO;
-using System.IO.MemoryMappedFiles;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace Microsoft.NET.HostModel.MachO;
 
@@ -18,7 +17,7 @@ namespace Microsoft.NET.HostModel.MachO;
 /// This class handles reading and writing of all the sub-blobs.
 /// The blob contains the following structure:
 /// </summary>
-internal class SuperBlob : IBlob
+internal class SuperBlob : ISuperBlob
 {
     /// <inheritdoc />
     public BlobMagic Magic { get; }
@@ -27,91 +26,63 @@ internal class SuperBlob : IBlob
     public uint Size => (uint)(
         sizeof(uint) + sizeof(uint) // magic + size
         + sizeof(uint) // sub blob count
-        + _blobIndices.Count * BlobIndex.Size
-        + _blobs.Sum(b => b.Size));
+        + (uint)BlobIndices.Length * BlobIndex.Size
+        + Blobs.Sum(b => b.Size));
 
-    /// <summary>
-    /// Gets the number of sub-blobs in this super blob.
-    /// </summary>
-    protected uint SubBlobCount => (uint)_blobIndices.Count;
+    public uint BlobCount => (uint)Blobs.Length;
 
-    private List<BlobIndex> _blobIndices;
-    private List<IBlob> _blobs;
+    public ImmutableArray<BlobIndex> BlobIndices { get; }
+    public ImmutableArray<IBlob> Blobs { get; }
 
-    protected IEnumerable<IBlob> Blobs => _blobs;
-    protected IEnumerable<BlobIndex> BlobIndices => _blobIndices;
-
-    protected void RemoveBlob(CodeDirectorySpecialSlot slot)
+    public SuperBlob(BlobMagic magic, IEnumerable<BlobIndex> blobIndices, IEnumerable<IBlob> blobs)
     {
-        int index = _blobIndices.FindIndex(b => b.Slot == slot);
-        if (index < 0)
-        {
-            return;
-        }
-        _blobIndices.RemoveAt(index);
-        _blobs.RemoveAt(index);
-        uint offset = (uint)(sizeof(uint) * 3 + _blobIndices.Count * BlobIndex.Size);
-        for (int i = index + 1; i < _blobIndices.Count; i++)
-        {
-            _blobIndices[i] = new BlobIndex(_blobIndices[i].Slot, offset);
-            offset += _blobs[i].Size;
-        }
-    }
-
-    /// <summary>
-    /// Inserts a blob into the SuperBlob such that the order of the blobs is maintained.
-    /// Will throw an exception if a blob with the same slot already exists.
-    /// </summary>
-    /// <param name="blob">The blob to insert.</param>
-    /// <param name="slot">The slot to insert the blob into. The Offset property does not need to be set.</param>
-    protected void AddBlob(IBlob blob, CodeDirectorySpecialSlot slot)
-    {
-        // Find the insertion point for the new blob based on slot order
-        int insertionIndex = 0;
-        while (insertionIndex < _blobIndices.Count && _blobIndices[insertionIndex].Slot < slot)
-        {
-            insertionIndex++;
-        }
-
-        // Check if a blob with the same slot already exists
-        if (insertionIndex < _blobIndices.Count && _blobIndices[insertionIndex].Slot == slot)
-        {
-            throw new InvalidOperationException($"Blob with slot {slot} already exists.");
-        }
-
-        // Insert the new blob at the correct position
-        _blobIndices.Insert(insertionIndex, new BlobIndex(slot, 0)); // Temporary offset
-        _blobs.Insert(insertionIndex, blob);
-
-        // Recalculate all offsets
-        uint offset = (uint)(sizeof(uint) * 3 + _blobIndices.Count * BlobIndex.Size);
-        for (int i = 0; i < _blobIndices.Count; i++)
-        {
-            _blobIndices[i] = new BlobIndex(_blobIndices[i].Slot, offset);
-            offset += _blobs[i].Size;
-        }
-    }
-
-    public SuperBlob(BlobMagic magic, List<BlobIndex> blobIndices, List<IBlob> blobs)
-    {
-        if (blobIndices.Count != blobs.Count)
+        if (blobIndices.Count() != blobs.Count())
         {
             throw new ArgumentException("Blob indices and blobs count must match.");
         }
         Magic = magic;
-        _blobs = blobs;
-        _blobIndices = blobIndices;
+        Blobs = blobs.ToImmutableArray();
+        BlobIndices = blobIndices.ToImmutableArray();
+        ValidateBlobs(Blobs, BlobIndices);
     }
 
-    protected SuperBlob(SuperBlob other)
+    protected SuperBlob(BlobMagic magic)
+    {
+        Magic = magic;
+        Blobs = ImmutableArray<IBlob>.Empty;
+        BlobIndices = ImmutableArray<BlobIndex>.Empty;
+    }
+
+    public SuperBlob(SuperBlob other)
     {
         Magic = other.Magic;
-        _blobs = other._blobs;
-        _blobIndices = other._blobIndices;
+        Blobs = other.Blobs;
+        BlobIndices = other.BlobIndices;
     }
 
-    protected SuperBlob(BlobMagic magic) : this(magic, [], [])
+    [Conditional("DEBUG")]
+    private static void ValidateBlobs(IEnumerable<IBlob> blobs, IEnumerable<BlobIndex> blobIndices)
     {
+        if (blobs.Count() != blobIndices.Count())
+        {
+            throw new InvalidOperationException("Blobs and blob indices count must match.");
+        }
+        uint expectedBlobOffset = (uint)(sizeof(uint) * 3 + blobIndices.Count() * BlobIndex.Size);
+        uint count = (uint)blobs.Count();
+        for (int i = 0; i < count; i++)
+        {
+            var blob = blobs.ElementAt(i);
+            var blobidx = blobIndices.ElementAt(i);
+            if (blob.Size == 0)
+            {
+                throw new InvalidOperationException("Blob size cannot be zero.");
+            }
+            if (blobidx.Offset != expectedBlobOffset)
+            {
+                throw new InvalidOperationException($"Blob index offset {blobidx.Offset} does not match expected offset {expectedBlobOffset}.");
+            }
+            expectedBlobOffset += blob.Size;
+        }
     }
 
     public int Write(IMachOFileWriter file, long offset)
@@ -121,23 +92,47 @@ internal class SuperBlob : IBlob
         file.WriteUInt32BigEndian(offset + sizeof(uint), Size);
 
         // Write sub blob count
-        uint count = SubBlobCount;
+        uint count = (uint)Blobs.Length;
         file.WriteUInt32BigEndian(offset + sizeof(uint) * 2, count);
 
         // Write blob indices
-        for (int i = 0; i < SubBlobCount; i++)
+        for (int i = 0; i < Blobs.Length; i++)
         {
-            var blobIndex = _blobIndices[i];
+            var blobIndex = BlobIndices[i];
             file.Write(offset + sizeof(uint) * 3 + (i * BlobIndex.Size), ref blobIndex);
         }
 
         // Write blobs
-        long currentOffset = offset + sizeof(uint) * 3 + (SubBlobCount * BlobIndex.Size);
-        for (int i = 0; i < SubBlobCount; i++)
+        long currentOffset = offset + sizeof(uint) * 3 + (Blobs.Length * BlobIndex.Size);
+        for (int i = 0; i < Blobs.Length; i++)
         {
-            currentOffset += _blobs[i].Write(file, currentOffset);
+            currentOffset += Blobs[i].Write(file, currentOffset);
         }
 
         return (int)Size;
+    }
+
+    /// <summary>
+    /// Creates a SuperBlob by reading from a memory-mapped file.
+    /// </summary>
+    public static SuperBlob Read(IMachOFileReader reader, long offset)
+    {
+        BlobMagic magic = (BlobMagic)reader.ReadUInt32BigEndian(offset);
+        uint size = reader.ReadUInt32BigEndian(offset + sizeof(BlobMagic));
+        uint count = reader.ReadUInt32BigEndian(offset + sizeof(BlobMagic) + sizeof(uint));
+
+        var blobs = new List<IBlob>((int)count);
+        var blobIndices = new List<BlobIndex>((int)count);
+        for (int i = 0; i < count; i++)
+        {
+            reader.Read(offset + sizeof(uint) * 3 + (i * BlobIndex.Size), out BlobIndex blobIndex);
+            blobIndices.Add(blobIndex);
+            blobs.Add(BlobParser.ParseBlob(reader, offset + blobIndex.Offset));
+        }
+        Debug.Assert(size == sizeof(uint) + sizeof(uint) + sizeof(uint)
+                             + blobIndices.Count * BlobIndex.Size
+                             + blobs.Sum(b => b.Size));
+
+        return new SuperBlob(magic, blobIndices, blobs);
     }
 }

@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.IO;
 #nullable enable
+
+using System;
+using System.Collections.Immutable;
+using System.IO;
 
 namespace Microsoft.NET.HostModel.MachO;
 
@@ -15,8 +17,62 @@ namespace Microsoft.NET.HostModel.MachO;
 /// but will be present in newly created signatures.
 /// Optionally, it may also contain the EntitlementsBlob and DerEntitlementsBlob.
 /// </summary>
-internal sealed class EmbeddedSignatureBlob : SuperBlob
+internal sealed class EmbeddedSignatureBlob : ISuperBlob
 {
+    private SuperBlob _inner;
+
+    public EmbeddedSignatureBlob(SuperBlob superBlob)
+    {
+        _inner = superBlob;
+        if (superBlob.Magic != BlobMagic.EmbeddedSignature)
+        {
+            throw new InvalidDataException($"Invalid magic for EmbeddedSignatureBlob: {superBlob.Magic}");
+        }
+    }
+
+    /// <summary>
+    /// Creates a new EmbeddedSignatureBlob with the specified blobs.
+    /// </summary>
+    public EmbeddedSignatureBlob(
+        CodeDirectoryBlob codeDirectoryBlob,
+        RequirementsBlob requirementsBlob,
+        CmsWrapperBlob cmsWrapperBlob,
+        EntitlementsBlob? entitlementsBlob,
+        DerEntitlementsBlob? derEntitlementsBlob)
+    {
+        int blobCount = 3 + (entitlementsBlob is not null ? 1 : 0) + (derEntitlementsBlob is not null ? 1 : 0);
+        var blobs = ImmutableArray.CreateBuilder<IBlob>(blobCount);
+        var blobIndices = ImmutableArray.CreateBuilder<BlobIndex>(blobCount);
+        uint expectedOffset = (uint)(sizeof(uint) * 3 + (BlobIndex.Size * blobCount));
+        blobs.Add(codeDirectoryBlob);
+        blobIndices.Add(new BlobIndex(CodeDirectorySpecialSlot.CodeDirectory, expectedOffset));
+        expectedOffset += codeDirectoryBlob.Size;
+        blobs.Add(requirementsBlob);
+        blobIndices.Add(new BlobIndex(CodeDirectorySpecialSlot.Requirements, expectedOffset));
+        expectedOffset += requirementsBlob.Size;
+        blobs.Add(cmsWrapperBlob);
+        blobIndices.Add(new BlobIndex(CodeDirectorySpecialSlot.CmsWrapper, expectedOffset));
+        expectedOffset += cmsWrapperBlob.Size;
+        if (entitlementsBlob is not null)
+        {
+            blobs.Add(entitlementsBlob);
+            blobIndices.Add(new BlobIndex(CodeDirectorySpecialSlot.Entitlements, expectedOffset));
+            expectedOffset += entitlementsBlob.Size;
+        }
+        if (derEntitlementsBlob is not null)
+        {
+            blobs.Add(derEntitlementsBlob);
+            blobIndices.Add(new BlobIndex(CodeDirectorySpecialSlot.DerEntitlements, expectedOffset));
+        }
+        _inner = new SuperBlob(BlobMagic.EmbeddedSignature, blobIndices.MoveToImmutable(), blobs.MoveToImmutable());
+    }
+
+    public BlobMagic Magic => _inner.Magic;
+    public uint Size => _inner.Size;
+    public uint BlobCount => ((ISuperBlob)_inner).BlobCount;
+    public ImmutableArray<BlobIndex> BlobIndices => _inner.BlobIndices;
+    public ImmutableArray<IBlob> Blobs => _inner.Blobs;
+
     public CodeDirectoryBlob CodeDirectoryBlob
     {
         get
@@ -88,38 +144,6 @@ internal sealed class EmbeddedSignatureBlob : SuperBlob
         }
     }
 
-    public EmbeddedSignatureBlob(SuperBlob superBlob)
-        : base(superBlob)
-    {
-        if (Magic != BlobMagic.EmbeddedSignature)
-        {
-            throw new InvalidDataException($"Invalid magic for EmbeddedSignatureBlob: {Magic}");
-        }
-    }
-
-    /// <summary>
-    /// Creates a new EmbeddedSignatureBlob with the specified blobs.
-    /// </summary>
-    public EmbeddedSignatureBlob(
-        CodeDirectoryBlob codeDirectoryBlob,
-        RequirementsBlob requirementsBlob,
-        CmsWrapperBlob cmsWrapperBlob,
-        EntitlementsBlob? entitlementsBlob,
-        DerEntitlementsBlob? derEntitlementsBlob)
-        : base(BlobMagic.EmbeddedSignature)
-    {
-        AddBlob(codeDirectoryBlob, CodeDirectorySpecialSlot.CodeDirectory);
-        AddBlob(requirementsBlob, CodeDirectorySpecialSlot.Requirements);
-        AddBlob(cmsWrapperBlob, CodeDirectorySpecialSlot.CmsWrapper);
-        if (entitlementsBlob != null)
-        {
-            AddBlob(entitlementsBlob, CodeDirectorySpecialSlot.Entitlements);
-        }
-        if (derEntitlementsBlob != null)
-        {
-            AddBlob(derEntitlementsBlob, CodeDirectorySpecialSlot.DerEntitlements);
-        }
-    }
 
     public uint GetSpecialSlotHashCount()
     {
@@ -135,6 +159,11 @@ internal sealed class EmbeddedSignatureBlob : SuperBlob
             }
         }
         return maxSlot;
+    }
+
+    public int Write(IMachOFileWriter writer, long offset)
+    {
+        return _inner.Write(writer, offset);
     }
 
     /// <summary>

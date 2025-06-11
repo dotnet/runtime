@@ -10,20 +10,27 @@ namespace Microsoft.NET.HostModel.MachO;
 /// Requirements is a SuperBlob.
 /// It should be empty but present for all created or written signatures.
 /// </summary>
-internal sealed class RequirementsBlob : SuperBlob
+internal sealed class RequirementsBlob : IBlob
 {
+    private SuperBlob _inner;
+
     public RequirementsBlob(SuperBlob blob)
-        : base(blob)
     {
-        if (Magic != BlobMagic.Requirements)
+        if (blob.Magic != BlobMagic.Requirements)
         {
-            throw new ArgumentException($"Expected a SuperBlob with Magic number '{BlobMagic.Requirements}', got '{Magic}'.");
+            throw new ArgumentException($"Expected a SuperBlob with Magic number '{BlobMagic.Requirements}', got '{blob.Magic}'.");
         }
+        _inner = blob;
     }
 
-    private RequirementsBlob(BlobMagic blobMagic) : base(blobMagic)
-    {
-    }
+    public static RequirementsBlob Empty { get; } = new RequirementsBlob(new SuperBlob(BlobMagic.Requirements, [], []));
 
-    public static RequirementsBlob Empty { get; } = new RequirementsBlob(BlobMagic.Requirements);
+    /// <inheritdoc />
+    public BlobMagic Magic => ((IBlob)_inner).Magic;
+
+    /// <inheritdoc />
+    public uint Size => ((IBlob)_inner).Size;
+
+    /// <inheritdoc />
+    public int Write(IMachOFileWriter writer, long offset) => ((IBlob)_inner).Write(writer, offset);
 }

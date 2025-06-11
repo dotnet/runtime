@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using Microsoft.NET.HostModel.AppHost;
-#nullable enable
 
 namespace Microsoft.NET.HostModel.MachO;
 
@@ -88,7 +89,7 @@ internal unsafe partial class MachObjectFile
             out long lowestSection);
         EmbeddedSignatureBlob? codeSignatureBlob = codeSignatureLC.Command.IsDefault
             ? null
-            : (EmbeddedSignatureBlob)BlobFactory.ReadBlob(file, codeSignatureLC.Command.GetDataOffset(header));
+            : (EmbeddedSignatureBlob)BlobParser.ParseBlob(file, codeSignatureLC.Command.GetDataOffset(header));
         return new MachObjectFile(
             header,
             codeSignatureLC,

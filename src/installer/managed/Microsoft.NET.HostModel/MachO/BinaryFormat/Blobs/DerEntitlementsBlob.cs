@@ -5,27 +5,31 @@ using System.IO;
 
 namespace Microsoft.NET.HostModel.MachO;
 
-internal sealed class DerEntitlementsBlob : SimpleBlob
+internal sealed class DerEntitlementsBlob : IBlob
 {
-    public DerEntitlementsBlob(byte[] data) : base(BlobMagic.DerEntitlements, data)
-    {
-        if (Size > MaxSize)
-        {
-            throw new InvalidDataException($"DerEntitlementsBlob size exceeds maximum allowed size: {Data.Length} > {MaxSize}");
-        }
-    }
+    private SimpleBlob _inner;
 
-    public DerEntitlementsBlob(SimpleBlob blob) : base(blob)
+    public DerEntitlementsBlob(SimpleBlob blob)
     {
-        if (Size > MaxSize)
+        _inner = blob;
+        if (blob.Size > MaxSize)
         {
-            throw new InvalidDataException($"DerEntitlementsBlob size exceeds maximum allowed size: {Size} > {MaxSize}");
+            throw new InvalidDataException($"DerEntitlementsBlob size exceeds maximum allowed size: {blob.Data.Length} > {MaxSize}");
         }
-        if (Magic != BlobMagic.DerEntitlements)
+        if (blob.Magic != BlobMagic.DerEntitlements)
         {
-            throw new InvalidDataException($"Invalid magic for DerEntitlementsBlob: {Magic}");
+            throw new InvalidDataException($"Invalid magic for DerEntitlementsBlob: {blob.Magic}");
         }
     }
 
     public static uint MaxSize => 1024;
+
+    /// <inheritdoc />
+    public BlobMagic Magic => ((IBlob)_inner).Magic;
+
+    /// <inheritdoc />
+    public uint Size => ((IBlob)_inner).Size;
+
+    /// <inheritdoc />
+    public int Write(IMachOFileWriter writer, long offset) => ((IBlob)_inner).Write(writer, offset);
 }

@@ -1,17 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Microsoft.NET.HostModel.MachO;
-
-#nullable enable
 
 /// <summary>
 /// A code signature blob for version 0x20400 only.
@@ -21,19 +20,10 @@ namespace Microsoft.NET.HostModel.MachO;
 /// </remarks>
 internal sealed class CodeDirectoryBlob : IBlob
 {
-    public BlobMagic Magic => BlobMagic.CodeDirectory;
-
-    public uint Size => (uint)(sizeof(uint) + sizeof(uint) // magic + size
-        + CodeDirectoryHeader.Size
-        + Encoding.UTF8.GetByteCount(_identifier) + 1 // +1 for null terminator
-        + SpecialSlotCount * HashSize
-        + CodeSlotCount * HashSize);
     private CodeDirectoryHeader _cdHeader;
     private string _identifier;
     private byte[][] _specialSlotHashes;
     private byte[][] _codeHashes;
-
-    public static HashType DefaultHashType => HashType.SHA256;
 
     private CodeDirectoryBlob(
         CodeDirectoryHeader cdHeader,
@@ -99,6 +89,17 @@ internal sealed class CodeDirectoryBlob : IBlob
         _specialSlotHashes = specialSlotHashes;
         _codeHashes = codeHashes;
     }
+
+    public static HashType DefaultHashType => HashType.SHA256;
+
+    public BlobMagic Magic => BlobMagic.CodeDirectory;
+
+    public uint Size => (uint)(sizeof(uint) + sizeof(uint) // magic + size
+        + CodeDirectoryHeader.Size
+        + Encoding.UTF8.GetByteCount(_identifier) + 1 // +1 for null terminator
+        + SpecialSlotCount * HashSize
+        + CodeSlotCount * HashSize);
+
 
     public static CodeDirectoryBlob Create(
         IMachOFileReader accessor,
