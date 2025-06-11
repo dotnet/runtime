@@ -341,6 +341,8 @@ session_provider_tracepoint_config_free (EventPipeSessionProviderTracepointConfi
 		tracepoint_config->tracepoints = NULL;
 	}
 
+	ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_config->default_tracepoint.tracepoint_format);
+
 	ep_rt_object_free (tracepoint_config);
 }
 
