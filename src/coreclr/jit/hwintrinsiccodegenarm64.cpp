@@ -813,6 +813,20 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
                                 break;
 
+                            case NI_Sve_MultiplyByScalar:
+                            {
+                                if (targetReg != embMaskOp1Reg)
+                                {
+                                    GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, maskReg,
+                                        embMaskOp1Reg, opt);
+                                }
+                                assert(intrinEmbMask.op2->IsCnsFltOrDbl());
+                                double imm = intrinEmbMask.op2->AsDblCon()->DconValue(); 
+                                assert((imm == 0.5) || (imm == 2.0));
+                                GetEmitter()->emitIns_R_R_F(insEmbMask, emitSize, targetReg, op1Reg, imm, opt);
+                                break;
+                            }
+
                             default:
                                 assert(targetReg != embMaskOp2Reg);
 
@@ -2739,6 +2753,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op3Reg, op1Reg, INS_OPTS_SCALABLE_D);
                 break;
 
+            case NI_Sve_MultiplyByScalar:
+            {
+                if (targetReg != op2Reg)
+                {
+                    GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op2Reg);
+                }
+                assert(node->IsCnsFltOrDbl());
+                unsigned imm = node->AsDblCon()->DconValue() == 0.5 ? 0 : 1;
+                GetEmitter()->emitInsSve_R_R_I(ins, emitSize, targetReg, op1Reg, opt);
+            }
             default:
                 unreached();
         }

@@ -21049,7 +21049,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 broadcastOp = &op2;
             }
 
-            if (broadcastOp != nullptr)
+            if ((broadcastOp != nullptr) && !isScalable)
             {
 #if defined(TARGET_ARM64)
                 if (varTypeIsLong(simdBaseType))
@@ -21509,19 +21509,38 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 #elif defined(TARGET_ARM64)
             if (isScalable)
             {
+                if (!varTypeIsSIMD(op2))
+                {
+                    if (varTypeIsFloating(op2))
+                    {
+                        double op2Cns = 0.0;
+                        if (op2->IsCnsFltOrDbl())
+                        {
+                            op2Cns = op2->AsDblCon()->DconValue();
+                        }
+
+                        if ((op2Cns == 0.5) || (op2Cns == 2.0))
+                        {
+                            //GenTree* trueMask = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+                            return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_Sve_MultiplyByScalar, simdBaseJitType, simdSize);
+                        }
+                    }
+                    op2 = gtNewSimdHWIntrinsicNode(type, op2, NI_Sve_DuplicateScalarToVector, simdBaseJitType, simdSize);
+                }
                 return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_Sve_Multiply, simdBaseJitType, simdSize);
             }
             else if (varTypeIsLong(simdBaseType))
             {
+                assert(varTypeIsSIMD(op1));
+
                 GenTree** op2ToDup = nullptr;
 
-                assert(varTypeIsSIMD(op1));
-                op1                = gtNewSimdToScalarNode(TYP_LONG, op1, simdBaseJitType, simdSize);
+                op1 = gtNewSimdToScalarNode(TYP_LONG, op1, simdBaseJitType, simdSize);
                 GenTree** op1ToDup = &op1->AsHWIntrinsic()->Op(1);
 
                 if (varTypeIsSIMD(op2))
                 {
-                    op2      = gtNewSimdToScalarNode(TYP_LONG, op2, simdBaseJitType, simdSize);
+                    op2 = gtNewSimdToScalarNode(TYP_LONG, op2, simdBaseJitType, simdSize);
                     op2ToDup = &op2->AsHWIntrinsic()->Op(1);
                 }
 
@@ -29805,6 +29824,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(var_types simdType, 
                 sveId = NI_Sve_Divide;
                 break;
             case NI_AdvSimd_Floor:
+            case NI_AdvSimd_Arm64_Floor:
                 sveId = NI_Sve_RoundToNegativeInfinity;
                 break;
             case NI_AdvSimd_FusedMultiplyAdd:
@@ -29842,6 +29862,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(var_types simdType, 
                 sveId = NI_Sve_RoundToNearest;
                 break;
             case NI_AdvSimd_RoundToZero:
+            case NI_AdvSimd_Arm64_RoundToZero:
                 sveId = NI_Sve_RoundToZero;
                 break;
             case NI_AdvSimd_ShiftLogical:
@@ -30390,17 +30411,24 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
                 id = NI_SSE2_MultiplyLow;
             }
 #elif defined(TARGET_ARM64)
-            if ((simdSize == 8) && (isScalar || (simdBaseType == TYP_DOUBLE)))
+            if (isScalable)
             {
-                id = NI_AdvSimd_MultiplyScalar;
+                id = varTypeIsSIMD(op2) ? NI_Sve_Multiply : NI_Illegal;
             }
-            else if (simdBaseType == TYP_DOUBLE)
+            else
             {
-                id = op2->TypeIs(simdType) ? NI_AdvSimd_Arm64_Multiply : NI_AdvSimd_Arm64_MultiplyByScalar;
-            }
-            else if (!varTypeIsLong(simdBaseType))
-            {
-                id = op2->TypeIs(simdType) ? NI_AdvSimd_Multiply : NI_AdvSimd_MultiplyByScalar;
+                if ((simdSize == 8) && (simdBaseType == TYP_DOUBLE))
+                {
+                    id = NI_AdvSimd_MultiplyScalar;
+                }
+                else if (simdBaseType == TYP_DOUBLE)
+                {
+                    id = op2->TypeIs(simdType) ? NI_AdvSimd_Arm64_Multiply : NI_AdvSimd_Arm64_MultiplyByScalar;
+                }
+                else if (!varTypeIsLong(simdBaseType))
+                {
+                    id = op2->TypeIs(simdType) ? NI_AdvSimd_Multiply : NI_AdvSimd_MultiplyByScalar;
+                }
             }
 #endif // !TARGET_XARCH && !TARGET_ARM64
             break;

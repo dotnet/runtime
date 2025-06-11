@@ -1735,6 +1735,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op2     = impPopStack().val;
             op1     = impPopStack().val;
+
+            //TODO-VL: There is no way to do floating point `initial and `step` in SVE, corresponding
+            // to the `Vector.CreateSequence<float>(). For now, just treat it as integral.
+            if (!varTypeIsIntegral(op1))
+            {
+                op1 = gtNewCastNode(TYP_LONG, op1, false, TYP_LONG);
+            }
+            if (!varTypeIsIntegral(op2))
+            {
+                op2 = gtNewCastNode(TYP_LONG, op2, false, TYP_LONG);
+            }
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_Sve_Index, simdBaseJitType, simdSize);
             break;
         }
@@ -2337,6 +2348,24 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Vector_op_Multiply:
+        {
+            assert(sig->numArgs == 2);
+
+            CORINFO_ARG_LIST_HANDLE arg1 = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2 = info.compCompHnd->getArgNext(arg1);
+            var_types               argType = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2 = getArgForHWIntrinsic(argType, argClass);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1 = getArgForHWIntrinsic(argType, argClass);
+
+            retNode = gtNewSimdBinOpNode(GT_MUL, retType, op1, op2, simdBaseJitType, simdSize, true);
+            break;
+        }
+
         case NI_Vector64_op_Multiply:
         case NI_Vector128_op_Multiply:
         {
@@ -2353,7 +2382,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
 
-            retNode = gtNewSimdBinOpNode(GT_MUL, retType, op1, op2, simdBaseJitType, simdSize, intrinsic == NI_Vector_op_Multiply);
+            retNode = gtNewSimdBinOpNode(GT_MUL, retType, op1, op2, simdBaseJitType, simdSize, false);
             break;
         }
 

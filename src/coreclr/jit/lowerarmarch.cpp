@@ -4315,6 +4315,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
             }
+            case NI_Sve_MultiplyByScalar:
+            {
+                MakeSrcContained(node, intrin.op2);
+                break;
+            }
 
             default:
                 unreached();
