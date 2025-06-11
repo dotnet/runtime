@@ -2506,17 +2506,14 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
                 }
                 m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
             }
-            else if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && !readonly)
+            else if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && newObj)
             {
                 CORINFO_CLASS_HANDLE arrayClsHnd = m_compHnd->getMethodClass(resolvedCallToken.hMethod);
                 uint32_t rank = m_compHnd->getArrayRank(arrayClsHnd);
 
-                if (callInfo.sig.retType == CORINFO_TYPE_VOID && callInfo.sig.numArgs == rank && (m_compHnd->getMethodAttribs(resolvedCallToken.hMethod) & CORINFO_FLG_CONSTRUCTOR) != 0)
-                {
-                    AddIns(INTOP_NEWMDARR);
-                    m_pLastNewIns->data[0] = GetDataItemIndex(arrayClsHnd);
-                    m_pLastNewIns->data[1] = rank;
-                }
+                AddIns(INTOP_NEWMDARR);
+                m_pLastNewIns->data[0] = GetDataItemIndex(arrayClsHnd);
+                m_pLastNewIns->data[1] = rank;
             }
             else
             {
