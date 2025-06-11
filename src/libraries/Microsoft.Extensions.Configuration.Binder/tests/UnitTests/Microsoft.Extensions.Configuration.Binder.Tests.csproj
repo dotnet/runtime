@@ -4,14 +4,16 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" /> 
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs"
              Link="Common\ConfigurationProviderExtensions.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs"
              Link="Common\TestStreamHelpers.cs" />
+    <Compile Include="$(CommonPath)System\AppContextSwitchHelper.cs" Link="Common\src\System\AppContextSwitchHelper.cs" />
     <Compile Include="..\Common\ConfigurationBinderTests.cs" Link="Common\ConfigurationBinderTests.cs" />
     <Compile Include="..\Common\ConfigurationBinderTests.Collections.cs" Link="Common\ConfigurationBinderTests.Collections.cs" />
     <Compile Include="..\Common\ConfigurationBinderTests.Helpers.cs" Link="Common\ConfigurationBinderTests.Helpers.cs" />

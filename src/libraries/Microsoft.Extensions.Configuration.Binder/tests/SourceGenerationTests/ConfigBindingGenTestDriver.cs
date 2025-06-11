@@ -15,12 +15,17 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Extensions.Configuration.Binder.SourceGeneration;
 using SourceGenerators.Tests;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
+        public ConfigurationBindingGeneratorTests(ITestOutputHelper output) : base(output)
+        {
+        }
+
         internal sealed class ConfigBindingGenTestDriver
         {
             private readonly CSharpParseOptions _parseOptions;

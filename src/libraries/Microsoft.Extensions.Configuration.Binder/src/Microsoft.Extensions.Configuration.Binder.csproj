@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs" Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs" />
+    <Compile Include="$(CommonPath)System\AppContextSwitchHelper.cs" Link="Common\src\System\AppContextSwitchHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
@@ -33,6 +34,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\src\Microsoft.Extensions.Configuration.csproj" />
     <ProjectReference Include="..\gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj"
                       ReferenceOutputAssembly="false"
                       PackAsAnalyzer="true" />

@@ -67,14 +67,65 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             ValidateConfigurationKeys(typeof(global::Program.MyClass2), s_configKeys_ProgramMyClass2, configuration, binderOptions);
 
-            if (configuration["MyInt"] is string value1 && !string.IsNullOrEmpty(value1))
+            if (TryGetConfigurationValue(configuration, key: "MyInt", out string? value1))
             {
-                instance.MyInt = ParseInt(value1, configuration.GetSection("MyInt").Path);
+                if (!string.IsNullOrEmpty(value1))
+                {
+                    instance.MyInt = ParseInt(value1, configuration.GetSection("MyInt").Path);
+                }
             }
             else if (defaultValueIfNotFound)
             {
                 instance.MyInt = instance.MyInt;
             }
+        }
+
+        /// <summary>Tries to get the configuration value for the specified key.</summary>
+        public static bool TryGetConfigurationValue(IConfiguration configuration, string key, out string? value)
+        {
+            if (configuration is ConfigurationSection section)
+            {
+                var result = section.TryGetValue(key, out value);
+                if (!DisallowNullConfigSwitch)
+                {
+                    return result;
+                }
+            }
+            else if (key != null)
+            {
+                value = configuration[key];
+            }
+            else
+            {
+                value = configuration is IConfigurationSection sec ? sec.Value : null;
+            }
+        
+            return value != null;
+        }
+        
+        /// <summary>Config switch to have the compatibility mode having the binder treat null configuration values as missing.</summary>
+        private static bool DisallowNullConfigSwitch { get; } = GetBooleanConfig("Microsoft.Configuration.DisallowNull", "DOTNET_MICROSOFT_CONFIGURATION_DISALLOWNULL");
+        
+        private static bool GetBooleanConfig(string switchName, string envVariable, bool defaultValue = false)
+        {
+            if (global::System.AppContext.TryGetSwitch(switchName, out bool value))
+            {
+                return value;
+            }
+        
+            if (global::System.Environment.GetEnvironmentVariable(envVariable) is string str)
+            {
+                if (str == "1" || string.Equals(str, bool.TrueString, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+                if (str == "0" || string.Equals(str, bool.FalseString, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+        
+            return defaultValue;
         }
 
 
@@ -144,7 +195,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
         #endregion Core binding extensions.
