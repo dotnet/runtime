@@ -1331,7 +1331,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
     else if (isa == InstructionSet_Vector)
     {
-        if (!comp->IsBaselineSimdIsaSupported())
+        if (!isHWIntrinsicEnabled)
         {
             return NI_Illegal;
         }

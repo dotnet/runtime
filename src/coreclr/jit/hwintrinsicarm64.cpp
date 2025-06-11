@@ -203,7 +203,6 @@ int HWIntrinsicInfo::lookupIval(NamedIntrinsic id)
     }
     return -1;
 }
-        case InstructionSet_Vector:
 
 //------------------------------------------------------------------------
 // getHWIntrinsicImmOps: Gets the immediate Ops for an intrinsic

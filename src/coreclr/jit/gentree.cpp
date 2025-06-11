@@ -29580,9 +29580,8 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForUnOp(
 #if defined(TARGET_ARM64)
     assert(!isScalar || (simdSize == 8));
     assert(!isScalar || varTypeIsFloating(simdBaseType));
-    assert(comp->IsBaselineSimdIsaSupportedDebugOnly());
     assert((simdSize <= 16) || (Compiler::SizeMatchesVectorTLength(simdSize)));
-#else
+#elif defined(TARGET_XARCH)
     if (simdSize == 64)
     {
         assert(!isScalar);
@@ -29594,11 +29593,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForUnOp(
         assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
     }
     else
-#endif // TARGET_XARCH
     {
         assert(!isScalar || varTypeIsFloating(simdBaseType));
     }
-#endif
+#endif // TARGET_ARM64 || TARGET_XARCH
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(simdType));
@@ -29694,9 +29692,8 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
 #if defined(TARGET_ARM64)
     assert(!isScalar || (simdSize == 8));
     assert(!isScalar || varTypeIsFloating(simdBaseType));
-    assert(comp->IsBaselineSimdIsaSupportedDebugOnly());
     assert((simdSize <= 16) || (Compiler::SizeMatchesVectorTLength(simdSize)));
-#else
+#elif defined(TARGET_XARCH)
     if (simdSize == 64)
     {
         assert(!isScalar);
@@ -29708,11 +29705,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
     }
     else
-#endif // TARGET_XARCH
     {
         assert(!isScalar || varTypeIsFloating(simdBaseType));
     }
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 || TARGET_XARCH
 
     NamedIntrinsic id = NI_Illegal;
 
