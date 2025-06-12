@@ -999,7 +999,7 @@ void LCGMethodResolver::DestroyCodeHeapMemory()
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
         PRECONDITION(FinalizerThread::IsCurrentThreadFinalizer());
     }
