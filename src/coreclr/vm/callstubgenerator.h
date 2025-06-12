@@ -50,6 +50,35 @@ struct CallStubHeader
 // how to translate the arguments from the interpreter stack to the CPU registers and native stack.
 class CallStubGenerator
 {
+    enum ReturnType
+    {
+        ReturnTypeVoid,
+        ReturnTypeI8,
+        ReturnTypeDouble,
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+        ReturnTypeBuffArg1,
+        ReturnTypeBuffArg2,
+#else
+        ReturnTypeBuff,
+#endif
+#ifdef UNIX_AMD64_ABI
+        ReturnTypeI8I8,
+        ReturnTypeDoubleDouble,
+        ReturnTypeI8Double,
+        ReturnTypeDoubleI8,
+#endif // UNIX_AMD64_ABI
+#ifdef TARGET_ARM64
+        ReturnType2I8,
+        ReturnType2Double,
+        ReturnType3Double,
+        ReturnType4Double,
+        ReturnTypeFloat,
+        ReturnType2Float,
+        ReturnType3Float,
+        ReturnType4Float
+#endif // TARGET_ARM64
+    };
+
     // When the m_r1, m_x1 or m_s1 are set to NoRange, it means that there is no active range of registers or stack arguments.
     static const int NoRange = -1;
 
@@ -67,11 +96,28 @@ class CallStubGenerator
     // The total stack size used for the arguments.
     int m_totalStackSize;
 
+    bool m_interpreterToNative;
+
+#ifndef UNIX_AMD64_ABI
+    PCODE GetGPRegRefRoutine(int r);
+#endif // !UNIX_AMD64_ABI
+    PCODE GetStackRoutine();
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+    PCODE GetStackRoutine_1B();
+    PCODE GetStackRoutine_2B();
+    PCODE GetStackRoutine_4B();
+#endif // TARGET_APPLE && TARGET_ARM64
+    PCODE GetFPRegRangeRoutine(int x1, int x2);
+    PCODE GetGPRegRangeRoutine(int r1, int r2);
+    ReturnType GetReturnType(ArgIterator *pArgIt);
+    CallStubHeader::InvokeFunctionPtr GetInvokeFunctionPtr(ReturnType returnType);
+    PCODE GetInterpreterReturnTypeHandler(ReturnType returnType);
+
     // Process the argument described by argLocDesc. This function is called for each argument in the method signature.
-    void ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDesc, PCODE *pRoutines);
+    void ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocDesc, PCODE *pRoutines);
 public:
     // Generate the call stub for the given method.
-    CallStubHeader *GenerateCallStub(MethodDesc *pMD, AllocMemTracker *pamTracker);
+    CallStubHeader *GenerateCallStub(MethodDesc *pMD, AllocMemTracker *pamTracker, bool interpreterToNative);
 };
 
 #endif // CALLSTUBGENERATOR_H

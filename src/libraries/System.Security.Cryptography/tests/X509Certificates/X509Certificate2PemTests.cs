@@ -317,7 +317,7 @@ MII
             AssertExtensions.SequenceEqual(cert.SerialNumberBytes.Span, reLoaded.SerialNumberBytes.Span);
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         public static void CreateFromPem_MLKem_Pkcs8_Success()
         {
             (string CertificatePem, string PrivateKeyPem, string Thumbprint)[] cases =
@@ -379,7 +379,7 @@ MII
             }
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         public static void CreateFromEncryptedPem_MLKem_Pkcs8_Success()
         {
             (string CertificatePem, string EncryptedPrivateKeyPem, string Thumbprint)[] cases =
@@ -444,7 +444,7 @@ MII
             }
         }
 
-        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [ConditionalFact(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.CertificatesAreSupported))]
         public static void CreateFromPem_MLDsa_Pkcs8_Success()
         {
             (string CertificatePem, string PrivateKeyPem, string Thumbprint)[] cases =
@@ -506,7 +506,7 @@ MII
             }
         }
 
-        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [ConditionalFact(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.CertificatesAreSupported))]
         public static void CreateFromEncryptedPem_MLDsa_Pkcs8_Success()
         {
             (string CertificatePem, string EncryptedPrivateKeyPem, string Thumbprint)[] cases =

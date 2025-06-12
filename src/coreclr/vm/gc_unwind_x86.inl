@@ -7,21 +7,10 @@
 
 #define RETURN_ADDR_OFFS        1       // in DWORDS
 
-#define X86_INSTR_TEST_ESP_SIB          0x24
-#define X86_INSTR_PUSH_0                0x6A    // push 00, entire instruction is 0x6A00
-#define X86_INSTR_PUSH_IMM              0x68    // push NNNN,
-#define X86_INSTR_W_PUSH_IND_IMM        0x35FF  // push [NNNN]
 #define X86_INSTR_CALL_REL32            0xE8    // call rel32
 #define X86_INSTR_W_CALL_IND_IMM        0x15FF  // call [addr32]
 #define X86_INSTR_NOP                   0x90    // nop
-#define X86_INSTR_NOP2                  0x9090  // 2-byte nop
-#define X86_INSTR_NOP3_1                0x9090  // 1st word of 3-byte nop
-#define X86_INSTR_NOP3_3                0x90    // 3rd byte of 3-byte nop
-#define X86_INSTR_NOP4                  0x90909090 // 4-byte nop
-#define X86_INSTR_NOP5_1                0x90909090 // 1st dword of 5-byte nop
-#define X86_INSTR_NOP5_5                0x90    // 5th byte of 5-byte nop
 #define X86_INSTR_INT3                  0xCC    // int3
-#define X86_INSTR_HLT                   0xF4    // hlt
 #define X86_INSTR_PUSH_EAX              0x50    // push eax
 #define X86_INSTR_PUSH_EBP              0x55    // push ebp
 #define X86_INSTR_W_MOV_EBP_ESP         0xEC8B  // mov ebp, esp

@@ -111,7 +111,7 @@ AllocFailed:
 FASTCALL_ENDFUNC
 
 ;
-; Shared code for RhNewString_UP, RhpNewArrayFast_UP and RhpNewObjectArrayFast_UP
+; Shared code for RhNewString_UP, RhpNewArrayFast_UP and RhpNewPtrArrayFast_UP
 ;  EAX == string/array size
 ;  ECX == MethodTable
 ;  EDX == character/element count
@@ -249,12 +249,12 @@ ArraySizeOverflow:
 FASTCALL_ENDFUNC
 
 ;
-; Object* RhpNewObjectArrayFast_UP(MethodTable *pMT, INT_PTR elementCount)
+; Object* RhpNewPtrArrayFast_UP(MethodTable *pMT, INT_PTR elementCount)
 ; 
-; Allocate one dimensional, zero based array (SZARRAY) of objects (pointer sized elements),
+; Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements,
 ; uniprocessor version
 ;
-FASTCALL_FUNC   RhpNewObjectArrayFast_UP, 8
+FASTCALL_FUNC   RhpNewPtrArrayFast_UP, 8
         ; Delegate overflow handling to the generic helper conservatively
 
         cmp         edx, (40000000h / 4) ; sizeof(void*)

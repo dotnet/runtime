@@ -95,7 +95,7 @@ LOCAL_LABEL(NewOutOfMemory):
 
     NESTED_END RhpNewObject, _TEXT
 
-// Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArrayFast
+// Shared code for RhNewString, RhpNewArrayFast and RhpNewPtrArrayFast
 //  a0 == MethodTable
 //  a1 == character/element count
 //  a2 == string/array size
@@ -191,16 +191,15 @@ LOCAL_LABEL(ArraySizeOverflow):
 
     LEAF_END    RhpNewArrayFast, _TEXT
 
-#ifndef FEATURE_NATIVEAOT
-// Allocate one-dimensional, zero-based array (SZARRAY) of objects (pointer sized elements).
+// Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements.
 //  $a0 == MethodTable
 //  $a1 == element count
-    LEAF_ENTRY RhpNewObjectArrayFast, _Text
+    LEAF_ENTRY RhpNewPtrArrayFast, _Text
 
         // Delegate overflow handling to the generic helper conservatively
 
         li.w  $a2, (0x40000000 / 8) // sizeof(void*)
-        bgeu  $a1, $a2, C_FUNC(RhpNewVariableSizeObject)
+        bgeu  $a1, $a2, C_FUNC(RhpNewArrayFast)
 
         // In this case we know the element size is sizeof(void *), or 8 for arm64
         // This helps us in two ways - we can shift instead of multiplying, and
@@ -214,10 +213,9 @@ LOCAL_LABEL(ArraySizeOverflow):
 
         NEW_ARRAY_FAST
 
-    LEAF_END    RhpNewObjectArrayFast, _TEXT
-#endif
+    LEAF_END    RhpNewPtrArrayFast, _TEXT
 
-// Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
+// Allocate variable sized object (eg. array, string) using the slow path that calls a runtime helper.
 //  a0 == MethodTable
 //  a1 == element count
     NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
