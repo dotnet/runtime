@@ -222,6 +222,12 @@ C_FUNC(\Name\()_End):
 
 .endm
 
+.macro SKIP_ARGUMENT_REGISTERS
+
+        add rsp, 6 * 8
+
+.endm
+
 .macro SAVE_FLOAT_ARGUMENT_REGISTERS ofs
 
         save_xmm128_postrsp xmm0, \ofs
@@ -344,7 +350,7 @@ C_FUNC(\Name\()_End):
 .macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
         free_stack      __PWTB_StackAlloc
-        POP_ARGUMENT_REGISTERS
+        SKIP_ARGUMENT_REGISTERS
         POP_CALLEE_SAVED_REGISTERS
         ret
 
@@ -368,19 +374,29 @@ C_FUNC(\Name\()_End):
 
 .endm
 
-// Inlined version of GetThreadEEAllocContext. Trashes volatile registers.
-.macro INLINE_GET_ALLOC_CONTEXT_BASE
-#if defined(FEATURE_EMULATED_TLS) || defined(__APPLE__)
-        call    C_FUNC(GetThreadEEAllocContext)
+.macro INLINE_GET_TLS_VAR Var
+       .att_syntax
+#if defined(__APPLE__)
+        movq    _\Var@TLVP(%rip), %rdi
+        callq   *(%rdi)
 #else
-        .att_syntax
         .byte 0x66  // data16 prefix - padding to have space for linker relaxations
-        leaq    t_runtime_thread_locals@TLSGD(%rip), %rdi
+        leaq    \Var@TLSGD(%rip), %rdi
         .byte 0x66  //
         .byte 0x66  //
         .byte 0x48  // rex.W prefix, also for padding
         callq   __tls_get_addr@PLT
-        .intel_syntax noprefix
+#endif
+       .intel_syntax noprefix
+.endm
+
+
+// Inlined version of GetThreadEEAllocContext. Trashes volatile registers.
+.macro INLINE_GET_ALLOC_CONTEXT_BASE
+#ifdef FEATURE_EMULATED_TLS
+        call    C_FUNC(GetThreadEEAllocContext)
+#else
+        INLINE_GET_TLS_VAR t_runtime_thread_locals
 
         .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
                 lea     rax, [rax + OFFSETOF__RuntimeThreadLocals__ee_alloc_context]
@@ -404,4 +420,10 @@ C_FUNC(\Name\()_End):
 .macro POP_COOP_PINVOKE_FRAME
         free_stack      56
         POP_CALLEE_SAVED_REGISTERS
+.endm
+
+.macro INLINE_GETTHREAD
+        // Inlined version of call C_FUNC(RhpGetThread)
+        INLINE_GET_TLS_VAR t_CurrentThreadInfo
+        mov rax, [rax + OFFSETOF__ThreadLocalInfo__m_pThread]
 .endm

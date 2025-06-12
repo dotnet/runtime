@@ -11,20 +11,6 @@
 
 #include "stdafx.h"
 
-// XXX Microsoft - Why aren't these extra MD APIs in a header?
-STDAPI GetMDPublicInterfaceFromInternal(
-   void        *pIUnkPublic,           // [IN] Given scope.
-   REFIID      riid,                   // [in] The interface desired.
-   void        **ppIUnkInternal);      // [out] Return interface on success.
-
-STDAPI  GetMetaDataPublicInterfaceFromInternal(
-    void        *pv,                    // [IN] Given interface.
-    REFIID      riid,                   // [IN] desired interface.
-    void        **ppv)                  // [OUT] returned interface
-{
-    return GetMDPublicInterfaceFromInternal(pv, riid, ppv);
-}
-
 //----------------------------------------------------------------------------
 //
 // ClrDataTask.

@@ -20,7 +20,6 @@
 #include "eedbginterfaceimpl.h" //so we can clearexception in RealCOMPlusThrow
 #include "dllimportcallback.h"
 #include "stackwalk.h" //for CrawlFrame, in SetIPFromSrcToDst
-#include "shimload.h"
 #include "eeconfig.h"
 #include "virtualcallstub.h"
 #include "typestring.h"

@@ -150,7 +150,6 @@
 #include "comcallablewrapper.h"
 #include "../dlls/mscorrc/resource.h"
 #include "util.hpp"
-#include "shimload.h"
 #include "posterror.h"
 #include "virtualcallstub.h"
 #include "strongnameinternal.h"
@@ -1405,71 +1404,6 @@ part2:
     }
 }
 
-
-#ifdef FEATURE_COMINTEROP
-
-BOOL IsThreadInSTA()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // If ole32.dll is not loaded
-    if (GetModuleHandle(W("ole32.dll")) == NULL)
-    {
-        return FALSE;
-    }
-
-    BOOL fInSTA = TRUE;
-    // To be conservative, check if finalizer thread is around
-    EX_TRY
-    {
-        Thread *pFinalizerThread = FinalizerThread::GetFinalizerThread();
-        if (!pFinalizerThread || pFinalizerThread->Join(0, FALSE) != WAIT_TIMEOUT)
-        {
-            fInSTA = FALSE;
-        }
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    if (!fInSTA)
-    {
-        return FALSE;
-    }
-
-    THDTYPE type;
-    HRESULT hr = S_OK;
-
-    hr = GetCurrentThreadTypeNT5(&type);
-    if (hr == S_OK)
-    {
-        fInSTA = (type == THDTYPE_PROCESSMESSAGES) ? TRUE : FALSE;
-
-        // If we get back THDTYPE_PROCESSMESSAGES, we are guaranteed to
-        // be an STA thread. If not, we are an MTA thread, however
-        // we can't know if the thread has been explicitly set to MTA
-        // (via a call to CoInitializeEx) or if it has been implicitly
-        // made MTA (if it hasn't been CoInitializeEx'd but CoInitialize
-        // has already been called on some other thread in the process.
-    }
-    else
-    {
-        // CoInitialize hasn't been called in the process yet so assume the current thread
-        // is MTA.
-        fInSTA = FALSE;
-    }
-
-    return fInSTA;
-}
-#endif
-
 // #EEShutDown
 //
 // Function: EEShutDown(BOOL fIsDllUnloading)
@@ -1562,23 +1496,6 @@ BOOL IsRuntimeActive()
     return (g_fEEStarted);
 }
 
-//*****************************************************************************
-BOOL ExecuteDLL_ReturnOrThrow(HRESULT hr, BOOL fFromThunk)
-{
-    CONTRACTL {
-        if (fFromThunk) THROWS; else NOTHROW;
-        WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    // If we have a failure result, and we're called from a thunk,
-    // then we need to throw an exception to communicate the error.
-    if (FAILED(hr) && fFromThunk)
-    {
-        COMPlusThrowHR(hr);
-    }
-    return SUCCEEDED(hr);
-}
 
 //
 // Initialize the Garbage Collector

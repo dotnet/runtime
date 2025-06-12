@@ -28,6 +28,11 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Throws<ObjectDisposedException>(() => slhDsa.VerifyData(ReadOnlySpan<byte>.Empty, tempBuffer.AsSpan(), ReadOnlySpan<byte>.Empty));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.VerifyData(Array.Empty<byte>(), tempBuffer, Array.Empty<byte>()));
 
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.SignPreHash(ReadOnlySpan<byte>.Empty, tempBuffer.AsSpan(), "1.0", ReadOnlySpan<byte>.Empty));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.SignPreHash(Array.Empty<byte>(), "1.0"));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.VerifyPreHash(ReadOnlySpan<byte>.Empty, tempBuffer.AsSpan(), "1.0", ReadOnlySpan<byte>.Empty));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.VerifyPreHash(Array.Empty<byte>(), tempBuffer.AsSpan(), "1.0", Array.Empty<byte>()));
+
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, pbeParameters));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char>.Empty, pbeParameters));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<byte>.Empty, pbeParameters));
@@ -386,5 +391,16 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 _ => null,
             };
         }
+
+        internal const string Md5Oid = "1.2.840.113549.2.5";
+        internal const string Sha1Oid = "1.3.14.3.2.26";
+        internal const string Sha256Oid = "2.16.840.1.101.3.4.2.1";
+        internal const string Sha384Oid = "2.16.840.1.101.3.4.2.2";
+        internal const string Sha512Oid = "2.16.840.1.101.3.4.2.3";
+        internal const string Sha3_256Oid = "2.16.840.1.101.3.4.2.8";
+        internal const string Sha3_384Oid = "2.16.840.1.101.3.4.2.9";
+        internal const string Sha3_512Oid = "2.16.840.1.101.3.4.2.10";
+        internal const string Shake128Oid = "2.16.840.1.101.3.4.2.11";
+        internal const string Shake256Oid = "2.16.840.1.101.3.4.2.12";
     }
 }
