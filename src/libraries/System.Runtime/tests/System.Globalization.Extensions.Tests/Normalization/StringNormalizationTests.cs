@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Linq;
 using System.Text;
 using Xunit;
 using System.Collections.Generic;
@@ -21,16 +22,23 @@ namespace System.Globalization.Tests
             if (normalizationForm == NormalizationForm.FormC)
             {
                 Assert.Equal(expected, value.IsNormalized());
+                Assert.Equal(expected, value.AsSpan().IsNormalized());
             }
             Assert.Equal(expected, value.IsNormalized(normalizationForm));
+            Assert.Equal(expected, value.AsSpan().IsNormalized(normalizationForm));
         }
 
         [Fact]
         public void IsNormalized_Invalid()
         {
             Assert.Throws<ArgumentException>(() => "\uFB01".IsNormalized((NormalizationForm)10));
-            AssertExtensions.Throws<ArgumentException>("strInput", () => "\uFFFE".IsNormalized()); // Invalid codepoint
-            AssertExtensions.Throws<ArgumentException>("strInput", () => "\uD800\uD800".IsNormalized()); // Invalid surrogate pair
+            Assert.Throws<ArgumentException>(() => "\uFB01".AsSpan().IsNormalized((NormalizationForm)10));
+
+            AssertExtensions.Throws<ArgumentException>("source", () => "\uFFFE".IsNormalized()); // Invalid codepoint
+            AssertExtensions.Throws<ArgumentException>("source", () => "\uFFFE".AsSpan().IsNormalized()); // Invalid codepoint
+
+            AssertExtensions.Throws<ArgumentException>("source", () => "\uD800\uD800".IsNormalized()); // Invalid surrogate pair
+            AssertExtensions.Throws<ArgumentException>("source", () => "\uD800\uD800".AsSpan().IsNormalized()); // Invalid surrogate pair
         }
 
         [Fact]
@@ -63,20 +71,61 @@ namespace System.Globalization.Tests
         [MemberData(nameof(NormalizeTestData))]
         public void Normalize(string value, NormalizationForm normalizationForm, string expected)
         {
+            Span<char> destination = new char[expected.Length + 1]; // NLS sometimes need extra character in the buffer mostly if need to insert the null terminator
+            int charsWritten;
+
             if (normalizationForm == NormalizationForm.FormC)
             {
                 Assert.Equal(expected, value.Normalize());
+
+                Assert.True(value.AsSpan().TryNormalize(destination, out charsWritten));
+                Assert.Equal(expected, destination.Slice(0, charsWritten).ToString());
+
+                if (PlatformDetection.IsNlsGlobalization)
+                {
+                    // NLS return estimated normalized length that is enough to hold the result but doesn't return the exact length
+                    Assert.True(expected.Length <= value.GetNormalizedLength(), $"Expected: {expected.Length}, Actual: {value.GetNormalizedLength()}");
+                }
+                else
+                {
+                    // ICU returns the exact normalized length
+                    Assert.Equal(expected.Length, value.AsSpan().GetNormalizedLength());
+                }
             }
+
             Assert.Equal(expected, value.Normalize(normalizationForm));
+
+            if (expected.Length > 0)
+            {
+                Assert.False(value.AsSpan().TryNormalize(destination.Slice(0, expected.Length - 1), out charsWritten, normalizationForm), $"Trying to normalize '{value}' to a buffer of length {expected.Length - 1} succeeded!");
+            }
+
+            Assert.True(value.AsSpan().TryNormalize(destination, out charsWritten, normalizationForm), $"Failed to normalize '{value}' to a buffer of length {destination.Length}");
+            Assert.Equal(expected, destination.Slice(0, charsWritten).ToString());
+            if (PlatformDetection.IsNlsGlobalization)
+            {
+                // NLS return estimated normalized length that is enough to hold the result but doesn't return the exact length
+                Assert.True(expected.Length <= value.AsSpan().GetNormalizedLength(normalizationForm), $"Expected: {expected.Length}, Actual: {value.AsSpan().GetNormalizedLength(normalizationForm)}");
+            }
+            else
+            {
+                // ICU returns the exact normalized length
+                Assert.Equal(expected.Length, value.AsSpan().GetNormalizedLength(normalizationForm));
+            }
         }
 
         [Fact]
         public void Normalize_Invalid()
         {
+            char[] destination = new char[100];
             Assert.Throws<ArgumentException>(() => "\uFB01".Normalize((NormalizationForm)7));
+            Assert.Throws<ArgumentException>(() => "\uFB01".AsSpan().TryNormalize(destination.AsSpan(), out int charsWritten, (NormalizationForm)7));
 
             AssertExtensions.Throws<ArgumentException>("strInput", () => "\uFFFE".Normalize()); // Invalid codepoint
+            AssertExtensions.Throws<ArgumentException>("source", () => "\uFFFE".AsSpan().TryNormalize(destination.AsSpan(), out int charsWritten)); // Invalid codepoint
+
             AssertExtensions.Throws<ArgumentException>("strInput", () => "\uD800\uD800".Normalize()); // Invalid surrogate pair
+            AssertExtensions.Throws<ArgumentException>("source", () => "\uD800\uD800".AsSpan().TryNormalize(destination, out int charsWritten)); // Invalid surrogate pair
         }
 
         [Fact]

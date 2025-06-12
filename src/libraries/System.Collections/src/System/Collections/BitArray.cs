@@ -115,7 +115,7 @@ namespace System.Collections
             _version = 0;
         }
 
-        public unsafe BitArray(bool[] values)
+        public BitArray(bool[] values)
         {
             ArgumentNullException.ThrowIfNull(values);
 
@@ -312,7 +312,7 @@ namespace System.Collections
         ** Exceptions: ArgumentException if value == null or
         **             value.Length != this.Length.
         =========================================================================*/
-        public unsafe BitArray And(BitArray value)
+        public BitArray And(BitArray value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
@@ -385,7 +385,7 @@ namespace System.Collections
         ** Exceptions: ArgumentException if value == null or
         **             value.Length != this.Length.
         =========================================================================*/
-        public unsafe BitArray Or(BitArray value)
+        public BitArray Or(BitArray value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
@@ -458,7 +458,7 @@ namespace System.Collections
         ** Exceptions: ArgumentException if value == null or
         **             value.Length != this.Length.
         =========================================================================*/
-        public unsafe BitArray Xor(BitArray value)
+        public BitArray Xor(BitArray value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
@@ -531,7 +531,7 @@ namespace System.Collections
         ** off/false. Off/false bit values are turned on/true. The current instance
         ** is updated and returned.
         =========================================================================*/
-        public unsafe BitArray Not()
+        public BitArray Not()
         {
             // This method uses unsafe code to manipulate data in the BitArray.  To avoid issues with
             // buggy code concurrently mutating this instance in a way that could cause memory corruption,
@@ -837,7 +837,7 @@ namespace System.Collections
                 Vector128<byte> lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
                 Vector128<byte> upperShuffleMask_CopyToBoolArray = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
 
-                if (Avx512F.IsSupported && (uint)m_length >= Vector512<byte>.Count)
+                if (Avx512BW.IsSupported && (uint)m_length >= Vector512<byte>.Count)
                 {
                     Vector256<byte> upperShuffleMask_CopyToBoolArray256 = Vector256.Create(0x04040404_04040404, 0x05050505_05050505,
                                                                                              0x06060606_06060606, 0x07070707_07070707).AsByte();
@@ -885,7 +885,7 @@ namespace System.Collections
                         }
                     }
                 }
-                else if (Ssse3.IsSupported && ((uint)m_length >= Vector512<byte>.Count * 2u))
+                else if (Ssse3.IsSupported && ((uint)m_length >= Vector128<byte>.Count * 2u))
                 {
                     Vector128<byte> lowerShuffleMask = lowerShuffleMask_CopyToBoolArray;
                     Vector128<byte> upperShuffleMask = upperShuffleMask_CopyToBoolArray;

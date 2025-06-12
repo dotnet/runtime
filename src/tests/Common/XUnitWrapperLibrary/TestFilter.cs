@@ -171,16 +171,7 @@ public class TestFilter
 
         if (filterString is not null)
         {
-            if (filterString.IndexOfAny(new[] { '!', '(', ')', '~', '=' }) != -1)
-            {
-                throw new ArgumentException("Complex test filter expressions are not supported today."
-                                          + " The only filters currently supported are the simple forms"
-                                          + " supported in 'dotnet test --filter' (substrings of the"
-                                          + " test's fully qualified name). If further filtering options"
-                                          + " are desired, file an issue on dotnet/runtime for support.",
-                                            nameof(filterArgs));
-            }
-            _filter = new NameClause(TermKind.FullyQualifiedName, filterString, substring: true);
+            _filter = ParseFilter(filterString, nameof(filterArgs));
         }
         _testExclusionTable = testExclusionTable;
     }
@@ -291,5 +282,36 @@ public class TestFilter
                 table.Add(testPath, skipReason);
             }
         }
+    }
+
+    private static ISearchClause ParseFilter(string filterString, string argName)
+    {
+        ReadOnlySpan<string> unsupported = ["|", "&", "(", ")", "!=", "!~"];
+        foreach (string s in unsupported)
+        {
+            if (filterString.Contains(s))
+            {
+                throw new ArgumentException("Test filtering with |, &, (, ), !=, !~ is not supported", argName);
+            }
+        }
+
+        int delimiter = filterString.IndexOfAny(['=', '~']);
+        if (delimiter == -1)
+        {
+            return new NameClause(TermKind.FullyQualifiedName, filterString, substring: true);
+        }
+
+        bool isSubstring = filterString[delimiter] == '~';
+        string termName = filterString.Substring(0, delimiter);
+        string testName = filterString.Substring(delimiter + 1);
+
+        TermKind termKind = termName switch
+        {
+            "FullyQualifiedName" => TermKind.FullyQualifiedName,
+            "DisplayName" => TermKind.DisplayName,
+            _ => throw new ArgumentException("Test filtering not supported with property " + termName, argName),
+        };
+
+        return new NameClause(termKind, testName, substring: isSubstring);
     }
 }

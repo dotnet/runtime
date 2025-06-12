@@ -3,7 +3,6 @@
 [![Build Status](https://dev.azure.com/dnceng-public/public/_apis/build/status/dotnet/runtime/runtime?branchName=main)](https://dev.azure.com/dnceng-public/public/_build/latest?definitionId=129&branchName=main)
 [![Help Wanted](https://img.shields.io/github/issues/dotnet/runtime/help%20wanted?style=flat-square&color=%232EA043&label=help%20wanted)](https://github.com/dotnet/runtime/labels/help%20wanted)
 [![Good First Issue](https://img.shields.io/github/issues/dotnet/runtime/good%20first%20issue?style=flat-square&color=%232EA043&label=good%20first%20issue)](https://github.com/dotnet/runtime/labels/good%20first%20issue)
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/runtime)
 [![Discord](https://img.shields.io/discord/732297728826277939?style=flat-square&label=Discord&logo=discord&logoColor=white&color=7289DA)](https://aka.ms/dotnet-discord)
 
 * [What is .NET?](#what-is-net)
@@ -23,12 +22,10 @@ Official Starting Page: <https://dotnet.microsoft.com>
 
 * [How to use .NET](https://learn.microsoft.com/dotnet/core/get-started) (with VS, VS Code, command-line CLI)
   * [Install official releases](https://dotnet.microsoft.com/download)
-  * [Install daily builds](docs/project/dogfooding.md)
   * [Documentation](https://learn.microsoft.com/dotnet/core) (Get Started, Tutorials, Porting from .NET Framework, API reference, ...)
     * [Deploying apps](https://learn.microsoft.com/dotnet/core/deploying)
-  * [Supported OS versions](https://github.com/dotnet/core/blob/main/os-lifecycle-policy.md)
+* [Support](https://github.com/dotnet/core/blob/main/support.md) (Releases, OS Versions, ...)
 * [Roadmap](https://github.com/dotnet/core/blob/main/roadmap.md)
-* [Releases](https://github.com/dotnet/core/tree/main/release-notes)
 
 ## How can I contribute?
 

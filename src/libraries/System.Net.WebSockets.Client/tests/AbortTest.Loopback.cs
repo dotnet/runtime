@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
+using System.Net.Sockets;
+using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -16,6 +19,8 @@ namespace System.Net.WebSockets.Client.Tests
         public AbortTest_Loopback(ITestOutputHelper output) : base(output) { }
 
         protected virtual Version HttpVersion => Net.HttpVersion.Version11;
+
+        public static object[][] AbortClient_MemberData = ToMemberData(Enum.GetValues<AbortType>(), UseSsl_Values, /* verifySendReceive */ Bool_Values);
 
         [Theory]
         [MemberData(nameof(AbortClient_MemberData))]
@@ -63,6 +68,8 @@ namespace System.Net.WebSockets.Client.Tests
                 new LoopbackWebSocketServer.Options(HttpVersion, useSsl, GetInvoker()),
                 timeoutCts.Token);
         }
+
+        public static object[][] ServerPrematureEos_MemberData = ToMemberData(Enum.GetValues<ServerEosType>(), UseSsl_Values);
 
         [Theory]
         [MemberData(nameof(ServerPrematureEos_MemberData))]
@@ -146,34 +153,6 @@ namespace System.Net.WebSockets.Client.Tests
         protected virtual Task SendServerResponseAndEosAsync(WebSocketRequestData requestData, ServerEosType serverEosType, Func<WebSocketRequestData, CancellationToken, Task> serverFunc, CancellationToken cancellationToken)
             => WebSocketHandshakeHelper.SendHttp11ServerResponseAndEosAsync(requestData, serverFunc, cancellationToken); // override for HTTP/2
 
-        private static readonly bool[] Bool_Values = new[] { false, true };
-        private static readonly bool[] UseSsl_Values = PlatformDetection.SupportsAlpn ? Bool_Values : new[] { false };
-
-        public static IEnumerable<object[]> AbortClient_MemberData()
-        {
-            foreach (var abortType in Enum.GetValues<AbortType>())
-            {
-                foreach (var useSsl in UseSsl_Values)
-                {
-                    foreach (var verifySendReceive in Bool_Values)
-                    {
-                        yield return new object[] { abortType, useSsl, verifySendReceive };
-                    }
-                }
-            }
-        }
-
-        public static IEnumerable<object[]> ServerPrematureEos_MemberData()
-        {
-            foreach (var serverEosType in Enum.GetValues<ServerEosType>())
-            {
-                foreach (var useSsl in UseSsl_Values)
-                {
-                    yield return new object[] { serverEosType, useSsl };
-                }
-            }
-        }
-
         public enum AbortType
         {
             Abort,
@@ -187,7 +166,7 @@ namespace System.Net.WebSockets.Client.Tests
             AfterSomeData
         }
 
-        private static async Task VerifySendReceiveAsync(WebSocket ws, byte[] localMsg, byte[] remoteMsg,
+        protected static async Task VerifySendReceiveAsync(WebSocket ws, byte[] localMsg, byte[] remoteMsg,
             TaskCompletionSource localAckTcs, Task remoteAck, CancellationToken cancellationToken)
         {
             var sendTask = ws.SendAsync(localMsg, WebSocketMessageType.Binary, endOfMessage: true, cancellationToken);

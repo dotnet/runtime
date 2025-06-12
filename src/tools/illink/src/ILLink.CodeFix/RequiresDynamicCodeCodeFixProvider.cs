@@ -25,7 +25,7 @@ namespace ILLink.CodeFix
 
 		private protected override string FullyQualifiedAttributeName => RequiresDynamicCodeAnalyzer.FullyQualifiedRequiresDynamicCodeAttribute;
 
-		private protected override AttributeableParentTargets AttributableParentTargets => AttributeableParentTargets.MethodOrConstructor;
+		private protected override AttributeableParentTargets AttributableParentTargets => AttributeableParentTargets.MethodOrConstructor | AttributeableParentTargets.Class;
 
 		public sealed override Task RegisterCodeFixesAsync (CodeFixContext context) => BaseRegisterCodeFixesAsync (context);
 

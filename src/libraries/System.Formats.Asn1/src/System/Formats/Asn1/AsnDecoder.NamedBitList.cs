@@ -15,6 +15,7 @@ namespace System.Formats.Asn1
         ///   the specified encoding rules, converting it to the
         ///   [<see cref="FlagsAttribute"/>] enum specified by <typeparamref name="TFlagsEnum"/>.
         /// </summary>
+        /// <typeparam name="TFlagsEnum">The destination enum type.</typeparam>
         /// <param name="source">The buffer containing encoded data.</param>
         /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
         /// <param name="bytesConsumed">
@@ -24,7 +25,6 @@ namespace System.Formats.Asn1
         /// <param name="expectedTag">
         ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 3).
         /// </param>
-        /// <typeparam name="TFlagsEnum">Destination enum type</typeparam>
         /// <returns>
         ///   The NamedBitList value converted to a <typeparamref name="TFlagsEnum"/>.
         /// </returns>
@@ -32,19 +32,19 @@ namespace System.Formats.Asn1
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the encoded value is too big to fit in a <typeparamref name="TFlagsEnum"/> value.
+        ///   The encoded value is too big to fit in a <typeparamref name="TFlagsEnum"/> value.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <typeparamref name="TFlagsEnum"/> is not an enum type.
@@ -97,9 +97,9 @@ namespace System.Formats.Asn1
         ///     }
         ///   </code>
         ///
-        ///   Note that while the example here uses the KeyUsage NamedBitList from
+        ///   While the example here uses the KeyUsage NamedBitList from
         ///   <a href="https://tools.ietf.org/html/rfc3280#section-4.2.1.3">RFC 3280 (4.2.1.3)</a>,
-        ///   the example enum uses values thar are different from
+        ///   the example enum uses values that are different from
         ///   System.Security.Cryptography.X509Certificates.X509KeyUsageFlags.
         /// </remarks>
         public static TFlagsEnum ReadNamedBitListValue<TFlagsEnum>(
@@ -142,19 +142,19 @@ namespace System.Formats.Asn1
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         ///
         ///   -or-
         ///-
-        ///   the encoded value is too big to fit in a <paramref name="flagsEnumType"/> value.
+        ///   The encoded value is too big to fit in a <paramref name="flagsEnumType"/> value.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="flagsEnumType"/> is not an enum type.
@@ -294,15 +294,15 @@ namespace System.Formats.Asn1
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -405,25 +405,25 @@ namespace System.Formats.Asn1
         ///   Reads the next value as a NamedBitList with a specified tag, converting it to the
         ///   [<see cref="FlagsAttribute"/>] enum specified by <typeparamref name="TFlagsEnum"/>.
         /// </summary>
+        /// <typeparam name="TFlagsEnum">The destination enum type.</typeparam>
         /// <param name="expectedTag">The tag to check for before reading.</param>
-        /// <typeparam name="TFlagsEnum">Destination enum type</typeparam>
         /// <returns>
         ///   The NamedBitList value converted to a <typeparamref name="TFlagsEnum"/>.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the encoded value is too big to fit in a <typeparamref name="TFlagsEnum"/> value.
+        ///   The encoded value is too big to fit in a <typeparamref name="TFlagsEnum"/> value.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <typeparamref name="TFlagsEnum"/> is not an enum type.
@@ -476,9 +476,9 @@ namespace System.Formats.Asn1
         ///     }
         ///   </code>
         ///
-        ///   Note that while the example here uses the KeyUsage NamedBitList from
+        ///   While the example here uses the KeyUsage NamedBitList from
         ///   <a href="https://tools.ietf.org/html/rfc3280#section-4.2.1.3">RFC 3280 (4.2.1.3)</a>,
-        ///   the example enum uses values thar are different from
+        ///   the example enum uses values that are different from
         ///   System.Security.Cryptography.X509Certificates.X509KeyUsageFlags.
         /// </remarks>
         public TFlagsEnum ReadNamedBitListValue<TFlagsEnum>(Asn1Tag? expectedTag = null) where TFlagsEnum : Enum
@@ -497,25 +497,25 @@ namespace System.Formats.Asn1
         ///   Reads the next value as a NamedBitList with a specified tag, converting it to the
         ///   [<see cref="FlagsAttribute"/>] enum specified by <paramref name="flagsEnumType"/>.
         /// </summary>
-        /// <param name="expectedTag">The tag to check for before reading.</param>
         /// <param name="flagsEnumType">Type object representing the destination type.</param>
+        /// <param name="expectedTag">The tag to check for before reading.</param>
         /// <returns>
         ///   The NamedBitList value converted to a <paramref name="flagsEnumType"/>.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the encoded value is too big to fit in a <paramref name="flagsEnumType"/> value.
+        ///   The encoded value is too big to fit in a <paramref name="flagsEnumType"/> value.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="flagsEnumType"/> is not an enum type.
@@ -556,15 +556,15 @@ namespace System.Formats.Asn1
         ///   The bits from the encoded value.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is

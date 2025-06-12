@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
             Interop.Crypto.EvpCipherSetKeyAndIV(
                 _ctxHandle,
                 key,
-                Span<byte>.Empty,
+                ReadOnlySpan<byte>.Empty,
                 Interop.Crypto.EvpCipherDirection.NoChange);
 
             Interop.Crypto.CipherSetNonceLength(_ctxHandle, NonceSizeInBytes);
@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
 
             Interop.Crypto.EvpCipherSetKeyAndIV(
                 _ctxHandle,
-                Span<byte>.Empty,
+                ReadOnlySpan<byte>.Empty,
                 nonce,
                 Interop.Crypto.EvpCipherDirection.Encrypt);
 

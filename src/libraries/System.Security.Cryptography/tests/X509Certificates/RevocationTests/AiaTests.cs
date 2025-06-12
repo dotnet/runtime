@@ -76,16 +76,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             {
                 responder.AiaResponseKind = aiaResponseKind;
 
-                using (ChainHolder holder = new ChainHolder())
-                {
-                    X509Chain chain = holder.Chain;
-                    chain.ChainPolicy.CustomTrustStore.Add(rootCert);
-                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                    chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
-                    chain.ChainPolicy.UrlRetrievalTimeout = DynamicRevocationTests.s_urlRetrievalLimit;
+                RetryHelper.Execute(() => {
+                    using (ChainHolder holder = new ChainHolder())
+                    {
+                        X509Chain chain = holder.Chain;
+                        chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                        chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
+                        chain.ChainPolicy.UrlRetrievalTimeout = DynamicRevocationTests.s_urlRetrievalLimit;
 
-                    Assert.NotEqual(mustIgnore, chain.Build(endEntity));
-                }
+                        Assert.NotEqual(mustIgnore, chain.Build(endEntity));
+                    }
+                });
             }
         }
 

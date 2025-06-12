@@ -4,7 +4,7 @@
 using System.Resources.Extensions.Tests.Common.TestTypes;
 using System.Resources.Extensions.Tests.FormattedObject;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 using System.Text;
 
 namespace System.Resources.Extensions.Tests.Common;
@@ -31,8 +31,7 @@ public class CorruptedTests : SerializationTest<FormattedObjectSerializer>
 
         // This fails in the SerializationConstructor in BinaryFormattedObject's deserializer because the
         // type isn't convertible to NodeWithNodeStruct. In BinaryFormatter it fails with fixups.
-        Action action = () => Deserialize(stream);
-        action.Should().Throw<SerializationException>();
+        Assert.Throws<SerializationException>(() => Deserialize(stream));
     }
 
     [Fact]
@@ -51,8 +50,7 @@ public class CorruptedTests : SerializationTest<FormattedObjectSerializer>
 
         stream.Position = 0;
 
-        Action action = () => Deserialize(stream);
-        action.Should().Throw<SerializationException>();
+        Assert.Throws<SerializationException>(() => Deserialize(stream));
     }
 
     [Fact]
@@ -74,8 +72,7 @@ public class CorruptedTests : SerializationTest<FormattedObjectSerializer>
         // Both deserializers create this where every boxed struct is the exact same boxed instance.
         stream.Position = 0;
 
-        Action action = () => Deserialize(stream);
-        action.Should().Throw<SerializationException>();
+        Assert.Throws<SerializationException>(() => Deserialize(stream));
     }
 
     [Fact]
@@ -114,7 +111,7 @@ public class CorruptedTests : SerializationTest<FormattedObjectSerializer>
         WriteMemberReference(writer, NextClassId);
         WriteMemberReference(writer, NextClassId);
         // ClassWithId
-        writer.Write((byte)RecordType.ClassWithId);
+        writer.Write((byte)SerializationRecordType.ClassWithId);
         writer.Write(NextClassId); // id
         writer.Write(ClassId); // id of the class that provides metadata
         WriteMemberReference(writer, ClassId);

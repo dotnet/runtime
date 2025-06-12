@@ -283,7 +283,7 @@ public:
     //return TRUE if GC actually happens, otherwise FALSE
     bool StressHeap(gc_alloc_context * acontext);
 
-#ifndef FEATURE_NATIVEAOT // Redhawk forces relocation a different way
+#ifndef FEATURE_NATIVEAOT // NativeAOT forces relocation a different way
 #ifdef STRESS_HEAP
 protected:
 
@@ -316,6 +316,8 @@ protected:
     virtual void DiagGetGCSettings(EtwGCSettingsInfo* etw_settings);
 
     virtual unsigned int GetGenerationWithRange(Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved);
+
+    virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p);
 public:
     Object * NextObj (Object * object);
 

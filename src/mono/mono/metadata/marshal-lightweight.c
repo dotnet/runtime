@@ -344,12 +344,12 @@ handle_enum:
 				break;
 			}
 
-			t = m_class_get_byval_arg (t->data.generic_class->container_class);
+			t = m_class_get_byval_arg (m_type_data_get_generic_class (t)->container_class);
 			type = t->type;
 			goto handle_enum;
 		case MONO_TYPE_VALUETYPE:
-			if (type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (t->data.klass)) {
-				type = mono_class_enum_basetype_internal (t->data.klass)->type;
+			if (type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass (t))) {
+				type = mono_class_enum_basetype_internal (m_type_data_get_klass (t))->type;
 				goto handle_enum;
 			}
 			mono_mb_emit_no_nullcheck (mb);
@@ -1009,9 +1009,9 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 			case MONO_TYPE_VOID:
 				break;
 			case MONO_TYPE_VALUETYPE:
-				klass = sig->ret->data.klass;
+				klass = m_type_data_get_klass (sig->ret);
 				if (m_class_is_enumtype (klass)) {
-					type = mono_class_enum_basetype_internal (sig->ret->data.klass)->type;
+					type = mono_class_enum_basetype_internal (m_type_data_get_klass (sig->ret))->type;
 					goto handle_enum;
 				}
 				mono_emit_marshal (&m, 0, sig->ret, spec, 0, NULL, MARSHAL_ACTION_CONV_RESULT);
@@ -2052,7 +2052,8 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 			}
 			mono_mb_emit_ldarg_addr (mb, 1);
 			mono_mb_emit_ldarg (mb, 0);
-			mono_mb_emit_icall (mb, mono_get_addr_compiled_method);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_LDVIRTFTN_DELEGATE);
 			mono_mb_emit_op (mb, CEE_CALLI, target_method_sig);
 		} else {
 			mono_mb_emit_byte (mb, CEE_LDNULL);
@@ -2305,8 +2306,8 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, gboolean inflate_gene
 	}
 
 	MonoClassField *target_field = mono_class_get_field_from_name_full (target_class, member_name, NULL);
-	if (target_field == NULL || !mono_metadata_type_equal_full (target_field->type, m_class_get_byval_arg (mono_class_from_mono_type_internal (ret_type)), TRUE)) {
-		mono_mb_emit_exception_full (mb, "System", "MissingFieldException", 
+	if (target_field == NULL || !mono_metadata_type_equal_full (target_field->type, m_class_get_byval_arg (mono_class_from_mono_type_internal (ret_type)), MONO_TYPE_EQ_FLAGS_SIG_ONLY | MONO_TYPE_EQ_FLAG_IGNORE_CMODS)) {
+		mono_mb_emit_exception_full (mb, "System", "MissingFieldException",
 			g_strdup_printf("No '%s' in '%s'. Or the type of '%s' doesn't match", member_name, m_class_get_name (target_class), member_name));
 		return;
 	}
@@ -2403,7 +2404,7 @@ inflate_method (MonoClass *klass, MonoMethod *method, MonoMethod *accessor_metho
 	if ((context.class_inst != NULL) || (context.method_inst != NULL))
 		result = mono_class_inflate_generic_method_checked (method, &context, error);
 	mono_error_assert_ok (error);
-	
+
 	return result;
 }
 
@@ -2425,13 +2426,13 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, gboolean inflate_gener
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
 		return;
 	}
-	
+
 	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
 
 	ERROR_DECL(find_method_error);
 
 	MonoMethodSignature *member_sig = ctor_sig_from_accessor_sig (mb, sig);
-	
+
 	MonoClass *in_class = target_class;
 
 	MonoMethod *target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
@@ -2506,7 +2507,7 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, gboolean inflate_gen
 		emit_missing_method_error (mb, find_method_error, member_name);
 		return;
 	}
-	
+
 	g_assert (target_method->klass == target_class);
 
 	emit_unsafe_accessor_ldargs (mb, sig, !hasthis ? 1 : 0);
@@ -2716,12 +2717,46 @@ emit_managed_wrapper_validate_signature (MonoMethodSignature* sig, MonoMarshalSp
 }
 
 static void
+emit_swift_lowered_struct_load (MonoMethodBuilder *mb, MonoMethodSignature *csig, SwiftPhysicalLowering swift_lowering, int tmp_local, uint32_t csig_argnum)
+{
+	guint8 stind_op;
+	uint32_t offset = 0;
+
+	for (uint32_t idx_lowered = 0; idx_lowered < swift_lowering.num_lowered_elements; idx_lowered++) {
+		offset = swift_lowering.offsets [idx_lowered];
+		mono_mb_emit_ldloc_addr (mb, tmp_local);
+		mono_mb_emit_icon (mb, offset);
+		mono_mb_emit_byte (mb, CEE_ADD);
+
+		mono_mb_emit_ldarg (mb, csig_argnum + idx_lowered);
+		stind_op = mono_type_to_stind (csig->params [csig_argnum + idx_lowered]);
+		mono_mb_emit_byte (mb, stind_op);
+    }
+}
+
+/* Swift struct lowering handling causes csig to have additional arguments.
+ * This function returns the index of the argument in the csig that corresponds to the argument in the original signature.
+ */
+static int
+get_csig_argnum (int i, EmitMarshalContext* m)
+{
+	if (m->swift_sig_to_csig_mp) {
+		g_assert (i < m->sig->param_count);
+		int csig_argnum = m->swift_sig_to_csig_mp [i];
+		g_assert (csig_argnum >= 0 && csig_argnum < m->csig->param_count);
+		return csig_argnum;
+	}
+	return i;
+}
+
+static void
 emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, gboolean runtime_init_callback, MonoError *error)
 {
 	MonoMethodSignature *sig, *csig;
 	int i, *tmp_locals;
 	gboolean closed = FALSE;
 	GCUnsafeTransitionBuilder gc_unsafe_builder = {0,};
+	SwiftPhysicalLowering *swift_lowering = m->swift_lowering;
 
 	sig = m->sig;
 	csig = m->csig;
@@ -2798,19 +2833,31 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	for (i = 0; i < sig->param_count; i ++) {
 		MonoType *t = sig->params [i];
 		MonoMarshalSpec *spec = mspecs [i + 1];
+		int csig_argnum = get_csig_argnum (i, m);
 
 		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
-			tmp_locals [i] = mono_emit_marshal (m, i, t, mspecs [i + 1], 0,  &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
+			tmp_locals [i] = mono_emit_marshal (m, csig_argnum, t, mspecs [i + 1], 0,  &csig->params [csig_argnum], MARSHAL_ACTION_MANAGED_CONV_IN);
 		} else {
 			switch (t->type) {
+			case MONO_TYPE_VALUETYPE:
+				if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+					if (swift_lowering [i].num_lowered_elements > 0) {
+						tmp_locals [i] = mono_mb_add_local (mb, sig->params [i]);
+						emit_swift_lowered_struct_load (mb, csig, swift_lowering [i], tmp_locals [i], csig_argnum);
+						break;
+					} else if (swift_lowering [i].by_reference) {
+						/* Structs passed by reference are handled during arg loading emission */
+						tmp_locals [i] = 0;
+						break;
+					}
+				} /* else fallthru */
 			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_CLASS:
-			case MONO_TYPE_VALUETYPE:
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_BOOLEAN:
-				tmp_locals [i] = mono_emit_marshal (m, i, t, mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
+				tmp_locals [i] = mono_emit_marshal (m, csig_argnum, t, mspecs [i + 1], 0, &csig->params [csig_argnum], MARSHAL_ACTION_MANAGED_CONV_IN);
 				break;
 			default:
 				tmp_locals [i] = 0;
@@ -2836,15 +2883,18 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
-
-		if (tmp_locals [i]) {
+		int csig_argnum = get_csig_argnum (i, m);
+		if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && swift_lowering [i].by_reference) {
+			mono_mb_emit_ldarg (mb, csig_argnum);
+			MonoClass* klass = mono_class_from_mono_type_internal (sig->params [i]);
+			mono_mb_emit_op (mb, CEE_LDOBJ, klass);
+		} else if (tmp_locals [i]) {
 			if (m_type_is_byref (t))
 				mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
 			else
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
-		}
-		else
-			mono_mb_emit_ldarg (mb, i);
+		} else
+			mono_mb_emit_ldarg (mb, csig_argnum);
 	}
 
 	/* ret = method (...) */

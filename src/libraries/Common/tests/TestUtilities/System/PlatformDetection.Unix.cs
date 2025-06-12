@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -17,19 +18,23 @@ namespace System
         public static bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         public static bool IsOpenSUSE => IsDistroAndVersion("opensuse");
         public static bool IsUbuntu => IsDistroAndVersion("ubuntu");
-        public static bool IsUbuntu2004 => IsDistroAndVersion("ubuntu", 20, 4);
+        public static bool IsUbuntu24 => IsDistroAndVersion("ubuntu", 24);
+        public static bool IsUbuntu24OrHigher => IsDistroAndVersionOrHigher("ubuntu", 24);
         public static bool IsDebian => IsDistroAndVersion("debian");
         public static bool IsAlpine => IsDistroAndVersion("alpine");
-        public static bool IsRaspbian10 => IsDistroAndVersion("raspbian", 10);
         public static bool IsMariner => IsDistroAndVersion("mariner");
         public static bool IsSLES => IsDistroAndVersion("sles");
         public static bool IsTizen => IsDistroAndVersion("tizen");
         public static bool IsFedora => IsDistroAndVersion("fedora");
         public static bool IsLinuxBionic => IsBionic();
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
+        public static bool IsAzureLinux => IsDistroAndVersionOrHigher("azurelinux", 3);
 
         public static bool IsMonoLinuxArm64 => IsMonoRuntime && IsLinux && IsArm64Process;
         public static bool IsNotMonoLinuxArm64 => !IsMonoLinuxArm64;
+        public static bool IsQemuLinux => IsLinux && Environment.GetEnvironmentVariable("DOTNET_RUNNING_UNDER_QEMU") != null;
+        public static bool IsNotQemuLinux => !IsQemuLinux;
+        public static bool IsNotAzureLinux => !IsAzureLinux;
 
         // OSX family
         public static bool IsApplePlatform => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
@@ -45,9 +50,12 @@ namespace System
             throw new PlatformNotSupportedException();
 
         private static readonly Version s_openssl3Version = new Version(3, 0, 0);
-        public static bool IsOpenSsl3 => !IsApplePlatform && !IsWindows && !IsAndroid && !IsBrowser ?
-            GetOpenSslVersion() >= s_openssl3Version :
-            false;
+        private static readonly Version s_openssl3_4Version = new Version(3, 4, 0);
+        private static readonly Version s_openssl3_5Version = new Version(3, 5, 0);
+
+        public static bool IsOpenSsl3 => IsOpenSslVersionAtLeast(s_openssl3Version);
+        public static bool IsOpenSsl3_4 => IsOpenSslVersionAtLeast(s_openssl3_4Version);
+        public static bool IsOpenSsl3_5 => IsOpenSslVersionAtLeast(s_openssl3_5Version);
 
         /// <summary>
         /// If gnulibc is available, returns the release, such as "stable".
@@ -101,7 +109,7 @@ namespace System
         {
             get
             {
-                if (IsWindows || IsAndroid || UsesMobileAppleCrypto || IsBrowser)
+                if (IsWindows || IsAndroid || IsApplePlatform || IsBrowser)
                 {
                     return false;
                 }
@@ -132,6 +140,18 @@ namespace System
             }
 
             return s_opensslVersion;
+        }
+
+        // The "IsOpenSsl" properties answer false on Apple, even if OpenSSL is present for lightup,
+        // as they are answering the question "is OpenSSL the primary crypto provider".
+        private static bool IsOpenSslVersionAtLeast(Version minVersion)
+        {
+            if (IsApplePlatform || IsWindows || IsAndroid || IsBrowser)
+            {
+                return false;
+            }
+
+            return GetOpenSslVersion() >= minVersion;
         }
 
         private static Version ToVersion(string versionString)
@@ -229,7 +249,13 @@ namespace System
                     }
                     else if (line.StartsWith("VERSION_ID=", StringComparison.Ordinal))
                     {
-                        result.VersionId = ToVersion(line.Substring(11).Trim('"', '\''));
+                        string versionId = line.Substring(11).Trim('"', '\'');
+                        int dashIndex = versionId.IndexOf('_'); // Strip prerelease info if any (needed for Alpine Edge)
+                        if (dashIndex != -1)
+                        {
+                            versionId = versionId.Substring(0, dashIndex);
+                        }
+                        result.VersionId = ToVersion(versionId);
                     }
                 }
             }

@@ -24,6 +24,9 @@ public class BootJsonData
 
     public string mainAssemblyName { get; set; }
 
+    [DataMember(EmitDefaultValue = false)]
+    public string applicationEnvironment { get; set; }
+
     /// <summary>
     /// Gets the set of resources needed to boot the application. This includes the transitive
     /// closure of .NET assemblies (including the entrypoint assembly), the dotnet.wasm file,
@@ -83,11 +86,6 @@ public class BootJsonData
     public string globalizationMode { get; set; }
 
     /// <summary>
-    /// Gets or sets a value that determines if the caching startup memory is enabled.
-    /// </summary>
-    public bool? startupMemoryCache { get; set; }
-
-    /// <summary>
     /// Gets a value for mono runtime options.
     /// </summary>
     public string[] runtimeOptions { get; set; }
@@ -100,7 +98,11 @@ public class BootJsonData
     /// <summary>
     /// Gets or sets environment variables.
     /// </summary>
-    public object environmentVariables { get; set; }
+    public System.Collections.Generic.Dictionary<string, string> environmentVariables { get; set; }
+    /// <summary>
+    /// Subset of runtimeconfig.json
+    /// </summary>
+    public RuntimeConfigData runtimeConfig { get; set; }
 
     /// <summary>
     /// Gets or sets diagnostic tracing.
@@ -118,12 +120,34 @@ public class BootJsonData
     public int? pthreadPoolUnusedSize { get; set; }
 }
 
+/// <summary>
+/// Subset of runtimeconfig.json
+/// </summary>
+public class RuntimeConfigData
+{
+    /// <summary>
+    /// Runtime options
+    /// </summary>
+    public RuntimeOptionsData runtimeOptions { get; set; }
+}
+
+public class RuntimeOptionsData
+{
+    /// <summary>
+    /// Config properties for the runtime
+    /// </summary>
+    public Dictionary<string, object> configProperties { get; set; }
+}
+
 public class ResourcesData
 {
     /// <summary>
     /// Gets a hash of all resources
     /// </summary>
     public string hash { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, string> fingerprinting { get; set; }
 
     /// <summary>
     /// .NET Wasm runtime resources (dotnet.wasm, dotnet.js) etc.
@@ -138,7 +162,7 @@ public class ResourcesData
     public ResourceHashesByNameDictionary jsModuleWorker { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
-    public ResourceHashesByNameDictionary jsModuleGlobalization { get; set; }
+    public ResourceHashesByNameDictionary jsModuleDiagnostics { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary jsModuleNative { get; set; }
@@ -249,11 +273,6 @@ public enum GlobalizationMode : int
     /// Load custom icu file provided by the developer.
     /// </summary>
     Custom = 3,
-
-    /// <summary>
-    /// Use the reduced icudt_hybrid.dat file
-    /// </summary>
-    Hybrid = 4,
 }
 
 [DataContract]

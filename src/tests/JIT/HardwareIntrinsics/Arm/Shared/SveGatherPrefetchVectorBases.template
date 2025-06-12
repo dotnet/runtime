@@ -1,0 +1,340 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\Arm\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Numerics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using Xunit;
+
+namespace JIT.HardwareIntrinsics.Arm
+{
+    public static partial class Program
+    {
+        [Fact]
+        public static void {TestName}()
+        {
+            var test = new SveGatherPrefetchVectorBasesTest__{TestName}();
+
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works, using Unsafe.Read
+                test.RunBasicScenario_UnsafeRead();
+
+                // Validates basic functionality works
+                test.RunBasicScenario_Load();
+
+                // Validates fully masked out load works.
+                test.RunBasicScenario_FalseMask();
+
+                // Validates fully masked out load with invalid address works.
+                test.RunBasicScenario_NonFaulting();
+
+                // Validates an invalid immediate fails.
+                test.RunBasicScenario_Invalid();
+
+                // Validates calling via reflection works, using Unsafe.Read
+                test.RunReflectionScenario_UnsafeRead();
+
+                // Validates passing a local works, using Unsafe.Read
+                test.RunLclVarScenario_UnsafeRead();
+
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class SveGatherPrefetchVectorBasesTest__{TestName}
+    {
+        private struct DataTable
+        {
+            private byte[] inArray1;
+            private byte[] inArray2;
+            private byte[] baseArray;
+
+            private GCHandle inHandle1;
+            private GCHandle inHandle2;
+            private GCHandle baseHandle;
+
+            private ulong alignment;
+
+            public DataTable({Op1BaseType}[] inArray1, {Op2BaseType}[] inArray2, byte[] baseArray, int alignment)
+            {
+                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
+                int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<{Op2BaseType}>();
+                int sizeOfBaseArray = baseArray.Length * Unsafe.SizeOf<byte>();
+
+                if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2)
+                {
+                    throw new ArgumentException($"Invalid value of alignment: {alignment}, sizeOfinArray1: {sizeOfinArray1}, sizeOfinArray2: {sizeOfinArray2}");
+                }
+
+                this.inArray1 = new byte[alignment * 2];
+                this.inArray2 = new byte[alignment * 2];
+                this.baseArray = new byte[alignment + sizeOfBaseArray];
+
+                this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
+                this.inHandle2 = GCHandle.Alloc(this.inArray2, GCHandleType.Pinned);
+                this.baseHandle = GCHandle.Alloc(this.baseArray, GCHandleType.Pinned);
+
+                this.alignment = (ulong)alignment;
+
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(baseArrayPtr), ref Unsafe.As<byte, byte>(ref baseArray[0]), (uint)sizeOfBaseArray);
+
+                // Add the base pointer to the offsets within inArray2 to create complete pointers.
+                for (var i = 0; i < inArray2.Length; i++) { inArray2[i] += ({Op2BaseType})baseArrayPtr; }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), (uint)sizeOfinArray2);
+            }
+
+            public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* inArray2Ptr => Align((byte*)(inHandle2.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* baseArrayPtr => Align((byte*)(baseHandle.AddrOfPinnedObject().ToPointer()), alignment);
+
+            public void Dispose()
+            {
+                inHandle1.Free();
+                inHandle2.Free();
+                baseHandle.Free();
+            }
+
+            private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
+            {
+                return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
+            }
+        }
+
+        private struct TestStruct
+        {
+            public {Op1VectorType}<{Op1BaseType}> _fld1;
+            public {Op2VectorType}<{Op2BaseType}> _fld2;
+
+            public static TestStruct Create(DataTable _dataTable)
+            {
+                var testStruct = new TestStruct();
+
+                for (var i = 0; i < BaseElementCount; i++) { _datab[i] = TestLibrary.Generator.GetByte(); }
+                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
+                for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp2}; }
+
+                // Fill full of offsets into the data buffer.
+                for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp2} % ({Op2BaseType})BaseElementCount; }
+
+                // Add the base pointer to the offsets within inArray2 to create complete pointers.
+                for (var i = 0; i < Op2ElementCount; i++) { _data2[i] += ({Op2BaseType})_dataTable.baseArrayPtr; }
+
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref testStruct._fld2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(SveGatherPrefetchVectorBasesTest__{TestName} testClass)
+            {
+                {Isa}.{Method}(_fld1, _fld2, {ValidPrefetch});
+            }
+        }
+
+        private static readonly int LargestVectorSize = {LargestVectorSize};
+
+        // A large enough buffer to hold many values.
+        // Values in Op2 will point to locations within this buffer.
+        private static readonly int BaseElementCount = 1024;
+        private static byte[] _datab = new byte[BaseElementCount];
+
+        private static readonly int Op1ElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
+        private static readonly int Op2ElementCount = Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>() / sizeof({Op2BaseType});
+
+        private static {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
+        private static {Op2BaseType}[] _data2 = new {Op2BaseType}[Op2ElementCount];
+
+        private {Op1VectorType}<{Op1BaseType}> _fld1;
+        private {Op2VectorType}<{Op2BaseType}> _fld2;
+
+        private DataTable _dataTable;
+
+        public SveGatherPrefetchVectorBasesTest__{TestName}()
+        {
+            Succeeded = true;
+
+            for (var i = 0; i < BaseElementCount; i++) { _datab[i] = TestLibrary.Generator.GetByte(); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
+
+            // Fill full of offsets into the data buffer. They wil be expanded to full pointers inside the DataTable constructor.
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp2} % ({Op2BaseType})BaseElementCount; }
+
+            _dataTable = new DataTable(_data1, _data2, _datab, LargestVectorSize);
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _fld2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+        }
+
+        public bool IsSupported => {Isa}.IsSupported;
+
+        public bool Succeeded { get; set; }
+
+        public void RunBasicScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+
+            {Isa}.{Method}(
+                Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr),
+                Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray2Ptr),
+                {ValidPrefetch}
+            );
+        }
+
+        public void RunBasicScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask1 = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
+            {Op2VectorType}<{Op2BaseType}> loadMask2 = Sve.CreateTrueMask{Op2BaseType}(SveMaskPattern.All);
+
+            {Isa}.{Method}(
+                {LoadIsa}.Load{Op1VectorType}(loadMask1, ({Op1BaseType}*)(_dataTable.inArray1Ptr)),
+                {LoadIsa}.Load{Op2VectorType}(loadMask2, ({Op2BaseType}*)(_dataTable.inArray2Ptr)),
+                {ValidPrefetch}
+            );
+        }
+
+
+        public void RunBasicScenario_FalseMask()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_FalseMask));
+
+            {Op1VectorType}<{Op1BaseType}> falseMask = Sve.CreateFalseMask{Op1BaseType}();
+
+            {Isa}.{Method}(
+                falseMask,
+                Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray2Ptr),
+                {ValidPrefetch}
+            );
+        }
+
+        public void RunBasicScenario_NonFaulting()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_NonFaulting));
+
+            {Op1VectorType}<{Op1BaseType}> falseMask = Sve.CreateFalseMask{Op1BaseType}();
+
+            try
+            {
+                {Isa}.{Method}(
+                    falseMask,
+                    {Op2VectorType}<{Op2BaseType}>.Zero,
+                    {ValidPrefetch}
+                );
+            }
+            catch
+            {
+                Succeeded = false;
+            }
+        }
+
+        public void RunBasicScenario_Invalid()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Invalid));
+
+            try
+            {
+                {Isa}.{Method}(
+                    Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr),
+                    Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray2Ptr),
+                    {InvalidPrefetch}
+                );
+                Succeeded = false;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+            }
+        }
+
+        public void RunReflectionScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
+
+            typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({Op1VectorType}<{Op2BaseType}>), typeof({Op3BaseType}) })
+                                     .Invoke(null, new object[] {
+                                        Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr),
+                                        Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray2Ptr),
+                                        {ValidPrefetch}
+                                     });
+        }
+
+        public void RunLclVarScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
+
+            var op1 = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr);
+            var op2 = Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray2Ptr);
+            {Isa}.{Method}(op1, op2, {ValidPrefetch});
+        }
+
+        public void RunClassFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
+
+            {Isa}.{Method}(_fld1, _fld2, {ValidPrefetch});
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
+
+            var test = TestStruct.Create(_dataTable);
+            {Isa}.{Method}(test._fld1, test._fld2, {ValidPrefetch});
+        }
+
+        public void RunStructFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
+
+            var test = TestStruct.Create(_dataTable);
+            test.RunStructFldScenario(this);
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
+            Succeeded = false;
+
+            try
+            {
+                RunBasicScenario_Load();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                Succeeded = true;
+            }
+        }
+    }
+}

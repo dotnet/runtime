@@ -9,6 +9,7 @@ using System.Net.Security;
 using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
 {
@@ -134,6 +135,9 @@ namespace System.Net.Http
         private static readonly HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
         private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object>>("WebAssemblyFetchOptions");
 
+        [FeatureSwitchDefinition("System.Net.Http.WasmEnableStreamingResponse")]
+        internal static bool FeatureEnableStreamingResponse { get; } = AppContextConfigHelper.GetBooleanConfig("System.Net.Http.WasmEnableStreamingResponse", "DOTNET_WASM_ENABLE_STREAMING_RESPONSE", defaultValue: true);
+
         internal readonly JSObject _jsController;
         private readonly CancellationTokenRegistration _abortRegistration;
         private readonly string[] _optionNames;
@@ -143,15 +147,12 @@ namespace System.Net.Http
         private readonly string uri;
         private readonly CancellationToken _cancellationToken;
         private readonly HttpRequestMessage _request;
-        private bool _isDisposed;
+        internal bool _isDisposed;
 
         public BrowserHttpController(HttpRequestMessage request, bool? allowAutoRedirect, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
-            if (request.RequestUri == null)
-            {
-                throw new ArgumentNullException(nameof(request.RequestUri));
-            }
+            ArgumentNullException.ThrowIfNull(request.RequestUri);
 
             _cancellationToken = cancellationToken;
             _request = request;
@@ -163,7 +164,7 @@ namespace System.Net.Http
 
                 if (!_httpController.IsDisposed)
                 {
-                    BrowserHttpInterop.AbortRequest(_httpController);
+                    BrowserHttpInterop.Abort(_httpController);
                 }
             }, httpController);
 
@@ -251,9 +252,16 @@ namespace System.Net.Http
                     {
                         fetchPromise = BrowserHttpInterop.FetchStream(_jsController, uri, _headerNames, _headerValues, _optionNames, _optionValues);
                         writeStream = new BrowserHttpWriteStream(this);
-                        await _request.Content.CopyToAsync(writeStream, _cancellationToken).ConfigureAwait(false);
-                        var closePromise = BrowserHttpInterop.TransformStreamClose(_jsController);
-                        await BrowserHttpInterop.CancellationHelper(closePromise, _cancellationToken, _jsController).ConfigureAwait(false);
+                        try
+                        {
+                            await _request.Content.CopyToAsync(writeStream, _cancellationToken).ConfigureAwait(false);
+                            var closePromise = BrowserHttpInterop.TransformStreamClose(_jsController);
+                            await BrowserHttpInterop.CancellationHelper(closePromise, _cancellationToken, _jsController).ConfigureAwait(false);
+                        }
+                        catch (JSException jse) when (jse.Message.Contains("BrowserHttpWriteStream.Rejected", StringComparison.Ordinal))
+                        {
+                            // any error from pushing bytes will also appear in the fetch promise result
+                        }
                     }
                     else
                     {
@@ -263,7 +271,9 @@ namespace System.Net.Http
                         Memory<byte> bufferMemory = buffer.AsMemory();
                         // http_wasm_fetch_byte makes a copy of the bytes synchronously, so we can un-pin it synchronously
                         using MemoryHandle pinBuffer = bufferMemory.Pin();
+#pragma warning disable CA2025
                         fetchPromise = BrowserHttpInterop.FetchBytes(_jsController, uri, _headerNames, _headerValues, _optionNames, _optionValues, pinBuffer, buffer.Length);
+#pragma warning restore
                     }
                 }
                 else
@@ -310,10 +320,14 @@ namespace System.Net.Http
                     responseMessage.SetReasonPhraseWithoutValidation(responseType);
                 }
 
-                bool streamingResponseEnabled = false;
-                if (BrowserHttpInterop.SupportsStreamingResponse())
+                bool streamingResponseEnabled = FeatureEnableStreamingResponse;
+                if (_request.Options.TryGetValue(EnableStreamingResponse, out var reqStreamingResponseEnabled))
                 {
-                    _request.Options.TryGetValue(EnableStreamingResponse, out streamingResponseEnabled);
+                    streamingResponseEnabled = reqStreamingResponseEnabled;
+                }
+                if (streamingResponseEnabled && !BrowserHttpInterop.SupportsStreamingResponse())
+                {
+                    throw new PlatformNotSupportedException("Streaming response is not supported in this browser.");
                 }
 
                 responseMessage.Content = streamingResponseEnabled
@@ -347,7 +361,7 @@ namespace System.Net.Http
             {
                 if (!_jsController.IsDisposed)
                 {
-                    BrowserHttpInterop.AbortRequest(_jsController);// aborts also response
+                    BrowserHttpInterop.Abort(_jsController);// aborts also response
                 }
                 _jsController.Dispose();
             }
@@ -357,10 +371,10 @@ namespace System.Net.Http
     internal sealed class BrowserHttpWriteStream : Stream
     {
         private readonly BrowserHttpController _controller; // we don't own it, we don't dispose it from here
+
         public BrowserHttpWriteStream(BrowserHttpController controller)
         {
             ArgumentNullException.ThrowIfNull(controller);
-
             _controller = controller;
         }
 
@@ -371,8 +385,10 @@ namespace System.Net.Http
 
             // http_wasm_transform_stream_write makes a copy of the bytes synchronously, so we can dispose the handle synchronously
             using MemoryHandle pinBuffer = buffer.Pin();
+#pragma warning disable CA2025
             Task writePromise = BrowserHttpInterop.TransformStreamWriteUnsafe(_controller._jsController, buffer, pinBuffer);
             return BrowserHttpInterop.CancellationHelper(writePromise, cancellationToken, _controller._jsController);
+#pragma warning restore
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -388,7 +404,7 @@ namespace System.Net.Http
 
         public override bool CanRead => false;
         public override bool CanSeek => false;
-        public override bool CanWrite => true;
+        public override bool CanWrite => !_controller._isDisposed;
 
         protected override void Dispose(bool disposing)
         {
@@ -475,7 +491,7 @@ namespace System.Net.Http
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            ArgumentNullException.ThrowIfNull(stream, nameof(stream));
+            ArgumentNullException.ThrowIfNull(stream);
 
             byte[] data = await GetResponseData(cancellationToken).ConfigureAwait(false);
             await stream.WriteAsync(data, cancellationToken).ConfigureAwait(false);
@@ -502,7 +518,7 @@ namespace System.Net.Http
 
     internal sealed class BrowserHttpReadStream : Stream
     {
-        private BrowserHttpController _controller; // we own the object and have to dispose it
+        private readonly BrowserHttpController _controller; // we own the object and have to dispose it
 
         public BrowserHttpReadStream(BrowserHttpController controller)
         {
@@ -536,7 +552,7 @@ namespace System.Net.Http
             return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
-        public override bool CanRead => true;
+        public override bool CanRead => !_controller._isDisposed;
         public override bool CanSeek => false;
         public override bool CanWrite => false;
 
@@ -577,5 +593,25 @@ namespace System.Net.Http
             throw new NotSupportedException();
         }
         #endregion
+    }
+
+    internal static class AppContextConfigHelper
+    {
+        internal static bool GetBooleanConfig(string switchName, string envVariable, bool defaultValue = false)
+        {
+            string? str = Environment.GetEnvironmentVariable(envVariable);
+            if (str != null)
+            {
+                if (str == "1" || str.Equals("true", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+                if (str == "0" || str.Equals("false", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+            return AppContext.TryGetSwitch(switchName, out bool value) ? value : defaultValue;
+        }
     }
 }

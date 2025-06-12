@@ -132,26 +132,13 @@ namespace System.Reflection.Emit
             int argCount = (parameters != null) ? parameters.Length : 0;
             if (Signature.Arguments.Length != argCount)
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
-
-            object? retValue;
-            switch (argCount)
+            object? retValue = argCount switch
             {
-                case 0:
-                    retValue = Invoker.InvokeWithNoArgs(obj, invokeAttr);
-                    break;
-                case 1:
-                    retValue = Invoker.InvokeWithOneArg(obj, invokeAttr, binder, parameters!, culture);
-                    break;
-                case 2:
-                case 3:
-                case 4:
-                    retValue = Invoker.InvokeWithFewArgs(obj, invokeAttr, binder, parameters!, culture);
-                    break;
-                default:
-                    retValue = Invoker.InvokeWithManyArgs(obj, invokeAttr, binder, parameters!, culture);
-                    break;
-            }
-
+                0 => Invoker.InvokeWithNoArgs(obj, invokeAttr),
+                1 => Invoker.InvokeWithOneArg(obj, invokeAttr, binder, parameters!, culture),
+                2 or 3 or 4 => Invoker.InvokeWithFewArgs(obj, invokeAttr, binder, parameters!, culture),
+                _ => Invoker.InvokeWithManyArgs(obj, invokeAttr, binder, parameters!, culture),
+            };
             GC.KeepAlive(this);
             return retValue;
         }

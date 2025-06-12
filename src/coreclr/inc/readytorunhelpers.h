@@ -34,8 +34,6 @@ HELPER(READYTORUN_HELPER_MemZero,                   CORINFO_HELP_MEMZERO,       
 HELPER(READYTORUN_HELPER_NativeMemSet,              CORINFO_HELP_NATIVE_MEMSET,                     )
 HELPER(READYTORUN_HELPER_MemCpy,                    CORINFO_HELP_MEMCPY,                            )
 
-HELPER(READYTORUN_HELPER_LogMethodEnter,            CORINFO_HELP_BBT_FCN_ENTER,                     )
-
 HELPER(READYTORUN_HELPER_GetRuntimeTypeHandle,      CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE,         )
 HELPER(READYTORUN_HELPER_GetRuntimeMethodHandle,    CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD,   )
 HELPER(READYTORUN_HELPER_GetRuntimeFieldHandle,     CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD,     )
@@ -45,16 +43,17 @@ HELPER(READYTORUN_HELPER_Box_Nullable,              CORINFO_HELP_BOX_NULLABLE,  
 HELPER(READYTORUN_HELPER_Unbox,                     CORINFO_HELP_UNBOX,                             )
 HELPER(READYTORUN_HELPER_Unbox_Nullable,            CORINFO_HELP_UNBOX_NULLABLE,                    )
 HELPER(READYTORUN_HELPER_NewMultiDimArr,            CORINFO_HELP_NEW_MDARR,                         )
+HELPER(READYTORUN_HELPER_Unbox_TypeTest,            CORINFO_HELP_UNBOX_TYPETEST,                    )
 
 HELPER(READYTORUN_HELPER_NewObject,                 CORINFO_HELP_NEWFAST,                           )
 HELPER(READYTORUN_HELPER_NewArray,                  CORINFO_HELP_NEWARR_1_DIRECT,                   )
 HELPER(READYTORUN_HELPER_CheckCastAny,              CORINFO_HELP_CHKCASTANY,                        )
 HELPER(READYTORUN_HELPER_CheckInstanceAny,          CORINFO_HELP_ISINSTANCEOFANY,                   )
 
-HELPER(READYTORUN_HELPER_GenericGcStaticBase,       CORINFO_HELP_GETGENERICS_GCSTATIC_BASE,         )
-HELPER(READYTORUN_HELPER_GenericNonGcStaticBase,    CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE,      )
-HELPER(READYTORUN_HELPER_GenericGcTlsBase,          CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE,   )
-HELPER(READYTORUN_HELPER_GenericNonGcTlsBase,       CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE,)
+HELPER(READYTORUN_HELPER_GenericGcStaticBase,       CORINFO_HELP_GET_GCSTATIC_BASE,                 )
+HELPER(READYTORUN_HELPER_GenericNonGcStaticBase,    CORINFO_HELP_GET_NONGCSTATIC_BASE,              )
+HELPER(READYTORUN_HELPER_GenericGcTlsBase,          CORINFO_HELP_GET_GCTHREADSTATIC_BASE,           )
+HELPER(READYTORUN_HELPER_GenericNonGcTlsBase,       CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE,        )
 
 HELPER(READYTORUN_HELPER_VirtualFuncPtr,            CORINFO_HELP_VIRTUAL_FUNC_PTR,                  )
 HELPER(READYTORUN_HELPER_IsInstanceOfException,     CORINFO_HELP_ISINSTANCEOF_EXCEPTION,            )
@@ -79,19 +78,17 @@ HELPER(READYTORUN_HELPER_Mod,                       CORINFO_HELP_MOD,           
 HELPER(READYTORUN_HELPER_UDiv,                      CORINFO_HELP_UDIV,                              )
 HELPER(READYTORUN_HELPER_UMod,                      CORINFO_HELP_UMOD,                              )
 
-HELPER(READYTORUN_HELPER_Dbl2Int,                   CORINFO_HELP_DBL2INT,                           )
 HELPER(READYTORUN_HELPER_Dbl2IntOvf,                CORINFO_HELP_DBL2INT_OVF,                       )
 HELPER(READYTORUN_HELPER_Dbl2Lng,                   CORINFO_HELP_DBL2LNG,                           )
 HELPER(READYTORUN_HELPER_Dbl2LngOvf,                CORINFO_HELP_DBL2LNG_OVF,                       )
-HELPER(READYTORUN_HELPER_Dbl2UInt,                  CORINFO_HELP_DBL2UINT,                          )
 HELPER(READYTORUN_HELPER_Dbl2UIntOvf,               CORINFO_HELP_DBL2UINT_OVF,                      )
 HELPER(READYTORUN_HELPER_Dbl2ULng,                  CORINFO_HELP_DBL2ULNG,                          )
 HELPER(READYTORUN_HELPER_Dbl2ULngOvf,               CORINFO_HELP_DBL2ULNG_OVF,                      )
+HELPER(READYTORUN_HELPER_Lng2Flt,                   CORINFO_HELP_LNG2FLT,                           )
+HELPER(READYTORUN_HELPER_ULng2Flt,                  CORINFO_HELP_ULNG2FLT,                          )
 
 HELPER(READYTORUN_HELPER_FltRem,                    CORINFO_HELP_FLTREM,                            )
 HELPER(READYTORUN_HELPER_DblRem,                    CORINFO_HELP_DBLREM,                            )
-HELPER(READYTORUN_HELPER_FltRound,                  CORINFO_HELP_FLTROUND,                          )
-HELPER(READYTORUN_HELPER_DblRound,                  CORINFO_HELP_DBLROUND,                          )
 
 #ifndef TARGET_X86
 HELPER(READYTORUN_HELPER_PersonalityRoutine,        CORINFO_HELP_EE_PERSONALITY_ROUTINE,            OPTIMIZEFORSIZE)

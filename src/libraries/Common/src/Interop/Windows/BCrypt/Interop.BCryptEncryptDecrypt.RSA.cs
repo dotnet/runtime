@@ -52,7 +52,7 @@ internal static partial class Interop
             BCryptEncryptFlags dwFlags)
         {
             // BCryptEncrypt does not accept null/0, only non-null/0.
-            Span<byte> notNull = stackalloc byte[1];
+            ReadOnlySpan<byte> notNull = stackalloc byte[1];
             scoped ReadOnlySpan<byte> effectiveSource;
 
             if (source.IsEmpty)

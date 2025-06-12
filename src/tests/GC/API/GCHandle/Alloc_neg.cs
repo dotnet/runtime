@@ -11,10 +11,12 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class Test_Alloc_neg
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int[] array = new int[25];
         array = null;

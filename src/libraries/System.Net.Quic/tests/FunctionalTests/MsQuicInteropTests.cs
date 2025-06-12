@@ -70,5 +70,17 @@ namespace System.Net.Quic.Tests
                 Assert.False(settings.Equals((QUIC_SETTINGS)boxed), $"Member {member.Name} is not compared.");
             }
         }
+
+        [Fact]
+        public void MsQuicCipherSuites_MapTo_TlsCipherSuite()
+        {
+            foreach (QUIC_CIPHER_SUITE msQuicCipherSuite in Enum.GetValues<QUIC_CIPHER_SUITE>())
+            {
+                // both QUIC_CIPHER_SUITE and TlsCipherSuite members use the IANA identifiers of the TLS cipher suites, check that their values match
+                TlsCipherSuite cipherSuite = (TlsCipherSuite)msQuicCipherSuite;
+                // if same numerical value maps to the same enum member, the ToString() should be the same
+                Assert.Equal(msQuicCipherSuite.ToString(), cipherSuite.ToString());
+            }
+        }
     }
 }

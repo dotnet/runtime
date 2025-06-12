@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.Http
 {
     internal class TestMessageHandler : HttpMessageHandler
     {
-        private Func<HttpRequestMessage, HttpResponseMessage> _responseFactory = _ => new HttpResponseMessage();
+        protected Func<HttpRequestMessage, HttpResponseMessage> _responseFactory = _ => new HttpResponseMessage();
 
         public TestMessageHandler(Func<HttpRequestMessage, HttpResponseMessage>? responseFactory = null)
         {

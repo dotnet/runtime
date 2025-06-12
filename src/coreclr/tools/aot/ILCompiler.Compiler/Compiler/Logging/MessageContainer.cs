@@ -90,7 +90,7 @@ namespace ILCompiler.Logging
         /// <param name="text">Humanly readable message describing the warning</param>
         /// <param name="code">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md
         /// for the list of warnings and possibly add a new one</param>
-        /// /// <param name="origin">Filename or member where the warning is coming from</param>
+        /// <param name="origin">Filename or member where the warning is coming from</param>
         /// <param name="subcategory">Optionally, further categorize this warning</param>
         /// <param name="version">Optional warning version number. Versioned warnings can be controlled with the
         /// warning wave option --warn VERSION. Unversioned warnings are unaffected by this option. </param>
@@ -128,6 +128,11 @@ namespace ILCompiler.Logging
             if (context.IsWarningSubcategorySuppressed(subcategory))
                 return null;
 
+            // If the warning comes from compiler-generated code, it would not be actionable. The assumption is that
+            // compiler-generated code doesn't have issues.
+            if (origin.MemberDefinition is MethodDesc originMethod && originMethod.GetTypicalMethodDefinition() is not EcmaMethod)
+                return null;
+
             if (TryLogSingleWarning(context, code, origin, subcategory))
                 return null;
 
@@ -143,6 +148,11 @@ namespace ILCompiler.Logging
                 return null;
 
             if (context.IsWarningSubcategorySuppressed(subcategory))
+                return null;
+
+            // If the warning comes from compiler-generated code, it would not be actionable. The assumption is that
+            // compiler-generated code doesn't have issues.
+            if (origin.MemberDefinition is MethodDesc originMethod && originMethod.GetTypicalMethodDefinition() is not EcmaMethod)
                 return null;
 
             if (TryLogSingleWarning(context, (int)id, origin, subcategory))

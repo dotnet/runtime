@@ -9,6 +9,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     public class RSACryptoServiceProviderProvider : IRSAProvider
     {
         private bool? _supportsSha1Signatures;
+        private bool? _supportsMd5Signatures;
 
         public RSA Create() => new RSACryptoServiceProvider();
 
@@ -23,6 +24,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         public bool SupportsPss => false;
 
         public bool SupportsSha1Signatures => _supportsSha1Signatures ??= SignatureSupport.CanProduceSha1Signature(Create());
+        public bool SupportsMd5Signatures => _supportsMd5Signatures ??= SignatureSupport.CanProduceMd5Signature(Create());
 
         public bool SupportsSha3 => false;
     }

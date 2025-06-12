@@ -20,37 +20,30 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         [Theory]
         [MemberData(nameof(NativeBuildData))]
-        public void SimpleStringChangeInSource(BuildArgs buildArgs, bool nativeRelink, bool invariant, RunHost host, string id)
+        public async void SimpleStringChangeInSource(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
-            buildArgs = buildArgs with { ProjectName = $"rebuild_simple_{buildArgs.Config}" };
-            (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink, invariant: invariant, buildArgs, id);
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_simple");
+            BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, nativeRelink, invariant);
 
-            string mainAssembly = $"{buildArgs.ProjectName}.dll";
-            var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: true);
+            string mainAssembly = $"{info.ProjectName}{ProjectProviderBase.WasmAssemblyExtension}";
+            var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
             pathsDict.UpdateTo(unchanged: false, mainAssembly);
-            pathsDict.UpdateTo(unchanged: !buildArgs.AOT, "dotnet.native.wasm", "dotnet.native.js");
+            bool dotnetFilesSizeUnchanged = !aot;
+            pathsDict.UpdateTo(unchanged: dotnetFilesSizeUnchanged, "dotnet.native.wasm", "dotnet.native.js");
+        
+            if (aot)
+                pathsDict.UpdateTo(unchanged: false, $"{info.ProjectName}.dll.bc", $"{info.ProjectName}.dll.o");
 
-            if (buildArgs.AOT)
-                pathsDict.UpdateTo(unchanged: false, $"{mainAssembly}.bc", $"{mainAssembly}.o");
+            var originalStat = StatFiles(pathsDict);
 
-            var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
-
-            // Changes
-            string mainResults55 = @"
-                public class TestClass {
-                    public static int Main()
-                    {
-                        return 55;
-                    }
-                }";
-            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), mainResults55);
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "SimpleSourceChange.cs"));
 
             // Rebuild
-            Rebuild(nativeRelink, invariant, buildArgs, id);
-            var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            Rebuild(info, config, aot, nativeRelink, invariant, assertAppBundle: dotnetFilesSizeUnchanged);
+            var newStat = StatFilesAfterRebuild(pathsDict);
 
-            _provider.CompareStat(originalStat, newStat, pathsDict.Values);
-            RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 55, host: host, id: id);
+            CompareStat(originalStat, newStat, pathsDict);
+            await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 55));
         }
     }
 }

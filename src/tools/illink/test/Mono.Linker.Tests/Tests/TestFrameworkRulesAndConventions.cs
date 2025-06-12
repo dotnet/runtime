@@ -76,6 +76,10 @@ namespace Mono.Linker.Tests.Tests
 			if (IsAttributeType (type))
 				return true;
 
+			// Extension types extending public enums
+			if (type.Name.EndsWith ("Ex") && type.IsAbstract && type.IsSealed)
+				return true;
+
 			// Anything else is not OK and should probably be defined in Mono.Linker.Tests.Cases and use SandboxDependency in order to be included
 			// with the tests that need it
 			return false;

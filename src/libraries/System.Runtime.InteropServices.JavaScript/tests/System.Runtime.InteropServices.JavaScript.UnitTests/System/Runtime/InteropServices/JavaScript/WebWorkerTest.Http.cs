@@ -32,7 +32,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         private static HttpRequestOptionsKey<bool> WebAssemblyEnableStreamingRequestKey = new("WebAssemblyEnableStreamingRequest");
-        private static HttpRequestOptionsKey<bool> WebAssemblyEnableStreamingResponseKey = new("WebAssemblyEnableStreamingResponse");
         private static string HelloJson = "{'hello':'world'}".Replace('\'', '"');
         private static string EchoStart = "{\"Method\":\"POST\",\"Url\":\"/Echo.ashx";
 
@@ -46,7 +45,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await ms.WriteAsync(Encoding.UTF8.GetBytes(HelloJson));
 
                 using var req = new HttpRequestMessage(HttpMethod.Post, url);
-                req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
                 req.Content = new StreamContent(ms);
                 using var client = new HttpClient();
                 var pr = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
@@ -72,6 +70,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             });
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/98101")]
         [Theory, MemberData(nameof(GetTargetThreads2x))]
         public async Task HttpClient_CancelInDifferentThread(Executor executor1, Executor executor2)
         {

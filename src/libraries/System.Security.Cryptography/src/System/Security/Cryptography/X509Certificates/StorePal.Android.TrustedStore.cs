@@ -6,8 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
-#pragma warning disable 8500 // taking address of managed type
-
 namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class StorePal

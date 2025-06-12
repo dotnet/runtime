@@ -213,7 +213,7 @@ namespace System.Reflection.Runtime.TypeInfos
                             for (int i = 0; i < rank; i++)
                                 indices[i] = (int)(args[i]);
                             object value = args[rank];
-                            array.SetValue(value, indices);
+                            RuntimeAugments.SetArrayValue(array, indices, value);
                             return null;
                         }
                     );

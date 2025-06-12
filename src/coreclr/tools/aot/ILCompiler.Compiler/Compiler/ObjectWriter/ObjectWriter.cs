@@ -118,9 +118,7 @@ namespace ILCompiler.ObjectWriter
                 return false;
 
             // Foldable sections are always COMDATs
-            if (section == ObjectNodeSection.FoldableManagedCodeUnixContentSection ||
-                section == ObjectNodeSection.FoldableManagedCodeWindowsContentSection ||
-                section == ObjectNodeSection.FoldableReadOnlyDataSection)
+            if (section == ObjectNodeSection.FoldableReadOnlyDataSection)
                 return true;
 
             if (_isSingleFileCompilation)
@@ -134,15 +132,6 @@ namespace ILCompiler.ObjectWriter
                 return false;
 
             return true;
-        }
-
-        private protected static ObjectNodeSection GetSharedSection(ObjectNodeSection section, string key)
-        {
-            string standardSectionPrefix = "";
-            if (section.IsStandardSection)
-                standardSectionPrefix = ".";
-
-            return new ObjectNodeSection(standardSectionPrefix + section.Name, section.Type, key);
         }
 
         private unsafe void EmitOrResolveRelocation(
@@ -395,12 +384,16 @@ namespace ILCompiler.ObjectWriter
                 if (node.ShouldSkipEmittingObjectNode(_nodeFactory))
                     continue;
 
+                ISymbolNode symbolNode = node as ISymbolNode;
+                if (_nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode) != symbolNode)
+                    continue;
+
                 ObjectData nodeContents = node.GetData(_nodeFactory);
 
                 dumper?.DumpObjectNode(_nodeFactory, node, nodeContents);
 
                 string currentSymbolName = null;
-                if (node is ISymbolNode symbolNode)
+                if (symbolNode != null)
                 {
                     currentSymbolName = GetMangledName(symbolNode);
                 }
@@ -420,13 +413,20 @@ namespace ILCompiler.ObjectWriter
                         n == node ? currentSymbolName : GetMangledName(n),
                         n.Offset + thumbBit,
                         n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0);
-                    if (_nodeFactory.GetSymbolAlternateName(n) is string alternateName)
+                    if (_nodeFactory.GetSymbolAlternateName(n, out bool isHidden) is string alternateName)
                     {
+                        string alternateCName = ExternCName(alternateName);
                         sectionWriter.EmitSymbolDefinition(
-                            ExternCName(alternateName),
+                            alternateCName,
                             n.Offset + thumbBit,
                             n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0,
-                            global: true);
+                            global: !isHidden);
+
+                        if (n is IMethodNode)
+                        {
+                            // https://github.com/dotnet/runtime/issues/105330: consider exports CFG targets
+                            EmitReferencedMethod(alternateCName);
+                        }
                     }
                 }
 
@@ -454,7 +454,9 @@ namespace ILCompiler.ObjectWriter
             {
                 foreach (Relocation reloc in blockToRelocate.Relocations)
                 {
-                    string relocSymbolName = GetMangledName(reloc.Target);
+                    ISymbolNode relocTarget = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, reloc.Target);
+
+                    string relocSymbolName = GetMangledName(relocTarget);
 
                     EmitOrResolveRelocation(
                         blockToRelocate.SectionIndex,
@@ -462,10 +464,10 @@ namespace ILCompiler.ObjectWriter
                         blockToRelocate.Data.AsSpan(reloc.Offset),
                         reloc.RelocType,
                         relocSymbolName,
-                        reloc.Target.Offset);
+                        relocTarget.Offset);
 
                     if (_options.HasFlag(ObjectWritingOptions.ControlFlowGuard) &&
-                        reloc.Target is IMethodNode or AssemblyStubNode)
+                        relocTarget is IMethodNode or AssemblyStubNode or AddressTakenExternSymbolNode)
                     {
                         // For now consider all method symbols address taken.
                         // We could restrict this in the future to those that are referenced from

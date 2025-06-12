@@ -3,10 +3,14 @@
 
 #pragma once
 
+class ClassLayout;
+enum class WellKnownArg : unsigned;
+
 class ABIPassingSegment
 {
-    regNumber m_register    = REG_NA;
-    unsigned  m_stackOffset = 0;
+    regNumberSmall m_register        = REG_NA;
+    bool           m_isFullStackSlot = true;
+    unsigned       m_stackOffset     = 0;
 
 public:
     bool IsPassedInRegister() const;
@@ -31,14 +35,70 @@ public:
     // offset, relative to the base of stack arguments.
     unsigned GetStackOffset() const;
 
+    // Get the size of stack consumed. Normally this is 'Size' rounded up to
+    // the pointer size, but for apple arm64 ABI some primitives do not consume
+    // full stack slots.
+    unsigned GetStackSize() const;
+
     var_types GetRegisterType() const;
+    var_types GetRegisterType(ClassLayout* layout) const;
 
     static ABIPassingSegment InRegister(regNumber reg, unsigned offset, unsigned size);
     static ABIPassingSegment OnStack(unsigned stackOffset, unsigned offset, unsigned size);
+    static ABIPassingSegment OnStackWithoutConsumingFullSlot(unsigned stackOffset, unsigned offset, unsigned size);
+
+#ifdef DEBUG
+    void Dump() const;
+#endif
+};
+
+class ABIPassingSegmentIterator
+{
+    const ABIPassingSegment* m_value;
+public:
+    explicit ABIPassingSegmentIterator(const ABIPassingSegment* value)
+        : m_value(value)
+    {
+    }
+
+    const ABIPassingSegment& operator*() const
+    {
+        return *m_value;
+    }
+    const ABIPassingSegment* operator->() const
+    {
+        return m_value;
+    }
+
+    ABIPassingSegmentIterator& operator++()
+    {
+        m_value++;
+        return *this;
+    }
+
+    bool operator==(const ABIPassingSegmentIterator& other) const
+    {
+        return m_value == other.m_value;
+    }
+
+    bool operator!=(const ABIPassingSegmentIterator& other) const
+    {
+        return m_value != other.m_value;
+    }
 };
 
 struct ABIPassingInformation
 {
+private:
+    union
+    {
+        ABIPassingSegment* m_segments;
+        ABIPassingSegment  m_singleSegment;
+    };
+
+    bool m_passedByRef = false;
+
+public:
     // The number of segments used to pass the value. Examples:
     // - On SysV x64, structs can be passed in two registers, resulting in two
     // register segments
@@ -51,22 +111,33 @@ struct ABIPassingInformation
     // - On loongarch64/riscv64, structs can be passed in two registers or
     // can be split out over register and stack, giving
     // multiple register segments and a struct segment.
-    unsigned           NumSegments;
-    ABIPassingSegment* Segments;
+    unsigned NumSegments = 0;
 
-    ABIPassingInformation(unsigned numSegments = 0, ABIPassingSegment* segments = nullptr)
-        : NumSegments(numSegments)
-        , Segments(segments)
+    ABIPassingInformation()
     {
     }
 
-    bool HasAnyRegisterSegment() const;
-    bool HasAnyStackSegment() const;
-    bool HasExactlyOneRegisterSegment() const;
-    bool HasExactlyOneStackSegment() const;
-    bool IsSplitAcrossRegistersAndStack() const;
+    ABIPassingInformation(Compiler* comp, unsigned numSegments);
 
-    static ABIPassingInformation FromSegment(Compiler* comp, const ABIPassingSegment& segment);
+    const ABIPassingSegment&                Segment(unsigned index) const;
+    ABIPassingSegment&                      Segment(unsigned index);
+    IteratorPair<ABIPassingSegmentIterator> Segments() const;
+
+    bool     IsPassedByReference() const;
+    bool     HasAnyRegisterSegment() const;
+    bool     HasAnyFloatingRegisterSegment() const;
+    bool     HasAnyStackSegment() const;
+    bool     HasExactlyOneRegisterSegment() const;
+    bool     HasExactlyOneStackSegment() const;
+    bool     IsSplitAcrossRegistersAndStack() const;
+    unsigned CountRegsAndStackSlots() const;
+    unsigned StackBytesConsumed() const;
+
+    static ABIPassingInformation FromSegment(Compiler* comp, bool passedByRef, const ABIPassingSegment& segment);
+    static ABIPassingInformation FromSegmentByValue(Compiler* comp, const ABIPassingSegment& segment);
+    static ABIPassingInformation FromSegments(Compiler*                comp,
+                                              const ABIPassingSegment& firstSegment,
+                                              const ABIPassingSegment& secondSegment);
 
 #ifdef WINDOWS_AMD64_ABI
     static bool GetShadowSpaceCallerOffsetForReg(regNumber reg, int* offset);

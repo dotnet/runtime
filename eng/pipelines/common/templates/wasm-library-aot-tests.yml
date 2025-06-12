@@ -35,9 +35,7 @@ jobs:
         - ${{ if ne(parameters.scenarios[0], '') }}:
           - ${{ parameters.scenarios }}
         - ${{ else }}:
-          - ${{ if eq(platform, 'browser_wasm') }}:
-            - WasmTestOnV8
-          - ${{ if eq(platform, 'browser_wasm_win') }}:
+          - ${{ if or(eq(platform, 'browser_wasm'), eq(platform, 'browser_wasm_win')) }}:
             - WasmTestOnChrome
           - ${{ if or(eq(platform, 'wasi_wasm_win'), eq(platform, 'wasi_wasm')) }}:
             - WasmTestOnWasmtime

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Tests;
@@ -120,6 +121,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithDictionaryAndProperty_DictionaryLast))]
         [JsonSerializable(typeof(SimpleClassWithDictionaries))]
         [JsonSerializable(typeof(DictionaryThatOnlyImplementsIDictionaryOfStringTValue<int>))]
+        [JsonSerializable(typeof(DictionaryThatOnlyImplementsIDictionaryOfStringTValue<string>))]
         [JsonSerializable(typeof(DictionaryThatOnlyImplementsIDictionaryOfStringTValue<Poco>))]
         [JsonSerializable(typeof(DictionaryThatOnlyImplementsIDictionaryOfStringPoco))]
         [JsonSerializable(typeof(DictionaryThatHasIncompatibleEnumerator))]
@@ -130,6 +132,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(JsonElement))]
         [JsonSerializable(typeof(string))]
         [JsonSerializable(typeof(IDictionary<int, int>))]
+        [JsonSerializable(typeof(IDictionary<int, IEnumerable<int>>))]
         [JsonSerializable(typeof(Dictionary<string, ClassWithInternalParameterlessConstructor>))]
         [JsonSerializable(typeof(Dictionary<string, ClassWithPrivateParameterlessConstructor>))]
         [JsonSerializable(typeof(Dictionary<string, Dictionary<string, CustomClass>>))]
@@ -462,6 +465,14 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ReadOnlyMemoryOfTClass<int>))]
         [JsonSerializable(typeof(MemoryOfTClass<EmptyClass>))]
         [JsonSerializable(typeof(ReadOnlyMemoryOfTClass<EmptyClass>))]
+        [JsonSerializable(typeof(Dictionary<int, string>))]
+        [JsonSerializable(typeof(IDictionary<int, string>))]
+        [JsonSerializable(typeof(IReadOnlyDictionary<int, string>))]
+        [JsonSerializable(typeof(ImmutableDictionary<int, string>))]
+        [JsonSerializable(typeof(IImmutableDictionary<int, string>))]
+        [JsonSerializable(typeof(ImmutableSortedDictionary<int, string>))]
+        [JsonSerializable(typeof(ConcurrentDictionary<int, string>))]
+        [JsonSerializable(typeof(GenericIDictionaryWrapper<int, string>))]
         internal sealed partial class CollectionTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -546,6 +557,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithDictionaryAndProperty_DictionaryLast))]
         [JsonSerializable(typeof(SimpleClassWithDictionaries))]
         [JsonSerializable(typeof(DictionaryThatOnlyImplementsIDictionaryOfStringTValue<int>))]
+        [JsonSerializable(typeof(DictionaryThatOnlyImplementsIDictionaryOfStringTValue<string>))]
         [JsonSerializable(typeof(DictionaryThatOnlyImplementsIDictionaryOfStringTValue<Poco>))]
         [JsonSerializable(typeof(DictionaryThatOnlyImplementsIDictionaryOfStringPoco))]
         [JsonSerializable(typeof(DictionaryThatHasIncompatibleEnumerator))]
@@ -556,6 +568,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(JsonElement))]
         [JsonSerializable(typeof(string))]
         [JsonSerializable(typeof(IDictionary<int, int>))]
+        [JsonSerializable(typeof(IDictionary<int, IEnumerable<int>>))]
         [JsonSerializable(typeof(Dictionary<string, ClassWithInternalParameterlessConstructor>))]
         [JsonSerializable(typeof(Dictionary<string, ClassWithPrivateParameterlessConstructor>))]
         [JsonSerializable(typeof(Dictionary<string, Dictionary<string, CustomClass>>))]
@@ -873,6 +886,14 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ReadOnlyMemoryOfTClass<int>))]
         [JsonSerializable(typeof(MemoryOfTClass<EmptyClass>))]
         [JsonSerializable(typeof(ReadOnlyMemoryOfTClass<EmptyClass>))]
+        [JsonSerializable(typeof(Dictionary<int, string>))]
+        [JsonSerializable(typeof(IDictionary<int, string>))]
+        [JsonSerializable(typeof(IReadOnlyDictionary<int, string>))]
+        [JsonSerializable(typeof(ImmutableDictionary<int, string>))]
+        [JsonSerializable(typeof(IImmutableDictionary<int, string>))]
+        [JsonSerializable(typeof(ImmutableSortedDictionary<int, string>))]
+        [JsonSerializable(typeof(ConcurrentDictionary<int, string>))]
+        [JsonSerializable(typeof(GenericIDictionaryWrapper<int, string>))]
         internal sealed partial class CollectionTestsContext_Default : JsonSerializerContext
         {
         }

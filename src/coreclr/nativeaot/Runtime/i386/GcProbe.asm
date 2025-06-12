@@ -172,7 +172,7 @@ RhpWaitForGC  proc
 
         HijackFixupEpilog
 Abort:
-        mov         ecx, STATUS_REDHAWK_THREAD_ABORT
+        mov         ecx, STATUS_NATIVEAOT_THREAD_ABORT
         pop         edx
         pop         eax         ;; ecx was pushed here, but we don't care for its value
         pop         ebp
@@ -191,12 +191,9 @@ RhpGcPoll  proc
 RhpGcPoll  endp
 
 RhpGcPollRare  proc
-        push        ebp
-        mov         ebp, esp
         PUSH_COOP_PINVOKE_FRAME ecx
         call        RhpGcPoll2
         POP_COOP_PINVOKE_FRAME
-        pop         ebp
         ret
 RhpGcPollRare  endp
 
@@ -251,7 +248,7 @@ RhpGcStressProbe  endp
 
 endif ;; FEATURE_GC_STRESS
 
-FASTCALL_FUNC RhpGcProbeHijack, 0
+_RhpGcProbeHijack@0  proc public
         HijackFixupProlog
         test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
         jnz         WaitForGC
@@ -261,18 +258,18 @@ WaitForGC:
         or          ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX
         jmp         RhpWaitForGC
 
-FASTCALL_ENDFUNC
+_RhpGcProbeHijack@0  endp
 
 ifdef FEATURE_GC_STRESS
-FASTCALL_FUNC RhpGcStressHijack, 0
+_RhpGcStressHijack@0  proc public
 
         HijackFixupProlog
         or          ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX
         jmp         RhpGcStressProbe
 
-FASTCALL_ENDFUNC
+_RhpGcStressHijack@0  endp
 
-FASTCALL_FUNC RhpHijackForGcStress, 0
+_RhpHijackForGcStress@0  proc public
         push        ebp
         mov         ebp, esp
 
@@ -307,7 +304,7 @@ FASTCALL_FUNC RhpHijackForGcStress, 0
         pop         edx
         pop         ebp
         ret
-FASTCALL_ENDFUNC
+_RhpHijackForGcStress@0  endp
 endif ;; FEATURE_GC_STRESS
 
         end

@@ -53,7 +53,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             public bool hasMethodCalls;
             public bool hasElementAccesses;
             public bool hasStringExpressionStatement;
-            internal List<VariableDefinition> variableDefinitions = new ();
+            internal List<VariableDefinition> variableDefinitions = new();
 
             public void VisitInternal(SyntaxNode node)
             {
@@ -227,7 +227,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (localsSet.Contains(idName))
                         return;
                     localsSet.Add(idName);
-                    variableDefinitions.Add(new (idName, value, ConvertJSToCSharpLocalVariableAssignment(idName, value)));
+                    variableDefinitions.Add(new(idName, value, ConvertJSToCSharpLocalVariableAssignment(idName, value)));
                 }
             }
         }

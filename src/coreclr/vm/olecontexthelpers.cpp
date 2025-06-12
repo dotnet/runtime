@@ -34,8 +34,7 @@ LPVOID SetupOleContext()
     {
         NOTHROW;
         GC_TRIGGERS;
-        MODE_ANY;
-        ENTRY_POINT;
+        MODE_COOPERATIVE;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
     CONTRACT_END;
@@ -48,17 +47,17 @@ LPVOID SetupOleContext()
         HRESULT hr = GetCurrentObjCtx(&pObjCtx);
         if (hr == S_OK)
         {
-            SOleTlsData* _pData = (SOleTlsData *) ClrTeb::GetOleReservedPtr();
+            SOleTlsData* _pData = (SOleTlsData *)ClrTeb::GetOleReservedPtr();
             if (_pData && _pData->pCurrentCtx == NULL)
             {
-                _pData->pCurrentCtx = (CObjectContext*)pObjCtx;   // no release !!!!
+                _pData->pCurrentCtx = pObjCtx;   // no release !!!!
             }
             else
             {
                 // We can't call SafeRelease here since that would transition
                 // to preemptive GC mode which is bad since SetupOleContext is called
                 // from places where we can't take a GC.
-                ULONG cbRef = pObjCtx->Release();
+                (void)pObjCtx->Release();
             }
         }
     }

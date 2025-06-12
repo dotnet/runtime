@@ -199,8 +199,8 @@ CrashInfo::GatherCrashInfo(DumpType dumpType)
     {
         return false;
     }
-    // Add the special (fake) memory region for the special diagnostics info
-    MemoryRegion special(PF_R, SpecialDiagInfoAddress, SpecialDiagInfoAddress + PAGE_SIZE);
+    // Add the special (fake) memory region for the special diagnostics info. Use constructor that doesn't assert PAGE_SIZE alignment.
+    MemoryRegion special(PF_R, SpecialDiagInfoAddress, SpecialDiagInfoAddress + SpecialDiagInfoSize, /* offset */ 0);
     m_memoryRegions.insert(special);
 #ifdef __APPLE__
     InitializeOtherMappings();
@@ -1026,7 +1026,7 @@ ConvertString(const WCHAR* str)
     if (str == nullptr)
         return { };
 
-    size_t cch = u16_strlen(str) + 1;
+    size_t cch = minipal_u16_strlen((CHAR16_T*)str) + 1;
     int len = minipal_get_length_utf16_to_utf8((CHAR16_T*)str, cch, 0);
     if (len == 0)
         return { };

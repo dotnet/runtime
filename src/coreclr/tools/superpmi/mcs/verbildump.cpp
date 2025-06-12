@@ -103,7 +103,7 @@ void DumpPrimToConsoleBare(MethodContext* mc, CorInfoType prim, DWORDLONG classH
             return;
         default:
             LogWarning("unknown type in PrimToString(0x%x)", prim);
-            __debugbreak();
+            DEBUG_BREAK;
             return;
     }
 }

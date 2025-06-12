@@ -164,7 +164,7 @@ namespace System.ServiceModel.Syndication.Tests
             else
             {
                 //something really wrong here, what should we do???
-                Debug.Assert(false, "ComparePosition meets an undecision situation.");
+                Debug.Fail("ComparePosition meets an undecision situation.");
                 return NodePosition.Unknown;
             }
         }
@@ -753,7 +753,7 @@ namespace System.ServiceModel.Syndication.Tests
 
         public override string GetNamespace(string name)
         {
-            Debug.Assert(false, "GetNamespace is NYI");
+            Debug.Fail("GetNamespace is NYI");
             return "";
         }
 
@@ -871,13 +871,13 @@ namespace System.ServiceModel.Syndication.Tests
 
         public override bool MoveToId(string id)
         {
-            Debug.Assert(false, "MoveToId is NYI");
+            Debug.Fail("MoveToId is NYI");
             return false;
         }
 
         public override bool MoveToNamespace(string name)
         {
-            Debug.Assert(false, "MoveToNamespace is NYI");
+            Debug.Fail("MoveToNamespace is NYI");
             return false;
         }
 
@@ -1094,7 +1094,7 @@ namespace System.ServiceModel.Syndication.Tests
         {
             get
             {
-                Debug.Assert(false, "BaseURI is NYI");
+                Debug.Fail("BaseURI is NYI");
                 return "";
             }
         }
@@ -1103,7 +1103,7 @@ namespace System.ServiceModel.Syndication.Tests
         {
             get
             {
-                Debug.Assert(false, "XmlLang not supported");
+                Debug.Fail("XmlLang not supported");
                 return "";
             }
         }
@@ -1612,7 +1612,7 @@ namespace System.ServiceModel.Syndication.Tests
                     w.WriteString(Value);
                     break;
                 default:
-                    Debug.Assert(false, $"Wrong type for text-like node : {_nodetype}");
+                    Debug.Fail($"Wrong type for text-like node : {_nodetype}");
                     break;
             }
         }

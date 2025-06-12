@@ -172,7 +172,7 @@ namespace System.Reflection.Metadata
                     return StringHandle.VirtualIndex.System_Numerics_Vectors;
             }
 
-            Debug.Assert(false, "Unexpected virtual index value");
+            Debug.Fail("Unexpected virtual index value");
             return 0;
         }
 

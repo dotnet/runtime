@@ -10,17 +10,6 @@ namespace System.Diagnostics.Tracing
     // It contains the runtime specific interop to native event sinks.
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
-#if NATIVEAOT
-        // We don't have these keywords defined from the genRuntimeEventSources.py, so we need to manually define them here.
-        public static partial class Keywords
-        {
-            public const EventKeywords ContentionKeyword = (EventKeywords)0x4000;
-            public const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
-            public const EventKeywords ThreadTransferKeyword = (EventKeywords)0x80000000;
-            public const EventKeywords WaitHandleKeyword = (EventKeywords)0x40000000000;
-        }
-#endif
-
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogContentionLockCreated")]
         private static partial void LogContentionLockCreated(nint LockID, nint AssociatedObjectID, ushort ClrInstanceID);

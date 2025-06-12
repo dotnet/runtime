@@ -7,7 +7,7 @@
       Dependencies are broken via Fakes. Since we are referencing netstandard, the real types can conflict with the ones
       imported. We are disabling the "Type conflicts with the imported type CS0436 warning" for these types of projects.
     -->
-    <NoWarn>436</NoWarn>
+    <NoWarn>$(NoWarn);436</NoWarn>
     <!-- Disable: CLSCompliant attribute is not needed -->
     <NoWarn>$(NoWarn);3021</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-android</TargetFrameworks>
@@ -54,7 +54,6 @@
     <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.Linux.cs" />
     <Compile Include="..\..\src\System\Net\Security\Pal.Managed\SafeChannelBindingHandle.cs" />
     <Compile Include="..\..\src\System\Net\Security\CipherSuitesPolicyPal.Linux.cs" />
-    <Compile Include="..\..\src\System\Net\Security\SslCertificateTrust.cs" />
     <Compile Include="..\..\src\System\Net\Security\CipherSuitesPolicy.cs" />
 
     <!-- these are not specific to linux, but they are not necessary for tests on other platforms -->
@@ -145,7 +144,6 @@
              Link="Common\System\Net\Security\TlsAlertMessage.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\TargetHostNameHelper.cs"
              Link="Common\System\Net\Security\TargetHostNameHelper.cs" />
-
     <Compile Include="..\..\src\System\Net\SecurityStatusPal.cs"
              Link="ProductionCode\System\Net\SecurityStatusPal.cs" />
     <Compile Include="..\..\src\System\Net\Security\NetEventSource.Security.cs"
@@ -164,16 +162,16 @@
              Link="ProductionCode\System\Net\Security\SslConnectionInfo.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.cs"
              Link="ProductionCode\System\Net\Security\SslStreamCertificateContext.cs" />
-    <Compile Include="..\..\src\System\Net\Security\ReadWriteAdapter.cs"
-             Link="ProductionCode\System\Net\Security\ReadWriteAdapter.cs" />
     <Compile Include="..\..\src\System\Net\SslStreamContext.cs"
-             Link="ProductionCode\System\Net\SslStreamContext.cs" />
-    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
-             Link="ProductionCode\Common\System\Net\SecurityProtocol.cs" />
+	    Link="ProductionCode\System\Net\SslStreamContext.cs" />
+    <Compile Include="..\..\src\System\Net\Security\SslCertificateTrust.cs"
+	    Link="ProductionCode\System\Net\Security\SslCertificateTrust.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsAlertType.cs"
              Link="ProductionCode\Common\System\Net\TlsAlertType.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsFrameHelper.cs"
              Link="ProductionCode\Common\System\Net\TlsFrameHelper.cs" />
+    <Compile Include="$(CommonPath)\System\Net\ReadWriteAdapter.cs"
+             Link="Common\System\Net\ReadWriteAdapter.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs"
              Link="Common\Interop\Windows\SChannel\Interop.Alerts.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
@@ -237,8 +235,6 @@
              Link="Common\System\Net\Security\SecurityBufferType.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SecurityContextTokenHandle.cs"
              Link="Common\System\Net\Security\SecurityContextTokenHandle.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Windows.cs"
-             Link="Common\System\Net\ContextAwareResult.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.Windows.cs"
              Link="Common\System\Net\Security\NetEventSource.Security.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs"

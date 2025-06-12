@@ -39,6 +39,17 @@ namespace ILCompiler.DependencyAnalysis
 
             // Load the generic dictionary cell
             encoder.EmitLD(result, context, dictionarySlot * factory.Target.PointerSize);
+
+            // If there's any invalid entries, we need to test for them
+            //
+            // Skip this in relocsOnly to make it easier to weed out bugs - the _hasInvalidEntries
+            // flag can change over the course of compilation and the bad slot helper dependency
+            // should be reported by someone else - the system should not rely on it coming from here.
+            if (!relocsOnly && _hasInvalidEntries)
+            {
+                encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, result, 0);
+                encoder.EmitJE(encoder.TargetRegister.IntraProcedureCallScratch1, GetBadSlotHelper(factory));
+            }
         }
 
         protected sealed override void EmitCode(NodeFactory factory, ref LoongArch64Emitter encoder, bool relocsOnly)
@@ -65,6 +76,7 @@ namespace ILCompiler.DependencyAnalysis
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitADD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg0, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
                             encoder.EmitLD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, 0);
+                            encoder.EmitDBAR();
                             encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg2, 0);
                             encoder.EmitRETIfEqual(Register.R21);
 
@@ -97,6 +109,7 @@ namespace ILCompiler.DependencyAnalysis
 
                             encoder.EmitADD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
                             encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
+                            encoder.EmitDBAR();
                             encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg3, 1);
                             encoder.EmitRETIfEqual(Register.R21);
 

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- SYSLIB0020: JsonSerializerOptions.IgnoreNullValues is obsolete -->
@@ -20,14 +21,13 @@
          Enable reflection and preserve required assemblies -->
     <JsonSerializerIsReflectionEnabledByDefault Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">true</JsonSerializerIsReflectionEnabledByDefault>
     <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
-    <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
+    <Features>$(Features.Replace('nullablePublicOnly', ''))</Features>
   </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
-    <XunitShowProgress>true</XunitShowProgress>
-    <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
-    <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
     <HighAotMemoryUsageAssembly Include="System.Text.Json.Tests.dll" />
   </ItemGroup>
@@ -67,7 +67,10 @@
     <Compile Include="..\Common\JsonCreationHandlingTests.Object.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonCreationHandlingTests.Object.cs" />
     <Compile Include="..\Common\JsonNumberTestData.cs" Link="CommonTest\System\Text\Json\Tests\JsonNumberTestData" />
     <Compile Include="..\Common\JsonSerializerWrapper.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapper.cs" />
+    <Compile Include="..\Common\JsonSchemaExporterTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSchemaExporterTests.cs" />
+    <Compile Include="..\Common\JsonSchemaExporterTests.TestTypes.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSchemaExporterTests.TestTypes.cs" />
     <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
+    <Compile Include="..\Common\JsonTestSerializerOptions.cs" Link="CommonTest\System\Text\Json\JsonTestSerializerOptions.cs" />
     <Compile Include="..\Common\MetadataTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.cs" />
     <Compile Include="..\Common\MetadataTests.JsonSerializer.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.JsonSerializer.cs" />
     <Compile Include="..\Common\MetadataTests.Options.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.Options.cs" />
@@ -175,6 +178,7 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ValueTypedMember.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.cs" />
     <Compile Include="Serialization\JsonCreationHandlingTests.cs" />
+    <Compile Include="Serialization\JsonSchemaExporterTests.cs" />
     <Compile Include="Serialization\MetadataTests\DefaultJsonPropertyInfo.cs" />
     <Compile Include="Serialization\Pipe.WriteTests.cs" />
     <Compile Include="Serialization\RequiredKeywordTests.cs" />
@@ -232,56 +236,20 @@
     <Compile Include="Serialization\Value.WriteTests.cs" />
     <Compile Include="Serialization\WriteValueTests.cs" />
     <Compile Include="SourceGenRegressionTests\Net60RegressionTests.cs" />
-    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.ClassWithCustomConverter.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.cs" />
-    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.DateTimeOffset.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.DictionaryStringHighLowTemps.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.GetJsonTypeInfo.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.HighLowTemps.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.Int32.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.ListDateTimeOffset.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.MyLinkedList.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.PropertyNames.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.String.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.StringArray.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.WeatherForecastWithPOCOs.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60\*.cs" />
     <Compile Include="SourceGenRegressionTests\Net70RegressionTests.cs" />
-    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.ClassWithCustomConverter.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.cs" />
-    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.DateTimeOffset.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.DictionaryStringHighLowTemps.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.GetJsonTypeInfo.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.HighLowTemps.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.Int32.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.ListDateTimeOffset.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.MyLinkedList.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.PropertyNames.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.String.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.StringArray.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.WeatherForecastWithPOCOs.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\*.cs" />
     <Compile Include="SourceGenRegressionTests\Net80RegressionTests.cs" />
-    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.ClassWithCustomConverter.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.cs" />
-    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.DateTimeOffset.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.DictionaryStringHighLowTemps.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.GetJsonTypeInfo.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.HighLowTemps.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.Int32.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.ListDateTimeOffset.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.MyLinkedList.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.PropertyNames.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.String.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.StringArray.g.cs" />
-    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.WeatherForecastWithPOCOs.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80\*.cs" />
+    <Compile Include="SourceGenRegressionTests\Net90RegressionTests.cs" />
+    <Compile Include="SourceGenRegressionTests\Net90\*.cs" />
     <Compile Include="TestCaseType.cs" />
     <Compile Include="Utf8JsonReaderTests.cs" />
     <Compile Include="Utf8JsonReaderTests.MultiSegment.cs" />
     <Compile Include="Utf8JsonReaderTests.TryGet.cs" />
     <Compile Include="Utf8JsonReaderTests.TryGet.Date.cs" />
     <Compile Include="Utf8JsonReaderTests.ValueTextEquals.cs" />
+    <Compile Include="Utf8JsonWriterTests.Values.StringSegment.cs" />
     <Compile Include="Utf8JsonWriterTests.cs" />
     <Compile Include="Utf8JsonWriterTests.WriteRaw.cs" />
 
@@ -302,18 +270,24 @@
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\src\System.Text.Json.csproj"  />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Linq.AsyncEnumerable\src\System.Linq.AsyncEnumerable.csproj" />
+
     <Reference Include="Microsoft.CSharp" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="$(SystemComponentModelAnnotationsVersion)" />
   </ItemGroup>
+
   <ItemGroup>
     <!-- Apple mobile trimming descriptor for Mono runtime -->
     <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="JsonSchema.Net" Version="$(JsonSchemaNetVersion)" />
+  </ItemGroup>
+
 </Project>

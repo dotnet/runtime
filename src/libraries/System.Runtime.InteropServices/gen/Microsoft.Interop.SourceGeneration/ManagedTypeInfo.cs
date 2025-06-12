@@ -63,7 +63,7 @@ namespace Microsoft.Interop
             }
             if (type.TypeKind == TypeKind.Delegate)
             {
-                return new DelegateTypeInfo(typeName, diagnosticFormattedName);
+                return new DelegateTypeInfo(typeName, diagnosticFormattedName, type is INamedTypeSymbol { IsGenericType: true });
             }
             if (type.TypeKind == TypeKind.TypeParameter)
             {
@@ -88,7 +88,7 @@ namespace Microsoft.Interop
         public static readonly SpecialTypeInfo Void = new("void", "void", SpecialType.System_Void);
         public static readonly SpecialTypeInfo String = new("string", "string", SpecialType.System_String);
         public static readonly SpecialTypeInfo Boolean = new("bool", "bool", SpecialType.System_Boolean);
-        public static readonly SpecialTypeInfo IntPtr = new("System.IntPtr", "System.IntPtr", SpecialType.System_IntPtr);
+        public static readonly SpecialTypeInfo IntPtr = new("nint", "nint", SpecialType.System_IntPtr);
 
         public bool Equals(SpecialTypeInfo? other)
         {
@@ -107,7 +107,7 @@ namespace Microsoft.Interop
 
     public sealed record SzArrayType(ManagedTypeInfo ElementTypeInfo) : ManagedTypeInfo($"{ElementTypeInfo.FullTypeName}[]", $"{ElementTypeInfo.DiagnosticFormattedName}[]");
 
-    public sealed record DelegateTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+    public sealed record DelegateTypeInfo(string FullTypeName, string DiagnosticFormattedName, bool IsGeneric) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 
     public sealed record TypeParameterTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 

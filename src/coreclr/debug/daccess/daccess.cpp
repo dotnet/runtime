@@ -17,7 +17,6 @@
 #include "peimagelayout.inl"
 #include "datatargetadapter.h"
 #include "readonlydatatargetfacade.h"
-#include "metadataexports.h"
 #include "excep.h"
 #include "debugger.h"
 #include "dwreport.h"
@@ -34,20 +33,18 @@ extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddre
 #define CAN_USE_CDAC
 #endif
 
+extern TADDR g_ClrModuleBase;
+
 #include "dwbucketmanager.hpp"
 #include "gcinterface.dac.h"
 
 // To include definition of IsThrowableThreadAbortException
 // #include <exstatecommon.h>
 
-CRITICAL_SECTION g_dacCritSec;
+minipal_mutex g_dacMutex;
 ClrDataAccess* g_dacImpl;
 
-EXTERN_C
-#ifdef TARGET_UNIX
-DLLEXPORT // For Win32 PAL LoadLibrary emulation
-#endif
-BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
+EXTERN_C BOOL WINAPI DllMain2(HANDLE instance, DWORD reason, LPVOID reserved)
 {
     static bool g_procInitialized = false;
 
@@ -74,7 +71,7 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
             return FALSE;
         }
 #endif
-        InitializeCriticalSection(&g_dacCritSec);
+        minipal_mutex_init(&g_dacMutex);
 
         g_procInitialized = true;
         break;
@@ -84,7 +81,7 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
         // It's possible for this to be called without ATTACH completing (eg. if it failed)
         if (g_procInitialized)
         {
-            DeleteCriticalSection(&g_dacCritSec);
+            minipal_mutex_destroy(&g_dacMutex);
         }
         g_procInitialized = false;
         break;
@@ -3239,6 +3236,14 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface14*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface15)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface15*>(this);
+    }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface16)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface16*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -5495,36 +5500,21 @@ ClrDataAccess::Initialize(void)
     IfFailRet(GetDacGlobalValues());
     IfFailRet(DacGetHostVtPtrs());
 
-// TODO: [cdac] TryGetSymbol is only implemented for Linux, OSX, and Windows.
-#ifdef CAN_USE_CDAC
-    CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
-    if (enable.IsSet())
-    {
-        DWORD val;
-        if (enable.TryAsInteger(10, val) && val == 1)
-        {
-            uint64_t contractDescriptorAddr = 0;
-            if (TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
-            {
-                m_cdac = CDAC::Create(contractDescriptorAddr, m_pTarget);
-                if (m_cdac.IsValid())
-                {
-                    // Get SOS interfaces from the cDAC if available.
-                    IUnknown* unk = m_cdac.SosInterface();
-                    (void)unk->QueryInterface(__uuidof(ISOSDacInterface), (void**)&m_cdacSos);
-                    (void)unk->QueryInterface(__uuidof(ISOSDacInterface9), (void**)&m_cdacSos9);
-                }
-            }
-        }
-    }
-#endif
-
     //
     // DAC is now setup and ready to use
     //
 
     // Do some validation
     IfFailRet(VerifyDlls());
+
+    // To support EH SxS, utilcode requires the base address of the runtime as part of its initialization
+    // so that functions like "WasThrownByUs" work correctly since they use the CLR base address to check
+    // if an exception was raised by a given instance of the runtime or not.
+    //
+    // Thus, when DAC is initialized, initialize utilcode with the base address of the runtime loaded in the
+    // target process. This is similar to work done in CorDB::SetTargetCLR for mscordbi.
+
+    g_ClrModuleBase = m_globalBase; // Base address of the runtime in the target process
 
     return S_OK;
 }
@@ -5651,8 +5641,8 @@ ClrDataAccess::GetJitHelperName(
 
     // Check if its a dynamically generated JIT helper
     const static CorInfoHelpFunc s_rgDynamicHCallIds[] = {
-#define DYNAMICJITHELPER(code, fn, sig) code,
-#define JITHELPER(code, fn,sig)
+#define DYNAMICJITHELPER(code, fn, binderId) code,
+#define JITHELPER(code, fn, binderId)
 #include <jithelpers.h>
     };
 
@@ -5830,7 +5820,7 @@ ClrDataAccess::RawGetMethodName(
                 {
                     // Try to find matching precode entrypoint
                     Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(alignedAddress, TRUE);
-                    if (pPrecode != NULL)
+                    if (pPrecode != NULL && pPrecode->GetType() != PRECODE_UMENTRY_THUNK)
                     {
                         methodDesc = pPrecode->GetMethodDesc();
                         if (methodDesc != NULL)
@@ -5906,8 +5896,8 @@ ClrDataAccess::RawGetMethodName(
     return E_NOINTERFACE;
 
 NameFromMethodDesc:
-    if (methodDesc->GetClassification() == mcDynamic &&
-        !methodDesc->GetSig())
+    if (methodDesc->GetClassification() == mcDynamic
+        && methodDesc->GetSigParser().IsNull())
     {
         return FormatCLRStubName(
             NULL,
@@ -5978,7 +5968,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
 {
     SUPPORTS_DAC;
     COUNT_T countNativeVarInfo;
-    NewHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
+    NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
     TADDR nativeCodeStartAddr;
     if (address != (TADDR)NULL)
     {
@@ -6033,7 +6023,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
                                   CLRDATA_ADDRESS* codeStart,
                                   ULONG32* codeOffset)
 {
-    _ASSERTE((codeOffset == NULL) || (address != NULL));
+    _ASSERTE((codeOffset == NULL) || (address != (TADDR)NULL));
 
     // Use the DebugInfoStore to get IL->Native maps.
     // It doesn't matter whether we're jitted, ngenned etc.
@@ -6423,7 +6413,6 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
                                              DWORD &dwSize,
                                              DWORD &dwDataSize,
                                              DWORD &dwRvaHint,
-                                             bool  &isNGEN,
                                              _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                              const DWORD cchFilePath)
 {
@@ -6433,7 +6422,6 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
     IMAGE_DATA_DIRECTORY *pDir = NULL;
     COUNT_T uniPathChars = 0;
 
-    isNGEN = false;
     if (pDir == NULL || pDir->Size == 0)
     {
         mdImage = pPEAssembly->GetPEImage();
@@ -6484,58 +6472,15 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
     return true;
 }
 
-/* static */
-bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
-                                                 DWORD &dwTimeStamp,
-                                                 DWORD &dwSize,
-                                                 _Out_writes_(cchFilePath) LPWSTR wszFilePath,
-                                                 const DWORD cchFilePath)
-{
-    SUPPORTS_DAC_HOST_ONLY;
-    DWORD dwWritten = 0;
-
-    // use the IL File name
-    if (!pPEAssembly->GetPath().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten)))
-    {
-        // Use DAC hint to retrieve the IL name.
-        pPEAssembly->GetModuleFileNameHint().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten));
-    }
-    dwTimeStamp = 0;
-    dwSize = 0;
-
-    return true;
-}
-
 void *
-ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
-                                   bool* isAlternate)
+ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly)
 {
     DWORD imageTimestamp, imageSize, dataSize;
     void* buffer = NULL;
     WCHAR uniPath[MAX_LONGPATH] = {0};
-    bool isAlt = false;
-    bool isNGEN = false;
     DAC_INSTANCE* inst = NULL;
     HRESULT  hr = S_OK;
     DWORD ulRvaHint;
-    //
-    // We always ask for the IL image metadata,
-    // as we expect that to be more
-    // available than others.  The drawback is that
-    // there may be differences between the IL image
-    // metadata and native image metadata, so we
-    // have to mark such alternate metadata so that
-    // we can fail unsupported usage of it.
-    //
-
-    // Microsoft - above comment seems to be an unimplemented thing.
-    // The DAC_MD_IMPORT.isAlternate field gets ultimately set, but
-    // on the searching I did, I cannot find any usage of it
-    // other than in the ctor.  Should we be doing something, or should
-    // we remove this comment and the isAlternate field?
-    // It's possible that test will want us to track whether we have
-    // an IL image's metadata loaded against an NGEN'ed image
-    // so the field remains for now.
 
     if (!ClrDataAccess::GetMetaDataFileInfoFromPEFile(
             pPEAssembly,
@@ -6543,7 +6488,6 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
             imageSize,
             dataSize,
             ulRvaHint,
-            isNGEN,
             uniPath,
             ARRAY_SIZE(uniPath)))
     {
@@ -6598,72 +6542,12 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
             (BYTE*)buffer,
             NULL);
     }
-    if (FAILED(hr) && isNGEN)
-    {
-        // We failed to locate the ngen'ed image. We should try to
-        // find the matching IL image
-        //
-        isAlt = true;
-        if (!ClrDataAccess::GetILImageInfoFromNgenPEFile(
-                pPEAssembly,
-                imageTimestamp,
-                imageSize,
-                uniPath,
-                ARRAY_SIZE(uniPath)))
-        {
-            goto ErrExit;
-        }
-
-        const WCHAR* ilExtension = W("dll");
-        WCHAR ngenImageName[MAX_LONGPATH] = {0};
-        if (wcscpy_s(ngenImageName, ARRAY_SIZE(ngenImageName), uniPath) != 0)
-        {
-            goto ErrExit;
-        }
-        if (wcscpy_s(uniPath, ARRAY_SIZE(uniPath), ngenImageName) != 0)
-        {
-            goto ErrExit;
-        }
-
-        // RVA size in ngen image and IL image is the same. Because the only
-        // different is in RVA. That is 4 bytes column fixed.
-        //
-
-        // try again
-        if (m_legacyMetaDataLocator)
-        {
-            hr = m_legacyMetaDataLocator->GetMetadata(
-                uniPath,
-                imageTimestamp,
-                imageSize,
-                NULL,           // MVID - not used yet
-                0,              // pass zero hint here... important
-                0,              // flags - reserved for future.
-                dataSize,
-                (BYTE*)buffer,
-                NULL);
-        }
-        else
-        {
-            hr = m_target3->GetMetaData(
-                uniPath,
-                imageTimestamp,
-                imageSize,
-                NULL,           // MVID - not used yet
-                0,              // pass zero hint here... important
-                0,              // flags - reserved for future.
-                dataSize,
-                (BYTE*)buffer,
-                NULL);
-        }
-    }
 
     if (FAILED(hr))
     {
         goto ErrExit;
     }
 
-    *isAlternate = isAlt;
     m_instances.AddSuperseded(inst);
     return buffer;
 
@@ -6691,7 +6575,6 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
     COUNT_T     mdSize;
     IMDInternalImport* mdImport = NULL;
     PVOID       mdBaseHost = NULL;
-    bool        isAlternate = false;
 
     _ASSERTE((pPEAssembly == NULL && reflectionModule != NULL) || (pPEAssembly != NULL && reflectionModule == NULL));
     TADDR     peAssemblyAddr = (pPEAssembly != NULL) ? dac_cast<TADDR>(pPEAssembly) : dac_cast<TADDR>(reflectionModule);
@@ -6713,11 +6596,11 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
     else if (reflectionModule != NULL)
     {
         // Get the metadata
-        PTR_SBuffer metadataBuffer = reflectionModule->GetDynamicMetadataBuffer();
+        TADDR metadataBuffer = reflectionModule->GetDynamicMetadataBuffer();
         if (metadataBuffer != PTR_NULL)
         {
-            mdBaseTarget = dac_cast<PTR_CVOID>((metadataBuffer->DacGetRawBuffer()).StartAddress());
-            mdSize = metadataBuffer->GetSize();
+            mdBaseTarget = dac_cast<PTR_CVOID>(metadataBuffer + offsetof(DynamicMetadata, Data));
+            mdSize = dac_cast<DPTR(DynamicMetadata)>(metadataBuffer)->Size;
         }
         else
         {
@@ -6764,7 +6647,7 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
         // We couldn't read the metadata from memory.  Ask
         // the target for metadata as it may be able to
         // provide it from some alternate means.
-        mdBaseHost = GetMetaDataFromHost(const_cast<PEAssembly *>(pPEAssembly), &isAlternate);
+        mdBaseHost = GetMetaDataFromHost(const_cast<PEAssembly *>(pPEAssembly));
     }
 
     if (mdBaseHost == NULL)
@@ -6799,7 +6682,7 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
     // The m_mdImports list does get cleaned up by calls to ClrDataAccess::Flush,
     // i.e. every time the process changes state.
 
-    if (m_mdImports.Add(peAssemblyAddr, mdImport, isAlternate) == NULL)
+    if (m_mdImports.Add(peAssemblyAddr, mdImport) == NULL)
     {
         mdImport->Release();
         DacError(E_OUTOFMEMORY);
@@ -7130,9 +7013,53 @@ CLRDataCreateInstance(REFIID iid,
 #ifdef LOGGING
     InitializeLogging();
 #endif
-    hr = pClrDataAccess->QueryInterface(iid, iface);
 
-    pClrDataAccess->Release();
+    // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
+    NonVMComHolder<IUnknown> cdacInterface = nullptr;
+#ifdef CAN_USE_CDAC
+    CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
+    if (enable.IsSet())
+    {
+        DWORD val;
+        if (enable.TryAsInteger(10, val) && val == 1)
+        {
+            // TODO: [cdac] TryGetSymbol is only implemented for Linux, OSX, and Windows.
+            uint64_t contractDescriptorAddr = 0;
+            if (TryGetSymbol(pClrDataAccess->m_pTarget, pClrDataAccess->m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+            {
+                IUnknown* thisImpl;
+                HRESULT qiRes = pClrDataAccess->QueryInterface(IID_IUnknown, (void**)&thisImpl);
+                _ASSERTE(SUCCEEDED(qiRes));
+                CDAC& cdac = pClrDataAccess->m_cdac;
+                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pTarget, thisImpl);
+                if (cdac.IsValid())
+                {
+                    // Get SOS interfaces from the cDAC if available.
+                    cdac.CreateSosInterface(&cdacInterface);
+                    _ASSERTE(cdacInterface != nullptr);
+
+                    // Lifetime is now managed by cDAC implementation of SOS interfaces
+                    pClrDataAccess->Release();
+                }
+
+                // Release the AddRef from the QI.
+                pClrDataAccess->Release();
+            }
+        }
+    }
+#endif
+    if (cdacInterface != nullptr)
+    {
+        hr = cdacInterface->QueryInterface(iid, iface);
+    }
+    else
+    {
+        hr = pClrDataAccess->QueryInterface(iid, iface);
+
+        // Lifetime is now managed by caller
+        pClrDataAccess->Release();
+    }
+
     return hr;
 }
 
@@ -7913,7 +7840,7 @@ void DacStackReferenceWalker::WalkStack()
     // Setup GCCONTEXT structs for the stackwalk.
     GCCONTEXT gcctx = {0};
     DacScanContext dsc(this, &mList, mResolvePointers);
-    dsc.pEnumFunc = DacStackReferenceWalker::GCEnumCallback;
+    dsc.pEnumFunc = DacStackReferenceWalker::GCEnumCallbackFunc;
     gcctx.f = DacStackReferenceWalker::GCReportCallback;
     gcctx.sc = &dsc;
 
@@ -7960,7 +7887,7 @@ CLRDATA_ADDRESS DacStackReferenceWalker::ReadPointer(TADDR addr)
 }
 
 
-void DacStackReferenceWalker::GCEnumCallback(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
+void DacStackReferenceWalker::GCEnumCallbackFunc(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
 {
     GCCONTEXT *gcctx = (GCCONTEXT *)hCallback;
     DacScanContext *dsc = (DacScanContext*)gcctx->sc;
@@ -8340,6 +8267,44 @@ HRESULT DacMemoryEnumerator::Next(unsigned int count, SOSMemoryRegion regions[],
     return i < count ? S_FALSE : S_OK;
 }
 
+HRESULT DacMethodTableSlotEnumerator::Skip(unsigned int count)
+{
+    mIteratorIndex += count;
+    return S_OK;
+}
+
+HRESULT DacMethodTableSlotEnumerator::Reset()
+{
+    mIteratorIndex = 0;
+    return S_OK;
+}
+
+HRESULT DacMethodTableSlotEnumerator::GetCount(unsigned int* pCount)
+{
+    if (!pCount)
+        return E_POINTER;
+
+    *pCount = mMethods.GetCount();
+    return S_OK;
+}
+
+HRESULT DacMethodTableSlotEnumerator::Next(unsigned int count, SOSMethodData methods[], unsigned int* pFetched)
+{
+    if (!pFetched)
+        return E_POINTER;
+
+    if (!methods)
+        return E_POINTER;
+
+    unsigned int i = 0;
+    while (i < count && mIteratorIndex < mMethods.GetCount())
+    {
+        methods[i++] = mMethods.Get(mIteratorIndex++);
+    }
+
+    *pFetched = i;
+    return i < count ? S_FALSE : S_OK;
+}
 
 HRESULT DacGCBookkeepingEnumerator::Init()
 {

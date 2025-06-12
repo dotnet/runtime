@@ -143,6 +143,25 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
+        [SkipOnPlatform(TestPlatforms.Browser, "KeepAlive not supported on browser")]
+        public static void KeepAliveTimeout_Roundtrips()
+        {
+            var cws = new ClientWebSocket();
+            Assert.True(cws.Options.KeepAliveTimeout == Timeout.InfiniteTimeSpan);
+
+            cws.Options.KeepAliveTimeout = TimeSpan.Zero;
+            Assert.Equal(TimeSpan.Zero, cws.Options.KeepAliveTimeout);
+
+            cws.Options.KeepAliveTimeout = TimeSpan.MaxValue;
+            Assert.Equal(TimeSpan.MaxValue, cws.Options.KeepAliveTimeout);
+
+            cws.Options.KeepAliveTimeout = Timeout.InfiniteTimeSpan;
+            Assert.Equal(Timeout.InfiniteTimeSpan, cws.Options.KeepAliveTimeout);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => cws.Options.KeepAliveTimeout = TimeSpan.MinValue);
+        }
+
+        [ConditionalFact(nameof(WebSocketsSupported))]
         [SkipOnPlatform(TestPlatforms.Browser, "Certificates not supported on browser")]
         public void RemoteCertificateValidationCallback_Roundtrips()
         {

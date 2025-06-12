@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,16 +19,16 @@ namespace System.PrivateUri.Tests
                 if (PlatformDetection.IsWindows)
                 {
                     yield return new object[] { @"file:///path1\path2/path3\path4", @"/path1/path2/path3/path4", @"/path1/path2/path3/path4", @"file:///path1/path2/path3/path4", "" };
-                    yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1/path2/path3", @"/path1/path2/path3", @"file:///path1/path2/path3", ""};
-                    yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1/path2/path3/path4/", @"\\localhost\path1\path2\path3\path4\", @"file://localhost/path1/path2/path3/path4/", "localhost"};
-                    yield return new object[] { @"file://randomhost/path1%5Cpath2\path3", @"/path1/path2/path3", @"\\randomhost\path1\path2\path3", @"file://randomhost/path1/path2/path3", "randomhost"};
+                    yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1/path2/path3", @"/path1/path2/path3", @"file:///path1/path2/path3", "" };
+                    yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1/path2/path3/path4/", @"\\localhost\path1\path2\path3\path4\", @"file://localhost/path1/path2/path3/path4/", "localhost" };
+                    yield return new object[] { @"file://randomhost/path1%5Cpath2\path3", @"/path1/path2/path3", @"\\randomhost\path1\path2\path3", @"file://randomhost/path1/path2/path3", "randomhost" };
                 }
                 else
                 {
                     yield return new object[] { @"file:///path1\path2/path3\path4", @"/path1%5Cpath2/path3%5Cpath4", @"/path1\path2/path3\path4", @"file:///path1%5Cpath2/path3%5Cpath4", "" };
-                    yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", @"/path1\path2\path3", @"file:///path1%5Cpath2%5Cpath3", ""};
-                    yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1%5Cpath2/path3%5Cpath4%5C", @"\\localhost\path1\path2\path3\path4\", @"file://localhost/path1%5Cpath2/path3%5Cpath4%5C", "localhost"};
-                    yield return new object[] { @"file://randomhost/path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", @"\\randomhost\path1\path2\path3", @"file://randomhost/path1%5Cpath2%5Cpath3", "randomhost"};
+                    yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", @"/path1\path2\path3", @"file:///path1%5Cpath2%5Cpath3", "" };
+                    yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1%5Cpath2/path3%5Cpath4%5C", @"\\localhost\path1\path2\path3\path4\", @"file://localhost/path1%5Cpath2/path3%5Cpath4%5C", "localhost" };
+                    yield return new object[] { @"file://randomhost/path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", @"\\randomhost\path1\path2\path3", @"file://randomhost/path1%5Cpath2%5Cpath3", "randomhost" };
                 }
             }
         }
@@ -729,6 +730,25 @@ namespace System.PrivateUri.Tests
             Assert.Equal(Combined, new Uri(baseUri, RelativeUriString).AbsoluteUri);
         }
 
+        [Theory]
+        [InlineData("http://bar/Testue/testImage.jpg", "http://bar/Testue/testImage.jpg", "http://bar/Testue/testImage.jpg", "bar")]
+        [InlineData(@"\\nas\Testue\testImage.jpg", "file://nas/Testue/testImage.jpg", "file://nas/Testue/testImage.jpg", "nas")]
+        // Tests that internal Uri info were properly applied during a Combine operation when URI contains non-ascii character.
+        [InlineData("http://bar/Test\u00fc/testImage.jpg", "http://bar/Test\u00fc/testImage.jpg", "http://bar/Test%C3%BC/testImage.jpg", "bar")]
+        [InlineData("\\\\nas\\Test\u00fc\\testImage.jpg", "file://nas/Test\u00fc/testImage.jpg", "file://nas/Test%C3%BC/testImage.jpg", "nas")]
+        public static void Uri_CombineWithAbsoluteUriResultInAbsoluteSchemaIgnoringOriginalBase(string relativeUri, string expectedUri, string expectedAbsoluteUri, string expectedHost)
+        {
+            string baseUriString = "combine-scheme://foo";
+
+            var baseUri = new Uri(baseUriString, UriKind.Absolute);
+            var uri = new Uri(relativeUri);
+            var resultUri = new Uri(baseUri, uri);
+
+            Assert.Equal(expectedUri, resultUri.ToString());
+            Assert.Equal(expectedAbsoluteUri, resultUri.AbsoluteUri);
+            Assert.Equal(expectedHost, resultUri.Host);
+        }
+
         [Fact]
         public static void Uri_CachesIdnHost()
         {
@@ -917,6 +937,38 @@ namespace System.PrivateUri.Tests
                 // ISpanFormattable.TryFormat
                 Assert.False(((ISpanFormattable)func()).TryFormat(formatted, out charsWritten, default, null));
                 Assert.Equal(0, charsWritten);
+            }
+        }
+
+        [Fact]
+        public static void IsLoopback()
+        {
+            string[] validLoopback =
+            [
+                "localhost", "Localhost", "LOCALHOST",
+                "127.0.0.1", "127.4.5.6",
+                "[::1]", "[0:0:0:0:0:0:0:1]", "[0:0:0:0:0:0:127.0.0.1]", "[0:0:0:0:0:FFFF:127.0.0.1]"
+            ];
+
+            string[] invalidLoopback =
+            [
+                "something", "ELSE", "dot.net",
+                "128.0.0.1",
+                "[::2]", "[0:0:0:0:0:1234:127.0.0.1]"
+            ];
+
+            foreach (bool expected in new[] { false, true })
+            {
+                foreach (string scheme in new[] { "http", "https" })
+                {
+                    foreach (string host in (expected ? validLoopback : invalidLoopback))
+                    {
+                        foreach (bool hasPort in new[] { false, true })
+                        {
+                            Assert.Equal(expected, new Uri($"{scheme}://{host}{(hasPort ? ":12345" : "")}").IsLoopback);
+                        }
+                    }
+                }
             }
         }
     }

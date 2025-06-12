@@ -128,32 +128,32 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
             {
                 switch (ins)
                 {
-                    case INS_movdqa:
+                    case INS_movdqa32:
                     {
                         return "vmovdqa32";
                     }
 
-                    case INS_movdqu:
+                    case INS_movdqu32:
                     {
                         return "vmovdqu32";
                     }
 
-                    case INS_pand:
+                    case INS_pandd:
                     {
                         return "vpandd";
                     }
 
-                    case INS_pandn:
+                    case INS_pandnd:
                     {
                         return "vpandnd";
                     }
 
-                    case INS_por:
+                    case INS_pord:
                     {
                         return "vpord";
                     }
 
-                    case INS_pxor:
+                    case INS_pxord:
                     {
                         return "vpxord";
                     }
@@ -178,32 +178,32 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
                         return "vrndscaless";
                     }
 
-                    case INS_vbroadcastf128:
+                    case INS_vbroadcastf32x4:
                     {
                         return "vbroadcastf32x4";
                     }
 
-                    case INS_vextractf128:
+                    case INS_vextractf32x4:
                     {
                         return "vextractf32x4";
                     }
 
-                    case INS_vinsertf128:
+                    case INS_vinsertf32x4:
                     {
                         return "vinsertf32x4";
                     }
 
-                    case INS_vbroadcasti128:
+                    case INS_vbroadcasti32x4:
                     {
                         return "vbroadcasti32x4";
                     }
 
-                    case INS_vextracti128:
+                    case INS_vextracti32x4:
                     {
                         return "vextracti32x4";
                     }
 
-                    case INS_vinserti128:
+                    case INS_vinserti32x4:
                     {
                         return "vinserti32x4";
                     }
@@ -355,12 +355,77 @@ bool CodeGenInterface::instIsFP(instruction ins)
  *  compatible instruction.
  */
 
-// static inline
 bool CodeGenInterface::instIsEmbeddedBroadcastCompatible(instruction ins)
 {
-    assert((unsigned)ins < ArrLen(instInfo));
+    if (GetEmitter()->IsEvexEncodableInstruction(ins))
+    {
+        insTupleType tupleType = emitter::insTupleTypeInfo(ins);
+        return (tupleType & INS_TT_IS_BROADCAST) != 0;
+    }
+    return false;
+}
 
-    return (instInfo[ins] & INS_Flags_EmbeddedBroadcastSupported) != 0;
+/*****************************************************************************
+ *
+ *  Returns non-zero if the given CPU instruction is an embedded masking
+ *  compatible instruction.
+ */
+
+bool CodeGenInterface::instIsEmbeddedMaskingCompatible(instruction ins)
+{
+    return (ins != INS_invalid) && (instKMaskBaseSize(ins) != 0);
+}
+
+/*****************************************************************************
+ *
+ *  Returns the value of the given instruction's input size attribute, in bytes.
+ */
+
+unsigned CodeGenInterface::instInputSize(instruction ins)
+{
+    assert((unsigned)ins < ArrLen(instInfo));
+    insFlags inputSize = static_cast<insFlags>((instInfo[ins] & Input_Mask));
+
+    switch (inputSize)
+    {
+        case Input_8Bit:
+            return 1;
+        case Input_16Bit:
+            return 2;
+        case Input_32Bit:
+            return 4;
+        case Input_64Bit:
+            return 8;
+        default:
+            unreached();
+    }
+}
+
+/*****************************************************************************
+ *
+ *  Returns the value of the given instruction's KMask base size attribute, in bits.
+ */
+
+unsigned CodeGenInterface::instKMaskBaseSize(instruction ins)
+{
+    assert((unsigned)ins < ArrLen(instInfo));
+    insFlags kmaskBaseSize = static_cast<insFlags>((instInfo[ins] & KMask_BaseMask));
+
+    switch (kmaskBaseSize)
+    {
+        case KMask_Base1:
+            return 1;
+        case KMask_Base2:
+            return 2;
+        case KMask_Base4:
+            return 4;
+        case KMask_Base8:
+            return 8;
+        case KMask_Base16:
+            return 16;
+        default:
+            return 0;
+    }
 }
 #endif // TARGET_XARCH
 
@@ -708,7 +773,7 @@ void CodeGen::inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumbe
     {
         // Is this the special case of a write-thru lclVar?
         // We mark it as SPILLED to denote that its value is valid in memory.
-        if (((tree->gtFlags & GTF_SPILL) != 0) && tree->gtOper == GT_STORE_LCL_VAR)
+        if (((tree->gtFlags & GTF_SPILL) != 0) && tree->OperIs(GT_STORE_LCL_VAR))
         {
             isValidInReg = true;
         }
@@ -721,7 +786,13 @@ void CodeGen::inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumbe
     unsigned varNum = tree->AsLclVarCommon()->GetLclNum();
     assert(varNum < compiler->lvaCount);
 #if CPU_LOAD_STORE_ARCH
+#ifdef TARGET_ARM64
+    // Workaround until https://github.com/dotnet/runtime/issues/105512 is fixed.
+    assert(GetEmitter()->emitInsIsStore(ins) || (ins == INS_sve_str));
+#else
     assert(GetEmitter()->emitInsIsStore(ins));
+#endif
+
 #endif
     GetEmitter()->emitIns_S_R(ins, size, reg, varNum, 0);
 }
@@ -744,7 +815,7 @@ void CodeGen::inst_RV_SH(
 #elif defined(TARGET_XARCH)
 
 #ifdef TARGET_AMD64
-    // X64 JB BE insures only encodable values make it here.
+    // X64 JB BE ensures only encodable values make it here.
     // x86 can encode 8 bits, though it masks down to 5 or 6
     // depending on 32-bit or 64-bit registers are used.
     // Here we will allow anything that is encodable.
@@ -778,6 +849,7 @@ void CodeGen::inst_RV_SH(
 // logic for determining what "kind" of operand "op" is.
 //
 // Arguments:
+//    ins - The instruction that will consume the operand.
 //    op - The operand node for which to obtain the descriptor.
 //
 // Return Value:
@@ -787,7 +859,7 @@ void CodeGen::inst_RV_SH(
 //    This method is not idempotent - it can only be called once for a
 //    given node.
 //
-CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
+CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
 {
     if (!op->isContained() && !op->isUsedFromSpillTemp())
     {
@@ -829,11 +901,12 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
             var_types           simdBaseType = hwintrinsic->GetSimdBaseType();
             switch (intrinsicId)
             {
+                case NI_SSE42_LoadAndDuplicateToVector128:
                 case NI_AVX_BroadcastScalarToVector128:
                 case NI_AVX_BroadcastScalarToVector256:
                 {
-                    // we have the assumption that AVX_BroadcastScalarToVector*
-                    // only take the memory address as the operand.
+                    // we have the assumption that these intrinsics
+                    // only take a memory address as the operand.
                     assert(hwintrinsic->isContained());
                     assert(hwintrinsic->OperIsMemoryLoad());
                     assert(hwintrinsic->GetOperandCount() == 1);
@@ -852,29 +925,29 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     }
                 }
 
-                case NI_SSE3_MoveAndDuplicate:
+                case NI_SSE42_MoveAndDuplicate:
                 case NI_AVX2_BroadcastScalarToVector128:
                 case NI_AVX2_BroadcastScalarToVector256:
-                case NI_AVX512F_BroadcastScalarToVector512:
+                case NI_AVX512_BroadcastScalarToVector512:
                 {
                     assert(hwintrinsic->isContained());
-                    if (intrinsicId == NI_SSE3_MoveAndDuplicate)
+                    if (intrinsicId == NI_SSE42_MoveAndDuplicate)
                     {
                         assert(simdBaseType == TYP_DOUBLE);
                     }
                     // If broadcast node is contained, should mean that we have some forms like
                     // Broadcast -> CreateScalarUnsafe -> Scalar.
                     // If so, directly emit scalar.
-                    // In the codes below, we specially handle the `Broadcast -> CNS_INT` form and
+                    // In the code below, we specially handle the `Broadcast -> CNS_INT/CNS_LNG` form and
                     // handle other cases recursively.
                     GenTree* hwintrinsicChild = hwintrinsic->Op(1);
                     assert(hwintrinsicChild->isContained());
-                    if (hwintrinsicChild->OperIs(GT_CNS_INT))
+                    if (hwintrinsicChild->IsIntegralConst())
                     {
-                        // a special case is when the operand of CreateScalarUnsafe is in integer type,
-                        // CreateScalarUnsafe node will be fold, so we directly match a pattern of
-                        // broadcast -> LCL_VAR(TYP_(U)INT)
-                        ssize_t        scalarValue = hwintrinsicChild->AsIntCon()->IconValue();
+                        // a special case is when the operand of CreateScalarUnsafe is an integer type,
+                        // CreateScalarUnsafe node will be folded, so we directly match a pattern of
+                        // broadcast -> LCL_VAR(TYP_(U)INT/LONG)
+                        INT64          scalarValue = hwintrinsicChild->AsIntConCommon()->IntegralValue();
                         UNATIVE_OFFSET cnum        = emit->emitDataConst(&scalarValue, genTypeSize(simdBaseType),
                                                                          genTypeSize(simdBaseType), simdBaseType);
                         return OperandDesc(compiler->eeFindJitDataOffs(cnum));
@@ -883,10 +956,14 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     {
                         // If the operand of broadcast is not a constant integer,
                         // we handle all the other cases recursively.
-                        return genOperandDesc(hwintrinsicChild);
+                        return genOperandDesc(ins, hwintrinsicChild);
                     }
                     break;
                 }
+
+                case NI_Vector128_CreateScalar:
+                case NI_Vector256_CreateScalar:
+                case NI_Vector512_CreateScalar:
                 case NI_Vector128_CreateScalarUnsafe:
                 case NI_Vector256_CreateScalarUnsafe:
                 case NI_Vector512_CreateScalarUnsafe:
@@ -894,12 +971,12 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     // The hwintrinsic should be contained and its
                     // op1 should be either contained or spilled. This
                     // allows us to transparently "look through" the
-                    // CreateScalarUnsafe and treat it directly like
+                    // CreateScalar/Unsafe and treat it directly like
                     // a load from memory.
 
                     assert(hwintrinsic->isContained());
                     op = hwintrinsic->Op(1);
-                    return genOperandDesc(op);
+                    return genOperandDesc(ins, op);
                 }
 
                 default:
@@ -950,61 +1027,31 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 return OperandDesc(op->AsIntCon()->IconValue(), op->AsIntCon()->ImmedValNeedsReloc(compiler));
             }
 
+#if defined(FEATURE_SIMD)
             case GT_CNS_VEC:
             {
-                switch (op->TypeGet())
+                insTupleType tupleType = emitter::insTupleTypeInfo(ins);
+                unsigned     cnsSize   = genTypeSize(op);
+
+                if ((tupleType == INS_TT_TUPLE1_SCALAR) || (tupleType == INS_TT_TUPLE1_FIXED))
                 {
-#if defined(FEATURE_SIMD)
-                    case TYP_SIMD8:
-                    {
-                        simd8_t constValue;
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd8_t));
-                        return OperandDesc(emit->emitSimd8Const(constValue));
-                    }
+                    // We have a vector const, but the instruction will only read a scalar from it,
+                    // so don't waste space putting the entire vector to the data section.
 
-                    case TYP_SIMD12:
-                    {
-                        simd16_t constValue = {};
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd12_t));
-                        return OperandDesc(emit->emitSimd16Const(constValue));
-                    }
-                    case TYP_SIMD16:
-                    {
-                        simd16_t constValue;
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd16_t));
-                        return OperandDesc(emit->emitSimd16Const(constValue));
-                    }
+                    cnsSize = max(CodeGenInterface::instInputSize(ins), 4U);
+                    assert(cnsSize <= genTypeSize(op));
+                }
 
-#if defined(TARGET_XARCH)
-                    case TYP_SIMD32:
-                    {
-                        simd32_t constValue;
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd32_t));
-                        return OperandDesc(emit->emitSimd32Const(constValue));
-                    }
-
-                    case TYP_SIMD64:
-                    {
-                        simd64_t constValue;
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd64_t));
-                        return OperandDesc(emit->emitSimd64Const(constValue));
-                    }
-
-                    case TYP_MASK:
-                    {
-                        simdmask_t constValue;
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simdmask_t));
-                        return OperandDesc(emit->emitSimdMaskConst(constValue));
-                    }
-#endif // TARGET_XARCH
+                return OperandDesc(emit->emitSimdConst(&op->AsVecCon()->gtSimdVal, EA_TYPE(cnsSize)));
+            }
 #endif // FEATURE_SIMD
 
-                    default:
-                    {
-                        unreached();
-                    }
-                }
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+            case GT_CNS_MSK:
+            {
+                return OperandDesc(emit->emitSimdMaskConst(op->AsMskCon()->gtSimdMaskVal));
             }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
             default:
                 unreached();
@@ -1032,7 +1079,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 void CodeGen::inst_TT(instruction ins, emitAttr size, GenTree* op1)
 {
     emitter*    emit    = GetEmitter();
-    OperandDesc op1Desc = genOperandDesc(op1);
+    OperandDesc op1Desc = genOperandDesc(ins, op1);
 
     switch (op1Desc.GetKind())
     {
@@ -1081,7 +1128,7 @@ void CodeGen::inst_TT(instruction ins, emitAttr size, GenTree* op1)
 void CodeGen::inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree* op2)
 {
     emitter*    emit    = GetEmitter();
-    OperandDesc op2Desc = genOperandDesc(op2);
+    OperandDesc op2Desc = genOperandDesc(ins, op2);
 
     switch (op2Desc.GetKind())
     {
@@ -1163,7 +1210,7 @@ void CodeGen::inst_RV_TT_IV(
     }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
-    OperandDesc rmOpDesc = genOperandDesc(rmOp);
+    OperandDesc rmOpDesc = genOperandDesc(ins, rmOp);
 
     switch (rmOpDesc.GetKind())
     {
@@ -1208,14 +1255,17 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
     // 1. EVEX enabled.
     // 2. Embedded broadcast compatible intrinsics
     // 3. A contained broadcast scalar node
+
     if (!GetEmitter()->UseEvexEncoding())
     {
         return false;
     }
+
     if (!instIsEmbeddedBroadcastCompatible(ins))
     {
         return false;
     }
+
     if (!op->isContained() || !op->OperIsHWIntrinsic())
     {
         return false;
@@ -1277,19 +1327,19 @@ void CodeGen::inst_RV_RV_TT(instruction ins,
         {
             switch (ins)
             {
-                case INS_pand:
+                case INS_pandd:
                     ins = INS_vpandq;
                     break;
 
-                case INS_pandn:
+                case INS_pandnd:
                     ins = INS_vpandnq;
                     break;
 
-                case INS_por:
+                case INS_pord:
                     ins = INS_vporq;
                     break;
 
-                case INS_pxor:
+                case INS_pxord:
                     ins = INS_vpxorq;
                     break;
 
@@ -1300,7 +1350,7 @@ void CodeGen::inst_RV_RV_TT(instruction ins,
     }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
-    OperandDesc op2Desc = genOperandDesc(op2);
+    OperandDesc op2Desc = genOperandDesc(ins, op2);
 
     switch (op2Desc.GetKind())
     {
@@ -1387,7 +1437,7 @@ void CodeGen::inst_RV_RV_TT_IV(instruction ins,
     }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
-    OperandDesc op2Desc = genOperandDesc(op2);
+    OperandDesc op2Desc = genOperandDesc(ins, op2);
 
     switch (op2Desc.GetKind())
     {
@@ -1578,9 +1628,9 @@ bool CodeGen::arm_Valid_Imm_For_Add_SP(target_ssize_t imm)
 bool CodeGenInterface::validImmForBL(ssize_t addr)
 {
     return
-        // If we are running the altjit for NGEN, then assume we can use the "BL" instruction.
-        // This matches the usual behavior for NGEN, since we normally do generate "BL".
-        (!compiler->info.compMatchedVM && compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)) ||
+        // If we are running the altjit for AOT, then assume we can use the "BL" instruction.
+        // This matches the usual behavior for AOT, since we normally do generate "BL".
+        (!compiler->info.compMatchedVM && compiler->IsAot()) ||
         (compiler->eeGetRelocTypeHint((void*)addr) == IMAGE_REL_BASED_THUMB_BRANCH24);
 }
 
@@ -1592,7 +1642,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
     // On arm64, we always assume a call target is in range and generate a 28-bit relative
     // 'bl' instruction. If this isn't sufficient range, the VM will generate a jump stub when
     // we call recordRelocation(). See the IMAGE_REL_ARM64_BRANCH26 case in jitinterface.cpp
-    // (for JIT) or zapinfo.cpp (for NGEN). If we cannot allocate a jump stub, it is fatal.
+    // (for JIT) or zapinfo.cpp (for AOT). If we cannot allocate a jump stub, it is fatal.
     return true;
 }
 #endif // TARGET_ARM64
@@ -1718,7 +1768,6 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
 #if defined(TARGET_XARCH)
         return INS_kmovq_msk;
 #elif defined(TARGET_ARM64)
-        unreached(); // TODO-SVE: This needs testing
         return INS_sve_mov;
 #endif
     }
@@ -1873,7 +1922,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #if defined(TARGET_XARCH)
         return INS_kmovq_msk;
 #elif defined(TARGET_ARM64)
-        return INS_sve_ldr_mask;
+        return INS_sve_ldr;
 #endif
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -2036,19 +2085,21 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
             return ins_Copy(dstType);
         }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (genIsValidMaskReg(srcReg))
         {
             // mask to int
             return INS_kmovq_gpr;
         }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_XARCH
 
         // float to int
         assert(genIsValidFloatReg(srcReg));
 
-#if defined(TARGET_XARCH)
-        return INS_movd;
+#if defined(TARGET_AMD64)
+        return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_movd32 : INS_movd64;
+#elif defined(TARGET_X86)
+        return INS_movd32;
 #elif defined(TARGET_ARM64)
         return INS_mov;
 #elif defined(TARGET_ARM)
@@ -2082,7 +2133,6 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 #if defined(TARGET_XARCH)
         return INS_kmovq_gpr;
 #elif defined(TARGET_ARM64)
-        unreached(); // TODO-SVE: This needs testing
         return INS_sve_mov;
 #endif
     }
@@ -2099,8 +2149,10 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
     // int to float
     assert(genIsValidIntOrFakeReg(srcReg));
 
-#if defined(TARGET_XARCH)
-    return INS_movd;
+#if defined(TARGET_AMD64)
+    return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_movd32 : INS_movd64;
+#elif defined(TARGET_X86)
+    return INS_movd32;
 #elif defined(TARGET_ARM64)
     return INS_fmov;
 #elif defined(TARGET_ARM)
@@ -2194,7 +2246,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 #if defined(TARGET_XARCH)
         return INS_kmovq_msk;
 #elif defined(TARGET_ARM64)
-        return INS_sve_str_mask;
+        return INS_sve_str;
 #endif
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -2380,89 +2432,50 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
 // Arguments:
 //    to - Destination type.
 //    from - Source type.
-//    attr - Input size.
 //
 // Returns:
 //    The correct conversion instruction to use based on src and dst types.
 //
-instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
+instruction CodeGen::ins_FloatConv(var_types to, var_types from)
 {
     // AVX: Supports following conversions
     //   srcType = int16/int64                     castToType = float
     // AVX512: Supports following conversions
     //   srcType = ulong                           castToType = double/float
-
+    bool isAvx10v2 = false;
     switch (from)
     {
-        // int/long -> float/double use the same instruction but type size would be different.
         case TYP_INT:
+            switch (to)
+            {
+                case TYP_FLOAT:
+                    return INS_cvtsi2ss32;
+                case TYP_DOUBLE:
+                    return INS_cvtsi2sd32;
+                default:
+                    unreached();
+            }
+            break;
+
         case TYP_LONG:
             switch (to)
             {
                 case TYP_FLOAT:
-                {
-                    if (EA_SIZE(attr) == EA_4BYTE)
-                    {
-                        return INS_cvtsi2ss32;
-                    }
-                    else if (EA_SIZE(attr) == EA_8BYTE)
-                    {
-                        return INS_cvtsi2ss64;
-                    }
-                    unreached();
-                }
+                    return INS_cvtsi2ss64;
                 case TYP_DOUBLE:
-                {
-                    if (EA_SIZE(attr) == EA_4BYTE)
-                    {
-                        return INS_cvtsi2sd32;
-                    }
-                    else if (EA_SIZE(attr) == EA_8BYTE)
-                    {
-                        return INS_cvtsi2sd64;
-                    }
-                    unreached();
-                }
+                    return INS_cvtsi2sd64;
                 default:
                     unreached();
             }
             break;
 
-        case TYP_FLOAT:
+        case TYP_UINT:
             switch (to)
             {
-                case TYP_INT:
-                    return INS_cvttss2si32;
-                case TYP_LONG:
-                    return INS_cvttss2si64;
                 case TYP_FLOAT:
-                    return ins_Move_Extend(TYP_FLOAT, false);
+                    return INS_vcvtusi2ss32;
                 case TYP_DOUBLE:
-                    return INS_cvtss2sd;
-                case TYP_ULONG:
-                    return INS_vcvttss2usi64;
-                case TYP_UINT:
-                    return INS_vcvttss2usi32;
-                default:
-                    unreached();
-            }
-            break;
-
-        case TYP_DOUBLE:
-            switch (to)
-            {
-                case TYP_INT:
-                    return INS_cvttsd2si32;
-                case TYP_LONG:
-                    return INS_cvttsd2si64;
-                case TYP_FLOAT:
-                    return INS_cvtsd2ss;
-                case TYP_DOUBLE:
-                    return ins_Move_Extend(TYP_DOUBLE, false);
-                case TYP_ULONG:
-                    return INS_vcvttsd2usi64;
-                case TYP_UINT:
-                    return INS_vcvttsd2usi32;
+                    return INS_vcvtusi2sd32;
                 default:
                     unreached();
             }
@@ -2471,13 +2484,66 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
         case TYP_ULONG:
             switch (to)
             {
-                case TYP_DOUBLE:
-                    return INS_vcvtusi2sd64;
                 case TYP_FLOAT:
                     return INS_vcvtusi2ss64;
+                case TYP_DOUBLE:
+                    return INS_vcvtusi2sd64;
                 default:
                     unreached();
             }
+            break;
+
+        case TYP_FLOAT:
+            if (to == TYP_FLOAT)
+            {
+                return ins_Move_Extend(TYP_FLOAT, false);
+            }
+            else if (to == TYP_DOUBLE)
+            {
+                return INS_cvtss2sd;
+            }
+            isAvx10v2 = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
+
+            switch (to)
+            {
+                case TYP_INT:
+                    return isAvx10v2 ? INS_vcvttss2sis32 : INS_cvttss2si32;
+                case TYP_LONG:
+                    return isAvx10v2 ? INS_vcvttss2sis64 : INS_cvttss2si64;
+                case TYP_ULONG:
+                    return isAvx10v2 ? INS_vcvttss2usis64 : INS_vcvttss2usi64;
+                case TYP_UINT:
+                    return isAvx10v2 ? INS_vcvttss2usis32 : INS_vcvttss2usi32;
+                default:
+                    unreached();
+            }
+            break;
+
+        case TYP_DOUBLE:
+            if (to == TYP_FLOAT)
+            {
+                return INS_cvtsd2ss;
+            }
+            else if (to == TYP_DOUBLE)
+            {
+                return ins_Move_Extend(TYP_DOUBLE, false);
+            }
+            isAvx10v2 = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
+
+            switch (to)
+            {
+                case TYP_INT:
+                    return isAvx10v2 ? INS_vcvttsd2sis32 : INS_cvttsd2si32;
+                case TYP_LONG:
+                    return isAvx10v2 ? INS_vcvttsd2sis64 : INS_cvttsd2si64;
+                case TYP_ULONG:
+                    return isAvx10v2 ? INS_vcvttsd2usis64 : INS_vcvttsd2usi64;
+                case TYP_UINT:
+                    return isAvx10v2 ? INS_vcvttsd2usis32 : INS_vcvttsd2usi32;
+                default:
+                    unreached();
+            }
+            break;
 
         default:
             unreached();

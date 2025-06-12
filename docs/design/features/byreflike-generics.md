@@ -7,22 +7,26 @@ Using ByRefLike types in Generic parameters is possible by building upon support
 
 ## Runtime impact
 
-Supporting ByRefLike type as Generic parameters will impact the following IL instructions:
+Supporting ByRefLike types as Generic parameters will impact the following IL instructions.
 
-- `box` &ndash; Types with ByRefLike parameters used in fields cannot be boxed.
+The `constrained. callvirt` sequence is valid if a ByRefLike type is provided. A `NotSupportedException` will be thrown at the call-site, if the target resolves to a method implemented on `object` or a default interface method.
+
+Throws `InvalidProgramException` when passed a ByRefLike type:
+- `box` &ndash; ByRefLike types cannot be allocated on the heap.
+
+Throws `TypeLoadException` when passed a ByRefLike type:
 - `stsfld` / `ldsfld` &ndash; Type fields of a ByRefLike parameter cannot be marked `static`.
 - `newarr` / `stelem` / `ldelem` / `ldelema` &ndash; Arrays are not able to contain ByRefLike types.
     - `newobj` &ndash; For multi-dimensional array construction.
-- `constrained.callvirt` &ndash; If this IL sequence resolves to a method implemented on `object` or default interface method, an error will occur during the attempt to box the instance.
-
-If any of the above instructions are attempted to be used with a ByRefLike type, the runtime will throw an `InvalidProgramException`. Sequences involving some of the above instructions are considered optimizations and represent cases that will remain valid regardless of a `T` being ByRefLike. See "Special IL Sequences" section below for details.
 
 The following instructions are already set up to support this feature since their behavior will fail as currently defined due to the inability to box a ByRefLike type.
 
-- `throw` &ndash; Requires an object reference to be on stack, which can never be a ByRefLike type.
-- `unbox` / `unbox.any` &ndash; Requires an object reference to be on stack, which can never be a ByRefLike type.
-- `isinst` &ndash; Will always place `null` on stack.
-- `castclass` &ndash; Will always throw `InvalidCastException`.
+- `throw`
+- `unbox` / `unbox.any`
+- `isinst`
+- `castclass`
+
+**NOTE** There are sequences involving some of the above instructions that may remain valid regardless of a `T` being ByRefLike&mdash;see ["Options for invalid IL" section](#invalid_il_options) below for details.
 
 The expansion of ByRefLike types as Generic parameters does not relax restrictions on where ByRefLike types can be used. When `T` is ByRefLike, the use of `T` as a field will require the enclosing type to be ByRefLike.
 
@@ -110,23 +114,123 @@ throw
 
 Adding `gpAcceptByRefLike` to the metadata of a Generic parameter will be considered a non-breaking binary change.
 
-Enumerating of constructors/methods on `Span<T>` and `ReadOnlySpan<T>` may throw `TypeLoadException` if `T` is a ByRefLike type. See "Troublesome APIs" above for the list of APIs that cause this condition.
+Enumerating of constructors/methods on `Span<T>` and `ReadOnlySpan<T>` may throw `TypeLoadException` if `T` is a ByRefLike type. See "Troublesome API mitigation" above for the list of APIs that cause this condition.
 
-## Special IL Sequences
+## <a name="invalid_il_options"></a> Options for invalid IL
 
-The following are IL sequences involving the `box` instruction. They are used for common C# language constructs and shall continue to be valid, even with ByRefLike types, in cases where the result can be computed at JIT time and elided safely. These sequences must now be elided when the target type is ByRefLike. The conditions where each sequence is elided are described below and each condition will be added to the ECMA-335 addendum.
+There are two potential options below for how to address this issue. Based on communication with the Roslyn team, option (1) is the current plan of record for .NET 10.
 
-`box` ; `unbox.any` &ndash; The box target type is equal to the unboxed target type.
+The first indented IL sequences below represents the `is-type` sequence. Combining the first with the second indented section represents the "type pattern matching" scenario in C#. The below sequence performs a type check and then, if successful, consumes the unboxed instance.
 
-`box` ; `br_true/false` &ndash; The box target type is non-`Nullable<T>`.
+```IL
+// Type check
+ldarg.0
+    box <Source>
+    isinst <Target>
+    brfalse.s NOT_INST
 
-`box` ; `isinst` ; `unbox.any` &ndash; The box, `isint`, and unbox target types are all equal.
+// Unbox and store unboxed instance
+ldarg.0
+    box <Source>
+    isinst <Target>
+    unbox.any <Target>
+stloc.X
 
-`box` ; `isinst` ; `br_true/false` &ndash; The box target type is equal to the unboxed target type or the box target type is `Nullable<T>` and target type equalities can be computed.
+NOT_INST:
+ret
+```
+
+With the above IL composition implemented, the following C# describes the following "type pattern matching" scenarios and what one might expect given current C# semantics.
+
+```csharp
+struct S {}
+struct S<T> {}
+ref struct RS {}
+ref struct RS<T> {}
+interface I {}
+class C {}
+class C<T> {}
+
+// Not currently valid C#
+void M<T, U>(T t) where T: allows ref struct
+{
+    // Valid
+    if (t is int i)
+
+    if (t is S s)
+    if (t is S<char> sc)
+    if (t is S<U> su)
+
+    if (t is RS rs)
+    if (t is RS<char> rsc)
+    if (t is RS<U> rsu)
+
+    if (t is string str)
+    if (t is C c)
+    if (t is C<I> ci)
+    if (t is C<U> cu)
+
+    // Can be made to work in IL.
+    if (t is I itf) // A new local "I" would not be used for ByRefLike scenarios.
+                    // The local would be the ByRefLike type, not "I".
+
+    // Invalid
+    if (t is object o)  // ByRefLike types evaluate "true" for object.
+    if (t is U u)
+}
+```
+
+### Option 1) Compiler helpers
+
+The following two helper functions could be introduced and would replace currently invalid `is-type` IL sequences when ByRefLike types are involved. Their behavior would broadly be defined to operate as if the ByRefLike aspect of either the `TFrom` and `TTo` is not present. An alternative approach would be consult with the Roslyn team and define the semantics of these functions to adhere to C# language rules.
+
+```csharp
+namespace System.Runtime.CompilerServices
+{
+    public static class RuntimeHelpers
+    {
+        // Replacement for the [box; isinst; brfalse/true] sequence.
+        public static bool IsInstanceOf<TFrom, TTo>(TFrom source)
+            where TFrom: allows ref struct
+            where TTo: allows ref struct;
+
+        // Replacement for the [box; isinst; unbox.any] sequence.
+        // Would throw InvalidCastException for invalid use at run-time.
+        // For example:
+        //  TFrom: RS, TTo: object      => always throws
+        //  TFrom: RS, TTo: <interface> => always throws
+        public static TTo CastTo<TFrom, TTo>(TFrom source)
+            where TFrom: allows ref struct
+            where TTo: allows ref struct;
+    }
+}
+```
+
+Example usage of the above methods.
+
+```csharp
+TTo result;
+if (RuntimeHelpers.IsInstanceOf<TFrom, TTo>(source))
+{
+    result = RuntimeHelpers.CastTo<TFrom, TTo>(source);
+}
+```
+
+### Option 2) Special IL sequences
+
+The following are IL sequences involving the `box` instruction. They are used for common C# language constructs and would continue to be valid, even with ByRefLike types. These sequences would be **required** to be valid when the target type is ByRefLike. Each sequence would be added to the ECMA-335 addendum.
+
+`box` ; `isinst` ; `br_true/false` &ndash; Passing a ByRefLike type as the argument to the `box` instruction is permitted to accomplish a type check, in C# `x is Y`. **Note** ByRefLike types would evaluate to `true` when compared against `System.Object`.
+
+`box` ; `isinst` ; `unbox.any` &ndash; In order to permit "type pattern matching", in C# `x is Y y`, this sequence will permit use of a ByRefLike type on any instruction, but does not permit the use of generic parameters being exposed to `isinst` or `unbox.any`.
+
+`box` ; `unbox.any` &ndash; Valid to use ByRefLike types.
+
+`box` ; `br_true/false` &ndash; Valid to use ByRefLike types.
 
 ## Examples
 
-Below are valid and invalid examples of ByRefLike as Generic parameters. All examples use the **not official** syntax, `allows ref struct`, for indicating the Generic permits ByRefLike types.
+Below are currently (.NET 9) valid and invalid examples of ByRefLike as Generic parameters.
 
 **1) Valid**
 ```csharp

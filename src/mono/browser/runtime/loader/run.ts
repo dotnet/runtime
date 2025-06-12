@@ -3,20 +3,19 @@
 
 import BuildConfiguration from "consts:configuration";
 
-import { type MonoConfig, type DotnetHostBuilder, type DotnetModuleConfig, type RuntimeAPI, type LoadBootResourceCallback, GlobalizationMode } from "../types";
-import type { EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, HybridGlobalizationModuleExportsInternal, } from "../types/internal";
+import { type MonoConfig, type DotnetHostBuilder, type DotnetModuleConfig, type RuntimeAPI, type LoadBootResourceCallback } from "../types";
+import type { EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, DiagnosticModuleExportsInternal } from "../types/internal";
 
 import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, emscriptenModule, exportedRuntimeAPI, globalObjectsRoot, monoConfig, mono_assert } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { installUnhandledErrorHandler, mono_exit, registerEmscriptenExitHandlers } from "./exit";
 import { setup_proxy_console, mono_log_info, mono_log_debug } from "./logging";
-import { mono_download_assets, preloadWorkers, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm } from "./assets";
+import { mono_download_assets, preloadWorkers, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm, try_resolve_single_asset_path } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
-import { runtimeHelpers, loaderHelpers, globalizationHelpers } from "./globals";
+import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
-import { initCacheToUseIfEnabled } from "./assetsCache";
 
 
 export class HostBuilder implements DotnetHostBuilder {
@@ -434,13 +433,14 @@ export async function createEmscripten (moduleFactory: DotnetModuleConfig | ((ap
 
 let jsModuleRuntimePromise: Promise<RuntimeModuleExportsInternal>;
 let jsModuleNativePromise: Promise<NativeModuleExportsInternal>;
+let jsModuleDiagnosticPromise: Promise<DiagnosticModuleExportsInternal>;
 
 // in the future we can use feature detection to load different flavors
 function importModules () {
     const jsModuleRuntimeAsset = resolve_single_asset_path("js-module-runtime");
     const jsModuleNativeAsset = resolve_single_asset_path("js-module-native");
     if (jsModuleRuntimePromise && jsModuleNativePromise) {
-        return [jsModuleRuntimePromise, jsModuleNativePromise];
+        return [jsModuleRuntimePromise, jsModuleNativePromise, jsModuleDiagnosticPromise];
     }
 
     if (typeof jsModuleRuntimeAsset.moduleExports === "object") {
@@ -456,37 +456,34 @@ function importModules () {
         mono_log_debug(() => `Attempting to import '${jsModuleNativeAsset.resolvedUrl}' for ${jsModuleNativeAsset.name}`);
         jsModuleNativePromise = import(/*! webpackIgnore: true */jsModuleNativeAsset.resolvedUrl!);
     }
-    return [jsModuleRuntimePromise, jsModuleNativePromise];
-}
 
-async function getHybridModuleExports () : Promise<HybridGlobalizationModuleExportsInternal> {
-    let jsModuleHybridGlobalizationPromise: Promise<NativeModuleExportsInternal> | undefined = undefined;
-    // todo: move it for after runtime startup
-    const jsModuleHybridGlobalization = resolve_single_asset_path("js-module-globalization");
-    if (typeof jsModuleHybridGlobalization.moduleExports === "object") {
-        jsModuleHybridGlobalizationPromise = jsModuleHybridGlobalization.moduleExports;
-    } else {
-        mono_log_debug(`Attempting to import '${jsModuleHybridGlobalization.resolvedUrl}' for ${jsModuleHybridGlobalization.name}`);
-        jsModuleHybridGlobalizationPromise = import(/*! webpackIgnore: true */jsModuleHybridGlobalization.resolvedUrl!);
+    const jsModuleDiagnosticAsset = try_resolve_single_asset_path("js-module-diagnostics");
+    if (jsModuleDiagnosticAsset) {
+        if (typeof jsModuleDiagnosticAsset.moduleExports === "object") {
+            jsModuleDiagnosticPromise = jsModuleDiagnosticAsset.moduleExports;
+        } else {
+            mono_log_debug(() => `Attempting to import '${jsModuleDiagnosticAsset.resolvedUrl}' for ${jsModuleDiagnosticAsset.name}`);
+            jsModuleDiagnosticPromise = import(/*! webpackIgnore: true */jsModuleDiagnosticAsset.resolvedUrl!);
+        }
     }
-    const hybridModule = await jsModuleHybridGlobalizationPromise;
-    return hybridModule as any;
+
+    return [jsModuleRuntimePromise, jsModuleNativePromise, jsModuleDiagnosticPromise];
 }
 
-async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {
+async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal, DiagnosticModuleExportsInternal?]) {
     const { initializeExports, initializeReplacements, configureRuntimeStartup, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals, passEmscriptenInternals } = es6Modules[0];
     const { default: emscriptenFactory } = es6Modules[1];
+    const diagnosticModule = es6Modules[2];
     setRuntimeGlobals(globalObjectsRoot);
     initializeExports(globalObjectsRoot);
-    if (loaderHelpers.config.globalizationMode === GlobalizationMode.Hybrid) {
-        const hybridModule = await getHybridModuleExports();
-        const { initHybrid } = hybridModule;
-        initHybrid(globalizationHelpers, runtimeHelpers);
+    if (diagnosticModule) {
+        diagnosticModule.setRuntimeGlobals(globalObjectsRoot);
     }
+
     await configureRuntimeStartup(emscriptenModule);
     loaderHelpers.runtimeModuleLoaded.promise_control.resolve();
 
-    emscriptenFactory((originalModule: EmscriptenModuleInternal) => {
+    const result = emscriptenFactory((originalModule: EmscriptenModuleInternal) => {
         Object.assign(emscriptenModule, {
             ready: originalModule.ready,
             __dotnet_runtime: {
@@ -495,6 +492,12 @@ async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, Nat
         });
 
         return emscriptenModule;
+    });
+    result.catch((error) => {
+        if (error.message && error.message.toLowerCase().includes("out of memory")) {
+            throw new Error(".NET runtime has failed to start, because too much memory was requested. Please decrease the memory by adjusting EmccMaximumHeapSize. See also https://aka.ms/dotnet-wasm-features");
+        }
+        throw error;
     });
 }
 
@@ -505,8 +508,6 @@ async function downloadOnly ():Promise<void> {
     await mono_wasm_load_config(emscriptenModule);
 
     prepareAssets();
-
-    await initCacheToUseIfEnabled();
 
     init_globalization();
 
@@ -522,8 +523,6 @@ async function createEmscriptenMain (): Promise<RuntimeAPI> {
     prepareAssets();
 
     const promises = importModules();
-
-    await initCacheToUseIfEnabled();
 
     streamingCompileWasm(); // intentionally not awaited
 

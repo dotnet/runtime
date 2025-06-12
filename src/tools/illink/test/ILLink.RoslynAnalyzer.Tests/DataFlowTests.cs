@@ -130,7 +130,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (DynamicDependencyDataflow));
 		}
 
-		[Fact]
+		[Fact (Skip = "https://github.com/dotnet/runtime/issues/116218")]
 		public Task DynamicObjects ()
 		{
 			return RunTest ();
@@ -174,6 +174,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task FunctionPointerDataflow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task GenericParameterDataFlow ()
 		{
 			return RunTest ();
@@ -211,6 +217,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		[Fact]
 		public Task MethodByRefReturnDataFlow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task MultipleReturnsDataFlow ()
 		{
 			return RunTest ();
 		}

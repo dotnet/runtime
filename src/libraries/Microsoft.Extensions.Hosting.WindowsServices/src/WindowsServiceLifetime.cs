@@ -45,11 +45,11 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         /// <param name="windowsServiceOptionsAccessor">The Windows service options used to find the service name.</param>
         public WindowsServiceLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory, IOptions<HostOptions> optionsAccessor, IOptions<WindowsServiceLifetimeOptions> windowsServiceOptionsAccessor)
         {
-            ThrowHelper.ThrowIfNull(environment);
-            ThrowHelper.ThrowIfNull(applicationLifetime);
-            ThrowHelper.ThrowIfNull(loggerFactory);
-            ThrowHelper.ThrowIfNull(optionsAccessor);
-            ThrowHelper.ThrowIfNull(windowsServiceOptionsAccessor);
+            ArgumentNullException.ThrowIfNull(environment);
+            ArgumentNullException.ThrowIfNull(applicationLifetime);
+            ArgumentNullException.ThrowIfNull(loggerFactory);
+            ArgumentNullException.ThrowIfNull(optionsAccessor);
+            ArgumentNullException.ThrowIfNull(windowsServiceOptionsAccessor);
 
             Environment = environment;
             ApplicationLifetime = applicationLifetime;
@@ -140,9 +140,11 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
 
         /// <summary>
         /// Executes when a Stop command is sent to the service by the Service Control Manager (SCM).
-        /// Triggers <see cref="IHostApplicationLifetime.ApplicationStopping"/> and waits for <see cref="IHostApplicationLifetime.ApplicationStopped"/>.
-        /// Shortly after this method returns, the Service will be marked as stopped in SCM and the process may exit at any point.
         /// </summary>
+        /// <remarks>
+        /// Triggers <see cref="IHostApplicationLifetime.ApplicationStopping"/> and waits for <see cref="IHostApplicationLifetime.ApplicationStopped"/>.
+        /// Shortly after this method returns, the Service will be marked as stopped in SCM and the process might exit at any point.
+        /// </remarks>
         protected override void OnStop()
         {
             _serviceStopRequested = true;
@@ -154,9 +156,11 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
 
         /// <summary>
         /// Executes when a Shutdown command is sent to the service by the Service Control Manager (SCM).
-        /// Triggers <see cref="IHostApplicationLifetime.ApplicationStopping"/> and waits for <see cref="IHostApplicationLifetime.ApplicationStopped"/>.
-        /// Shortly after this method returns, the Service will be marked as stopped in SCM and the process may exit at any point.
         /// </summary>
+        /// <remarks>
+        /// Triggers <see cref="IHostApplicationLifetime.ApplicationStopping"/> and waits for <see cref="IHostApplicationLifetime.ApplicationStopped"/>.
+        /// Shortly after this method returns, the Service will be marked as stopped in SCM and the process might exit at any point.
+        /// </remarks>
         protected override void OnShutdown()
         {
             _serviceStopRequested = true;

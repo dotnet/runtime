@@ -58,6 +58,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_SymbolicLink_TargetsDirectory_Create()
         {
             // Arrange
@@ -78,6 +79,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_SymbolicLink_TargetsDirectory_Create_IncludeSubdirectories()
         {
             FileSystemWatcherTest.Execute(() =>
@@ -111,6 +113,7 @@ namespace System.IO.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/70450", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_SymbolicLink_IncludeSubdirectories_DoNotDereferenceChildLink()
         {
             // Arrange

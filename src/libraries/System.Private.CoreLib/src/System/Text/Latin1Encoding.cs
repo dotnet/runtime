@@ -26,7 +26,7 @@ namespace System.Text
         public override ReadOnlySpan<byte> Preamble => default;
 
         // Default fallback that we'll use.
-        internal override void SetDefaultFallbacks()
+        internal sealed override void SetDefaultFallbacks()
         {
             // We use best-fit mappings by default when encoding.
             encoderFallback = EncoderLatin1BestFitFallback.SingletonInstance;

@@ -5,6 +5,7 @@ import { mono_log_error } from "./logging";
 import { GlobalizationMode, MonoConfig } from "../types";
 import { ENVIRONMENT_IS_WEB, loaderHelpers } from "./globals";
 import { mono_log_info, mono_log_debug } from "./logging";
+import { getNonFingerprintedAssetName } from "./assets";
 
 export function init_globalization () {
     loaderHelpers.preferredIcuAsset = getIcuResourceName(loaderHelpers.config);
@@ -25,11 +26,8 @@ export function init_globalization () {
     }
 
     const invariantEnv = "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT";
-    const hybridEnv = "DOTNET_SYSTEM_GLOBALIZATION_HYBRID";
     const env_variables = loaderHelpers.config.environmentVariables!;
-    if (env_variables[hybridEnv] === undefined && loaderHelpers.config.globalizationMode === GlobalizationMode.Hybrid) {
-        env_variables[hybridEnv] = "1";
-    } else if (env_variables[invariantEnv] === undefined && invariantMode) {
+    if (env_variables[invariantEnv] === undefined && invariantMode) {
         env_variables[invariantEnv] = "1";
     }
     if (env_variables["TZ"] === undefined) {
@@ -51,22 +49,32 @@ export function getIcuResourceName (config: MonoConfig): string | null {
         const culture = config.applicationCulture || (ENVIRONMENT_IS_WEB ? (globalThis.navigator && globalThis.navigator.languages && globalThis.navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
 
         const icuFiles = Object.keys(config.resources.icu);
+        const fileMapping: {
+            [k: string]: string
+        } = {};
+        for (let index = 0; index < icuFiles.length; index++) {
+            const icuFile = icuFiles[index];
+            if (config.resources.fingerprinting) {
+                fileMapping[getNonFingerprintedAssetName(icuFile)] = icuFile;
+            } else {
+                fileMapping[icuFile] = icuFile;
+            }
+        }
 
         let icuFile = null;
         if (config.globalizationMode === GlobalizationMode.Custom) {
-            if (icuFiles.length === 1) {
-                icuFile = icuFiles[0];
+            // custom ICU file is saved in the resources with fingerprinting and does not require mapping
+            if (icuFiles.length >= 1) {
+                return icuFiles[0];
             }
-        } else if (config.globalizationMode === GlobalizationMode.Hybrid) {
-            icuFile = "icudt_hybrid.dat";
         } else if (!culture || config.globalizationMode === GlobalizationMode.All) {
             icuFile = "icudt.dat";
         } else if (config.globalizationMode === GlobalizationMode.Sharded) {
             icuFile = getShardedIcuResourceName(culture);
         }
 
-        if (icuFile && icuFiles.includes(icuFile)) {
-            return icuFile;
+        if (icuFile && fileMapping[icuFile]) {
+            return fileMapping[icuFile];
         }
     }
 

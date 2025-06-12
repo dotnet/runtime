@@ -12,7 +12,7 @@
 #ifndef __excepamd64_h__
 #define __excepamd64_h__
 
-#include "corerror.h"  // HResults for the COM+ Runtime
+#include "corerror.h"
 
 #include "../dlls/mscorrc/resource.h"
 
@@ -40,14 +40,18 @@ EXTERN_C void RedirectForThrowControl();
 // Retrieves the redirected CONTEXT* from the stack frame of one of the
 // RedirectedHandledJITCaseForXXX_Stub's.
 //
+#ifdef TARGET_WINDOWS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(DISPATCHER_CONTEXT * pDispatcherContext);
+#endif // TARGET_WINDOWS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext);
 
+#ifdef TARGET_WINDOWS
 //
 // Retrieves the FaultingExceptionFrame* from the stack frame of
 // RedirectForThrowControl.
 //
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext);
+#endif // TARGET_WINDOWS
 
 //
 // Functions that wrap RtlVirtualUnwind to make sure that in the AMD64 case all the

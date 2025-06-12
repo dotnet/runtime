@@ -139,10 +139,6 @@ extern size_t gc_global_mechanisms[MAX_GLOBAL_GC_MECHANISMS_COUNT];
 class DacHeapWalker;
 #endif
 
-#ifdef _DEBUG
-#define  _LOGALLOC
-#endif
-
 #define MP_LOCKS
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
@@ -395,5 +391,7 @@ void GCLog (const char *fmt, ... );
 #if defined(TRACE_GC) || defined(GC_CONFIG_DRIVEN)
 FILE* CreateLogFile(const GCConfigStringHolder& temp_logfile_name, bool is_config);
 #endif //TRACE_GC || GC_CONFIG_DRIVEN
+
+void log_init_error_to_host (const char* format, ...);
 
 #endif // __GC_H

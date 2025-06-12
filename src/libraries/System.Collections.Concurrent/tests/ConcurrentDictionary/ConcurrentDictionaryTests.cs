@@ -629,27 +629,6 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(2, dictionary.Count);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
-        public static void TestDebuggerAttributes()
-        {
-            DebuggerAttributes.ValidateDebuggerDisplayReferences(new ConcurrentDictionary<string, int>());
-            ConcurrentDictionary<string, int> dict = new ConcurrentDictionary<string, int>();
-            dict.TryAdd("One", 1);
-            dict.TryAdd("Two", 2);
-            DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(dict);
-            PropertyInfo itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
-            KeyValuePair<string, int>[] items = itemProperty.GetValue(info.Instance) as KeyValuePair<string, int>[];
-            Assert.Equal(dict, items);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
-        public static void TestDebuggerAttributes_Null()
-        {
-            Type proxyType = DebuggerAttributes.GetProxyType(new ConcurrentDictionary<string, int>());
-            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
-            Assert.IsType<ArgumentNullException>(tie.InnerException);
-        }
-
         [Fact]
         public static void TestNullComparer()
         {
@@ -975,6 +954,25 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(dictionary.IsEmpty, "TestClear: FAILED.  IsEmpty returned false after Clear");
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [InlineData(3)]
+        [InlineData(1_162_687)]
+        public static void TestCapacity(int capacity)
+        {
+            int itemsCount = capacity + 100;
+            var dictionary = new ConcurrentDictionary<int, int>(1, capacity);
+            Assert.Equal(capacity, GetCapacity(dictionary));
+
+            for (int i = 0; i < itemsCount; i++)
+                dictionary.TryAdd(i, i);
+
+            Assert.Equal(itemsCount, dictionary.Count);
+            Assert.InRange(GetCapacity(dictionary), capacity + 1, int.MaxValue);
+
+            dictionary.Clear();
+            Assert.Equal(capacity, GetCapacity(dictionary));
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestTryUpdate()
         {
@@ -1088,13 +1086,6 @@ namespace System.Collections.Concurrent.Tests
                 }));
         }
 
-        // TODO: Revise this test when EqualityComparer<string>.Default implements IAlternateEqualityComparer<ReadOnlySpan<char>, string>
-        [Fact]
-        public void GetAlternateLookup_FailsForDefaultComparer()
-        {
-            Assert.False(new ConcurrentDictionary<string, string>().TryGetAlternateLookup<ReadOnlySpan<char>>(out _));
-        }
-
         [Fact]
         public void GetAlternateLookup_FailsWhenIncompatible()
         {
@@ -1112,26 +1103,23 @@ namespace System.Collections.Concurrent.Tests
             Assert.False(dictionary.TryGetAlternateLookup<int>(out _));
         }
 
+        public static IEnumerable<object[]> Dictionary_GetAlternateLookup_OperationsMatchUnderlyingDictionary_MemberData()
+        {
+            yield return new object[] { EqualityComparer<string>.Default };
+            yield return new object[] { StringComparer.Ordinal };
+            yield return new object[] { StringComparer.OrdinalIgnoreCase };
+            yield return new object[] { StringComparer.InvariantCulture };
+            yield return new object[] { StringComparer.InvariantCultureIgnoreCase };
+            yield return new object[] { StringComparer.CurrentCulture };
+            yield return new object[] { StringComparer.CurrentCultureIgnoreCase };
+        }
+
         [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(2)]
-        [InlineData(3)]
-        [InlineData(4)]
-        [InlineData(5)]
-        public void GetAlternateLookup_OperationsMatchUnderlyingDictionary(int mode)
+        [MemberData(nameof(Dictionary_GetAlternateLookup_OperationsMatchUnderlyingDictionary_MemberData))]
+        public void GetAlternateLookup_OperationsMatchUnderlyingDictionary(IEqualityComparer<string> comparer)
         {
             // Test with a variety of comparers to ensure that the alternate lookup is consistent with the underlying dictionary
-            ConcurrentDictionary<string, int> dictionary = new(mode switch
-            {
-                0 => StringComparer.Ordinal,
-                1 => StringComparer.OrdinalIgnoreCase,
-                2 => StringComparer.InvariantCulture,
-                3 => StringComparer.InvariantCultureIgnoreCase,
-                4 => StringComparer.CurrentCulture,
-                5 => StringComparer.CurrentCultureIgnoreCase,
-                _ => throw new ArgumentOutOfRangeException(nameof(mode))
-            });
+            ConcurrentDictionary<string, int> dictionary = new(comparer);
             ConcurrentDictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> lookup = dictionary.GetAlternateLookup<ReadOnlySpan<char>>();
             Assert.Same(dictionary, lookup.Dictionary);
             Assert.Same(lookup.Dictionary, lookup.Dictionary);
@@ -1165,7 +1153,8 @@ namespace System.Collections.Concurrent.Tests
 
             // Ensure that case-sensitivity of the comparer is respected
             lookup["a".AsSpan()] = 42;
-            if (dictionary.Comparer.Equals(StringComparer.Ordinal) ||
+            if (dictionary.Comparer.Equals(EqualityComparer<string>.Default) ||
+                dictionary.Comparer.Equals(StringComparer.Ordinal) ||
                 dictionary.Comparer.Equals(StringComparer.InvariantCulture) ||
                 dictionary.Comparer.Equals(StringComparer.CurrentCulture))
             {
@@ -1261,6 +1250,20 @@ namespace System.Collections.Concurrent.Tests
         }
 
         #region Helper Classes and Methods
+
+        private static int GetCapacity(ConcurrentDictionary<int, int> dictionary)
+        {
+            var tables = typeof(ConcurrentDictionary<int, int>)
+                .GetField("_tables", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(dictionary);
+
+            var buckets = (ICollection)tables.GetType()
+                .GetField("_buckets", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(tables);
+
+            return buckets.Count;
+        }
+
         private sealed class CreateThrowsComparer : IEqualityComparer<string>, IAlternateEqualityComparer<ReadOnlySpan<char>, string>
         {
             public bool Equals(string? x, string? y) => EqualityComparer<string>.Default.Equals(x, y);

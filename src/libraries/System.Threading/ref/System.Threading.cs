@@ -212,13 +212,19 @@ namespace System.Threading
     {
         public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode) { }
         public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string? name) { }
+        public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string? name, System.Threading.NamedWaitHandleOptions options) { }
         public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string? name, out bool createdNew) { throw null; }
+        public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string? name, System.Threading.NamedWaitHandleOptions options, out bool createdNew) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.Threading.EventWaitHandle OpenExisting(string name) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public static System.Threading.EventWaitHandle OpenExisting(string name, System.Threading.NamedWaitHandleOptions options) { throw null; }
         public bool Reset() { throw null; }
         public bool Set() { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static bool TryOpenExisting(string name, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Threading.EventWaitHandle? result) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public static bool TryOpenExisting(string name, System.Threading.NamedWaitHandleOptions options, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Threading.EventWaitHandle? result) { throw null; }
     }
     public sealed partial class ExecutionContext : System.IDisposable, System.Runtime.Serialization.ISerializable
     {
@@ -269,7 +275,7 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static ulong CompareExchange(ref ulong location1, ulong value, ulong comparand) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location1")]
-        public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class? { throw null; }
+        public static T CompareExchange<T>(ref T location1, T value, T comparand) { throw null; }
         public static int Decrement(ref int location) { throw null; }
         public static long Decrement(ref long location) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -296,7 +302,7 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static ulong Exchange(ref ulong location1, ulong value) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location1")]
-        public static T Exchange<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref T location1, T value) where T : class? { throw null; }
+        public static T Exchange<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref T location1, T value) { throw null; }
         public static int Increment(ref int location) { throw null; }
         public static long Increment(ref long location) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -418,11 +424,21 @@ namespace System.Threading
     {
         public Mutex() { }
         public Mutex(bool initiallyOwned) { }
+        public Mutex(string? name, System.Threading.NamedWaitHandleOptions options) { throw null; }
         public Mutex(bool initiallyOwned, string? name) { }
+        public Mutex(bool initiallyOwned, string? name, System.Threading.NamedWaitHandleOptions options) { throw null; }
         public Mutex(bool initiallyOwned, string? name, out bool createdNew) { throw null; }
+        public Mutex(bool initiallyOwned, string? name, System.Threading.NamedWaitHandleOptions options, out bool createdNew) { throw null; }
         public static System.Threading.Mutex OpenExisting(string name) { throw null; }
+        public static System.Threading.Mutex OpenExisting(string name, System.Threading.NamedWaitHandleOptions options) { throw null; }
         public void ReleaseMutex() { }
         public static bool TryOpenExisting(string name, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Threading.Mutex? result) { throw null; }
+        public static bool TryOpenExisting(string name, System.Threading.NamedWaitHandleOptions options, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out Mutex? result) { throw null; }
+    }
+    public struct NamedWaitHandleOptions
+    {
+        public bool CurrentUserOnly { get { throw null; } set { } }
+        public bool CurrentSessionOnly { get { throw null; } set { } }
     }
     public partial class ReaderWriterLockSlim : System.IDisposable
     {
@@ -457,13 +473,19 @@ namespace System.Threading
     {
         public Semaphore(int initialCount, int maximumCount) { }
         public Semaphore(int initialCount, int maximumCount, string? name) { }
+        public Semaphore(int initialCount, int maximumCount, string? name, System.Threading.NamedWaitHandleOptions options) { }
         public Semaphore(int initialCount, int maximumCount, string? name, out bool createdNew) { throw null; }
+        public Semaphore(int initialCount, int maximumCount, string? name, System.Threading.NamedWaitHandleOptions options, out bool createdNew) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.Threading.Semaphore OpenExisting(string name) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public static System.Threading.Semaphore OpenExisting(string name, System.Threading.NamedWaitHandleOptions options) { throw null; }
         public int Release() { throw null; }
         public int Release(int releaseCount) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static bool TryOpenExisting(string name, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Threading.Semaphore? result) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public static bool TryOpenExisting(string name, System.Threading.NamedWaitHandleOptions options, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Threading.Semaphore? result) { throw null; }
     }
     public partial class SemaphoreFullException : System.SystemException
     {
@@ -613,6 +635,8 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static void Write(ref System.UIntPtr location, System.UIntPtr value) { }
         public static void Write<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref T location, T value) where T : class? { }
+        public static void ReadBarrier() { }
+        public static void WriteBarrier() { }
     }
     public partial class WaitHandleCannotBeOpenedException : System.ApplicationException
     {

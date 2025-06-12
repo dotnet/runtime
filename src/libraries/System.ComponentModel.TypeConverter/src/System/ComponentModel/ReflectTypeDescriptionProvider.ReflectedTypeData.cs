@@ -45,7 +45,7 @@ namespace System.ComponentModel
             /// Retrieves custom attributes.
             /// </summary>
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:UnrecognizedReflectionPattern",
-                Justification = "_type is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
+                Justification = "_type is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well.")]
             internal AttributeCollection GetAttributes()
             {
                 // Worst case collision scenario:  we don't want the perf hit
@@ -509,7 +509,7 @@ namespace System.ComponentModel
             /// then a global Type.GetType is performed.
             /// </summary>
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Calling _type.Assembly.GetType on a non-assembly qualified type will still work. See https://github.com/mono/linker/issues/1895")]
+                Justification = "Trimming requires fully-qualified type names for strings annotated with DynamicallyAccessedMembers, so the call to _type.Assembly.GetType should be unreachable in an app without trim warnings.")]
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
                 Justification = "Using the non-assembly qualified type name will still work.")]
             private Type? GetTypeFromName(

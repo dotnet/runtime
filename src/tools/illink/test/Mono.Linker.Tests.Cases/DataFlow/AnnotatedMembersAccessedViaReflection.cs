@@ -333,8 +333,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
-			[UnexpectedWarning ("IL2118", nameof (LdftnOnLambdaTriggersLamdaAnalysis), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
-			[UnexpectedWarning ("IL2118", nameof (LdftnOnLocalMethodTriggersLocalMethodAnalysis), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
 			static void DynamicallyAccessedMembersAll1 ()
 			{
 				typeof (AnnotatedMethodParameters).RequiresAll ();
@@ -347,8 +345,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
-			[UnexpectedWarning ("IL2118", nameof (LdftnOnLambdaTriggersLamdaAnalysis), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
-			[UnexpectedWarning ("IL2118", nameof (LdftnOnLocalMethodTriggersLocalMethodAnalysis), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
 			static void DynamicallyAccessedMembersAll2 ()
 			{
 				typeof (AnnotatedMethodParameters).RequiresAll ();
@@ -743,8 +739,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedGenerics).RequiresPublicMethods ();
 			}
 
-			// This should produce IL2071 https://github.com/dotnet/linker/issues/2144
-			[ExpectedWarning ("IL2070", "MakeGenericMethod")]
+			[ExpectedWarning ("IL2071", "'T'")]
 			static void InstantiateGeneric (Type type = null)
 			{
 				// This should warn due to MakeGenericMethod - in this case the generic parameter is unannotated type
@@ -958,17 +953,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[RequiresUnreferencedCode("--AnnotatedType--")]
 			public class AnnotatedType
 			{
-				[ExpectedWarning("IL2112", [nameof(AnnotatedType), "requires unreferenced code", "--AnnotatedType--"], Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102002")]
+				[ExpectedWarning("IL2112", nameof(AnnotatedType), "requires unreferenced code", "--AnnotatedType--")]
 				public AnnotatedType () { }
 			}
 
-			[ExpectedWarning("IL2114", nameof(MethodWithDataflow), nameof(DynamicallyAccessedMembersAttribute), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102002")]
+			[ExpectedWarning("IL2114", nameof(MethodWithDataflow), nameof(DynamicallyAccessedMembersAttribute))]
 			public void MethodWithDataflow ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) { }
 
 			[RequiresDynamicCode ("--MethodWithRequires--")]
 			[RequiresUnreferencedCode("--MethodWithRequires--")]
 			[RequiresAssemblyFiles("--MethodWithRequires--")]
-			[ExpectedWarning("IL2112", "requires unreferenced code", "--MethodWithRequires--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102002")]
+			[ExpectedWarning("IL2112", "requires unreferenced code", "--MethodWithRequires--")]
 			public void MethodWithRequires () { }
 
 			public static void Test ()

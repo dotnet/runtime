@@ -800,7 +800,7 @@
         .try
         {
             call void Main::RunTestC1()
-            leave.s CC2
+            leave.s CC3
         }
         catch [mscorlib]System.TypeLoadException
         {   
@@ -809,45 +809,9 @@
             call       void [System.Console]System.Console::WriteLine(object)        
             ldc.i4.0
             stloc.0
-            leave.s CC2
+            leave.s CC3
         }  
 
-CC2:
-        ldstr "C2: override int32[] by IList<int32>"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC2()
-            ldc.i4.0
-            stloc.0
-            leave.s CD2
-        }
-        catch [mscorlib]System.TypeLoadException
-        {
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)
-            leave.s CD2
-        }
-CD2:
-        ldstr "D2: call non-overriding method MD2 when base class of D2 has invalid covariant override"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestD2()
-            ldc.i4.0
-            stloc.0
-            leave.s CC3
-        }
-        catch [mscorlib]System.TypeLoadException
-        {   
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)        
-            leave.s CC3
-        }
 CC3:
         ldstr "C3: override IList<int32> by int32[]"
         call void [System.Console]System.Console::WriteLine(string)
@@ -855,7 +819,7 @@ CC3:
         .try
         {
             call void Main::RunTestC3()
-            leave.s CC4
+            leave.s CC6
         }
         catch [mscorlib]System.TypeLoadException
         {   
@@ -864,44 +828,6 @@ CC3:
             call       void [System.Console]System.Console::WriteLine(object)        
             ldc.i4.0
             stloc.0
-            leave.s CC4
-        }  
-
-CC4:
-        ldstr "C4: override int32 by Nullable`1<int32>"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC4()
-            ldc.i4.0
-            stloc.0
-            leave.s CC5
-        }
-        catch [mscorlib]System.TypeLoadException
-        {   
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)        
-            leave.s CC5
-        }  
-
-CC5:
-        ldstr "C5: override Nullable<int32> by int32"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC5()
-            ldc.i4.0
-            stloc.0
-            leave.s CC6
-        }
-        catch [mscorlib]System.TypeLoadException
-        {   
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)        
             leave.s CC6
         }  
 CC6:
@@ -947,7 +873,7 @@ CC8:
         .try
         {
             call void Main::RunTestC8()
-            leave.s CC9
+            leave.s CC15
         }
         catch [mscorlib]System.TypeLoadException
         {   
@@ -956,114 +882,6 @@ CC8:
             call       void [System.Console]System.Console::WriteLine(object)        
             ldc.i4.0
             stloc.0
-            leave.s CC9
-        }  
-CC9:
-        ldstr "C9: override native int[] by uint64[]"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC9()
-            ldc.i4.0
-            stloc.0
-            leave.s CC10
-        }
-        catch [mscorlib]System.TypeLoadException
-        {   
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)        
-            leave.s CC10
-        }  
-CC10:
-        ldstr "C10: override native int[] by uint32[]"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC10()
-            ldc.i4.0
-            stloc.0
-            leave.s CC11
-        }
-        catch [mscorlib]System.TypeLoadException
-        {   
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)        
-            leave.s CC11
-        }
-CC11:
-        ldstr "C11: override Base* by Derived*"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC11()
-            ldc.i4.0
-            stloc.0
-            leave.s CC12
-        }
-        catch [mscorlib]System.TypeLoadException
-        {
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)
-            leave.s CC12
-        }
-CC12:
-        ldstr "C12: override void* by int32*"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC12()
-            ldc.i4.0
-            stloc.0
-            leave.s CC13
-        }
-        catch [mscorlib]System.TypeLoadException
-        {
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)
-            leave.s CC13
-        }
-CC13:
-        ldstr "C13: override int32 *(class Base) by int32 *(class Derived)"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC13()
-            ldc.i4.0
-            stloc.0
-            leave.s CC14
-        }
-        catch [mscorlib]System.TypeLoadException
-        {
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)
-            leave.s CC14
-        }
-CC14:
-        ldstr "C14: override int32 *(class Base) by int32 *(class C1)"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC14()
-            ldc.i4.0
-            stloc.0
-            leave.s CC15
-        }
-        catch [mscorlib]System.TypeLoadException
-        {
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)
             leave.s CC15
         }
 CC15:
@@ -1127,7 +945,7 @@ CC18:
         .try
         {
             call void Main::RunTestC18()
-            leave.s CC19
+            leave.s CC20
         }
         catch [mscorlib]System.TypeLoadException
         {
@@ -1136,24 +954,6 @@ CC18:
             call       void [System.Console]System.Console::WriteLine(object)
             ldc.i4.0
             stloc.0
-            leave.s CC19
-        }
-CC19:
-        ldstr "C19: override Base& M13() by Derived& M13()"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC19()
-            ldc.i4.0
-            stloc.0
-            leave.s CC20
-        }
-        catch [mscorlib]System.TypeLoadException
-        {
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)
             leave.s CC20
         }
 CC20:
@@ -1181,7 +981,7 @@ CC21:
         .try
         {
             call void Main::RunTestC21()
-            leave.s CC22
+            leave.s DONE
         }
         catch [mscorlib]System.TypeLoadException
         {
@@ -1190,150 +990,6 @@ CC21:
             call       void [System.Console]System.Console::WriteLine(object)
             ldc.i4.0
             stloc.0
-            leave.s CC22
-        }
-CC22:
-        ldstr "C22: override char& M14() by uint8& M14()"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC22()
-            ldc.i4.0
-            stloc.0
-            leave.s CC23
-        }
-        catch [mscorlib]System.TypeLoadException
-        {
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)
-            leave.s CC23
-        }
-CC23:
-        ldstr "C23: override bool* M15() by uint32* M15()"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC23()
-            ldc.i4.0
-            stloc.0
-            leave.s CC24
-        }
-        catch [mscorlib]System.TypeLoadException
-        {
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)
-            leave.s CC24
-        }
-CC24:
-        ldstr "C24: override bool* M15() by bool& M15()"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC24()
-            ldc.i4.0
-            stloc.0
-            leave.s CC25
-        }
-        catch [mscorlib]System.TypeLoadException
-        {
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)
-            leave.s CC25
-        }
-CC25:
-        ldstr "C25: override bool* M15() by int32 *(class Base) M15()"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC25()
-            ldc.i4.0
-            stloc.0
-            leave.s CC26
-        }
-        catch [mscorlib]System.TypeLoadException
-        {
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)
-            leave.s CC26
-        }
-CC26:
-        ldstr "C26: override char& M14() by char* M14()"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC26()
-            ldc.i4.0
-            stloc.0
-            leave.s CC27
-        }
-        catch [mscorlib]System.TypeLoadException
-        {
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)
-            leave.s CC27
-        }
-CC27:
-        ldstr "C27: override char& M14() by int32 *(class Base) M14()"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC27()
-            ldc.i4.0
-            stloc.0
-            leave.s CC28
-        }
-        catch [mscorlib]System.TypeLoadException
-        {
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)
-            leave.s CC28
-        }
-CC28:
-        ldstr "C28: override int32 *(class Base) M9() by int32* M9()"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC28()
-            ldc.i4.0
-            stloc.0
-            leave.s CC29
-        }
-        catch [mscorlib]System.TypeLoadException
-        {
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)
-            leave.s CC29
-        }
-CC29:
-        ldstr "C29: override int32 *(class Base) M9() by int32& M9()"
-        call void [System.Console]System.Console::WriteLine(string)
-
-        .try
-        {
-            call void Main::RunTestC29()
-            ldc.i4.0
-            stloc.0
-            leave.s DONE
-        }
-        catch [mscorlib]System.TypeLoadException
-        {
-            ldstr "Caught expected TypeLoadException:"
-            call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)
             leave.s DONE
         }
 DONE:

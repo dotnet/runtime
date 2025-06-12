@@ -604,93 +604,6 @@ namespace System.Net.Security.Tests
             return new CipherSuitesPolicy(cipherSuites);
         }
 
-        private static async Task<Exception> WaitForSecureConnection(SslStream client, SslClientAuthenticationOptions clientOptions, SslStream server, SslServerAuthenticationOptions serverOptions)
-        {
-            Task serverTask = null;
-            Task clientTask = null;
-
-            // check if failed synchronously
-            try
-            {
-                serverTask = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
-                clientTask = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
-            }
-            catch (Exception e)
-            {
-                client.Close();
-                server.Close();
-
-                if (!(e is AuthenticationException || e is Win32Exception))
-                {
-                    throw;
-                }
-
-                if (serverTask != null)
-                {
-                    // i.e. for server we used DEFAULT options but for client we chose not supported cipher suite
-                    //      this will cause client to fail synchronously while server awaits connection
-                    try
-                    {
-                        // since we broke connection the server should finish
-                        await serverTask;
-                    }
-                    catch (AuthenticationException) { }
-                    catch (Win32Exception) { }
-                    catch (IOException) { }
-                }
-
-                return e;
-            }
-
-            // Since we got here it means client and server have at least 1 choice
-            // of cipher suite
-            // Now we expect both sides to fail or both to succeed
-
-            Exception failure = null;
-            Task task = null;
-
-            try
-            {
-                task = await Task.WhenAny(serverTask, clientTask).WaitAsync(TestConfiguration.PassingTestTimeout);
-                await task;
-            }
-            catch (Exception e) when (e is AuthenticationException || e is Win32Exception)
-            {
-                failure = e;
-                // avoid client waiting for server's response
-                if (task == serverTask)
-                {
-                    server.Close();
-                }
-                else
-                {
-                    client.Close();
-                }
-            }
-
-            try
-            {
-                // Now wait for the other task to finish.
-                task = (task == serverTask ? clientTask : serverTask);
-                await task.WaitAsync(TestConfiguration.PassingTestTimeout);
-
-                // Fail if server has failed but client has succeeded
-                Assert.Null(failure);
-            }
-            catch (Exception e) when (e is AuthenticationException || e is Win32Exception || e is IOException)
-            {
-                // Fail if server has succeeded but client has failed
-                Assert.NotNull(failure);
-
-                if (e.GetType() != typeof(IOException))
-                {
-                    failure = new AggregateException(new Exception[] { failure, e });
-                }
-            }
-
-            return failure;
-        }
-
         private static NegotiatedParams ConnectAndGetNegotiatedParams(ConnectionParams serverParams, ConnectionParams clientParams)
         {
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
@@ -714,7 +627,7 @@ namespace System.Net.Security.Tests
                 clientOptions.TargetHost = "test";
                 clientOptions.RemoteCertificateValidationCallback = delegate { return true; };
 
-                Exception failure = WaitForSecureConnection(client, clientOptions, server, serverOptions).WaitAsync(TestConfiguration.PassingTestTimeoutMilliseconds).GetAwaiter().GetResult();
+                Exception failure = TestHelper.WaitForSecureConnection(client, clientOptions, server, serverOptions).WaitAsync(TestConfiguration.PassingTestTimeoutMilliseconds).GetAwaiter().GetResult();
 
                 if (failure == null)
                 {

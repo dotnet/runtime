@@ -96,110 +96,7 @@ void ECall::PopulateManagedStringConstructors()
     INDEBUG(fInitialized = true);
 }
 
-void ECall::PopulateManagedHelpers()
-{
-
-    STANDARD_VM_CONTRACT;
-
-    MethodDesc* pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFANY));
-    PCODE pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFANY, pDest);
-    // array cast uses the "ANY" helper
-    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFARRAY, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFINTERFACE));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFCLASS));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFCLASS, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTANY));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTANY, pDest);
-    // array cast uses the "ANY" helper
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTARRAY, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTINTERFACE));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTINTERFACE, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASS));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASSSPECIAL));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS_SPECIAL, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__UNBOX));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_UNBOX, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__STELEMREF));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ARRADDR_ST, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__LDELEMAREF));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_LDELEMA_REF, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMSET));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_MEMSET, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMZERO));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_MEMZERO, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMCOPY));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_MEMCPY, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__BUFFER__MEMCOPYGC));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_BULK_WRITEBARRIER, pDest);
-
-#ifndef TARGET_64BIT
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__MULTIPLY_CHECKED_INT64));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_LMUL_OVF, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__MULTIPLY_CHECKED_UINT64));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ULMUL_OVF, pDest);
-#endif
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__CONVERT_TO_INT32_CHECKED));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_DBL2INT_OVF, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__CONVERT_TO_UINT32_CHECKED));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_DBL2UINT_OVF, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__CONVERT_TO_INT64_CHECKED));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_DBL2LNG_OVF, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__CONVERT_TO_UINT64_CHECKED));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_DBL2ULNG_OVF, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__ROUND));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_DBLROUND, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATHF__ROUND));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_FLTROUND, pDest);
-}
-
 static CrstStatic gFCallLock;
-
-// This variable is used to force the compiler not to tailcall a function.
-RAW_KEYWORD(volatile) int FC_NO_TAILCALL;
 
 #endif // !DACCESS_COMPILE
 
@@ -420,30 +317,25 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     MethodTable * pMT = pMD->GetMethodTable();
 
     //
-    // Delegate constructors are FCalls for which the entrypoint points to the target of the delegate
-    // We have to intercept these and set the call target to the helper COMDelegate::DelegateConstruct
+    // Delegate constructors are QCalls for which the entrypoint points to the target of the delegate
+    // We have to intercept these and set the call target to the managed helper Delegate.DelegateConstruct
     //
     if (pMT->IsDelegate())
     {
         if (pfSharedOrDynamicFCallImpl)
             *pfSharedOrDynamicFCallImpl = TRUE;
 
-        // COMDelegate::DelegateConstruct is the only fcall used by user delegates.
-        // All the other gDelegateFuncs are only used by System.Delegate
         _ASSERTE(pMD->IsCtor());
 
         // We need to set up the ECFunc properly.  We don't want to use the pMD passed in,
         // since it may disappear.  Instead, use the stable one on Delegate.  Remember
-        // that this is 1:M between the FCall and the pMDs.
-        return GetFCallImpl(CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
+        // that this is 1:M between the method and the constructors.
+        return CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE)->GetMultiCallableAddrOfCode();
     }
 
-    // COM imported classes have special constructors
-    if (pMT->IsComObjectType()
 #ifdef FEATURE_COMINTEROP
-        && (g_pBaseCOMObject == NULL || pMT != g_pBaseCOMObject)
-#endif // FEATURE_COMINTEROP
-    )
+    // COM imported classes have special constructors
+    if (pMT->IsComObjectType() && pMT != g_pBaseCOMObject)
     {
         if (pfSharedOrDynamicFCallImpl)
             *pfSharedOrDynamicFCallImpl = TRUE;
@@ -454,6 +346,12 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
         // FCComCtor does not need to be in the fcall hashtable since it does not erect frame.
         return GetEEFuncEntryPoint(FCComCtor);
     }
+#else // !FEATURE_COMINTEROP
+    // This code path is taken when a class marked with ComImport is being created.
+    // If we get here and COM interop isn't suppported, throw.
+    if (pMT->IsComObjectType())
+        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_ERROR_COM);
+#endif // FEATURE_COMINTEROP
 
     if (!pMD->GetModule()->IsSystem())
         COMPlusThrow(kSecurityException, BFA_ECALLS_MUST_BE_IN_SYS_MOD);
@@ -496,7 +394,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
             *pfSharedOrDynamicFCallImpl = TRUE;
 
         pImplementation = g_FCDynamicallyAssignedImplementations[iDynamicID];
-        _ASSERTE(pImplementation != NULL);
+        _ASSERTE(pImplementation != (PCODE)NULL);
         return pImplementation;
     }
 
@@ -547,7 +445,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     if (pfSharedOrDynamicFCallImpl)
         *pfSharedOrDynamicFCallImpl = FALSE;
 
-    _ASSERTE(pImplementation != NULL);
+    _ASSERTE(pImplementation != (PCODE)NULL);
     return pImplementation;
 }
 
@@ -557,9 +455,7 @@ BOOL ECall::IsSharedFCallImpl(PCODE pImpl)
 
     PCODE pNativeCode = pImpl;
 
-    return
-        (pNativeCode == GetEEFuncEntryPoint(FCComCtor)) ||
-        (pNativeCode == GetEEFuncEntryPoint(COMDelegate::DelegateConstruct));
+    return (pNativeCode == GetEEFuncEntryPoint(FCComCtor));
 }
 
 BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)
@@ -584,7 +480,7 @@ BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)
 
                 if (!usedIDs.Contains(id))
                 {
-                    printf("CheckCoreLibExtended: Unused ecall found: %s.%s::%s\n", pECClass->m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName, ptr->m_szMethodName);
+                    minipal_log_print_error("CheckCoreLibExtended: Unused ecall found: %s.%s::%s\n", pECClass->m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName, ptr->m_szMethodName);
                     fUnusedFCallsFound = TRUE;
                     continue;
                 }
@@ -594,7 +490,7 @@ BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)
 
         if (fUnreferencedType)
         {
-            printf("CheckCoreLibExtended: Unused type found: %s.%s\n", c_rgECClasses[ImplsIndex].m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName);
+            minipal_log_print_error("CheckCoreLibExtended: Unused type found: %s.%s\n", c_rgECClasses[ImplsIndex].m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName);
             fUnusedFCallsFound = TRUE;
             continue;
         }
@@ -631,11 +527,6 @@ void ECall::Init()
     CONTRACTL_END;
 
     gFCallLock.Init(CrstFCall);
-
-    // It is important to do an explicit increment here instead of just in-place initialization
-    // so that the global optimizer cannot figure out the value and remove the side-effect that
-    // we depend on in FC_INNER_RETURN macros and other places
-    FC_NO_TAILCALL++;
 }
 #endif // !DACCESS_COMPILE
 

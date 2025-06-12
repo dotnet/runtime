@@ -22,7 +22,7 @@ extends:
       jobs:
       - job: windows
         displayName: Build & Deploy to OneFuzz
-        timeoutInMinutes: 120
+        timeoutInMinutes: 240
         pool:
           name: $(DncEngInternalBuildPool)
           demands: ImageOverride -equals windows.vs2022.amd64
@@ -35,12 +35,13 @@ extends:
 
         - powershell: |
             cd $(Build.SourcesDirectory)
-            ./build.cmd clr+libs+packs+host -rc Checked -c Debug
+            ./build.cmd clr+libs -rc Checked -c Debug
           displayName: Build runtime (checked + debug)
 
         - powershell: |
             cd $(fuzzerProject)
-            $(dotnetPath) publish -o publish
+            $(dotnetPath) build-server shutdown
+            $(dotnetPath) build
           displayName: Build Fuzzing targets
 
         - powershell: |
@@ -50,7 +51,7 @@ extends:
 
         - powershell: |
             cd $(fuzzerProject)
-            publish/DotnetFuzzing.exe prepare-onefuzz deployment
+            ./run.bat
           displayName: Prepare OneFuzz deployment
 
 # OneFuzz can't currently handle a single deployment where multiple jobs share similar assemblies/pdbs.
@@ -69,9 +70,25 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/AssemblyNameInfoFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send AssemblyNameInfoFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/Base64Fuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send Base64Fuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/Base64UrlFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send Base64UrlFuzzer to OneFuzz
 
         - task: onefuzz-task@0
           inputs:
@@ -85,9 +102,25 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/IPAddressFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send IPAddressFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/JsonDocumentFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send JsonDocumentFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/NrbfDecoderFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send NrbfDecoderFuzzer to OneFuzz
 
         - task: onefuzz-task@0
           inputs:
@@ -109,7 +142,39 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/TextEncodingFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send TextEncodingFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/TypeNameFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send TypeNameFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/UTF8Fuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send UTF8Fuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/Utf8JsonWriterFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send Utf8JsonWriterFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/ZipArchiveFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send ZipArchiveFuzzer to OneFuzz
 # ONEFUZZ_TASK_WORKAROUND_END

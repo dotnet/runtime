@@ -1,10 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TestDisableParallelization>true</TestDisableParallelization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <!-- this is necessary for libmono-component-diagnostics_tracing-static.a to be linked, which makes the EventPipeEventProvider.EventActivityIdControl to work in Mono -->
+    <EnableDiagnostics>true</EnableDiagnostics>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'android'">
     <RuntimeComponents Include="diagnostics_tracing" />
@@ -29,14 +33,12 @@
     <Compile Include="BasicEventSourceTest\TestEventCounter.cs" />
     <Compile Include="BasicEventSourceTest\TestFilter.cs" />
     <Compile Include="BasicEventSourceTest\TestNotSupported.cs" />
-    <Compile Include="BasicEventSourceTest\TestShutdown.cs" />
     <Compile Include="BasicEventSourceTest\TestsEventSourceLifetime.cs" />
     <Compile Include="BasicEventSourceTest\TestsManifestGeneration.cs" />
     <Compile Include="BasicEventSourceTest\TestsManifestNegative.cs" />
     <Compile Include="BasicEventSourceTest\TestsTraits.cs" />
     <Compile Include="BasicEventSourceTest\TestsWriteEvent.cs" />
     <Compile Include="BasicEventSourceTest\TestsWriteEventToListener.cs" />
-    <Compile Include="BasicEventSourceTest\EventSourceTestParser.cs" />
     <Compile Include="BasicEventSourceTest\LoudListener.cs" />
     <Compile Include="BasicEventSourceTest\TestsWrite.cs" />
     <Compile Include="BasicEventSourceTest\TestsUserErrors.cs" />

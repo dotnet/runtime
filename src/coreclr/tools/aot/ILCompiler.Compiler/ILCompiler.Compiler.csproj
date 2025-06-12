@@ -37,6 +37,7 @@
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" Link="Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.Win32Structs.cs" Link="Compiler\Win32Resources\ResourceData.Win32Structs.cs" />
+    <Compile Include="..\..\Common\Microsoft\SourceLink\Tools\SourceLinkMap.cs" Link="Common\SourceLinkMap.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\DelegateInfo.cs">
       <Link>IL\DelegateInfo.cs</Link>
     </Compile>
@@ -214,9 +215,6 @@
     <Compile Include="..\..\Common\Internal\Runtime\StackTraceData.cs">
       <Link>Common\StackTraceData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\Internal\Runtime\UniversalGenericParameterLayout.cs">
-      <Link>Common\UniversalGenericParameterLayout.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\Internal\Text\Utf8String.cs">
       <Link>Common\Utf8String.cs</Link>
     </Compile>
@@ -347,6 +345,7 @@
     <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
     <Compile Include="Compiler\BodySubstitution.cs" />
     <Compile Include="Compiler\BodySubstitutionParser.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AddressTakenMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ByRefTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DehydratableObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DehydratedDataNode.cs" />
@@ -368,7 +367,6 @@
     <Compile Include="Compiler\Dataflow\ArrayValue.cs" />
     <Compile Include="Compiler\Dataflow\AttributeDataFlow.cs" />
     <Compile Include="Compiler\Dataflow\CompilerGeneratedCallGraph.cs" />
-    <Compile Include="Compiler\Dataflow\CompilerGeneratedNames.cs" />
     <Compile Include="Compiler\Dataflow\CompilerGeneratedState.cs" />
     <Compile Include="Compiler\Dataflow\DiagnosticContext.cs" />
     <Compile Include="Compiler\Dataflow\DiagnosticUtilities.cs" />
@@ -396,9 +394,6 @@
     <Compile Include="Compiler\Dataflow\TrimAnalysisMethodCallPattern.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisPatternStore.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisTokenAccessPattern.cs" />
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameHelpers.cs">
-      <Link>Utilities\TypeNameHelpers.cs</Link>
-    </Compile>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs">
       <Link>Utilities\ValueStringBuilder.cs</Link>
     </Compile>
@@ -411,6 +406,7 @@
     <Compile Include="Compiler\DependencyAnalysis\DataflowAnalyzedTypeDefinitionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributesOnEntityNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ExactMethodInstantiationsEntryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />
@@ -424,8 +420,10 @@
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\MethodParameterMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleInitializerListNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NotReadOnlyFieldNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ObjectGetTypeCalledNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PointerTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectedDelegateNode.cs" />
@@ -453,6 +451,10 @@
     <Compile Include="Compiler\DependencyAnalysis\ImportedNodeProvider.cs" />
     <Compile Include="Compiler\ExpectedIsaFeaturesRootProvider.cs" />
     <Compile Include="Compiler\ExternSymbolMappedField.cs" />
+    <Compile Include="Compiler\ObjectDataInterner.cs" />
+    <Compile Include="Compiler\ReachabilityInstrumentationFilter.cs" />
+    <Compile Include="Compiler\ReachabilityInstrumentationProvider.cs" />
+    <Compile Include="Compiler\SourceLinkWriter.cs" />
     <Compile Include="Compiler\SubstitutedILProvider.cs" />
     <Compile Include="Compiler\SubstitutionProvider.cs" />
     <Compile Include="Compiler\GenericRootProvider.cs" />
@@ -495,7 +497,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReflectionFieldMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NativeLayoutInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NativeLayoutVertexNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\NativeLayoutSignatureNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericTypesHashtableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericTypesTemplateMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericMethodsHashtableNode.cs" />
@@ -527,10 +528,7 @@
     <Compile Include="Compiler\DependencyAnalysis\RuntimeImportMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StringAllocatorMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunGenericHelperNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMInitialInterfaceDispatchStubNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VTableSliceNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\EETypeOptionalFieldsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternMethodSymbolNode.cs" />
@@ -651,7 +649,6 @@
     <Compile Include="Compiler\UsageBasedInteropStubManager.cs" />
     <Compile Include="Compiler\UsageBasedMetadataManager.cs" />
     <Compile Include="Compiler\UserDefinedTypeDescriptor.cs" />
-    <Compile Include="Compiler\UniversalGenericsRootProvider.cs" />
     <Compile Include="Compiler\UnixNodeMangler.cs" />
     <Compile Include="Compiler\VectorOfTFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
@@ -669,6 +666,8 @@
     <Compile Include="Compiler\Logging\UnconditionalSuppressMessageAttributeState.cs" />
     <Compile Include="Compiler\XmlObjectDumper.cs" />
     <Compile Include="IL\ILImporter.Scanner.cs" />
+    <Compile Include="IL\IsInstCheckPatternAnalyzer.cs" />
+    <Compile Include="IL\TypeEqualityPatternAnalyzer.cs" />
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.Sorting.cs" />
@@ -682,14 +681,8 @@
     <Compile Include="..\..\Common\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\ArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\Internal\Runtime\CanonTypeKind.cs">
-      <Link>Common\CanonTypeKind.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\MethodTable.Constants.cs">
       <Link>Common\MethodTable.Constants.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\Internal\Runtime\EETypeOptionalFieldsBuilder.cs">
-      <Link>Common\EETypeOptionalFieldsBuilder.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\EETypeBuilderHelpers.cs">
       <Link>Common\EETypeBuilderHelpers.cs</Link>

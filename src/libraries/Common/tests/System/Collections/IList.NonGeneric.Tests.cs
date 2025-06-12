@@ -83,6 +83,17 @@ namespace System.Collections.Tests
         /// </summary>
         protected virtual bool IList_CurrentAfterAdd_Throws => Enumerator_Current_UndefinedOperation_Throws;
 
+        /// <summary>
+        /// When calling Current of the empty enumerator after the end of the list and list is extended by new items.
+        /// Tests are included to cover two behavioral scenarios:
+        ///   - Throwing an InvalidOperationException
+        ///   - Returning an undefined value.
+        ///
+        /// If this property is set to true, the tests ensure that the exception is thrown. The default value is
+        /// the same as Enumerator_Current_UndefinedOperation_Throws.
+        /// </summary>
+        protected virtual bool IList_Empty_CurrentAfterAdd_Throws => Enumerator_Empty_Current_UndefinedOperation_Throw;
+
         #endregion
 
         #region ICollection Helper Methods
@@ -697,7 +708,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_IndexOf_ReturnsFirstMatchingValue(int count)
         {
-            if (!IsReadOnly && !ExpectedFixedSize)
+            if (!IsReadOnly && !ExpectedFixedSize && DuplicateValuesAllowed)
             {
                 IList list = NonGenericIListFactory(count);
 
@@ -1084,7 +1095,7 @@ namespace System.Collections.Tests
                 IEnumerator enumerator = collection.GetEnumerator();
                 while (enumerator.MoveNext()) ; // Go to end of enumerator
 
-                if (Enumerator_Current_UndefinedOperation_Throws)
+                if (count == 0 ? Enumerator_Empty_Current_UndefinedOperation_Throw : Enumerator_Current_UndefinedOperation_Throws)
                 {
                     Assert.Throws<InvalidOperationException>(() => enumerator.Current); // Enumerator.Current should fail
                 }
@@ -1099,7 +1110,7 @@ namespace System.Collections.Tests
                 {
                     collection.Add(CreateT(seed++));
 
-                    if (IList_CurrentAfterAdd_Throws)
+                    if (count == 0 ? IList_Empty_CurrentAfterAdd_Throws : IList_CurrentAfterAdd_Throws)
                     {
                         Assert.Throws<InvalidOperationException>(() => enumerator.Current); // Enumerator.Current should fail
                     }

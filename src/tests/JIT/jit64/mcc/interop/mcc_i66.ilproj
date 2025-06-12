@@ -1,11 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- Needed for CLRTestTargetUnsupported, CMakeProjectReference -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <!-- Test unsupported outside of windows -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
@@ -13,6 +7,7 @@
     <Compile Include="mcc_i66.il ..\common\common.il" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
     <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

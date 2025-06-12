@@ -57,7 +57,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
             // Trimmer/NativeAot only for now
             [ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethodsKeptByName--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
-			[KeepsPublicMethods (TypeName = "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributesOnMethod+ClassWithKeptPublicMethodsKeptByName")]
+			[KeepsPublicMethods (TypeName = "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributesOnMethod+ClassWithKeptPublicMethodsKeptByName, test")]
 			public static void TestKeepsPublicMethodsByName ()
 			{
 				typeof (AttributesOnMethod).GetMethod (nameof (TestKeepsPublicMethodsByName)).GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
@@ -213,7 +213,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
 			// Trimmer/NativeAot only for now
 			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
-			[KeepsPublicMethods (TypeName = 1 + 1 == 2 ? "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributeWithConditionalExpression+ClassWithKeptPublicMethods" : null)]
+			[KeepsPublicMethods (TypeName = 1 + 1 == 2 ? "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributeWithConditionalExpression+ClassWithKeptPublicMethodsKeptByName, test" : null)]
 			public static void Test ()
 			{
 				typeof (AttributeWithConditionalExpression).GetMethod ("Test").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
@@ -225,11 +225,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
 			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
-			[KeepsPublicMethods (TypeName = 1 + 1 == 2 ? "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributeWithConditionalExpression+ClassWithKeptPublicMethods" : null)]
+			[KeepsPublicMethods (TypeName = 1 + 1 == 2 ? "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributeWithConditionalExpression+ClassWithKeptPublicMethodsKeptByName, test" : null)]
 			public static int field;
 
 			[Kept]
-			class ClassWithKeptPublicMethods
+			class ClassWithKeptPublicMethodsKeptByName
 			{
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]

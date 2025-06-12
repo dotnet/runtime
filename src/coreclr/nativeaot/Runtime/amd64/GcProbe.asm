@@ -50,7 +50,7 @@ endm
 ;; registers and return value to their values from before the probe was called (while also updating any
 ;; object refs or byrefs).
 ;;
-POP_PROBE_FRAME macro 
+POP_PROBE_FRAME macro
     movdqa      xmm0, [rsp + 20h]
     add         rsp, 20h + 10h + 8  ; deallocate stack and discard saved m_RIP
     pop         rbp
@@ -76,7 +76,6 @@ endm
 ;;
 ;; Register state on exit:
 ;;  RDX: thread pointer
-;;  RCX: return value flags
 ;;  RAX: preserved, other volatile regs trashed
 ;;
 FixupHijackedCallstack macro
@@ -87,22 +86,16 @@ FixupHijackedCallstack macro
         mov         rcx, [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress]
         push        rcx
 
-        ;; Fetch the return address flags
-        mov         rcx, [rdx + OFFSETOF__Thread__m_uHijackedReturnValueFlags]
-
         ;; Clear hijack state
-        xor         r9, r9
-        mov         [rdx + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], r9
-        mov         [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress], r9
-        mov         [rdx + OFFSETOF__Thread__m_uHijackedReturnValueFlags], r9
+        xor         ecx, ecx
+        mov         [rdx + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], rcx
+        mov         [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress], rcx
 endm
-
-EXTERN RhpPInvokeExceptionGuard : PROC
 
 ;;
 ;; GC Probe Hijack target
 ;;
-NESTED_ENTRY RhpGcProbeHijack, _TEXT, RhpPInvokeExceptionGuard
+NESTED_ENTRY RhpGcProbeHijack, _TEXT
         END_PROLOGUE
         FixupHijackedCallstack
 
@@ -110,7 +103,7 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, RhpPInvokeExceptionGuard
         jnz         @f
         ret
 @@:
-        or          ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX
+        mov         ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_THREAD_HIJACK
         jmp         RhpWaitForGC
 NESTED_END RhpGcProbeHijack, _TEXT
 
@@ -131,7 +124,7 @@ NESTED_ENTRY RhpWaitForGC, _TEXT
         ret
 Abort:
         POP_PROBE_FRAME
-        mov         rcx, STATUS_REDHAWK_THREAD_ABORT
+        mov         rcx, STATUS_NATIVEAOT_THREAD_ABORT
         pop         rdx         ;; return address as exception RIP
         jmp         RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
 
@@ -147,7 +140,6 @@ LEAF_END RhpGcPoll, _TEXT
 
 NESTED_ENTRY RhpGcPollRare, _TEXT
         PUSH_COOP_PINVOKE_FRAME rcx
-        END_PROLOGUE
         call        RhpGcPoll2
         POP_COOP_PINVOKE_FRAME
         ret

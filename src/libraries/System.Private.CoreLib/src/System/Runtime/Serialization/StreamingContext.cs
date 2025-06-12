@@ -29,12 +29,14 @@ namespace System.Runtime.Serialization
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is StreamingContext))
+            if (obj is StreamingContext ctx)
             {
-                return false;
+                return
+                    ctx._additionalContext == _additionalContext &&
+                    ctx._state == _state;
             }
-            StreamingContext ctx = (StreamingContext)obj;
-            return ctx._additionalContext == _additionalContext && ctx._state == _state;
+
+            return false;
         }
 
         public override int GetHashCode() => (int)_state;

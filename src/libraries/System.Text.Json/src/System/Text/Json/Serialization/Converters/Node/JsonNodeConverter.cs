@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 using System.Text.Json.Nodes;
-using System.Text.Json.Serialization.Metadata;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -13,15 +13,7 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal sealed class JsonNodeConverter : JsonConverter<JsonNode?>
     {
-        private static JsonNodeConverter? s_nodeConverter;
-        private static JsonArrayConverter? s_arrayConverter;
-        private static JsonObjectConverter? s_objectConverter;
-        private static JsonValueConverter? s_valueConverter;
-
-        public static JsonNodeConverter Instance => s_nodeConverter ??= new JsonNodeConverter();
-        public static JsonArrayConverter ArrayConverter => s_arrayConverter ??= new JsonArrayConverter();
-        public static JsonObjectConverter ObjectConverter => s_objectConverter ??= new JsonObjectConverter();
-        public static JsonValueConverter ValueConverter => s_valueConverter ??= new JsonValueConverter();
+        internal static JsonNodeConverter Instance { get; } = new JsonNodeConverter();
 
         public override void Write(Utf8JsonWriter writer, JsonNode? value, JsonSerializerOptions options)
         {
@@ -37,17 +29,45 @@ namespace System.Text.Json.Serialization.Converters
 
         public override JsonNode? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            return options.AllowDuplicateProperties
+                ? ReadAsJsonElement(ref reader, options.GetNodeOptions())
+                : ReadAsJsonNode(ref reader, options.GetNodeOptions());
+        }
+
+        internal static JsonNode? ReadAsJsonElement(ref Utf8JsonReader reader, JsonNodeOptions options)
+        {
             switch (reader.TokenType)
             {
                 case JsonTokenType.String:
                 case JsonTokenType.False:
                 case JsonTokenType.True:
                 case JsonTokenType.Number:
-                    return ValueConverter.Read(ref reader, typeToConvert, options);
+                    return JsonValueConverter.ReadNonNullPrimitiveValue(ref reader, options);
                 case JsonTokenType.StartObject:
-                    return ObjectConverter.Read(ref reader, typeToConvert, options);
+                    return JsonObjectConverter.ReadAsJsonElement(ref reader, options);
                 case JsonTokenType.StartArray:
-                    return ArrayConverter.Read(ref reader, typeToConvert, options);
+                    return JsonArrayConverter.ReadAsJsonElement(ref reader, options);
+                case JsonTokenType.Null:
+                    return null;
+                default:
+                    Debug.Assert(false);
+                    throw new JsonException();
+            }
+        }
+
+        internal static JsonNode? ReadAsJsonNode(ref Utf8JsonReader reader, JsonNodeOptions options)
+        {
+            switch (reader.TokenType)
+            {
+                case JsonTokenType.String:
+                case JsonTokenType.False:
+                case JsonTokenType.True:
+                case JsonTokenType.Number:
+                    return JsonValueConverter.ReadNonNullPrimitiveValue(ref reader, options);
+                case JsonTokenType.StartObject:
+                    return JsonObjectConverter.ReadAsJsonNode(ref reader, options);
+                case JsonTokenType.StartArray:
+                    return JsonArrayConverter.ReadAsJsonNode(ref reader, options);
                 case JsonTokenType.Null:
                     return null;
                 default:
@@ -72,11 +92,13 @@ namespace System.Text.Json.Serialization.Converters
                     node = new JsonArray(element, options);
                     break;
                 default:
-                    node = new JsonValuePrimitive<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options);
+                    node = new JsonValueOfElement(element, options);
                     break;
             }
 
             return node;
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.CreateTrueSchema();
     }
 }

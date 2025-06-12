@@ -59,8 +59,6 @@ namespace System.Net.Mail.Tests
             yield return new object[] { "!def!xyz%abc@example.com" };
             yield return new object[] { "_somename@example.com" };
             yield return new object[] { "\"te\\@st\"@example.com" };
-            yield return new object[] { "a..b_b@example.com" };
-            yield return new object[] { "a..b_b...@example.com" };
             yield return new object[] { "\"test display\" test@(comment)[exam\\@ple](comment)" };
             yield return new object[] { "NoSpaceBeforeEmail\"a\"@example.com" };
             yield return new object[] { "NoSpace BeforeEmail\"a\"@example.com" };
@@ -134,6 +132,8 @@ namespace System.Net.Mail.Tests
             yield return new object[] { "\uD800 invalid@unicode.com" }; // D800 is a high surrogate
             yield return new object[] { null };
             yield return new object[] { "" };
+            yield return new object[] { "a..b_b@example.com" };
+            yield return new object[] { "a..b_b...@example.com" };
         }
 
         [Theory]

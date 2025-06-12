@@ -130,8 +130,10 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (suppress_gc_transition_attribute, "Sys
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callers_only_attribute, "System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callconv_attribute, "System.Runtime.InteropServices", "UnmanagedCallConvAttribute")
 
-GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
 GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
+GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self_t, "System.Runtime.InteropServices.Swift", "SwiftSelf`1");
+GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
+GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_indirect_result, "System.Runtime.InteropServices.Swift", "SwiftIndirectResult")
 
 static gboolean type_is_blittable (MonoType *type);
 
@@ -1345,15 +1347,15 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return CEE_LDIND_R8;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype_internal (type->data.klass);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto handle_enum;
 		}
 		return CEE_LDOBJ;
 	case MONO_TYPE_TYPEDBYREF:
 		return CEE_LDOBJ;
 	case MONO_TYPE_GENERICINST:
-		type = m_class_get_byval_arg (type->data.generic_class->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto handle_enum;
 	default:
 		g_error ("unknown type 0x%02x in type_to_ldind", type->type);
@@ -1399,15 +1401,15 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return CEE_STIND_R8;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype_internal (type->data.klass);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto handle_enum;
 		}
 		return CEE_STOBJ;
 	case MONO_TYPE_TYPEDBYREF:
 		return CEE_STOBJ;
 	case MONO_TYPE_GENERICINST:
-		type = m_class_get_byval_arg (type->data.generic_class->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto handle_enum;
 	default:
 		g_error ("unknown type 0x%02x in type_to_stind", type->type);
@@ -1600,7 +1602,7 @@ mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 		return TRUE;
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
-		if (t->data.klass == mono_class_try_get_stringbuilder_class ()) {
+		if (m_type_data_get_klass_unchecked (t) == mono_class_try_get_stringbuilder_class ()) {
 			gboolean need_free;
 			mono_marshal_get_ptr_to_stringbuilder_conv (piinfo, spec, &need_free);
 			return need_free;
@@ -2493,8 +2495,8 @@ handle_enum:
 	case MONO_TYPE_U:
 		return mono_get_int_type ();
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (t->data.klass)) {
-			t = mono_class_enum_basetype_internal (t->data.klass);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (t))) {
+			t = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (t));
 			goto handle_enum;
 		}
 		return t;
@@ -3580,7 +3582,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		 * In AOT mode and embedding scenarios, it is possible that the icall is not registered in the runtime doing the AOT compilation.
 		 * Emit a wrapper that throws a NotSupportedException.
 		 */
-		get_marshal_cb ()->mb_emit_exception (mb, "System", "NotSupportedException", "Method canot be marked with both DllImportAttribute and UnmanagedCallersOnlyAttribute");
+		get_marshal_cb ()->mb_emit_exception (mb, "System", "NotSupportedException", "Method cannot be marked with both DllImportAttribute and UnmanagedCallersOnlyAttribute");
 		goto emit_exception_for_error;
 	} else if (!pinvoke && !piinfo->addr && !aot) {
 		/* if there's no code but the error isn't set, just use a fairly generic exception. */
@@ -3697,11 +3699,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 		if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+			MonoClass *swift_self_t = mono_class_try_get_swift_self_t_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
-			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
-			int swift_error_args = 0, swift_self_args = 0;
+			MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
+			MonoClass *swift_error_ptr = swift_error ? mono_class_create_ptr (m_class_get_this_arg (swift_error)) : NULL;
+			int swift_error_args = 0, swift_self_args = 0, swift_indirect_result_args = 0;
 			for (int i = 0; i < method->signature->param_count; ++i) {
 				MonoClass *param_klass = mono_class_from_mono_type_internal (method->signature->params [i]);
+				MonoGenericClass *param_gklass = mono_class_try_get_generic_class (param_klass);
 				if (param_klass) {
 					if (param_klass == swift_error && !m_type_is_byref (method->signature->params [i])) {
 						swift_error_args = swift_self_args = 0;
@@ -3709,18 +3714,28 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 						break;
 					} else if (param_klass == swift_error || param_klass == swift_error_ptr) {
 						swift_error_args++;
-					} else if (param_klass == swift_self) {
-						swift_self_args++;
-					} else if (!type_is_blittable (method->signature->params [i]) || m_class_is_simd_type (param_klass)) {
+					} else if (param_gklass && (param_gklass->container_class == swift_self_t) && (i != method->signature->param_count - 1)) {
 						swift_error_args = swift_self_args = 0;
+						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "SwiftSelf<T> must be the last argument in the signature.");
+						break;
+					} else if (param_gklass && (param_gklass->container_class == swift_self_t) && m_type_is_byref (method->signature->params [i])) {
+						swift_error_args = swift_self_args = 0;
+						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Expected SwiftSelf<T> struct, got pointer/reference.");
+						break;
+					} else if (param_klass == swift_self || (param_gklass && (param_gklass->container_class == swift_self_t))) {
+						swift_self_args++;
+					} else if (param_klass == swift_indirect_result) {
+						swift_indirect_result_args++;
+					} else if (!type_is_blittable (method->signature->params [i]) || m_class_is_simd_type (param_klass)) {
+						swift_error_args = swift_self_args = swift_indirect_result_args = 0;
 						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Passing non-blittable types to a P/Invoke with the Swift calling convention is unsupported.");
 						break;
 					}
 				}
 			}
 
-			if (swift_self_args > 1 || swift_error_args > 1) {
-				mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Method signature contains multiple SwiftSelf or SwiftError arguments.");
+			if (swift_self_args > 1 || swift_error_args > 1 || swift_indirect_result_args > 1) {
+				mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Method signature contains multiple SwiftSelf, SwiftError, SwiftIndirectResult arguments.");
 			}
 
 			if (!is_ok (emitted_error)) {
@@ -3948,7 +3963,7 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	    return res;
 
 	char *name = mono_signature_to_name (sig, "wrapper_native_indirect");
-	MonoMethodBuilder *mb = mono_mb_new (caller_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
+	MonoMethodBuilder *mb = mono_mb_new (get_wrapper_target_class (image), name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 	mb->method->save_lmf = 1;
 
 	WrapperInfo *info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT);
@@ -4099,6 +4114,8 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 	int i;
 	EmitMarshalContext m;
 	gboolean marshalling_enabled = FALSE;
+	int *swift_sig_to_csig_mp = NULL;
+	SwiftPhysicalLowering *swift_lowering = NULL;
 
 	g_assert (method != NULL);
 	error_init (error);
@@ -4179,6 +4196,50 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 	csig->hasthis = 0;
 	csig->pinvoke = 1;
 
+	if (invoke)
+		mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
+	else
+		mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (method, csig);
+
+	if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+		MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
+		swift_lowering = g_newa (SwiftPhysicalLowering, sig->param_count);
+		swift_sig_to_csig_mp = g_newa (int, sig->param_count);
+		GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), csig->param_count);
+		int new_param_count = 0;
+
+
+		for (i = 0; i < csig->param_count; i++) {
+			swift_lowering [i] = (SwiftPhysicalLowering){0};
+			swift_sig_to_csig_mp [i] = new_param_count;
+			MonoType *ptype = csig->params [i];
+			MonoClass *klass = mono_class_from_mono_type_internal (ptype);
+
+			if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error || klass == swift_indirect_result)) {
+				SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
+				swift_lowering [i] = lowered_swift_struct;
+				if (!lowered_swift_struct.by_reference) {
+					for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; idx_lowered++) {
+						g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
+						new_param_count++;
+					}
+				} else {
+					ptype = mono_class_get_byref_type (klass);
+					g_array_append_val (new_params, ptype);
+					new_param_count++;
+				}
+			} else {
+				g_array_append_val (new_params, ptype);
+				new_param_count++;
+			}
+		}
+
+		csig = mono_metadata_signature_dup_new_params (NULL, m_method_get_mem_manager (method), csig, new_param_count, (MonoType**)new_params->data);
+		g_array_free (new_params, TRUE);
+	}
+
 	if (!marshalling_enabled)
 		csig->marshalling_disabled = 1;
 
@@ -4190,11 +4251,8 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 	m.csig = csig;
 	m.image = get_method_image (method);
 	m.runtime_marshalling_enabled = marshalling_enabled;
-
-	if (invoke)
-		mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
-	else
-		mono_marshal_set_callconv_from_unmanaged_callers_only_attribute(method, csig);
+	m.swift_lowering = swift_lowering;
+	m.swift_sig_to_csig_mp = swift_sig_to_csig_mp;
 
 	/* The attribute is only available in Net 2.0 */
 	if (delegate_klass && mono_class_try_get_unmanaged_function_pointer_attribute_class ()) {
@@ -4270,10 +4328,10 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 			info->d.native_to_managed.klass = delegate_klass;
 
 			res = mono_mb_create_and_cache_full (cache, method,
-												 mb, csig, sig->param_count + 16,
+												 mb, csig, csig->param_count + 16,
 												 info, NULL);
 		} else {
-			res = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
+			res = mono_mb_create (mb, csig, csig->param_count + 16, NULL);
 		}
 	}
 
@@ -5183,6 +5241,62 @@ mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
 	return res;
 }
 
+static void process_unsafe_accessor_type (MonoUnsafeAccessorKind kind, MonoMethod *accessor_method, MonoMethodSignature *tgt_sig)
+{
+	g_assert (accessor_method);
+	g_assert (tgt_sig);
+
+	char *type_name;
+	MonoAssemblyLoadContext *alc = mono_alc_get_ambient ();
+	MonoImage *image = m_class_get_image (accessor_method->klass);
+	MonoType *type;
+
+	// Iterate through all parameters. Zero is the return value, the arguments are 1-based.
+	for (guint16 seq = 0; seq <= tgt_sig->param_count; ++seq) {
+
+		ERROR_DECL (error);
+
+		type_name = NULL;
+		if (!mono_method_param_get_unsafe_accessor_type_attr_data (accessor_method, seq, &type_name, error))
+			continue;
+		mono_error_assert_ok (error);
+		g_assert (type_name);
+
+		type = mono_reflection_type_from_name_checked (type_name, alc, image, error);
+		if (!type)
+			continue;
+		mono_error_assert_ok (error);
+
+		// Future versions of the runtime may support
+		// UnsafeAccessorTypeAttribute on value types.
+		g_assert (type->type != MONO_TYPE_VALUETYPE);
+
+		if (seq == 0 && m_type_is_byref (tgt_sig->ret)) {
+			// [FIXME] UnsafeAccessorType is not supported on return that are byref, type safety issue.
+			return;
+		}
+
+		// Check the target signature for attribute, byref and cmods state. This information
+		// is not contained with in the type name itself, so we may need to check the target
+		// signature and retain it on the new type.
+		MonoType *current_param = (seq == 0) ? tgt_sig->ret : tgt_sig->params [seq - 1];
+		if (current_param->attrs != 0 || m_type_is_byref(current_param) || current_param->has_cmods) {
+			type = mono_metadata_type_dup_with_cmods(image, type, current_param);
+			type->byref__ = current_param->byref__;
+			type->attrs = current_param->attrs;
+		}
+
+		// Update the target signature with the new type
+		if (seq == 0) {
+			// The return value
+			tgt_sig->ret = type;
+		} else {
+			// The arguments
+			tgt_sig->params [seq - 1] = type;
+		}
+	}
+}
+
 /*
  * mono_marshal_get_unsafe_accessor_wrapper:
  *
@@ -5306,7 +5420,7 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 			return res;
 	}
 	// printf ("Cache miss\n");
-	
+
 	mb = mono_mb_new (accessor_method->klass, accessor_method->name, MONO_WRAPPER_OTHER);
 	if (generic_wrapper) {
 		// If the accessor method was generic, make the wrapper generic, too.
@@ -5330,6 +5444,9 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 		sig = mono_metadata_signature_dup_full (get_method_image (accessor_method), mono_method_signature_internal (accessor_method));
 	}
 	sig->pinvoke = 0;
+
+	// Parse the signature and check for instances of UnsafeAccessorTypeAttribute.
+	process_unsafe_accessor_type (kind, accessor_method, sig);
 
 	get_marshal_cb ()->mb_skip_visibility (mb);
 
@@ -5925,7 +6042,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 			// Limit the max size of array instance to 1MiB
 			const int struct_max_size = 1024 * 1024;
 			guint32 initial_size = size;
-			size *= m_class_inlinearray_value (klass);
+			size *= mono_class_get_inlinearray_value (klass);
 			if(size == 0 || size > struct_max_size) {
 				if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback) {
 					if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct size out of bounds, abnormally large."))
@@ -6267,7 +6384,7 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE: {
 
-		MonoClass *klass = t->data.klass;
+		MonoClass *klass = m_type_data_get_klass_unchecked (t);
 
 		if (mono_class_is_auto_layout (klass))
 			break;
@@ -6291,7 +6408,8 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 	}
 	case MONO_TYPE_SZARRAY: {
 		//TODO: Implement structs and in-params for all value types
-		MonoClass *klass = t->data.klass;
+		// FIXME: This appears to be incorrect, t->data->klass is initialized to the eklass. -kg
+		MonoClass *klass = m_type_data_get_klass_unchecked (t);
 		MonoClass *eklass = m_class_get_element_class (klass);
 		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
 
@@ -6299,6 +6417,7 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 		if ((param_attrs & PARAM_ATTRIBUTE_IN) && eklass != mono_get_char_class ())
 			break;
 
+		// FIXME: SZARRAY rank is always 1; this is either never true or is trying to check for T[][,]. I suspect this is just a dead if. -kg
 		if (m_class_get_rank (klass) > 1)
 			break;
 
@@ -6354,7 +6473,7 @@ mono_marshal_free_asany_impl (MonoObjectHandle o, gpointer ptr, MonoMarshalNativ
 		break;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE: {
-		MonoClass *klass = t->data.klass;
+		MonoClass *klass = m_type_data_get_klass_unchecked (t);
 
 		if (m_class_is_valuetype (klass) && (mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass) || m_class_is_enumtype (klass)))
 			break;
@@ -6379,7 +6498,8 @@ mono_marshal_free_asany_impl (MonoObjectHandle o, gpointer ptr, MonoMarshalNativ
 		break;
 	}
 	case MONO_TYPE_SZARRAY: {
-		MonoClass *klass = t->data.klass;
+		// FIXME: t->data->klass should already be the eklass. -kg
+		MonoClass *klass = m_type_data_get_klass_unchecked (t);
 		MonoClass *eklass = m_class_get_element_class (klass);
 		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
 
@@ -6388,6 +6508,8 @@ mono_marshal_free_asany_impl (MonoObjectHandle o, gpointer ptr, MonoMarshalNativ
 
 		mono_unichar2 *utf16_array = g_utf8_to_utf16 ((const char *)ptr, arr->max_length, NULL, NULL, NULL);
 		g_free (ptr);
+		// g_utf8_to_utf16 can fail and return NULL. In that case we can't do anything except either continue or crash.
+		g_assert (utf16_array);
 		memcpy (arr->vector, utf16_array, arr->max_length * sizeof (mono_unichar2));
 		g_free (utf16_array);
 		break;
@@ -6693,7 +6815,7 @@ typedef enum {
 	SWIFT_DOUBLE,
 } SwiftPhysicalLoweringKind;
 
-static int get_swift_lowering_alignment (SwiftPhysicalLoweringKind kind) 
+static int get_swift_lowering_alignment (SwiftPhysicalLoweringKind kind)
 {
 	switch (kind) {
 	case SWIFT_INT64:
@@ -6706,19 +6828,19 @@ static int get_swift_lowering_alignment (SwiftPhysicalLoweringKind kind)
 	}
 }
 
-static void set_lowering_range(guint8* lowered_bytes, guint32 offset, guint32 size, SwiftPhysicalLoweringKind kind) 
+static void set_lowering_range(guint8* lowered_bytes, guint32 offset, guint32 size, SwiftPhysicalLoweringKind kind)
 {
 	bool force_opaque = false;
-	
+
 	if (offset != ALIGN_TO(offset, get_swift_lowering_alignment(kind))) {
 		// If the start of the range is not aligned, we need to force the entire range to be opaque.
 		force_opaque = true;
 	}
-	
+
         // Check if any of the range is non-empty.
         // If so, we need to force this range to be opaque
         // and extend the range to the existing tag's range and mark as opaque in addition to the requested range.
-	
+
 	for (guint32 i = 0; i < size; ++i) {
 		SwiftPhysicalLoweringKind current = (SwiftPhysicalLoweringKind)lowered_bytes[offset + i];
 		if (current != SWIFT_EMPTY && current != kind) {
@@ -6738,13 +6860,27 @@ static void set_lowering_range(guint8* lowered_bytes, guint32 offset, guint32 si
 
 static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoType* type, guint32 offset);
 
-static void record_inlinearray_struct_physical_lowering (guint8* lowered_bytes, MonoClass* klass, guint32 offset) 
+static void record_inlinearray_struct_physical_lowering (guint8* lowered_bytes, MonoClass* klass, guint32 offset)
 {
-	// Get the first field and record its physical lowering N times
-	MonoClassField* field = mono_class_get_fields_internal (klass, NULL);
+	int align;
+	int type_offset = MONO_ABI_SIZEOF (MonoObject);
+	gpointer iter = NULL;
+	MonoClassField* field;
+
+	// Get the first instance field and record its physical lowering N times
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		if (mono_field_is_deleted (field))
+			continue;
+		break;
+	}
+
+	g_assert (field);
+
 	MonoType* fieldType = field->type;
-	for (int i = 0; i < m_class_inlinearray_value(klass); ++i) {
-		record_struct_field_physical_lowering(lowered_bytes, fieldType, offset + m_field_get_offset(field) + i * mono_type_size(fieldType, NULL));
+	for (int i = 0; i < mono_class_get_inlinearray_value (klass); ++i) {
+		record_struct_field_physical_lowering(lowered_bytes, fieldType, offset + m_field_get_offset(field) + i * mono_type_size(fieldType, &align) - type_offset);
 	}
 }
 
@@ -6769,7 +6905,7 @@ static void record_struct_physical_lowering (guint8* lowered_bytes, MonoClass* k
 	}
 }
 
-static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoType* type, guint32 offset) 
+static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoType* type, guint32 offset)
 {
 	int align;
 
@@ -6792,7 +6928,7 @@ static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoTy
 		else if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR
 			|| type->type == MONO_TYPE_I || type->type == MONO_TYPE_U) {
 			kind = SWIFT_INT64;
-		} 
+		}
 #endif
 		else if (type->type == MONO_TYPE_R4) {
 			kind = SWIFT_FLOAT;
@@ -6841,7 +6977,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	}
 
 	guint8 lowered_bytes[TARGET_SIZEOF_VOID_P * 4] = { 0 };
-	
+
 	// Loop through all fields and get the physical lowering for each field
 	record_struct_physical_lowering(lowered_bytes, klass, 0);
 
@@ -6871,7 +7007,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 			|| (i == ALIGN_TO(i, 8) && (current == SWIFT_DOUBLE || current == SWIFT_INT64))
 			// We've changed interval types
 			|| current != lowered_bytes[i - 1];
-		
+
 		if (start_new_interval) {
 			struct _SwiftInterval interval = { i, 1, current };
 			g_array_append_val(intervals, interval);
@@ -6901,7 +7037,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	MonoType *lowered_types[4];
 	guint32 offsets[4];
 	guint32 num_lowered_types = 0;
-	
+
 	for (int i = 0; i < intervals->len; ++i) {
 		if (num_lowered_types == 4) {
 			// We can't handle more than 4 fields
@@ -6911,7 +7047,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 		}
 
 		struct _SwiftInterval interval = g_array_index(intervals, struct _SwiftInterval, i);
-		
+
 		offsets[num_lowered_types] = interval.start;
 
 		switch (interval.kind) {

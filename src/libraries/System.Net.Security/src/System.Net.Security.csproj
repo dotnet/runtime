@@ -47,7 +47,6 @@
     <Compile Include="System\Net\Security\NegotiateAuthenticationStatusCode.cs" />
     <Compile Include="System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="System\Net\Security\NetSecurityTelemetry.cs" />
-    <Compile Include="System\Net\Security\ReadWriteAdapter.cs" />
     <Compile Include="System\Net\Security\ProtectionLevel.cs" />
     <Compile Include="System\Net\Security\SslApplicationProtocol.cs" />
     <Compile Include="System\Net\Security\SslAuthenticationOptions.cs" />
@@ -98,9 +97,9 @@
     </Compile>
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
              Link="Common\System\Net\ExceptionCheck.cs" />
-    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
-             Link="Common\System\Net\SecurityProtocol.cs" />
     <!-- Common -->
+    <Compile Include="$(CommonPath)\System\Net\ReadWriteAdapter.cs"
+             Link="Common\System\Net\ReadWriteAdapter.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs"
@@ -295,7 +294,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseManagedNtlm)' != 'true'">
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
     <Compile Include="System\Net\NegotiateAuthenticationPal.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"
              Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs" />
@@ -456,6 +454,7 @@
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
+    <Reference Include="System.Diagnostics.DiagnosticSource" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />

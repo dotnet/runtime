@@ -70,9 +70,7 @@ namespace System.Linq
             }
 
             return
-#if !OPTIMIZE_FOR_SIZE
-                source is Iterator<TSource> iterator ? iterator.TryGetFirst(out found) :
-#endif
+                !IsSizeOptimized && source is Iterator<TSource> iterator ? iterator.TryGetFirst(out found) :
                 TryGetFirstNonIterator(source, out found);
         }
 
@@ -88,13 +86,11 @@ namespace System.Linq
             }
             else
             {
-                using (IEnumerator<TSource> e = source.GetEnumerator())
+                using IEnumerator<TSource> e = source.GetEnumerator();
+                if (e.MoveNext())
                 {
-                    if (e.MoveNext())
-                    {
-                        found = true;
-                        return e.Current;
-                    }
+                    found = true;
+                    return e.Current;
                 }
             }
 
@@ -114,12 +110,26 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            foreach (TSource element in source)
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
             {
-                if (predicate(element))
+                foreach (TSource element in span)
                 {
-                    found = true;
-                    return element;
+                    if (predicate(element))
+                    {
+                        found = true;
+                        return element;
+                    }
+                }
+            }
+            else
+            {
+                foreach (TSource element in source)
+                {
+                    if (predicate(element))
+                    {
+                        found = true;
+                        return element;
+                    }
                 }
             }
 

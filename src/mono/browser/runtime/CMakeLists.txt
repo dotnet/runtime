@@ -26,12 +26,11 @@ target_link_libraries(dotnet.native
     ${MONO_ARTIFACTS_DIR}/libmono-icall-table.a
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-eh-js.a
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-${CONFIGURATION_INTERPSIMDTABLES_LIB}.a
-    ${MONO_ARTIFACTS_DIR}/libmono-profiler-aot.a
-    ${MONO_ARTIFACTS_DIR}/libmono-profiler-browser.a
     ${NATIVE_BIN_DIR}/wasm-bundled-timezones.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
     ${NATIVE_BIN_DIR}/libSystem.Globalization.Native.a
-    ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a)
+    ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a
+    ${NATIVE_BIN_DIR}/libz.a)
 
 set_target_properties(dotnet.native PROPERTIES
     LINK_DEPENDS "${NATIVE_BIN_DIR}/src/emcc-default.rsp;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.pre.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.lib.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.extpost.js;"
@@ -44,7 +43,7 @@ set(ignoreMeEmsdkPath "${EMSDK_PATH}")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_custom_command(TARGET dotnet.native
-                        POST_BUILD COMMAND ${EMSDK_PATH}/bin/wasm-opt --enable-exception-handling ${CONFIGURATION_WASM_OPT_FLAGS} --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.native.wasm -o ${NATIVE_BIN_DIR}/dotnet.native.wasm
+                        POST_BUILD COMMAND ${EMSDK_PATH}/bin/wasm-opt --enable-exception-handling --enable-simd --enable-bulk-memory ${CONFIGURATION_WASM_OPT_FLAGS} --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.native.wasm -o ${NATIVE_BIN_DIR}/dotnet.native.wasm
                         COMMENT "Stripping debug symbols from dotnet.native.wasm using wasm-opt")
 endif()
 

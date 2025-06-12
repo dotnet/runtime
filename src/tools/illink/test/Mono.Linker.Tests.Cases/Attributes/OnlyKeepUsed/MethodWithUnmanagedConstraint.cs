@@ -1,3 +1,4 @@
+using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
@@ -5,6 +6,11 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 {
 	[SetupCSharpCompilerToUse ("csc")]
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
+
+	// Necessary to allow trimming the attribute instance from types in CoreLib.
+	[SetupLinkerTrimMode ("link")]
+	// When we allow trimming CoreLib, some well-known types expected by ILVerify are removed.
+	[SkipILVerify]
 	public class MethodWithUnmanagedConstraint
 	{
 		public static void Main ()
@@ -19,7 +25,10 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		[Kept]
-		static void Method<T> () where T : unmanaged
+		static void Method<
+			[KeptGenericParamAttributes (GenericParameterAttributes.NotNullableValueTypeConstraint | GenericParameterAttributes.DefaultConstructorConstraint)]
+			T
+		> () where T : unmanaged
 		{
 		}
 	}

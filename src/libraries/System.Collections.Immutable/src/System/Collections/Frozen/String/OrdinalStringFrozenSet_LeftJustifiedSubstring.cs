@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace System.Collections.Frozen
 {
-    internal sealed class OrdinalStringFrozenSet_LeftJustifiedSubstring : OrdinalStringFrozenSet
+    internal sealed partial class OrdinalStringFrozenSet_LeftJustifiedSubstring : OrdinalStringFrozenSet
     {
         internal OrdinalStringFrozenSet_LeftJustifiedSubstring(
             string[] entries,
@@ -18,12 +18,10 @@ namespace System.Collections.Frozen
         {
         }
 
-        // This override is necessary to force the jit to emit the code in such a way that it
-        // avoids virtual dispatch overhead when calling the Equals/GetHashCode methods. Don't
-        // remove this, or you'll tank performance.
+        // See comment in OrdinalStringFrozenSet for why these overrides exist. Do not remove.
         private protected override int FindItemIndex(string item) => base.FindItemIndex(item);
 
-        private protected override bool Equals(string? x, string? y) => string.Equals(x, y);
         private protected override int GetHashCode(string s) => Hashing.GetHashCodeOrdinal(s.AsSpan(HashIndex, HashCount));
+        private protected override int GetHashCode(ReadOnlySpan<char> s) => Hashing.GetHashCodeOrdinal(s.Slice(HashIndex, HashCount));
     }
 }

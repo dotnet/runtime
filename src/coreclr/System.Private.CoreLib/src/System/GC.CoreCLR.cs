@@ -2,19 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================
-**
-**
-**
 ** Purpose: Exposes features of the Garbage Collector through
 ** the class libraries.  This is a class which cannot be
 ** instantiated.
-**
-**
 ===========================================================*/
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
@@ -103,14 +99,14 @@ namespace System
             GC_ALLOC_PINNED_OBJECT_HEAP = 64,
         };
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Array AllocateNewArray(IntPtr typeHandle, int length, GC_ALLOC_FLAGS flags);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AllocateNewArray")]
+        private static partial void AllocateNewArray(IntPtr typeHandlePtr, int length, GC_ALLOC_FLAGS flags, ObjectHandleOnStack ret);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
         private static partial long GetTotalMemory();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_Collect")]
-        private static partial void _Collect(int generation, int mode);
+        private static partial void _Collect(int generation, int mode, [MarshalAs(UnmanagedType.U1)] bool lowMemoryPressure);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int GetMaxGeneration();
@@ -155,12 +151,16 @@ namespace System
             _RemoveMemoryPressure((ulong)bytesAllocated);
         }
 
-
         // Returns the generation that obj is currently in.
         //
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetGeneration(object obj);
+        public static int GetGeneration(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+            return GetGenerationInternal(obj);
+        }
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern int GetGenerationInternal(object obj);
 
         // Forces a collection of all generations from 0 through Generation.
         //
@@ -174,7 +174,7 @@ namespace System
         public static void Collect()
         {
             // -1 says to GC all generations.
-            _Collect(-1, (int)InternalGCCollectionMode.Blocking);
+            _Collect(-1, (int)InternalGCCollectionMode.Blocking, lowMemoryPressure: false);
         }
 
         public static void Collect(int generation, GCCollectionMode mode)
@@ -190,13 +190,17 @@ namespace System
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting)
         {
+            Collect(generation, mode, blocking, compacting, lowMemoryPressure: false);
+        }
+
+        internal static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting, bool lowMemoryPressure)
+        {
             ArgumentOutOfRangeException.ThrowIfNegative(generation);
 
             if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Aggressive))
             {
                 throw new ArgumentOutOfRangeException(nameof(mode), SR.ArgumentOutOfRange_Enum);
             }
-
 
             int iInternalModes = 0;
 
@@ -222,7 +226,9 @@ namespace System
             }
 
             if (compacting)
+            {
                 iInternalModes |= (int)InternalGCCollectionMode.Compacting;
+            }
 
             if (blocking)
             {
@@ -233,7 +239,7 @@ namespace System
                 iInternalModes |= (int)InternalGCCollectionMode.NonBlocking;
             }
 
-            _Collect(generation, iInternalModes);
+            _Collect(generation, (int)iInternalModes, lowMemoryPressure);
         }
 
         public static int CollectionCount(int generation)
@@ -291,10 +297,7 @@ namespace System
             object? obj = GCHandle.InternalGet(wo.WeakHandle);
             KeepAlive(wo);
 
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(wo));
-            }
+            ArgumentNullException.ThrowIfNull(obj, nameof(wo));
 
             return GetGeneration(obj);
         }
@@ -302,6 +305,36 @@ namespace System
         // Returns the maximum GC generation.  Currently assumes only 1 heap.
         //
         public static int MaxGeneration => GetMaxGeneration();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetNextFinalizableObject")]
+        private static unsafe partial void* GetNextFinalizeableObject(ObjectHandleOnStack target);
+
+        private static unsafe uint RunFinalizers()
+        {
+            Thread currentThread = Thread.CurrentThread;
+
+            uint count = 0;
+            while (true)
+            {
+                object? target = null;
+                void* fptr = GetNextFinalizeableObject(ObjectHandleOnStack.Create(ref target));
+                if (fptr == null)
+                    break;
+
+                try
+                {
+                    ((delegate*<object, void>)fptr)(target!);
+                }
+                catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
+                {
+                    // the handler returned "true" means the exception is now "handled" and we should continue.
+                }
+
+                currentThread.ResetFinalizerThread();
+                count++;
+            }
+            return count;
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForPendingFinalizers")]
         private static partial void _WaitForPendingFinalizers();
@@ -315,13 +348,17 @@ namespace System
         // Indicates that the system should not call the Finalize() method on
         // an object that would normally require this call.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _SuppressFinalize(object o);
+        private static extern void SuppressFinalizeInternal(object o);
 
-        public static void SuppressFinalize(object obj)
+        public static unsafe void SuppressFinalize(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            _SuppressFinalize(obj);
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+            if (pMT->HasFinalizer)
+            {
+                SuppressFinalizeInternal(obj);
+            }
         }
 
         // Indicates that the system should call the Finalize() method on an object
@@ -568,12 +605,14 @@ namespace System
                     return true;
                 }
 
-                // We need to take a snapshot of s_notifications.Count, so that in the case that s_notifications[i].Notification() registers new notifications,
-                // we neither get rid of them nor iterate over them
+                // We need to take a snapshot of s_notifications.Count, so that in the case that
+                // s_notifications[i].Notification() registers new notifications, we neither get rid
+                // of them nor iterate over them.
                 int count = s_notifications.Count;
 
-                // If there is no existing notifications, we won't be iterating over any and we won't be adding any new one. Also, there wasn't any added since
-                // we last invoked this method so it's safe to assume we can reset s_previousMemoryLoad.
+                // If there is no existing notifications, we won't be iterating over any and we won't
+                // be adding any new one. Also, there wasn't any added since we last invoked this
+                // method so it's safe to assume we can reset s_previousMemoryLoad.
                 if (count == 0)
                 {
                     s_previousMemoryLoad = float.MaxValue;
@@ -641,7 +680,7 @@ namespace System
             public bool scheduled;
             public bool abandoned;
 
-            public GCHandle action;
+            public GCHandle<Action> action;
         }
 
         internal enum EnableNoGCRegionCallbackStatus
@@ -677,7 +716,7 @@ namespace System
             try
             {
                 pWorkItem = (NoGCRegionCallbackFinalizerWorkItem*)NativeMemory.AllocZeroed((nuint)sizeof(NoGCRegionCallbackFinalizerWorkItem));
-                pWorkItem->action = GCHandle.Alloc(callback);
+                pWorkItem->action = new GCHandle<Action>(callback);
                 pWorkItem->callback = &Callback;
 
                 EnableNoGCRegionCallbackStatus status = (EnableNoGCRegionCallbackStatus)_EnableNoGCRegionCallback(pWorkItem, totalSize);
@@ -707,14 +746,13 @@ namespace System
             {
                 Debug.Assert(pWorkItem->scheduled);
                 if (!pWorkItem->abandoned)
-                    ((Action)(pWorkItem->action.Target!))();
+                    pWorkItem->action.Target();
                 Free(pWorkItem);
             }
 
             static void Free(NoGCRegionCallbackFinalizerWorkItem* pWorkItem)
             {
-                if (pWorkItem->action.IsAllocated)
-                    pWorkItem->action.Free();
+                pWorkItem->action.Dispose();
                 NativeMemory.Free(pWorkItem);
             }
         }
@@ -769,22 +807,29 @@ namespace System
                 // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
 #if !DEBUG
                 // small arrays are allocated using `new[]` as that is generally faster.
-#pragma warning disable 8500 // sizeof of managed types
                 if (length < 2048 / sizeof(T))
-#pragma warning restore 8500
                 {
                     return new T[length];
                 }
-
 #endif
             }
 
-            // Runtime overrides GC_ALLOC_ZEROING_OPTIONAL if the type contains references, so we don't need to worry about that.
-            GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
-            if (pinned)
-                flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
+            return AllocateNewArrayWorker(length, pinned);
 
-            return Unsafe.As<T[]>(AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags));
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static T[] AllocateNewArrayWorker(int length, bool pinned)
+            {
+                // Runtime overrides GC_ALLOC_ZEROING_OPTIONAL if the type contains references, so we don't need to worry about that.
+                GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
+                if (pinned)
+                {
+                    flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
+                }
+
+                T[]? result = null;
+                AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags, ObjectHandleOnStack.Create(ref result));
+                return result!;
+            }
         }
 
         /// <summary>
@@ -802,7 +847,9 @@ namespace System
                 flags = GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
             }
 
-            return Unsafe.As<T[]>(AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags));
+            T[]? result = null;
+            AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags, ObjectHandleOnStack.Create(ref result));
+            return result!;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -871,9 +918,7 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-#pragma warning disable CS8500 // takes address of managed type
             _EnumerateConfigurationValues(&context, &ConfigCallback);
-#pragma warning restore CS8500
             return context.Configurations!;
         }
 

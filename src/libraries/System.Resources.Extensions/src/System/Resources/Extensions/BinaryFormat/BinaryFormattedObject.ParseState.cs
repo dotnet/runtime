@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 
 namespace System.Resources.Extensions.BinaryFormat;
 
@@ -23,7 +23,7 @@ internal sealed partial class BinaryFormattedObject
         }
 
         public BinaryReader Reader { get; }
-        public IReadOnlyDictionary<int, SerializationRecord> RecordMap => _format.RecordMap;
+        public IReadOnlyDictionary<SerializationRecordId, SerializationRecord> RecordMap => _format.RecordMap;
         public Options Options => _format._options;
         public ITypeResolver TypeResolver => _format.TypeResolver;
     }

@@ -366,18 +366,6 @@ IErrorInfo *CLRException::GetErrorInfo()
     // return the IErrorInfo we got...
     return pErrorInfo;
 }
-#else   // FEATURE_COMINTEROP
-IErrorInfo *CLRException::GetErrorInfo()
-{
-    LIMITED_METHOD_CONTRACT;
-    return NULL;
-}
-HRESULT CLRException::SetErrorInfo()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return S_OK;
- }
 #endif  // FEATURE_COMINTEROP
 
 void CLRException::GetMessage(SString &result)
@@ -660,7 +648,6 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
         GCPROTECT_BEGIN (throwable);
         EX_TRY
         {
-            SCAN_IGNORE_FAULT;
             if (throwable != NULL  && !CLRException::IsPreallocatedExceptionObject(throwable))
             {
                 _ASSERTE(IsException(throwable->GetMethodTable()));
@@ -698,6 +685,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
                 }
                 else
                 {
+#ifdef FEATURE_COMINTEROP
                     SafeComHolder<IErrorInfo> pErrInfo(pException->GetErrorInfo());
 
                     if (pErrInfo != NULL)
@@ -705,6 +693,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
                         GetExceptionForHR(hr, pErrInfo, &oRetVal);
                     }
                     else
+#endif // FEATURE_COMINTEROP
                     {
                         SString message;
                         pException->GetMessage(message);
@@ -854,16 +843,6 @@ void CLRException::HandlerState::SetupCatch(INDEBUG_COMMA(_In_z_ const char * sz
             }
         }
     }
-
-#ifdef FEATURE_EH_FUNCLETS
-    if (!DidCatchCxx() && !g_isNewExceptionHandlingEnabled)
-    {
-        // this must be done after the second pass has run, it does not
-        // reference anything on the stack, so it is safe to run in an
-        // SEH __except clause as well as a C++ catch clause.
-        ExceptionTracker::PopTrackers(this);
-    }
-#endif // FEATURE_EH_FUNCLETS
 }
 
 #ifdef LOGGING
@@ -938,12 +917,14 @@ HRESULT EEException::GetHR()
     return EEException::GetHRFromKind(m_kind);
 }
 
+#ifdef FEATURE_COMINTEROP
 IErrorInfo *EEException::GetErrorInfo()
 {
     LIMITED_METHOD_CONTRACT;
 
     return NULL;
 }
+#endif // FEATURE_COMINTEROP
 
 BOOL EEException::GetThrowableMessage(SString &result)
 {

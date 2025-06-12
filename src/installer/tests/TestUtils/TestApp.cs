@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 
 using Microsoft.NET.HostModel.AppHost;
 
@@ -77,13 +78,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
             builder.Build(this);
         }
 
-        public void CreateAppHost(bool isWindowsGui = false, bool copyResources = true, bool disableCetCompat = false)
-            => CreateAppHost(Binaries.AppHost.FilePath, isWindowsGui, copyResources, disableCetCompat);
+        public void CreateAppHost(bool isWindowsGui = false, bool copyResources = true, bool disableCetCompat = false, HostWriter.DotNetSearchOptions dotNetRootOptions = null, bool? macosCodesign = null)
+            => CreateAppHost(Binaries.AppHost.FilePath, isWindowsGui, copyResources, disableCetCompat, dotNetRootOptions, macosCodesign: macosCodesign);
 
-        public void CreateSingleFileHost(bool isWindowsGui = false, bool copyResources = true, bool disableCetCompat = false)
-            => CreateAppHost(Binaries.SingleFileHost.FilePath, isWindowsGui, copyResources, disableCetCompat);
+        public void CreateSingleFileHost(bool isWindowsGui = false, bool copyResources = true, bool disableCetCompat = false, HostWriter.DotNetSearchOptions dotNetRootOptions = null, bool? macosCodesign = null)
+            => CreateAppHost(Binaries.SingleFileHost.FilePath, isWindowsGui, copyResources, disableCetCompat, dotNetRootOptions, macosCodesign: macosCodesign);
 
-        private void CreateAppHost(string hostSourcePath, bool isWindowsGui, bool copyResources, bool disableCetCompat)
+        private void CreateAppHost(string hostSourcePath, bool isWindowsGui, bool copyResources, bool disableCetCompat, HostWriter.DotNetSearchOptions dotNetRootOptions, bool? macosCodesign)
         {
             // Use the live-built apphost and HostModel to create the apphost to run
             HostWriter.CreateAppHost(
@@ -92,7 +93,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 Path.GetFileName(AppDll),
                 windowsGraphicalUserInterface: isWindowsGui,
                 assemblyToCopyResourcesFrom: copyResources ? AppDll : null,
-                disableCetCompat: disableCetCompat);
+                disableCetCompat: disableCetCompat,
+                dotNetSearchOptions: dotNetRootOptions,
+                enableMacOSCodeSign: macosCodesign ?? RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
         }
 
         public enum MockedComponent
@@ -184,7 +187,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             Directory.CreateDirectory(Location);
             AppDll = Path.Combine(Location, $"{AssemblyName}.dll");
-            AppExe = Path.Combine(Location, Binaries.GetExeFileNameForCurrentPlatform(AssemblyName));
+            AppExe = Path.Combine(Location, Binaries.GetExeName(AssemblyName));
             DepsJson = Path.Combine(Location, $"{AssemblyName}.deps.json");
             RuntimeConfigJson = Path.Combine(Location, $"{AssemblyName}.runtimeconfig.json");
             RuntimeDevConfigJson = Path.Combine(Location, $"{AssemblyName}.runtimeconfig.dev.json");

@@ -6,6 +6,7 @@
  */
 
 using System;
+using Xunit;
 
 public class PressureOverflow {
 
@@ -74,7 +75,8 @@ public class PressureOverflow {
     }
 
 
-    public static int Main() {
+    [Fact]
+    public static int TestEntryPoint() {
 
             PressureOverflow a = new PressureOverflow();
 

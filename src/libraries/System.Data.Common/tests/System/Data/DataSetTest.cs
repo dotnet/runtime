@@ -364,7 +364,7 @@ namespace System.Data.Tests
             Assert.Equal(xml, sw.ToString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void SerializeDataSet()
         {
             // see GetReady() for current culture
@@ -384,7 +384,7 @@ namespace System.Data.Tests
             Assert.Equal(result.Replace("\r\n", "\n"), xml.Replace("\r\n", "\n"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void SerializeDataSet2()
         {
             DataSet quota = new DataSet("Quota");
@@ -417,7 +417,7 @@ namespace System.Data.Tests
             DataSet ds = (DataSet)ser.Deserialize(new StringReader(sw.ToString()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/30154")]
         public void SerializeDataSet3()
         {
@@ -475,7 +475,7 @@ namespace System.Data.Tests
             Assert.Equal(xml, result.Replace("\r\n", "").Replace("\n", ""), ignoreCase: false, ignoreLineEndingDifferences: true, ignoreWhiteSpaceDifferences: true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void DeserializeDataSet()
         {
             string xml = @"<DataSet>
@@ -1355,7 +1355,7 @@ namespace System.Data.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void DeserializeModifiedDataSet()
         {
             // Serialization begins
@@ -1591,7 +1591,10 @@ namespace System.Data.Tests
 #pragma warning restore SYSLIB0038
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static bool RemoteExecutorBinaryFormatter =>
+            RemoteExecutor.IsSupported && PlatformDetection.IsBinaryFormatterSupported;
+
+        [ConditionalFact(nameof(RemoteExecutorBinaryFormatter))]
         public void SerializationFormat_Binary_works_with_appconfig_switch()
         {
             RemoteExecutor.Invoke(RunTest).Dispose();

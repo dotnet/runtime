@@ -935,7 +935,7 @@ namespace System.Text.RegularExpressions
             }
 
             // Assume that everything else might overlap.  In the future if it proved impactful, we could be more accurate here,
-            // at the exense of more computation time.
+            // at the expense of more computation time.
             return true;
 
             static bool KnownDistinctSets(string set1, string set2) =>
@@ -1042,7 +1042,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets whether the specified span contains only ASCII.</summary>
         public static bool IsAscii(ReadOnlySpan<char> s)
         {
-#if NET8_0_OR_GREATER
+#if NET
             return Ascii.IsValid(s);
 #else
             foreach (char c in s)
@@ -1541,9 +1541,9 @@ namespace System.Text.RegularExpressions
         /// <param name="c">The character for which to create the set.</param>
         /// <returns>The create set string.</returns>
         public static string OneToStringClass(char c)
-            => CharsToStringClass(stackalloc char[1] { c });
+            => CharsToStringClass([c]);
 
-        internal static unsafe string CharsToStringClass(ReadOnlySpan<char> chars)
+        internal static string CharsToStringClass(ReadOnlySpan<char> chars)
         {
 #if DEBUG
             // Make sure they're all sorted with no duplicates
@@ -1591,22 +1591,16 @@ namespace System.Text.RegularExpressions
             }
 
             // Get the pointer/length of the span to be able to pass it into string.Create.
-#pragma warning disable CS8500 // takes address of managed type
             ReadOnlySpan<char> tmpChars = chars; // avoid address exposing the span and impacting the other code in the method that uses it
-            return
 #if NET
-                string
-#else
-                StringExtensions
-#endif
-                .Create(SetStartIndex + count, (IntPtr)(&tmpChars), static (span, charsPtr) =>
+            return string.Create(SetStartIndex + count, tmpChars, static (span, chars) =>
             {
                 // Fill in the set string
                 span[FlagsIndex] = (char)0;
                 span[SetLengthIndex] = (char)(span.Length - SetStartIndex);
                 span[CategoryLengthIndex] = (char)0;
                 int i = SetStartIndex;
-                foreach (char c in *(ReadOnlySpan<char>*)charsPtr)
+                foreach (char c in chars)
                 {
                     span[i++] = c;
                     if (c != LastChar)
@@ -1616,8 +1610,31 @@ namespace System.Text.RegularExpressions
                 }
                 Debug.Assert(i == span.Length);
             });
-#pragma warning restore CS8500
+#else
+            unsafe
+            {
+                return StringExtensions.Create(SetStartIndex + count, (IntPtr)(&tmpChars), static (span, charsPtr) =>
+                {
+                    // Fill in the set string
+                    span[FlagsIndex] = (char)0;
+                    span[SetLengthIndex] = (char)(span.Length - SetStartIndex);
+                    span[CategoryLengthIndex] = (char)0;
+                    int i = SetStartIndex;
+                    ReadOnlySpan<char> chars = *(ReadOnlySpan<char>*)charsPtr;
+                    foreach (char c in chars)
+                    {
+                        span[i++] = c;
+                        if (c != LastChar)
+                        {
+                            span[i++] = (char)(c + 1);
+                        }
+                    }
+                    Debug.Assert(i == span.Length);
+                });
+            }
+#endif
         }
+
 
         /// <summary>
         /// Constructs the string representation of the class.

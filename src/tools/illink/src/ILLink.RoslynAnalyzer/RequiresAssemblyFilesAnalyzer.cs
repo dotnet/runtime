@@ -32,7 +32,9 @@ namespace ILLink.RoslynAnalyzer
 
 		static readonly DiagnosticDescriptor s_requiresAssemblyFilesOnStaticCtor = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresAssemblyFilesOnStaticConstructor);
 
-		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (s_locationRule, s_getFilesRule, s_requiresAssemblyFilesRule, s_requiresAssemblyFilesAttributeMismatch, s_requiresAssemblyFilesOnStaticCtor);
+		static readonly DiagnosticDescriptor s_requiresAssemblyFilesOnEntryPoint = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresAssemblyFilesOnEntryPoint);
+
+		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (s_locationRule, s_getFilesRule, s_requiresAssemblyFilesRule, s_requiresAssemblyFilesAttributeMismatch, s_requiresAssemblyFilesOnStaticCtor, s_requiresAssemblyFilesOnEntryPoint);
 
 		private protected override string RequiresAttributeName => RequiresAssemblyFilesAttribute;
 
@@ -42,9 +44,13 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override DiagnosticDescriptor RequiresDiagnosticRule => s_requiresAssemblyFilesRule;
 
+		private protected override DiagnosticId RequiresDiagnosticId => DiagnosticId.RequiresAssemblyFiles;
+
 		private protected override DiagnosticDescriptor RequiresAttributeMismatch => s_requiresAssemblyFilesAttributeMismatch;
 
 		private protected override DiagnosticDescriptor RequiresOnStaticCtor => s_requiresAssemblyFilesOnStaticCtor;
+
+		private protected override DiagnosticDescriptor RequiresOnEntryPoint => s_requiresAssemblyFilesOnEntryPoint;
 
 		internal override bool IsAnalyzerEnabled (AnalyzerOptions options)
 		{
@@ -98,20 +104,18 @@ namespace ILLink.RoslynAnalyzer
 		}
 
 		protected override bool CreateSpecialIncompatibleMembersDiagnostic (
-			IOperation operation,
 			ImmutableArray<ISymbol> dangerousPatterns,
 			ISymbol member,
-			out Diagnostic? diagnostic)
+			in DiagnosticContext diagnosticContext)
 		{
-			diagnostic = null;
 			if (member is IMethodSymbol method) {
 				if (ImmutableArrayOperations.Contains (dangerousPatterns, member, SymbolEqualityComparer.Default)) {
-					diagnostic = Diagnostic.Create (s_getFilesRule, operation.Syntax.GetLocation (), member.GetDisplayName ());
+					diagnosticContext.AddDiagnostic (DiagnosticId.AvoidAssemblyGetFilesInSingleFile, member.GetDisplayName ());
 					return true;
 				}
 				else if (method.AssociatedSymbol is ISymbol associatedSymbol &&
 					ImmutableArrayOperations.Contains (dangerousPatterns, associatedSymbol, SymbolEqualityComparer.Default)) {
-					diagnostic = Diagnostic.Create (s_locationRule, operation.Syntax.GetLocation (), member.GetDisplayName ());
+					diagnosticContext.AddDiagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile, member.GetDisplayName ());
 					// The getters for CodeBase and EscapedCodeBase have RAF attribute on them
 					// so our caller will produce the RAF warning (IL3002) by default. Since we handle these properties specifically
 					// here and produce different warning (IL3000) we don't want the caller to produce IL3002.

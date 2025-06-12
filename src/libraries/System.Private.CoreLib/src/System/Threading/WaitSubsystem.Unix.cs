@@ -340,7 +340,7 @@ namespace System.Threading
         }
 
         public static int Wait(
-            Span<IntPtr> waitHandles,
+            ReadOnlySpan<IntPtr> waitHandles,
             bool waitForAll,
             int timeoutMilliseconds)
         {

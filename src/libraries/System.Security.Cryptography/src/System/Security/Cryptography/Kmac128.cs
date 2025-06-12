@@ -56,6 +56,11 @@ namespace System.Security.Cryptography
             _kmacProvider = new ConcurrentSafeKmac(HashAlgorithmNames.KMAC128, key, customizationString, xof: false);
         }
 
+        private Kmac128(ConcurrentSafeKmac kmacProvider)
+        {
+            _kmacProvider = kmacProvider;
+        }
+
         /// <summary>
         ///   Gets a value that indicates whether the algorithm is supported on the current platform.
         /// </summary>
@@ -163,6 +168,18 @@ namespace System.Security.Cryptography
 
             int written = _kmacProvider.Current(destination);
             Debug.Assert(written == destination.Length);
+        }
+
+        /// <summary>
+        ///   Creates a new instance of <see cref="Kmac128" /> with the existing appended data preserved.
+        /// </summary>
+        /// <returns>A clone of the current instance.</returns>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public Kmac128 Clone()
+        {
+            CheckDisposed();
+            return new Kmac128(_kmacProvider.Clone());
         }
 
         /// <summary>

@@ -477,7 +477,7 @@ namespace System.Net
                                     {
                                         byte[] certEncoded = new byte[pClientCertInfo->CertEncodedSize];
                                         Marshal.Copy((IntPtr)pClientCertInfo->pCertEncoded, certEncoded, 0, certEncoded.Length);
-                                        ClientCertificate = new X509Certificate2(certEncoded);
+                                        ClientCertificate = X509CertificateLoader.LoadCertificate(certEncoded);
                                     }
                                     catch (CryptographicException exception)
                                     {

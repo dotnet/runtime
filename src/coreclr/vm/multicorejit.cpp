@@ -20,6 +20,7 @@
 #include "array.h"
 #include "fstream.h"
 #include "hash.h"
+#include "minipal/time.h"
 
 #include "appdomain.hpp"
 #include "qcall.h"
@@ -99,7 +100,7 @@ void _MulticoreJitTrace(const char * format, ...)
 
     if (s_startTick == 0)
     {
-        s_startTick = GetTickCount();
+        s_startTick = (unsigned)minipal_lowres_ticks();
     }
 
     va_list args;
@@ -108,7 +109,7 @@ void _MulticoreJitTrace(const char * format, ...)
 #ifdef LOGGING
     LogSpew2      (LF2_MULTICOREJIT, LL_INFO100, "Mcj ");
     LogSpew2Valist(LF2_MULTICOREJIT, LL_INFO100, format, args);
-    LogSpew2      (LF2_MULTICOREJIT, LL_INFO100, ", (time=%d ms)\n", GetTickCount() - s_startTick);
+    LogSpew2      (LF2_MULTICOREJIT, LL_INFO100, ", (time=%d ms)\n", (unsigned)minipal_lowres_ticks() - s_startTick);
 #else
 
     // Following LogSpewValist(DWORD facility, DWORD level, const char *fmt, va_list args)
@@ -118,7 +119,7 @@ void _MulticoreJitTrace(const char * format, ...)
 
     len  =  sprintf_s(buffer,       ARRAY_SIZE(buffer),       "Mcj TID %04x: ", GetCurrentThreadId());
     len += _vsnprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, format, args);
-    len +=  sprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, ", (time=%d ms)\r\n", GetTickCount() - s_startTick);
+    len +=  sprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, ", (time=%d ms)\r\n", (unsigned)minipal_lowres_ticks() - s_startTick);
 
     OutputDebugStringA(buffer);
 #endif
@@ -237,11 +238,11 @@ FileLoadLevel MulticoreJitManager::GetModuleFileLoadLevel(Module * pModule)
 
     if (pModule != NULL)
     {
-        DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
+        Assembly * pAssembly = pModule->GetAssembly();
 
-        if (pDomainAssembly != NULL)
+        if (pAssembly != NULL)
         {
-            level = pDomainAssembly->GetLoadLevel();
+            level = pAssembly->GetLoadLevel();
         }
     }
 
@@ -398,6 +399,12 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
         }
 
         MethodDesc * pMethod = m_JitInfoArray[i].GetMethodDescAndClean();
+        if (pMethod->IsAsyncVariantMethod())
+        {
+            // TODO: (async) consider adding support for async variants in the future
+            skipped++;
+            continue;
+        }
 
         if (m_JitInfoArray[i].IsGenericMethodInfo())
         {
@@ -768,7 +775,7 @@ DWORD MulticoreJitRecorder::EncodeModule(Module * pReferencedModule)
 }
 
 // Enumerate all modules within an assembly, call OnModule virtual method
-HRESULT MulticoreJitModuleEnumerator::HandleAssembly(DomainAssembly * pAssembly)
+HRESULT MulticoreJitModuleEnumerator::HandleAssembly(Assembly * pAssembly)
 {
     STANDARD_VM_CONTRACT;
 
@@ -786,12 +793,12 @@ HRESULT MulticoreJitModuleEnumerator::EnumerateLoadedModules(AppDomain * pDomain
 
     AppDomain::AssemblyIterator appIt = pDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
 
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-    while (appIt.Next(pDomainAssembly.This()) && SUCCEEDED(hr))
+    while (appIt.Next(pAssembly.This()) && SUCCEEDED(hr))
     {
         {
-            hr = HandleAssembly(pDomainAssembly);
+            hr = HandleAssembly(pAssembly);
         }
     }
 

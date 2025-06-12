@@ -14,7 +14,8 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Covariant Return Types](#covariant-return-types)
 - [Function Pointer Type Identity](#function-pointer-type-identity)
 - [Unsigned data conversion with overflow detection](#unsigned-data-conversion-with-overflow-detection)
-- [Ref field support](#ref-fields)
+- [Ref fields support](#ref-fields)
+- [ByRefLike types in generics](#byreflike-generics)
 - [Rules for IL rewriters](#rules-for-il-rewriters)
 - [Checked user-defined operators](#checked-user-defined-operators)
 - [Atomic reads and writes](#atomic-reads-and-writes)
@@ -1026,6 +1027,31 @@ Changes to signatures:
 - Add a bullet point
   - Managed pointers which point at null, the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
 
+## <a name="byreflike-generics"></a> ByRefLike types in generics
+
+ByRefLike types, defined in C# with the `ref struct` syntax, represent types that cannot escape to the managed heap and must remain on the stack. It is possible for these types to be used as generic parameters, but in order to improve utility certain affordances are required.
+
+### II.10.1.7
+An additional IL keyword, `byreflike`, is introduced to indicate use of ByRefLike types is permitted. This expands the set of permissible types used by this parameters, but limits the potential instructions that can be used on instances of this generic parameter type.
+
+### II.23.1.7
+Update the `SpecialConstraintMask` flag value and description, and add a new flag, `AllowByRefLike`.
+
+| Flag | Value | Description |
+| ---  | ----- | ----------- |
+| `SpecialConstraintMask` | `0x3C` | These 4 bits contain one of the following values: |
+| ... | ... | ... |
+| `AllowByRefLike`        | `0x20` | The generic parameter is allowed to be ByRefLike |
+
+### III.2.1
+The following case is added as the **third** cases in the "if _thisType_" sequence.
+
+> If _thisType_ is ByRefLike and _thisType_ does not implement _method_ then; a `NotSupportedException` is thrown at the callsite.
+
+The following is added to the paragraph starting with "This last case can only occur when _method_ was defined on `System.Object`, `System.ValueType`, or `System.Enum`".
+
+> The third case can only occur when _method_ was defined on `System.Object` or is a Default Interface Method.
+
 ## Rules for IL Rewriters
 
 There are apis such as `System.Runtime.CompilerServices.RuntimeHelpers.CreateSpan<T>(...)` which require that the PE file have a particular structure. In particular, that api requires that the associated RVA of a FieldDef which is used to create a span must be naturally aligned over the data type that `CreateSpan` is instantiated over. There are 2 major concerns.
@@ -1037,15 +1063,60 @@ In order to maintain alignment, if the field needs alignment to be preserved, th
 
 ## Checked user-defined operators
 
-Section "I.10.3.1 Unary operators" of ECMA-335 adds *op_CheckedIncrement*, *op_CheckedDecrement*, *op_CheckedUnaryNegation* as the names for methods implementing checked `++`, `--` and `-` unary operators.
+Section "I.10.3.1 Unary operators" is reworded to include the support for instance form operators:
+```diff
+- Unary operators take one operand, perform some operation on it, and return the result. They are
+- represented as static methods on the class that defines the type of their one operand. Table I.4:
+- Unary Operator Names shows the names that are defined.
++ Unary operators take one operand and perform some operation on it. They are exposed on the class
++ that defines the type of their one operand and are represented as either static methods which
++ return the result or as void returning instance methods which take the first operand as the this
++ pointer and which mutates that operand directly. "Table I.4: Unary Operator Names" shows the names
++ that are defined.
+```
 
-Section "I.10.3.2 Binary operators" of ECMA-335 adds *op_CheckedAddition*, *op_CheckedSubtraction*,
-*op_CheckedMultiply*, *op_CheckedDivision* as the names for methods implementing checked `+`, `-`, `*`, and `/` binary operators.
+"Table I.4: Unary Operator Names" is expanded to include a third column, "Method Kind", which indicates whether the operator is represented as an instance or a static method. All existing table entries should have this column set to "static". The following additional entries are added to the table:
+> | Name                            | ISO/IEC 14882:20003 C++ Operator Symbol | Method Kind |
+> | ------------------------------- | --------------------------------------- | ----------- |
+> | *op_CheckedIncrement*           | Similar to `++`<sup>1, 3</sup>          | static      |
+> | *op_CheckedDecrement*           | Similar to `--`<sup>1, 3</sup>          | static      |
+> | *op_CheckedUnaryNegation*       | `-` (unary)<sup>3</sup>                 | static      |
+> | *op_DecrementAssignment*        | Similar to `++`<sup>4</sup>             | instance    |
+> | *op_IncrementAssignment*        | Similar to `--`<sup>4</sup>             | instance    |
+> | *op_CheckedDecrementAssignment* | Similar to `++`<sup>3, 4</sup>          | instance    |
+> | *op_CheckedIncrementAssignment* | Similar to `--`<sup>3, 4</sup>          | instance    |
+>
+> <sup>3</sup> A checked operator is expected to throw an exception when the result of an operation is too large to represent in the destination type. What does it mean to be too large actually depends on the nature of the destination type. Typically the exception thrown is `System.OverflowException`.
+>
+> <sup>4</sup> Unlike <sup>1</sup>, these methods increment or decrement their operand directly and so better match the pure C++ point of view.
 
-Section "I.10.3.3 Conversion operators" of ECMA-335 adds *op_CheckedExplicit* as the name for a method
-implementing checked explicit conversion operator.
+Section "I.10.3.2 Binary operators" is reworded to include the support for instance form operators:
+```diff
+- Binary operators take two operands, perform some operation on them, and return a value. They
+- are represented as static methods on the class that defines the type of one of their two operands.
+- Table I.5: Binary Operator Names shows the names that are defined.
++ Binary operators take two operands and perform some operation on them. They are exposed on the class
++ that defines the type of one of their two operands and are represented as either static methods which
++ return the result or as void returning instance methods which take the first operand as the `this`
++ pointer and which mutates that operand directly. "Table I.5: Binary Operator Names" shows the names
++ that are defined.
+```
 
-A checked user-defined operator is expected to throw an exception when the result of an operation is too large to represent in the destination type. What does it mean to be too large actually depends on the nature of the destination type. Typically the exception thrown is a System.OverflowException.
+"Table I.5: Binary Operator Names" is expanded to include a third column, "Method Kind", which indicates whether the operator is represented as an instance or a static method. All existing table entries should have this column set to "static". Table entries where the name column ends with "Assignment" should have this column set to "static or instance". The following additional entries are added to the table:
+> | Name                                 | ISO/IEC 14882:20003 C++ Operator Symbol | Method Kind        |
+> | ------------------------------------ | --------------------------------------- | ------------------ |
+> | *op_CheckedAddition*                 | + (binary)<sup>1</sup>                  | static             |
+> | *op_CheckedSubtraction*              | - (binary)<sup>1</sup>                  | static             |
+> | *op_CheckedMultiply*                 | \* (binary)<sup>1</sup>                 | static             |
+> | *op_CheckedDivision*                 | /<sup>1</sup>                           | static             |
+> | *op_CheckedAdditionAssignment*       | +=<sup>1</sup>                          | static or instance |
+> | *op_CheckedSubtractionAssignment*    | -=<sup>1</sup>                          | static or instance |
+> | *op_CheckedMultiplicationAssignment* | \*=<sup>1</sup>                         | static or instance |
+> | *op_CheckedDivisionAssignment*       | /=<sup>1</sup>                          | static or instance |
+>
+> <sup>1</sup> A checked operator is expected to throw an exception when the result of an operation is too large to represent in the destination type. What does it mean to be too large actually depends on the nature of the destination type. Typically the exception thrown is `System.OverflowException`.
+
+Section "I.10.3.3 Conversion operators" of ECMA-335 adds *op_CheckedExplicit* as the name for a method implementing checked explicit conversion operator.
 
 ## Atomic reads and writes
 

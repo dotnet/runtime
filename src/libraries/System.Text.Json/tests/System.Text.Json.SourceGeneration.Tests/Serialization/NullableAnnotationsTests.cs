@@ -65,6 +65,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(NullableGenericConstructorParameter<string>))]
         [JsonSerializable(typeof(NotNullGenericConstructorParameter<string>))]
         [JsonSerializable(typeof(NotNullablePropertyWithIgnoreConditions))]
+        [JsonSerializable(typeof(ClassWithNullableInitProperty))]
+        [JsonSerializable(typeof(ClassWithNonNullableInitProperty))]
+        [JsonSerializable(typeof(ClassWithNullableRequiredProperty))]
+        [JsonSerializable(typeof(ClassWithNonNullableRequiredProperty))]
         internal sealed partial class NullableAnnotationsTestsContext_Metadata
             : JsonSerializerContext { }
     }
@@ -128,6 +132,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(NullableGenericConstructorParameter<string>))]
         [JsonSerializable(typeof(NotNullGenericConstructorParameter<string>))]
         [JsonSerializable(typeof(NotNullablePropertyWithIgnoreConditions))]
+        [JsonSerializable(typeof(ClassWithNullableInitProperty))]
+        [JsonSerializable(typeof(ClassWithNonNullableInitProperty))]
+        [JsonSerializable(typeof(ClassWithNullableRequiredProperty))]
+        [JsonSerializable(typeof(ClassWithNonNullableRequiredProperty))]
         internal sealed partial class NullableAnnotationsTestsContext_Default
             : JsonSerializerContext
         { }

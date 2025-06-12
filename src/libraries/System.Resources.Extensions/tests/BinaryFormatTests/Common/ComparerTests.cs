@@ -28,6 +28,6 @@ public abstract class ComparerTests<T> : SerializationTest<T> where T : ISeriali
     public void NullableComparers_Roundtrip(string expectedType, object obj)
     {
         object roundTrip = RoundTrip(obj);
-        roundTrip.GetType().Name.Should().Be(expectedType);
+        Assert.Equal(expectedType, roundTrip.GetType().Name);
     }
 }

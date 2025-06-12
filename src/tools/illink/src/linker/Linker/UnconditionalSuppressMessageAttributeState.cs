@@ -257,7 +257,7 @@ namespace Mono.Linker
 
 		IEnumerable<Suppression> DecodeSuppressions (ICustomAttributeProvider provider)
 		{
-			Debug.Assert (provider is not ModuleDefinition or AssemblyDefinition);
+			Debug.Assert (provider is not (ModuleDefinition or AssemblyDefinition));
 
 			if (!_context.CustomAttributes.HasAny (provider))
 				yield break;

@@ -448,7 +448,7 @@ namespace System.Drawing.Primitives.Tests
         public static IEnumerable<object[]> Equality_MemberData()
         {
             yield return new object[] { Color.AliceBlue, Color.AliceBlue, true };
-            yield return new object[] { Color.AliceBlue, Color.White, false};
+            yield return new object[] { Color.AliceBlue, Color.White, false };
             yield return new object[] { Color.AliceBlue, Color.Black, false };
 
             yield return new object[] { Color.FromArgb(255, 1, 2, 3), Color.FromArgb(255, 1, 2, 3), true };
@@ -466,7 +466,7 @@ namespace System.Drawing.Primitives.Tests
 
             string someNameConstructed = string.Join("", "Some", "Name");
             Assert.NotSame("SomeName", someNameConstructed); // If this fails the above must be changed so this test is correct.
-            yield return new object[] {Color.FromName("SomeName"), Color.FromName(someNameConstructed), true};
+            yield return new object[] { Color.FromName("SomeName"), Color.FromName(someNameConstructed), true };
         }
 
         [Theory]
@@ -888,6 +888,28 @@ namespace System.Drawing.Primitives.Tests
         {
             // The COLORREF value has the following hexadecimal form: 0x00bbggrr.
             return color.B << 16 | color.G << 8 | color.R;
+        }
+
+        [Fact]
+        public void SystemColor_AlternativeColors()
+        {
+            try
+            {
+#pragma warning disable SYSLIB5002 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+                Drawing.SystemColors.UseAlternativeColorSet = true;
+#pragma warning restore SYSLIB5002
+
+                Assert.Equal(0xFF464646, (uint)Drawing.SystemColors.ActiveBorder.ToArgb());
+                Assert.Equal(0xFFF0F0F0, (uint)Drawing.SystemColors.WindowText.ToArgb());
+                Assert.Equal(0xFF202020, (uint)Drawing.SystemColors.ButtonFace.ToArgb());
+                Assert.Equal(0xFF2A80D2, (uint)Drawing.SystemColors.MenuHighlight.ToArgb());
+            }
+            finally
+            {
+#pragma warning disable SYSLIB5002 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+                Drawing.SystemColors.UseAlternativeColorSet = false;
+#pragma warning restore SYSLIB5002
+            }
         }
     }
 }

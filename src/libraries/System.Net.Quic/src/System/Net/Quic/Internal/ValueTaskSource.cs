@@ -55,7 +55,7 @@ internal sealed class ValueTaskSource : IValueTaskSource
     {
         lock (this)
         {
-            // Set up value task either way, so the the caller can get the result even if they do not start the operation.
+            // Set up value task either way, so the caller can get the result even if they do not start the operation.
             valueTask = new ValueTask(this, _valueTaskSource.Version);
 
             // Cancellation might kick off synchronously, re-entering the lock and changing the state to completed.

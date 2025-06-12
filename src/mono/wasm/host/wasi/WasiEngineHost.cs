@@ -35,8 +35,6 @@ internal sealed class WasiEngineHost
 
     private async Task<int> RunAsync()
     {
-        string[] engineArgs = Array.Empty<string>();
-
         string engineBinary = _args.Host switch
         {
             WasmHost.Wasmtime => "wasmtime",
@@ -60,7 +58,13 @@ internal sealed class WasiEngineHost
             args.AddRange(["--dir", "."]);
         };
 
-        args.AddRange(engineArgs);
+        if (_args.ForwardExitCode)
+        {
+            args.AddRange(["--env", "DOTNET_WASI_PRINT_EXIT_CODE=1"]);
+        };
+
+        args.AddRange(_args.CommonConfig.HostArguments);
+
         args.Add("--");
 
         if (_args.IsSingleFileBundle)
@@ -85,11 +89,23 @@ internal sealed class WasiEngineHost
         foreach (string? arg in args)
             psi.ArgumentList.Add(arg!);
 
+        int? exitCodeOverride = null;
         int exitCode = await Utils.TryRunProcess(psi,
                                     _logger,
                                     msg => { if (msg != null) _logger.LogInformation(msg); },
-                                    msg => { if (msg != null) _logger.LogInformation(msg); });
+                                    msg => {
+                                        if (msg != null) {
+                                            if (_args.ForwardExitCode && msg.StartsWith("WASM EXIT "))
+                                            {
+                                                exitCodeOverride = int.Parse(msg.Substring(10));
+                                            }
+                                            else
+                                            {
+                                                _logger.LogInformation(msg);
+                                            }
+                                        }
+                                    });
 
-        return exitCode;
+        return exitCodeOverride ?? exitCode;
     }
 }

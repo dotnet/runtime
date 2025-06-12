@@ -6,11 +6,13 @@
 -->
 
 <Project Sdk="Microsoft.NET.Sdk">
-  
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);SNT_NET8_TESTS</DefineConstants>
+    <!-- SYSLIB5001: Tensor<T> and related APIs in System.Numerics.Tensors are experimental in .NET 9 -->
+    <NoWarn>$(NoWarn);SYSLIB5001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,7 +23,7 @@
     <Compile Include="..\TensorPrimitives.ConvertTo.cs" />
     <Compile Include="..\TensorPrimitives.Generic.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Numerics.Tensors.csproj" SkipUseReferenceAssembly="true">
       <SetTargetFramework>TargetFramework=net8.0</SetTargetFramework>

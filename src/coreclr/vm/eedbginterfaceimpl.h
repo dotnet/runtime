@@ -4,7 +4,7 @@
 
 /*
  *
- * COM+99 EE to Debugger Interface Implementation
+ * EE to Debugger Interface Implementation
  *
  */
 #ifndef _eedbginterfaceimpl_h_
@@ -21,6 +21,7 @@
 #include "eetwain.h"
 #include "jitinterface.h"
 #include "stubmgr.h"
+#include "exinfo.h"
 
 #include "eedbginterface.h"
 #include "debugdebugger.h"

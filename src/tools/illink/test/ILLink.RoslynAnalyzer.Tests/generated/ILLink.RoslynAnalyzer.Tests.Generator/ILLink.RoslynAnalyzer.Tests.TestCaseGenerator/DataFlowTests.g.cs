@@ -20,7 +20,19 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task InterfaceImplementedThroughBaseValidation ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task MethodByRefParameterDataFlow ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task ModifierDataFlow ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

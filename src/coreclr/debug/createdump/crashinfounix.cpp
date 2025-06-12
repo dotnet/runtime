@@ -126,7 +126,7 @@ CrashInfo::EnumerateAndSuspendThreads()
         pid_t tid = static_cast<pid_t>(strtol(entry->d_name, nullptr, 10));
         if (tid != 0)
         {
-            //  Reference: http://stackoverflow.com/questions/18577956/how-to-use-ptrace-to-get-a-consistent-view-of-multiple-threads
+            // Reference: http://stackoverflow.com/questions/18577956/how-to-use-ptrace-to-get-a-consistent-view-of-multiple-threads
             if (ptrace(PTRACE_ATTACH, tid, nullptr, nullptr) != -1)
             {
                 int waitStatus;
@@ -134,7 +134,12 @@ CrashInfo::EnumerateAndSuspendThreads()
             }
             else
             {
-                printf_error("Problem suspending threads: ptrace(ATTACH, %d) FAILED %s (%d)\n", tid, strerror(errno), errno);
+                printf_error("Problem suspending thread: ptrace(ATTACH, %d) FAILED %s (%d)\n", tid, strerror(errno), errno);
+                // If the ptrace on a thread that has already terminated, skip/ignore
+                if (errno == ESRCH && tid != CrashThread())
+                {
+                    continue;
+                }
                 closedir(taskDir);
                 return false;
             }

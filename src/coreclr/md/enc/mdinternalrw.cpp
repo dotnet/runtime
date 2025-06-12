@@ -20,7 +20,7 @@
 
 __checkReturn
 HRESULT _GetFixedSigOfVarArg(           // S_OK or error.
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob of COM+ method signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob of CLR method signature
     ULONG   cbSigBlob,                  // [IN] size of signature
     CQuickBytes *pqbSig,                // [OUT] output buffer for fixed part of VarArg Signature
     ULONG   *pcbSigBlob);               // [OUT] number of bytes written to the above output buffer
@@ -942,11 +942,6 @@ HRESULT MDInternalRW::EnumGlobalFieldsInit( // return hresult
     return EnumInit(mdtFieldDef, m_tdModule, phEnum);
 } // MDInternalRW::EnumGlobalFieldsInit
 
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 //*****************************************
 // Enumerator initializer
 //*****************************************
@@ -1363,9 +1358,6 @@ ErrExit:
 
     return hr;
 } // MDInternalRW::EnumInit
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //*****************************************
 // Enumerator initializer
@@ -1696,7 +1688,7 @@ __checkReturn
 HRESULT MDInternalRW::FindMethodDef(// S_OK or error.
     mdTypeDef   classdef,               // The owning class of the member.
     LPCSTR      szName,                 // Name of the member in utf8.
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     mdMethodDef *pmethoddef)            // Put MemberDef token here.
 {
@@ -1723,7 +1715,7 @@ __checkReturn
 HRESULT MDInternalRW::FindMethodDefUsingCompare(// S_OK or error.
     mdTypeDef   classdef,               // The owning class of the member.
     LPCSTR      szName,                 // Name of the member in utf8.
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     PSIGCOMPARE pSignatureCompare,      // [IN] Routine to compare signatures
     void*       pSignatureArgs,         // [IN] Additional info to supply the compare function
@@ -1916,7 +1908,7 @@ __checkReturn
 HRESULT
 MDInternalRW::GetNameAndSigOfMethodDef(
     mdMethodDef      methoddef,         // [IN] given memberdef
-    PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of COM+ signature
+    PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of signature
     ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
     LPCSTR          *pszMethodName)
 {
@@ -2665,7 +2657,7 @@ __checkReturn
 HRESULT
 MDInternalRW::GetNameAndSigOfMemberRef( // meberref's name
     mdMemberRef      memberref,         // given a memberref
-    PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of COM+ signature
+    PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of signature
     ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
     LPCSTR          *pszMemberRefName)
 {
@@ -3835,7 +3827,7 @@ __checkReturn
 HRESULT MDInternalRW::ConvertTextSigToComSig(// Return hresult.
     BOOL        fCreateTrIfNotFound,    // create typeref if not found or not
     LPCSTR      pSignature,             // class file format signature
-    CQuickBytes *pqbNewSig,             // [OUT] place holder for COM+ signature
+    CQuickBytes *pqbNewSig,             // [OUT] place holder for signature
     ULONG       *pcbCount)              // [OUT] the result size of signature
 {
     return E_NOTIMPL;

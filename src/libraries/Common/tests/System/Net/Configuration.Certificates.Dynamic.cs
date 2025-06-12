@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.X509Certificates.Tests.Common;
-using Test.Cryptography;
 
 namespace System.Net.Test.Common
 {
@@ -140,7 +139,7 @@ namespace System.Net.Test.Common
                     intermediateAuthorityCount: longChain ? 3 : 1,
                     subjectName: targetName,
                     testName: testName,
-                    keySize: keySize,
+                    keyFactory: CertificateAuthority.KeyFactory.RSASize(keySize),
                     extensions: extensions);
 
                 // Walk the intermediates backwards so we build the chain collection as
@@ -164,7 +163,7 @@ namespace System.Net.Test.Common
                 if (!ephemeralKey && PlatformDetection.IsWindows)
                 {
                     X509Certificate2 ephemeral = endEntity;
-                    endEntity = new X509Certificate2(endEntity.Export(X509ContentType.Pfx), (string?)null, X509KeyStorageFlags.Exportable);
+                    endEntity = X509CertificateLoader.LoadPkcs12(endEntity.Export(X509ContentType.Pfx), (string?)null, X509KeyStorageFlags.Exportable);
                     ephemeral.Dispose();
                 }
 

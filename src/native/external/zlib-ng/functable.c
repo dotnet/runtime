@@ -2,18 +2,17 @@
  * Copyright (C) 2017 Hans Kristian Rosbach
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
+#ifndef DISABLE_RUNTIME_CPU_DETECTION
 
 #include "zbuild.h"
-#include "zendian.h"
-#include "crc32_braid_p.h"
-#include "deflate.h"
-#include "deflate_p.h"
-#include "functable.h"
-#include "cpu_features.h"
 
 #if defined(_MSC_VER)
 #  include <intrin.h>
 #endif
+
+#include "functable.h"
+#include "cpu_features.h"
+#include "arch_functions.h"
 
 /* Platform has pointer size atomic store */
 #if defined(__GNUC__) || defined(__clang__)
@@ -61,31 +60,10 @@ static void init_functable(void) {
     ft.crc32_fold_final = &crc32_fold_final_c;
     ft.crc32_fold_reset = &crc32_fold_reset_c;
     ft.inflate_fast = &inflate_fast_c;
-    ft.insert_string = &insert_string_c;
-    ft.quick_insert_string = &quick_insert_string_c;
     ft.slide_hash = &slide_hash_c;
-    ft.update_hash = &update_hash_c;
-
-#if defined(UNALIGNED_OK) && BYTE_ORDER == LITTLE_ENDIAN
-#  if defined(UNALIGNED64_OK) && defined(HAVE_BUILTIN_CTZLL)
-    ft.longest_match = &longest_match_unaligned_64;
-    ft.longest_match_slow = &longest_match_slow_unaligned_64;
-    ft.compare256 = &compare256_unaligned_64;
-#  elif defined(HAVE_BUILTIN_CTZ)
-    ft.longest_match = &longest_match_unaligned_32;
-    ft.longest_match_slow = &longest_match_slow_unaligned_32;
-    ft.compare256 = &compare256_unaligned_32;
-#  else
-    ft.longest_match = &longest_match_unaligned_16;
-    ft.longest_match_slow = &longest_match_slow_unaligned_16;
-    ft.compare256 = &compare256_unaligned_16;
-#  endif
-#else
     ft.longest_match = &longest_match_c;
     ft.longest_match_slow = &longest_match_slow_c;
     ft.compare256 = &compare256_c;
-#endif
-
 
     // Select arch-optimized functions
 
@@ -110,19 +88,14 @@ static void init_functable(void) {
 #ifdef X86_SSSE3
     if (cf.x86.has_ssse3) {
         ft.adler32 = &adler32_ssse3;
-#  ifdef X86_SSE2
         ft.chunkmemset_safe = &chunkmemset_safe_ssse3;
         ft.inflate_fast = &inflate_fast_ssse3;
-#  endif
     }
 #endif
     // X86 - SSE4.2
 #ifdef X86_SSE42
     if (cf.x86.has_sse42) {
         ft.adler32_fold_copy = &adler32_fold_copy_sse42;
-        ft.insert_string = &insert_string_sse42;
-        ft.quick_insert_string = &quick_insert_string_sse42;
-        ft.update_hash = &update_hash_sse42;
     }
 #endif
     // X86 - PCLMUL
@@ -137,7 +110,11 @@ static void init_functable(void) {
 #endif
     // X86 - AVX
 #ifdef X86_AVX2
-    if (cf.x86.has_avx2) {
+    /* BMI2 support is all but implicit with AVX2 but let's sanity check this just in case. Enabling BMI2 allows for
+     * flagless shifts, resulting in fewer flag stalls for the pipeline, and allows us to set destination registers
+     * for the shift results as an operand, eliminating several register-register moves when the original value needs
+     * to remain intact. They also allow for a count operand that isn't the CL register, avoiding contention there */
+    if (cf.x86.has_avx2 && cf.x86.has_bmi2) {
         ft.adler32 = &adler32_avx2;
         ft.adler32_fold_copy = &adler32_fold_copy_avx2;
         ft.chunkmemset_safe = &chunkmemset_safe_avx2;
@@ -151,10 +128,14 @@ static void init_functable(void) {
 #  endif
     }
 #endif
+    // X86 - AVX512 (F,DQ,BW,Vl)
 #ifdef X86_AVX512
-    if (cf.x86.has_avx512) {
+    if (cf.x86.has_avx512_common) {
         ft.adler32 = &adler32_avx512;
         ft.adler32_fold_copy = &adler32_fold_copy_avx512;
+        ft.chunkmemset_safe = &chunkmemset_safe_avx512;
+        ft.chunksize = &chunksize_avx512;
+        ft.inflate_fast = &inflate_fast_avx512;
     }
 #endif
 #ifdef X86_AVX512VNNI
@@ -164,8 +145,8 @@ static void init_functable(void) {
     }
 #endif
     // X86 - VPCLMULQDQ
-#if defined(X86_PCLMULQDQ_CRC) && defined(X86_VPCLMULQDQ_CRC)
-    if (cf.x86.has_pclmulqdq && cf.x86.has_avx512 && cf.x86.has_vpclmulqdq) {
+#ifdef X86_VPCLMULQDQ_CRC
+    if (cf.x86.has_pclmulqdq && cf.x86.has_avx512_common && cf.x86.has_vpclmulqdq) {
         ft.crc32 = &crc32_vpclmulqdq;
         ft.crc32_fold = &crc32_fold_vpclmulqdq;
         ft.crc32_fold_copy = &crc32_fold_vpclmulqdq_copy;
@@ -206,9 +187,6 @@ static void init_functable(void) {
 #ifdef ARM_ACLE
     if (cf.arm.has_crc32) {
         ft.crc32 = &crc32_acle;
-        ft.insert_string = &insert_string_acle;
-        ft.quick_insert_string = &quick_insert_string_acle;
-        ft.update_hash = &update_hash_acle;
     }
 #endif
 
@@ -279,12 +257,9 @@ static void init_functable(void) {
     FUNCTABLE_ASSIGN(ft, crc32_fold_final);
     FUNCTABLE_ASSIGN(ft, crc32_fold_reset);
     FUNCTABLE_ASSIGN(ft, inflate_fast);
-    FUNCTABLE_ASSIGN(ft, insert_string);
     FUNCTABLE_ASSIGN(ft, longest_match);
     FUNCTABLE_ASSIGN(ft, longest_match_slow);
-    FUNCTABLE_ASSIGN(ft, quick_insert_string);
     FUNCTABLE_ASSIGN(ft, slide_hash);
-    FUNCTABLE_ASSIGN(ft, update_hash);
 
     // Memory barrier for weak memory order CPUs
     FUNCTABLE_BARRIER();
@@ -305,9 +280,9 @@ static uint32_t adler32_fold_copy_stub(uint32_t adler, uint8_t* dst, const uint8
     return functable.adler32_fold_copy(adler, dst, src, len);
 }
 
-static uint8_t* chunkmemset_safe_stub(uint8_t* out, unsigned dist, unsigned len, unsigned left) {
+static uint8_t* chunkmemset_safe_stub(uint8_t* out, uint8_t *from, unsigned len, unsigned left) {
     init_functable();
-    return functable.chunkmemset_safe(out, dist, len, left);
+    return functable.chunkmemset_safe(out, from, len, left);
 }
 
 static uint32_t chunksize_stub(void) {
@@ -350,11 +325,6 @@ static void inflate_fast_stub(PREFIX3(stream) *strm, uint32_t start) {
     functable.inflate_fast(strm, start);
 }
 
-static void insert_string_stub(deflate_state* const s, uint32_t str, uint32_t count) {
-    init_functable();
-    functable.insert_string(s, str, count);
-}
-
 static uint32_t longest_match_stub(deflate_state* const s, Pos cur_match) {
     init_functable();
     return functable.longest_match(s, cur_match);
@@ -365,19 +335,9 @@ static uint32_t longest_match_slow_stub(deflate_state* const s, Pos cur_match) {
     return functable.longest_match_slow(s, cur_match);
 }
 
-static Pos quick_insert_string_stub(deflate_state* const s, const uint32_t str) {
-    init_functable();
-    return functable.quick_insert_string(s, str);
-}
-
 static void slide_hash_stub(deflate_state* s) {
     init_functable();
     functable.slide_hash(s);
-}
-
-static uint32_t update_hash_stub(deflate_state* const s, uint32_t h, uint32_t val) {
-    init_functable();
-    return functable.update_hash(s, h, val);
 }
 
 /* functable init */
@@ -394,10 +354,9 @@ Z_INTERNAL struct functable_s functable = {
     crc32_fold_final_stub,
     crc32_fold_reset_stub,
     inflate_fast_stub,
-    insert_string_stub,
     longest_match_stub,
     longest_match_slow_stub,
-    quick_insert_string_stub,
     slide_hash_stub,
-    update_hash_stub
 };
+
+#endif

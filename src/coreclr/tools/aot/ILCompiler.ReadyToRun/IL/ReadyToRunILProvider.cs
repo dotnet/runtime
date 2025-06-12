@@ -85,9 +85,9 @@ namespace Internal.IL
                 return UnsafeIntrinsics.EmitIL(method);
             }
 
-            if (mdType.Name == "Interlocked" && mdType.Namespace == "System.Threading")
+            if (mdType.Name == "InstanceCalliHelper" && mdType.Namespace == "System.Reflection")
             {
-                return InterlockedIntrinsics.EmitIL(_compilationModuleGroup, method);
+                return InstanceCalliHelperIntrinsics.EmitIL(method);
             }
 
             return null;
@@ -112,6 +112,11 @@ namespace Internal.IL
             if (mdType.Name == "Activator" && mdType.Namespace == "System")
             {
                 return TryGetIntrinsicMethodILForActivator(method);
+            }
+
+            if (mdType.Name == "Interlocked" && mdType.Namespace == "System.Threading")
+            {
+                return InterlockedIntrinsics.EmitIL(_compilationModuleGroup, method);
             }
 
             return null;

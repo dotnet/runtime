@@ -9,7 +9,7 @@
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
 
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
 #include <windows.h>
 #else
 #include <fcntl.h>
@@ -18,6 +18,7 @@
 #endif
 
 #include <minipal/random.h>
+#include <minipal/time.h>
 
 #include "gcenv.h"
 #include "thread.h"
@@ -45,8 +46,29 @@ ep_rt_aot_walk_managed_stack_for_thread (
     ep_rt_thread_handle_t thread,
     EventPipeStackContents *stack_contents)
 {
-    // NativeAOT does not support getting the call stack
-    return false;
+    STATIC_CONTRACT_NOTHROW;
+    EP_ASSERT (thread != NULL);
+    EP_ASSERT (stack_contents != NULL);
+
+    StackFrameIterator frameIterator(thread, thread->GetTransitionFrameForSampling()); 
+
+    while (frameIterator.IsValid())
+    {
+        frameIterator.CalculateCurrentMethodState();
+
+        // Get the IP.
+        uintptr_t control_pc = (uintptr_t)frameIterator.GetControlPC();
+
+        if (control_pc != 0)
+        {
+            // Add the IP to the captured stack.
+            ep_stack_contents_append (stack_contents, control_pc, NULL);
+        }
+
+        frameIterator.Next();
+    }
+
+    return true;
 }
 
 bool
@@ -61,6 +83,53 @@ ep_rt_aot_sample_profiler_write_sampling_event_for_threads (
     ep_rt_thread_handle_t sampling_thread,
     EventPipeEvent *sampling_event)
 {
+    STATIC_CONTRACT_NOTHROW;
+    EP_ASSERT (sampling_thread != NULL);
+
+    ThreadStore *thread_store = GetThreadStore ();
+
+    // Check to see if we can suspend managed execution.
+    if (thread_store->GetSuspendingThread () != NULL)
+        return;
+
+    // Actually suspend managed execution.
+    thread_store->LockThreadStore ();
+    thread_store->SuspendAllThreads (false);
+
+    EventPipeStackContents stack_contents;
+    EventPipeStackContents *current_stack_contents;
+    current_stack_contents = ep_stack_contents_init (&stack_contents);
+
+    EP_ASSERT (current_stack_contents != NULL);
+
+    // Walk all managed threads and capture stacks.
+    FOREACH_THREAD (target_thread)
+    {
+        ep_stack_contents_reset (current_stack_contents);
+
+        // Walk the stack and write it out as an event.
+        if (ep_rt_aot_walk_managed_stack_for_thread (target_thread, current_stack_contents) && !ep_stack_contents_is_empty (current_stack_contents)) {
+            // Set the payload.
+            // TODO: We can actually detect whether we are in managed or external code but does it matter?!
+            uint32_t payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+
+            // Write the sample.
+            ep_write_sample_profile_event (
+                sampling_thread,
+                sampling_event,
+                target_thread,
+                current_stack_contents,
+                (uint8_t *)&payload_data,
+                sizeof (payload_data));
+        }
+    }
+    END_FOREACH_THREAD
+
+    ep_stack_contents_fini (current_stack_contents);
+
+    // Resume managed execution.
+    thread_store->ResumeAllThreads(false);
+    thread_store->UnlockThreadStore();
 }
 
 const ep_char8_t *
@@ -340,6 +409,11 @@ ep_rt_aot_get_last_error (void)
     return PalGetLastError();
 }
 
+void ep_rt_aot_set_server_name (void)
+{
+    PalSetCurrentThreadName(".NET EventPipe");
+}
+
 bool
 ep_rt_aot_thread_create (
     void *thread_func,
@@ -361,7 +435,7 @@ ep_rt_aot_thread_create (
 
     case EP_THREAD_TYPE_SERVER:
         // Match CoreCLR and hardcode a null thread context in this case.
-        return PalStartEventPipeHelperThread(reinterpret_cast<BackgroundCallback>(thread_func), NULL);
+        return PalStartEventPipeHelperThread(reinterpret_cast<BackgroundCallback>(thread_func), nullptr);
 
     case EP_THREAD_TYPE_SESSION:
     case EP_THREAD_TYPE_SAMPLING:
@@ -392,7 +466,7 @@ uint32_t
 ep_rt_aot_current_process_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<uint32_t>(GetCurrentProcessId ());
+    return PalGetCurrentProcessId ();
 }
 
 ep_rt_thread_id_t
@@ -400,10 +474,7 @@ ep_rt_aot_current_thread_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
 #ifdef TARGET_UNIX
-    static __thread uint64_t tid;
-    if (!tid)
-        tid = PalGetCurrentOSThreadId();
-    return static_cast<ep_rt_thread_id_t>(tid);
+    return static_cast<ep_rt_thread_id_t>(PalGetCurrentOSThreadId());
 #else
     return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
 #endif
@@ -413,14 +484,14 @@ int64_t
 ep_rt_aot_perf_counter_query (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return (int64_t)PalQueryPerformanceCounter();
+    return minipal_hires_ticks();
 }
 
 int64_t
 ep_rt_aot_perf_frequency_query (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return (int64_t)PalQueryPerformanceFrequency();
+    return minipal_hires_tick_frequency();
 }
 
 int64_t
@@ -429,7 +500,7 @@ ep_rt_aot_system_timestamp_get (void)
     STATIC_CONTRACT_NOTHROW;
 
     FILETIME value;
-    GetSystemTimeAsFileTime (&value);
+    PalGetSystemTimeAsFileTime (&value);
     return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
 }
 
@@ -778,46 +849,6 @@ void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
     ep_char8_t **next = NULL;
     for (next = environ; *next != NULL; ++next)
         dn_vector_ptr_push_back (env_array, ep_rt_utf8_to_utf16le_string (*next));
-#endif
-}
-
-void ep_rt_aot_create_activity_id (uint8_t *activity_id, uint32_t activity_id_len)
-{
-    // We call CoCreateGuid for windows, and use a random generator for non-windows
-    STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (activity_id != NULL);
-    EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
-#ifdef HOST_WIN32
-    CoCreateGuid (reinterpret_cast<GUID *>(activity_id));
-#else
-    if(minipal_get_cryptographically_secure_random_bytes(activity_id, activity_id_len)==-1)
-    {
-        *activity_id=0;
-        return;
-    }
-
-    const uint16_t version_mask = 0xF000;
-    const uint16_t random_guid_version = 0x4000;
-    const uint8_t clock_seq_hi_and_reserved_mask = 0xC0;
-    const uint8_t clock_seq_hi_and_reserved_value = 0x80;
-
-    // Modify bits indicating the type of the GUID
-    uint8_t *activity_id_c = activity_id + sizeof (uint32_t) + sizeof (uint16_t);
-    uint8_t *activity_id_d = activity_id + sizeof (uint32_t) + sizeof (uint16_t) + sizeof (uint16_t);
-
-    uint16_t c;
-    memcpy (&c, activity_id_c, sizeof (c));
-
-    uint8_t d;
-    memcpy (&d, activity_id_d, sizeof (d));
-
-    // time_hi_and_version
-    c = ((c & ~version_mask) | random_guid_version);
-    // clock_seq_hi_and_reserved
-    d = ((d & ~clock_seq_hi_and_reserved_mask) | clock_seq_hi_and_reserved_value);
-
-    memcpy (activity_id_c, &c, sizeof (c));
-    memcpy (activity_id_d, &d, sizeof (d));
 #endif
 }
 

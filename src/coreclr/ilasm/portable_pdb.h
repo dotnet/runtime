@@ -46,8 +46,12 @@ public:
     IMetaDataEmit3* GetEmitter();
     GUID*           GetGuid();
     ULONG           GetTimestamp();
+    void            SetGuid(REFGUID newGuid);
+    void            SetTimestamp(const ULONG newTimestamp);
     Document*       GetCurrentDocument();
     HRESULT         BuildPdbStream(IMetaDataEmit3* peEmitter, mdMethodDef entryPoint);
+    HRESULT         ComputeSha256PdbStreamChecksum(BYTE (&checksum)[32]);
+    HRESULT         ChangePdbStreamGuid(REFGUID newGuid);
     HRESULT         DefineDocument(char* name, GUID* language);
     HRESULT         DefineSequencePoints(Method* method);
     HRESULT         DefineLocalScope(Method* method);
@@ -59,10 +63,11 @@ private:
     BOOL            _DefineLocalScope(mdMethodDef methodDefToken, Scope* currScope);
 
 private:
-    IMetaDataEmit3* m_pdbEmitter;
-    PORT_PDB_STREAM m_pdbStream;
-    DocumentList    m_documentList;
-    Document*       m_currentDocument;
+    IMetaDataEmit3*          m_pdbEmitter;
+    IILAsmPortablePdbWriter* m_ilasmPdbWriter;
+    PORT_PDB_STREAM          m_pdbStream;
+    DocumentList             m_documentList;
+    Document*                m_currentDocument;
 };
 
 #endif

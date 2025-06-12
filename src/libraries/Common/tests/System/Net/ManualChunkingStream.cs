@@ -26,11 +26,11 @@ namespace System.Net.Test.Common
 
         public async ValueTask CommitWriteAsync(int length)
         {
-            Debug.Assert(length <= PendingWriteLength && length > 0, "length <= PendingWriteLength && length > 0");
+            Debug.Assert(length <= PendingWriteLength && length > 0);
             byte[] buffer = ArrayPool<byte>.Shared.Rent(length);
 
             int read = await _writeBuffer.ReadAsync(buffer.AsMemory(0, length));
-            Debug.Assert(read == length, "read == length");
+            Debug.Assert(read == length);
             await _innerStream.WriteAsync(buffer, 0, read);
             await _innerStream.FlushAsync();
 
@@ -46,7 +46,7 @@ namespace System.Net.Test.Common
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(PendingWriteLength);
 
                 int read = _writeBuffer.Read(buffer.AsSpan(0, PendingWriteLength));
-                Debug.Assert(PendingWriteLength == 0, "PendingWriteLength == 0");
+                Debug.Assert(PendingWriteLength == 0);
                 _innerStream.Write(buffer, 0, read);
                 _innerStream.Flush();
 

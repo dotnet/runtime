@@ -81,6 +81,20 @@ jobject CryptoNative_EvpMdCtxCreate(intptr_t type)
     return (void*)ToGRef(env, GetMessageDigestInstance(env, type));
 }
 
+jobject CryptoNative_EvpMdCtxCopyEx(jobject ctx)
+{
+    abort_if_invalid_pointer_argument(ctx);
+
+    JNIEnv* env = GetJNIEnv();
+    jobject clone = (*env)->CallObjectMethod(env, ctx, g_mdClone);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
+
+    return ToGRef(env, clone);
+error:
+    (*env)->DeleteLocalRef(env, clone);
+    return FAIL;
+}
+
 int32_t CryptoNative_EvpDigestReset(jobject ctx, intptr_t type)
 {
     abort_if_invalid_pointer_argument (ctx);

@@ -119,7 +119,7 @@ class ReduceExamples(threading.Thread):
 
             if new_line:
                 evt = json.loads(new_line)
-                # Only reduce BadResult examples since crashes take very long to reduce.
+                # Do not reduce crash examples since those take a very long to reduce.
                 # We will still report crashes, just not with a reduced example.
                 if evt["Kind"] == "ExampleFound":
                     ex = evt["Example"]
@@ -134,8 +134,12 @@ class ReduceExamples(threading.Thread):
 
                     if reduce_this:
                         print("Reducing {}".format(ex['Seed']))
-                        output_path = path.join(self.examples_dir, str(ex["Seed"]) + ".cs")
-                        spmi_collections_path = path.join(self.examples_dir, str(ex["Seed"]) + "_spmi")
+                        file_name = str(ex["Seed"])
+                        dash_index = file_name.find('-')
+                        if dash_index != -1:
+                            file_name = file_name[:dash_index]
+                        output_path = path.join(self.examples_dir, file_name + ".cs")
+                        spmi_collections_path = path.join(self.examples_dir, file_name + "_spmi")
                         os.mkdir(spmi_collections_path)
                         cmd = [self.fuzzlyn_path,
                             "--host", self.host_path,
@@ -143,7 +147,7 @@ class ReduceExamples(threading.Thread):
                             "--seed", str(ex['Seed']),
                             "--collect-spmi-to", spmi_collections_path,
                             "--output", output_path]
-                        run_command(cmd)
+                        run_command(cmd, _timeout=60*25)
                         if path.exists(output_path):
                             num_reduced += 1
                             if num_reduced >= 5:
@@ -152,6 +156,8 @@ class ReduceExamples(threading.Thread):
 
                             if ex_assert_err is not None:
                                 self.reduced_jit_asserts.add(ex_assert_err)
+                        else:
+                            print("  Reduction failed, output file not present")
 
 
 def main(main_args):

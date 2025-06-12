@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="TestInterface.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="TestClass.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

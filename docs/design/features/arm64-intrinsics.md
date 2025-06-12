@@ -263,9 +263,6 @@ To facilitate incremental progress, initial intrinsic API for a given `static cl
 
 As intrinsic support is added test coverage must be extended to provide basic testing.
 
-Tests should be added as soon as practical.  CoreCLR Implementation and CoreFX API will need to be merged before tests
-can be merged.
-
 ## LSRA changes to allocate contiguous register ranges
 
 Some ARM64 instructions will require allocation of contiguous blocks of registers.  These are likely limited to load and

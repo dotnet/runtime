@@ -85,11 +85,11 @@ namespace System.Threading
 
             if (m_localValues == null || AsyncLocalValueMap.IsEmpty(m_localValues))
             {
-#pragma warning disable CA1825 // Avoid unnecessary zero-length array allocations
+#pragma warning disable CA1825, IDE0300 // Avoid unnecessary zero-length array allocations
                 return isFlowSuppressed ?
                     (s_defaultFlowSuppressed ??= new ExecutionContext(AsyncLocalValueMap.Empty, new IAsyncLocal[0], isFlowSuppressed: true)) :
                     null; // implies the default context
-#pragma warning restore CA1825
+#pragma warning restore CA1825, IDE0300
             }
 
             return new ExecutionContext(m_localValues, m_localChangeNotifications, isFlowSuppressed);
@@ -147,7 +147,7 @@ namespace System.Threading
         {
             // Note: ExecutionContext.RunInternal is an extremely hot function and used by every await, ThreadPool execution, etc.
             // Note: Manual enregistering may be addressed by "Exception Handling Write Through Optimization"
-            //       https://github.com/dotnet/runtime/blob/main/docs/design/features/eh-writethru.md
+            //       https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/eh-writethru.md
 
             // Enregister previousExecutionCtx0 so they can be used in registers without EH forcing them to stack
 
@@ -515,7 +515,7 @@ namespace System.Threading
                 }
                 else if (newChangeNotifications == null)
                 {
-                    newChangeNotifications = new IAsyncLocal[1] { local };
+                    newChangeNotifications = [local];
                 }
                 else
                 {

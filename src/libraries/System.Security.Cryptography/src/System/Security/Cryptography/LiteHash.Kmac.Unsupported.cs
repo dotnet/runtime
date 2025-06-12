@@ -24,6 +24,7 @@ namespace System.Security.Cryptography
         public int Finalize(Span<byte> destination) => throw new UnreachableException();
         public int Current(Span<byte> destination) => throw new UnreachableException();
         public void Reset() => throw new UnreachableException();
+        public LiteKmac Clone() => throw new UnreachableException();
         public void Dispose() => throw new UnreachableException();
 #pragma warning restore IDE0060
 #pragma warning restore CA1822

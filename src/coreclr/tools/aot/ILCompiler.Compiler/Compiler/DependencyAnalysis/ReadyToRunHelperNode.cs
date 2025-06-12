@@ -156,6 +156,9 @@ namespace ILCompiler.DependencyAnalysis
 #endif
                 }
 
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencyList, factory, info.DelegateType,
+                    info.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
+
                 return dependencyList;
             }
 

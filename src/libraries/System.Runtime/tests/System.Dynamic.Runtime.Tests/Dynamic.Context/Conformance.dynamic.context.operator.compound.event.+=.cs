@@ -302,12 +302,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
         {
             get
             {
-                return field;
+                return this.field;
             }
 
             set
             {
-                field = value;
+                this.field = value;
             }
         }
 
@@ -372,12 +372,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
         {
             get
             {
-                return field;
+                return this.field;
             }
 
             set
             {
-                field = value;
+                this.field = value;
             }
         }
 

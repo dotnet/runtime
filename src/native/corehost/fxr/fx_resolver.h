@@ -64,7 +64,6 @@ private:
     static void display_missing_framework_error(
         const pal::string_t& fx_name,
         const pal::string_t& fx_version,
-        const pal::string_t& fx_dir,
         const pal::string_t& dotnet_root,
         bool disable_multilevel_lookup);
     static void display_incompatible_framework_error(

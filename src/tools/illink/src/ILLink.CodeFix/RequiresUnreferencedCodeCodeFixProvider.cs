@@ -15,7 +15,7 @@ using Microsoft.CodeAnalysis.Editing;
 namespace ILLink.CodeFix
 {
 	[ExportCodeFixProvider (LanguageNames.CSharp, Name = nameof (RequiresUnreferencedCodeCodeFixProvider)), Shared]
-	public class RequiresUnreferencedCodeCodeFixProvider : BaseAttributeCodeFixProvider
+	public sealed class RequiresUnreferencedCodeCodeFixProvider : BaseAttributeCodeFixProvider
 	{
 		public static ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresUnreferencedCode));
 
@@ -25,7 +25,7 @@ namespace ILLink.CodeFix
 
 		private protected override string FullyQualifiedAttributeName => RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute;
 
-		private protected override AttributeableParentTargets AttributableParentTargets => AttributeableParentTargets.MethodOrConstructor;
+		private protected override AttributeableParentTargets AttributableParentTargets => AttributeableParentTargets.MethodOrConstructor | AttributeableParentTargets.Class;
 
 		public sealed override Task RegisterCodeFixesAsync (CodeFixContext context) => BaseRegisterCodeFixesAsync (context);
 

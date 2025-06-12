@@ -20,11 +20,12 @@ namespace ILLink.RoslynAnalyzer
 		public const string FullyQualifiedRequiresDynamicCodeAttribute = "System.Diagnostics.CodeAnalysis." + RequiresDynamicCodeAttribute;
 
 		static readonly DiagnosticDescriptor s_requiresDynamicCodeOnStaticCtor = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresDynamicCodeOnStaticConstructor);
+		static readonly DiagnosticDescriptor s_requiresDynamicCodeOnEntryPoint = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresDynamicCodeOnEntryPoint);
 		static readonly DiagnosticDescriptor s_requiresDynamicCodeRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresDynamicCode);
 		static readonly DiagnosticDescriptor s_requiresDynamicCodeAttributeMismatch = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresDynamicCodeAttributeMismatch);
 
 		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-			ImmutableArray.Create (s_requiresDynamicCodeRule, s_requiresDynamicCodeAttributeMismatch, s_requiresDynamicCodeOnStaticCtor);
+			ImmutableArray.Create (s_requiresDynamicCodeRule, s_requiresDynamicCodeAttributeMismatch, s_requiresDynamicCodeOnStaticCtor, s_requiresDynamicCodeOnEntryPoint);
 
 		private protected override string RequiresAttributeName => RequiresDynamicCodeAttribute;
 
@@ -34,9 +35,13 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override DiagnosticDescriptor RequiresDiagnosticRule => s_requiresDynamicCodeRule;
 
+		private protected override DiagnosticId RequiresDiagnosticId => DiagnosticId.RequiresDynamicCode;
+
 		private protected override DiagnosticDescriptor RequiresAttributeMismatch => s_requiresDynamicCodeAttributeMismatch;
 
 		private protected override DiagnosticDescriptor RequiresOnStaticCtor => s_requiresDynamicCodeOnStaticCtor;
+
+		private protected override DiagnosticDescriptor RequiresOnEntryPoint => s_requiresDynamicCodeOnEntryPoint;
 
 		internal override bool IsAnalyzerEnabled (AnalyzerOptions options) =>
 			options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableAotAnalyzer);
@@ -49,8 +54,9 @@ namespace ILLink.RoslynAnalyzer
 			case IntrinsicId.Type_MakeGenericType: {
 					if (!instance.IsEmpty ()) {
 						foreach (var value in instance.AsEnumerable ()) {
-							if (value is SystemTypeValue) {
-								if (!IsKnownInstantiation (arguments[0])) {
+							if (value is SystemTypeValue typeValue) {
+								if (!IsKnownInstantiation (arguments[0])
+									&& !IsConstrainedToBeReferenceTypes(typeValue.RepresentedType.GetGenericParameters())) {
 									return false;
 								}
 							} else {
@@ -64,7 +70,8 @@ namespace ILLink.RoslynAnalyzer
 					if (!instance.IsEmpty ()) {
 						foreach (var methodValue in instance.AsEnumerable ()) {
 							if (methodValue is SystemReflectionMethodBaseValue methodBaseValue) {
-								if (!IsKnownInstantiation (arguments[0])) {
+								if (!IsKnownInstantiation (arguments[0])
+									&& !IsConstrainedToBeReferenceTypes(methodBaseValue.RepresentedMethod.GetGenericParameters())) {
 									return false;
 								}
 							} else {
@@ -108,6 +115,14 @@ namespace ILLink.RoslynAnalyzer
 					}
 				}
 
+				return true;
+			}
+
+			static bool IsConstrainedToBeReferenceTypes(ImmutableArray<GenericParameterProxy> parameters)
+			{
+				foreach (GenericParameterProxy param in parameters)
+					if (!param.TypeParameterSymbol.HasReferenceTypeConstraint)
+						return false;
 				return true;
 			}
 		}

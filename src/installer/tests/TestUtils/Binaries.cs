@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 {
     public static class Binaries
     {
-        public static string GetExeFileNameForCurrentPlatform(string exeName) =>
+        public static string GetExeName(string exeName) =>
             exeName + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : string.Empty);
 
         public static (string, string) GetSharedLibraryPrefixSuffix()
@@ -37,7 +37,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public static class AppHost
         {
-            public static string FileName = GetExeFileNameForCurrentPlatform("apphost");
+            public static string FileName = GetExeName("apphost");
             public static string FilePath = Path.Combine(RepoDirectoriesProvider.Default.HostArtifacts, FileName);
         }
 
@@ -52,7 +52,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public static class DotNet
         {
-            public static string FileName = GetExeFileNameForCurrentPlatform("dotnet");
+            public static string FileName = GetExeName("dotnet");
             public static string FilePath = Path.Combine(RepoDirectoriesProvider.Default.HostArtifacts, FileName);
         }
 
@@ -84,7 +84,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public static class SingleFileHost
         {
-            public static string FileName = GetExeFileNameForCurrentPlatform("singlefilehost");
+            public static string FileName = GetExeName("singlefilehost");
             public static string FilePath = Path.Combine(RepoDirectoriesProvider.Default.HostArtifacts, FileName);
         }
 

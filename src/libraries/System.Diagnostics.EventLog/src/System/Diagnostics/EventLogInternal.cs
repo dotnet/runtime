@@ -55,7 +55,7 @@ namespace System.Diagnostics
 
         private const string EventLogKey = "SYSTEM\\CurrentControlSet\\Services\\EventLog";
         private const string eventLogMutexName = "netfxeventlog.1.0";
-        private const int SecondsPerDay = 60 * 60 * 24;
+        private const int SecondsPerDay = 60 * 60 * 24; // can't pull in the new TimeSpan constant because this builds in older CLR versions
 
         private const int Flag_notifying = 0x1;           // keeps track of whether we're notifying our listeners - to prevent double notifications
         private const int Flag_forwards = 0x2;     // whether the cache contains entries in forwards order (true) or backwards (false)

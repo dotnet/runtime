@@ -610,7 +610,7 @@ void DebuggerRCThread::ThreadProc(void)
     // This message actually serves a purpose (which is why it is always run)
     // The Stress log is run during hijacking, when other threads can be suspended
     // at arbitrary locations (including when holding a lock that NT uses to serialize
-    // all memory allocations).  By sending a message now, we insure that the stress
+    // all memory allocations).  By sending a message now, we ensure that the stress
     // log will not allocate memory at these critical times an avoid deadlock.
     {
         SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
@@ -858,7 +858,7 @@ void DebuggerRCThread::MainLoop()
         PRECONDITION(m_thread != NULL);
         PRECONDITION(ThisIsHelperThreadWorker());
         PRECONDITION(IsDbgHelperSpecialThread());   // Can only be called on native debugger helper thread
-        PRECONDITION((!ThreadStore::HoldingThreadStore()) || g_fProcessDetach);
+        PRECONDITION((!ThreadStore::HoldingThreadStore()) || IsAtProcessExit());
     }
     CONTRACTL_END;
 
@@ -960,7 +960,7 @@ void DebuggerRCThread::MainLoop()
             {
 
                 // If they called continue, then we must have released the TSL.
-                _ASSERTE(!ThreadStore::HoldingThreadStore() || g_fProcessDetach);
+                _ASSERTE(!ThreadStore::HoldingThreadStore() || IsAtProcessExit());
 
                 // Let's release the lock here since runtime is resumed.
                 debugLockHolderSuspended.Release();
@@ -1062,7 +1062,7 @@ LWaitTimedOut:
                 // We also hold debugger lock the whole time that Runtime is stopped. We will release the debugger lock
                 // when we receive the Continue event that resumes the runtime.
 
-                _ASSERTE(ThreadStore::HoldingThreadStore() || g_fProcessDetach);
+                _ASSERTE(ThreadStore::HoldingThreadStore() || IsAtProcessExit());
             }
             else
             {
@@ -1107,7 +1107,7 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
         // It should be holding the debugger lock!!!
         //
         PRECONDITION(m_debugger->ThreadHoldsLock());
-        PRECONDITION((ThreadStore::HoldingThreadStore()) || g_fProcessDetach);
+        PRECONDITION((ThreadStore::HoldingThreadStore()) || IsAtProcessExit());
         PRECONDITION(ThisIsTempHelperThread());
     }
     CONTRACTL_END;
@@ -1177,7 +1177,7 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
             if (fWasContinue)
             {
                 // If they called continue, then we must have released the TSL.
-                _ASSERTE(!ThreadStore::HoldingThreadStore() || g_fProcessDetach);
+                _ASSERTE(!ThreadStore::HoldingThreadStore() || IsAtProcessExit());
 
 #ifdef _DEBUG
                 // Always reset the syncSpinCount to 0 on a continue so that we have the maximum number of possible
@@ -1241,7 +1241,7 @@ LWaitTimedOut:
             dwWaitTimeout = INFINITE;
 
             // Note: we hold the thread store lock now and debugger lock...
-            _ASSERTE(ThreadStore::HoldingThreadStore() || g_fProcessDetach);
+            _ASSERTE(ThreadStore::HoldingThreadStore() || IsAtProcessExit());
 
         }
     }
@@ -1379,7 +1379,7 @@ HRESULT DebuggerRCThread::Start(void)
 
         // This gets published immediately.
         DebuggerIPCControlBlock* dcb = GetDCB();
-        PREFIX_ASSUME(dcb != NULL);
+        _ASSERTE(dcb != NULL);
         dcb->m_realHelperThreadId = helperThreadId;
 
 #ifdef _DEBUG

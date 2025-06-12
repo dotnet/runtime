@@ -13,6 +13,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <PropertyGroup>
     <!-- Avoid having the rid show up in output paths -->
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <IsRidAgnostic>true</IsRidAgnostic>
 
     <OutputType>exe</OutputType>
 
@@ -35,6 +36,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <StaticWebAssetsGetPublishAssetsTargets>ComputeFilesToPublish;GetCurrentProjectPublishStaticWebAssetItems</StaticWebAssetsGetPublishAssetsTargets>
     <StaticWebAssetsAdditionalPublishProperties>$(StaticWebAssetsAdditionalPublishProperties);BuildProjectReferences=false;ResolveAssemblyReferencesFindRelatedSatellites=true</StaticWebAssetsAdditionalPublishProperties>
     <StaticWebAssetsAdditionalPublishPropertiesToRemove>$(StaticWebAssetsAdditionalPublishPropertiesToRemove);NoBuild;RuntimeIdentifier</StaticWebAssetsAdditionalPublishPropertiesToRemove>
+    <StaticWebAssetStandaloneHosting Condition="'$(StaticWebAssetStandaloneHosting)' == '' and '$(StaticWebAssetProjectMode)' == 'Root'">true</StaticWebAssetStandaloneHosting>
   </PropertyGroup>
 
   <ItemGroup>

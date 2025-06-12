@@ -26,12 +26,12 @@ namespace System.Diagnostics
         }
 
         public bool HasRemoteParent { get { throw null; } }
-        public bool IsAllDataRequested { get { throw null; } set { throw null; } }
+        public bool IsAllDataRequested { get { throw null; } set { } }
         public bool IsStopped { get { throw null; } }
         public System.Diagnostics.ActivityIdFormat IdFormat { get { throw null; } }
         public System.Diagnostics.ActivityKind Kind  { get { throw null; } }
         public string OperationName { get { throw null; } }
-        public string DisplayName { get { throw null; } set { throw null; } }
+        public string DisplayName { get { throw null; } set { } }
         public System.Diagnostics.ActivitySource Source { get { throw null; } }
         public System.Diagnostics.Activity? Parent { get { throw null; } }
         public string? ParentId { get { throw null; } }
@@ -59,7 +59,7 @@ namespace System.Diagnostics
         public string? GetBaggageItem(string key) { throw null; }
         public object? GetTagItem(string key) { throw null; }
         public System.Diagnostics.Activity SetEndTime(System.DateTime endTimeUtc) { throw null; }
-        public static Func<System.Diagnostics.ActivityTraceId>? TraceIdGenerator { get { throw null; } set { throw null; } }
+        public static Func<System.Diagnostics.ActivityTraceId>? TraceIdGenerator { get { throw null; } set { } }
         public System.Diagnostics.Activity SetIdFormat(System.Diagnostics.ActivityIdFormat format) { throw null; }
         public System.Diagnostics.Activity SetParentId(System.Diagnostics.ActivityTraceId traceId, System.Diagnostics.ActivitySpanId spanId, System.Diagnostics.ActivityTraceFlags activityTraceFlags = System.Diagnostics.ActivityTraceFlags.None) { throw null; }
         public System.Diagnostics.Activity SetParentId(string parentId) { throw null; }
@@ -155,8 +155,10 @@ namespace System.Diagnostics
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public ActivitySource(string name, string? version = "") { throw null; }
         public ActivitySource(string name, string? version = "", System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = default) { throw null; }
+        public ActivitySource(ActivitySourceOptions options) { throw null; }
         public string Name { get { throw null; } }
         public string? Version { get { throw null; } }
+        public string? TelemetrySchemaUrl { get; }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? Tags { get { throw null; } }
         public bool HasListeners() { throw null; }
         public System.Diagnostics.Activity? CreateActivity(string name, System.Diagnostics.ActivityKind kind) { throw null; }
@@ -168,6 +170,14 @@ namespace System.Diagnostics
         public System.Diagnostics.Activity? StartActivity(System.Diagnostics.ActivityKind kind, System.Diagnostics.ActivityContext parentContext = default, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, DateTimeOffset startTime = default, [System.Runtime.CompilerServices.CallerMemberName] string name = "") { throw null; }
         public static void AddActivityListener(System.Diagnostics.ActivityListener listener) { throw null; }
         public void Dispose() { throw null; }
+    }
+    public class ActivitySourceOptions
+    {
+        public ActivitySourceOptions(string name) { throw null; }
+        public string Name { get { throw null; } set { } }
+        public string? Version { get { throw null; } set { } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? Tags { get { throw null; } set { } }
+        public string? TelemetrySchemaUrl { get { throw null; } set { } }
     }
     [System.FlagsAttribute]
     public enum ActivityTraceFlags
@@ -281,12 +291,12 @@ namespace System.Diagnostics
     public sealed class ActivityListener : IDisposable
     {
         public ActivityListener() { throw null; }
-        public System.Action<System.Diagnostics.Activity>? ActivityStarted { get { throw null; } set { throw null; } }
-        public System.Action<System.Diagnostics.Activity>? ActivityStopped { get { throw null; } set { throw null; } }
-        public System.Diagnostics.ExceptionRecorder? ExceptionRecorder { get { throw null; } set { throw null; } }
-        public System.Func<System.Diagnostics.ActivitySource, bool>? ShouldListenTo { get { throw null; } set { throw null; } }
-        public System.Diagnostics.SampleActivity<string>? SampleUsingParentId { get { throw null; } set { throw null; } }
-        public System.Diagnostics.SampleActivity<ActivityContext>? Sample { get { throw null; } set { throw null; } }
+        public System.Action<System.Diagnostics.Activity>? ActivityStarted { get { throw null; } set { } }
+        public System.Action<System.Diagnostics.Activity>? ActivityStopped { get { throw null; } set { } }
+        public System.Diagnostics.ExceptionRecorder? ExceptionRecorder { get { throw null; } set { } }
+        public System.Func<System.Diagnostics.ActivitySource, bool>? ShouldListenTo { get { throw null; } set { } }
+        public System.Diagnostics.SampleActivity<string>? SampleUsingParentId { get { throw null; } set { } }
+        public System.Diagnostics.SampleActivity<ActivityContext>? Sample { get { throw null; } set { } }
         public void Dispose() { throw null; }
     }
     public abstract class DistributedContextPropagator
@@ -301,6 +311,8 @@ namespace System.Diagnostics
       public static DistributedContextPropagator CreateDefaultPropagator() { throw null; }
       public static DistributedContextPropagator CreatePassThroughPropagator() { throw null; }
       public static DistributedContextPropagator CreateNoOutputPropagator() { throw null; }
+      public static DistributedContextPropagator CreatePreW3CPropagator() { throw null; }
+      public static DistributedContextPropagator CreateW3CPropagator() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct TagList : System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>
@@ -350,6 +362,18 @@ namespace System.Diagnostics.Metrics
         internal Counter(Meter meter, string name, string? unit, string? description) :
                         base(meter, name, unit, description) { throw null; }
     }
+    public sealed class Gauge<T> : Instrument<T> where T : struct
+    {
+        public void Record(T value) { throw null; }
+        public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag) { throw null; }
+        public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2) { throw null; }
+        public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3) { throw null; }
+        public void Record(T value, params System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+        public void Record(T value, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) { throw null; }
+        public void Record(T value, in TagList tagList) { throw null; }
+        internal Gauge(Meter meter, string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) :
+                        base(meter, name, unit, description, tags) { throw null; }
+    }
     public sealed class UpDownCounter<T> : Instrument<T> where T : struct
     {
         public void Add(T delta) { throw null; }
@@ -381,8 +405,10 @@ namespace System.Diagnostics.Metrics
     {
         public string? Description { get {throw null;} }
         public bool Enabled { get  {throw null; } }
-        protected Instrument(Meter meter, string name, string? unit, string? description) {throw null;}
-        protected Instrument(Meter meter, string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) {throw null;}
+        protected Instrument(Meter meter, string name) : this(meter, name, unit: null, description: null, tags: null) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        protected Instrument(Meter meter, string name, string? unit, string? description) : this(meter, name, unit, description, tags: null) { throw null; }
+        protected Instrument(Meter meter, string name, string? unit = default, string? description = default, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = default) { throw null; }
         public virtual bool IsObservable { get  {throw null; } }
         public Meter Meter { get {throw null;} }
         public string Name { get {throw null;} }
@@ -392,8 +418,19 @@ namespace System.Diagnostics.Metrics
     }
     public abstract class Instrument<T> : Instrument where T : struct
     {
-        protected Instrument(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description) { throw null; }
-        protected Instrument(Meter meter, string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) : base(meter, name, unit, description, tags)  {throw null;}
+        public InstrumentAdvice<T>? Advice { get { throw null; } }
+        protected Instrument(Meter meter, string name) : this(meter, name, unit: null, description: null, tags: null, advice: null) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        protected Instrument(Meter meter, string name, string? unit, string? description) : this(meter, name, unit, description, tags: null, advice: null) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        protected Instrument(Meter meter, string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) : this(meter, name, unit, description, tags, advice: null)  { throw null; }
+        protected Instrument(
+            Meter meter,
+            string name,
+            string? unit = default,
+            string? description = default,
+            System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = default,
+            InstrumentAdvice<T>? advice = default) : base(meter, name, unit, description, tags) { throw null; }
         protected void RecordMeasurement(T measurement)  { throw null; }
         protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag) { throw null; }
         protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2)  { throw null; }
@@ -401,24 +438,36 @@ namespace System.Diagnostics.Metrics
         protected void RecordMeasurement(T measurement, in TagList tagList) { throw null; }
         protected void RecordMeasurement(T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
     }
+    public sealed class InstrumentAdvice<T> where T : struct
+    {
+        public InstrumentAdvice() { throw null; }
+        public System.Collections.Generic.IReadOnlyList<T>? HistogramBucketBoundaries { get { throw null; } init { throw null; } }
+    }
     public readonly struct Measurement<T> where T : struct
     {
         public Measurement(T value) { throw null; }
         public Measurement(T value, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) { throw null; }
         public Measurement(T value, params System.Collections.Generic.KeyValuePair<string, object?>[]? tags) { throw null; }
         public Measurement(T value, params System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+        public Measurement(T value, in System.Diagnostics.TagList tags) { throw null; }
         public ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> Tags { get { throw null; } }
         public T Value { get { throw null; } }
     }
     public delegate void MeasurementCallback<T>(Instrument instrument, T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags, object? state) where T : struct;
     public class Meter : IDisposable
     {
-        public Counter<T> CreateCounter<T>(string name, string? unit = null, string? description = null) where T : struct  { throw null; }
-        public Counter<T> CreateCounter<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct  { throw null; }
-        public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit = null, string? description = null) where T : struct  { throw null; }
-        public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct  { throw null; }
-        public Histogram<T> CreateHistogram<T>(string name, string? unit = null, string? description = null) where T : struct { throw null; }
-        public Histogram<T> CreateHistogram<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
+        public Counter<T> CreateCounter<T>(string name, string? unit = null, string? description = null) where T : struct { throw null; }
+        public Counter<T> CreateCounter<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
+        public Gauge<T> CreateGauge<T>(string name) where T : struct { throw null; }
+        public Gauge<T> CreateGauge<T>(string name, string? unit = null, string? description = null, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null) where T : struct { throw null; }
+        public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit = null, string? description = null) where T : struct { throw null; }
+        public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
+        public Histogram<T> CreateHistogram<T>(string name) where T : struct { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public Histogram<T> CreateHistogram<T>(string name, string? unit, string? description) where T : struct { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public Histogram<T> CreateHistogram<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) where T : struct { throw null; }
+        public Histogram<T> CreateHistogram<T>(string name, string? unit = default, string? description = default, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = default, InstrumentAdvice<T>? advice = default) where T : struct { throw null; }
         public ObservableCounter<T> CreateObservableCounter<T>(
                             string name,
                             Func<T> observeValue,
@@ -528,6 +577,7 @@ namespace System.Diagnostics.Metrics
         public string? Version { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? Tags { get { throw null; }  }
         public object? Scope { get { throw null; }  }
+        public string? TelemetrySchemaUrl { get { throw null; }  }
     }
     public static class MeterFactoryExtensions
     {
@@ -538,8 +588,8 @@ namespace System.Diagnostics.Metrics
         public object? DisableMeasurementEvents(Instrument instrument) { throw null; }
         public void Dispose() { throw null; }
         public void EnableMeasurementEvents(Instrument instrument, object? state = null) { throw null; }
-        public Action<Instrument, MeterListener>? InstrumentPublished { get { throw null; } set { throw null; } }
-        public Action<Instrument, object?>? MeasurementsCompleted { get { throw null; } set { throw null; } }
+        public Action<Instrument, MeterListener>? InstrumentPublished { get { throw null; } set { } }
+        public Action<Instrument, object?>? MeasurementsCompleted { get { throw null; } set { } }
         public MeterListener() { throw null; }
         public void RecordObservableInstruments() { throw null; }
         public void SetMeasurementEventCallback<T>(MeasurementCallback<T>? measurementCallback) where T : struct { throw null; }
@@ -547,10 +597,11 @@ namespace System.Diagnostics.Metrics
     }
     public class MeterOptions
     {
-        public string Name { get { throw null;} set { throw null;} }
-        public string? Version { get { throw null;} set { throw null;} }
-        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object?>>? Tags { get { throw null;} set { throw null;} }
-        public object? Scope { get { throw null;} set { throw null;} }
+        public string Name { get { throw null;} set { } }
+        public string? Version { get { throw null;} set { } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object?>>? Tags { get { throw null;} set { } }
+        public object? Scope { get { throw null;} set { } }
+        public string? TelemetrySchemaUrl { get { throw null;} set { } }
         public MeterOptions(string name) { throw null;}
     }
     public sealed class ObservableCounter<T> : ObservableInstrument<T> where T : struct

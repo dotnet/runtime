@@ -387,7 +387,10 @@ namespace System.Data.Tests
 #pragma warning restore SYSLIB0038
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static bool RemoteExecutorBinaryFormatter =>
+            RemoteExecutor.IsSupported && PlatformDetection.IsBinaryFormatterSupported;
+
+        [ConditionalFact(nameof(RemoteExecutorBinaryFormatter))]
         public void SerializationFormat_Binary_works_with_appconfig_switch()
         {
             RemoteExecutor.Invoke(RunTest).Dispose();

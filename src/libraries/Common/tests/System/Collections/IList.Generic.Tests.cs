@@ -103,8 +103,15 @@ namespace System.Collections.Tests
         public void IList_Generic_ItemGet_NegativeIndex_ThrowsException(int count)
         {
             IList<T> list = GenericIListFactory(count);
+
             Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[-1]);
             Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[int.MinValue]);
+
+            if (list is IReadOnlyList<T> rol)
+            {
+                Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => rol[-1]);
+                Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => rol[int.MinValue]);
+            }
         }
 
         [Theory]
@@ -112,8 +119,15 @@ namespace System.Collections.Tests
         public void IList_Generic_ItemGet_IndexGreaterThanListCount_ThrowsException(int count)
         {
             IList<T> list = GenericIListFactory(count);
+
             Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[count]);
             Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[count + 1]);
+
+            if (list is IReadOnlyList<T> rol)
+            {
+                Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => rol[count]);
+                Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => rol[count + 1]);
+            }
         }
 
         [Theory]
@@ -122,7 +136,15 @@ namespace System.Collections.Tests
         {
             IList<T> list = GenericIListFactory(count);
             T result;
+
             Assert.All(Enumerable.Range(0, count), index => result = list[index]);
+            Assert.All(Enumerable.Range(0, count), index => Assert.Equal(list[index], list[index]));
+
+            if (list is IReadOnlyList<T> rol)
+            {
+                Assert.All(Enumerable.Range(0, count), index => result = rol[index]);
+                Assert.All(Enumerable.Range(0, count), index => Assert.Equal(rol[index], rol[index]));
+            }
         }
 
         #endregion
@@ -369,7 +391,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void IList_Generic_IndexOf_ReturnsFirstMatchingValue(int count)
         {
-            if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
+            if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported && DuplicateValuesAllowed)
             {
                 IList<T> list = GenericIListFactory(count);
                 foreach (T duplicate in list.ToList()) // hard copies list to circumvent enumeration error

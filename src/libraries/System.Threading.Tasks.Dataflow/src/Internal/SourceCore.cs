@@ -123,14 +123,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
         internal IDisposable LinkTo(ITargetBlock<TOutput> target, DataflowLinkOptions linkOptions)
         {
-            if (target is null)
-            {
-                throw new ArgumentNullException(nameof(target));
-            }
-            if (linkOptions is null)
-            {
-                throw new ArgumentNullException(nameof(linkOptions));
-            }
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(linkOptions);
 
             // If the block is already completed, there is not much to do -
             // we have to propagate completion if that was requested, and
@@ -625,7 +619,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     if (_nextMessageId.Value != header.Id ||
                         !_messages.TryDequeue(out dropped)) // remove the next message
                     {
-                        Debug.Assert(false, "The target did not follow the protocol.");
+                        Debug.Fail("The target did not follow the protocol.");
                     }
                     _nextMessageId.Value++;
 

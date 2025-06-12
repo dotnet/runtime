@@ -4,7 +4,7 @@
 
 /*
  *
- * COM+99 EE to Debugger Interface Implementation
+ * EE to Debugger Interface Implementation
  *
  */
 
@@ -415,7 +415,7 @@ BOOL EEDbgInterfaceImpl::IsManagedNativeCode(const BYTE *address)
 PCODE EEDbgInterfaceImpl::GetNativeCodeStartAddress(PCODE address)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(address != NULL);
+    _ASSERTE(address != (PCODE)NULL);
 
     return ExecutionManager::GetCodeStartAddress(address);
 }
@@ -592,7 +592,7 @@ StackFrame EEDbgInterfaceImpl::FindParentStackFrame(CrawlFrame* pCF)
     return StackFrame();
 
 #else  // !DACCESS_COMPILE
-    return ExceptionTracker::FindParentStackFrameForStackWalk(pCF);
+    return ExInfo::FindParentStackFrameForStackWalk(pCF);
 
 #endif // !DACCESS_COMPILE
 }
@@ -1331,7 +1331,7 @@ void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
 
 #ifdef TARGET_WINDOWS
     *pTLSIndex = _tls_index;
-    *pTLSEEThreadOffset = Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo.m_pThread);
+    *pTLSEEThreadOffset = Thread::GetOffsetOfThreadStatic(&t_CurrentThreadInfo.m_pThread);
     *pTLSIsSpecialOffset = Thread::GetOffsetOfThreadStatic(&t_ThreadType);
     *pTLSCantStopOffset = Thread::GetOffsetOfThreadStatic(&t_CantStopCount);
 #else

@@ -53,7 +53,14 @@ NESTED_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
         rdsspq  rax
         sub     r11, rax
         shr     r11, 3
-        incsspq r11
+        ; the incsspq instruction uses only the lowest 8 bits of the argument, so we need to loop in case the increment is larger than 255
+        mov     rax, 255
+    Update_Loop:
+        cmp     r11, rax
+        cmovb   rax, r11
+        incsspq rax
+        sub     r11, rax
+        ja      Update_Loop
     No_Ssp_Update:
 
         ; When user-mode shadow stacks are enabled, and for example the intent is to continue execution in managed code after

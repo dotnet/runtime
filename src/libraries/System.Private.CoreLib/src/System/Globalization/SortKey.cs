@@ -51,8 +51,8 @@ namespace System.Globalization
             byte[] key1Data = sortkey1._keyData;
             byte[] key2Data = sortkey2._keyData;
 
-            Debug.Assert(key1Data != null, "key1Data != null");
-            Debug.Assert(key2Data != null, "key2Data != null");
+            Debug.Assert(key1Data != null);
+            Debug.Assert(key2Data != null);
 
             // SortKey comparisons are done as an ordinal comparison by the raw sort key bytes.
 

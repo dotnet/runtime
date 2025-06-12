@@ -116,7 +116,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
             }
             Handle[] ctorTypeHandles = parameterTypeSignatureHandles.ToArray();
 
-            LowLevelListWithIList<CustomAttributeTypedArgument> customAttributeTypedArguments = new LowLevelListWithIList<CustomAttributeTypedArgument>();
+            ArrayBuilder<CustomAttributeTypedArgument> customAttributeTypedArguments = new ArrayBuilder<CustomAttributeTypedArgument>(_customAttribute.FixedArguments.Count);
             foreach (Handle fixedArgumentHandle in _customAttribute.FixedArguments)
             {
                 Handle typeHandle = ctorTypeHandles[index];
@@ -147,7 +147,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
                 index++;
             }
 
-            return customAttributeTypedArguments;
+            return customAttributeTypedArguments.ToArray();
         }
 
         //
@@ -155,7 +155,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
         //
         internal sealed override IList<CustomAttributeNamedArgument> GetNamedArguments(bool throwIfMissingMetadata)
         {
-            LowLevelListWithIList<CustomAttributeNamedArgument> customAttributeNamedArguments = new LowLevelListWithIList<CustomAttributeNamedArgument>();
+            ArrayBuilder<CustomAttributeNamedArgument> customAttributeNamedArguments = new ArrayBuilder<CustomAttributeNamedArgument>(_customAttribute.NamedArguments.Count);
             foreach (NamedArgumentHandle namedArgumentHandle in _customAttribute.NamedArguments)
             {
                 NamedArgument namedArgument = namedArgumentHandle.GetNamedArgument(_reader);
@@ -185,7 +185,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
 
                 customAttributeNamedArguments.Add(CreateCustomAttributeNamedArgument(this.AttributeType, memberName, isField, typedValue));
             }
-            return customAttributeNamedArguments;
+            return customAttributeNamedArguments.ToArray();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",

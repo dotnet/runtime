@@ -1489,14 +1489,10 @@ void DisAssembler::disAsmCode(BYTE*  hotCodePtr,
 #endif // !DEBUG
 
 #ifdef DEBUG
-    const WCHAR* fileName = JitConfig.JitLateDisasmTo();
+    const char* fileName = JitConfig.JitLateDisasmTo();
     if (fileName != nullptr)
     {
-        errno_t ec = _wfopen_s(&disAsmFile, fileName, W("a+"));
-        if (ec != 0)
-        {
-            disAsmFile = nullptr;
-        }
+        disAsmFile = fopen_utf8(fileName, "a+");
     }
 #else  // !DEBUG
     // NOTE: non-DEBUG builds always use jitstdout currently!
@@ -1708,6 +1704,10 @@ bool DisAssembler::InitCoredistoolsDisasm()
     coreDisTargetArchitecture = Target_X86;
 #elif defined(TARGET_AMD64)
     coreDisTargetArchitecture = Target_X64;
+#elif defined(TARGET_LOONGARCH64)
+    coreDisTargetArchitecture = Target_LoongArch64;
+#elif defined(TARGET_RISCV64)
+    coreDisTargetArchitecture = Target_RiscV64;
 #else
 #error Unsupported target for LATE_DISASM with USE_COREDISTOOLS
 #endif

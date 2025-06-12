@@ -1,0 +1,233 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\Arm\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Numerics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using Xunit;
+
+namespace JIT.HardwareIntrinsics.Arm
+{
+    public static partial class Program
+    {
+        [Fact]
+        public static void {TestName}()
+        {
+            var test = new TestTest__{TestName}();
+
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works
+                test.RunBasicScenario();
+
+                // Validates calling via reflection works
+                test.RunReflectionScenario();
+
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class TestTest__{TestName}
+    {
+        private struct TestStruct
+        {
+            public Vector<{MaskBaseType}> _fld1;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+
+                testStruct._fld1 = {Op1Value};
+
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(TestTest__{TestName} testClass)
+            {
+                Vector<{MaskBaseType}> op2 = {Op2Value};
+
+                var result = {Isa}.{Method}(_fld1, op2);
+
+                testClass.ValidateResult(_fld1, op2, result);
+            }
+        }   
+
+        private Vector<{MaskBaseType}> _fld1;
+
+        public TestTest__{TestName}()
+        {
+            if ({Isa}.IsSupported)
+            {
+                _fld1 = {Op1Value};
+            }
+            else
+            {
+                _fld1 = default;
+            }
+            Succeeded = true;
+        }
+
+        public bool IsSupported => {Isa}.IsSupported;
+
+        public bool Succeeded { get; set; }
+
+        public void RunBasicScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
+
+            Vector<{MaskBaseType}> op1 = {Op1Value};
+            Vector<{MaskBaseType}> op2 = {Op2Value};
+
+            var result = {Isa}.{Method}(op1, op2);
+
+            ValidateResult(op1, op2, result);
+        }
+
+        public void RunReflectionScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
+
+            Vector<{MaskBaseType}> op1 = {Op1Value};
+            Vector<{MaskBaseType}> op2 = {Op2Value};
+
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof(Vector<{MaskBaseType}>), typeof(Vector<{MaskBaseType}>) })
+                                     .Invoke(null, new object[] {
+                                        op1, op2
+                                     });
+
+            ValidateResult(op1, op2, (bool)result);
+        }
+
+        public void RunClassFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
+
+            Vector<{MaskBaseType}> op2 = {Op2Value};
+
+            var result = {Isa}.{Method}(_fld1, op2);
+
+            ValidateResult(_fld1, op2, result);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
+
+            Vector<{MaskBaseType}> op2 = {Op2Value};
+
+            var test = TestStruct.Create();
+            var result = {Isa}.{Method}(test._fld1, op2);
+
+            ValidateResult(test._fld1, op2, result);
+        }
+
+        public void RunStructFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
+            bool succeeded = false;
+
+            try
+            {
+                RunBasicScenario();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
+            }
+        }
+
+        /// Find any occurrence where both left and right and set
+        static bool TestAnyTrue(Vector<{MaskBaseType}> left, Vector<{MaskBaseType}> right)
+        {
+            for (var i = 0; i < Vector<{MaskBaseType}>.Count; i++)
+            {
+                if ((left[i] > 0) && (right[i] > 0)) return true;
+            }
+            return false;
+        }
+
+        /// Find first true value in left, and return contents of right
+        static bool TestFirstTrue(Vector<{MaskBaseType}> left, Vector<{MaskBaseType}> right)
+        {
+            for (var i = 0; i < Vector<{MaskBaseType}>.Count; i++)
+            {
+                if (left[i] > 0) return (right[i] > 0);
+            }
+            return false;
+        }
+
+        /// Find last true value in left, and return contents of right
+        static bool TestLastTrue(Vector<{MaskBaseType}> left, Vector<{MaskBaseType}> right)
+        {
+            for (var i = Vector<{MaskBaseType}>.Count - 1; i >= 0; i--)
+            {
+                if (left[i] > 0) return (right[i] > 0);
+            }
+            return false;
+        }
+
+        private void ValidateResult(Vector<{MaskBaseType}> op1, Vector<{MaskBaseType}> op2, bool result, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            if ({ValidateEntry})
+            {
+                succeeded = false;
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}(Vector<{MaskBaseType}>, Vector<{MaskBaseType}>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"     mask: ({op1})");
+                TestLibrary.TestFramework.LogInformation($"  srcMask: ({op2})");
+                TestLibrary.TestFramework.LogInformation($"   result: ({result})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}

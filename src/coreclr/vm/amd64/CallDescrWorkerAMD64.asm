@@ -6,32 +6,6 @@ include <AsmConstants.inc>
 
 extern CallDescrWorkerUnwindFrameChainHandler:proc
 
-;;
-;;      EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
-;;
-        NESTED_ENTRY FastCallFinalizeWorker, _TEXT, CallDescrWorkerUnwindFrameChainHandler
-        alloc_stack     28h     ;; alloc callee scratch and align the stack
-        END_PROLOGUE
-
-        ;
-        ; RCX: already contains obj*
-        ; RDX: address of finalizer method to call
-        ;
-
-        ; !!!!!!!!!
-        ; NOTE:  you cannot tail call here because we must have the CallDescrWorkerUnwindFrameChainHandler
-        ;        personality routine on the stack.
-        ; !!!!!!!!!
-        call    rdx
-        xor     rax, rax
-
-        ; epilog
-        add     rsp, 28h
-        ret
-
-
-        NESTED_END FastCallFinalizeWorker, _TEXT
-
 ;;extern "C" void CallDescrWorkerInternal(CallDescrData * pCallDescrData);
 
         NESTED_ENTRY CallDescrWorkerInternal, _TEXT, CallDescrWorkerUnwindFrameChainHandler

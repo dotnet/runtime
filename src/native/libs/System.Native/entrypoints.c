@@ -35,9 +35,9 @@ static const Entry s_sysNative[] =
 {
     DllImportEntry(SystemNative_FStat)
     DllImportEntry(SystemNative_GetWindowSize)
-    DllImportEntry(SystemNative_SetWindowSize)
     DllImportEntry(SystemNative_IsATty)
     DllImportEntry(SystemNative_InitializeTerminalAndSignalHandling)
+    DllImportEntry(SystemNative_UninitializeTerminal)
     DllImportEntry(SystemNative_SetKeypadXmit)
     DllImportEntry(SystemNative_GetControlCharacters)
     DllImportEntry(SystemNative_StdinReady)
@@ -62,6 +62,8 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_Close)
     DllImportEntry(SystemNative_Dup)
     DllImportEntry(SystemNative_Unlink)
+    DllImportEntry(SystemNative_IsMemfdSupported)
+    DllImportEntry(SystemNative_MemfdCreate)
     DllImportEntry(SystemNative_ShmOpen)
     DllImportEntry(SystemNative_ShmUnlink)
     DllImportEntry(SystemNative_GetReadDirRBufferSize)
@@ -186,6 +188,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_FreeSocketEventBuffer)
     DllImportEntry(SystemNative_TryChangeSocketEventRegistration)
     DllImportEntry(SystemNative_WaitForSocketEvents)
+    DllImportEntry(SystemNative_GetWasiSocketDescriptor)
     DllImportEntry(SystemNative_PlatformSupportsDualModeIPv4PacketInfo)
     DllImportEntry(SystemNative_GetDomainSocketSizes)
     DllImportEntry(SystemNative_GetMaximumAddressSize)
@@ -252,6 +255,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_UTimensat)
     DllImportEntry(SystemNative_FUTimens)
     DllImportEntry(SystemNative_GetTimestamp)
+    DllImportEntry(SystemNative_GetLowResolutionTimestamp)
     DllImportEntry(SystemNative_GetBootTimeTicks)
     DllImportEntry(SystemNative_GetCpuUtilization)
     DllImportEntry(SystemNative_GetPwUidR)
@@ -282,6 +286,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetGroupName)
     DllImportEntry(SystemNative_GetUInt64OSThreadId)
     DllImportEntry(SystemNative_TryGetUInt32OSThreadId)
+    DllImportEntry(SystemNative_Select)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

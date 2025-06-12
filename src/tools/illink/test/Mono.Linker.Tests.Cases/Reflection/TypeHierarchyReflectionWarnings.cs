@@ -17,6 +17,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	[SkipKeptItemsValidation (By = Tool.NativeAot)]
 	public class TypeHierarchyReflectionWarnings
 	{
+		[ExpectedWarning ("IL2026", "--AnnotatedRUCPublicMethods--")]
 		public static void Main ()
 		{
 			annotatedBase.GetType ().RequiresPublicMethods ();
@@ -45,8 +46,15 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			var t7 = typeof (DerivedFromAnnotatedPublicParameterlessConstructor);
 			annotatedRUCPublicMethods.GetType ().RequiresPublicMethods ();
 
-			// Instantiate this type just so its property getters are considered reachable
-			var b = new DerivedFromAnnotatedDerivedFromBase ();
+			// Instantiate these types just so things are considered reachable
+			_ = new DerivedFromAnnotatedDerivedFromBase ();
+			_ = new AnnotatedPublicMethods ();
+			_ = new AnnotatedPublicFields ();
+			_ = new AnnotatedPublicEvents ();
+			_ = new AnnotatedPublicProperties ();
+			_ = new AnnotatedInterfaces ();
+			_ = new AnnotatedPublicNestedTypes ();
+			_ = new AnnotatedRUCPublicMethods ();
 
 			// Check that this field doesn't produce a warning even if it is kept
 			// for some non-reflection access.
@@ -58,10 +66,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			RUCOnVirtualOnAnnotatedBase.Test ();
 			RUCOnVirtualOnAnnotatedBaseUsedByDerived.Test ();
+			RUCOnVirtualOnAnnotatedInterface.Test ();
+			RucOnVirtualOnAnnotatedInterfaceUsedByImplementation.Test ();
 			UseByDerived.Test ();
 
-			CompilerGeneratedCodeRUC.Test (null);
-			CompilerGeneratedCodeDAM.Test (null);
+			CompilerGeneratedCodeRUC.Test (new CompilerGeneratedCodeRUC ());
+			CompilerGeneratedCodeDAM.Test (new CompilerGeneratedCodeDAM ());
 		}
 
 		[Kept]
@@ -150,6 +160,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
 		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		class AnnotatedPublicMethods
@@ -202,6 +213,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
 		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 		class AnnotatedPublicFields
@@ -215,6 +227,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
 		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
 		class AnnotatedPublicProperties
@@ -235,6 +248,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
 		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicEvents)]
 		class AnnotatedPublicEvents
@@ -264,11 +278,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			// Removed, because keeping the interface on its own
 			// doesn't apply its type annotations
+			[ExpectedWarning ("IL2112", nameof (RequiredInterface), nameof (RUCMethod), Tool.Analyzer, "Analyzer warns about DAM on type access to members even without call to object.GetType().")]
 			[RequiresUnreferencedCode ("--RUC on RequiredInterface.UnusedMethod--")]
 			void RUCMethod ();
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (RequiredInterface))]
 		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)]
@@ -311,7 +327,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 			[ExpectedWarning ("IL2112", "--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--")]
-			[ExpectedWarning ("IL2112", "--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2112", "--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--")]
 			[RequiresUnreferencedCode ("--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--")]
 			public DerivedFromAnnotatedPublicParameterlessConstructor () { }
 
@@ -494,6 +510,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public void RUCMethod () { }
 		}
 
+		[KeptMember (".ctor()")]
 		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicNestedTypes)]
 		// Warnings about base types of nested types are shown at the (outer) type level.
@@ -592,6 +609,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[RequiresUnreferencedCode ("--AnnotatedRUCPublicMethods--")]
 		public class AnnotatedRUCPublicMethods
 		{
+			[Kept]
 			public AnnotatedRUCPublicMethods () { }
 
 			[Kept]
@@ -699,16 +717,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--")]
-				// Compare to the case above - the only difference is the type of the field
-				// and it causes different warnings to be produced.
-				[ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--", Tool.None, "https://github.com/dotnet/runtime/issues/86580")]
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--")]
 				public virtual void RUCVirtualMethod () { }
 			}
 
 			[Kept]
 			[KeptMember (".ctor()")]
 			[KeptBaseType (typeof (Base))]
-			[UnexpectedWarning ("IL2113", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/86580")]
 			public class Derived : Base
 			{
 				[Kept]
@@ -730,6 +745,82 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		class RUCOnVirtualOnAnnotatedInterface
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+			public interface Interface
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--RUCOnVirtualOnAnnotatedInterface.Interface.RUCVirtualMethod--")]
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualOnAnnotatedInterface.Interface.RUCVirtualMethod--")]
+				void RUCVirtualMethod () { }
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptInterface (typeof (Interface))]
+			public class Implementation : Interface
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--RUCOnVirtualOnAnnotatedInterface.Implementation.RUCVirtualMethod--")]
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualOnAnnotatedInterface.Implementation.RUCVirtualMethod--")]
+				public void RUCVirtualMethod () { }
+			}
+
+			[Kept]
+			static Interface _interfaceInstance;
+
+			[Kept]
+			public static void Test ()
+			{
+				_interfaceInstance = new Implementation ();
+				_interfaceInstance.GetType ().RequiresAll ();
+			}
+		}
+
+		[Kept]
+		class RucOnVirtualOnAnnotatedInterfaceUsedByImplementation
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+			public interface Interface
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--RucOnVirtualOnAnnotatedInterfaceUsedByImplementation.Interface.RUCVirtualMethod--")]
+				[ExpectedWarning ("IL2112", "--RucOnVirtualOnAnnotatedInterfaceUsedByImplementation.Interface.RUCVirtualMethod--")]
+				void RUCVirtualMethod () { }
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptInterface (typeof (Interface))]
+			public class Implementation : Interface
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--RucOnVirtualOnAnnotatedInterfaceUsedByImplementation.Implementation.RUCVirtualMethod--")]
+				[ExpectedWarning ("IL2112", "--RucOnVirtualOnAnnotatedInterfaceUsedByImplementation.Implementation.RUCVirtualMethod--")]
+				public void RUCVirtualMethod () { }
+			}
+
+			[Kept]
+			static Implementation _implementationInstance;
+
+			[Kept]
+			public static void Test ()
+			{
+				_implementationInstance = new Implementation ();
+				_implementationInstance.GetType ().RequiresAll ();
+			}
+		}
+
+		[Kept]
 		class UseByDerived
 		{
 			[Kept]
@@ -745,13 +836,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[RequiresUnreferencedCode ("--AnnotatedBase.VirtualMethodWithRequires--")]
 				[RequiresDynamicCode ("--AnnotatedBase.VirtualMethodWithRequires--")]
 				[RequiresAssemblyFiles ("--AnnotatedBase.VirtualMethodWithRequires--")]
+				[ExpectedWarning ("IL2112", "--AnnotatedBase.VirtualMethodWithRequires--")]
 				public virtual void VirtualMethodWithRequires () { }
 			}
 
 			[Kept]
 			[KeptBaseType (typeof (AnnotatedBase))]
 			[KeptMember (".ctor()")]
-			[UnexpectedWarning ("IL2113", "--AnnotatedBase.VirtualMethodWithRequires--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/86580")]
 			class Derived : AnnotatedBase
 			{
 				[Kept]
@@ -824,6 +915,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		class CompilerGeneratedBackingField
 		{
 			[Kept]
+			[KeptMember (".ctor()")]
 			public class BaseWithField
 			{
 				[KeptBackingField]
@@ -832,10 +924,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
+			[KeptMember (".ctor()")]
 			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[KeptBaseType (typeof (BaseWithField))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicFields)]
-			[ExpectedWarning ("IL2115", nameof (BaseWithField), nameof (BaseWithField.CompilerGeneratedProperty))]
+			[ExpectedWarning ("IL2115", nameof (BaseWithField), nameof (BaseWithField.CompilerGeneratedProperty),
+				Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2628")]
 			public class DerivedWithAnnotation : BaseWithField
 			{
 			}
@@ -846,6 +940,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public static void Test ()
 			{
+				derivedInstance = new DerivedWithAnnotation ();
 				derivedInstance.GetType ().RequiresNonPublicFields ();
 			}
 		}
@@ -951,7 +1046,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			[KeptAttributeAttribute (typeof (IteratorStateMachineAttribute))]
-			[UnexpectedWarning ("IL2119", nameof (IteratorWithGenericDAM), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042", CompilerGeneratedCode = true)]
 			static IEnumerable<bool> IteratorWithGenericDAM<
 				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
@@ -963,7 +1057,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[KeptAttributeAttribute (typeof (AsyncStateMachineAttribute))]
 			[KeptAttributeAttribute (typeof (DebuggerStepThroughAttribute))]
-			[UnexpectedWarning ("IL2119", nameof (AsyncWithGenericDAM), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042", CompilerGeneratedCode = true)]
 			static async Task AsyncWithGenericDAM<
 				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
@@ -974,7 +1067,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			[KeptAttributeAttribute (typeof (AsyncIteratorStateMachineAttribute))]
-			[ExpectedWarning("IL2119", nameof(AsyncIteratorWithGenericDAM), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042", CompilerGeneratedCode = true)]
 			static async IAsyncEnumerable<bool> AsyncIteratorWithGenericDAM<
 				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()

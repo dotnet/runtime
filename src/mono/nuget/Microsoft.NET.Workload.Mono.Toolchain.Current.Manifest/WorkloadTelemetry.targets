@@ -17,7 +17,6 @@
       <WorkloadPublishProperties Include="NativeAOT" Value="$(_WorkloadUsesNativeAOT)" />
       <WorkloadPublishProperties Include="Interp" Value="$(_WorkloadUsesInterpreter)" />
       <WorkloadPublishProperties Include="LibraryMode" Value="$(_WorkloadUsesLibraryMode)" />
-      <WorkloadPublishProperties Include="HybridGlobalization" Value="$(HybridGlobalization)" />
       <WorkloadPublishProperties Include="ResolvedRuntimePack" Value="$(_MonoWorkloadRuntimePackPackageVersion)" />
       <WorkloadPublishProperties Include="StripILAfterAOT" Value="$(_WorkloadUsesStripILAfterAOT)" />
     </ItemGroup>

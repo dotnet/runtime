@@ -4,16 +4,6 @@
 project(singlefilehost)
 set(DOTNET_PROJECT_NAME "singlefilehost")
 
-# Add RPATH to the apphost binary that allows using local copies of shared libraries
-# dotnet core depends on for special scenarios when system wide installation of such
-# dependencies is not possible for some reason.
-# This cannot be enabled for MacOS (Darwin) since its RPATH works in a different way,
-# doesn't apply to libraries loaded via dlopen and most importantly, it is not transitive.
-if (NOT CLR_CMAKE_TARGET_APPLE)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    set(CMAKE_INSTALL_RPATH "\$ORIGIN/netcoredeps")
-endif()
-
 include_directories(..)
 include_directories(../..)
 include_directories(../../hostmisc)
@@ -25,7 +15,11 @@ include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
 add_subdirectory(../../hostmisc hostmisc)
 
 configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)
-target_include_directories(hostmisc PUBLIC ${GENERATED_INCLUDE_DIR}/corehost)
+target_include_directories(hostmisc_interface INTERFACE ${GENERATED_INCLUDE_DIR}/corehost)
+
+if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
+    include_directories(${CLR_SRC_NATIVE_DIR}/external/)
+endif()
 
 set(SOURCES
     ../bundle_marker.cpp
@@ -42,7 +36,10 @@ set(HEADERS
     ../../fxr_resolver.h
 )
 
-add_compile_definitions(NATIVE_LIBS_EMBEDDED)
+# TODO: https://github.com/dotnet/runtime/issues/111523
+if (NOT CLR_CMAKE_TARGET_ANDROID)
+    add_compile_definitions(NATIVE_LIBS_EMBEDDED)
+endif()
 
 include(../../fxr/files.cmake)
 include(../../hostpolicy/files.cmake)
@@ -149,6 +146,10 @@ if(CLR_CMAKE_TARGET_WIN32)
         delayimp.lib
     )
 
+    # additional requirements for System.IO.Compression.Native
+    include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
+    append_extra_compression_libs(NATIVE_LIBS)
+
     set(RUNTIMEINFO_LIB runtimeinfo)
 
 else()
@@ -161,15 +162,31 @@ else()
 
         System.Globalization.Native-Static
         System.IO.Compression.Native-Static
-        System.Net.Security.Native-Static
         System.Native-Static
-        System.Security.Cryptography.Native.OpenSsl-Static
+    )
 
-        palrt
+    if(NOT CLR_CMAKE_TARGET_ANDROID)
+        list(APPEND NATIVE_LIBS
+            System.Net.Security.Native-Static
+            System.Security.Cryptography.Native.OpenSsl-Static
+        )
+    else()
+        list(APPEND NATIVE_LIBS
+            System.Security.Cryptography.Native.Android-Static
+        )
+    endif()
+
+    list(APPEND NATIVE_LIBS
         coreclrpal_dac
         corguids
         dbgutil
-        eventprovider
+    )
+    if (FEATURE_EVENT_TRACE)
+        LIST(APPEND NATIVE_LIBS
+            eventprovider
+        )
+    endif(FEATURE_EVENT_TRACE)
+    LIST(APPEND NATIVE_LIBS
         nativeresourcestring
     )
 
@@ -177,7 +194,7 @@ else()
     include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
     append_extra_compression_libs(NATIVE_LIBS)
 
-    if (NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_HOST_ANDROID) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
+    if (NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
         # Additional requirements for System.Net.Security.Native
         include(${CLR_SRC_NATIVE_DIR}/libs/System.Net.Security.Native/extra_libs.cmake)
         append_extra_security_libs(NATIVE_LIBS)
@@ -187,7 +204,7 @@ else()
     include(${CLR_SRC_NATIVE_DIR}/libs/System.Native/extra_libs.cmake)
     append_extra_system_libs(NATIVE_LIBS)
 
-    if(NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_HOST_ANDROID)
+    if(NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
         # Additional requirements for System.Security.Cryptography.Native.OpenSsl
         include(${CLR_SRC_NATIVE_DIR}/libs/System.Security.Cryptography.Native/extra_libs.cmake)
         append_extra_cryptography_libs(NATIVE_LIBS)
@@ -196,6 +213,10 @@ else()
     set(RUNTIMEINFO_LIB runtimeinfo)
 
 endif()
+
+LIST(APPEND NATIVE_LIBS
+    gcinfo
+)
 
 if(CLR_CMAKE_TARGET_APPLE)
     LIST(APPEND NATIVE_LIBS

@@ -9,15 +9,15 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Microsoft.Extensions.Logging
 {
     /// <summary>
-    /// Creates delegates which can be later cached to log messages in a performant way.
+    /// Creates delegates that can be later cached to log messages in a performant way.
     /// </summary>
     public static class LoggerMessage
     {
         /// <summary>
-        /// Creates a delegate which can be invoked to create a log scope.
+        /// Creates a delegate that can be invoked to create a log scope.
         /// </summary>
-        /// <param name="formatString">The named format string</param>
-        /// <returns>A delegate which when invoked creates a log scope.</returns>
+        /// <param name="formatString">The named format string.</param>
+        /// <returns>A delegate that, when invoked, creates a log scope.</returns>
         public static Func<ILogger, IDisposable?> DefineScope(string formatString)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 0);
@@ -28,11 +28,11 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Creates a delegate which can be invoked to create a log scope.
+        /// Creates a delegate that can be invoked to create a log scope.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
-        /// <param name="formatString">The named format string</param>
-        /// <returns>A delegate which when invoked creates a log scope.</returns>
+        /// <param name="formatString">The named format string.</param>
+        /// <returns>A delegate that, when invoked, creates a log scope.</returns>
         public static Func<ILogger, T1, IDisposable?> DefineScope<T1>(string formatString)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 1);
@@ -41,12 +41,12 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Creates a delegate which can be invoked to create a log scope.
+        /// Creates a delegate that can be invoked to create a log scope.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
         /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
-        /// <param name="formatString">The named format string</param>
-        /// <returns>A delegate which when invoked creates a log scope.</returns>
+        /// <param name="formatString">The named format string.</param>
+        /// <returns>A delegate that, when invoked, creates a log scope.</returns>
         public static Func<ILogger, T1, T2, IDisposable?> DefineScope<T1, T2>(string formatString)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 2);
@@ -55,13 +55,13 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Creates a delegate which can be invoked to create a log scope.
+        /// Creates a delegate that can be invoked to create a log scope.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
         /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
         /// <typeparam name="T3">The type of the third parameter passed to the named format string.</typeparam>
-        /// <param name="formatString">The named format string</param>
-        /// <returns>A delegate which when invoked creates a log scope.</returns>
+        /// <param name="formatString">The named format string.</param>
+        /// <returns>A delegate that, when invoked, creates a log scope.</returns>
         public static Func<ILogger, T1, T2, T3, IDisposable?> DefineScope<T1, T2, T3>(string formatString)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 3);
@@ -70,14 +70,14 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Creates a delegate which can be invoked to create a log scope.
+        /// Creates a delegate that can be invoked to create a log scope.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
         /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
         /// <typeparam name="T3">The type of the third parameter passed to the named format string.</typeparam>
         /// <typeparam name="T4">The type of the fourth parameter passed to the named format string.</typeparam>
-        /// <param name="formatString">The named format string</param>
-        /// <returns>A delegate which when invoked creates a log scope.</returns>
+        /// <param name="formatString">The named format string.</param>
+        /// <returns>A delegate that, when invoked, creates a log scope.</returns>
         public static Func<ILogger, T1, T2, T3, T4, IDisposable?> DefineScope<T1, T2, T3, T4>(string formatString)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 4);
@@ -86,15 +86,15 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Creates a delegate which can be invoked to create a log scope.
+        /// Creates a delegate that can be invoked to create a log scope.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
         /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
         /// <typeparam name="T3">The type of the third parameter passed to the named format string.</typeparam>
         /// <typeparam name="T4">The type of the fourth parameter passed to the named format string.</typeparam>
         /// <typeparam name="T5">The type of the fifth parameter passed to the named format string.</typeparam>
-        /// <param name="formatString">The named format string</param>
-        /// <returns>A delegate which when invoked creates a log scope.</returns>
+        /// <param name="formatString">The named format string.</param>
+        /// <returns>A delegate that, when invoked, creates a log scope.</returns>
         public static Func<ILogger, T1, T2, T3, T4, T5, IDisposable?> DefineScope<T1, T2, T3, T4, T5>(string formatString)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 5);
@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Creates a delegate which can be invoked to create a log scope.
+        /// Creates a delegate that can be invoked to create a log scope.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
         /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
@@ -111,8 +111,8 @@ namespace Microsoft.Extensions.Logging
         /// <typeparam name="T4">The type of the fourth parameter passed to the named format string.</typeparam>
         /// <typeparam name="T5">The type of the fifth parameter passed to the named format string.</typeparam>
         /// <typeparam name="T6">The type of the sixth parameter passed to the named format string.</typeparam>
-        /// <param name="formatString">The named format string</param>
-        /// <returns>A delegate which when invoked creates a log scope.</returns>
+        /// <param name="formatString">The named format string.</param>
+        /// <returns>A delegate that, when invoked, creates a log scope.</returns>
         public static Func<ILogger, T1, T2, T3, T4, T5, T6, IDisposable?> DefineScope<T1, T2, T3, T4, T5, T6>(string formatString)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 6);
@@ -121,23 +121,23 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Creates a delegate which can be invoked for logging a message.
+        /// Creates a delegate that can be invoked for logging a message.
         /// </summary>
-        /// <param name="logLevel">The <see cref="LogLevel"/></param>
-        /// <param name="eventId">The event id</param>
-        /// <param name="formatString">The named format string</param>
-        /// <returns>A delegate which when invoked creates a log message.</returns>
+        /// <param name="logLevel">The <see cref="LogLevel"/>.</param>
+        /// <param name="eventId">The event ID.</param>
+        /// <param name="formatString">The named format string.</param>
+        /// <returns>A delegate that, when invoked, creates a log message.</returns>
         public static Action<ILogger, Exception?> Define(LogLevel logLevel, EventId eventId, string formatString)
             => Define(logLevel, eventId, formatString, options: null);
 
         /// <summary>
-        /// Creates a delegate which can be invoked for logging a message.
+        /// Creates a delegate that can be invoked for logging a message.
         /// </summary>
-        /// <param name="logLevel">The <see cref="LogLevel"/></param>
-        /// <param name="eventId">The event id</param>
-        /// <param name="formatString">The named format string</param>
-        /// <param name="options">The <see cref="LogDefineOptions"/></param>
-        /// <returns>A delegate which when invoked creates a log message.</returns>
+        /// <param name="logLevel">The <see cref="LogLevel"/>.</param>
+        /// <param name="eventId">The event ID.</param>
+        /// <param name="formatString">The named format string.</param>
+        /// <param name="options">The <see cref="LogDefineOptions"/>.</param>
+        /// <returns>A delegate that, when invoked, creates a log message.</returns>
         public static Action<ILogger, Exception?> Define(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 0);
@@ -162,25 +162,25 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Creates a delegate which can be invoked for logging a message.
+        /// Creates a delegate that can be invoked for logging a message.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
-        /// <param name="logLevel">The <see cref="LogLevel"/></param>
-        /// <param name="eventId">The event id</param>
-        /// <param name="formatString">The named format string</param>
-        /// <returns>A delegate which when invoked creates a log message.</returns>
+        /// <param name="logLevel">The <see cref="LogLevel"/>.</param>
+        /// <param name="eventId">The event ID.</param>
+        /// <param name="formatString">The named format string.</param>
+        /// <returns>A delegate that, when invoked, creates a log message.</returns>
         public static Action<ILogger, T1, Exception?> Define<T1>(LogLevel logLevel, EventId eventId, string formatString)
             => Define<T1>(logLevel, eventId, formatString, options: null);
 
         /// <summary>
-        /// Creates a delegate which can be invoked for logging a message.
+        /// Creates a delegate that can be invoked for logging a message.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
-        /// <param name="logLevel">The <see cref="LogLevel"/></param>
-        /// <param name="eventId">The event id</param>
-        /// <param name="formatString">The named format string</param>
-        /// <param name="options">The <see cref="LogDefineOptions"/></param>
-        /// <returns>A delegate which when invoked creates a log message.</returns>
+        /// <param name="logLevel">The <see cref="LogLevel"/>.</param>
+        /// <param name="eventId">The event ID.</param>
+        /// <param name="formatString">The named format string.</param>
+        /// <param name="options">The <see cref="LogDefineOptions"/>.</param>
+        /// <returns>A delegate that, when invoked, creates a log message.</returns>
         public static Action<ILogger, T1, Exception?> Define<T1>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 1);
@@ -205,27 +205,27 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Creates a delegate which can be invoked for logging a message.
+        /// Creates a delegate that can be invoked for logging a message.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
         /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
-        /// <param name="logLevel">The <see cref="LogLevel"/></param>
-        /// <param name="eventId">The event id</param>
-        /// <param name="formatString">The named format string</param>
-        /// <returns>A delegate which when invoked creates a log message.</returns>
+        /// <param name="logLevel">The <see cref="LogLevel"/>.</param>
+        /// <param name="eventId">The event ID.</param>
+        /// <param name="formatString">The named format string.</param>
+        /// <returns>A delegate that, when invoked, creates a log message.</returns>
         public static Action<ILogger, T1, T2, Exception?> Define<T1, T2>(LogLevel logLevel, EventId eventId, string formatString)
             => Define<T1, T2>(logLevel, eventId, formatString, options: null);
 
         /// <summary>
-        /// Creates a delegate which can be invoked for logging a message.
+        /// Creates a delegate that can be invoked for logging a message.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
         /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
-        /// <param name="logLevel">The <see cref="LogLevel"/></param>
-        /// <param name="eventId">The event id</param>
-        /// <param name="formatString">The named format string</param>
-        /// <param name="options">The <see cref="LogDefineOptions"/></param>
-        /// <returns>A delegate which when invoked creates a log message.</returns>
+        /// <param name="logLevel">The <see cref="LogLevel"/>.</param>
+        /// <param name="eventId">The event ID.</param>
+        /// <param name="formatString">The named format string.</param>
+        /// <param name="options">The <see cref="LogDefineOptions"/>.</param>
+        /// <returns>A delegate that, when invoked, creates a log message.</returns>
         public static Action<ILogger, T1, T2, Exception?> Define<T1, T2>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 2);
@@ -250,29 +250,29 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Creates a delegate which can be invoked for logging a message.
+        /// Creates a delegate that can be invoked for logging a message.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
         /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
         /// <typeparam name="T3">The type of the third parameter passed to the named format string.</typeparam>
-        /// <param name="logLevel">The <see cref="LogLevel"/></param>
-        /// <param name="eventId">The event id</param>
-        /// <param name="formatString">The named format string</param>
-        /// <returns>A delegate which when invoked creates a log message.</returns>
+        /// <param name="logLevel">The <see cref="LogLevel"/>.</param>
+        /// <param name="eventId">The event ID.</param>
+        /// <param name="formatString">The named format string.</param>
+        /// <returns>A delegate that, when invoked, creates a log message.</returns>
         public static Action<ILogger, T1, T2, T3, Exception?> Define<T1, T2, T3>(LogLevel logLevel, EventId eventId, string formatString)
             => Define<T1, T2, T3>(logLevel, eventId, formatString, options: null);
 
         /// <summary>
-        /// Creates a delegate which can be invoked for logging a message.
+        /// Creates a delegate that can be invoked for logging a message.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
         /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
         /// <typeparam name="T3">The type of the third parameter passed to the named format string.</typeparam>
-        /// <param name="logLevel">The <see cref="LogLevel"/></param>
-        /// <param name="eventId">The event id</param>
-        /// <param name="formatString">The named format string</param>
-        /// <param name="options">The <see cref="LogDefineOptions"/></param>
-        /// <returns>A delegate which when invoked creates a log message.</returns>
+        /// <param name="logLevel">The <see cref="LogLevel"/>.</param>
+        /// <param name="eventId">The event ID.</param>
+        /// <param name="formatString">The named format string.</param>
+        /// <param name="options">The <see cref="LogDefineOptions"/>.</param>
+        /// <returns>A delegate that, when invoked, creates a log message.</returns>
         public static Action<ILogger, T1, T2, T3, Exception?> Define<T1, T2, T3>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 3);
@@ -297,31 +297,31 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Creates a delegate which can be invoked for logging a message.
+        /// Creates a delegate that can be invoked for logging a message.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
         /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
         /// <typeparam name="T3">The type of the third parameter passed to the named format string.</typeparam>
         /// <typeparam name="T4">The type of the fourth parameter passed to the named format string.</typeparam>
-        /// <param name="logLevel">The <see cref="LogLevel"/></param>
-        /// <param name="eventId">The event id</param>
-        /// <param name="formatString">The named format string</param>
-        /// <returns>A delegate which when invoked creates a log message.</returns>
+        /// <param name="logLevel">The <see cref="LogLevel"/>.</param>
+        /// <param name="eventId">The event ID.</param>
+        /// <param name="formatString">The named format string.</param>
+        /// <returns>A delegate that, when invoked, creates a log message.</returns>
         public static Action<ILogger, T1, T2, T3, T4, Exception?> Define<T1, T2, T3, T4>(LogLevel logLevel, EventId eventId, string formatString)
             => Define<T1, T2, T3, T4>(logLevel, eventId, formatString, options: null);
 
         /// <summary>
-        /// Creates a delegate which can be invoked for logging a message.
+        /// Creates a delegate that can be invoked for logging a message.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
         /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
         /// <typeparam name="T3">The type of the third parameter passed to the named format string.</typeparam>
         /// <typeparam name="T4">The type of the fourth parameter passed to the named format string.</typeparam>
-        /// <param name="logLevel">The <see cref="LogLevel"/></param>
-        /// <param name="eventId">The event id</param>
-        /// <param name="formatString">The named format string</param>
-        /// <param name="options">The <see cref="LogDefineOptions"/></param>
-        /// <returns>A delegate which when invoked creates a log message.</returns>
+        /// <param name="logLevel">The <see cref="LogLevel"/>.</param>
+        /// <param name="eventId">The event ID.</param>
+        /// <param name="formatString">The named format string.</param>
+        /// <param name="options">The <see cref="LogDefineOptions"/>.</param>
+        /// <returns>A delegate that, when invoked, creates a log message.</returns>
         public static Action<ILogger, T1, T2, T3, T4, Exception?> Define<T1, T2, T3, T4>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 4);
@@ -346,33 +346,33 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Creates a delegate which can be invoked for logging a message.
+        /// Creates a delegate that can be invoked for logging a message.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
         /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
         /// <typeparam name="T3">The type of the third parameter passed to the named format string.</typeparam>
         /// <typeparam name="T4">The type of the fourth parameter passed to the named format string.</typeparam>
         /// <typeparam name="T5">The type of the fifth parameter passed to the named format string.</typeparam>
-        /// <param name="logLevel">The <see cref="LogLevel"/></param>
-        /// <param name="eventId">The event id</param>
-        /// <param name="formatString">The named format string</param>
-        /// <returns>A delegate which when invoked creates a log message.</returns>
+        /// <param name="logLevel">The <see cref="LogLevel"/>.</param>
+        /// <param name="eventId">The event ID.</param>
+        /// <param name="formatString">The named format string.</param>
+        /// <returns>A delegate that, when invoked, creates a log message.</returns>
         public static Action<ILogger, T1, T2, T3, T4, T5, Exception?> Define<T1, T2, T3, T4, T5>(LogLevel logLevel, EventId eventId, string formatString)
             => Define<T1, T2, T3, T4, T5>(logLevel, eventId, formatString, options: null);
 
         /// <summary>
-        /// Creates a delegate which can be invoked for logging a message.
+        /// Creates a delegate that can be invoked for logging a message.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
         /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
         /// <typeparam name="T3">The type of the third parameter passed to the named format string.</typeparam>
         /// <typeparam name="T4">The type of the fourth parameter passed to the named format string.</typeparam>
         /// <typeparam name="T5">The type of the fifth parameter passed to the named format string.</typeparam>
-        /// <param name="logLevel">The <see cref="LogLevel"/></param>
-        /// <param name="eventId">The event id</param>
-        /// <param name="formatString">The named format string</param>
-        /// <param name="options">The <see cref="LogDefineOptions"/></param>
-        /// <returns>A delegate which when invoked creates a log message.</returns>
+        /// <param name="logLevel">The <see cref="LogLevel"/>.</param>
+        /// <param name="eventId">The event ID.</param>
+        /// <param name="formatString">The named format string.</param>
+        /// <param name="options">The <see cref="LogDefineOptions"/>.</param>
+        /// <returns>A delegate that, when invoked, creates a log message.</returns>
         public static Action<ILogger, T1, T2, T3, T4, T5, Exception?> Define<T1, T2, T3, T4, T5>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 5);
@@ -397,7 +397,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Creates a delegate which can be invoked for logging a message.
+        /// Creates a delegate that can be invoked for logging a message.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
         /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
@@ -405,15 +405,15 @@ namespace Microsoft.Extensions.Logging
         /// <typeparam name="T4">The type of the fourth parameter passed to the named format string.</typeparam>
         /// <typeparam name="T5">The type of the fifth parameter passed to the named format string.</typeparam>
         /// <typeparam name="T6">The type of the sixth parameter passed to the named format string.</typeparam>
-        /// <param name="logLevel">The <see cref="LogLevel"/></param>
-        /// <param name="eventId">The event id</param>
-        /// <param name="formatString">The named format string</param>
-        /// <returns>A delegate which when invoked creates a log message.</returns>
+        /// <param name="logLevel">The <see cref="LogLevel"/>.</param>
+        /// <param name="eventId">The event ID.</param>
+        /// <param name="formatString">The named format string.</param>
+        /// <returns>A delegate that, when invoked, creates a log message.</returns>
         public static Action<ILogger, T1, T2, T3, T4, T5, T6, Exception?> Define<T1, T2, T3, T4, T5, T6>(LogLevel logLevel, EventId eventId, string formatString)
             => Define<T1, T2, T3, T4, T5, T6>(logLevel, eventId, formatString, options: null);
 
         /// <summary>
-        /// Creates a delegate which can be invoked for logging a message.
+        /// Creates a delegate that can be invoked for logging a message.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
         /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
@@ -421,11 +421,11 @@ namespace Microsoft.Extensions.Logging
         /// <typeparam name="T4">The type of the fourth parameter passed to the named format string.</typeparam>
         /// <typeparam name="T5">The type of the fifth parameter passed to the named format string.</typeparam>
         /// <typeparam name="T6">The type of the sixth parameter passed to the named format string.</typeparam>
-        /// <param name="logLevel">The <see cref="LogLevel"/></param>
-        /// <param name="eventId">The event id</param>
-        /// <param name="formatString">The named format string</param>
-        /// <param name="options">The <see cref="LogDefineOptions"/></param>
-        /// <returns>A delegate which when invoked creates a log message.</returns>
+        /// <param name="logLevel">The <see cref="LogLevel"/>.</param>
+        /// <param name="eventId">The event ID.</param>
+        /// <param name="formatString">The named format string.</param>
+        /// <param name="options">The <see cref="LogDefineOptions"/>.</param>
+        /// <returns>A delegate that, when invoked, creates a log message.</returns>
         public static Action<ILogger, T1, T2, T3, T4, T5, T6, Exception?> Define<T1, T2, T3, T4, T5, T6>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 6);

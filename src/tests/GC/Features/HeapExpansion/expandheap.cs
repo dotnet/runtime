@@ -8,13 +8,12 @@ This test stimulates heap expansion on the finalizer thread
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class Test_expandheap
 {
-
-
-
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Console.WriteLine("First Alloc");
         GCUtil.Alloc(1024*1024*4, 30);
@@ -28,10 +27,5 @@ public class Test_expandheap
         GCUtil.FreePins();
 
         Console.WriteLine("Test passed");
-        return 100;
-
     }
-
-   
-
 }

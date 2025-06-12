@@ -221,7 +221,7 @@ namespace System.Text.Json.Serialization.Metadata
         private JsonObjectCreationHandling? _objectCreationHandling;
         internal JsonObjectCreationHandling EffectiveObjectCreationHandling { get; private set; }
 
-        internal string? MemberName { get; set; }
+        internal string? MemberName { get; set; } // Do not rename (legacy schema generation)
         internal MemberTypes MemberType { get; set; }
         internal bool IsVirtual { get; set; }
 
@@ -443,12 +443,14 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                CacheNameAsUtf8BytesAndEscapedNameSection();
+                ValidateAndCachePropertyName();
             }
 
             if (IsRequired)
             {
-                if (!CanDeserialize && AssociatedParameter?.IsRequiredParameter != true)
+                if (!CanDeserialize &&
+                    !(AssociatedParameter?.IsRequiredParameter is true &&
+                      Options.RespectRequiredConstructorParameters))
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndNotDeserializable(this);
                 }
@@ -470,9 +472,20 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal abstract void DetermineReflectionPropertyAccessors(MemberInfo memberInfo, bool useNonPublicAccessors);
 
-        private void CacheNameAsUtf8BytesAndEscapedNameSection()
+        private void ValidateAndCachePropertyName()
         {
             Debug.Assert(Name != null);
+
+            if (Options.ReferenceHandlingStrategy is JsonKnownReferenceHandler.Preserve &&
+                this is { DeclaringType.IsValueType: false, IsIgnored: false, IsExtensionData: false } &&
+                Name is JsonSerializer.IdPropertyName or JsonSerializer.RefPropertyName)
+            {
+                // Validate potential conflicts with reference preservation metadata property names.
+                // Conflicts with polymorphic type discriminators are contextual and need to be
+                // handled separately by the PolymorphicTypeResolver type.
+
+                ThrowHelper.ThrowInvalidOperationException_PropertyConflictsWithMetadataPropertyName(DeclaringType, Name);
+            }
 
             NameAsUtf8Bytes = Encoding.UTF8.GetBytes(Name);
             EscapedNameSection = JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
@@ -668,7 +681,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowNotSupportedException_ObjectCreationHandlingPropertyDoesNotSupportParameterizedConstructors();
                 }
 
-                if (Options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
+                if (Options.ReferenceHandlingStrategy != JsonKnownReferenceHandler.Unspecified)
                 {
                     ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingPropertyCannotAllowReferenceHandling();
                 }
@@ -730,25 +743,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal abstract object? GetValueAsObject(object obj);
 
-#if DEBUG
-        internal string GetDebugInfo(int indent = 0)
-        {
-            string ind = new string(' ', indent);
-            StringBuilder sb = new();
-
-            sb.AppendLine($"{ind}{{");
-            sb.AppendLine($"{ind}  Name: {Name},");
-            sb.AppendLine($"{ind}  NameAsUtf8.Length: {(NameAsUtf8Bytes?.Length ?? -1)},");
-            sb.AppendLine($"{ind}  IsConfigured: {IsConfigured},");
-            sb.AppendLine($"{ind}  IsIgnored: {IsIgnored},");
-            sb.AppendLine($"{ind}  CanSerialize: {CanSerialize},");
-            sb.AppendLine($"{ind}  CanDeserialize: {CanDeserialize},");
-            sb.AppendLine($"{ind}}}");
-
-            return sb.ToString();
-        }
-#endif
-
         internal bool HasGetter => _untypedGet is not null;
         internal bool HasSetter => _untypedSet is not null;
         internal bool IgnoreNullTokensOnRead { get; private protected set; }
@@ -803,10 +797,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (value == null)
-                {
-                    ThrowHelper.ThrowArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 _name = value;
             }
@@ -817,12 +808,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Utf8 version of Name.
         /// </summary>
-        internal byte[] NameAsUtf8Bytes { get; set; } = null!;
+        internal byte[] NameAsUtf8Bytes { get; private set; } = null!;
 
         /// <summary>
         /// The escaped name passed to the writer.
         /// </summary>
-        internal byte[] EscapedNameSection { get; set; } = null!;
+        internal byte[] EscapedNameSection { get; private set; } = null!;
 
         /// <summary>
         /// Gets the <see cref="JsonSerializerOptions"/> value associated with the current contract instance.
@@ -863,20 +854,20 @@ namespace System.Text.Json.Serialization.Metadata
                 if (reader.TokenType == JsonTokenType.Null)
                 {
                     // A null JSON value is treated as a null object reference.
-                    dictionaryObjectValue[state.Current.JsonPropertyNameAsString!] = null;
+                    AddProperty(in state.Current, dictionaryObjectValue, null);
                 }
                 else
                 {
                     JsonConverter<object> converter = GetDictionaryValueConverter<object>();
                     object value = converter.Read(ref reader, JsonTypeInfo.ObjectType, Options)!;
-                    dictionaryObjectValue[state.Current.JsonPropertyNameAsString!] = value;
+                    AddProperty(in state.Current, dictionaryObjectValue, value);
                 }
             }
             else if (propValue is IDictionary<string, JsonElement> dictionaryElementValue)
             {
                 JsonConverter<JsonElement> converter = GetDictionaryValueConverter<JsonElement>();
                 JsonElement value = converter.Read(ref reader, typeof(JsonElement), Options);
-                dictionaryElementValue[state.Current.JsonPropertyNameAsString!] = value;
+                AddProperty(in state.Current, dictionaryElementValue, value);
             }
             else
             {
@@ -898,6 +889,30 @@ namespace System.Text.Json.Serialization.Metadata
 
                 Debug.Assert(dictionaryValueInfo is JsonTypeInfo<TValue>);
                 return ((JsonTypeInfo<TValue>)dictionaryValueInfo).EffectiveConverter;
+            }
+
+            void AddProperty<TValue>(ref readonly ReadStackFrame current, IDictionary<string, TValue> d, TValue value)
+            {
+                string property = current.JsonPropertyNameAsString!;
+                if (Options.AllowDuplicateProperties)
+                {
+                    d[property] = value;
+                }
+                else
+                {
+#if NET
+                    if (!d.TryAdd(property, value))
+#else
+                    if (d.ContainsKey(property))
+#endif
+                    {
+                        ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(current.JsonPropertyInfo!);
+                    }
+
+#if !NET
+                    d[property] = value;
+#endif
+                }
             }
         }
 
@@ -1052,28 +1067,27 @@ namespace System.Text.Json.Serialization.Metadata
         internal abstract object? DefaultValue { get; }
 
         /// <summary>
-        /// Required property index on the list of JsonTypeInfo properties.
-        /// It is used as a unique identifier for required properties.
+        /// Property index on the list of JsonTypeInfo properties.
+        /// It is used as a unique identifier for properties.
         /// It is set just before property is configured and does not change afterward.
         /// It is not equivalent to index on the properties list
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        internal int RequiredPropertyIndex
+        internal int PropertyIndex
         {
             get
             {
                 Debug.Assert(IsConfigured);
-                Debug.Assert(IsRequired);
-                return _index;
+                return _propertyIndex;
             }
             set
             {
                 Debug.Assert(!IsConfigured);
-                _index = value;
+                _propertyIndex = value;
             }
         }
 
-        private int _index;
+        private int _propertyIndex;
 
         internal bool IsOverriddenOrShadowedBy(JsonPropertyInfo other)
             => MemberName == other.MemberName && DeclaringType.IsAssignableFrom(other.DeclaringType);

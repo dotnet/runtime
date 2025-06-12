@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
@@ -577,5 +578,102 @@ namespace System.Text.Json.Serialization.Tests
         class MyThingCollection : List<IThing> { }
 
         class MyThingDictionary : Dictionary<string, IThing> { }
+
+        [Theory]
+        [InlineData(typeof(PolymorphicTypeWithConflictingPropertyNameAtBase), typeof(PolymorphicTypeWithConflictingPropertyNameAtBase.Derived))]
+        [InlineData(typeof(PolymorphicTypeWithConflictingPropertyNameAtDerived), typeof(PolymorphicTypeWithConflictingPropertyNameAtDerived.Derived))]
+        public async Task PolymorphicTypesWithConflictingPropertyNames_ThrowsInvalidOperationException(Type baseType, Type derivedType)
+        {
+            InvalidOperationException ex;
+            object value = Activator.CreateInstance(derivedType);
+
+            ex = Assert.Throws<InvalidOperationException>(() => Serializer.GetTypeInfo(baseType));
+            ValidateException(ex);
+
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value, baseType));
+            ValidateException(ex);
+
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.DeserializeWrapper("{}", baseType));
+            ValidateException(ex);
+
+            void ValidateException(InvalidOperationException ex)
+            {
+                Assert.Contains($"The type '{derivedType}' contains property 'Type' that conflicts with an existing metadata property name.", ex.Message);
+            }
+        }
+
+        [JsonPolymorphic(TypeDiscriminatorPropertyName = "Type")]
+        [JsonDerivedType(typeof(Derived), nameof(Derived))]
+        public abstract class PolymorphicTypeWithConflictingPropertyNameAtBase
+        {
+            public string Type { get; set; }
+
+            public class Derived : PolymorphicTypeWithConflictingPropertyNameAtBase
+            {
+                public string Name { get; set; }
+            }
+        }
+
+        [JsonPolymorphic(TypeDiscriminatorPropertyName = "Type")]
+        [JsonDerivedType(typeof(Derived), nameof(Derived))]
+        public abstract class PolymorphicTypeWithConflictingPropertyNameAtDerived
+        {
+            public class Derived : PolymorphicTypeWithConflictingPropertyNameAtDerived
+            {
+                public string Type { get; set; }
+            }
+        }
+
+        [Fact]
+        public async Task PolymorphicTypeWithIgnoredConflictingPropertyName_Supported()
+        {
+            PolymorphicTypeWithIgnoredConflictingPropertyName value = new PolymorphicTypeWithIgnoredConflictingPropertyName.Derived();
+
+            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeof(PolymorphicTypeWithIgnoredConflictingPropertyName));
+            Assert.NotNull(typeInfo);
+
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("""{"Type":"Derived"}""", json);
+
+            value = await Serializer.DeserializeWrapper<PolymorphicTypeWithIgnoredConflictingPropertyName>(json);
+            Assert.IsType<PolymorphicTypeWithIgnoredConflictingPropertyName.Derived>(value);
+        }
+
+        [JsonPolymorphic(TypeDiscriminatorPropertyName = "Type")]
+        [JsonDerivedType(typeof(Derived), nameof(Derived))]
+        public abstract class PolymorphicTypeWithIgnoredConflictingPropertyName
+        {
+            [JsonIgnore]
+            public string Type { get; set; }
+
+            public class Derived : PolymorphicTypeWithIgnoredConflictingPropertyName;
+        }
+
+        [Fact]
+        public async Task PolymorphicTypeWithExtensionDataConflictingPropertyName_Supported()
+        {
+            PolymorphicTypeWithExtensionDataConflictingPropertyName value = new PolymorphicTypeWithExtensionDataConflictingPropertyName.Derived();
+
+            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeof(PolymorphicTypeWithIgnoredConflictingPropertyName));
+            Assert.NotNull(typeInfo);
+
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("""{"Type":"Derived"}""", json);
+
+            value = await Serializer.DeserializeWrapper<PolymorphicTypeWithExtensionDataConflictingPropertyName>("""{"Type":"Derived","extraProp":null}""");
+            Assert.IsType<PolymorphicTypeWithExtensionDataConflictingPropertyName.Derived>(value);
+            Assert.Equal(1, value.Type.Count);
+            Assert.Contains("extraProp", value.Type);
+        }
+
+        [JsonPolymorphic(TypeDiscriminatorPropertyName = "Type")]
+        [JsonDerivedType(typeof(Derived), nameof(Derived))]
+        public abstract class PolymorphicTypeWithExtensionDataConflictingPropertyName
+        {
+            [JsonExtensionData]
+            public JsonObject Type { get; set; }
+
+            public class Derived : PolymorphicTypeWithExtensionDataConflictingPropertyName;
+        }
     }
 }

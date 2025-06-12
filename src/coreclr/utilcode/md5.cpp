@@ -12,6 +12,7 @@
 #include "stdmacros.h"
 #include "md5.h"
 #include "contract.h"
+#include <minipal/utils.h>
 
 void MD5::Init(BOOL fConstructed)
     {
@@ -60,17 +61,7 @@ void MD5::HashMore(const void* pvInput, ULONG cbInput)
 
         // Hash the now-full buffer
         MD5Transform(m_state, (ULONG*)&m_data[0]);
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22019) // Suppress this OACR warning 22019:
-                               //     'cbInput-=cbRemaining' may be greater than 'cbInput'. This can be caused by integer underflow.
-                               //     This could yield an incorrect loop index 'cbInput>=64'
-                               // We only enter the else clause here if cbInput >= cbRemaining
-#endif
         cbInput -= cbRemaining;
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
         pbInput += cbRemaining;
 
         // Hash the data in 64-byte runs, starting just after what we've copied
@@ -141,11 +132,12 @@ void MD5::GetHashValue(MD5HASHDATA* phash)
     //
     // but our compiler has an intrinsic!
 
-    #if (defined(HOST_X86) || defined(HOST_ARM) || !defined(__clang__)) && defined(TARGET_UNIX)
-    #define ROL(x, n)        (((x) << (n)) | ((x) >> (32-(n))))
-    #define ROTATE_LEFT(x,n) (x) = ROL(x,n)
+    #if defined(TARGET_WINDOWS)
+        #define ROTATE_LEFT(x, n) (x) = _lrotl(x, n)
+    #elif __has_builtin(__builtin_rotateleft)
+        #define ROTATE_LEFT(x, n) ((x) = __builtin_rotateleft(x, n))
     #else
-    #define ROTATE_LEFT(x,n) (x) = _lrotl(x,n)
+        #define ROTATE_LEFT(x, n) ((x) = ((x << (n)) | (x >> (sizeof(x) * 8 - (n)))))
     #endif
 
     ////////////////////////////////////////////////////////////////

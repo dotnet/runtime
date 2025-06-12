@@ -4,7 +4,7 @@
 namespace Microsoft.Extensions.Caching.Memory
 {
     /// <summary>
-    /// Options class for <see cref="MemoryDistributedCacheOptions"/>.
+    /// Specifies options for <see cref="MemoryDistributedCacheOptions"/>.
     /// </summary>
     public class MemoryDistributedCacheOptions : MemoryCacheOptions
     {

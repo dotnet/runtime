@@ -1,7 +1,7 @@
 //! Licensed to the .NET Foundation under one or more agreements.
 //! The .NET Foundation licenses this file to you under the MIT license.
 //!
-//! This is generated file, see src/mono/wasm/runtime/rollup.config.js
+//! This is generated file, see src/mono/browser/runtime/rollup.config.js
 
 //! This is not considered public API with backward compatibility guarantees. 
 
@@ -58,11 +58,11 @@ declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Arra
 interface DotnetHostBuilder {
     /**
      * @param config default values for the runtime configuration. It will be merged with the default values.
-     * Note that if you provide resources and don't provide custom configSrc URL, the blazor.boot.json will be downloaded and applied by default.
+     * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: MonoConfig): DotnetHostBuilder;
     /**
-     * @param configSrc URL to the configuration file. ./blazor.boot.json is a default config file location.
+     * @param configSrc URL to the configuration file. ./dotnet.boot.js is a default config file location.
      */
     withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
@@ -167,14 +167,6 @@ type MonoConfig = {
      */
     debugLevel?: number;
     /**
-     * Gets a value that determines whether to enable caching of the 'resources' inside a CacheStorage instance within the browser.
-     */
-    cacheBootResources?: boolean;
-    /**
-     * Delay of the purge of the cached resources in milliseconds. Default is 10000 (10 seconds).
-     */
-    cachedResourcesPurgeDelay?: number;
-    /**
      * Configures use of the `integrity` directive for fetching assets
      */
     disableIntegrityCheck?: boolean;
@@ -191,6 +183,16 @@ type MonoConfig = {
      */
     environmentVariables?: {
         [i: string]: string;
+    };
+    /**
+     * Subset of runtimeconfig.json
+     */
+    runtimeConfig?: {
+        runtimeOptions?: {
+            configProperties?: {
+                [i: string]: string | number | boolean;
+            };
+        };
     };
     /**
      * initial number of workers to add to the emscripten pthread pool
@@ -247,13 +249,16 @@ type ResourceExtensions = {
 };
 interface ResourceGroups {
     hash?: string;
+    fingerprinting?: {
+        [name: string]: string;
+    };
     coreAssembly?: ResourceList;
     assembly?: ResourceList;
     lazyAssembly?: ResourceList;
     corePdb?: ResourceList;
     pdb?: ResourceList;
     jsModuleWorker?: ResourceList;
-    jsModuleGlobalization?: ResourceList;
+    jsModuleDiagnostics?: ResourceList;
     jsModuleNative: ResourceList;
     jsModuleRuntime: ResourceList;
     wasmSymbols?: ResourceList;
@@ -289,7 +294,10 @@ type ResourceList = {
  * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
  * When returned string is not qualified with `./` or absolute URL, it will be resolved against the application base URI.
  */
-type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | null | undefined;
+type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | Promise<BootModule> | null | undefined;
+type BootModule = {
+    config: MonoConfig;
+};
 interface LoadingResource {
     name: string;
     url: string;
@@ -358,6 +366,10 @@ type SingleAssetBehaviors =
  */
  | "js-module-threads"
 /**
+ * The javascript module for diagnostic server and client.
+ */
+ | "js-module-diagnostics"
+/**
  * The javascript module for runtime.
  */
  | "js-module-runtime"
@@ -366,21 +378,13 @@ type SingleAssetBehaviors =
  */
  | "js-module-native"
 /**
- * The javascript module for hybrid globalization.
- */
- | "js-module-globalization"
-/**
- * Typically blazor.boot.json
+ * Typically dotnet.boot.js
  */
  | "manifest"
 /**
  * The debugging symbols
  */
- | "symbols"
-/**
- * Load segmentation rules file for Hybrid Globalization.
- */
- | "segmentation-rules";
+ | "symbols";
 type AssetBehaviors = SingleAssetBehaviors | 
 /**
  * Load asset as a managed resource assembly.
@@ -426,11 +430,7 @@ declare const enum GlobalizationMode {
     /**
      * Use user defined icu file.
      */
-    Custom = "custom",
-    /**
-     * Operate in hybrid globalization mode with small ICU files, using native platform functions.
-     */
-    Hybrid = "hybrid"
+    Custom = "custom"
 }
 type DotnetModuleConfig = {
     config?: MonoConfig;
@@ -441,7 +441,7 @@ type DotnetModuleConfig = {
     imports?: any;
     exports?: string[];
 } & Partial<EmscriptenModule>;
-type APIType = {
+type RunAPIType = {
     /**
      * Runs the Main() method of the application.
      * Note: this will keep the .NET runtime alive and the APIs will be available for further calls.
@@ -491,6 +491,8 @@ type APIType = {
      * You can register the scripts using MonoConfig.resources.modulesAfterConfigLoaded and MonoConfig.resources.modulesAfterRuntimeReady.
      */
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>;
+};
+type MemoryAPIType = {
     /**
      * Writes to the WASM linear memory
      */
@@ -632,6 +634,43 @@ type APIType = {
      */
     localHeapViewF64: () => Float64Array;
 };
+type DiagnosticsAPIType = {
+    /**
+     * creates diagnostic trace file. Default is 60 seconds.
+     * It could be opened in PerfView or Visual Studio as is.
+     */
+    collectCpuSamples: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * creates diagnostic trace file. Default is 60 seconds.
+     * It could be opened in PerfView or Visual Studio as is.
+     * It could be summarized by `dotnet-trace report xxx.nettrace topN -n 10`
+     */
+    collectMetrics: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * creates diagnostic trace file.
+     * It could be opened in PerfView as is.
+     * It could be converted for Visual Studio using `dotnet-gcdump convert`.
+     */
+    collectGcDump: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * changes DOTNET_DiagnosticPorts and makes a new connection to WebSocket on that URL.
+     */
+    connectDSRouter(url: string): void;
+};
+type DiagnosticCommandProviderV2 = {
+    keywords: [number, number];
+    logLevel: number;
+    provider_name: string;
+    arguments: string | null;
+};
+type DiagnosticCommandOptions = {
+    durationSeconds?: number;
+    intervalSeconds?: number;
+    skipDownload?: boolean;
+    circularBufferMB?: number;
+    extraProviders?: DiagnosticCommandProviderV2[];
+};
+type APIType = RunAPIType & MemoryAPIType & DiagnosticsAPIType;
 type RuntimeAPI = {
     INTERNAL: any;
     Module: EmscriptenModule;
@@ -692,4 +731,4 @@ declare global {
 }
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
-export { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, GlobalizationMode, IMemoryView, ModuleAPI, MonoConfig, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { type AssetBehaviors, type AssetEntry, type CreateDotnetRuntimeType, type DotnetHostBuilder, type DotnetModuleConfig, type EmscriptenModule, GlobalizationMode, type IMemoryView, type ModuleAPI, type MonoConfig, type RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

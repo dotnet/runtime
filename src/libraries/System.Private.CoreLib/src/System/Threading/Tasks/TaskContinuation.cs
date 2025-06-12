@@ -277,7 +277,7 @@ namespace System.Threading.Tasks
             m_options = options;
             m_taskScheduler = scheduler;
             if (TplEventSource.Log.IsEnabled())
-                TplEventSource.Log.TraceOperationBegin(m_task.Id, "Task.ContinueWith: " + task.m_action!.Method.Name, 0);
+                TplEventSource.Log.TraceOperationBegin(m_task.Id, "Task.ContinueWith: " + task.m_action!.GetMethodName(), 0);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(m_task);
@@ -357,7 +357,7 @@ namespace System.Threading.Tasks
         internal override Delegate[]? GetDelegateContinuationsForDebugger() =>
             m_task is null ? null :
             m_task.m_action is null ? m_task.GetDelegateContinuationsForDebugger() :
-            new Delegate[] { m_task.m_action };
+            [m_task.m_action];
     }
 
     /// <summary>Task continuation for awaiting with a current synchronization context.</summary>
@@ -824,7 +824,7 @@ namespace System.Threading.Tasks
         internal override Delegate[] GetDelegateContinuationsForDebugger()
         {
             Debug.Assert(m_action != null);
-            return new Delegate[] { AsyncMethodBuilderCore.TryGetStateMachineForDebugger(m_action) };
+            return [AsyncMethodBuilderCore.TryGetStateMachineForDebugger(m_action)];
         }
     }
 }

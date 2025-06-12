@@ -154,8 +154,11 @@ namespace System.Text
 
             int byteCount = bytes.Length - byteIndex;
 
-            fixed (char* pChars = s) fixed (byte* pBytes = &MemoryMarshal.GetReference((Span<byte>)bytes))
+            fixed (char* pChars = s)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
+            {
                 return GetBytes(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, null);
+            }
         }
 
         // Encodes a range of characters in a character array into a range of bytes
@@ -194,9 +197,12 @@ namespace System.Text
             // Just call pointer version
             int byteCount = bytes.Length - byteIndex;
 
-            fixed (char* pChars = chars) fixed (byte* pBytes = &MemoryMarshal.GetReference((Span<byte>)bytes))
+            fixed (char* pChars = chars)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
+            {
                 // Remember that byteCount is # to decode, not size of array.
                 return GetBytes(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, null);
+            }
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
@@ -283,9 +289,12 @@ namespace System.Text
             // Just call pointer version
             int charCount = chars.Length - charIndex;
 
-            fixed (byte* pBytes = bytes) fixed (char* pChars = &MemoryMarshal.GetReference((Span<char>)chars))
+            fixed (byte* pBytes = bytes)
+            fixed (char* pChars = &MemoryMarshal.GetArrayDataReference(chars))
+            {
                 // Remember that charCount is # to decode, not size of array
                 return GetChars(pBytes + byteIndex, byteCount, pChars + charIndex, charCount, null);
+            }
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
@@ -1124,13 +1133,11 @@ namespace System.Text
                             byte[]? byteBuffer = null;
                             if (bigEndian)
                             {
-                                byteBuffer = new byte[]
-                                    { unchecked((byte)(lastChar >> 8)), unchecked((byte)lastChar) };
+                                byteBuffer = [unchecked((byte)(lastChar >> 8)), unchecked((byte)lastChar)];
                             }
                             else
                             {
-                                byteBuffer = new byte[]
-                                    { unchecked((byte)lastChar), unchecked((byte)(lastChar >> 8)) };
+                                byteBuffer = [unchecked((byte)lastChar), unchecked((byte)(lastChar >> 8))];
                             }
 
                             if (fallbackBuffer is null)
@@ -1164,13 +1171,11 @@ namespace System.Text
                         byte[]? byteBuffer = null;
                         if (bigEndian)
                         {
-                            byteBuffer = new byte[]
-                                { unchecked((byte)(ch >> 8)), unchecked((byte)ch) };
+                            byteBuffer = [unchecked((byte)(ch >> 8)), unchecked((byte)ch)];
                         }
                         else
                         {
-                            byteBuffer = new byte[]
-                                { unchecked((byte)ch), unchecked((byte)(ch >> 8)) };
+                            byteBuffer = [unchecked((byte)ch), unchecked((byte)(ch >> 8))];
                         }
 
                         if (fallbackBuffer is null)
@@ -1202,13 +1207,11 @@ namespace System.Text
                     byte[]? byteBuffer = null;
                     if (bigEndian)
                     {
-                        byteBuffer = new byte[]
-                            { unchecked((byte)(lastChar >> 8)), unchecked((byte)lastChar) };
+                        byteBuffer = [unchecked((byte)(lastChar >> 8)), unchecked((byte)lastChar)];
                     }
                     else
                     {
-                        byteBuffer = new byte[]
-                            { unchecked((byte)lastChar), unchecked((byte)(lastChar >> 8)) };
+                        byteBuffer = [unchecked((byte)lastChar), unchecked((byte)(lastChar >> 8))];
                     }
 
                     if (fallbackBuffer is null)
@@ -1241,13 +1244,11 @@ namespace System.Text
                     byte[]? byteBuffer = null;
                     if (bigEndian)
                     {
-                        byteBuffer = new byte[]
-                            { unchecked((byte)(lastChar >> 8)), unchecked((byte)lastChar) };
+                        byteBuffer = [unchecked((byte)(lastChar >> 8)), unchecked((byte)lastChar)];
                     }
                     else
                     {
-                        byteBuffer = new byte[]
-                            { unchecked((byte)lastChar), unchecked((byte)(lastChar >> 8)) };
+                        byteBuffer = [unchecked((byte)lastChar), unchecked((byte)(lastChar >> 8))];
                     }
 
                     if (fallbackBuffer is null)
@@ -1278,7 +1279,7 @@ namespace System.Text
                     }
 
                     // No hanging odd bytes allowed if must flush
-                    charCount += fallbackBuffer.InternalFallback(new byte[] { unchecked((byte)lastByte) }, bytes);
+                    charCount += fallbackBuffer.InternalFallback([unchecked((byte)lastByte)], bytes);
                     lastByte = -1;
                 }
             }
@@ -1444,13 +1445,11 @@ namespace System.Text
                             byte[]? byteBuffer = null;
                             if (bigEndian)
                             {
-                                byteBuffer = new byte[]
-                                    { unchecked((byte)(lastChar >> 8)), unchecked((byte)lastChar) };
+                                byteBuffer = [unchecked((byte)(lastChar >> 8)), unchecked((byte)lastChar)];
                             }
                             else
                             {
-                                byteBuffer = new byte[]
-                                    { unchecked((byte)lastChar), unchecked((byte)(lastChar >> 8)) };
+                                byteBuffer = [unchecked((byte)lastChar), unchecked((byte)(lastChar >> 8))];
                             }
 
                             if (fallbackBuffer is null)
@@ -1495,13 +1494,11 @@ namespace System.Text
                         byte[]? byteBuffer = null;
                         if (bigEndian)
                         {
-                            byteBuffer = new byte[]
-                                { unchecked((byte)(ch >> 8)), unchecked((byte)ch) };
+                            byteBuffer = [unchecked((byte)(ch >> 8)), unchecked((byte)ch)];
                         }
                         else
                         {
-                            byteBuffer = new byte[]
-                                { unchecked((byte)ch), unchecked((byte)(ch >> 8)) };
+                            byteBuffer = [unchecked((byte)ch), unchecked((byte)(ch >> 8))];
                         }
 
                         if (fallbackBuffer is null)
@@ -1556,13 +1553,11 @@ namespace System.Text
                     byte[]? byteBuffer = null;
                     if (bigEndian)
                     {
-                        byteBuffer = new byte[]
-                            { unchecked((byte)(lastChar >> 8)), unchecked((byte)lastChar) };
+                        byteBuffer = [unchecked((byte)(lastChar >> 8)), unchecked((byte)lastChar)];
                     }
                     else
                     {
-                        byteBuffer = new byte[]
-                            { unchecked((byte)lastChar), unchecked((byte)(lastChar >> 8)) };
+                        byteBuffer = [unchecked((byte)lastChar), unchecked((byte)(lastChar >> 8))];
                     }
 
                     if (fallbackBuffer is null)
@@ -1620,13 +1615,11 @@ namespace System.Text
                     byte[]? byteBuffer = null;
                     if (bigEndian)
                     {
-                        byteBuffer = new byte[]
-                            { unchecked((byte)(lastChar >> 8)), unchecked((byte)lastChar) };
+                        byteBuffer = [unchecked((byte)(lastChar >> 8)), unchecked((byte)lastChar)];
                     }
                     else
                     {
-                        byteBuffer = new byte[]
-                            { unchecked((byte)lastChar), unchecked((byte)(lastChar >> 8)) };
+                        byteBuffer = [unchecked((byte)lastChar), unchecked((byte)(lastChar >> 8))];
                     }
 
                     if (fallbackBuffer is null)
@@ -1679,7 +1672,7 @@ namespace System.Text
 
                     // No hanging odd bytes allowed if must flush
                     charsForFallback = chars; // Avoid passing chars by reference to allow it to be en-registered
-                    bool fallbackResult = fallbackBuffer.InternalFallback(new byte[] { unchecked((byte)lastByte) }, bytes, ref charsForFallback);
+                    bool fallbackResult = fallbackBuffer.InternalFallback([unchecked((byte)lastByte)], bytes, ref charsForFallback);
                     chars = charsForFallback;
 
                     if (!fallbackResult)
@@ -1736,9 +1729,9 @@ namespace System.Text
                 // Note - we must allocate new byte[]'s here to prevent someone
                 // from modifying a cached byte[].
                 if (bigEndian)
-                    return new byte[2] { 0xfe, 0xff };
+                    return [0xfe, 0xff];
                 else
-                    return new byte[2] { 0xff, 0xfe };
+                    return [0xff, 0xfe];
             }
             return Array.Empty<byte>();
         }
