@@ -51,8 +51,17 @@ namespace System.Net.Security
             RemoteCertRequired = true;
             CertificateContext = sslClientAuthenticationOptions.ClientCertificateContext;
             TargetHost = sslClientAuthenticationOptions.TargetHost ?? string.Empty;
+
             AllowRsaPssPadding = sslClientAuthenticationOptions.AllowRsaPssPadding;
             AllowRsaPkcs1Padding = sslClientAuthenticationOptions.AllowRsaPkcs1Padding;
+
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux())
+            {
+                if (!sslClientAuthenticationOptions.AllowRsaPssPadding || !sslClientAuthenticationOptions.AllowRsaPkcs1Padding)
+                {
+                    throw new PlatformNotSupportedException(SR.net_ssl_allow_rsa_padding_not_supported);
+                }
+            }
 
             // Client specific options.
             CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
@@ -112,8 +121,18 @@ namespace System.Net.Security
             RemoteCertRequired = sslServerAuthenticationOptions.ClientCertificateRequired;
             CipherSuitesPolicy = sslServerAuthenticationOptions.CipherSuitesPolicy;
             CertificateRevocationCheckMode = sslServerAuthenticationOptions.CertificateRevocationCheckMode;
+
             AllowRsaPssPadding = sslServerAuthenticationOptions.AllowRsaPssPadding;
             AllowRsaPkcs1Padding = sslServerAuthenticationOptions.AllowRsaPkcs1Padding;
+
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux())
+            {
+                if (!sslServerAuthenticationOptions.AllowRsaPssPadding || !sslServerAuthenticationOptions.AllowRsaPkcs1Padding)
+                {
+                    throw new PlatformNotSupportedException(SR.net_ssl_allow_rsa_padding_not_supported);
+                }
+            }
+
             if (sslServerAuthenticationOptions.ServerCertificateContext != null)
             {
                 CertificateContext = sslServerAuthenticationOptions.ServerCertificateContext;

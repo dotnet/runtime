@@ -1209,6 +1209,39 @@ namespace System.Net.Security.Tests
             await Assert.ThrowsAsync<AuthenticationException>(() => t2.WaitAsync(TestConfiguration.PassingTestTimeout));
         }
 
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [PlatformSpecific(~(TestPlatforms.Windows | TestPlatforms.Linux))]
+        public void DisallowPkcsOrPss_UnsupportedPlatforms_Throws(bool disablePkcs1Padding, bool disablePssPadding)
+        {
+            using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using SslStream client = new SslStream(stream1);
+            using SslStream server = new SslStream(stream2);
+
+            Assert.Throws<PlatformNotSupportedException>(() =>
+            {
+                server.AuthenticateAsServer(new SslServerAuthenticationOptions()
+                {
+                    ServerCertificate = serverCertificate,
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
+                    AllowRsaPkcs1Padding = !disablePkcs1Padding,
+                    AllowRsaPssPadding = !disablePssPadding
+                });
+            });
+
+            Assert.Throws<PlatformNotSupportedException>(() =>
+            {
+                client.AuthenticateAsServer(new SslClientAuthenticationOptions()
+                {
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
+                    AllowRsaPkcs1Padding = !disablePkcs1Padding,
+                    AllowRsaPssPadding = !disablePssPadding
+                });
+            });
+        }
 
         private static bool ValidateServerCertificate(
             object sender,
