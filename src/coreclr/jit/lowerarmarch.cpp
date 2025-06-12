@@ -1948,9 +1948,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId))
     {
         LIR::Use use;
-        JITDUMP("lowering EmbeddedMasked HWIntrinisic (before):\n");
-        DISPTREERANGE(BlockRange(), node);
-        JITDUMP("\n");
+        LABELEDDISPTREERANGE("lowering EmbeddedMasked HWIntrinisic (before)", BlockRange(), node);
 
         // Use lastOp to verify if it's a ConditionlSelectNode.
         size_t lastOpNum = node->GetOperandCount();
@@ -1959,11 +1957,11 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             node->Op(lastOpNum)->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect &&
             TryContainingCselOp(node, node->Op(lastOpNum)->AsHWIntrinsic()))
         {
-            JITDUMP("lowering EmbeddedMasked HWIntrinisic (after):\n");
-            DISPTREERANGE(BlockRange(), node);
-            JITDUMP("\n");
+            LABELEDDISPTREERANGE("Contained conditional select", BlockRange(), node);
             return node->gtNext;
         }
+
+        // Wrap a conditional select around the embedded mask operation
 
         CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
         unsigned    simdSize        = node->GetSimdSize();
@@ -1996,9 +1994,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             condSelNode->SetUnusedValue();
         }
 
-        JITDUMP("lowering EmbeddedMasked HWIntrinisic (after):\n");
-        DISPTREERANGE(BlockRange(), condSelNode);
-        JITDUMP("\n");
+        LABELEDDISPTREERANGE("Embedded HWIntrinisic inside conditional select", BlockRange(), condSelNode);
     }
 
     ContainCheckHWIntrinsic(node);
@@ -4110,8 +4106,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 
     if (op2->OperIsHWIntrinsic(NI_Sve_ConditionalSelect))
     {
-        // Handle cases where there is a nested ConditionalSelect for
-        // `trueValue`
+        // Handle cases where there is a nested ConditionalSelect for `trueValue`
         GenTreeHWIntrinsic* nestedCndSel = op2->AsHWIntrinsic();
         GenTree*            nestedOp1    = nestedCndSel->Op(1);
         GenTree*            nestedOp2    = nestedCndSel->Op(2);
@@ -4131,14 +4126,12 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 GenTree* nestedOp2 = nestedCndSel->Op(2);
                 GenTree* nestedOp3 = nestedCndSel->Op(3);
 
-                JITDUMP("lowering nested ConditionalSelect HWIntrinisic (before):\n");
-                DISPTREERANGE(BlockRange(), cndSelNode);
-                JITDUMP("\n");
+                LABELEDDISPTREERANGE("Removed nested conditionalselect (before):", BlockRange(), cndSelNode);
 
                 // Transform:
                 //
-                // CndSel(mask, CndSel(AllTrue, embeddedMask(trueValOp2), trueValOp3), op3) to
-                // CndSel(mask, embedded(trueValOp2), op3)
+                // CndSel1(mask, CndSel2(AllTrue, embedded(), trueValOp3), op3) to
+                // CndSel1(mask, embedded(), op3)
                 //
                 cndSelNode->Op(2) = nestedCndSel->Op(2);
                 nestedOp3->SetUnusedValue();
@@ -4146,10 +4139,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 BlockRange().Remove(nestedOp1);
                 BlockRange().Remove(nestedCndSel);
 
-                JITDUMP("lowering nested ConditionalSelect HWIntrinisic (after):\n");
-                DISPTREERANGE(BlockRange(), cndSelNode);
-                JITDUMP("\n");
-
+                LABELEDDISPTREERANGE("Removed nested conditionalselect (after)", BlockRange(), cndSelNode);
                 return cndSelNode;
             }
         }
@@ -4160,9 +4150,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
         if (!op2->OperIsHWIntrinsic() ||
             !HWIntrinsicInfo::IsEmbeddedMaskedOperation(op2->AsHWIntrinsic()->GetHWIntrinsicId()))
         {
-            JITDUMP("lowering ConditionalSelect HWIntrinisic (before):\n");
-            DISPTREERANGE(BlockRange(), cndSelNode);
-            JITDUMP("\n");
+            LABELEDDISPTREERANGE("Lowered ConditionalSelect(True, op2, op3) to op2 (before)", BlockRange(), cndSelNode);
 
             // Transform
             // CndSel(AllTrue, op2, op3) to
@@ -4184,10 +4172,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             GenTree* next = cndSelNode->gtNext;
             BlockRange().Remove(cndSelNode);
 
-            JITDUMP("lowering ConditionalSelect HWIntrinisic (after):\n");
-            DISPTREERANGE(BlockRange(), op2);
-            JITDUMP("\n");
-
+            LABELEDDISPTREERANGE("Lowered ConditionalSelect(True, op2, op3) to op2 (after)", BlockRange(), op2);
             return next;
         }
     }
