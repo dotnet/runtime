@@ -41,7 +41,7 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(s_algHandle is not null, $"Check {nameof(SupportsAny)}() before calling.");
 
-            string parameterSet = PqcBlobHelpers.GetParameterSet(algorithm);
+            string parameterSet = PqcBlobHelpers.GetMLDsaParameterSet(algorithm);
             SafeBCryptKeyHandle keyHandle = Interop.BCrypt.BCryptGenerateKeyPair(s_algHandle, keyLength: 0);
 
             try
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
 
             SafeBCryptKeyHandle key =
                 PqcBlobHelpers.EncodeMLDsaBlob(
-                    PqcBlobHelpers.GetParameterSet(algorithm),
+                    PqcBlobHelpers.GetMLDsaParameterSet(algorithm),
                     source,
                     PublicBlobType,
                     static blob => Interop.BCrypt.BCryptImportKeyPair(s_algHandle, PublicBlobType, blob));
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography
 
             SafeBCryptKeyHandle key =
                 PqcBlobHelpers.EncodeMLDsaBlob(
-                    PqcBlobHelpers.GetParameterSet(algorithm),
+                    PqcBlobHelpers.GetMLDsaParameterSet(algorithm),
                     source,
                     PrivateBlobType,
                     static blob => Interop.BCrypt.BCryptImportKeyPair(s_algHandle, PrivateBlobType, blob));
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography
 
             SafeBCryptKeyHandle key =
                 PqcBlobHelpers.EncodeMLDsaBlob(
-                    PqcBlobHelpers.GetParameterSet(algorithm),
+                    PqcBlobHelpers.GetMLDsaParameterSet(algorithm),
                     source,
                     PrivateSeedBlobType,
                     static blob => Interop.BCrypt.BCryptImportKeyPair(s_algHandle, PrivateSeedBlobType, blob));
