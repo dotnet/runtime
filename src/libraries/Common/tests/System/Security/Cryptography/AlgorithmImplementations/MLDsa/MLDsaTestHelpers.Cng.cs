@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.Tests
         internal static MLDsaCng ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             CngKey key = PqcBlobHelpers.EncodeMLDsaBlob(
-                PqcBlobHelpers.GetParameterSet(algorithm),
+                PqcBlobHelpers.GetMLDsaParameterSet(algorithm),
                 source,
                 Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB,
                 blob => CngKey.Import(blob.ToArray(), CngKeyBlobFormat.PQDsaPublicBlob));
@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Tests
         internal static MLDsaCng ImportPrivateSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source, CngExportPolicies exportPolicies)
         {
             CngKey key = PqcBlobHelpers.EncodeMLDsaBlob(
-                PqcBlobHelpers.GetParameterSet(algorithm),
+                PqcBlobHelpers.GetMLDsaParameterSet(algorithm),
                 source,
                 Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB,
                 blob =>
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Tests
         internal static MLDsaCng ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source, CngExportPolicies exportPolicies)
         {
             CngKey key = PqcBlobHelpers.EncodeMLDsaBlob(
-                PqcBlobHelpers.GetParameterSet(algorithm),
+                PqcBlobHelpers.GetMLDsaParameterSet(algorithm),
                 source,
                 Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB,
                 blob =>
