@@ -1688,9 +1688,9 @@ configuration:
           mentionees:
           - dotnet/jit-contrib
           replyTemplate: >-
-            Tagging @dotnet/jit-contrib for JIT related changes
+            Tagging @dotnet/jit-contrib for JIT-related changes
           assignMentionees: False
-      description: '@Mention for JIT related changes'
+      description: '@Mention for JIT-related changes'
     - if:
       - payloadType: Pull_Request
       - filesMatchPattern:
