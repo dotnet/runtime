@@ -30,6 +30,7 @@
 #include "invokeutil.h"
 #include "castcache.h"
 #include "encee.h"
+#include "finalizerthread.h"
 
 extern "C" BOOL QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes)
 {
@@ -1758,11 +1759,10 @@ FCIMPLEND
 extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod)
 {
     QCALL_CONTRACT;
+    _ASSERTE(pMethod != NULL);
+    _ASSERTE(pMethod->IsDynamicMethod());
 
     BEGIN_QCALL;
-
-    if (pMethod == NULL)
-        COMPlusThrowArgumentNull(NULL, W("Arg_InvalidHandle"));
 
     DynamicMethodDesc* pDynamicMethodDesc = pMethod->AsDynamicMethodDesc();
 
@@ -1780,7 +1780,8 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod)
         END_PROFILER_CALLBACK();
     }
 
-    pDynamicMethodDesc->Destroy();
+    if (!pDynamicMethodDesc->TryDestroy())
+        FinalizerThread::DelayDestroyDynamicMethodDesc(pDynamicMethodDesc);
 
     END_QCALL;
 }

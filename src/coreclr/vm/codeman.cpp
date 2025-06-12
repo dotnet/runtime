@@ -3817,36 +3817,6 @@ BOOL InterpreterJitManager::LoadInterpreter()
 }
 #endif // FEATURE_INTERPRETER
 
-void EECodeGenManager::FreeHostCodeHeapMemory(HostCodeHeap* pCodeHeap, void* codeStart)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    CrstHolder ch(&m_CodeHeapLock);
-    if (m_iteratorCount == 0)
-    {
-        FreeHostCodeHeapMemoryWorker(pCodeHeap, codeStart);
-    }
-    else
-    {
-        // If we are in the middle of an enumeration, we cannot unload any code heap code.
-        EX_TRY
-        {
-            FreeHostCodeHeapStartCode* delayed = m_delayFreeHostCodeHeapMemory.AppendThrowing();
-            *delayed = { pCodeHeap, codeStart };
-        }
-        EX_CATCH
-        {
-            LOG((LF_JIT, LL_ERROR, "Failed to delay FreeHostCodeHeapMemory for code start (%p) in HostCodeHeap (%p)\n", codeStart, pCodeHeap));
-        }
-        EX_END_CATCH(SwallowAllExceptions);
-    }
-}
-
 void EECodeGenManager::FreeHostCodeHeapMemoryWorker(HostCodeHeap* pCodeHeap, void* codeStart)
 {
     CONTRACTL
@@ -4005,6 +3975,9 @@ void EECodeGenManager::ReleaseIterator()
     _ASSERTE(m_iteratorCount > 0);
     m_iteratorCount--;
 
+    if (m_iteratorCount != 0)
+        return;
+
     //
     // Cleanup any delayed operations that were added while the iterator was active.
     //
@@ -4016,23 +3989,17 @@ void EECodeGenManager::ReleaseIterator()
         RemoveJitDataWorker(m_delayRemoveJitData.Table()[i]);
     }
     m_delayRemoveJitData.Clear();
-
-    count = m_delayFreeHostCodeHeapMemory.Count();
-    for (UINT32 i = 0; i < count; ++i)
-    {
-        FreeHostCodeHeapStartCode& delay = m_delayFreeHostCodeHeapMemory.Table()[i];
-        FreeHostCodeHeapMemoryWorker(delay.CodeHeap, delay.CodeStartAddress);
-    }
-    m_delayFreeHostCodeHeapMemory.Clear();
 }
 
 void EECodeGenManager::AddToCleanupList(HostCodeHeap *pCodeHeap)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(m_CodeHeapLock.OwnedByCurrentThread());
-    } CONTRACTL_END;
+    }
+    CONTRACTL_END;
 
     // it may happen that the current heap count goes to 0 and later on, before it is destroyed, it gets reused
     // for another dynamic method.
@@ -4056,13 +4023,36 @@ void EECodeGenManager::AddToCleanupList(HostCodeHeap *pCodeHeap)
     }
 }
 
+bool EECodeGenManager::TryDestroyCodeHeapMemory(LCGMethodResolver* pLCGMethodResolver)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(pLCGMethodResolver != NULL);
+    }
+    CONTRACTL_END;
+
+    CrstHolder ch(&m_CodeHeapLock);
+    if (m_iteratorCount != 0)
+    {
+        // If we are in the middle of an enumeration, we cannot destroy code heap memory.
+        return false;
+    }
+
+    pLCGMethodResolver->DestroyCodeHeapMemory();
+    return true;
+}
+
 void EECodeGenManager::DeleteCodeHeap(HeapList *pHeapList)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(m_CodeHeapLock.OwnedByCurrentThread());
-    } CONTRACTL_END;
+    }
+    CONTRACTL_END;
 
     // Remove from the list of heaps
     HeapList *pHp = m_pAllCodeHeaps;

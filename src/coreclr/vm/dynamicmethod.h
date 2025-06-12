@@ -137,9 +137,12 @@ class LCGMethodResolver : public DynamicResolver
     friend class HostCodeHeap;
     friend struct ExecutionManager::JumpStubCache;
 
-public:
-    void Destroy();
+    // Due how the current locks are structured,
+    // we clean-up in stages.
+    void DestroyCodeHeapMemory();
+    void DestroyResolver();
 
+public:
     void FreeCompileTimeState();
     void GetJitContext(SecurityControlFlags * securityControlFlags,
                        TypeHandle * typeOwner);
@@ -159,6 +162,7 @@ public:
 
     MethodDesc* GetDynamicMethod() { LIMITED_METHOD_CONTRACT; return m_pDynamicMethod; }
     OBJECTREF GetManagedResolver();
+    PTR_EECodeGenManager GetJitManager();
     void SetManagedResolver(OBJECTHANDLE obj) { LIMITED_METHOD_CONTRACT; m_managedResolver = obj; }
     void* GetRecordCodePointer()  { LIMITED_METHOD_CONTRACT; return m_recordCodePointer; }
     void SetRecordCodePointer(void* recordCodePointer)  { LIMITED_METHOD_CONTRACT; m_recordCodePointer = recordCodePointer; }

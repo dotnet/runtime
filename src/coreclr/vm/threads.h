@@ -124,6 +124,7 @@
 class     Thread;
 class     ThreadStore;
 class     MethodDesc;
+class     DynamicMethodDesc;
 struct    PendingSync;
 class     AppDomain;
 class     NDirect;
@@ -838,8 +839,10 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
+    void DelayDestroyDynamicMethodDesc(DynamicMethodDesc* pDMD);
+
     // returns if there is some extra work for the finalizer thread.
-    BOOL HaveExtraWorkForFinalizer();
+    bool HaveExtraWorkForFinalizer();
 
     // do the extra finalizer work.
     void DoExtraWorkForFinalizer();

@@ -848,13 +848,14 @@ inline void SetBit(BYTE * pcBits,int iBit,int bOn)
 #endif
 
 template<typename T>
-class SimpleListNode
+class SimpleListNode final
 {
 public:
-    SimpleListNode(const T& _t)
+    SimpleListNode(T const& _t)
+        : data{ _t }
+        , next{}
     {
-        data = _t;
-        next = 0;
+        LIMITED_METHOD_CONTRACT;
     }
 
     T                  data;
@@ -862,43 +863,45 @@ public:
 };
 
 template<typename T>
-class SimpleList
+class SimpleList final
 {
 public:
-    typedef SimpleListNode<T> NodeType;
+    typedef SimpleListNode<T> Node;
 
     SimpleList()
+        : _head{}
     {
-        head = NULL;
+        LIMITED_METHOD_CONTRACT;
     }
 
-    void LinkHead(NodeType* pNode)
+    void LinkHead(Node* pNode)
     {
-        pNode->next = head;
-                      head = pNode;
+        LIMITED_METHOD_CONTRACT;
+        pNode->next = _head;
+        _head = pNode;
     }
 
-    NodeType* UnlinkHead()
+    Node* UnlinkHead()
     {
-        NodeType* ret = head;
+        LIMITED_METHOD_CONTRACT;
+        Node* ret = _head;
 
-        if (head)
+        if (_head)
         {
-            head = head->next;
+            _head = _head->next;
         }
         return ret;
     }
 
-    NodeType* Head()
+    Node* Head()
     {
-        return head;
+        LIMITED_METHOD_CONTRACT;
+        return _head;
     }
 
-protected:
-
-    NodeType* head;
+private:
+    Node* _head;
 };
-
 
 //*****************************************************************************
 // This class implements a dynamic array of structures for which the order of

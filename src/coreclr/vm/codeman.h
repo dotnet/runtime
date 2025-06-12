@@ -72,6 +72,7 @@ Abstract:
 #endif
 
 class MethodDesc;
+class LCGMethodResolver;
 class ICorJitCompiler;
 class IJitManager;
 class EEJitManager;
@@ -465,10 +466,10 @@ struct CodeHeapRequestInfo
 // committed on demand).
 //
 // A CodeHeap is naturally protected from multiple threads by the code heap
-// critical section - m_pCodeHeapCritSec - so if the implementation of the heap
+// critical section - m_CodeHeapLock - so if the implementation of the heap
 // is only for the code manager, no locking needs to occur.
 // It's important however that a delete operation on the CodeHeap (if any) happens
-// via EECodeGenManager::FreeHostCodeHeapMemory(HostCodeHeap*, void*)
+// via a EECodeGenManager and not directly.
 //
 // The heap to be created depends on the MethodDesc that is being compiled.
 // Standard code uses the LoaderCodeHeap, a heap based on the LoaderHeap.
@@ -1859,6 +1860,7 @@ class EECodeGenManager : public IJitManager
     friend class CheckDuplicatedStructLayouts;
     friend class EECodeInfo;
     friend class CodeHeapIterator;
+    friend class LCGMethodResolver;
 
     VPTR_ABSTRACT_VTABLE_CLASS(EECodeGenManager, IJitManager)
 
@@ -1977,8 +1979,8 @@ public:
 
     // Heap Management functions
     void NibbleMapSet(HeapList * pHp, TADDR pCode, size_t codeSize);
-    void FreeHostCodeHeapMemory(HostCodeHeap* pCodeHeap, void* codeStart);
     void AddToCleanupList(HostCodeHeap* pCodeHeap);
+    bool TryDestroyCodeHeapMemory(LCGMethodResolver* pLCGMethodResolver);
     CodeHeapIterator GetCodeHeapIterator(LoaderAllocator* pLoaderAllocatorFilter = NULL);
 
 private:
@@ -2023,13 +2025,6 @@ private:
 #ifndef DACCESS_COMPILE
     CUnorderedArray<LoaderAllocator*, 4> m_delayUnload;
     CUnorderedArray<RemoveJitDataArg, 16> m_delayRemoveJitData;
-
-    struct FreeHostCodeHeapStartCode final
-    {
-        HostCodeHeap* CodeHeap;
-        void* CodeStartAddress;
-    };
-    CUnorderedArray<FreeHostCodeHeapStartCode, 32> m_delayFreeHostCodeHeapMemory;
 #endif // !DACCESS_COMPILE
 
 protected:

@@ -6798,33 +6798,80 @@ T_CONTEXT *Thread::GetFilterContext(void)
 
 void Thread::ClearContext()
 {
-    CONTRACTL {
-        NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-    }
-    CONTRACTL_END;
+    LIMITED_METHOD_CONTRACT;
+
 #ifdef FEATURE_COMINTEROP
     m_fDisableComObjectEagerCleanup = false;
 #endif //FEATURE_COMINTEROP
 }
 
-BOOL Thread::HaveExtraWorkForFinalizer()
+namespace
+{
+    SimpleList<DynamicMethodDesc*> s_delayDestroyDynamicMethodList;
+
+    bool HasDelayedDynamicMethod()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return s_delayDestroyDynamicMethodList.Head() != NULL;
+    }
+
+    void AddDelayedDynamicMethod(DynamicMethodDesc* pDMD)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(pDMD != NULL);
+
+        s_delayDestroyDynamicMethodList.LinkHead(new SimpleList<DynamicMethodDesc*>::Node(pDMD));
+    }
+
+    void CleanupDelayedDynamicMethods()
+    {
+        STANDARD_VM_CONTRACT;
+
+        while (s_delayDestroyDynamicMethodList.Head())
+        {
+            SimpleList<DynamicMethodDesc*>::Node* curr = s_delayDestroyDynamicMethodList.UnlinkHead();
+            if (!curr->data->TryDestroy())
+            {
+                // Method was not destroyed, add it back for later cleanup.
+                // If one fails, we will stop destroying any more and try again later.
+                s_delayDestroyDynamicMethodList.LinkHead(curr);
+                return;
+            }
+
+            delete curr;
+        }
+    }
+}
+
+void Thread::DelayDestroyDynamicMethodDesc(DynamicMethodDesc* pDMD)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(FinalizerThread::IsCurrentThreadFinalizer());
+
+    AddDelayedDynamicMethod(pDMD);
+}
+
+bool Thread::HaveExtraWorkForFinalizer()
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(FinalizerThread::IsCurrentThreadFinalizer());
 
     return RequireSyncBlockCleanup()
-        || Thread::CleanupNeededForFinalizedThread()
-        || (m_DetachCount > 0)
         || SystemDomain::System()->RequireAppDomainCleanup()
+        || (m_DetachCount > 0)
+        || Thread::CleanupNeededForFinalizedThread()
         || YieldProcessorNormalization::IsMeasurementScheduled()
+        || HasDelayedDynamicMethod()
         || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads();
 }
 
 void Thread::DoExtraWorkForFinalizer()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -6847,7 +6894,7 @@ void Thread::DoExtraWorkForFinalizer()
         SystemDomain::System()->ProcessDelayedUnloadLoaderAllocators();
     }
 
-    if(m_DetachCount > 0 || Thread::CleanupNeededForFinalizedThread())
+    if (m_DetachCount > 0 || Thread::CleanupNeededForFinalizedThread())
     {
         Thread::CleanupDetachedThreads();
     }
@@ -6856,6 +6903,12 @@ void Thread::DoExtraWorkForFinalizer()
     {
         GCX_PREEMP();
         YieldProcessorNormalization::PerformMeasurement();
+    }
+
+    if (HasDelayedDynamicMethod())
+    {
+        GCX_PREEMP();
+        CleanupDelayedDynamicMethods();
     }
 
     ThreadStore::s_pThreadStore->TriggerGCForDeadThreadsIfNecessary();

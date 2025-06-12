@@ -32,7 +32,7 @@ CLREvent * FinalizerThread::hEventFinalizerToShutDown = NULL;
 
 HANDLE FinalizerThread::MHandles[kHandleCount];
 
-BOOL FinalizerThread::IsCurrentThreadFinalizer()
+bool FinalizerThread::IsCurrentThreadFinalizer()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -46,7 +46,14 @@ void FinalizerThread::EnableFinalization()
     hEventFinalizer->Set();
 }
 
-BOOL FinalizerThread::HaveExtraWorkForFinalizer()
+void FinalizerThread::DelayDestroyDynamicMethodDesc(DynamicMethodDesc* pDMD)
+{
+    WRAPPER_NO_CONTRACT;
+
+    GetFinalizerThread()->DelayDestroyDynamicMethodDesc(pDMD);
+}
+
+bool FinalizerThread::HaveExtraWorkForFinalizer()
 {
     WRAPPER_NO_CONTRACT;
 

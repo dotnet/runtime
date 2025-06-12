@@ -2920,7 +2920,7 @@ public:
     //
     // following implementations defined in DynamicMethod.cpp
     //
-    void Destroy();
+    bool TryDestroy();
     friend struct ::cdac_data<DynamicMethodDesc>;
 };
 
