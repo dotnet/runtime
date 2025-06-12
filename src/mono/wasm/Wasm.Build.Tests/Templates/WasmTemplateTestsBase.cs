@@ -204,8 +204,8 @@ public class WasmTemplateTestsBase : BuildTestBase
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "JavascriptBundlers", "package.json"), Path.Combine(publicWwwrootDir, "package.json"));
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "JavascriptBundlers", "rollup.config.mjs"), Path.Combine(publicWwwrootDir, "rollup.config.mjs"));
 
-            // TODO MF: Discover npm
-            ToolCommand npmCommand = new ToolCommand(@"C:\Program Files\nodejs\npm.cmd", _testOutput).WithWorkingDirectory(publicWwwrootDir);
+            string npmPath = s_isWindows ? @"C:\Program Files\nodejs\npm.cmd" : "/usb/bin/node/bin/npm";
+            ToolCommand npmCommand = new ToolCommand(npmPath, _testOutput).WithWorkingDirectory(publicWwwrootDir);
             npmCommand.Execute("install").EnsureSuccessful();
             npmCommand.Execute("run build").EnsureSuccessful();
 
