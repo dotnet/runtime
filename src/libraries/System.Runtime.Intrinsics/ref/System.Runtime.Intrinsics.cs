@@ -4712,66 +4712,66 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> Compute8BitAddresses(System.Numerics.Vector<uint> bases, System.Numerics.Vector<uint> indices) { throw null; }
         public static System.Numerics.Vector<ulong> Compute8BitAddresses(System.Numerics.Vector<ulong> bases, System.Numerics.Vector<long> indices) { throw null; }
         public static System.Numerics.Vector<ulong> Compute8BitAddresses(System.Numerics.Vector<ulong> bases, System.Numerics.Vector<ulong> indices) { throw null; }
-        public static System.Numerics.Vector<byte> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> defaultValue, System.Numerics.Vector<byte> data) { throw null; }
-        public static byte ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<byte> mask, byte defaultValues, System.Numerics.Vector<byte> data) { throw null; }
-        public static System.Numerics.Vector<double> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> defaultValue, System.Numerics.Vector<double> data) { throw null; }
-        public static double ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<double> mask, double defaultValues, System.Numerics.Vector<double> data) { throw null; }
-        public static System.Numerics.Vector<short> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> defaultValue, System.Numerics.Vector<short> data) { throw null; }
-        public static short ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<short> mask, short defaultValues, System.Numerics.Vector<short> data) { throw null; }
-        public static System.Numerics.Vector<int> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> defaultValue, System.Numerics.Vector<int> data) { throw null; }
-        public static int ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<int> mask, int defaultValues, System.Numerics.Vector<int> data) { throw null; }
-        public static System.Numerics.Vector<long> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> defaultValue, System.Numerics.Vector<long> data) { throw null; }
-        public static long ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<long> mask, long defaultValues, System.Numerics.Vector<long> data) { throw null; }
-        public static System.Numerics.Vector<sbyte> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> defaultValue, System.Numerics.Vector<sbyte> data) { throw null; }
-        public static sbyte ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<sbyte> mask, sbyte defaultValues, System.Numerics.Vector<sbyte> data) { throw null; }
-        public static System.Numerics.Vector<float> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> defaultValue, System.Numerics.Vector<float> data) { throw null; }
-        public static float ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<float> mask, float defaultValues, System.Numerics.Vector<float> data) { throw null; }
-        public static System.Numerics.Vector<ushort> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> defaultValue, System.Numerics.Vector<ushort> data) { throw null; }
-        public static ushort ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<ushort> mask, ushort defaultValues, System.Numerics.Vector<ushort> data) { throw null; }
-        public static System.Numerics.Vector<uint> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> defaultValue, System.Numerics.Vector<uint> data) { throw null; }
-        public static uint ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<uint> mask, uint defaultValues, System.Numerics.Vector<uint> data) { throw null; }
-        public static System.Numerics.Vector<ulong> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> defaultValue, System.Numerics.Vector<ulong> data) { throw null; }
-        public static ulong ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<ulong> mask, ulong defaultValues, System.Numerics.Vector<ulong> data) { throw null; }
-        public static System.Numerics.Vector<byte> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> defaultScalar, System.Numerics.Vector<byte> data) { throw null; }
-        public static System.Numerics.Vector<double> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> defaultScalar, System.Numerics.Vector<double> data) { throw null; }
-        public static System.Numerics.Vector<short> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> defaultScalar, System.Numerics.Vector<short> data) { throw null; }
-        public static System.Numerics.Vector<int> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> defaultScalar, System.Numerics.Vector<int> data) { throw null; }
-        public static System.Numerics.Vector<long> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> defaultScalar, System.Numerics.Vector<long> data) { throw null; }
-        public static System.Numerics.Vector<sbyte> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> defaultScalar, System.Numerics.Vector<sbyte> data) { throw null; }
-        public static System.Numerics.Vector<float> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> defaultScalar, System.Numerics.Vector<float> data) { throw null; }
-        public static System.Numerics.Vector<ushort> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> defaultScalar, System.Numerics.Vector<ushort> data) { throw null; }
-        public static System.Numerics.Vector<uint> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> defaultScalar, System.Numerics.Vector<uint> data) { throw null; }
-        public static System.Numerics.Vector<ulong> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> defaultScalar, System.Numerics.Vector<ulong> data) { throw null; }
-        public static System.Numerics.Vector<byte> ConditionalExtractLastActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> defaultValue, System.Numerics.Vector<byte> data) { throw null; }
-        public static byte ConditionalExtractLastActiveElement(System.Numerics.Vector<byte> mask, byte defaultValues, System.Numerics.Vector<byte> data) { throw null; }
-        public static System.Numerics.Vector<double> ConditionalExtractLastActiveElement(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> defaultValue, System.Numerics.Vector<double> data) { throw null; }
-        public static double ConditionalExtractLastActiveElement(System.Numerics.Vector<double> mask, double defaultValues, System.Numerics.Vector<double> data) { throw null; }
-        public static System.Numerics.Vector<short> ConditionalExtractLastActiveElement(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> defaultValue, System.Numerics.Vector<short> data) { throw null; }
-        public static short ConditionalExtractLastActiveElement(System.Numerics.Vector<short> mask, short defaultValues, System.Numerics.Vector<short> data) { throw null; }
-        public static System.Numerics.Vector<int> ConditionalExtractLastActiveElement(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> defaultValue, System.Numerics.Vector<int> data) { throw null; }
-        public static int ConditionalExtractLastActiveElement(System.Numerics.Vector<int> mask, int defaultValues, System.Numerics.Vector<int> data) { throw null; }
-        public static System.Numerics.Vector<long> ConditionalExtractLastActiveElement(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> defaultValue, System.Numerics.Vector<long> data) { throw null; }
-        public static long ConditionalExtractLastActiveElement(System.Numerics.Vector<long> mask, long defaultValues, System.Numerics.Vector<long> data) { throw null; }
-        public static System.Numerics.Vector<sbyte> ConditionalExtractLastActiveElement(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> defaultValue, System.Numerics.Vector<sbyte> data) { throw null; }
-        public static sbyte ConditionalExtractLastActiveElement(System.Numerics.Vector<sbyte> mask, sbyte defaultValues, System.Numerics.Vector<sbyte> data) { throw null; }
-        public static System.Numerics.Vector<float> ConditionalExtractLastActiveElement(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> defaultValue, System.Numerics.Vector<float> data) { throw null; }
-        public static float ConditionalExtractLastActiveElement(System.Numerics.Vector<float> mask, float defaultValues, System.Numerics.Vector<float> data) { throw null; }
-        public static System.Numerics.Vector<ushort> ConditionalExtractLastActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> defaultValue, System.Numerics.Vector<ushort> data) { throw null; }
-        public static ushort ConditionalExtractLastActiveElement(System.Numerics.Vector<ushort> mask, ushort defaultValues, System.Numerics.Vector<ushort> data) { throw null; }
-        public static System.Numerics.Vector<uint> ConditionalExtractLastActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> defaultValue, System.Numerics.Vector<uint> data) { throw null; }
-        public static uint ConditionalExtractLastActiveElement(System.Numerics.Vector<uint> mask, uint defaultValues, System.Numerics.Vector<uint> data) { throw null; }
-        public static System.Numerics.Vector<ulong> ConditionalExtractLastActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> defaultValue, System.Numerics.Vector<ulong> data) { throw null; }
-        public static ulong ConditionalExtractLastActiveElement(System.Numerics.Vector<ulong> mask, ulong defaultValues, System.Numerics.Vector<ulong> data) { throw null; }
-        public static System.Numerics.Vector<byte> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> fallback, System.Numerics.Vector<byte> data) { throw null; }
-        public static System.Numerics.Vector<double> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> fallback, System.Numerics.Vector<double> data) { throw null; }
-        public static System.Numerics.Vector<short> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> fallback, System.Numerics.Vector<short> data) { throw null; }
-        public static System.Numerics.Vector<int> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> fallback, System.Numerics.Vector<int> data) { throw null; }
-        public static System.Numerics.Vector<long> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> fallback, System.Numerics.Vector<long> data) { throw null; }
-        public static System.Numerics.Vector<sbyte> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> fallback, System.Numerics.Vector<sbyte> data) { throw null; }
-        public static System.Numerics.Vector<float> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> fallback, System.Numerics.Vector<float> data) { throw null; }
-        public static System.Numerics.Vector<ushort> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> fallback, System.Numerics.Vector<ushort> data) { throw null; }
-        public static System.Numerics.Vector<uint> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> fallback, System.Numerics.Vector<uint> data) { throw null; }
-        public static System.Numerics.Vector<ulong> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> fallback, System.Numerics.Vector<ulong> data) { throw null; }
+        public static System.Numerics.Vector<byte> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> defaultScalar, System.Numerics.Vector<byte> data) { throw null; }
+        public static byte ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<byte> mask, byte defaultValue, System.Numerics.Vector<byte> data) { throw null; }
+        public static System.Numerics.Vector<double> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> defaultScalar, System.Numerics.Vector<double> data) { throw null; }
+        public static double ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<double> mask, double defaultValue, System.Numerics.Vector<double> data) { throw null; }
+        public static System.Numerics.Vector<short> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> defaultScalar, System.Numerics.Vector<short> data) { throw null; }
+        public static short ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<short> mask, short defaultValue, System.Numerics.Vector<short> data) { throw null; }
+        public static System.Numerics.Vector<int> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> defaultScalar, System.Numerics.Vector<int> data) { throw null; }
+        public static int ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<int> mask, int defaultValue, System.Numerics.Vector<int> data) { throw null; }
+        public static System.Numerics.Vector<long> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> defaultScalar, System.Numerics.Vector<long> data) { throw null; }
+        public static long ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<long> mask, long defaultValue, System.Numerics.Vector<long> data) { throw null; }
+        public static System.Numerics.Vector<sbyte> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> defaultScalar, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static sbyte ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<sbyte> mask, sbyte defaultValue, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static System.Numerics.Vector<float> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> defaultScalar, System.Numerics.Vector<float> data) { throw null; }
+        public static float ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<float> mask, float defaultValue, System.Numerics.Vector<float> data) { throw null; }
+        public static System.Numerics.Vector<ushort> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> defaultScalar, System.Numerics.Vector<ushort> data) { throw null; }
+        public static ushort ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<ushort> mask, ushort defaultValue, System.Numerics.Vector<ushort> data) { throw null; }
+        public static System.Numerics.Vector<uint> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> defaultScalar, System.Numerics.Vector<uint> data) { throw null; }
+        public static uint ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<uint> mask, uint defaultValue, System.Numerics.Vector<uint> data) { throw null; }
+        public static System.Numerics.Vector<ulong> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> defaultScalar, System.Numerics.Vector<ulong> data) { throw null; }
+        public static ulong ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<ulong> mask, ulong defaultValue, System.Numerics.Vector<ulong> data) { throw null; }
+        public static System.Numerics.Vector<byte> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> defaultValues, System.Numerics.Vector<byte> data) { throw null; }
+        public static System.Numerics.Vector<double> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> defaultValues, System.Numerics.Vector<double> data) { throw null; }
+        public static System.Numerics.Vector<short> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> defaultValues, System.Numerics.Vector<short> data) { throw null; }
+        public static System.Numerics.Vector<int> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> defaultValues, System.Numerics.Vector<int> data) { throw null; }
+        public static System.Numerics.Vector<long> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> defaultValues, System.Numerics.Vector<long> data) { throw null; }
+        public static System.Numerics.Vector<sbyte> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> defaultValues, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static System.Numerics.Vector<float> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> defaultValues, System.Numerics.Vector<float> data) { throw null; }
+        public static System.Numerics.Vector<ushort> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> defaultValues, System.Numerics.Vector<ushort> data) { throw null; }
+        public static System.Numerics.Vector<uint> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> defaultValues, System.Numerics.Vector<uint> data) { throw null; }
+        public static System.Numerics.Vector<ulong> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> defaultValues, System.Numerics.Vector<ulong> data) { throw null; }
+        public static System.Numerics.Vector<byte> ConditionalExtractLastActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> defaultScalar, System.Numerics.Vector<byte> data) { throw null; }
+        public static byte ConditionalExtractLastActiveElement(System.Numerics.Vector<byte> mask, byte defaultValue, System.Numerics.Vector<byte> data) { throw null; }
+        public static System.Numerics.Vector<double> ConditionalExtractLastActiveElement(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> defaultScalar, System.Numerics.Vector<double> data) { throw null; }
+        public static double ConditionalExtractLastActiveElement(System.Numerics.Vector<double> mask, double defaultValue, System.Numerics.Vector<double> data) { throw null; }
+        public static System.Numerics.Vector<short> ConditionalExtractLastActiveElement(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> defaultScalar, System.Numerics.Vector<short> data) { throw null; }
+        public static short ConditionalExtractLastActiveElement(System.Numerics.Vector<short> mask, short defaultValue, System.Numerics.Vector<short> data) { throw null; }
+        public static System.Numerics.Vector<int> ConditionalExtractLastActiveElement(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> defaultScalar, System.Numerics.Vector<int> data) { throw null; }
+        public static int ConditionalExtractLastActiveElement(System.Numerics.Vector<int> mask, int defaultValue, System.Numerics.Vector<int> data) { throw null; }
+        public static System.Numerics.Vector<long> ConditionalExtractLastActiveElement(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> defaultScalar, System.Numerics.Vector<long> data) { throw null; }
+        public static long ConditionalExtractLastActiveElement(System.Numerics.Vector<long> mask, long defaultValue, System.Numerics.Vector<long> data) { throw null; }
+        public static System.Numerics.Vector<sbyte> ConditionalExtractLastActiveElement(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> defaultScalar, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static sbyte ConditionalExtractLastActiveElement(System.Numerics.Vector<sbyte> mask, sbyte defaultValue, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static System.Numerics.Vector<float> ConditionalExtractLastActiveElement(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> defaultScalar, System.Numerics.Vector<float> data) { throw null; }
+        public static float ConditionalExtractLastActiveElement(System.Numerics.Vector<float> mask, float defaultValue, System.Numerics.Vector<float> data) { throw null; }
+        public static System.Numerics.Vector<ushort> ConditionalExtractLastActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> defaultScalar, System.Numerics.Vector<ushort> data) { throw null; }
+        public static ushort ConditionalExtractLastActiveElement(System.Numerics.Vector<ushort> mask, ushort defaultValue, System.Numerics.Vector<ushort> data) { throw null; }
+        public static System.Numerics.Vector<uint> ConditionalExtractLastActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> defaultScalar, System.Numerics.Vector<uint> data) { throw null; }
+        public static uint ConditionalExtractLastActiveElement(System.Numerics.Vector<uint> mask, uint defaultValue, System.Numerics.Vector<uint> data) { throw null; }
+        public static System.Numerics.Vector<ulong> ConditionalExtractLastActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> defaultScalar, System.Numerics.Vector<ulong> data) { throw null; }
+        public static ulong ConditionalExtractLastActiveElement(System.Numerics.Vector<ulong> mask, ulong defaultValue, System.Numerics.Vector<ulong> data) { throw null; }
+        public static System.Numerics.Vector<byte> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> defaultValues, System.Numerics.Vector<byte> data) { throw null; }
+        public static System.Numerics.Vector<double> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> defaultValues, System.Numerics.Vector<double> data) { throw null; }
+        public static System.Numerics.Vector<short> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> defaultValues, System.Numerics.Vector<short> data) { throw null; }
+        public static System.Numerics.Vector<int> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> defaultValues, System.Numerics.Vector<int> data) { throw null; }
+        public static System.Numerics.Vector<long> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> defaultValues, System.Numerics.Vector<long> data) { throw null; }
+        public static System.Numerics.Vector<sbyte> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> defaultValues, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static System.Numerics.Vector<float> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> defaultValues, System.Numerics.Vector<float> data) { throw null; }
+        public static System.Numerics.Vector<ushort> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> defaultValues, System.Numerics.Vector<ushort> data) { throw null; }
+        public static System.Numerics.Vector<uint> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> defaultValues, System.Numerics.Vector<uint> data) { throw null; }
+        public static System.Numerics.Vector<ulong> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> defaultValues, System.Numerics.Vector<ulong> data) { throw null; }
         public static System.Numerics.Vector<byte> ConditionalSelect(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<double> ConditionalSelect(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<short> ConditionalSelect(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
@@ -4804,14 +4804,14 @@ namespace System.Runtime.Intrinsics.Arm
         public static ulong Count32BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong Count64BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong Count8BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
-        public static System.Numerics.Vector<byte> CreateBreakAfterMask(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
-        public static System.Numerics.Vector<short> CreateBreakAfterMask(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
-        public static System.Numerics.Vector<int> CreateBreakAfterMask(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
-        public static System.Numerics.Vector<long> CreateBreakAfterMask(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
-        public static System.Numerics.Vector<sbyte> CreateBreakAfterMask(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
-        public static System.Numerics.Vector<ushort> CreateBreakAfterMask(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
-        public static System.Numerics.Vector<uint> CreateBreakAfterMask(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
-        public static System.Numerics.Vector<ulong> CreateBreakAfterMask(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static System.Numerics.Vector<byte> CreateBreakAfterMask(System.Numerics.Vector<byte> totalMask, System.Numerics.Vector<byte> fromMask) { throw null; }
+        public static System.Numerics.Vector<short> CreateBreakAfterMask(System.Numerics.Vector<short> totalMask, System.Numerics.Vector<short> fromMask) { throw null; }
+        public static System.Numerics.Vector<int> CreateBreakAfterMask(System.Numerics.Vector<int> totalMask, System.Numerics.Vector<int> fromMask) { throw null; }
+        public static System.Numerics.Vector<long> CreateBreakAfterMask(System.Numerics.Vector<long> totalMask, System.Numerics.Vector<long> fromMask) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateBreakAfterMask(System.Numerics.Vector<sbyte> totalMask, System.Numerics.Vector<sbyte> fromMask) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateBreakAfterMask(System.Numerics.Vector<ushort> totalMask, System.Numerics.Vector<ushort> fromMask) { throw null; }
+        public static System.Numerics.Vector<uint> CreateBreakAfterMask(System.Numerics.Vector<uint> totalMask, System.Numerics.Vector<uint> fromMask) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateBreakAfterMask(System.Numerics.Vector<ulong> totalMask, System.Numerics.Vector<ulong> fromMask) { throw null; }
         public static System.Numerics.Vector<byte> CreateBreakAfterPropagateMask(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> CreateBreakAfterPropagateMask(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> CreateBreakAfterPropagateMask(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -4820,14 +4820,14 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> CreateBreakAfterPropagateMask(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> CreateBreakAfterPropagateMask(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> CreateBreakAfterPropagateMask(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
-        public static System.Numerics.Vector<byte> CreateBreakBeforeMask(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
-        public static System.Numerics.Vector<short> CreateBreakBeforeMask(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
-        public static System.Numerics.Vector<int> CreateBreakBeforeMask(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
-        public static System.Numerics.Vector<long> CreateBreakBeforeMask(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
-        public static System.Numerics.Vector<sbyte> CreateBreakBeforeMask(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
-        public static System.Numerics.Vector<ushort> CreateBreakBeforeMask(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
-        public static System.Numerics.Vector<uint> CreateBreakBeforeMask(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
-        public static System.Numerics.Vector<ulong> CreateBreakBeforeMask(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static System.Numerics.Vector<byte> CreateBreakBeforeMask(System.Numerics.Vector<byte> totalMask, System.Numerics.Vector<byte> fromMask) { throw null; }
+        public static System.Numerics.Vector<short> CreateBreakBeforeMask(System.Numerics.Vector<short> totalMask, System.Numerics.Vector<short> fromMask) { throw null; }
+        public static System.Numerics.Vector<int> CreateBreakBeforeMask(System.Numerics.Vector<int> totalMask, System.Numerics.Vector<int> fromMask) { throw null; }
+        public static System.Numerics.Vector<long> CreateBreakBeforeMask(System.Numerics.Vector<long> totalMask, System.Numerics.Vector<long> fromMask) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateBreakBeforeMask(System.Numerics.Vector<sbyte> totalMask, System.Numerics.Vector<sbyte> fromMask) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateBreakBeforeMask(System.Numerics.Vector<ushort> totalMask, System.Numerics.Vector<ushort> fromMask) { throw null; }
+        public static System.Numerics.Vector<uint> CreateBreakBeforeMask(System.Numerics.Vector<uint> totalMask, System.Numerics.Vector<uint> fromMask) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateBreakBeforeMask(System.Numerics.Vector<ulong> totalMask, System.Numerics.Vector<ulong> fromMask) { throw null; }
         public static System.Numerics.Vector<byte> CreateBreakBeforePropagateMask(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> CreateBreakBeforePropagateMask(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> CreateBreakBeforePropagateMask(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -4854,18 +4854,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> CreateFalseMaskUInt16() { throw null; }
         public static System.Numerics.Vector<uint> CreateFalseMaskUInt32() { throw null; }
         public static System.Numerics.Vector<ulong> CreateFalseMaskUInt64() { throw null; }
-        public static System.Numerics.Vector<byte> CreateMaskForFirstActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
-        public static System.Numerics.Vector<short> CreateMaskForFirstActiveElement(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
-        public static System.Numerics.Vector<int> CreateMaskForFirstActiveElement(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
-        public static System.Numerics.Vector<long> CreateMaskForFirstActiveElement(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
-        public static System.Numerics.Vector<sbyte> CreateMaskForFirstActiveElement(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
-        public static System.Numerics.Vector<ushort> CreateMaskForFirstActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
-        public static System.Numerics.Vector<uint> CreateMaskForFirstActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
-        public static System.Numerics.Vector<ulong> CreateMaskForFirstActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
-        public static System.Numerics.Vector<byte> CreateMaskForNextActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
-        public static System.Numerics.Vector<ushort> CreateMaskForNextActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
-        public static System.Numerics.Vector<uint> CreateMaskForNextActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
-        public static System.Numerics.Vector<ulong> CreateMaskForNextActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static System.Numerics.Vector<byte> CreateMaskForFirstActiveElement(System.Numerics.Vector<byte> totalMask, System.Numerics.Vector<byte> fromMask) { throw null; }
+        public static System.Numerics.Vector<short> CreateMaskForFirstActiveElement(System.Numerics.Vector<short> totalMask, System.Numerics.Vector<short> fromMask) { throw null; }
+        public static System.Numerics.Vector<int> CreateMaskForFirstActiveElement(System.Numerics.Vector<int> totalMask, System.Numerics.Vector<int> fromMask) { throw null; }
+        public static System.Numerics.Vector<long> CreateMaskForFirstActiveElement(System.Numerics.Vector<long> totalMask, System.Numerics.Vector<long> fromMask) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateMaskForFirstActiveElement(System.Numerics.Vector<sbyte> totalMask, System.Numerics.Vector<sbyte> fromMask) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateMaskForFirstActiveElement(System.Numerics.Vector<ushort> totalMask, System.Numerics.Vector<ushort> fromMask) { throw null; }
+        public static System.Numerics.Vector<uint> CreateMaskForFirstActiveElement(System.Numerics.Vector<uint> totalMask, System.Numerics.Vector<uint> fromMask) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateMaskForFirstActiveElement(System.Numerics.Vector<ulong> totalMask, System.Numerics.Vector<ulong> fromMask) { throw null; }
+        public static System.Numerics.Vector<byte> CreateMaskForNextActiveElement(System.Numerics.Vector<byte> totalMask, System.Numerics.Vector<byte> fromMask) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateMaskForNextActiveElement(System.Numerics.Vector<ushort> totalMask, System.Numerics.Vector<ushort> fromMask) { throw null; }
+        public static System.Numerics.Vector<uint> CreateMaskForNextActiveElement(System.Numerics.Vector<uint> totalMask, System.Numerics.Vector<uint> fromMask) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateMaskForNextActiveElement(System.Numerics.Vector<ulong> totalMask, System.Numerics.Vector<ulong> fromMask) { throw null; }
         public static System.Numerics.Vector<byte> CreateTrueMaskByte([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<double> CreateTrueMaskDouble([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<short> CreateTrueMaskInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
@@ -5937,30 +5937,30 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> SubtractSaturate(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> SubtractSaturate(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> SubtractSaturate(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> rightMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> rightMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> rightMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> rightMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> rightMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> rightMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> rightMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> rightMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<byte> leftMask, System.Numerics.Vector<byte> rightMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<short> leftMask, System.Numerics.Vector<short> rightMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<int> leftMask, System.Numerics.Vector<int> rightMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<long> leftMask, System.Numerics.Vector<long> rightMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<sbyte> leftMask, System.Numerics.Vector<sbyte> rightMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<ushort> leftMask, System.Numerics.Vector<ushort> rightMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<uint> leftMask, System.Numerics.Vector<uint> rightMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<ulong> leftMask, System.Numerics.Vector<ulong> rightMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<byte> leftMask, System.Numerics.Vector<byte> rightMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<short> leftMask, System.Numerics.Vector<short> rightMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<int> leftMask, System.Numerics.Vector<int> rightMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<long> leftMask, System.Numerics.Vector<long> rightMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<sbyte> leftMask, System.Numerics.Vector<sbyte> rightMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<ushort> leftMask, System.Numerics.Vector<ushort> rightMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<uint> leftMask, System.Numerics.Vector<uint> rightMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<ulong> leftMask, System.Numerics.Vector<ulong> rightMask) { throw null; }
         public static System.Numerics.Vector<byte> TransposeEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<double> TransposeEven(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<short> TransposeEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }

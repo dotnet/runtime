@@ -1083,7 +1083,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
         int       shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
         var_types targetType   = tree->TypeGet();
 
-        if ((genActualType(targetType) == TYP_LONG) && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) &&
+        if ((genActualType(targetType) == TYP_LONG) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) &&
             tree->OperIs(GT_ROL, GT_ROR) && (shiftByValue > 0) && (shiftByValue < 64))
         {
             srcCandidates = ForceLowGprForApxIfNeeded(source, srcCandidates, getEvexIsSupported());
@@ -1093,7 +1093,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 #endif
     }
     else if (!tree->isContained() && (tree->OperIsShift() || source->isContained()) &&
-             compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && !tree->gtSetFlags())
+             compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) && !tree->gtSetFlags())
     {
         // We don'thave any specific register requirements here, so skip the logic that
         // reserves RCX or preferences the source reg.
@@ -1700,9 +1700,9 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
                     simdTemp = buildInternalFloatRegisterDefForNode(putArgStk);
                 }
 
-                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
                 {
-                    // To store SIMD12 without SSE4.1 (extractps) we will need
+                    // To store SIMD12 without extractps we will need
                     // a temp xmm reg to do the shuffle.
                     buildInternalFloatRegisterDefForNode(use.GetNode());
                 }
@@ -2261,7 +2261,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         srcCount += 1;
 
                         if ((baseType == TYP_FLOAT) && HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId) &&
-                            !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                            !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
                         {
                             setDelayFree(op1Use);
                         }
@@ -2278,7 +2278,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     dstCandidates = allByteRegs();
                 }
-                else if (varTypeIsLong(baseType) && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                else if (varTypeIsLong(baseType) && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
                 {
                     // For SSE2 fallbacks, we will need a temp register to insert the upper half of a long
                     buildInternalFloatRegisterDefForNode(intrinsicTree);
@@ -2380,7 +2380,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_SSE41_BlendVariable:
+            case NI_SSE42_BlendVariable:
             {
                 assert(numArgs == 3);
 
@@ -2388,7 +2388,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     assert(isRMW);
 
-                    // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
+                    // pre-VEX blendv* hardcodes the mask vector (op3) in XMM0
                     tgtPrefUse = BuildUse(op1, BuildEvexIncompatibleMask(op1));
 
                     srcCount += 1;
@@ -2408,7 +2408,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_SSE41_Extract:
+            case NI_SSE42_Extract:
             {
                 assert(!varTypeIsFloating(baseType));
 
@@ -2481,8 +2481,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_BMI2_MultiplyNoFlags:
-            case NI_BMI2_X64_MultiplyNoFlags:
+            case NI_AVX2_MultiplyNoFlags:
+            case NI_AVX2_X64_MultiplyNoFlags:
             {
                 assert(numArgs == 2 || numArgs == 3);
                 srcCount += BuildOperandUses(op1, SRBM_EDX);
@@ -2502,16 +2502,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_FMA_MultiplyAdd:
-            case NI_FMA_MultiplyAddNegated:
-            case NI_FMA_MultiplyAddNegatedScalar:
-            case NI_FMA_MultiplyAddScalar:
-            case NI_FMA_MultiplyAddSubtract:
-            case NI_FMA_MultiplySubtract:
-            case NI_FMA_MultiplySubtractAdd:
-            case NI_FMA_MultiplySubtractNegated:
-            case NI_FMA_MultiplySubtractNegatedScalar:
-            case NI_FMA_MultiplySubtractScalar:
+            case NI_AVX2_MultiplyAdd:
+            case NI_AVX2_MultiplyAddNegated:
+            case NI_AVX2_MultiplyAddNegatedScalar:
+            case NI_AVX2_MultiplyAddScalar:
+            case NI_AVX2_MultiplyAddSubtract:
+            case NI_AVX2_MultiplySubtract:
+            case NI_AVX2_MultiplySubtractAdd:
+            case NI_AVX2_MultiplySubtractNegated:
+            case NI_AVX2_MultiplySubtractNegatedScalar:
+            case NI_AVX2_MultiplySubtractScalar:
             case NI_AVX512_FusedMultiplyAdd:
             case NI_AVX512_FusedMultiplyAddScalar:
             case NI_AVX512_FusedMultiplyAddNegated:
@@ -2699,9 +2699,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVX512_PermuteVar16x16x2:
             case NI_AVX512_PermuteVar16x32x2:
             case NI_AVX512_PermuteVar32x16x2:
-            case NI_AVX512VBMI_PermuteVar16x8x2:
-            case NI_AVX512VBMI_PermuteVar32x8x2:
-            case NI_AVX512VBMI_PermuteVar64x8x2:
+            case NI_AVX512v2_PermuteVar16x8x2:
+            case NI_AVX512v2_PermuteVar32x8x2:
+            case NI_AVX512v2_PermuteVar64x8x2:
             {
                 assert(numArgs == 3);
                 assert(isRMW);
@@ -3089,7 +3089,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 
 #ifdef FEATURE_SIMD
     if (indirTree->TypeIs(TYP_SIMD12) && indirTree->OperIs(GT_STOREIND) &&
-        !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41) && !indirTree->Data()->IsVectorZero())
+        !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42) && !indirTree->Data()->IsVectorZero())
     {
         // GT_STOREIND needs an internal register so the upper 4 bytes can be extracted
         buildInternalFloatRegisterDefForNode(indirTree);
