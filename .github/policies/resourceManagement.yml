@@ -1679,6 +1679,21 @@ configuration:
     - if:
       - payloadType: Pull_Request
       - filesMatchPattern:
+          pattern: (?i)src/coreclr/.*jit.*
+          matchAny: true
+      - isPullRequest
+      - isOpen
+      then:
+      - mentionUsers:
+          mentionees:
+          - dotnet/jit-contrib
+          replyTemplate: >-
+            Tagging @dotnet/jit-contrib for JIT related changes
+          assignMentionees: False
+      description: '@Mention for JIT related changes'
+    - if:
+      - payloadType: Pull_Request
+      - filesMatchPattern:
           pattern: (?i).*ILLink.*
           matchAny: true
       - not:
