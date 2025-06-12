@@ -710,7 +710,6 @@ public:
     // we don't recreated one on exit if its been deleted.
     DEBUG_NOINLINE void Enter()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_DEBUG_ONLY;
 
         m_pClrDebugState = GetClrDebugState();
@@ -723,7 +722,6 @@ public:
 
     DEBUG_NOINLINE void Leave()
     {
-        SCAN_SCOPE_END;
         STATIC_CONTRACT_DEBUG_ONLY;
 
         m_pClrDebugState = CheckClrDebugState();
@@ -751,7 +749,6 @@ class AutoCleanupDebugOnlyCodeHolder : public DebugOnlyCodeHolder
 public:
     DEBUG_NOINLINE AutoCleanupDebugOnlyCodeHolder()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_DEBUG_ONLY;
 
         Enter();
@@ -759,8 +756,6 @@ public:
 
     DEBUG_NOINLINE ~AutoCleanupDebugOnlyCodeHolder()
     {
-        SCAN_SCOPE_END;
-
         Leave();
     };
 };
@@ -1403,7 +1398,6 @@ typedef __SafeToUsePostCondition __PostConditionOK;
 
 #define UNCHECKED(thecheck)                                                                 \
         do {                                                                                \
-            ANNOTATION_UNCHECKED(thecheck);                                                 \
             enum {___disabled = 1 };                                                        \
             thecheck;                                                                       \
         } while(0)
@@ -1601,7 +1595,7 @@ typedef __SafeToUsePostCondition __PostConditionOK;
 #define WRAPPER_NO_CONTRACT CUSTOM_WRAPPER_NO_CONTRACT(Contract)
 
 // GC_NOTRIGGER allowed but not currently enforced at runtime
-#define GC_NOTRIGGER STATIC_CONTRACT_GC_NOTRIGGER
+#define GC_NOTRIGGER do { STATIC_CONTRACT_GC_NOTRIGGER; } while(0)
 #define GC_TRIGGERS static_assert(false, "TriggersGC not supported in utilcode contracts")
 
 #ifdef ENABLE_CONTRACTS_IMPL
@@ -1619,7 +1613,6 @@ public:
 
     DEBUG_NOINLINE void Leave()
     {
-        SCAN_SCOPE_END;
         LeaveInternal();
     };
 
@@ -1660,7 +1653,6 @@ public:
 
     DEBUG_NOINLINE ~AutoCleanupContractViolationHolder()
     {
-        SCAN_SCOPE_END;
         this->LeaveInternal();
     };
 };
@@ -1737,7 +1729,6 @@ class FaultForbidHolder
  public:
     DEBUG_NOINLINE FaultForbidHolder(BOOL fConditional, BOOL fAlloc, const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_FORBID_FAULT;
 
         m_fConditional = fConditional;
@@ -1772,8 +1763,6 @@ class FaultForbidHolder
 
     DEBUG_NOINLINE ~FaultForbidHolder()
     {
-        SCAN_SCOPE_END;
-
         if (m_fConditional)
         {
             *m_pClrDebugState = m_oldClrDebugState;
@@ -1914,7 +1903,6 @@ class ClrTryMarkerHolder
 public:
     DEBUG_NOINLINE ClrTryMarkerHolder()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_THROWS;
 
         m_pClrDebugState = GetClrDebugState();
@@ -1924,8 +1912,6 @@ public:
 
     DEBUG_NOINLINE ~ClrTryMarkerHolder()
     {
-        SCAN_SCOPE_END;
-
         m_pClrDebugState->SetOkToThrow( m_oldOkayToThrowValue );
     }
 

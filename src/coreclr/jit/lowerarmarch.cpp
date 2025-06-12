@@ -938,12 +938,12 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 }
 
 //------------------------------------------------------------------------
-// LowerPutArgStkOrSplit: Lower a GT_PUTARG_STK/GT_PUTARG_SPLIT.
+// LowerPutArgStk: Lower a GT_PUTARG_STK.
 //
 // Arguments:
 //    putArgStk - The node to lower
 //
-void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
+void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgNode)
 {
     GenTree* src = putArgNode->Data();
 
@@ -3503,9 +3503,6 @@ bool Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next)
     if (!comp->opts.OptimizationEnabled())
         return false;
 
-    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
-        return false;
-
     if (op->isContained())
         return false;
 
@@ -3607,9 +3604,6 @@ bool Lowering::TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next)
     assert(op->OperIs(GT_NEG));
 
     if (!comp->opts.OptimizationEnabled())
-        return false;
-
-    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
         return false;
 
     if (op->isContained())

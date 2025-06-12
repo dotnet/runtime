@@ -1406,41 +1406,6 @@ void HijackFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 #endif // TARGET_X86
 #endif // FEATURE_HIJACK
 
-void ProtectByRefsFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
-
-    ByRefInfo *pByRefInfos = m_brInfo;
-    while (pByRefInfos)
-    {
-        if (!CorIsPrimitiveType(pByRefInfos->typ))
-        {
-            TADDR pData = PTR_HOST_MEMBER_TADDR(ByRefInfo, pByRefInfos, data);
-
-            if (pByRefInfos->typeHandle.IsValueType())
-            {
-                ReportPointersFromValueType(fn, sc, pByRefInfos->typeHandle.GetMethodTable(), PTR_VOID(pData));
-            }
-            else
-            {
-                PTR_PTR_Object ppObject = PTR_PTR_Object(pData);
-
-                LOG((LF_GC, INFO3, "ProtectByRefs Frame Promoting" FMT_ADDR "to ", DBG_ADDR(*ppObject)));
-
-                (*fn)(ppObject, sc, CHECK_APP_DOMAIN);
-
-                LOG((LF_GC, INFO3, FMT_ADDR "\n", DBG_ADDR(*ppObject) ));
-            }
-        }
-        pByRefInfos = pByRefInfos->pNext;
-    }
-}
-
 void ProtectValueClassFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
 {
     CONTRACTL
@@ -1704,7 +1669,6 @@ CLRToCOMMethodFrame::CLRToCOMMethodFrame(TransitionBlock * pTransitionBlock, Met
 }
 #endif // #ifndef DACCESS_COMPILE
 
-//virtual
 void CLRToCOMMethodFrame::GcScanRoots_Impl(promote_func* fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
@@ -1715,22 +1679,32 @@ void CLRToCOMMethodFrame::GcScanRoots_Impl(promote_func* fn, ScanContext* sc)
     FramedMethodFrame::GcScanRoots_Impl(fn, sc);
     PromoteCallerStack(fn, sc);
 
-
+    //
     // Promote the returned object
-    MethodDesc* methodDesc = GetFunction();
-    ReturnKind returnKind = methodDesc->GetReturnKind();
-    if (returnKind == RT_Object)
+    //
+
+    MetaSig sig(GetFunction());
+
+    TypeHandle thValueType;
+    CorElementType et = sig.GetReturnTypeNormalized(&thValueType);
+    if (CorTypeInfo::IsObjRef_NoThrow(et))
     {
         (*fn)(GetReturnObjectPtr(), sc, CHECK_APP_DOMAIN);
     }
-    else if (returnKind == RT_ByRef)
+    else if (CorTypeInfo::IsByRef_NoThrow(et))
     {
         PromoteCarefully(fn, GetReturnObjectPtr(), sc, GC_CALL_INTERIOR | CHECK_APP_DOMAIN);
     }
-    else
+    else if (et == ELEMENT_TYPE_VALUETYPE)
     {
-        _ASSERTE_MSG(!IsStructReturnKind(returnKind), "NYI: We can't promote multiregs struct returns");
-        _ASSERTE_MSG(IsScalarReturnKind(returnKind), "Non-scalar types must be promoted.");
+        ArgIterator argit(&sig);
+        if (!argit.HasRetBuffArg())
+        {
+#ifdef TARGET_UNIX
+#error Non-Windows ABIs must be special cased
+#endif
+            ReportPointersFromValueType(fn, sc, thValueType.AsMethodTable(), GetReturnObjectPtr());
+        }
     }
 }
 #endif // FEATURE_COMINTEROP
@@ -1772,16 +1746,6 @@ BOOL TransitionFrame::Protects_Impl(OBJECTREF * ppORef)
     return sc.oref_protected;
 }
 #endif //defined (_DEBUG) && !defined (DACCESS_COMPILE)
-
-//+----------------------------------------------------------------------------
-//
-//  Method:     TPMethodFrame::GcScanRoots    public
-//
-//  Synopsis:   GC protects arguments on the stack
-//
-
-//
-//+----------------------------------------------------------------------------
 
 #ifdef FEATURE_COMINTEROP
 

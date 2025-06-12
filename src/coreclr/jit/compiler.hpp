@@ -1489,7 +1489,13 @@ inline GenTreeIntCon* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags f
 
 inline GenTree* Compiler::gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd)
 {
-    return gtNewIconEmbHndNode((void*)scpHnd, nullptr, GTF_ICON_SCOPE_HDL, scpHnd);
+    void *embedScpHnd, *pEmbedScpHnd;
+
+    embedScpHnd = (void*)info.compCompHnd->embedModuleHandle(scpHnd, &pEmbedScpHnd);
+
+    assert((!embedScpHnd) != (!pEmbedScpHnd));
+
+    return gtNewIconEmbHndNode(embedScpHnd, pEmbedScpHnd, GTF_ICON_SCOPE_HDL, scpHnd);
 }
 
 //-----------------------------------------------------------------------------
@@ -1529,7 +1535,13 @@ inline GenTree* Compiler::gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHnd)
 
 inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 {
-    return gtNewIconEmbHndNode((void*)fldHnd, nullptr, GTF_ICON_FIELD_HDL, fldHnd);
+    void *embedFldHnd, *pEmbedFldHnd;
+
+    embedFldHnd = (void*)info.compCompHnd->embedFieldHandle(fldHnd, &pEmbedFldHnd);
+
+    assert((!embedFldHnd) != (!pEmbedFldHnd));
+
+    return gtNewIconEmbHndNode(embedFldHnd, pEmbedFldHnd, GTF_ICON_FIELD_HDL, fldHnd);
 }
 
 /*****************************************************************************/
@@ -4576,9 +4588,6 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-#if FEATURE_ARG_SPLIT
-        case GT_PUTARG_SPLIT:
-#endif // FEATURE_ARG_SPLIT
         case GT_RETURNTRAP:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
