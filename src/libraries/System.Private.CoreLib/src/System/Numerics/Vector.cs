@@ -2383,6 +2383,24 @@ namespace System.Numerics
         public static Vector<uint> Narrow(Vector<ulong> low, Vector<ulong> high)
             => Narrow<ulong, uint>(low, high);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector<byte> NarrowNative(Vector<ushort> low, Vector<ushort> high)
+        {
+            if (Vector<byte>.Count == Vector512<byte>.Count)
+            {
+                return Vector512.NarrowNative(low.AsVector512(), high.AsVector512()).AsVector();
+            }
+            else if (Vector<byte>.Count == Vector256<byte>.Count)
+            {
+                return Vector256.NarrowNative(low.AsVector256(), high.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(Vector<byte>.Count == Vector128<byte>.Count);
+                return Vector128.NarrowNative(low.AsVector128(), high.AsVector128()).AsVector();
+            }
+        }
+
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector<TResult> NarrowWithSaturation<TSource, TResult>(Vector<TSource> low, Vector<TSource> high)

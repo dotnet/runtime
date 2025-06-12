@@ -2776,6 +2776,21 @@ namespace System.Runtime.Intrinsics
         public static Vector256<uint> Narrow(Vector256<ulong> lower, Vector256<ulong> upper)
             => Narrow<ulong, uint>(lower, upper);
 
+        /// <inheritdoc cref="Vector128.NarrowNative(Vector128{ushort}, Vector128{ushort})"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector256<byte> NarrowNative(Vector256<ushort> lower, Vector256<ushort> upper)
+        {
+            if (Avx2.IsSupported)
+            {
+                const byte control = 0b_11_01_10_00;
+                return Avx2.Permute4x64(Avx2.PackUnsignedSaturate(lower.AsInt16(), upper.AsInt16()).AsInt64(), control).AsByte();
+            }
+            else
+            {
+                return Narrow(lower, upper);
+            }
+        }
+
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<TResult> NarrowWithSaturation<TSource, TResult>(Vector256<TSource> lower, Vector256<TSource> upper)

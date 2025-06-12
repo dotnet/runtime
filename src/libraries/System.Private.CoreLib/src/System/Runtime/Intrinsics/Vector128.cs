@@ -2711,6 +2711,31 @@ namespace System.Runtime.Intrinsics
         public static Vector128<uint> Narrow(Vector128<ulong> lower, Vector128<ulong> upper)
             => Narrow<ulong, uint>(lower, upper);
 
+        /// <summary>Narrows two vector of <see cref="ushort" /> instances into one vector of <see cref="byte" /> using platform specific behavior.</summary>
+        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
+        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
+        /// <returns>A vector of <see cref="byte" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<byte> NarrowNative(Vector128<ushort> lower, Vector128<ushort> upper)
+        {
+            if (Sse2.IsSupported)
+            {
+                return Sse2.PackUnsignedSaturate(lower.AsInt16(), upper.AsInt16());
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.UnzipEven(lower.AsByte(), upper.AsByte());
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.ConvertNarrowingSaturateUnsigned(lower.AsInt16(), upper.AsInt16());
+            }
+            else
+            {
+                return Narrow(lower, upper);
+            }
+        }
+
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector128<TResult> NarrowWithSaturation<TSource, TResult>(Vector128<TSource> lower, Vector128<TSource> upper)

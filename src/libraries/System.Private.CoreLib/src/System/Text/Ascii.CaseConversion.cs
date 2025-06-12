@@ -352,10 +352,10 @@ namespace System.Text
                     }
                     else
                     {
-                        // Narrowing operation required, we know data is all-ASCII so use extract helper.
+                        // Narrowing operation required, platform-dependent narrowing is safe as data is all-ASCII.
 
                         Vector128<ushort> blockAsVectorOfUInt16 = blockAsVectorOfUInt64.AsUInt16();
-                        Vector128<uint> narrowedBlock = ExtractAsciiVector(blockAsVectorOfUInt16, blockAsVectorOfUInt16).AsUInt32();
+                        Vector128<uint> narrowedBlock = Vector128.NarrowNative(blockAsVectorOfUInt16, blockAsVectorOfUInt16).AsUInt32();
                         Unsafe.WriteUnaligned(&pDest[i], narrowedBlock.ToScalar());
                     }
                 }
@@ -414,10 +414,10 @@ namespace System.Text
                     }
                     else
                     {
-                        // Narrowing operation required, we know data is all-ASCII so use extract helper.
+                        // Narrowing operation required, platform-dependent narrowing is safe as data is all-ASCII.
 
                         Vector128<ushort> blockAsVectorOfUInt16 = blockAsVectorOfUInt32.AsUInt16();
-                        Vector128<ushort> narrowedBlock = ExtractAsciiVector(blockAsVectorOfUInt16, blockAsVectorOfUInt16).AsUInt16();
+                        Vector128<ushort> narrowedBlock = Vector128.NarrowNative(blockAsVectorOfUInt16, blockAsVectorOfUInt16).AsUInt16();
                         Unsafe.WriteUnaligned(&pDest[i], narrowedBlock.ToScalar());
                     }
                 }
@@ -493,8 +493,9 @@ namespace System.Text
             }
             else if (sizeof(TFrom) == 2 && sizeof(TTo) == 1)
             {
-                // narrowing operation required, we know data is all-ASCII so use extract helper
-                Vector128<byte> narrow = ExtractAsciiVector(vector.AsUInt16(), vector.AsUInt16());
+                // Narrowing operation required, platform-dependent narrowing is safe as data is all-ASCII.
+
+                Vector128<byte> narrow = Vector128.NarrowNative(vector.AsUInt16(), vector.AsUInt16());
                 narrow.StoreLowerUnsafe(ref *(byte*)pDest, elementOffset);
             }
             else

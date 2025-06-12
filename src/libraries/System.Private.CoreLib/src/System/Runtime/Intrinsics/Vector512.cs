@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Runtime.Intrinsics
 {
@@ -2800,6 +2801,21 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<uint> Narrow(Vector512<ulong> lower, Vector512<ulong> upper)
             => Narrow<ulong, uint>(lower, upper);
+
+        /// <inheritdoc cref="Vector128.NarrowNative(Vector128{ushort}, Vector128{ushort})"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector512<byte> NarrowNative(Vector512<ushort> lower, Vector512<ushort> upper)
+        {
+            if (Avx512BW.IsSupported)
+            {
+                Vector512<long> control = Create(0, 2, 4, 6, 1, 3, 5, 7);
+                return Avx512F.PermuteVar8x64(Avx512BW.PackUnsignedSaturate(lower.AsInt16(), upper.AsInt16()).AsInt64(), control).AsByte();
+            }
+            else
+            {
+                return Narrow(lower, upper);
+            }
+        }
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
