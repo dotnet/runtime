@@ -803,7 +803,7 @@ internal sealed unsafe partial class SOSDacImpl
             IExecutionManager executionManager = _target.Contracts.ExecutionManager;
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
-            CodeBlockHandle? handle = executionManager.GetCodeBlockHandle(new TargetCodePointer(ip));
+            CodeBlockHandle? handle = executionManager.GetCodeBlockHandle(ip.ToTargetCodePointer(_target));
             if (handle is CodeBlockHandle codeHandle)
             {
                 TargetPointer methodDescAddr = executionManager.GetMethodDesc(codeHandle);
@@ -814,7 +814,7 @@ internal sealed unsafe partial class SOSDacImpl
                     // if validation fails, should return E_INVALIDARG
                     rts.GetMethodDescHandle(methodDescAddr);
 
-                    *ppMD = methodDescAddr.Value;
+                    *ppMD = methodDescAddr.ToClrDataAddress(_target);
                     hr = HResults.S_OK;
                 }
                 catch (System.Exception)
