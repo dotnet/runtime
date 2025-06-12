@@ -946,27 +946,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         public static void CheckCopyWithPrivateKey_MLDsa_OtherMLDsa_WrongPkcs8()
         {
             using (X509Certificate2 ietfCert = X509CertificateLoader.LoadCertificate(MLDsaTestsData.IetfMLDsa44.Certificate))
+            using (RSA rsa = RSA.Create())
+            using (MLDsaTestImplementation keyThatExportsRsaPkcs8 = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(MLDsaAlgorithm.MLDsa44))
             {
-                RSA rsa = RSA.Create();
+                keyThatExportsRsaPkcs8.ExportMLDsaPublicKeyHook = MLDsaTestsData.IetfMLDsa44.PublicKey.CopyTo;
+                keyThatExportsRsaPkcs8.ExportMLDsaPrivateSeedHook = MLDsaTestsData.IetfMLDsa44.PrivateSeed.CopyTo;
 
-                using (MLDsaTestImplementation keyThatExportsRsaPkcs8 = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(MLDsaAlgorithm.MLDsa44))
+                // Export RSA PKCS#8
+                keyThatExportsRsaPkcs8.TryExportPkcs8PrivateKeyHook = rsa.TryExportPkcs8PrivateKey;
+
+                if (PlatformDetection.IsWindows)
                 {
-                    keyThatExportsRsaPkcs8.ExportMLDsaPublicKeyHook = MLDsaTestsData.IetfMLDsa44.PublicKey.CopyTo;
-                    keyThatExportsRsaPkcs8.ExportMLDsaPrivateSeedHook = MLDsaTestsData.IetfMLDsa44.PrivateSeed.CopyTo;
-
-                    // Export the RSA PKCS#8
-                    keyThatExportsRsaPkcs8.TryExportPkcs8PrivateKeyHook = rsa.TryExportPkcs8PrivateKey;
-
-                    if (PlatformDetection.IsWindows)
-                    {
-                        // Only Windows uses PKCS#8 for pairing key to cert.
-                        AssertExtensions.Throws<CryptographicException>(() => ietfCert.CopyWithPrivateKey(keyThatExportsRsaPkcs8));
-                    }
-                    else
-                    {
-                        // Assert.NoThrow
-                        using (ietfCert.CopyWithPrivateKey(keyThatExportsRsaPkcs8)) { }
-                    }
+                    // Only Windows uses PKCS#8 for pairing key to cert.
+                    AssertExtensions.Throws<CryptographicException>(() => ietfCert.CopyWithPrivateKey(keyThatExportsRsaPkcs8));
+                }
+                else
+                {
+                    // Assert.NoThrow
+                    using (ietfCert.CopyWithPrivateKey(keyThatExportsRsaPkcs8)) { }
                 }
             }
         }
@@ -975,30 +972,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         public static void CheckCopyWithPrivateKey_MLDsa_OtherMLDsa_MalformedPkcs8()
         {
             using (X509Certificate2 ietfCert = X509CertificateLoader.LoadCertificate(MLDsaTestsData.IetfMLDsa44.Certificate))
+            using (MLDsaTestImplementation keyThatExportsMalformedPkcs8 = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(MLDsaAlgorithm.MLDsa44))
             {
-                using (MLDsaTestImplementation keyThatExportsMalformedPkcs8 = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(MLDsaAlgorithm.MLDsa44))
+                keyThatExportsMalformedPkcs8.ExportMLDsaPublicKeyHook = MLDsaTestsData.IetfMLDsa44.PublicKey.CopyTo;
+                keyThatExportsMalformedPkcs8.ExportMLDsaPrivateSeedHook = MLDsaTestsData.IetfMLDsa44.PrivateSeed.CopyTo;
+
+                // Export malformed PKCS#8
+                keyThatExportsMalformedPkcs8.TryExportPkcs8PrivateKeyHook =
+                    (dest, out written) =>
+                    {
+                        written = 0;
+                        return true;
+                    };
+
+                if (PlatformDetection.IsWindows)
                 {
-                    keyThatExportsMalformedPkcs8.ExportMLDsaPublicKeyHook = MLDsaTestsData.IetfMLDsa44.PublicKey.CopyTo;
-                    keyThatExportsMalformedPkcs8.ExportMLDsaPrivateSeedHook = MLDsaTestsData.IetfMLDsa44.PrivateSeed.CopyTo;
-
-                    // Export malformed PKCS#8
-                    keyThatExportsMalformedPkcs8.TryExportPkcs8PrivateKeyHook =
-                        (dest, out written) =>
-                        {
-                            written = 0;
-                            return true;
-                        };
-
-                    if (PlatformDetection.IsWindows)
-                    {
-                        // Only Windows uses PKCS#8 for pairing key to cert.
-                        AssertExtensions.Throws<CryptographicException>(() => ietfCert.CopyWithPrivateKey(keyThatExportsMalformedPkcs8));
-                    }
-                    else
-                    {
-                        // Assert.NoThrow
-                        using (ietfCert.CopyWithPrivateKey(keyThatExportsMalformedPkcs8)) { }
-                    }
+                    // Only Windows uses PKCS#8 for pairing key to cert.
+                    AssertExtensions.Throws<CryptographicException>(() => ietfCert.CopyWithPrivateKey(keyThatExportsMalformedPkcs8));
+                }
+                else
+                {
+                    // Assert.NoThrow
+                    using (ietfCert.CopyWithPrivateKey(keyThatExportsMalformedPkcs8)) { }
                 }
             }
         }
