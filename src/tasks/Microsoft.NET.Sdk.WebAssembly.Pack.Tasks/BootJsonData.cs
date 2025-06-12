@@ -28,6 +28,9 @@ public class BootJsonData
     public string applicationEnvironment { get; set; }
 
     /// <summary>
+    /// For .NET < 10, this contains <see cref="ResourcesData"/>.
+    /// For .NET >= 10, this contains <see cref="AssetsData"/>.
+    /// ---
     /// Gets the set of resources needed to boot the application. This includes the transitive
     /// closure of .NET assemblies (including the entrypoint assembly), the dotnet.wasm file,
     /// and any PDBs to be loaded.
