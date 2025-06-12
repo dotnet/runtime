@@ -3684,8 +3684,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             case NI_Vector_WidenLower:
             case NI_Vector_WidenUpper:
             {
-                intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(retType, simdBaseType, retNode->AsHWIntrinsic()->GetHWIntrinsicId());
-                retNode->AsHWIntrinsic()->ChangeHWIntrinsicId(intrinsic);
+                if (retNode->OperIsHWIntrinsic())
+                {
+                    intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(retType, simdBaseType, retNode->AsHWIntrinsic()->GetHWIntrinsicId());
+                    retNode->AsHWIntrinsic()->ChangeHWIntrinsicId(intrinsic);
+                }
                 break;
             }
             case NI_Vector_Add:
