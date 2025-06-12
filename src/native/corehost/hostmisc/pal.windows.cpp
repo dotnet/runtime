@@ -667,8 +667,8 @@ namespace
 
 bool pal::is_path_rooted(const string_t& path)
 {
-    return (path.length() >= 1 && is_directory_separator(path[0]))
-        || (path.length() >= 2 && path[1] == L':');
+    return (path.length() >= 1 && is_directory_separator(path[0])) // UNC or device paths
+        || (path.length() >= 2 && path[1] == L':'); // Drive letter paths
 }
 
 bool pal::is_path_fully_qualified(const string_t& path)
