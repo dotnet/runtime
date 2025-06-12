@@ -75,7 +75,13 @@ namespace System.Security.Cryptography
             get { return _mode; }
         }
 
-        internal int CalculatePssSaltLength(int rsaKeySizeInBits, HashAlgorithmName hashAlgorithm)
+        /// <summary>
+        /// Calculates the length of the salt for PSS signatures based on the RSA key size and hash algorithm.
+        /// </summary>
+        /// <param name="rsaKeySizeInBits">The key size of the RSA key used.</param>
+        /// <param name="hashAlgorithm">The hash algorithm used.</param>
+        /// <returns></returns>
+        public int CalculatePssSaltLength(int rsaKeySizeInBits, HashAlgorithmName hashAlgorithm)
         {
             int emLen = (rsaKeySizeInBits + 7) / 8;
             int hLen = RsaPaddingProcessor.HashLength(hashAlgorithm);

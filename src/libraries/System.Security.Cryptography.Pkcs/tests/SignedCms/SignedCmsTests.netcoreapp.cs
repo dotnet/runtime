@@ -593,15 +593,39 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Theory]
-        [InlineData(Oids.Sha256, true)]
-        [InlineData(Oids.Sha384, true)]
-        [InlineData(Oids.Sha512, true)]
-        [InlineData(Oids.Sha1, true)]
-        [InlineData(Oids.Sha256, false)]
-        [InlineData(Oids.Sha384, false)]
-        [InlineData(Oids.Sha512, false)]
-        [InlineData(Oids.Sha1, false)]
-        public static void CreateSignature_RsaPss(string digestOid, bool assignByConstructor)
+        [InlineData(Oids.Sha256, true, 0)]
+        [InlineData(Oids.Sha384, true, 0)]
+        [InlineData(Oids.Sha512, true, 0)]
+        [InlineData(Oids.Sha1, true, 0)]
+        [InlineData(Oids.Sha256, false, 0)]
+        [InlineData(Oids.Sha384, false, 0)]
+        [InlineData(Oids.Sha512, false, 0)]
+        [InlineData(Oids.Sha1, false, 0)]
+        [InlineData(Oids.Sha256, true, 1)]
+        [InlineData(Oids.Sha384, true, 1)]
+        [InlineData(Oids.Sha512, true, 1)]
+        [InlineData(Oids.Sha1, true, 1)]
+        [InlineData(Oids.Sha256, false, 1)]
+        [InlineData(Oids.Sha384, false, 1)]
+        [InlineData(Oids.Sha512, false, 1)]
+        [InlineData(Oids.Sha1, false, 1)]
+        [InlineData(Oids.Sha256, true, RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData(Oids.Sha384, true, RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData(Oids.Sha512, true, RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData(Oids.Sha1, true, RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData(Oids.Sha256, false, RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData(Oids.Sha384, false, RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData(Oids.Sha512, false, RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData(Oids.Sha1, false, RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData(Oids.Sha256, true, RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [InlineData(Oids.Sha384, true, RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [InlineData(Oids.Sha512, true, RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [InlineData(Oids.Sha1, true, RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [InlineData(Oids.Sha256, false, RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [InlineData(Oids.Sha384, false, RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [InlineData(Oids.Sha512, false, RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [InlineData(Oids.Sha1, false, RSASignaturePadding.PssSaltLengthIsHashLength)]
+        public static void CreateSignature_RsaPss(string digestOid, bool assignByConstructor, int saltLength)
         {
             ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
             SignedCms cms = new SignedCms(content);
@@ -613,12 +637,12 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
                 if (assignByConstructor)
                 {
-                    signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert, null, RSASignaturePadding.Pss);
+                    signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert, null, RSASignaturePadding.CreatePss(saltLength));
                 }
                 else
                 {
                     signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert);
-                    signer.SignaturePadding = RSASignaturePadding.Pss;
+                    signer.SignaturePadding = RSASignaturePadding.CreatePss(saltLength);
                 }
 
                 signer.DigestAlgorithm = new Oid(digestOid, null);
