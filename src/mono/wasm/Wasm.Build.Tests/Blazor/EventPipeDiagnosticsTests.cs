@@ -31,8 +31,9 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     public async Task BlazorEventPipeTestWithCpuSamples(Configuration config, bool aot)
     {
         string extraProperties = @"
-                <WasmPerfInstrumentation>all,interval=0</WasmPerfInstrumentation>
-                <WasmPerfTracing>true</WasmPerfTracing>
+                <WasmPerformanceInstrumentation>all,interval=0</WasmPerformanceInstrumentation>
+                <EnableDiagnostics>true</EnableDiagnostics>
+                <WasmDebugLevel>0</WasmDebugLevel>
                 <WBTDevServer>true</WBTDevServer>
             ";
 
@@ -86,7 +87,9 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     public async Task BlazorEventPipeTestWithMetrics()
     {
         string extraProperties = @"
-                <WasmPerfTracing>true</WasmPerfTracing>
+                <EnableDiagnostics>true</EnableDiagnostics>
+                <EventSourceSupport>true</EventSourceSupport>
+                <MetricsSupport>true</MetricsSupport>
                 <WBTDevServer>true</WBTDevServer>
             ";
 
@@ -119,35 +122,43 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             }
         ));
 
-        var dictionary = ExtractInstrumentNames(info, "metrics.nettrace");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.assembly.count"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.exceptions"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.gc.collections"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.gc.heap.total_allocated"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.gc.last_collection.heap.fragmentation.size"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.gc.last_collection.heap.size"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.gc.last_collection.memory.committed_size"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.gc.pause.time"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.jit.compilation.time"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.jit.compiled_il.size"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.jit.compiled_methods"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.monitor.lock_contentions"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.process.cpu.count"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.process.memory.working_set"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.thread_pool.queue.length"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.thread_pool.thread.count"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.thread_pool.work_item.count"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.timer.count"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("Microsoft-DotNETCore-EventPipe/ArchInformation/Unknown"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("Microsoft-DotNETCore-EventPipe/CommandLine//managed BlazorBasicTestApp"), "The metrics.nettrace should contain instrument");
-        Assert.True(dictionary.ContainsKey("Microsoft-DotNETCore-EventPipe/OSInformation/Unknown"), "The metrics.nettrace should contain instrument");
+        var actualInstruments = ExtractInstrumentNames(info, "metrics.nettrace");
+        var expectedInstruments = new[]
+        {
+            "System.Diagnostics.Metrics/instrumentName/dotnet.assembly.count",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.exceptions",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.gc.collections",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.gc.heap.total_allocated",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.gc.last_collection.heap.fragmentation.size",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.gc.last_collection.heap.size",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.gc.last_collection.memory.committed_size",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.gc.pause.time",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.jit.compilation.time",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.jit.compiled_il.size",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.jit.compiled_methods",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.monitor.lock_contentions",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.process.cpu.count",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.process.memory.working_set",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.thread_pool.queue.length",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.thread_pool.thread.count",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.thread_pool.work_item.count",
+            "System.Diagnostics.Metrics/instrumentName/dotnet.timer.count",
+            "Microsoft-DotNETCore-EventPipe/ArchInformation/Unknown",
+            "Microsoft-DotNETCore-EventPipe/CommandLine//managed BlazorBasicTestApp",
+            "Microsoft-DotNETCore-EventPipe/OSInformation/Unknown"
+        };
+
+        foreach (var expectedInstrument in expectedInstruments)
+        {
+            Assert.True(actualInstruments.ContainsKey(expectedInstrument), $"The metrics.nettrace should contain instrument: {expectedInstrument}");
+        }
     }
 
     [Fact]
     public async Task BlazorEventPipeTestWithHeapDump()
     {
         string extraProperties = @"
-                <WasmPerfTracing>true</WasmPerfTracing>
+                <EnableDiagnostics>true</EnableDiagnostics>
                 <WBTDevServer>true</WBTDevServer>
             ";
 
@@ -184,13 +195,21 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             }
         ));
 
-        var dictionary = ExtractEventNames(info, "gcdump.nettrace");
-        Assert.True(dictionary.ContainsKey("Microsoft-Windows-DotNETRuntime/GC/Start"), "The metrics.nettrace should contain GC/Start");
-        Assert.True(dictionary.ContainsKey("Microsoft-Windows-DotNETRuntime/GC/Stop"), "The metrics.nettrace should contain GC/Stop");
-        Assert.True(dictionary.ContainsKey("Microsoft-Windows-DotNETRuntime/GC/BulkEdge"), "The metrics.nettrace should contain GC/BulkEdge");
-        Assert.True(dictionary.ContainsKey("Microsoft-Windows-DotNETRuntime/GC/BulkNode"), "The metrics.nettrace should contain GC/BulkNode");
-        Assert.True(dictionary.ContainsKey("Microsoft-Windows-DotNETRuntime/GC/BulkRootEdge"), "The metrics.nettrace should contain GC/BulkRootEdge");
-        Assert.True(dictionary.ContainsKey("Microsoft-Windows-DotNETRuntime/Type/BulkType"), "The metrics.nettrace should contain GC/BulkType");
+        var actualEvents = ExtractEventNames(info, "gcdump.nettrace");
+        var expectedEvents = new[]
+        {
+            "Microsoft-Windows-DotNETRuntime/GC/Start",
+            "Microsoft-Windows-DotNETRuntime/GC/Stop",
+            "Microsoft-Windows-DotNETRuntime/GC/BulkEdge",
+            "Microsoft-Windows-DotNETRuntime/GC/BulkNode",
+            "Microsoft-Windows-DotNETRuntime/GC/BulkRootEdge",
+            "Microsoft-Windows-DotNETRuntime/Type/BulkType"
+        };
+
+        foreach (var expectedEvent in expectedEvents)
+        {
+            Assert.True(actualEvents.ContainsKey(expectedEvent), $"The metrics.nettrace should contain event: {expectedEvent}");
+        }
     }
 
     private string ConvertTrace(ProjectInfo info, string fileName)

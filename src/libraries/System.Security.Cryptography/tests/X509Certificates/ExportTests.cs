@@ -12,6 +12,7 @@ using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Asn1.Pkcs12;
 using System.Security.Cryptography.Pkcs;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -340,7 +341,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public static void ExportPkcs12_MLKem_Roundtrip(MLKemAlgorithm algorithm)
         {
@@ -391,7 +392,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsDraft10Pkcs8))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116463", TestPlatforms.Windows)]
         [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public static void ExportPkcs12_MLDsa_Generated_Roundtrip(MLDsaKeyInfo info)
         {

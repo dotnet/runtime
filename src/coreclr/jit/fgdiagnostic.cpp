@@ -409,6 +409,12 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 
 #ifdef DEBUG
     dumpFunction = JitConfig.JitDumpFg().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
+    dumpFunction |= ((unsigned)JitConfig.JitDumpFgHash() == info.compMethodHash());
+
+    if (opts.IsTier0())
+    {
+        dumpFunction &= (JitConfig.JitDumpFgTier0() > 0);
+    }
 
     CompAllocator allocator = getAllocatorDebugOnly();
     filename                = JitConfig.JitDumpFgFile();
@@ -656,6 +662,8 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 //    Here are the config values that control it:
 //      DOTNET_JitDumpFg              A string (ala the DOTNET_JitDump string) indicating what methods to dump
 //                                     flowgraphs for.
+//      DOTNET_JitDumpFgHash          Dump flowgraphs for methods with this hash
+//      DOTNET_JitDumpFgTier0         Dump tier-0 compilations
 //      DOTNET_JitDumpFgDir           A path to a directory into which the flowgraphs will be dumped.
 //      DOTNET_JitDumpFgFile          The filename to use. The default is "default.[xml|dot]".
 //                                     Note that the new graphs will be appended to this file if it already exists.
@@ -897,7 +905,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 if (condStmt != nullptr)
                 {
                     GenTree* const condTree = condStmt->GetRootNode();
-                    noway_assert(condTree->gtOper == GT_JTRUE);
+                    noway_assert(condTree->OperIs(GT_JTRUE));
                     GenTree* const compareTree = condTree->AsOp()->gtOp1;
                     fgDumpTree(fgxFile, compareTree);
                 }
@@ -2546,7 +2554,7 @@ Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData
     GenTree*  tree  = *pTree;
     Compiler* pComp = data->compiler;
 
-    if (tree->gtOper != GT_MUL || tree->gtType != TYP_INT || (tree->gtOverflow()))
+    if (!tree->OperIs(GT_MUL) || !tree->TypeIs(TYP_INT) || (tree->gtOverflow()))
     {
         return WALK_CONTINUE;
     }
@@ -3006,7 +3014,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             else if (block->KindIs(BBJ_SWITCH))
             {
                 assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
-                       (block->lastNode()->gtOper == GT_SWITCH || block->lastNode()->gtOper == GT_SWITCH_TABLE));
+                       block->lastNode()->OperIs(GT_SWITCH, GT_SWITCH_TABLE));
             }
         }
 
@@ -3507,7 +3515,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
 //
 void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags)
 {
-    if (tree->OperGet() == GT_IND)
+    if (tree->OperIs(GT_IND))
     {
         printf("%c", (dispFlags & GTF_IND_INVARIANT) ? '#' : '-');
         printf("%c", (dispFlags & GTF_IND_NONFAULTING) ? 'n' : '-');
@@ -3620,13 +3628,13 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
 
         if (tree->OperIsLeaf())
         {
-            if (tree->gtOper == GT_CATCH_ARG)
+            if (tree->OperIs(GT_CATCH_ARG))
             {
                 // The GT_CATCH_ARG should always have GTF_ORDER_SIDEEFF set
                 noway_assert(tree->gtFlags & GTF_ORDER_SIDEEFF);
                 // The GT_CATCH_ARG has to be the first thing evaluated
                 noway_assert(stmt == block->FirstNonPhiDef());
-                noway_assert(stmt->GetTreeList()->gtOper == GT_CATCH_ARG);
+                noway_assert(stmt->GetTreeList()->OperIs(GT_CATCH_ARG));
                 // The root of the tree should have GTF_ORDER_SIDEEFF set
                 noway_assert(stmt->GetRootNode()->gtFlags & GTF_ORDER_SIDEEFF);
             }
@@ -4733,7 +4741,12 @@ void Compiler::fgDebugCheckLoops()
             loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
                 for (BasicBlock* pred : exit->PredBlocks())
                 {
-                    assert(loop->ContainsBlock(pred));
+                    if (!loop->ContainsBlock(pred))
+                    {
+                        JITDUMP("Loop " FMT_LP " exit " FMT_BB " has non-loop predecessor " FMT_BB "\n",
+                                loop->GetIndex(), exit->bbNum, pred->bbNum);
+                        assert(!"Loop exit has non-loop predecessor");
+                    }
                 }
                 return BasicBlockVisit::Continue;
             });

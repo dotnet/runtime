@@ -38,7 +38,7 @@
 template <bool ssaLiveness>
 void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
 {
-    assert((tree->OperIsLocal() && (tree->OperGet() != GT_PHI_ARG)) || tree->OperIs(GT_LCL_ADDR));
+    assert((tree->OperIsLocal() && !tree->OperIs(GT_PHI_ARG)) || tree->OperIs(GT_LCL_ADDR));
 
     const unsigned   lclNum = tree->GetLclNum();
     LclVarDsc* const varDsc = lvaGetDesc(lclNum);
@@ -1198,7 +1198,7 @@ void Compiler::fgComputeLife(VARSET_TP&           life,
     for (GenTree* tree = startNode; tree != endNode; tree = tree->gtPrev)
     {
     AGAIN:
-        assert(tree->OperGet() != GT_QMARK);
+        assert(!tree->OperIs(GT_QMARK));
 
         bool       isUse        = false;
         bool       doAgain      = false;
@@ -1289,7 +1289,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_CALL:
             {
                 GenTreeCall* const call = node->AsCall();
-                if (((call->TypeGet() == TYP_VOID) || call->IsUnusedValue()) && !call->HasSideEffects(this))
+                if ((call->TypeIs(TYP_VOID) || call->IsUnusedValue()) && !call->HasSideEffects(this))
                 {
                     JITDUMP("Removing dead call:\n");
                     DISPNODE(call);
@@ -1624,7 +1624,7 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
         // (as opposed to side effects of their children).
         // This default case should never include calls or stores.
         assert(!node->OperRequiresAsgFlag() && !node->OperIs(GT_CALL));
-        if (!node->gtSetFlags() && !node->OperMayThrow(this))
+        if (!node->gtSetFlags() && !node->NodeOrContainedOperandsMayThrow(this))
         {
             JITDUMP("Removing dead node:\n");
             DISPNODE(node);
@@ -1667,8 +1667,7 @@ bool Compiler::fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclN
     if ((lclNode->gtFlags & GTF_VAR_USEASG) == 0)
     {
         LclVarDsc* varDsc = lvaGetDesc(lclNode);
-        if (varDsc->lvHasExplicitInit && (varDsc->TypeGet() == TYP_STRUCT) && varDsc->HasGCPtr() &&
-            (varDsc->lvRefCnt() > 1))
+        if (varDsc->lvHasExplicitInit && varDsc->TypeIs(TYP_STRUCT) && varDsc->HasGCPtr() && (varDsc->lvRefCnt() > 1))
         {
             JITDUMP("Not removing a potential explicit init [%06u] of V%02u\n", dspTreeID(store), lclNode->GetLclNum());
             return false;

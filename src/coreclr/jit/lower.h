@@ -53,22 +53,7 @@ private:
     {
         LowerRange(range.FirstNode(), range.LastNode());
     }
-    void LowerRange(GenTree* firstNode, GenTree* lastNode)
-    {
-        GenTree* cur = firstNode;
-
-        while (true)
-        {
-            GenTree* next = LowerNode(cur);
-            if (cur == lastNode)
-            {
-                break;
-            }
-
-            cur = next;
-            assert(cur != nullptr);
-        }
-    }
+    void LowerRange(GenTree* firstNode, GenTree* lastNode);
 
     // ContainCheckRange handles new code that is introduced by or after Lowering,
     // and that is known to be already in Lowered form.
@@ -219,10 +204,12 @@ private:
     void LowerSpecialCopyArgs(GenTreeCall* call);
     void InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum);
 #endif // defined(TARGET_X86) && defined(FEATURE_IJW)
-    void LowerArg(GenTreeCall* call, CallArg* callArg);
-    void InsertBitCastIfNecessary(GenTree** argNode, const ABIPassingSegment& registerSegment);
-    void InsertPutArgReg(GenTree** node, const ABIPassingSegment& registerSegment);
-    void LegalizeArgPlacement(GenTreeCall* call);
+    void         LowerArg(GenTreeCall* call, CallArg* callArg);
+    void         SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg* callArg);
+    ClassLayout* SliceLayout(ClassLayout* layout, unsigned offset, unsigned size);
+    void         InsertBitCastIfNecessary(GenTree** argNode, const ABIPassingSegment& registerSegment);
+    void         InsertPutArgReg(GenTree** node, const ABIPassingSegment& registerSegment);
+    void         LegalizeArgPlacement(GenTreeCall* call);
 
     void     InsertPInvokeCallProlog(GenTreeCall* call);
     void     InsertPInvokeCallEpilog(GenTreeCall* call);
@@ -256,19 +243,19 @@ private:
 
     GenTree* Offset(GenTree* base, unsigned offset)
     {
-        var_types resultType = (base->TypeGet() == TYP_REF) ? TYP_BYREF : base->TypeGet();
+        var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
         return new (comp, GT_LEA) GenTreeAddrMode(resultType, base, nullptr, 0, offset);
     }
 
     GenTree* OffsetByIndex(GenTree* base, GenTree* index)
     {
-        var_types resultType = (base->TypeGet() == TYP_REF) ? TYP_BYREF : base->TypeGet();
+        var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
         return new (comp, GT_LEA) GenTreeAddrMode(resultType, base, index, 0, 0);
     }
 
     GenTree* OffsetByIndexWithScale(GenTree* base, GenTree* index, unsigned scale)
     {
-        var_types resultType = (base->TypeGet() == TYP_REF) ? TYP_BYREF : base->TypeGet();
+        var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
         return new (comp, GT_LEA) GenTreeAddrMode(resultType, base, index, scale, 0);
     }
 
@@ -277,7 +264,7 @@ private:
     GenTreeLclVar* ReplaceWithLclVar(LIR::Use& use, unsigned tempNum = BAD_VAR_NUM)
     {
         GenTree* oldUseNode = use.Def();
-        if ((oldUseNode->gtOper != GT_LCL_VAR) || (tempNum != BAD_VAR_NUM))
+        if (!oldUseNode->OperIs(GT_LCL_VAR) || (tempNum != BAD_VAR_NUM))
         {
             GenTree* store;
             use.ReplaceWithLclVar(comp, tempNum, &store);
@@ -406,14 +393,13 @@ private:
     bool     TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blkNode);
     void     LowerLclHeap(GenTree* node);
     void     ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
-    void     LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
+    void     LowerPutArgStk(GenTreePutArgStk* putArgNode);
     GenTree* LowerArrLength(GenTreeArrCommon* node);
 
     bool TryRemoveCast(GenTreeCast* node);
     bool TryRemoveBitCast(GenTreeUnOp* node);
 
 #ifdef TARGET_XARCH
-    void     LowerPutArgStk(GenTreePutArgStk* putArgStk);
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
 #endif // TARGET_XARCH
 

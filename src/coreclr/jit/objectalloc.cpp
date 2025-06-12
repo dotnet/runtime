@@ -672,7 +672,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                 assert(tree == m_ancestors.Top());
                 m_allocator->AnalyzeParentStack(&m_ancestors, lclIndex, m_block);
             }
-            else if (tree->OperIs(GT_LCL_ADDR) && (lclDsc->TypeGet() == TYP_STRUCT))
+            else if (tree->OperIs(GT_LCL_ADDR) && lclDsc->TypeIs(TYP_STRUCT))
             {
                 assert(tree == m_ancestors.Top());
                 m_allocator->AnalyzeParentStack(&m_ancestors, lclIndex, m_block);
@@ -686,7 +686,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             }
             else
             {
-                assert((tree->OperIs(GT_LCL_ADDR) && (lclDsc->TypeGet() != TYP_STRUCT)));
+                assert((tree->OperIs(GT_LCL_ADDR) && !lclDsc->TypeIs(TYP_STRUCT)));
                 JITDUMP("V%02u address taken at [%06u]\n", lclNum, m_compiler->dspTreeID(tree));
                 m_allocator->MarkLclVarAsEscaping(lclNum);
             }
@@ -1178,7 +1178,7 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
 ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* tree)
 {
     ObjectAllocationType allocType = OAT_NONE;
-    if (tree->OperGet() == GT_ALLOCOBJ)
+    if (tree->OperIs(GT_ALLOCOBJ))
     {
         GenTreeAllocObj* const allocObj = tree->AsAllocObj();
         CORINFO_CLASS_HANDLE   clsHnd   = allocObj->gtAllocObjClsHnd;
@@ -1193,7 +1193,7 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
         switch (call->GetHelperNum())
         {
             case CORINFO_HELP_NEWARR_1_VC:
-            case CORINFO_HELP_NEWARR_1_OBJ:
+            case CORINFO_HELP_NEWARR_1_PTR:
             case CORINFO_HELP_NEWARR_1_DIRECT:
             case CORINFO_HELP_NEWARR_1_ALIGN8:
             {
@@ -2231,7 +2231,7 @@ void ObjectAllocator::UpdateAncestorTypes(
                     //
                     GenTreeLclVarCommon* const lclParent = parent->AsLclVarCommon();
                     LclVarDsc* const           lclDsc    = comp->lvaGetDesc(lclParent);
-                    if ((parent->TypeGet() == TYP_REF) || (lclDsc->TypeGet() == newType))
+                    if (parent->TypeIs(TYP_REF) || (lclDsc->TypeGet() == newType))
                     {
                         parent->ChangeType(newType);
                     }
@@ -2802,6 +2802,11 @@ void ObjectAllocator::RewriteUses()
                 JITDUMP("Changing the type of V%02u from %s to %s\n", lclNum, varTypeName(lclVarDsc->lvType),
                         varTypeName(newType));
                 lclVarDsc->lvType = newType;
+            }
+            else
+            {
+                JITDUMP("V%02u already properly typed\n", lclNum);
+                lclVarDsc->lvTracked = 0;
             }
         }
     }

@@ -357,7 +357,7 @@ bool CodeGenInterface::instIsFP(instruction ins)
 
 bool CodeGenInterface::instIsEmbeddedBroadcastCompatible(instruction ins)
 {
-    if (emitter::HasEvexEncoding(ins))
+    if (GetEmitter()->IsEvexEncodableInstruction(ins))
     {
         insTupleType tupleType = emitter::insTupleTypeInfo(ins);
         return (tupleType & INS_TT_IS_BROADCAST) != 0;
@@ -773,7 +773,7 @@ void CodeGen::inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumbe
     {
         // Is this the special case of a write-thru lclVar?
         // We mark it as SPILLED to denote that its value is valid in memory.
-        if (((tree->gtFlags & GTF_SPILL) != 0) && tree->gtOper == GT_STORE_LCL_VAR)
+        if (((tree->gtFlags & GTF_SPILL) != 0) && tree->OperIs(GT_STORE_LCL_VAR))
         {
             isValidInReg = true;
         }
@@ -901,7 +901,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
             var_types           simdBaseType = hwintrinsic->GetSimdBaseType();
             switch (intrinsicId)
             {
-                case NI_SSE3_LoadAndDuplicateToVector128:
+                case NI_SSE42_LoadAndDuplicateToVector128:
                 case NI_AVX_BroadcastScalarToVector128:
                 case NI_AVX_BroadcastScalarToVector256:
                 {
@@ -925,13 +925,13 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
                     }
                 }
 
-                case NI_SSE3_MoveAndDuplicate:
+                case NI_SSE42_MoveAndDuplicate:
                 case NI_AVX2_BroadcastScalarToVector128:
                 case NI_AVX2_BroadcastScalarToVector256:
                 case NI_AVX512_BroadcastScalarToVector512:
                 {
                     assert(hwintrinsic->isContained());
-                    if (intrinsicId == NI_SSE3_MoveAndDuplicate)
+                    if (intrinsicId == NI_SSE42_MoveAndDuplicate)
                     {
                         assert(simdBaseType == TYP_DOUBLE);
                     }

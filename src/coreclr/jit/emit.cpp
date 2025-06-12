@@ -7097,7 +7097,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
                 assert(dsc->lvTracked);
                 assert(dsc->lvRefCnt() != 0);
 
-                assert(dsc->TypeGet() == TYP_REF || dsc->TypeGet() == TYP_BYREF);
+                assert(dsc->TypeIs(TYP_REF, TYP_BYREF));
 
                 assert(indx < emitComp->lvaTrackedCount);
 
@@ -7113,7 +7113,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
                 }
 #endif // JIT32_GCENCODER && FEATURE_EH_WINDOWS_X86
 
-                if (dsc->TypeGet() == TYP_BYREF)
+                if (dsc->TypeIs(TYP_BYREF))
                 {
                     offs |= byref_OFFSET_FLAG;
                 }
@@ -8265,7 +8265,7 @@ void emitter::emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, reg
 
     if ((dataSize == 16) && (constValue->u64[1] == constValue->u64[0]))
     {
-        if (((cnsSize == 16) && emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE3)) ||
+        if (((cnsSize == 16) && emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE42)) ||
             emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX))
         {
             dataSize = 8;

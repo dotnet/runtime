@@ -293,40 +293,6 @@ Histogram computeReachabilitySetsIterationTable(computeReachabilitySetsIteration
 
 #endif // COUNT_BASIC_BLOCKS
 
-/*****************************************************************************
- *
- *  Used by optFindNaturalLoops to gather statistical information such as
- *   - total number of natural loops
- *   - number of loops with 1, 2, ... exit conditions
- *   - number of loops that have an iterator (for like)
- *   - number of loops that have a constant iterator
- */
-
-#if COUNT_LOOPS
-
-unsigned totalLoopMethods;        // counts the total number of methods that have natural loops
-unsigned maxLoopsPerMethod;       // counts the maximum number of loops a method has
-unsigned totalLoopCount;          // counts the total number of natural loops
-unsigned totalUnnatLoopCount;     // counts the total number of (not-necessarily natural) loops
-unsigned totalUnnatLoopOverflows; // # of methods that identified more unnatural loops than we can represent
-unsigned iterLoopCount;           // counts the # of loops with an iterator (for like)
-unsigned constIterLoopCount;      // counts the # of loops with a constant iterator (for like)
-bool     hasMethodLoops;          // flag to keep track if we already counted a method as having loops
-unsigned loopsThisMethod;         // counts the number of loops in the current method
-bool     loopOverflowThisMethod;  // True if we exceeded the max # of loops in the method.
-
-/* Histogram for number of loops in a method */
-
-unsigned  loopCountBuckets[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 0};
-Histogram loopCountTable(loopCountBuckets);
-
-/* Histogram for number of loop exits */
-
-unsigned  loopExitCountBuckets[] = {0, 1, 2, 3, 4, 5, 6, 0};
-Histogram loopExitCountTable(loopExitCountBuckets);
-
-#endif // COUNT_LOOPS
-
 Compiler::Compiler(ArenaAllocator*       arena,
                    CORINFO_METHOD_HANDLE methodHnd,
                    COMP_HANDLE           compHnd,
@@ -1531,32 +1497,6 @@ void Compiler::compShutdown()
 
 #endif // COUNT_BASIC_BLOCKS
 
-#if COUNT_LOOPS
-
-    jitprintf("\n");
-    jitprintf("---------------------------------------------------\n");
-    jitprintf("Loop stats\n");
-    jitprintf("---------------------------------------------------\n");
-    jitprintf("Total number of methods with loops is %5u\n", totalLoopMethods);
-    jitprintf("Total number of              loops is %5u\n", totalLoopCount);
-    jitprintf("Maximum number of loops per method is %5u\n", maxLoopsPerMethod);
-    jitprintf("Total number of 'unnatural' loops is %5u\n", totalUnnatLoopCount);
-    jitprintf("# of methods overflowing unnat loop limit is %5u\n", totalUnnatLoopOverflows);
-    jitprintf("Total number of loops with an         iterator is %5u\n", iterLoopCount);
-    jitprintf("Total number of loops with a constant iterator is %5u\n", constIterLoopCount);
-
-    jitprintf("--------------------------------------------------\n");
-    jitprintf("Loop count frequency table:\n");
-    jitprintf("--------------------------------------------------\n");
-    loopCountTable.dump(jitstdout());
-    jitprintf("--------------------------------------------------\n");
-    jitprintf("Loop exit count frequency table:\n");
-    jitprintf("--------------------------------------------------\n");
-    loopExitCountTable.dump(jitstdout());
-    jitprintf("--------------------------------------------------\n");
-
-#endif // COUNT_LOOPS
-
 #if MEASURE_NODE_SIZE
 
     jitprintf("\n");
@@ -1690,7 +1630,7 @@ void Compiler::compShutdown()
     jitprintf("   NYI:                 %u\n", fatal_NYI);
 #endif // MEASURE_FATAL
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
     DumpOnShutdown::DumpAll();
 #endif
 }
@@ -1980,11 +1920,15 @@ void Compiler::compSetProcessor()
     opts.compSupportsISAReported.Reset();
     opts.compSupportsISAExactly.Reset();
 
-// The VM will set the ISA flags depending on actual hardware support
-// and any specified config switches specified by the user. The exception
-// here is for certain "artificial ISAs" such as Vector64/128/256 where they
-// don't actually exist. The JIT is in charge of adding those and ensuring
-// the total sum of flags is still valid.
+    // The VM will set the ISA flags depending on actual hardware support and any
+    // config values specified by the user. Config may cause the VM to omit baseline
+    // ISAs from the supported set. We force their inclusion here so that JIT code
+    // can use them unconditionally, but we will honor the config when resolving
+    // managed HWIntrinsic methods.
+    //
+    // We also take care of adding the virtual vector ISAs (i.e. Vector64/128/256/512)
+    // here, based on the combination of hardware ISA support and config values.
+
 #if defined(TARGET_XARCH)
     // If the VM passed in a virtual vector ISA, it was done to communicate PreferredVectorBitWidth.
     // No check is done for the validity of the value, since it will be clamped to max supported by
@@ -2015,10 +1959,14 @@ void Compiler::compSetProcessor()
            !instructionSetFlags.HasInstructionSet(InstructionSet_Vector256) &&
            !instructionSetFlags.HasInstructionSet(InstructionSet_Vector512));
 
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_X86Base))
-    {
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-    }
+    // Ensure required baseline ISAs are supported in JIT code, even if not passed in by the VM.
+    instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
+#ifdef TARGET_AMD64
+    instructionSetFlags.AddInstructionSet(InstructionSet_X86Base_X64);
+#endif // TARGET_AMD64
+
+    // We can now add the virtual vector ISAs as appropriate. Vector128 is part of the required baseline.
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
 
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX))
     {
@@ -2030,11 +1978,15 @@ void Compiler::compSetProcessor()
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
     }
 #elif defined(TARGET_ARM64)
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
-    {
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-    }
+    // Ensure required baseline ISAs are supported in JIT code, even if not passed in by the VM.
+    instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
+    instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase_Arm64);
+    instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
+    instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd_Arm64);
+
+    // Add virtual vector ISAs. These are both supported as part of the required baseline.
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
 #endif // TARGET_ARM64
 
     assert(instructionSetFlags.Equals(EnsureInstructionSetFlagsAreValid(instructionSetFlags)));
@@ -2531,6 +2483,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 fgPgoDisabled    = true;
             }
         }
+#endif // DEBUG
 
         // A successful result implies a non-NULL fgPgoSchema
         //
@@ -2550,6 +2503,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                     break;
                 }
             }
+
+            // Stash pointers to PGO info on the context so
+            // we can access contextually it later.
+            //
+            compInlineContext->SetPgoInfo(PgoInfo(this));
         }
 
         // A failed result implies a NULL fgPgoSchema
@@ -2559,7 +2517,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             assert(fgPgoSchema == nullptr);
         }
-#endif // DEBUG
     }
 
     bool enableInliningMethodsWithEH = JitConfig.JitInlineMethodsWithEH() > 0;
@@ -6011,11 +5968,8 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             }
         }
 
-        if (JitConfig.EnableHWIntrinsic() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
-            instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
-        }
+        instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
+        instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
 
         if (JitConfig.EnableArm64Aes() != 0)
         {
@@ -6084,25 +6038,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             }
         }
 
-        if (JitConfig.EnableHWIntrinsic() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
-        }
-
-        if (JitConfig.EnableSSE3() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE3);
-        }
-
-        if (JitConfig.EnableSSSE3() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSSE3);
-        }
-
-        if (JitConfig.EnableSSE41() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE41);
-        }
+        instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
 
         if (JitConfig.EnableSSE42() != 0)
         {
@@ -6119,67 +6055,19 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX2);
         }
 
-        if (JitConfig.EnableAES() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AES);
-        }
-
-        if (JitConfig.EnableBMI1() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_BMI1);
-        }
-
-        if (JitConfig.EnableBMI2() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_BMI2);
-        }
-
-        if (JitConfig.EnableFMA() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_FMA);
-        }
-
-        if (JitConfig.EnableGFNI() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_GFNI);
-            instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V256);
-            instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V512);
-        }
-
-        if (JitConfig.EnableLZCNT() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_LZCNT);
-        }
-
-        if (JitConfig.EnablePCLMULQDQ() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ);
-        }
-
-        if (JitConfig.EnableVPCLMULQDQ() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ_V256);
-            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ_V512);
-        }
-
-        if (JitConfig.EnablePOPCNT() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_POPCNT);
-        }
-
-        if (JitConfig.EnableAVXVNNI() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
-        }
-
         if (JitConfig.EnableAVX512() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX512);
         }
 
-        if (JitConfig.EnableAVX512VBMI() != 0)
+        if (JitConfig.EnableAVX512v2() != 0)
         {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VBMI);
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512v2);
+        }
+
+        if (JitConfig.EnableAVX512v3() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512v3);
         }
 
         if (JitConfig.EnableAVX10v1() != 0)
@@ -6196,11 +6084,56 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_APX);
         }
-#elif defined(TARGET_RISCV64)
-        if (JitConfig.EnableHWIntrinsic() != 0)
+
+        if (JitConfig.EnableAES() != 0)
         {
-            instructionSetFlags.AddInstructionSet(InstructionSet_RiscV64Base);
+            instructionSetFlags.AddInstructionSet(InstructionSet_AES);
+
+            if (JitConfig.EnableVAES() != 0)
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_AES_V256);
+                instructionSetFlags.AddInstructionSet(InstructionSet_AES_V512);
+            }
         }
+
+        if (JitConfig.EnableAVX512VP2INTERSECT() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VP2INTERSECT);
+        }
+
+        if (JitConfig.EnableAVXIFMA() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVXIFMA);
+        }
+
+        if (JitConfig.EnableAVXVNNI() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
+        }
+
+        if (JitConfig.EnableGFNI() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_GFNI);
+            instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V256);
+            instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V512);
+        }
+
+        if (JitConfig.EnableSHA() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SHA);
+        }
+
+        if (JitConfig.EnableWAITPKG() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_WAITPKG);
+        }
+
+        if (JitConfig.EnableX86Serialize() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_X86Serialize);
+        }
+#elif defined(TARGET_RISCV64)
+        instructionSetFlags.AddInstructionSet(InstructionSet_RiscV64Base);
 
         if (JitConfig.EnableRiscV64Zba() != 0)
         {
@@ -8095,7 +8028,7 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
                 TestLabelAndNum tlAndN;
 
                 // For call nodes, translate late args to what they stand for.
-                if (tree->OperGet() == GT_CALL)
+                if (tree->OperIs(GT_CALL))
                 {
                     GenTreeCall* call = tree->AsCall();
                     unsigned     i    = 0;
@@ -8216,7 +8149,7 @@ void Compiler::compCallArgStats()
         {
             for (GenTree* const call : stmt->TreeList())
             {
-                if (call->gtOper != GT_CALL)
+                if (!call->OperIs(GT_CALL))
                     continue;
 
                 argNum = regArgNum = regArgDeferred = regArgTemp = regArgConst = regArgLclVar = argDWordNum =
@@ -10640,15 +10573,19 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
 //
 const char* Compiler::printfAlloc(const char* format, ...)
 {
-    char    str[512];
     va_list args;
     va_start(args, format);
-    int result = vsprintf_s(str, ArrLen(str), format, args);
+    int count = _vscprintf(format, args);
     va_end(args);
-    assert((result >= 0) && ((unsigned)result < ArrLen(str)));
 
-    char* resultStr = new (this, CMK_DebugOnly) char[result + 1];
-    memcpy(resultStr, str, (unsigned)result + 1);
+    assert(count >= 0);
+    char* resultStr = new (this, CMK_DebugOnly) char[count + 1];
+
+    va_start(args, format);
+    int result = vsprintf_s(resultStr, count + 1, format, args);
+    va_end(args);
+
+    assert((result >= 0) && (result < (count + 1)));
     return resultStr;
 }
 
@@ -10687,14 +10624,14 @@ Compiler::EnregisterStats Compiler::s_enregisterStats;
 void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
 {
     m_totalNumberOfVars++;
-    if (varDsc->TypeGet() == TYP_STRUCT)
+    if (varDsc->TypeIs(TYP_STRUCT))
     {
         m_totalNumberOfStructVars++;
     }
     if (!varDsc->lvDoNotEnregister)
     {
         m_totalNumberOfEnregVars++;
-        if (varDsc->TypeGet() == TYP_STRUCT)
+        if (varDsc->TypeIs(TYP_STRUCT))
         {
             m_totalNumberOfStructEnregVars++;
         }

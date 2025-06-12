@@ -859,7 +859,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 return;
             }
 
-            assert((dstAddr->TypeGet() == TYP_BYREF) || (dstAddr->TypeGet() == TYP_I_IMPL));
+            assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
         }
         else if (blkNode->OperIs(GT_STORE_BLK) && (size <= copyBlockUnrollLimit))
@@ -938,12 +938,12 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 }
 
 //------------------------------------------------------------------------
-// LowerPutArgStkOrSplit: Lower a GT_PUTARG_STK/GT_PUTARG_SPLIT.
+// LowerPutArgStk: Lower a GT_PUTARG_STK.
 //
 // Arguments:
 //    putArgStk - The node to lower
 //
-void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
+void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgNode)
 {
     GenTree* src = putArgNode->Data();
 
@@ -1007,7 +1007,7 @@ void Lowering::LowerCast(GenTree* tree)
 //
 void Lowering::LowerRotate(GenTree* tree)
 {
-    if (tree->OperGet() == GT_ROL)
+    if (tree->OperIs(GT_ROL))
     {
         // There is no ROL instruction on ARM. Convert ROL into ROR.
         GenTree* rotatedValue        = tree->AsOp()->gtOp1;
@@ -1521,7 +1521,7 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    if (node->TypeGet() == TYP_SIMD12)
+    if (node->TypeIs(TYP_SIMD12))
     {
         // GT_HWINTRINSIC node requiring to produce TYP_SIMD12 in fact
         // produces a TYP_SIMD16 result
@@ -1948,9 +1948,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId))
     {
         LIR::Use use;
-        JITDUMP("lowering EmbeddedMasked HWIntrinisic (before):\n");
-        DISPTREERANGE(BlockRange(), node);
-        JITDUMP("\n");
+        LABELEDDISPTREERANGE("lowering EmbeddedMasked HWIntrinisic (before)", BlockRange(), node);
 
         // Use lastOp to verify if it's a ConditionlSelectNode.
         size_t lastOpNum = node->GetOperandCount();
@@ -1959,11 +1957,11 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             node->Op(lastOpNum)->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect &&
             TryContainingCselOp(node, node->Op(lastOpNum)->AsHWIntrinsic()))
         {
-            JITDUMP("lowering EmbeddedMasked HWIntrinisic (after):\n");
-            DISPTREERANGE(BlockRange(), node);
-            JITDUMP("\n");
+            LABELEDDISPTREERANGE("Contained conditional select", BlockRange(), node);
             return node->gtNext;
         }
+
+        // Wrap a conditional select around the embedded mask operation
 
         CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
         unsigned    simdSize        = node->GetSimdSize();
@@ -1996,9 +1994,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             condSelNode->SetUnusedValue();
         }
 
-        JITDUMP("lowering EmbeddedMasked HWIntrinisic (after):\n");
-        DISPTREERANGE(BlockRange(), condSelNode);
-        JITDUMP("\n");
+        LABELEDDISPTREERANGE("Embedded HWIntrinisic inside conditional select", BlockRange(), condSelNode);
     }
 
     ContainCheckHWIntrinsic(node);
@@ -2765,7 +2761,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 {
     // If this is the rhs of a block copy it will be handled when we handle the store.
-    if (indirNode->TypeGet() == TYP_STRUCT)
+    if (indirNode->TypeIs(TYP_STRUCT))
     {
         return;
     }
@@ -2778,7 +2774,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     //
     // TODO-ARM64-CQ: handle other addr mode expressions that could be marked
     // as contained.
-    if (indirNode->TypeGet() == TYP_SIMD12)
+    if (indirNode->TypeIs(TYP_SIMD12))
     {
         return;
     }
@@ -2786,7 +2782,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 
     GenTree* addr = indirNode->Addr();
 
-    if ((addr->OperGet() == GT_LEA) && IsInvariantInRange(addr, indirNode))
+    if (addr->OperIs(GT_LEA) && IsInvariantInRange(addr, indirNode))
     {
         bool makeContained = true;
 
@@ -2798,14 +2794,14 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         int              cns = lea->Offset();
         if (lea->HasIndex() || !emitter::emitIns_valid_imm_for_vldst_offset(cns))
         {
-            if (indirNode->OperGet() == GT_STOREIND)
+            if (indirNode->OperIs(GT_STOREIND))
             {
                 if (varTypeIsFloating(indirNode->AsStoreInd()->Data()))
                 {
                     makeContained = false;
                 }
             }
-            else if (indirNode->OperGet() == GT_IND)
+            else if (indirNode->OperIs(GT_IND))
             {
                 if (varTypeIsFloating(indirNode))
                 {
@@ -2927,7 +2923,7 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
     GenTree* source = node->gtOp1;
     if (node->OperIs(GT_LSH_HI, GT_RSH_LO))
     {
-        assert(source->OperGet() == GT_LONG);
+        assert(source->OperIs(GT_LONG));
         MakeSrcContained(node, source);
     }
 #endif // TARGET_ARM
@@ -2990,7 +2986,7 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     {
         MakeSrcContained(storeLoc, op1);
     }
-    else if (op1->OperGet() == GT_LONG)
+    else if (op1->OperIs(GT_LONG))
     {
         MakeSrcContained(storeLoc, op1);
     }
@@ -3064,7 +3060,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 #ifdef TARGET_ARM
     if (varTypeIsLong(castOp))
     {
-        assert(castOp->OperGet() == GT_LONG);
+        assert(castOp->OperIs(GT_LONG));
         MakeSrcContained(node, castOp);
     }
 #endif // TARGET_ARM
@@ -3503,9 +3499,6 @@ bool Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next)
     if (!comp->opts.OptimizationEnabled())
         return false;
 
-    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
-        return false;
-
     if (op->isContained())
         return false;
 
@@ -3607,9 +3600,6 @@ bool Lowering::TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next)
     assert(op->OperIs(GT_NEG));
 
     if (!comp->opts.OptimizationEnabled())
-        return false;
-
-    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
         return false;
 
     if (op->isContained())
@@ -4116,8 +4106,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 
     if (op2->OperIsHWIntrinsic(NI_Sve_ConditionalSelect))
     {
-        // Handle cases where there is a nested ConditionalSelect for
-        // `trueValue`
+        // Handle cases where there is a nested ConditionalSelect for `trueValue`
         GenTreeHWIntrinsic* nestedCndSel = op2->AsHWIntrinsic();
         GenTree*            nestedOp1    = nestedCndSel->Op(1);
         GenTree*            nestedOp2    = nestedCndSel->Op(2);
@@ -4137,14 +4126,12 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 GenTree* nestedOp2 = nestedCndSel->Op(2);
                 GenTree* nestedOp3 = nestedCndSel->Op(3);
 
-                JITDUMP("lowering nested ConditionalSelect HWIntrinisic (before):\n");
-                DISPTREERANGE(BlockRange(), cndSelNode);
-                JITDUMP("\n");
+                LABELEDDISPTREERANGE("Removed nested conditionalselect (before):", BlockRange(), cndSelNode);
 
                 // Transform:
                 //
-                // CndSel(mask, CndSel(AllTrue, embeddedMask(trueValOp2), trueValOp3), op3) to
-                // CndSel(mask, embedded(trueValOp2), op3)
+                // CndSel1(mask, CndSel2(AllTrue, embedded(), trueValOp3), op3) to
+                // CndSel1(mask, embedded(), op3)
                 //
                 cndSelNode->Op(2) = nestedCndSel->Op(2);
                 nestedOp3->SetUnusedValue();
@@ -4152,10 +4139,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 BlockRange().Remove(nestedOp1);
                 BlockRange().Remove(nestedCndSel);
 
-                JITDUMP("lowering nested ConditionalSelect HWIntrinisic (after):\n");
-                DISPTREERANGE(BlockRange(), cndSelNode);
-                JITDUMP("\n");
-
+                LABELEDDISPTREERANGE("Removed nested conditionalselect (after)", BlockRange(), cndSelNode);
                 return cndSelNode;
             }
         }
@@ -4166,9 +4150,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
         if (!op2->OperIsHWIntrinsic() ||
             !HWIntrinsicInfo::IsEmbeddedMaskedOperation(op2->AsHWIntrinsic()->GetHWIntrinsicId()))
         {
-            JITDUMP("lowering ConditionalSelect HWIntrinisic (before):\n");
-            DISPTREERANGE(BlockRange(), cndSelNode);
-            JITDUMP("\n");
+            LABELEDDISPTREERANGE("Lowered ConditionalSelect(True, op2, op3) to op2 (before)", BlockRange(), cndSelNode);
 
             // Transform
             // CndSel(AllTrue, op2, op3) to
@@ -4190,10 +4172,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             GenTree* next = cndSelNode->gtNext;
             BlockRange().Remove(cndSelNode);
 
-            JITDUMP("lowering ConditionalSelect HWIntrinisic (after):\n");
-            DISPTREERANGE(BlockRange(), op2);
-            JITDUMP("\n");
-
+            LABELEDDISPTREERANGE("Lowered ConditionalSelect(True, op2, op3) to op2 (after)", BlockRange(), op2);
             return next;
         }
     }

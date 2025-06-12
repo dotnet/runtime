@@ -279,7 +279,7 @@ void CodeGen::genCodeForBBlist()
         {
             for (GenTree* node : LIR::AsRange(block))
             {
-                if (node->OperGet() == GT_CATCH_ARG)
+                if (node->OperIs(GT_CATCH_ARG))
                 {
                     gcInfo.gcMarkRegSetGCref(RBM_EXCEPTION_OBJECT);
                     break;
@@ -431,7 +431,7 @@ void CodeGen::genCodeForBBlist()
         for (GenTree* node : LIR::AsRange(block))
         {
             // Do we have a new IL offset?
-            if (node->OperGet() == GT_IL_OFFSET)
+            if (node->OperIs(GT_IL_OFFSET))
             {
                 GenTreeILOffset* ilOffset = node->AsILOffset();
                 DebugInfo        rootDI   = ilOffset->gtStmtDI.GetRoot();
@@ -727,7 +727,7 @@ void CodeGen::genCodeForBBlist()
                 {
                     GenTree* call = block->lastNode();
 
-                    if ((call != nullptr) && (call->gtOper == GT_CALL))
+                    if ((call != nullptr) && call->OperIs(GT_CALL))
                     {
                         if (call->AsCall()->IsNoReturn())
                         {
@@ -769,7 +769,7 @@ void CodeGen::genCodeForBBlist()
             {
 #ifdef DEBUG
                 GenTree* call = block->lastNode();
-                if ((call != nullptr) && (call->gtOper == GT_CALL))
+                if ((call != nullptr) && call->OperIs(GT_CALL))
                 {
                     // At this point, BBJ_ALWAYS should never end with a call that doesn't return.
                     assert(!call->AsCall()->IsNoReturn());
@@ -1023,7 +1023,7 @@ void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int reg
 {
     // This should only be called for multireg lclVars.
     assert(compiler->lvaEnregMultiRegVars);
-    assert(tree->IsMultiRegLclVar() || (tree->gtOper == GT_COPY));
+    assert(tree->IsMultiRegLclVar() || tree->OperIs(GT_COPY));
     varDsc->SetRegNum(tree->GetRegByIndex(regIndex));
 }
 
@@ -1038,7 +1038,7 @@ void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int reg
 void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree)
 {
     // This should not be called for multireg lclVars.
-    assert((tree->OperIsScalarLocal() && !tree->IsMultiRegLclVar()) || (tree->gtOper == GT_COPY));
+    assert((tree->OperIsScalarLocal() && !tree->IsMultiRegLclVar()) || tree->OperIs(GT_COPY));
     varDsc->SetRegNum(tree->GetRegNum());
 }
 
@@ -1140,7 +1140,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex)
     GenTree* unspillTree = tree;
     assert(unspillTree->IsMultiRegNode());
 
-    if (tree->gtOper == GT_RELOAD)
+    if (tree->OperIs(GT_RELOAD))
     {
         unspillTree = tree->AsOp()->gtOp1;
     }
@@ -1207,7 +1207,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex)
 void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 {
     GenTree* unspillTree = tree;
-    if (tree->gtOper == GT_RELOAD)
+    if (tree->OperIs(GT_RELOAD))
     {
         unspillTree = tree->AsOp()->gtOp1;
     }
@@ -1386,7 +1386,7 @@ void CodeGen::genCheckConsumeNode(GenTree* const node)
         }
     }
 
-    assert((node->OperGet() == GT_CATCH_ARG) || ((node->gtDebugFlags & GTF_DEBUG_NODE_CG_CONSUMED) == 0));
+    assert(node->OperIs(GT_CATCH_ARG) || ((node->gtDebugFlags & GTF_DEBUG_NODE_CG_CONSUMED) == 0));
     assert((lastConsumedNode == nullptr) || (node->gtUseNum == -1) || (node->gtUseNum > lastConsumedNode->gtUseNum));
 
     node->gtDebugFlags |= GTF_DEBUG_NODE_CG_CONSUMED;
@@ -1477,7 +1477,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
 //
 regNumber CodeGen::genConsumeReg(GenTree* tree)
 {
-    if (tree->OperGet() == GT_COPY)
+    if (tree->OperIs(GT_COPY))
     {
         genRegCopy(tree);
     }
@@ -1578,7 +1578,7 @@ void CodeGen::genConsumeAddress(GenTree* addr)
     {
         genConsumeReg(addr);
     }
-    else if (addr->OperGet() == GT_LEA)
+    else if (addr->OperIs(GT_LEA))
     {
         genConsumeAddrMode(addr->AsAddrMode());
     }
@@ -1593,7 +1593,7 @@ void CodeGen::genConsumeAddrMode(GenTreeAddrMode* addr)
 void CodeGen::genConsumeRegs(GenTree* tree)
 {
 #if !defined(TARGET_64BIT)
-    if (tree->OperGet() == GT_LONG)
+    if (tree->OperIs(GT_LONG))
     {
         genConsumeRegs(tree->gtGetOp1());
         genConsumeRegs(tree->gtGetOp2());
@@ -1826,29 +1826,6 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
     }
 }
 
-#if FEATURE_ARG_SPLIT
-//------------------------------------------------------------------------
-// genConsumeArgRegSplit: Consume register(s) in Call node to set split struct argument.
-//
-// Arguments:
-//    putArgNode - the PUTARG_STK tree.
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode)
-{
-    assert(putArgNode->OperGet() == GT_PUTARG_SPLIT);
-    assert(putArgNode->gtHasReg(compiler));
-
-    genUnspillRegIfNeeded(putArgNode);
-
-    gcInfo.gcMarkRegSetNpt(putArgNode->gtGetRegMask());
-
-    genCheckConsumeNode(putArgNode);
-}
-#endif // FEATURE_ARG_SPLIT
-
 //------------------------------------------------------------------------
 // genPutArgStkFieldList: Generate code for a putArgStk whose source is a GT_FIELD_LIST
 //
@@ -1940,7 +1917,7 @@ void CodeGen::genConsumeBlockSrc(GenTreeBlk* blkNode)
     {
         // For a CopyBlk we need the address of the source.
         assert(src->isContained());
-        if (src->OperGet() == GT_IND)
+        if (src->OperIs(GT_IND))
         {
             src = src->AsOp()->gtOp1;
         }
@@ -1976,7 +1953,7 @@ void CodeGen::genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg)
     if (blkNode->OperIsCopyBlkOp())
     {
         // For a CopyBlk we need the address of the source.
-        if (src->OperGet() == GT_IND)
+        if (src->OperIs(GT_IND))
         {
             src = src->AsOp()->gtOp1;
         }
@@ -2192,7 +2169,7 @@ void CodeGen::genProduceReg(GenTree* tree)
             {
                 // we should never see reload of multi-reg call here
                 // because GT_RELOAD gets generated in reg consuming path.
-                noway_assert(tree->OperGet() == GT_COPY);
+                noway_assert(tree->OperIs(GT_COPY));
 
                 // A multi-reg GT_COPY node produces those regs to which
                 // copy has taken place.
@@ -2493,7 +2470,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
     GenTreeLclVarCommon* lclNode = treeNode->AsLclVarCommon();
     unsigned             lclNum  = lclNode->GetLclNum();
     LclVarDsc*           varDsc  = compiler->lvaGetDesc(lclNum);
-    assert(varDsc->TypeGet() == TYP_LONG);
+    assert(varDsc->TypeIs(TYP_LONG));
     assert(!varDsc->lvPromoted);
     GenTree* op1 = treeNode->AsOp()->gtOp1;
 
