@@ -1199,6 +1199,8 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     m_classHnd   = compHnd->getMethodClass(m_methodHnd);
 
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
+                            /* includeAssembly */ false,
+                            /* includeClass */ true,
                             /* includeClassInstantiation */ true,
                             /* includeMethodInstantiation */ true,
                             /* includeSignature */ true,
@@ -5062,6 +5064,8 @@ void InterpCompiler::PrintMethodName(CORINFO_METHOD_HANDLE method)
     m_compHnd->getMethodSig(method, &sig, cls);
 
     TArray<char> methodName = ::PrintMethodName(m_compHnd, cls, method, &sig,
+                            /* includeAssembly */ false,
+                            /* includeClass */ false,
                             /* includeClassInstantiation */ true,
                             /* includeMethodInstantiation */ true,
                             /* includeSignature */ true,
