@@ -817,8 +817,8 @@ namespace System
         {
             ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
             Debug.Assert(lookup.Length == 256);
-            int upper = (sbyte)lookup[byte.CreateTruncating(ch1)];
-            int lower = (sbyte)lookup[byte.CreateTruncating(ch2)];
+            int upper = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), byte.CreateTruncating(ch1));
+            int lower = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), byte.CreateTruncating(ch2));
             int result = (upper << 4) | lower;
 
             uint c1 = TChar.CastToUInt32(ch1);
