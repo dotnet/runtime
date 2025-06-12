@@ -100,7 +100,7 @@ eventpipe_collect_tracing_command_try_parse_provider_config (
 
 static
 bool
-eventpipe_collect_tracing_command_try_parse_config (
+eventpipe_collect_tracing_command_try_parse_provider_configs (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
 	EventPipeProviderOptionalFieldFlags optional_field_flags,
@@ -509,7 +509,7 @@ ep_on_error:
 }
 
 /*
- * eventpipe_collect_tracing_command_try_parse_config
+ * eventpipe_collect_tracing_command_try_parse_provider_configs
  *
  * With the introduction of CollectTracing5, there is more flexiblity in provider configuration encoding.
  * This function deserializes all provider configurations from the IPC Stream, providing callers the flexibility
@@ -519,7 +519,7 @@ ep_on_error:
  */
 static
 bool
-eventpipe_collect_tracing_command_try_parse_config (
+eventpipe_collect_tracing_command_try_parse_provider_configs (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
 	EventPipeProviderOptionalFieldFlags optional_field_flags,
@@ -615,7 +615,7 @@ eventpipe_collect_tracing_command_try_parse_payload (
 
 	if (!eventpipe_collect_tracing_command_try_parse_circular_buffer_size (&buffer_cursor, &buffer_cursor_len, &instance->circular_buffer_size_in_mb ) ||
 		!eventpipe_collect_tracing_command_try_parse_serialization_format (&buffer_cursor, &buffer_cursor_len, &instance->serialization_format) ||
-		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, EP_PROVIDER_OPTFIELD_NONE, &instance->provider_configs))
+		!eventpipe_collect_tracing_command_try_parse_provider_configs (&buffer_cursor, &buffer_cursor_len, EP_PROVIDER_OPTFIELD_NONE, &instance->provider_configs))
 		ep_raise_error ();
 	instance->rundown_requested = true;
 	instance->stackwalk_requested = true;
@@ -650,7 +650,7 @@ eventpipe_collect_tracing2_command_try_parse_payload (
 	if (!eventpipe_collect_tracing_command_try_parse_circular_buffer_size (&buffer_cursor, &buffer_cursor_len, &instance->circular_buffer_size_in_mb ) ||
 		!eventpipe_collect_tracing_command_try_parse_serialization_format (&buffer_cursor, &buffer_cursor_len, &instance->serialization_format) ||
 		!eventpipe_collect_tracing_command_try_parse_rundown_requested (&buffer_cursor, &buffer_cursor_len, &instance->rundown_requested) ||
-		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, EP_PROVIDER_OPTFIELD_NONE, &instance->provider_configs))
+		!eventpipe_collect_tracing_command_try_parse_provider_configs (&buffer_cursor, &buffer_cursor_len, EP_PROVIDER_OPTFIELD_NONE, &instance->provider_configs))
 		ep_raise_error ();
 
 	instance->rundown_keyword = instance->rundown_requested ? ep_default_rundown_keyword : 0;
@@ -687,7 +687,7 @@ eventpipe_collect_tracing3_command_try_parse_payload (
 		!eventpipe_collect_tracing_command_try_parse_serialization_format (&buffer_cursor, &buffer_cursor_len, &instance->serialization_format) ||
 		!eventpipe_collect_tracing_command_try_parse_rundown_requested (&buffer_cursor, &buffer_cursor_len, &instance->rundown_requested) ||
 		!eventpipe_collect_tracing_command_try_parse_stackwalk_requested (&buffer_cursor, &buffer_cursor_len, &instance->stackwalk_requested) ||
-		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, EP_PROVIDER_OPTFIELD_NONE, &instance->provider_configs))
+		!eventpipe_collect_tracing_command_try_parse_provider_configs (&buffer_cursor, &buffer_cursor_len, EP_PROVIDER_OPTFIELD_NONE, &instance->provider_configs))
 		ep_raise_error ();
 
 	instance->rundown_keyword = instance->rundown_requested ? ep_default_rundown_keyword : 0;
@@ -722,7 +722,7 @@ eventpipe_collect_tracing4_command_try_parse_payload (
 		!eventpipe_collect_tracing_command_try_parse_serialization_format (&buffer_cursor, &buffer_cursor_len, &instance->serialization_format) ||
 		!eventpipe_collect_tracing_command_try_parse_rundown_keyword (&buffer_cursor, &buffer_cursor_len, &instance->rundown_keyword) ||
 		!eventpipe_collect_tracing_command_try_parse_stackwalk_requested (&buffer_cursor, &buffer_cursor_len, &instance->stackwalk_requested) ||
-		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, EP_PROVIDER_OPTFIELD_NONE, &instance->provider_configs))
+		!eventpipe_collect_tracing_command_try_parse_provider_configs (&buffer_cursor, &buffer_cursor_len, EP_PROVIDER_OPTFIELD_NONE, &instance->provider_configs))
 		ep_raise_error ();
 
 	instance->rundown_requested = instance->rundown_keyword != 0;
@@ -783,7 +783,7 @@ eventpipe_collect_tracing5_command_try_parse_payload (
 	if (instance->session_type == EP_SESSION_TYPE_USEREVENTS)
 		optional_field_flags = (EventPipeProviderOptionalFieldFlags)(optional_field_flags | EP_PROVIDER_OPTFIELD_TRACEPOINT_CONFIG);
 
-	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, optional_field_flags, &instance->provider_configs));
+	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_provider_configs (&buffer_cursor, &buffer_cursor_len, optional_field_flags, &instance->provider_configs));
 
 	instance->rundown_requested = instance->rundown_keyword != 0;
 

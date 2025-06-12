@@ -731,88 +731,106 @@ session_tracepoint_write_event (
 	if (tracepoint->enabled == 0)
 		return false;
 
-	uint8_t version = 0x01; // hardcoded for the first tracepoint format version
-
-	uint32_t event_id = ep_event_get_event_id (ep_event);
-	uint16_t truncated_event_id = event_id & 0xFFFF; // For parity with EventSource, there shouldn't be any that need more than 16 bits. 
-
-	uint8_t extension_metadata[EP_EXTENSION_METADATA_PREFIX_SIZE];
-	extension_metadata[0] = 0x01; // label
-	uint32_t metadata_len = ep_event_get_metadata_len (ep_event);
-	memcpy (extension_metadata + 1, &metadata_len, sizeof (metadata_len));
-
-	uint8_t extension_activity_ids[EP_EXTENSION_ACTIVITIES_SIZE];
-	uint16_t extension_activity_ids_len = construct_extension_activity_ids_buffer (extension_activity_ids, EP_EXTENSION_ACTIVITIES_SIZE, activity_id, related_activity_id);
-	EP_ASSERT(extension_activity_ids_len <= EP_EXTENSION_ACTIVITIES_SIZE);
-
-	uint32_t extension_len = EP_EXTENSION_METADATA_PREFIX_SIZE + metadata_len + extension_activity_ids_len;
-	if (extension_len & 0xFFFF0000)
-		return false;
-
-	uint32_t payload_len = ep_event_payload_get_size (ep_event_payload);
-	if ((payload_len & 0xFFFF0000) != 0)
-		return false;
-
-	uint32_t payload_rel_loc = payload_len << 16 | (extension_len & 0xFFFF);
-	if ((extension_len & 0xFFFF0000) != 0)
-		return false;
-
-	uint32_t extension_rel_loc = extension_len << 16 | (sizeof(payload_rel_loc) & 0xFFFF);
-	if (sizeof(payload_rel_loc) & 0xFFFF0000)
-		return false;
-
-	struct iovec static_io[EP_DEFAULT_IOVEC_SIZE];
+	// Setup iovec array
+	const int max_non_parameter_iov = 8;
+	const int max_static_io_capacity = 30; // Should account for most events that use EventData structs
+	struct iovec static_io[max_static_io_capacity];
 	struct iovec *io = static_io;
-	EventData *event_data = NULL;
-	uint32_t index = EP_TRACEPOINT_V1_PAYLOAD_INDEX;
-	// Since ep_event_payload can use multiple buffers, try to fit that in first
-	if (ep_event_payload_get_data (ep_event_payload) != NULL) {
-		io[index].iov_base = ep_event_payload_get_data (ep_event_payload);
-		io[index].iov_len = payload_len;
-		index++;
-	} else {
-		event_data = ep_event_payload->event_data;
 
-		// In the unlikely event that an event_payload uses more EventData structs than can fit in the static iovec,
-		// dynamically allocate to fit all event_data buffers
-		if (ep_event_payload->event_data_len >= EP_DEFAULT_IOVEC_SIZE - EP_TRACEPOINT_V1_PAYLOAD_INDEX) {
-			io = (struct iovec *)malloc (sizeof (struct iovec) * (EP_TRACEPOINT_V1_PAYLOAD_INDEX + ep_event_payload->event_data_len));
-			if (io == NULL)
-				return false;
-		}
+	uint8_t *ep_event_data = ep_event_payload_get_data (ep_event_payload);
+
+	int param_iov = ep_event_data != NULL ? 1 : ep_event_payload->event_data_len;
+	int io_elem_capacity = param_iov + max_non_parameter_iov;
+	if (io_elem_capacity > max_static_io_capacity) {
+		io = (struct iovec *)malloc (sizeof (struct iovec) * io_elem_capacity);
+		if (io == NULL)
+			return false;
+	}
+
+	int io_index = 0;
+
+	// Write Index
+	io[io_index].iov_base = (void *)&tracepoint->write_index;
+	io[io_index].iov_len = sizeof(tracepoint->write_index);
+	io_index++;
+
+	// Version
+	uint8_t version = 0x01; // Format V1
+	io[io_index].iov_base = &version;
+	io[io_index].iov_len = sizeof(version);
+	io_index++;
+
+	// Truncated event id
+	// For parity with EventSource, there shouldn't be any that need more than 16 bits.
+	uint16_t truncated_event_id = ep_event_get_event_id (ep_event) & 0xFFFF;
+	io[io_index].iov_base = &truncated_event_id;
+	io[io_index].iov_len = sizeof(truncated_event_id);
+	io_index++;
+
+	// Extension and payload relative locations (to be fixed up later)
+	uint32_t extension_rel_loc = 0;
+	io[io_index].iov_base = &extension_rel_loc;
+	io[io_index].iov_len = sizeof(extension_rel_loc);
+	io_index++;
+
+	uint32_t payload_rel_loc = 0;
+	io[io_index].iov_base = &payload_rel_loc;
+	io[io_index].iov_len = sizeof(payload_rel_loc);
+	io_index++;
+
+	// Extension
+	int extension_len = 0;
+
+	// Extension Event Metadata
+	int metadata_len = ep_event_get_metadata_len (ep_event);
+	uint8_t extension_metadata[1 + sizeof(uint32_t)];
+	extension_metadata[0] = 0x01; // label
+	*(uint32_t*)&extension_metadata[1] = metadata_len;
+	io[io_index].iov_base = extension_metadata;
+	io[io_index].iov_len = sizeof(extension_metadata);
+	io_index++;
+	extension_len += sizeof(extension_metadata);
+
+	io[io_index].iov_base = (void *)ep_event_get_metadata (ep_event);
+	io[io_index].iov_len = metadata_len;
+	io_index++;
+	extension_len += metadata_len;
+
+	// Extension Activity IDs
+	const int extension_activity_ids_max_len = 2 * (1 + EP_ACTIVITY_ID_SIZE);
+	uint8_t extension_activity_ids[extension_activity_ids_max_len];
+	uint16_t extension_activity_ids_len = construct_extension_activity_ids_buffer (extension_activity_ids, extension_activity_ids_max_len, activity_id, related_activity_id);
+	EP_ASSERT (extension_activity_ids_len <= extension_activity_ids_max_len);
+	io[io_index].iov_base = extension_activity_ids;
+	io[io_index].iov_len = extension_activity_ids_len;
+	io_index++;
+	extension_len += extension_activity_ids_len;
+
+	EP_ASSERT (io_index <= max_non_parameter_iov);
+
+	int ep_event_payload_len = 0;
+	// EventPipeEventPayload
+	if (ep_event_data != NULL) {
+		io[io_index].iov_base = ep_event_data;
+		io[io_index].iov_len = ep_event_payload_get_size (ep_event_payload);
+		io_index++;
+		ep_event_payload_len += ep_event_payload_get_size (ep_event_payload);
+	} else {
+		EventData *event_data = ep_event_payload->event_data;
 		for (uint32_t i = 0; i < ep_event_payload->event_data_len; ++i) {
-			io[index].iov_base = (void *)ep_event_data_get_ptr (&event_data[i]);
-			io[index].iov_len = ep_event_data_get_size (&event_data[i]);
-			++index;
+			io[io_index].iov_base = (void *)ep_event_data_get_ptr (&event_data[i]);
+			io[io_index].iov_len = ep_event_data_get_size (&event_data[i]);
+			io_index++;
+			ep_event_payload_len += ep_event_data_get_size (&event_data[i]);
 		}
 	}
 
-	io[0].iov_base = (void *)&tracepoint->write_index;
-	io[0].iov_len = sizeof(tracepoint->write_index);
-
-	io[1].iov_base = &version;
-	io[1].iov_len = sizeof(version);
-
-	io[2].iov_base = &truncated_event_id;
-	io[2].iov_len = sizeof(truncated_event_id);
-
-	io[3].iov_base = &extension_rel_loc;
-	io[3].iov_len = sizeof(extension_rel_loc);
-
-	io[4].iov_base = &payload_rel_loc;
-	io[4].iov_len = sizeof(payload_rel_loc);
-
-	io[5].iov_base = extension_metadata;
-	io[5].iov_len = sizeof(extension_metadata);
-
-	io[6].iov_base = (void *)ep_event_get_metadata (ep_event);
-	io[6].iov_len = metadata_len;
-
-	io[7].iov_base = extension_activity_ids;
-	io[7].iov_len = extension_activity_ids_len;
+	// Calculate the relative locations for extension and payload.
+	extension_rel_loc = extension_len << 16 | (sizeof(payload_rel_loc) & 0xFFFF);
+	payload_rel_loc = ep_event_payload_len << 16 | (extension_len & 0xFFFF);
 
 	ssize_t bytes_written;
-	while ((bytes_written = writev(session->user_events_data_fd, (const struct iovec *)io, index) < 0) && errno == EINTR);
+	while ((bytes_written = writev(session->user_events_data_fd, (const struct iovec *)io, io_index) < 0) && errno == EINTR);
 
 	if (io != static_io)
 		free (io);
@@ -1004,10 +1022,7 @@ ep_session_has_started (EventPipeSession *session)
 bool
 ep_session_type_uses_buffer_manager (EventPipeSessionType session_type)
 {
-	if (session_type == EP_SESSION_TYPE_SYNCHRONOUS || session_type == EP_SESSION_TYPE_USEREVENTS)
-		return false;
-
-	return true;
+	return (session_type != EP_SESSION_TYPE_SYNCHRONOUS && session_type != EP_SESSION_TYPE_USEREVENTS);
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */

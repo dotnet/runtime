@@ -16,9 +16,9 @@
  */
 
 #if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
-struct _EventPipeTracepoint {
+struct _EventPipeSessionProviderTracepoint {
 #else
-struct _EventPipeTracepoint_Internal {
+struct _EventPipeSessionProviderTracepoint_Internal {
 #endif
 	const ep_char8_t *tracepoint_format;
 	uint32_t write_index;
@@ -26,10 +26,12 @@ struct _EventPipeTracepoint_Internal {
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
-struct _EventPipeTracepoint {
-	uint8_t _internal [sizeof (struct _EventPipeTracepoint_Internal)];
+struct _EventPipeSessionProviderTracepoint {
+	uint8_t _internal [sizeof (struct _EventPipeSessionProviderTracepoint_Internal)];
 };
 #endif
+
+#define EP_SESSION_PROVIDER_TRACEPOINT_ENABLE_BIT 31
 
 bool
 ep_session_provider_register_tracepoints (

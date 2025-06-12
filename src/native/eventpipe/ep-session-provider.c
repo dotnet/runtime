@@ -157,7 +157,7 @@ session_provider_tracepoint_register (
 	struct user_reg reg = {0};
 
 	reg.size = sizeof(reg);
-	reg.enable_bit = EP_TRACEPOINT_ENABLE_BIT;
+	reg.enable_bit = EP_SESSION_PROVIDER_TRACEPOINT_ENABLE_BIT;
 	reg.enable_size = sizeof(tracepoint->enabled);
 	reg.enable_addr = (uint64_t)&tracepoint->enabled;
 
@@ -182,7 +182,7 @@ session_provider_tracepoint_unregister (
 	struct user_unreg unreg = {0};
 
 	unreg.size = sizeof(unreg);
-	unreg.disable_bit = EP_TRACEPOINT_ENABLE_BIT;
+	unreg.disable_bit = EP_SESSION_PROVIDER_TRACEPOINT_ENABLE_BIT;
 	unreg.disable_addr = (uint64_t)&tracepoint->enabled;
 
 	if (ioctl(user_events_data_fd, DIAG_IOCSUNREG, &unreg) == -1)
@@ -351,12 +351,15 @@ static
 const ep_char8_t *
 tracepoint_format_alloc (const ep_char8_t *tracepoint_name)
 {
+	const int format_max_size = 512;
+	const ep_char8_t *args = "u8 version; u16 event_id; __rel_loc u8[] extension; __rel_loc u8[] payload";
+
 	ep_return_null_if_nok (tracepoint_name != NULL);
-	
-	if (strlen(tracepoint_name) > EP_TRACEPOINT_NAME_MAX_SIZE)
+
+	if ((strlen(tracepoint_name) + strlen(args) + 2) > format_max_size) // +2 for the space and null terminator
 		return NULL;
 
-	return ep_rt_utf8_string_printf_alloc ("%s %s", tracepoint_name, EP_TRACEPOINT_FORMAT_V1);
+	return ep_rt_utf8_string_printf_alloc ("%s %s", tracepoint_name, args);
 }
 
 static
