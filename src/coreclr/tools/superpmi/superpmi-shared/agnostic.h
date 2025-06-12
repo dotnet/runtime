@@ -719,6 +719,14 @@ struct GetCookieForPInvokeCalliSigValue
     DWORD     token;
 };
 
+struct GetCookieForInterpreterCalliSigValue
+{
+    DWORD     cbSig;
+    DWORD     pSig_Index;
+    DWORDLONG scope;
+    DWORD     token;
+};
+
 struct CanGetCookieForPInvokeCalliSigValue
 {
     DWORDLONG scope;

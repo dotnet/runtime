@@ -591,6 +591,9 @@ void* GetCookieForPInvokeCalliSig(
           CORINFO_SIG_INFO* szMetaSig,
           void** ppIndirection) override;
 
+void* GetCookieForInterpreterCalliSig(
+          CORINFO_SIG_INFO* szMetaSig) override;
+
 bool canGetCookieForPInvokeCalliSig(
           CORINFO_SIG_INFO* szMetaSig) override;
 

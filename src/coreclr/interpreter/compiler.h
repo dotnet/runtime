@@ -385,7 +385,12 @@ private:
         EmbedParent = 2,
     };
     InterpEmbedGenericResult EmitGenericHandle(CORINFO_RESOLVED_TOKEN* resolvedToken, GenericHandleEmbedOptions options);
+
+    // Do a generic handle lookup and acquire the result as either a var or a data item.
     int EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo);
+
+    // Emit a generic dictionary lookup and push the result onto the interpreter stack
+    void EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup);
 
     void* AllocMethodData(size_t numBytes);
 public:
@@ -484,7 +489,7 @@ private:
     void    EmitUnaryArithmeticOp(int32_t opBase);
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
-    void    EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall, bool newObj);
+    void    EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall, bool newObj, bool isCalli);
     bool    EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
