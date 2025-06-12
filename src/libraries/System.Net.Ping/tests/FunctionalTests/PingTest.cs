@@ -686,6 +686,59 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Equal(IPStatus.Success, reply.Status);
         }
 
+        private async Task CancelSendPingExperimentImpl(string host)
+        {
+            using Ping ping = new Ping();
+            IPAddress address = (await Dns.GetHostAddressesAsync(host))[0];
+            using CancellationTokenSource cts = new CancellationTokenSource();
+
+            Task<PingReply> task = ping.SendPingAsync(address, TimeSpan.FromSeconds(5), cancellationToken: cts.Token);
+            cts.Cancel();
+            try
+            {
+                PingReply reply = await task;
+                Assert.Fail(reply.Status.ToString());
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
+        public static TheoryData<string> CancelSendPingExperiment_Data = new TheoryData<string>()
+        {
+            "www.microsoft.com",
+            "192.0.2.0",
+            "100.64.0.1",
+            "10.255.255.1"
+        };
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(CancelSendPingExperiment_Data))]
+        public Task _CancelSendPingExperiment1(string host) => CancelSendPingExperimentImpl(host);
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(CancelSendPingExperiment_Data))]
+        public Task _CancelSendPingExperiment2(string host) => CancelSendPingExperimentImpl(host);
+
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(CancelSendPingExperiment_Data))]
+        public Task _CancelSendPingExperiment3(string host) => CancelSendPingExperimentImpl(host);
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(CancelSendPingExperiment_Data))]
+        public Task _CancelSendPingExperiment4(string host) => CancelSendPingExperimentImpl(host);
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(CancelSendPingExperiment_Data))]
+        [OuterLoop]
+        public Task _CancelSendPingExperiment_Outer1(string host) => CancelSendPingExperimentImpl(host);
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(CancelSendPingExperiment_Data))]
+        [OuterLoop]
+        public Task _CancelSendPingExperiment_Outer2(string host) => CancelSendPingExperimentImpl(host);
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false, false)]
         [InlineData(false, true)]
@@ -694,15 +747,10 @@ namespace System.Net.NetworkInformation.Tests
         [OuterLoop] // Depends on external host and assumption that successful ping takes long enough for cancellation to go through first
         public async Task CancelSendPingAsync(bool useIPAddress, bool useCancellationToken)
         {
-            if (PlatformDetection.IsOSX && useIPAddress && !useCancellationToken)
-            {
-                throw new SkipTestException("[ActiveIssue(https://github.com/dotnet/runtime/issues/114782)]");
-            }
-
             using CancellationTokenSource source = new();
 
             using Ping ping = new();
-            Task pingTask = useIPAddress
+            Task<PingReply> pingTask = useIPAddress
                 ? ping.SendPingAsync((await Dns.GetHostAddressesAsync(Test.Common.Configuration.Ping.PingHost))[0], TimeSpan.FromSeconds(5), cancellationToken: source.Token)
                 : ping.SendPingAsync(Test.Common.Configuration.Ping.PingHost, TimeSpan.FromSeconds(5), cancellationToken: source.Token);
             if (useCancellationToken)
@@ -713,7 +761,12 @@ namespace System.Net.NetworkInformation.Tests
             {
                 ping.SendAsyncCancel();
             }
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pingTask);
+            try
+            {
+                PingReply reply = await pingTask;
+                Assert.Fail(reply.Status.ToString());
+            }
+            catch (OperationCanceledException) { }
             Assert.True(pingTask.IsCanceled);
         }
 
