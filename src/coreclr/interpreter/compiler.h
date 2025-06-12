@@ -6,6 +6,7 @@
 
 #include "intops.h"
 #include "datastructs.h"
+#include "enum_class_flags.h"
 
 TArray<char> PrintMethodName(COMP_HANDLE comp,
                              CORINFO_CLASS_HANDLE  clsHnd,
@@ -353,6 +354,7 @@ private:
     // FIXME during compilation this should be a hashtable for fast lookup of duplicates
     TArray<void*> m_dataItems;
     int32_t GetDataItemIndex(void* data);
+    void* GetDataItemAtIndex(int32_t index);
     int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
     int32_t GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn);
 
@@ -363,6 +365,27 @@ private:
     void                    ResolveToken(uint32_t token, CorInfoTokenKind tokenKind, CORINFO_RESOLVED_TOKEN *pResolvedToken);
     CORINFO_METHOD_HANDLE   ResolveMethodToken(uint32_t token);
     CORINFO_CLASS_HANDLE    ResolveClassToken(uint32_t token);
+    CORINFO_CLASS_HANDLE    getClassFromContext(CORINFO_CONTEXT_HANDLE context);
+    int                     getParamArgIndex(); // Get the index into the m_pVars array of the Parameter argument. This is either the this pointer, a methoddesc or a class handle
+
+    struct InterpEmbedGenericResult
+    {
+        // If var is != -1, then the var holds the result of the lookup
+        int var = -1;
+        // If var == -1, then the data item holds the result of the lookup
+        int dataItemIndex = -1;
+    };
+
+    enum class GenericHandleEmbedOptions
+    {
+        support_use_as_flags = -1, // Magic value which in combination with enum_class_flags.h allows the use of bitwise operations and the HasFlag helper method
+
+        None = 0,
+        VarOnly = 1,
+        EmbedParent = 2,
+    };
+    InterpEmbedGenericResult EmitGenericHandle(CORINFO_RESOLVED_TOKEN* resolvedToken, GenericHandleEmbedOptions options);
+    int EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo);
 
     void* AllocMethodData(size_t numBytes);
 public:
@@ -421,6 +444,7 @@ private:
     int32_t m_varsSize = 0;
     int32_t m_varsCapacity = 0;
     int32_t m_numILVars = 0;
+    int32_t m_paramArgIndex = 0; // Index of the type parameter argument in the m_pVars array.
     // For each catch or filter clause, we create a variable that holds the exception object.
     // This is the index of the first such variable.
     int32_t m_clauseVarsIndex = 0;
@@ -437,6 +461,8 @@ private:
 
     int32_t GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, InterpType interpType, int32_t *pAlign);
     void    CreateILVars();
+
+    void CreateNextLocalVar(int iArgToSet, CORINFO_CLASS_HANDLE argClass, InterpType interpType, int32_t *pOffset);
 
     // Stack
     StackInfo *m_pStackPointer, *m_pStackBase;
@@ -458,7 +484,7 @@ private:
     void    EmitUnaryArithmeticOp(int32_t opBase);
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
-    void    EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readonly, bool tailcall);
+    void    EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall, bool newObj);
     bool    EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
