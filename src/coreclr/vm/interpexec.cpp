@@ -21,7 +21,7 @@ FCDECL1(double, JIT_ULng2Dbl, uint64_t val);
 FCDECL1(float, JIT_Lng2Flt, int64_t val);
 FCDECL1(double, JIT_Lng2Dbl, int64_t val);
 
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
+void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE overrideTarget = (PCODE)NULL)
 {
     CONTRACTL
     {
@@ -54,7 +54,10 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
         }
     }
 
-    pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode()); // The method to call
+    if (overrideTarget)
+        pHeader->SetTarget(overrideTarget);
+    else
+        pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode()); // The method to call
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
@@ -1451,6 +1454,28 @@ MAIN_LOOP:
                     goto CALL_INTERP_METHOD;
                 }
 
+                case INTOP_CALL_PINVOKE:
+                {
+                    // This opcode handles p/invokes that don't use a managed wrapper for marshaling. These
+                    //  calls are special in that they need an InlinedCallFrame in order for proper EH to happen
+
+                    returnOffset = ip[1];
+                    callArgsOffset = ip[2];
+                    methodSlot = ip[3];
+                    int32_t targetAddrSlot = ip[4];
+
+                    ip += 5;
+                    targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
+                    PCODE callTarget = *(PCODE*)pMethod->pDataItems[targetAddrSlot];
+
+                    {
+                        // Interpreter-FIXME: Create InlinedCallFrame.
+                        GCX_PREEMP();
+                        InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+                    }
+                    break;
+                }
+
                 case INTOP_CALL:
                 {
                     returnOffset = ip[1];
@@ -1475,7 +1500,12 @@ CALL_INTERP_METHOD:
                             pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
                             GCX_PREEMP();
                             // Attempt to setup the interpreter code for the target method.
-                            if (!(targetMethod->IsFCall() || (targetMethod->IsCtor() && targetMethod->GetMethodTable()->IsString())))
+                            if (!(
+                                targetMethod->IsFCall() ||
+                                // Interpreter-FIXME: Even if the p/invoke needs a managed marshaling wrapper, PrepareInitialCode does not work.
+                                targetMethod->IsNDirect() ||
+                                (targetMethod->IsCtor() && targetMethod->GetMethodTable()->IsString())
+                            ))
                             {
                                 targetMethod->PrepareInitialCode(CallerGCMode::Coop);
                             }
@@ -1645,11 +1675,14 @@ CALL_INTERP_METHOD:
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
                     HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod->pDataItems[ip[4]]);
 
-                    if (opcode == INTOP_BOX) {
+                    if (opcode == INTOP_BOX)
+                    {
                         // internal static object Box(MethodTable* typeMT, ref byte unboxedData)
                         void *unboxedData = LOCAL_VAR_ADDR(sreg, void);
                         LOCAL_VAR(dreg, Object*) = (Object*)helper(pMT, unboxedData);
-                    } else {
+                    }
+                    else
+                    {
                         // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
                         Object *src = LOCAL_VAR(sreg, Object*);
                         void *unboxedData = helper(pMT, src);

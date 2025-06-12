@@ -2311,6 +2311,9 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
         doCallInsteadOfNew = true;
     }
 
+    bool isPInvoke = callInfo.methodFlags & CORINFO_FLG_PINVOKE;
+    bool isMarshaledPInvoke = isPInvoke && m_compHnd->pInvokeMarshalingRequired(callInfo.hMethod, &callInfo.sig);
+
     // Process sVars
     int numArgsFromStack = callInfo.sig.numArgs + (newObj ? 0 : callInfo.sig.hasThis());
     int newObjThisArgLocation = newObj && !doCallInsteadOfNew ? 0 : INT_MAX;
@@ -2527,8 +2530,15 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
                     // before the call.
                     // TODO: Add null checking behavior somewhere here!
                 }
-                AddIns(INTOP_CALL);
+                AddIns((isPInvoke && !isMarshaledPInvoke) ? INTOP_CALL_PINVOKE : INTOP_CALL);
                 m_pLastNewIns->data[0] = GetMethodDataItemIndex(callInfo.hMethod);
+                if (isPInvoke && !isMarshaledPInvoke)
+                {
+                    CORINFO_CONST_LOOKUP lookup;
+                    m_compHnd->getAddressOfPInvokeTarget(callInfo.hMethod, &lookup);
+                    assert(lookup.accessType == IAT_PVALUE);
+                    m_pLastNewIns->data[1] = GetDataItemIndex(lookup.addr);
+                }
             }
             break;
 
@@ -2804,6 +2814,20 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
 
 void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad)
 {
+    switch (pFieldInfo->fieldAccessor)
+    {
+        case CORINFO_FIELD_INTRINSIC_ZERO:
+            AddIns(INTOP_LDNULL);
+            PushInterpType(InterpTypeI, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return;
+        case CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN:
+            assert(!"Static field intrinsic IsLittleEndian not implemented");
+            return;
+        default:
+            break;
+    }
+
     EmitStaticFieldAddress(pFieldInfo, pResolvedToken);
     if (isLoad)
         EmitLdind(interpFieldType, pFieldInfo->structType, 0);
