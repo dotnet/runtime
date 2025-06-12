@@ -921,7 +921,6 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_unmanagedThreads(11),
 #endif
     m_appDomains(11),
-    m_sharedAppDomain(0),
     m_steppers(11),
     m_continueCounter(1),
     m_flushCounter(0),
@@ -1058,8 +1057,6 @@ CordbProcess::~CordbProcess()
 
     // We shouldn't still be in Cordb's list of processes. Unfortunately, our root Cordb object
     // may have already been deleted b/c we're at the mercy of ref-counting, so we can't check.
-
-	_ASSERTE(m_sharedAppDomain == NULL);
 
     m_processMutex.Destroy();
     m_StopGoLock.Destroy();
@@ -1292,12 +1289,6 @@ void CordbProcess::NeuterChildren()
 
     // Frees per-appdomain left-side resources. See assumptions above.
     m_appDomains.NeuterAndClear(GetProcessLock());
-    if (m_sharedAppDomain != NULL)
-    {
-        m_sharedAppDomain->Neuter();
-        m_sharedAppDomain->InternalRelease();
-        m_sharedAppDomain = NULL;
-    }
 
     m_steppers.NeuterAndClear(GetProcessLock());
 
@@ -2441,7 +2432,7 @@ HRESULT CordbProcess::GetTypeForTypeID(COR_TYPEID id, ICorDebugType **ppType)
         GetDAC()->GetObjectExpandedTypeInfoFromID(AllBoxed, VMPTR_AppDomain::NullPtr(), id, &data);
 
         CordbType *type = 0;
-        hr = CordbType::TypeDataToType(GetSharedAppDomain(), &data, &type);
+        hr = CordbType::TypeDataToType(GetAppDomain(), &data, &type);
 
         if (SUCCEEDED(hr))
             hr = type->QueryInterface(IID_ICorDebugType, (void**)ppType);
@@ -2582,7 +2573,7 @@ HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbAppDomain* pAppD
         {
             appDomain = pAppDomainOverride->GetADToken();
         }
-        CordbAppDomain *cdbAppDomain = appDomain.IsNull() ? GetSharedAppDomain() : LookupOrCreateAppDomain(appDomain);
+        CordbAppDomain *cdbAppDomain = appDomain.IsNull() ? GetAppDomain() : LookupOrCreateAppDomain(appDomain);
 
         _ASSERTE(cdbAppDomain);
 
@@ -8717,19 +8708,13 @@ CordbAppDomain * CordbProcess::LookupOrCreateAppDomain(VMPTR_AppDomain vmAppDoma
     return CacheAppDomain(vmAppDomain);
 }
 
-CordbAppDomain * CordbProcess::GetSharedAppDomain()
+CordbAppDomain * CordbProcess::GetAppDomain()
 {
-    if (m_sharedAppDomain == NULL)
-    {
-        CordbAppDomain *pAD = new CordbAppDomain(this, VMPTR_AppDomain::NullPtr());
-        if (InterlockedCompareExchangeT<CordbAppDomain*>(&m_sharedAppDomain, pAD, NULL) != NULL)
-        {
-            delete pAD;
-        }
-		m_sharedAppDomain->InternalAddRef();
-    }
-
-    return m_sharedAppDomain;
+    // Return the one and only app domain
+    const ULONG appDomainId = 1; // DefaultADID in appdomain.hpp
+    VMPTR_AppDomain vmAppDomain = GetDAC()->GetAppDomainFromId(appDomainId);
+    CordbAppDomain* appDomain = LookupOrCreateAppDomain(vmAppDomain);
+    return appDomain;
 }
 
 //---------------------------------------------------------------------------------------

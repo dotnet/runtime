@@ -70,7 +70,7 @@ CordbModule::CordbModule(
     else
     {
         // Not yet implemented
-        m_pAppDomain = pProcess->GetSharedAppDomain();
+        m_pAppDomain = pProcess->GetAppDomain();
         m_pAssembly = m_pAppDomain->LookupOrCreateAssembly(modInfo.vmAssembly);
     }
 #ifdef _DEBUG

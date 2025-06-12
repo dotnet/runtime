@@ -3689,8 +3689,8 @@ public:
     // Lookup or create an appdomain.
     CordbAppDomain * LookupOrCreateAppDomain(VMPTR_AppDomain vmAppDomain);
 
-    // Get the shared app domain.
-    CordbAppDomain * GetSharedAppDomain();
+    // Get the app domain.
+    CordbAppDomain * GetAppDomain();
 
     // Get metadata dispenser.
     IMetaDataDispenserEx * GetDispenser();
@@ -3901,8 +3901,6 @@ public:
 #endif // FEATURE_INTEROP_DEBUGGING
 
     CordbSafeHashTable<CordbAppDomain>        m_appDomains;
-
-    CordbAppDomain * m_sharedAppDomain;
 
     // Since a stepper can begin in one appdomain, and complete in another,
     // we put the hashtable here, rather than on specific appdomains.
