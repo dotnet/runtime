@@ -42,6 +42,8 @@ namespace ILCompiler
             protected override string GetName(NodeFactory context) => $"Type maps root node: {typeMapState.DiagnosticName}";
         }
 
+        private readonly HashSet<TypeDesc> _requestedExternalTypeMaps = [];
+        private readonly HashSet<TypeDesc> _requestedProxyTypeMaps = [];
         private readonly SortedSet<IExternalTypeMapNode> _externalTypeMaps = new SortedSet<IExternalTypeMapNode>(CompilerComparer.Instance);
         private readonly SortedSet<IProxyTypeMapNode> _proxyTypeMaps = new SortedSet<IProxyTypeMapNode>(CompilerComparer.Instance);
 
@@ -72,16 +74,54 @@ namespace ILCompiler
             {
                 _proxyTypeMaps.Add(proxyTypeMapNode);
             }
+
+            if (obj is ExternalTypeMapRequestNode externalTypeMapRequestNode)
+            {
+                _requestedExternalTypeMaps.Add(externalTypeMapRequestNode.TypeMapGroup);
+            }
+
+            if (obj is ProxyTypeMapRequestNode proxyTypeMapRequestNode)
+            {
+                _requestedProxyTypeMaps.Add(proxyTypeMapRequestNode.TypeMapGroup);
+            }
         }
 
         internal override IEnumerable<IExternalTypeMapNode> GetExternalTypeMaps()
         {
-            return _externalTypeMaps;
+            List<IExternalTypeMapNode> typeMaps = [.._externalTypeMaps];
+            SortedSet<TypeDesc> generatedMaps = new(TypeSystemComparer.Instance);
+            foreach (var generatedMap in typeMaps)
+            {
+                generatedMaps.Add(generatedMap.TypeMapGroup);
+            }
+
+            SortedSet<TypeDesc> emptyMapsToGenerate = new SortedSet<TypeDesc>(_requestedExternalTypeMaps, TypeSystemComparer.Instance);
+            emptyMapsToGenerate.ExceptWith(generatedMaps);
+
+            foreach (var emptyMap in emptyMapsToGenerate)
+            {
+                typeMaps.Add(new ExternalTypeMapNode(emptyMap, []));
+            }
+            return typeMaps;
         }
 
         internal override IEnumerable<IProxyTypeMapNode> GetProxyTypeMaps()
         {
-            return _proxyTypeMaps;
+            List<IProxyTypeMapNode> typeMaps = [.. _proxyTypeMaps];
+            SortedSet<TypeDesc> generatedMaps = new(TypeSystemComparer.Instance);
+            foreach (var generatedMap in typeMaps)
+            {
+                generatedMaps.Add(generatedMap.TypeMapGroup);
+            }
+
+            SortedSet<TypeDesc> emptyMapsToGenerate = new SortedSet<TypeDesc>(_requestedProxyTypeMaps, TypeSystemComparer.Instance);
+            emptyMapsToGenerate.ExceptWith(generatedMaps);
+
+            foreach (var emptyMap in emptyMapsToGenerate)
+            {
+                typeMaps.Add(new ProxyTypeMapNode(emptyMap, []));
+            }
+            return typeMaps;
         }
 
         public override void AddCompilationRoots(IRootingServiceProvider rootProvider)

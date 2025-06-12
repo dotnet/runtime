@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 using Internal.NativeFormat;
+using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
@@ -57,7 +58,7 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            return EmptyExternalTypeMapDictionary.Instance;
+            throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(typeMapGroup);
         }
 
         public static IReadOnlyDictionary<Type, Type> CreateProxyTypeMap(RuntimeType typeMapGroup)
@@ -100,7 +101,7 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            return EmptyAssociatedTypeMapDictionary.Instance;
+            throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(typeMapGroup);
         }
 
         private static unsafe bool TryGetNativeReaderForBlob(TypeManagerHandle module, ReflectionMapBlob blob, out NativeReader reader)
@@ -165,20 +166,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private sealed class EmptyExternalTypeMapDictionary : TypeMapDictionaryBase<string>
-        {
-            internal static readonly EmptyExternalTypeMapDictionary Instance = new EmptyExternalTypeMapDictionary();
-
-            private EmptyExternalTypeMapDictionary() { }
-
-            public override Type this[string key] => throw new KeyNotFoundException(key);
-            public override bool TryGetValue(string key, [MaybeNullWhen(false)] out Type value)
-            {
-                value = null;
-                return false;
-            }
-        }
-
         private sealed class AssociatedTypeMapDictionary(NativeHashtable table, ExternalReferencesTable externalReferences) : TypeMapDictionaryBase<Type>
         {
             public override Type this[Type key]
@@ -214,19 +201,6 @@ namespace System.Runtime.InteropServices
                         return true;
                     }
                 }
-                value = null;
-                return false;
-            }
-        }
-
-        private sealed class EmptyAssociatedTypeMapDictionary : TypeMapDictionaryBase<Type>
-        {
-            internal static readonly EmptyAssociatedTypeMapDictionary Instance = new EmptyAssociatedTypeMapDictionary();
-
-            private EmptyAssociatedTypeMapDictionary() { }
-            public override Type this[Type key] => throw new KeyNotFoundException(key.ToString()!);
-            public override bool TryGetValue(Type key, [MaybeNullWhen(false)] out Type value)
-            {
                 value = null;
                 return false;
             }

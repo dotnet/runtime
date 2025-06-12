@@ -278,7 +278,7 @@ namespace ILCompiler
 
         public TypeMapManager GetTypeMapManager()
         {
-            return new ScannedTypeMapManager(_factory, MarkedNodes);
+            return new ScannedTypeMapManager(_factory);
         }
 
         private sealed class ScannedVTableProvider : VTableSliceProvider
@@ -995,20 +995,18 @@ namespace ILCompiler
             private ImmutableArray<IExternalTypeMapNode> _externalTypeMapNodes;
             private ImmutableArray<IProxyTypeMapNode> _proxyTypeMapNodes;
 
-            public ScannedTypeMapManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
+            public ScannedTypeMapManager(NodeFactory factory)
             {
                 ImmutableArray<IExternalTypeMapNode>.Builder externalTypeMapNodes = ImmutableArray.CreateBuilder<IExternalTypeMapNode>();
                 ImmutableArray<IProxyTypeMapNode>.Builder proxyTypeMapNodes = ImmutableArray.CreateBuilder<IProxyTypeMapNode>();
-                foreach (var node in markedNodes)
+                foreach (var externalTypeMapNode in factory.TypeMapManager.GetExternalTypeMaps())
                 {
-                    if (node is IExternalTypeMapNode externalTypeMapNode)
-                    {
-                        externalTypeMapNodes.Add(externalTypeMapNode.ToAnalysisBasedNode(factory));
-                    }
-                    else if (node is IProxyTypeMapNode proxyTypeMapNode)
-                    {
-                        proxyTypeMapNodes.Add(proxyTypeMapNode.ToAnalysisBasedNode(factory));
-                    }
+                    externalTypeMapNodes.Add(externalTypeMapNode.ToAnalysisBasedNode(factory));
+                }
+
+                foreach (var proxyTypeMapNode in factory.TypeMapManager.GetProxyTypeMaps())
+                {
+                    proxyTypeMapNodes.Add(proxyTypeMapNode.ToAnalysisBasedNode(factory));
                 }
 
                 _externalTypeMapNodes = externalTypeMapNodes.ToImmutable();
