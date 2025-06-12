@@ -179,7 +179,7 @@ namespace System.Security.Cryptography
                     out ReadOnlySpan<char> parameterSet,
                     out string blobType);
 
-                string expectedParameterSet = PqcBlobHelpers.GetParameterSet(Algorithm);
+                string expectedParameterSet = PqcBlobHelpers.GetMLDsaParameterSet(Algorithm);
 
                 if (blobType != keyBlobType ||
                     keyBytes.Length != expectedKeySize ||

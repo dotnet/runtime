@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.Tests
         public void ImportPrivateSeed_Persisted()
         {
             CngKey key = PqcBlobHelpers.EncodeMLDsaBlob(
-                PqcBlobHelpers.GetParameterSet(MLDsaAlgorithm.MLDsa44),
+                PqcBlobHelpers.GetMLDsaParameterSet(MLDsaAlgorithm.MLDsa44),
                 MLDsaTestsData.IetfMLDsa44.PrivateSeed,
                 Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB,
                 blob =>
@@ -135,7 +135,7 @@ namespace System.Security.Cryptography.Tests
         public void ImportSecretKey_Persisted()
         {
             CngKey key = PqcBlobHelpers.EncodeMLDsaBlob(
-                PqcBlobHelpers.GetParameterSet(MLDsaAlgorithm.MLDsa44),
+                PqcBlobHelpers.GetMLDsaParameterSet(MLDsaAlgorithm.MLDsa44),
                 MLDsaTestsData.IetfMLDsa44.SecretKey,
                 Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB,
                 blob =>
