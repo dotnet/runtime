@@ -801,7 +801,7 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
         case GT_MULHI:
         {
             // MUL, IMUL are RMW but mulx is not (which is used for unsigned operands when BMI2 is availible)
-            return !(tree->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2));
+            return !(tree->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2));
         }
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -3234,7 +3234,7 @@ int LinearScan::BuildMul(GenTree* tree)
     bool isUnsignedMultiply    = tree->IsUnsigned();
     bool requiresOverflowCheck = tree->gtOverflowEx();
     bool useMulx               = tree->OperGet() != GT_MUL && isUnsignedMultiply &&
-                   compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2);
+                   compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2);
 
     // ToDo-APX : imul currently doesn't have rex2 support. So, cannot use R16-R31.
     int              srcCount      = 0;

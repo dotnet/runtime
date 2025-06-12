@@ -831,7 +831,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     // Lowering has ensured that op1 is never the memory operand to simplify checks here
     assert(!op1->isUsedFromMemory());
 
-    if (treeNode->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+    if (treeNode->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
     {
         if (op2->isUsedFromReg() && (op2->GetRegNum() == REG_RDX))
         {

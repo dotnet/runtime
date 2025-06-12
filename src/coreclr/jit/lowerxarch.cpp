@@ -7972,7 +7972,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
             MakeSrcContained(node, memOp);
 
             // Swap the operands so that the contained memory operand is always op2 for GT_MULHI and GT_MUL_LONG
-            if (memOp == op1 && node->OperGet() != GT_MUL)
+            if (memOp == op1 && !node->OperIs(GT_MUL))
             {
                 std::swap(node->gtOp1, node->gtOp2);
             }

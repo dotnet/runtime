@@ -785,7 +785,7 @@ regMaskTP LinearScan::getKillSetForMul(GenTreeOp* mulNode)
     if (!mulNode->OperIs(GT_MUL))
     {
         // If we can use the mulx instruction, we don't need to kill RAX
-        if (mulNode->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+        if (mulNode->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
             // For mulx we force one arg to RDX, but we do not modify it
             // keep killMask set to RBM_NONE
