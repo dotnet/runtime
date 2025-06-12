@@ -198,7 +198,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             return (_projectDir, res.Output);
         }
 
-        if (EnvironmentVariables.UseJavascriptBundler)
+        if (EnvironmentVariables.UseJavascriptBundler && buildOptions.IsPublish)
         {
             string publicWwwrootDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(configuration, forPublish: true), ".."));
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "JavascriptBundlers", "package.json"), Path.Combine(publicWwwrootDir, "package.json"));
