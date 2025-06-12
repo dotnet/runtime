@@ -291,16 +291,20 @@ struct Range
 
     bool IsValid() const
     {
-        // Lower limit should be less than or equal to upper limit.
-        // In case of Checked Bounds, we have assumptions that a Checked Bound is never negative,
-        // e.g. <$bnd + 10, 5> is not a valid range.
-        if ((lLimit.IsConstant() && uLimit.IsConstant()) || (lLimit.IsBinOpArray() && uLimit.IsConstant()))
+        // A valid range must have lower limit <= upper limit.
+        if (lLimit.IsConstant() && uLimit.IsConstant())
         {
             return lLimit.GetConstant() <= uLimit.GetConstant();
         }
 
         // When both limits are BinOpArray, we check if their offsets are valid
         if (lLimit.IsBinOpArray() && uLimit.IsBinOpArray() && lLimit.vn == uLimit.vn)
+        {
+            return lLimit.GetConstant() <= uLimit.GetConstant();
+        }
+
+        // e.g. <$bnd + 10, 5> is not a valid range since $bnd is expected to be >= 0
+        if (lLimit.IsBinOpArray() && uLimit.IsConstant())
         {
             return lLimit.GetConstant() <= uLimit.GetConstant();
         }
@@ -661,6 +665,9 @@ struct RangeOps
     //
     static RelationKind EvalRelop(const genTreeOps relop, bool isUnsigned, const Range& x, const Range& y)
     {
+        assert(x.IsValid());
+        assert(y.IsValid());
+
         const Limit& xLower = x.LowerLimit();
         const Limit& yLower = y.LowerLimit();
         const Limit& xUpper = x.UpperLimit();
