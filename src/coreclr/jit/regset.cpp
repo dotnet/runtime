@@ -350,12 +350,20 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     var_types tempType = RegSet::tmpNormalizeType(treeType);
     regMaskTP mask;
     bool      floatSpill = false;
+    bool      maskSpill = false;
 
     if (isFloatRegType(treeType))
     {
         floatSpill = true;
         mask       = genRegMaskFloat(reg ARM_ARG(treeType));
     }
+#if defined(TARGET_ARM64)
+    if (varTypeUsesMaskReg(treeType))
+    {
+        maskSpill = true;
+        mask = genRegMask(reg);
+    }
+#endif
     else
     {
         mask = genRegMask(reg);
@@ -426,6 +434,10 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
 
     // Generate the code to spill the register
     var_types storeType = floatSpill ? treeType : tempType;
+
+#if defined(TARGET_ARM64)
+    storeType = maskSpill ? treeType : storeType;
+#endif
 
     m_rsCompiler->codeGen->spillReg(storeType, temp, reg);
 
