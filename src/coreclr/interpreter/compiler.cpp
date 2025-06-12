@@ -2123,13 +2123,16 @@ int32_t InterpCompiler::GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle)
 int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
 {
     // Interpreter-TODO: Find an existing data item index for this helper if possible and reuse it
-    void *indirect;
-    void *direct = m_compHnd->getHelperFtn(ftn, &indirect);
-    size_t data = !direct
-        ? (size_t)indirect | INTERP_INDIRECT_HELPER_TAG
-        : (size_t)direct;
-    assert(data);
-    return GetDataItemIndex((void*)data);
+    CORINFO_CONST_LOOKUP ftnLookup;
+    m_compHnd->getHelperFtn(ftn, &ftnLookup);
+    void* addr = ftnLookup.addr;
+    if (ftnLookup.accessType == IAT_PVALUE)
+    {
+        addr = (void*)((size_t)addr | INTERP_INDIRECT_HELPER_TAG);
+    }
+    assert(ftnLookup.accessType == IAT_VALUE || ftnLookup.accessType == IAT_PVALUE);
+
+    return GetDataItemIndex(addr);
 }
 
 bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)

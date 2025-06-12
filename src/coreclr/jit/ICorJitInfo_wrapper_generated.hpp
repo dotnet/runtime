@@ -1269,14 +1269,14 @@ int32_t* WrapICorJitInfo::getAddrOfCaptureThreadGlobal(
     return temp;
 }
 
-void* WrapICorJitInfo::getHelperFtn(
+void WrapICorJitInfo::getHelperFtn(
           CorInfoHelpFunc ftnNum,
-          void** ppIndirection)
+          CORINFO_CONST_LOOKUP* pNativeEntrypoint,
+          CORINFO_METHOD_HANDLE* pMethod)
 {
     API_ENTER(getHelperFtn);
-    void* temp = wrapHnd->getHelperFtn(ftnNum, ppIndirection);
+    wrapHnd->getHelperFtn(ftnNum, pNativeEntrypoint, pMethod);
     API_LEAVE(getHelperFtn);
-    return temp;
 }
 
 void WrapICorJitInfo::getFunctionEntryPoint(

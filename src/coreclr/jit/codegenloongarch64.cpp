@@ -2688,11 +2688,18 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 
     EmitCallParams params;
 
-    void* pAddr = nullptr;
-    params.addr = compiler->compGetHelperFtn(CORINFO_HELP_STOP_FOR_GC, &pAddr);
-
-    if (params.addr == nullptr)
+    CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn(CORINFO_HELP_STOP_FOR_GC);
+    if (helperFunction.accessType == IAT_VALUE)
     {
+        // If the helper is a value, we need to use the address of the helper.
+        params.addr = helperFunction.addr;
+    }
+    else
+    {
+        params.addr = nullptr;
+        assert(helperFunction.accessType == IAT_PVALUE);
+        void* pAddr = helperFunction.addr;
+
         params.callType = EC_INDIR_R;
         params.ireg     = REG_DEFAULT_HELPER_CALL_TARGET;
 
@@ -3758,15 +3765,23 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
 {
-    void* pAddr = nullptr;
-
     EmitCallParams params;
-    params.callType   = EC_FUNC_TOKEN;
-    params.addr       = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
+
+    CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
     regMaskTP killSet = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
-    if (params.addr == nullptr)
+    params.callType   = EC_FUNC_TOKEN;
+
+    if (helperFunction.accessType == IAT_VALUE)
     {
+        params.addr = (void*)helperFunction.addr;
+    }
+    else
+    {
+        params.addr = nullptr;
+        assert(helperFunction.accessType == IAT_PVALUE);
+        void* pAddr = helperFunction.addr;
+
         // This is call to a runtime helper.
         // li reg, pAddr     #NOTE: this maybe multi-instructions.
         // ld_d reg, reg
@@ -5793,9 +5808,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(params.methHnd);
                     noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
-                    void* pAddr = nullptr;
-                    params.addr = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
-                    assert(pAddr == nullptr);
+                    CORINFO_CONST_LOOKUP helperLookup = compiler->compGetHelperFtn(helperNum);
+                    params.addr = helperLookup.addr;
+                    assert(helperLookup.accessType == IAT_VALUE);
                 }
                 else
                 {
@@ -6483,10 +6498,8 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
         // The code to throw the exception will be generated inline, and
         //  we will jump around it in the normal non-exception case.
 
-        void*          pAddr = nullptr;
         EmitCallParams params;
-        params.addr = compiler->compGetHelperFtn((CorInfoHelpFunc)(compiler->acdHelper(codeKind)), &pAddr);
-
+        
         // maybe optimize
         // ins = (instruction)(ins^((ins != INS_beq)+(ins != INS_bne)));
         if (ins == INS_blt)
@@ -6510,8 +6523,18 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             ins = ins == INS_beq ? INS_bne : INS_beq;
         }
 
-        if (params.addr == nullptr)
+        CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
+        if (helperFunction.accessType == IAT_VALUE)
         {
+            // If the helper is a value, we need to use the address of the helper.
+            params.addr = helperFunction.addr;
+        }
+        else
+        {
+            params.addr = nullptr;
+            assert(helperFunction.accessType == IAT_PVALUE);
+            void* pAddr = helperFunction.addr;
+
             params.callType = EC_INDIR_R;
             params.ireg     = REG_DEFAULT_HELPER_CALL_TARGET;
 

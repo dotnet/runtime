@@ -1462,12 +1462,21 @@ int32_t* interceptor_ICJI::getAddrOfCaptureThreadGlobal(void** ppIndirection)
 }
 
 // return the native entry point to an EE helper (see CorInfoHelpFunc)
-void* interceptor_ICJI::getHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection)
+void interceptor_ICJI::getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP *pNativeEntrypoint, CORINFO_METHOD_HANDLE *methodHandle)
 {
     mc->cr->AddCall("getHelperFtn");
-    void* temp = original_ICorJitInfo->getHelperFtn(ftnNum, ppIndirection);
-    mc->recGetHelperFtn(ftnNum, ppIndirection, temp);
-    return temp;
+    CORINFO_CONST_LOOKUP localNativeEntrypoint;
+    CORINFO_METHOD_HANDLE localMethodHandle;
+    original_ICorJitInfo->getHelperFtn(ftnNum, &localNativeEntrypoint, &localMethodHandle);
+    mc->recGetHelperFtn(ftnNum, localNativeEntrypoint, localMethodHandle);
+    if (pNativeEntrypoint != nullptr)
+    {
+        *pNativeEntrypoint = localNativeEntrypoint;
+    }
+    if (methodHandle != nullptr)
+    {
+        *methodHandle = localMethodHandle;
+    }
 }
 
 // return a callable address of the function (native code). This function

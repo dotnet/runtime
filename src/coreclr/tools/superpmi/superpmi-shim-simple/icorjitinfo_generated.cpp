@@ -913,11 +913,12 @@ int32_t* interceptor_ICJI::getAddrOfCaptureThreadGlobal(
     return original_ICorJitInfo->getAddrOfCaptureThreadGlobal(ppIndirection);
 }
 
-void* interceptor_ICJI::getHelperFtn(
+void interceptor_ICJI::getHelperFtn(
           CorInfoHelpFunc ftnNum,
-          void** ppIndirection)
+          CORINFO_CONST_LOOKUP* pNativeEntrypoint,
+          CORINFO_METHOD_HANDLE* pMethod)
 {
-    return original_ICorJitInfo->getHelperFtn(ftnNum, ppIndirection);
+    original_ICorJitInfo->getHelperFtn(ftnNum, pNativeEntrypoint, pMethod);
 }
 
 void interceptor_ICJI::getFunctionEntryPoint(
