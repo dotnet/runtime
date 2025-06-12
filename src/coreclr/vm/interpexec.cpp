@@ -33,10 +33,10 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
     }
     CONTRACTL_END
 
-    CallStubGenerator callStubGenerator;
     CallStubHeader *pHeader = pMD->GetCallStub();
     if (pHeader == NULL)
     {
+        CallStubGenerator callStubGenerator;
         GCX_PREEMP();
 
         AllocMemTracker amTracker;
@@ -56,6 +56,26 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
 
     pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode()); // The method to call
 
+    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
+}
+
+void InvokeCalliStub(PCODE ftn, CallStubHeader *stubHeaderTemplate, int8_t *pArgs, int8_t *pRet)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer((void*)ftn));
+        PRECONDITION(CheckPointer(stubHeaderTemplate));
+    }
+    CONTRACTL_END
+
+    // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
+    // copied to a local buffer before we can actually set their target address.
+    uint8_t* actualCallStub = (uint8_t*)alloca(stubHeaderTemplate->GetSize());
+    memcpy(actualCallStub, stubHeaderTemplate, stubHeaderTemplate->GetSize());
+    CallStubHeader *pHeader = (CallStubHeader*)actualCallStub;
+    pHeader->SetTarget(ftn); // The method to call
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
 
@@ -385,6 +405,10 @@ MAIN_LOOP:
                     break;
                 case INTOP_LDPTR:
                     LOCAL_VAR(ip[1], void*) = pMethod->pDataItems[ip[2]];
+                    ip += 3;
+                    break;
+                case INTOP_LDPTR_DEREF:
+                    LOCAL_VAR(ip[1], void*) = *(void**)pMethod->pDataItems[ip[2]];
                     ip += 3;
                     break;
                 case INTOP_RET:
@@ -1451,6 +1475,20 @@ MAIN_LOOP:
                     goto CALL_INTERP_METHOD;
                 }
 
+                case INTOP_CALLI:
+                {
+                    returnOffset = ip[1];
+                    callArgsOffset = ip[2];
+                    int32_t calliFunctionPointerVar = ip[3];
+                    int32_t calliCookie = ip[4];
+
+                    CallStubHeader *pCallStub = (CallStubHeader*)pMethod->pDataItems[calliCookie];
+                    ip += 5;
+
+                    InvokeCalliStub(LOCAL_VAR(calliFunctionPointerVar, PCODE), pCallStub, stack + callArgsOffset, stack + returnOffset);
+                    break;
+                }
+
                 case INTOP_CALL:
                 {
                     returnOffset = ip[1];
@@ -1475,7 +1513,7 @@ CALL_INTERP_METHOD:
                             pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
                             GCX_PREEMP();
                             // Attempt to setup the interpreter code for the target method.
-                            if (!(targetMethod->IsFCall() || (targetMethod->IsCtor() && targetMethod->GetMethodTable()->IsString())))
+                            if (targetMethod->IsIL() || targetMethod->IsNoMetadata())
                             {
                                 targetMethod->PrepareInitialCode(CallerGCMode::Coop);
                             }
