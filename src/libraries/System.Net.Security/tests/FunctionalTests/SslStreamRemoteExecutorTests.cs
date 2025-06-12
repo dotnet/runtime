@@ -35,7 +35,7 @@ namespace System.Net.Security.Tests
                 return;
             }
 
-            if (PlatformDetection.IsOpenSsl3_5)
+            if (PlatformDetection.IsOpenSsl3_5 && !enabledBySwitch)
             {
                 // OpenSSL 3.5 and later versions log into file in SSLKEYLOGFILE environment variable by default,
                 // regardless of AppContext switch.
