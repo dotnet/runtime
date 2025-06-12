@@ -790,6 +790,18 @@ CDAC_TYPE_SIZE(sizeof(CalleeSavedRegisters))
 ENUM_CALLEE_SAVED_REGISTERS()
 #undef CALLEE_SAVED_REGISTER
 
+#elif defined(TARGET_ARM)
+
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, R4, offsetof(CalleeSavedRegisters, r4))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, R5, offsetof(CalleeSavedRegisters, r5))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, R6, offsetof(CalleeSavedRegisters, r6))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, R7, offsetof(CalleeSavedRegisters, r7))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, R8, offsetof(CalleeSavedRegisters, r8))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, R9, offsetof(CalleeSavedRegisters, r9))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, R10, offsetof(CalleeSavedRegisters, r10))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, R11, offsetof(CalleeSavedRegisters, r11))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Lr, offsetof(CalleeSavedRegisters, r14))
+
 #elif defined(TARGET_ARM64)
 
 CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X19, offsetof(CalleeSavedRegisters, x19))

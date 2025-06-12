@@ -29,8 +29,6 @@ internal class ARMUnwinder(Target target)
 
         TargetPointer imageBase = _eman.GetUnwindInfoBaseAddress(cbh);
         Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh));
-        if (functionEntry.EndAddress is null)
-            return false;
 
         if ((functionEntry.UnwindData & 0x3) != 0)
         {
@@ -223,7 +221,8 @@ internal class ARMUnwinder(Target target)
         //
         // Now execute codes until we hit the end.
         //
-        while (unwindCodePtr < unwindCodesEndPtr && status)
+        bool keepReading = true;
+        while (unwindCodePtr < unwindCodesEndPtr && keepReading && status)
         {
 
             byte curCode = _target.Read<byte>(unwindCodePtr);
@@ -485,6 +484,7 @@ internal class ARMUnwinder(Target target)
                     case 0xfd:
                     case 0xfe:
                     case 0xff:
+                        keepReading = false;
                         break;
 
                     default:
