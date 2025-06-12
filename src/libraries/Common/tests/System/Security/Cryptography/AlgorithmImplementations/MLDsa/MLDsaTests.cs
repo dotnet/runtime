@@ -30,6 +30,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116598", TargetFrameworkMonikers.NetFramework)]
         public static void IsSupported_AgreesWithPlatform()
         {
             Assert.Equal(PlatformSupportsMLDsa(), MLDsa.IsSupported);
