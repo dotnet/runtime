@@ -2716,7 +2716,8 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
     if (helperFunction.accessType == IAT_VALUE)
     {
         // If the helper is a value, we need to use the address of the helper.
-        params.addr = helperFunction.addr;
+        params.addr     = helperFunction.addr;
+        params.callType = EC_FUNC_TOKEN;
     }
     else
     {
@@ -2726,19 +2727,15 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 
         if (compiler->opts.compReloc)
         {
-            GetEmitter()->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, params.ireg, (ssize_t)pAddr);
+            GetEmitter()->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, params.ireg, (ssize_t)helperFunction.addr);
         }
         else
         {
             // TODO-RISCV64: maybe optimize further.
-            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, params.ireg, (ssize_t)pAddr);
+            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, params.ireg, (ssize_t)helperFunction.addr);
             GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, params.ireg, params.ireg, 0);
         }
         regSet.verifyRegUsed(params.ireg);
-    }
-    else
-    {
-        params.callType = EC_FUNC_TOKEN;
     }
 
     // TODO-RISCV64: can optimize further !!!
@@ -6536,8 +6533,18 @@ void CodeGen::genJumpToThrowHlpBlk_la(
             compiler->compGetHelperFtn((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
         if (helperFunction.accessType == IAT_VALUE)
         {
+            // INS_OPTS_C
             // If the helper is a value, we need to use the address of the helper.
-            params.addr = helperFunction.addr;
+            params.addr     = helperFunction.addr;
+            params.callType = EC_FUNC_TOKEN;
+
+            ssize_t imm = 9 << 2;
+            if (compiler->opts.compReloc)
+            {
+                imm = 3 << 2;
+            }
+
+            emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
         }
         else
         {
@@ -6564,16 +6571,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
             regSet.verifyRegUsed(params.ireg);
         }
         else
-        { // INS_OPTS_C
-            params.callType = EC_FUNC_TOKEN;
-
-            ssize_t imm = 9 << 2;
-            if (compiler->opts.compReloc)
-            {
-                imm = 3 << 2;
-            }
-
-            emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
+        {
         }
 
         BasicBlock* skipLabel = genCreateTempLabel();

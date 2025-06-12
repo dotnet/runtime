@@ -2692,7 +2692,8 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
     if (helperFunction.accessType == IAT_VALUE)
     {
         // If the helper is a value, we need to use the address of the helper.
-        params.addr = helperFunction.addr;
+        params.addr     = helperFunction.addr;
+        params.callType = EC_FUNC_TOKEN;
     }
     else
     {
@@ -2718,10 +2719,6 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
                                         ((ssize_t)pAddr & 0xfff) >> 2);
         }
         regSet.verifyRegUsed(params.ireg);
-    }
-    else
-    {
-        params.callType = EC_FUNC_TOKEN;
     }
 
     // TODO-LOONGARCH64: can optimize further !!!
@@ -6527,8 +6524,19 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             compiler->compGetHelperFtn((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
         if (helperFunction.accessType == IAT_VALUE)
         {
+            // INS_OPTS_C
+
             // If the helper is a value, we need to use the address of the helper.
-            params.addr = helperFunction.addr;
+            params.addr     = helperFunction.addr;
+            params.callType = EC_FUNC_TOKEN;
+
+            ssize_t imm = 5 << 2;
+            if (compiler->opts.compReloc)
+            {
+                imm = 3 << 2;
+            }
+
+            emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
         }
         else
         {
@@ -6557,18 +6565,6 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
                 GetEmitter()->emitIns_R_R_I(INS_ldptr_d, EA_PTRSIZE, params.ireg, params.ireg,
                                             ((ssize_t)pAddr & 0xfff) >> 2);
             }
-        }
-        else
-        { // INS_OPTS_C
-            params.callType = EC_FUNC_TOKEN;
-
-            ssize_t imm = 5 << 2;
-            if (compiler->opts.compReloc)
-            {
-                imm = 3 << 2;
-            }
-
-            emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
         }
 
         BasicBlock* skipLabel = genCreateTempLabel();
