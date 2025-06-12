@@ -107,6 +107,7 @@
     // Fix the stack by restoring the original return address
     //
     ldr         lr, [x2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+    xpaclri
 
     //
     // Clear hijack state

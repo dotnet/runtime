@@ -28,11 +28,12 @@ FCIMPL2(void*, TailCallHelp::GetTailCallInfo, void** retAddrSlot, void** retAddr
 
     Thread* thread = GetThread();
 
-    *retAddr = thread->GetReturnAddress(retAddrSlot);
+    void* retAddrFromSlot = thread->GetReturnAddress(retAddrSlot);
 
 #if defined(TARGET_ARM64)
-    *retAddr = PacStripPtr(*retAddr);
+    retAddrFromSlot = PacStripPtr(retAddrFromSlot);
 #endif // TARGET_ARM64
+    *retAddr = retAddrFromSlot;
 
     return thread->GetTailCallTls();
 }

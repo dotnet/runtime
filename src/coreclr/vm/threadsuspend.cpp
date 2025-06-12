@@ -23,7 +23,6 @@
 #define HIJACK_NONINTERRUPTIBLE_THREADS
 
 #if defined(TARGET_ARM64)
-extern "C" void* PacStripPtr(void* ptr);
 extern "C" void* PacSignPtr(void* ptr);
 #endif // TARGET_ARM64
 
@@ -4549,7 +4548,7 @@ struct ExecutionState
 };
 
 // Client is responsible for suspending the thread before calling
-void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet))
+void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet) ARM64_ARG(bool isPacEnabledFrame))
 {
     CONTRACTL {
         NOTHROW;
@@ -4604,11 +4603,7 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
     m_ppvHJRetAddrPtr = esb->m_ppvRetAddrPtr;
 
     // Remember the place that the return would have gone
-    void* pvRetAddrPtr = *esb->m_ppvRetAddrPtr;
-#if defined(TARGET_ARM64)
-    pvRetAddrPtr = PacStripPtr(pvRetAddrPtr);
-#endif // TARGET_ARM64
-    m_pvHJRetAddr = pvRetAddrPtr;
+    m_pvHJRetAddr = *esb->m_ppvRetAddrPtr;
     IS_VALID_CODE_PTR((FARPROC) (TADDR)m_pvHJRetAddr);
     // TODO [DAVBR]: For the full fix for VsWhidbey 450273, the below
     // may be uncommented once isLegalManagedCodeCaller works properly
@@ -4621,7 +4616,10 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
 
     // Bash the stack to return to one of our stubs
 #if defined(TARGET_ARM64)
-    pvHijackAddr = PacSignPtr(pvHijackAddr);
+    if (isPacEnabledFrame)
+    {
+        pvHijackAddr = PacSignPtr(pvHijackAddr);
+    }
 #endif // TARGET_ARM64
 
     *esb->m_ppvRetAddrPtr = pvHijackAddr;
@@ -4652,11 +4650,7 @@ void Thread::UnhijackThread()
 
         STRESS_LOG2(LF_SYNC, LL_INFO100, "Unhijacking return address 0x%p for thread %p\n", m_pvHJRetAddr, this);
         // restore the return address and clear the flag
-        void* pvHijackedRetAddr = m_pvHJRetAddr;
-#if defined(TARGET_ARM64)
-        pvHijackedRetAddr = PacSignPtr(pvHijackedRetAddr);
-#endif // TARGET_ARM64
-        *m_ppvHJRetAddrPtr = pvHijackedRetAddr;
+        *m_ppvHJRetAddrPtr = m_pvHJRetAddr;
         ResetThreadState(TS_Hijacked);
 
         // But don't touch m_pvHJRetAddr.  We may need that to resume a thread that
@@ -5337,9 +5331,13 @@ BOOL Thread::HandledJITCase()
 
             X86_ONLY(ReturnKind returnKind;)
             X86_ONLY(bool hasAsyncRet;)
+            ARM64_ONLY(bool isPacEnabledFrame;)
             if (GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind) X86_ARG(&hasAsyncRet)))
             {
-                HijackThread(&esb X86_ARG(returnKind) X86_ARG(hasAsyncRet));
+#ifdef TARGET_ARM64
+                isPacEnabledFrame = IsPacPresent(&codeInfo);
+#endif
+                HijackThread(&esb X86_ARG(returnKind) X86_ARG(hasAsyncRet) ARM64_ARG(isPacEnabledFrame));
             }
         }
     }
@@ -5917,7 +5915,8 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool susp
         StackWalkerWalkingThreadHolder threadStackWalking(pThread);
 
         // Hijack the return address to point to the appropriate routine based on the method's return type.
-        pThread->HijackThread(&executionState X86_ARG(returnKind) X86_ARG(hasAsyncRet));
+        auto isPacEnabledFrame = IsPacPresent(&codeInfo);
+        pThread->HijackThread(&executionState X86_ARG(returnKind) X86_ARG(hasAsyncRet) ARM64_ARG(isPacEnabledFrame));
     }
 }
 

@@ -302,6 +302,7 @@ TailCallWasHijacked
         mov         lr, x1
         str         lr, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__LR)]
         str         lr, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__IP)]
+        xpaclri
 
 ClearThreadState
 

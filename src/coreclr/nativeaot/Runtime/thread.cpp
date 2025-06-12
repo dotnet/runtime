@@ -37,7 +37,6 @@ static Thread* g_RuntimeInitializingThread;
 #endif //!DACCESS_COMPILE
 
 #if defined(TARGET_ARM64)
-extern "C" void* PacStripPtr(void* ptr);
 extern "C" void* PacSignPtr(void* ptr);
 #endif // TARGET_ARM64
 
@@ -813,11 +812,7 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         // we only unhijack if we are going to install a new or better hijack.
         CrossThreadUnhijack();
 
-#if defined(TARGET_ARM64)
-        void* pvRetAddr = PacStripPtr(*ppvRetAddrLocation);
-#else
         void* pvRetAddr = *ppvRetAddrLocation;
-#endif // TARGET_ARM64
 
         ASSERT(pvRetAddr != NULL);
         ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
@@ -832,7 +827,11 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
 
         void* pvHijacedkAddr = (void*)pfnHijackFunction;
 #if defined(TARGET_ARM64)
-        pvHijacedkAddr = PacSignPtr(pvHijacedkAddr);
+        uint64_t isJitPacEnabled;
+        if (g_pRhConfig->ReadConfigValue("JitPacEnabled", &isJitPacEnabled, true /* decimal */) && isJitPacEnabled != 0)
+        {
+            pvHijacedkAddr = PacSignPtr(pvHijacedkAddr);
+        }
 #endif // TARGET_ARM64
         *ppvRetAddrLocation = pvHijacedkAddr;
 
@@ -963,11 +962,7 @@ void Thread::UnhijackWorker()
     // Restore the original return address.
     ASSERT(m_ppvHijackedReturnAddressLocation != NULL);
 
-    void* pvHijackedRetAddr = m_pvHijackedReturnAddress;
-#if defined(TARGET_ARM64)
-    pvHijackedRetAddr = PacSignPtr(pvHijackedRetAddr);
-#endif // TARGET_ARM64
-    *m_ppvHijackedReturnAddressLocation = pvHijackedRetAddr;
+    *m_ppvHijackedReturnAddressLocation = m_pvHijackedReturnAddress;
 
     // Clear the hijack state.
     m_ppvHijackedReturnAddressLocation  = NULL;

@@ -1709,6 +1709,447 @@ Return Value:
     return STATUS_SUCCESS;
 }
 
+
+NTSTATUS
+RtlpProcessPdata (
+    _Out_ PULONG_PTR UnwindCodePtr,
+    _Out_ PULONG_PTR UnwindCodesEndPtr,
+    _In_ PARM64_UNWIND_PARAMS UnwindParams,
+    _In_ ULONG ControlPcRva,
+    _In_ ULONG_PTR ImageBase,
+    _In_ PRUNTIME_FUNCTION FunctionEntry,
+    _In_ IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA *FunctionEntryExtended,
+    _Inout_ PEXCEPTION_ROUTINE *ExceptionHandler,
+    _Inout_ PVOID *ExceptionHandlerData
+    )
+
+/*++
+
+Routine Description:
+
+    Processes the .pdata record of a function.
+
+Arguments:
+    UnwindCodePtr - Supplies a pointer to a variable that receives address
+        of the beginning of opcodes.
+
+    UnwindCodesEndPtr - Supplies a pointer to a variable that receives address
+        of the end of opcodes.
+
+    UnwindParams - Supplies address of a variable containing additional
+        parameters shared with caller.
+
+    ControlPcRva - Supplies the address where control left the specified
+        function, as an offset relative to the ImageBase.
+
+    ImageBase - Supplies the base address of the image that contains the
+        function being unwound.
+
+    FunctionEntry - Supplies the address of the function table entry for the
+        specified function. If appropriate, this should have already been
+        probed.
+
+    FunctionEntryExtended - Supplies a pointer to the variable containing
+        address of the extended function entry. It contains a non-NULL when
+        opcodes are present in .xdata.
+
+    ExceptionHandler - Supplies a pointer to a variable that receives
+        the exception handler routine address.
+
+    ExceptionHandlerData - Supplies a pointer to a variable that receives
+        the exception handler data address.
+
+Return Value:
+
+    STATUS_SUCCESS if the unwind could be completed, a failure status otherwise.
+
+--*/
+{
+    ULONG CurCode;
+    ULONG ScopeNum;
+    ULONG ScopeSize;
+    ULONG SkipWords;
+    ULONG ScopeStart;
+    ULONG EpilogScopeCount;
+    ULONG FunctionLength;
+    ULONG HeaderWord;
+    ULONG OffsetInFunction;
+    ULONG_PTR UnwindDataPtr;
+    ULONG UnwindIndex;
+    ULONG UnwindWords;
+
+    //
+    // Fetch the header word from the .xdata blob
+    //
+
+    UnwindDataPtr = (FunctionEntryExtended != NULL) ?
+                    ((ULONG_PTR)FunctionEntryExtended) :
+                    (ImageBase + FunctionEntry->UnwindData);
+
+    HeaderWord = MEMORY_READ_DWORD(UnwindParams, UnwindDataPtr);
+    UnwindDataPtr += 4;
+
+    //
+    // Verify the version before we do anything else
+    //
+
+    if (((HeaderWord >> 18) & 3) != 0) {
+        return STATUS_UNWIND_UNSUPPORTED_VERSION;
+    }
+
+    FunctionLength = HeaderWord & 0x3ffff;
+    OffsetInFunction = (ControlPcRva - FunctionEntry->BeginAddress) / 4;
+
+    //
+    // Determine the number of epilog scope records and the maximum number
+    // of unwind codes.
+    //
+
+    UnwindWords = (HeaderWord >> 27) & 31;
+    EpilogScopeCount = (HeaderWord >> 22) & 31;
+    if (EpilogScopeCount == 0 && UnwindWords == 0) {
+        EpilogScopeCount = MEMORY_READ_DWORD(UnwindParams, UnwindDataPtr);
+        UnwindDataPtr += 4;
+        UnwindWords = (EpilogScopeCount >> 16) & 0xff;
+        EpilogScopeCount &= 0xffff;
+    }
+
+    UnwindIndex = 0;
+    if ((HeaderWord & (1 << 21)) != 0) {
+        UnwindIndex = EpilogScopeCount;
+        EpilogScopeCount = 0;
+    }
+
+    //
+    // If exception data is present, extract it now.
+    //
+
+    if ((HeaderWord & (1 << 20)) != 0) {
+        *ExceptionHandler = (PEXCEPTION_ROUTINE)(ImageBase +
+                        MEMORY_READ_DWORD(UnwindParams, UnwindDataPtr + 4 * (EpilogScopeCount + UnwindWords)));
+        *ExceptionHandlerData = (PVOID)(UnwindDataPtr + 4 * (EpilogScopeCount + UnwindWords + 1));
+    }
+
+    //
+    // Unless we are in a prolog/epilog, we execute the unwind codes
+    // that immediately follow the epilog scope list.
+    //
+
+    *UnwindCodePtr = UnwindDataPtr + 4 * EpilogScopeCount;
+    *UnwindCodesEndPtr = *UnwindCodePtr + 4 * UnwindWords;
+    SkipWords = 0;
+
+    //
+    // If we're near the start of the function, and this function has a prolog,
+    // compute the size of the prolog from the unwind codes. If we're in the
+    // midst of it, we still execute starting at unwind code index 0, but we may
+    // need to skip some to account for partial execution of the prolog.
+    //
+    // N.B. As an optimization here, note that each byte of unwind codes can
+    //      describe at most one 32-bit instruction. Thus, the largest prologue
+    //      that could possibly be described by UnwindWords (which is 4 * the
+    //      number of unwind code bytes) is 4 * UnwindWords words. If
+    //      OffsetInFunction is larger than this value, it is guaranteed to be
+    //      in the body of the function.
+    //
+
+    if (OffsetInFunction < 4 * UnwindWords) {
+        ScopeSize = RtlpComputeScopeSize(*UnwindCodePtr, *UnwindCodesEndPtr, FALSE, UnwindParams);
+
+        if (OffsetInFunction < ScopeSize) {
+            SkipWords = ScopeSize - OffsetInFunction;
+            *ExceptionHandler = NULL;
+            *ExceptionHandlerData = NULL;
+        }
+    }
+    else
+    {
+        //
+        // We're not in the prolog, now check to see if we are in the epilog.
+        // In the simple case, the 'E' bit is set indicating there is a single
+        // epilog that lives at the end of the function. If we're near the end
+        // of the function, compute the actual size of the epilog from the
+        // unwind codes. If we're in the midst of it, adjust the unwind code
+        // pointer to the start of the codes and determine how many we need to skip.
+        //
+        // N.B. Similar to the prolog case above, the maximum number of halfwords
+        //      that an epilog can cover is limited by UnwindWords. In the epilog
+        //      case, however, the starting index within the unwind code table is
+        //      non-zero, and so the maximum number of unwind codes that can pertain
+        //      to an epilog is (UnwindWords * 4 - UnwindIndex), thus further
+        //      constraining the bounds of the epilog.
+        //
+
+        if ((HeaderWord & (1 << 21)) != 0) {
+            if (OffsetInFunction + (4 * UnwindWords - UnwindIndex) >= FunctionLength) {
+                ScopeSize = RtlpComputeScopeSize(*UnwindCodePtr + UnwindIndex, *UnwindCodesEndPtr, TRUE, UnwindParams);
+                ScopeStart = FunctionLength - ScopeSize;
+
+                //
+                // N.B. This code assumes that no handleable exceptions can occur in
+                //      the prolog or in a chained shrink-wrapping prolog region.
+                //
+
+                if (OffsetInFunction >= ScopeStart) {
+                    *UnwindCodePtr += UnwindIndex;
+                    SkipWords = OffsetInFunction - ScopeStart;
+                    *ExceptionHandler = NULL;
+                    *ExceptionHandlerData = NULL;
+                }
+            }
+        }
+
+        //
+        // In the multiple-epilog case, we scan forward to see if we are within
+        // shooting distance of any of the epilogs. If we are, we compute the
+        // actual size of the epilog from the unwind codes and proceed like the
+        // simple case above.
+        //
+
+        else {
+            for (ScopeNum = 0; ScopeNum < EpilogScopeCount; ScopeNum++) {
+                HeaderWord = MEMORY_READ_DWORD(UnwindParams, UnwindDataPtr);
+                UnwindDataPtr += 4;
+
+                //
+                // The scope records are stored in order. If we hit a record that
+                // starts after our current position, we must not be in an epilog.
+                //
+
+                ScopeStart = HeaderWord & 0x3ffff;
+                if (OffsetInFunction < ScopeStart) {
+                    break;
+                }
+
+                UnwindIndex = HeaderWord >> 22;
+                if (OffsetInFunction < ScopeStart + (4 * UnwindWords - UnwindIndex)) {
+                    ScopeSize = RtlpComputeScopeSize(*UnwindCodePtr + UnwindIndex, *UnwindCodesEndPtr, TRUE, UnwindParams);
+
+                    if (OffsetInFunction < ScopeStart + ScopeSize) {
+
+                        *UnwindCodePtr += UnwindIndex;
+                        SkipWords = OffsetInFunction - ScopeStart;
+                        *ExceptionHandler = NULL;
+                        *ExceptionHandlerData = NULL;
+                        break;
+                    }
+                }
+            }
+        }
+
+    }
+    //
+    // Skip over unwind codes until we account for the number of halfwords
+    // to skip.
+    //
+
+    while (*UnwindCodePtr < *UnwindCodesEndPtr && SkipWords > 0) {
+        CurCode = MEMORY_READ_BYTE(UnwindParams, *UnwindCodePtr);
+        if (OPCODE_IS_END(CurCode)) {
+            break;
+        }
+        *UnwindCodePtr += RtlpGetUnwindCodeSize(CurCode, NULL);
+        SkipWords--;
+    }
+
+    return STATUS_SUCCESS;
+}
+
+NTSTATUS GetControlPcRva (
+    _In_ ULONG_PTR ImageBase,
+    _In_ ULONG_PTR ControlPc,
+    _In_opt_ PRUNTIME_FUNCTION FunctionEntry,
+    _In_ ULONG UnwindType,
+    _Out_ PULONG ControlPcRva
+)
+{
+    //
+    // Unwind type 3 refers to a chained record. The top 30 bits of the
+    // unwind data contains the RVA of the parent pdata record.
+    //
+
+    if (UnwindType == 3) {
+        if ((FunctionEntry->UnwindData & 4) == 0) {
+            FunctionEntry = (PRUNTIME_FUNCTION)(ImageBase + FunctionEntry->UnwindData - 3);
+            UnwindType = (FunctionEntry->UnwindData & 3);
+
+            UNWINDER_ASSERT(UnwindType != 3);
+
+            *ControlPcRva = FunctionEntry->BeginAddress;
+
+        } else {
+            return STATUS_UNWIND_UNSUPPORTED_VERSION;
+        }
+
+    } else {
+        *ControlPcRva = (ULONG)(ControlPc - ImageBase);
+    }
+
+    return STATUS_SUCCESS;
+}
+
+BOOLEAN
+RtlpUnwindIsPacPresent (
+    _In_ ULONG_PTR ImageBase,
+    _In_ ULONG_PTR ControlPc,
+    _In_ PRUNTIME_FUNCTION FunctionEntry,
+    _Out_ PVOID *HandlerData,
+    _Inout_opt_ PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
+    _Out_ PULONG_PTR EstablisherFrame,
+    _In_opt_ PULONG_PTR LowLimit,
+    _In_opt_ PULONG_PTR HighLimit,
+    _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine,
+    _In_ ULONG UnwindFlags
+    )
+/*++
+
+Routine Description:
+
+    This function goes through the unwinding data of the specified function
+    to look for an opcode representing Pointer Authentication (PAC).
+
+Arguments:
+
+    ImageBase - Supplies the base address of the image that contains the
+        function being unwound.
+
+    ControlPc - Supplies the address where control left the specified
+        function.
+
+    FunctionEntry - Supplies the address of the function table entry for the
+        specified function. If appropriate, this should have already been
+        probed.
+
+    HandlerData - Supplies a pointer to a variable that receives a pointer
+        the the language handler data.
+
+    EstablisherFrame - Supplies a pointer to a variable that receives the
+        the establisher frame pointer value.
+
+    LowLimit - Supplies an optional low limit used to bound the establisher
+        frame. This must be supplied in conjunction with a high limit.
+
+    HighLimit - Supplies an optional high limit used to bound the establisher
+        frame. This must be supplied in conjunction with a low limit.
+
+    HandlerRoutine - Supplies an optional pointer to a variable that receives
+        the handler routine address.  If control did not leave the specified
+        function in either the prolog or an epilog and a handler of the
+        proper type is associated with the function, then the address of the
+        language specific exception handler is returned. Otherwise, NULL is
+        returned.
+
+    UnwindFlags - Supplies additional flags for the unwind operation.
+
+Return Value:
+
+    A boolean true if the unwind could be completed and an opcode for
+    Pointer Authentication (PAC) is found, false otherwise.
+
+--*/
+
+{
+    NTSTATUS Status;
+    PEXCEPTION_ROUTINE ExceptionHandler = NULL;
+    PVOID ExceptionHandlerData = NULL;
+    ULONG_PTR UnwindCodePtr = NULL;
+    ULONG_PTR UnwindCodesEndPtr = NULL;
+    ULONG ControlPcRva;
+    ULONG UnwindType;
+    ARM64_UNWIND_PARAMS UnwindParams;
+    ULONG ScopeSize;
+    BYTE Opcode;
+
+    UNWINDER_ASSERT((UnwindFlags & ~RTL_VIRTUAL_UNWIND_VALID_FLAGS_ARM64) == 0);
+
+    if (FunctionEntry == NULL) {
+        // Leaf function so no PAC
+        return false;
+    }
+
+    //
+    // Make sure out-of-bound stack accesses don't send us into an infinite
+    // unwinding loop.
+    //
+#if 0
+__try {
+#endif
+    UnwindParams.ControlPc = ControlPc;
+    UnwindParams.LowLimit = LowLimit;
+    UnwindParams.HighLimit = HighLimit;
+    UnwindParams.ContextPointers = ContextPointers;
+
+    UnwindType = (FunctionEntry->UnwindData & 3);
+
+    Status = GetControlPcRva(ImageBase, ControlPc, FunctionEntry, UnwindType, &ControlPcRva);
+
+    if (Status != STATUS_SUCCESS)
+    {
+        return false;
+    }
+
+    //
+    // Identify the compact .pdata format versus the full .pdata+.xdata format.
+    //
+
+    IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA *FunctionEntryExtended = NULL;
+    struct LOCAL_XDATA {
+        IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA xdata;
+        char ops[60];
+    } fnent_xdata = {};
+
+    if (UnwindType != 0) {
+        fnent_xdata.xdata.CodeWords = sizeof(fnent_xdata.ops) / 4;
+        RtlpExpandCompactToFull(FunctionEntry, &fnent_xdata.xdata);
+        FunctionEntryExtended = &fnent_xdata.xdata;
+    }
+
+    UNREFERENCED_PARAMETER(UnwindFlags);
+
+    Status = RtlpProcessPdata (&UnwindCodePtr, &UnwindCodesEndPtr, &UnwindParams,
+        ControlPcRva, ImageBase, FunctionEntry, FunctionEntryExtended, &ExceptionHandler, &ExceptionHandlerData);
+
+    if (Status != STATUS_SUCCESS)
+    {
+        return false;
+    }
+ #if 0
+    }
+
+    //
+    // If we do take an exception here, fetch the exception code as the status
+    // and do not propagate the exception. Since the exception handler also
+    // uses this function, propagating it will most likely generate the same
+    // exception at the same point in the unwind, and continuing will typically
+    // overflow the kernel stack.
+    //
+
+    __except (EXCEPTION_EXECUTE_HANDLER) {
+        return false;
+    }
+#endif // HOST_WINDOWS
+
+    //
+    // Iterate through the unwind codes until we find PAC or hit an end marker.
+    //
+
+    ScopeSize = 0;
+    Opcode = 0;
+    while (UnwindCodePtr < UnwindCodesEndPtr) {
+        Opcode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
+        if (OPCODE_IS_END(Opcode)) {
+            break;
+        }
+        if (Opcode == 0xfc)
+        {
+            return true;
+        }
+
+        UnwindCodePtr += RtlpGetUnwindCodeSize(Opcode, &ScopeSize);
+    }
+    return false;
+}
+
 NTSTATUS
 RtlpUnwindFunctionFull (
     __in ULONG ControlPcRva,
@@ -1777,24 +2218,13 @@ Return Value:
 {
     ULONG AccumulatedSaveNexts;
     ULONG CurCode;
-    ULONG EpilogScopeCount;
-    PEXCEPTION_ROUTINE ExceptionHandler;
-    PVOID ExceptionHandlerData;
     BOOLEAN FinalPcFromLr;
-    ULONG FunctionLength;
-    ULONG HeaderWord;
     ULONG NextCode;
-    ULONG OffsetInFunction;
-    ULONG ScopeNum;
-    ULONG ScopeSize;
-    ULONG ScopeStart;
-    ULONG SkipWords;
     NTSTATUS Status;
-    ULONG_PTR UnwindCodePtr;
-    ULONG_PTR UnwindCodesEndPtr;
-    ULONG_PTR UnwindDataPtr;
-    ULONG UnwindIndex;
-    ULONG UnwindWords;
+    PEXCEPTION_ROUTINE ExceptionHandler = NULL;
+    PVOID ExceptionHandlerData = NULL;
+    ULONG_PTR UnwindCodePtr = NULL;
+    ULONG_PTR UnwindCodesEndPtr = NULL;
 
     UNREFERENCED_PARAMETER(UnwindFlags);
 
@@ -1806,6 +2236,14 @@ Return Value:
 
     ContextRecord->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
 
+    Status = RtlpProcessPdata (&UnwindCodePtr, &UnwindCodesEndPtr, UnwindParams,
+        ControlPcRva, ImageBase, FunctionEntry, FunctionEntryExtended, &ExceptionHandler, &ExceptionHandlerData);
+
+    if (Status != STATUS_SUCCESS)
+    {
+        return Status;
+    }
+
     //
     // By default, unwinding is done by popping to the LR, then copying
     // that LR to the PC. However, some special opcodes require different
@@ -1813,183 +2251,6 @@ Return Value:
     //
 
     FinalPcFromLr = TRUE;
-
-    //
-    // Fetch the header word from the .xdata blob
-    //
-
-    UnwindDataPtr = (FunctionEntryExtended != NULL) ?
-                    ((ULONG_PTR)FunctionEntryExtended) :
-                    (ImageBase + FunctionEntry->UnwindData);
-
-    HeaderWord = MEMORY_READ_DWORD(UnwindParams, UnwindDataPtr);
-    UnwindDataPtr += 4;
-
-    //
-    // Verify the version before we do anything else
-    //
-
-    if (((HeaderWord >> 18) & 3) != 0) {
-        return STATUS_UNWIND_UNSUPPORTED_VERSION;
-    }
-
-    FunctionLength = HeaderWord & 0x3ffff;
-    OffsetInFunction = (ControlPcRva - FunctionEntry->BeginAddress) / 4;
-
-    //
-    // Determine the number of epilog scope records and the maximum number
-    // of unwind codes.
-    //
-
-    UnwindWords = (HeaderWord >> 27) & 31;
-    EpilogScopeCount = (HeaderWord >> 22) & 31;
-    if (EpilogScopeCount == 0 && UnwindWords == 0) {
-        EpilogScopeCount = MEMORY_READ_DWORD(UnwindParams, UnwindDataPtr);
-        UnwindDataPtr += 4;
-        UnwindWords = (EpilogScopeCount >> 16) & 0xff;
-        EpilogScopeCount &= 0xffff;
-    }
-
-    UnwindIndex = 0;
-    if ((HeaderWord & (1 << 21)) != 0) {
-        UnwindIndex = EpilogScopeCount;
-        EpilogScopeCount = 0;
-    }
-
-    //
-    // If exception data is present, extract it now.
-    //
-
-    ExceptionHandler = NULL;
-    ExceptionHandlerData = NULL;
-    if ((HeaderWord & (1 << 20)) != 0) {
-        ExceptionHandler = (PEXCEPTION_ROUTINE)(ImageBase +
-                        MEMORY_READ_DWORD(UnwindParams, UnwindDataPtr + 4 * (EpilogScopeCount + UnwindWords)));
-        ExceptionHandlerData = (PVOID)(UnwindDataPtr + 4 * (EpilogScopeCount + UnwindWords + 1));
-    }
-
-    //
-    // Unless we are in a prolog/epilog, we execute the unwind codes
-    // that immediately follow the epilog scope list.
-    //
-
-    UnwindCodePtr = UnwindDataPtr + 4 * EpilogScopeCount;
-    UnwindCodesEndPtr = UnwindCodePtr + 4 * UnwindWords;
-    SkipWords = 0;
-
-    //
-    // If we're near the start of the function, and this function has a prolog,
-    // compute the size of the prolog from the unwind codes. If we're in the
-    // midst of it, we still execute starting at unwind code index 0, but we may
-    // need to skip some to account for partial execution of the prolog.
-    //
-    // N.B. As an optimization here, note that each byte of unwind codes can
-    //      describe at most one 32-bit instruction. Thus, the largest prologue
-    //      that could possibly be described by UnwindWords (which is 4 * the
-    //      number of unwind code bytes) is 4 * UnwindWords words. If
-    //      OffsetInFunction is larger than this value, it is guaranteed to be
-    //      in the body of the function.
-    //
-
-    if (OffsetInFunction < 4 * UnwindWords) {
-        ScopeSize = RtlpComputeScopeSize(UnwindCodePtr, UnwindCodesEndPtr, FALSE, UnwindParams);
-
-        if (OffsetInFunction < ScopeSize) {
-            SkipWords = ScopeSize - OffsetInFunction;
-            ExceptionHandler = NULL;
-            ExceptionHandlerData = NULL;
-            goto ExecuteCodes;
-        }
-    }
-
-    //
-    // We're not in the prolog, now check to see if we are in the epilog.
-    // In the simple case, the 'E' bit is set indicating there is a single
-    // epilog that lives at the end of the function. If we're near the end
-    // of the function, compute the actual size of the epilog from the
-    // unwind codes. If we're in the midst of it, adjust the unwind code
-    // pointer to the start of the codes and determine how many we need to skip.
-    //
-    // N.B. Similar to the prolog case above, the maximum number of halfwords
-    //      that an epilog can cover is limited by UnwindWords. In the epilog
-    //      case, however, the starting index within the unwind code table is
-    //      non-zero, and so the maximum number of unwind codes that can pertain
-    //      to an epilog is (UnwindWords * 4 - UnwindIndex), thus further
-    //      constraining the bounds of the epilog.
-    //
-
-    if ((HeaderWord & (1 << 21)) != 0) {
-        if (OffsetInFunction + (4 * UnwindWords - UnwindIndex) >= FunctionLength) {
-            ScopeSize = RtlpComputeScopeSize(UnwindCodePtr + UnwindIndex, UnwindCodesEndPtr, TRUE, UnwindParams);
-            ScopeStart = FunctionLength - ScopeSize;
-
-            //
-            // N.B. This code assumes that no handleable exceptions can occur in
-            //      the prolog or in a chained shrink-wrapping prolog region.
-            //
-
-            if (OffsetInFunction >= ScopeStart) {
-                UnwindCodePtr += UnwindIndex;
-                SkipWords = OffsetInFunction - ScopeStart;
-                ExceptionHandler = NULL;
-                ExceptionHandlerData = NULL;
-            }
-        }
-    }
-
-    //
-    // In the multiple-epilog case, we scan forward to see if we are within
-    // shooting distance of any of the epilogs. If we are, we compute the
-    // actual size of the epilog from the unwind codes and proceed like the
-    // simple case above.
-    //
-
-    else {
-        for (ScopeNum = 0; ScopeNum < EpilogScopeCount; ScopeNum++) {
-            HeaderWord = MEMORY_READ_DWORD(UnwindParams, UnwindDataPtr);
-            UnwindDataPtr += 4;
-
-            //
-            // The scope records are stored in order. If we hit a record that
-            // starts after our current position, we must not be in an epilog.
-            //
-
-            ScopeStart = HeaderWord & 0x3ffff;
-            if (OffsetInFunction < ScopeStart) {
-                break;
-            }
-
-            UnwindIndex = HeaderWord >> 22;
-            if (OffsetInFunction < ScopeStart + (4 * UnwindWords - UnwindIndex)) {
-                ScopeSize = RtlpComputeScopeSize(UnwindCodePtr + UnwindIndex, UnwindCodesEndPtr, TRUE, UnwindParams);
-
-                if (OffsetInFunction < ScopeStart + ScopeSize) {
-
-                    UnwindCodePtr += UnwindIndex;
-                    SkipWords = OffsetInFunction - ScopeStart;
-                    ExceptionHandler = NULL;
-                    ExceptionHandlerData = NULL;
-                    break;
-                }
-            }
-        }
-    }
-
-ExecuteCodes:
-
-    //
-    // Skip over unwind codes until we account for the number of halfwords
-    // to skip.
-    //
-
-    while (UnwindCodePtr < UnwindCodesEndPtr && SkipWords > 0) {
-        CurCode = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
-        if (OPCODE_IS_END(CurCode)) {
-            break;
-        }
-        UnwindCodePtr += RtlpGetUnwindCodeSize(CurCode, NULL);
-        SkipWords--;
-    }
 
     //
     // Now execute codes until we hit the end.
@@ -2559,6 +2820,7 @@ RtlpUnwindFunctionCompact (
     return Status;
 }
 
+
 #if !defined(DEBUGGER_UNWIND)
 
 NTSTATUS
@@ -2780,7 +3042,6 @@ Return Value:
 }
 
 #endif // !defined(DEBUGGER_UNWIND)
-
 BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
 {
     DWORD64 ImageBase = 0;

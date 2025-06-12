@@ -369,6 +369,21 @@ RtlVirtualUnwind(
     IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
     );
 
+EXTERN_C
+NTSYSAPI
+BOOLEAN
+RtlpUnwindIsPacPresent (
+    _In_ ULONG_PTR ImageBase,
+    _In_ ULONG_PTR ControlPc,
+    _In_ PRUNTIME_FUNCTION FunctionEntry,
+    _Out_ PVOID *HandlerData,
+    _Inout_opt_ PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
+    _Out_ PULONG_PTR EstablisherFrame,
+    _In_opt_ PULONG_PTR LowLimit,
+    _In_opt_ PULONG_PTR HighLimit,
+    _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine,
+    _In_ ULONG UnwindFlags
+    );
 // Mirror the XSTATE_ARM64_SVE flags from winnt.h
 
 #ifndef XSTATE_ARM64_SVE

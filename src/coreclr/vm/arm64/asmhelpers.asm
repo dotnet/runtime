@@ -495,6 +495,7 @@ COMToCLRDispatchHelper_RegSetup
     EPILOG_RESTORE_REG_PAIR   x25, x26, #64
     EPILOG_RESTORE_REG_PAIR   x27, x28, #80
     EPILOG_RESTORE_REG_PAIR   fp, lr,   #192!
+    DCD     0xD50320FF  ; xpaclri instruction in binary to avoid error while compiling with non-PAC enabled compilers
     EPILOG_RETURN
     NESTED_END
 

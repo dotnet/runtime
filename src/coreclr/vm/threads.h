@@ -2657,7 +2657,7 @@ public:
 
 private:
 #ifdef FEATURE_HIJACK
-    void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet));
+    void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet) ARM64_ARG(bool isPacEnabledFrame));
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address

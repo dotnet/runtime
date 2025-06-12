@@ -161,6 +161,7 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR   x25, x26, 64
     EPILOG_RESTORE_REG_PAIR   x27, x28, 80
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   192
+    xpaclri
     EPILOG_RETURN
 NESTED_END OnHijackTripThread, _TEXT
 
