@@ -201,7 +201,7 @@ namespace ILCompiler
                 compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
                 if (singleMethod.OwningType is MetadataType { Module.Assembly: EcmaAssembly assembly })
                 {
-                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(assembly));
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(assembly, typeSystemContext));
                 }
             }
             else
@@ -315,7 +315,7 @@ namespace ILCompiler
 
                 if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
                 {
-                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly));
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext));
                 }
             }
 

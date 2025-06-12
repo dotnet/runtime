@@ -142,7 +142,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             TypeMapManager typeMapManager = new UsageBasedTypeMapManager (TypeMapMetadata.Empty);
             if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
             {
-                typeMapManager = new UsageBasedTypeMapManager (TypeMapMetadata.CreateFromAssembly (entryAssembly));
+                typeMapManager = new UsageBasedTypeMapManager (TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext));
             }
 
             CompilationBuilder builder = new RyuJitCompilationBuilder (typeSystemContext, compilationGroup)

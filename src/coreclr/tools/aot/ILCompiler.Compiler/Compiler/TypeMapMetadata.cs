@@ -125,7 +125,7 @@ namespace ILCompiler
 
         public string DiagnosticName { get; }
 
-        public static TypeMapMetadata CreateFromAssembly(EcmaAssembly assembly)
+        public static TypeMapMetadata CreateFromAssembly(EcmaAssembly assembly, CompilerTypeSystemContext typeSystemContext)
         {
             Dictionary<TypeDesc, Map> typeMapStates = [];
             HashSet<EcmaAssembly> scannedAssemblies = [];
@@ -195,12 +195,12 @@ namespace ILCompiler
 
                         if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget or TypeMapAttributeKind.TypeMap)
                         {
-                            value.SetExternalTypeMapStub(assembly, ex);
+                            value.SetExternalTypeMapStub(typeSystemContext.GeneratedAssembly, ex);
                         }
 
                         if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget or TypeMapAttributeKind.TypeMapAssociation)
                         {
-                            value.SetAssociatedTypeMapStub(assembly, ex);
+                            value.SetAssociatedTypeMapStub(typeSystemContext.GeneratedAssembly, ex);
                         }
                     }
                 }
