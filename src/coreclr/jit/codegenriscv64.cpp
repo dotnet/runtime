@@ -6570,9 +6570,6 @@ void CodeGen::genJumpToThrowHlpBlk_la(
             }
             regSet.verifyRegUsed(params.ireg);
         }
-        else
-        {
-        }
 
         BasicBlock* skipLabel = genCreateTempLabel();
 
