@@ -296,7 +296,7 @@ internal unsafe partial class MachObjectFile
     /// <summary>
     /// Writes the entire file to <paramref name="file"/>.
     /// </summary>
-    private long Write(IMachOFileWriter file)
+    public long Write(IMachOFileWriter file)
     {
         if (file.Capacity < GetFileSize())
             throw new ArgumentException("File is too small", nameof(file));

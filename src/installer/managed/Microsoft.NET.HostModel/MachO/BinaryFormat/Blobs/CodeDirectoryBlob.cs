@@ -25,18 +25,6 @@ internal sealed class CodeDirectoryBlob : IBlob
     private byte[][] _specialSlotHashes;
     private byte[][] _codeHashes;
 
-    private CodeDirectoryBlob(
-        CodeDirectoryHeader cdHeader,
-        string identifier,
-        byte[][] specialSlotHashes,
-        byte[][] codeHashes)
-    {
-        _cdHeader = cdHeader;
-        _identifier = identifier;
-        _specialSlotHashes = specialSlotHashes;
-        _codeHashes = codeHashes;
-    }
-
     public CodeDirectoryBlob(SimpleBlob blob)
     {
         var data = blob.Data;
@@ -61,7 +49,6 @@ internal sealed class CodeDirectoryBlob : IBlob
             byte[] bytes = data.AsSpan(specialSlotHashesOffset + i * hashSize, hashSize).ToArray();
             specialSlotHashes[i] = bytes;
         }
-        specialSlotHashes.Reverse();
 
         // Code slot hashes are stored positively indexed from HashesOffset
         for (int codeSlotNumber = 0; codeSlotNumber < codeSlotCount; codeSlotNumber++)
@@ -75,7 +62,7 @@ internal sealed class CodeDirectoryBlob : IBlob
         static int GetDataOffset(uint original) => (int)(original - sizeof(uint) - sizeof(uint));
     }
 
-    public CodeDirectoryBlob(
+    private CodeDirectoryBlob(
         string identifier,
         ulong signatureStart,
         HashType hashType,
@@ -83,8 +70,18 @@ internal sealed class CodeDirectoryBlob : IBlob
         byte[][] specialSlotHashes,
         byte[][] codeHashes)
     {
-        // Always assume the executable length is the entire file size
-        _cdHeader = new CodeDirectoryHeader(identifier, (uint)codeHashes.Length, (uint)specialSlotHashes.Length, (uint)signatureStart, hashType.GetHashSize(), hashType, signatureStart, 0, signatureStart, execSegmentFlags);
+        // Always assume the executable length is the entire file size / signature start.
+        _cdHeader = new CodeDirectoryHeader(
+            identifier,
+            (uint)codeHashes.Length,
+            (uint)specialSlotHashes.Length,
+            (uint)signatureStart,
+            hashType.GetHashSize(),
+            hashType,
+            signatureStart,
+            0,
+            signatureStart,
+            execSegmentFlags);
         _identifier = identifier;
         _specialSlotHashes = specialSlotHashes;
         _codeHashes = codeHashes;
@@ -94,12 +91,11 @@ internal sealed class CodeDirectoryBlob : IBlob
 
     public BlobMagic Magic => BlobMagic.CodeDirectory;
 
-    public uint Size => (uint)(sizeof(uint) + sizeof(uint) // magic + size
+    public uint Size => sizeof(uint) + sizeof(uint) // magic + size
         + CodeDirectoryHeader.Size
-        + Encoding.UTF8.GetByteCount(_identifier) + 1 // +1 for null terminator
+        + GetIdentifierLength(_identifier)
         + SpecialSlotCount * HashSize
-        + CodeSlotCount * HashSize);
-
+        + CodeSlotCount * HashSize;
 
     public static CodeDirectoryBlob Create(
         IMachOFileReader accessor,
@@ -191,12 +187,11 @@ internal sealed class CodeDirectoryBlob : IBlob
 
         public CodeDirectoryHeader(string identifier, uint codeSlotCount, uint specialCodeSlotCount, uint executableLength, byte hashSize, HashType hashType, ulong signatureStart, ulong execSegmentBase, ulong execSegmentLimit, ExecutableSegmentFlags execSegmentFlags)
         {
-            uint identifierLength = (uint)(Encoding.UTF8.GetByteCount(identifier) + 1);
             HashSize = hashSize;
             _version = (CodeDirectoryVersion)((uint)CodeDirectoryVersion.HighestVersion).ConvertToBigEndian();
             _flags = (CodeDirectoryFlags)((uint)CodeDirectoryFlags.Adhoc).ConvertToBigEndian();
             _identifierOffset = (CodeDirectoryHeader.Size + sizeof(uint) * 2).ConvertToBigEndian();
-            _hashesOffset = (_identifierOffset.ConvertFromBigEndian() + identifierLength + HashSize * specialCodeSlotCount).ConvertToBigEndian();
+            _hashesOffset = (_identifierOffset.ConvertFromBigEndian() + GetIdentifierLength(identifier) + HashSize * specialCodeSlotCount).ConvertToBigEndian();
             _codeSlotCount = codeSlotCount.ConvertToBigEndian();
             _specialSlotCount = specialCodeSlotCount.ConvertToBigEndian();
             _executableLength = executableLength.ConvertToBigEndian();
@@ -210,14 +205,9 @@ internal sealed class CodeDirectoryBlob : IBlob
         }
     }
 
-    public CodeDirectoryVersion Version => (CodeDirectoryVersion)((uint)_cdHeader._version).ConvertFromBigEndian();
-    public CodeDirectoryFlags Flags => (CodeDirectoryFlags)((uint)_cdHeader._flags).ConvertFromBigEndian();
     public uint HashesOffset => _cdHeader._hashesOffset.ConvertFromBigEndian();
     public uint SpecialSlotCount => _cdHeader._specialSlotCount.ConvertFromBigEndian();
     public uint CodeSlotCount => _cdHeader._codeSlotCount.ConvertFromBigEndian();
-    public ulong ExecSegmentBase => _cdHeader._execSegmentBase.ConvertFromBigEndian();
-    public ulong ExecSegmentLimit => _cdHeader._execSegmentLimit.ConvertFromBigEndian();
-    public ExecutableSegmentFlags ExecSegmentFlags => (ExecutableSegmentFlags)((ulong)_cdHeader._execSegmentFlags).ConvertFromBigEndian();
     public byte HashSize => _cdHeader.HashSize;
 
     public override bool Equals(object? obj)

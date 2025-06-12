@@ -31,7 +31,8 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true))
             using (var managedSignedAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite))
             {
-                if (!MachObjectFile.Create(new MemoryMappedMachOViewAccessor(managedSignedAccessor)).HasSignature) {
+                if (!MachObjectFile.Create(new MemoryMappedMachOViewAccessor(managedSignedAccessor)).HasSignature)
+                {
                     return false;
                 }
             }
@@ -51,13 +52,9 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             List<string> testFilePaths = new();
             foreach ((string name, FileInfo file) in testData)
             {
-                string originalFilePath = Path.Combine(testArtifact.Location, name);
-                using (var src = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read))
-                using (var dest = new FileStream(originalFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite))
-                {
-                    src.CopyTo(dest);
-                }
-                testFilePaths.Add(originalFilePath);
+                string newFilePath = Path.Combine(testArtifact.Location, name);
+                File.Copy(file.FullName, newFilePath, true);
+                testFilePaths.Add(newFilePath);
             }
 
             // If we're on mac, we can use the live built binaries to test against
@@ -161,7 +158,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         void SignedMachOExecutableRuns()
         {
             using var testArtifact = TestArtifact.Create(nameof(SignedMachOExecutableRuns));
-            foreach(var (fileName, fileInfo) in TestData.MachObjects.GetRunnable())
+            foreach (var (fileName, fileInfo) in TestData.MachObjects.GetRunnable())
             {
                 string unsignedFilePath = Path.Combine(testArtifact.Location, fileName);
                 string signedPath = unsignedFilePath + ".signed";
@@ -174,6 +171,45 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 
                 var result = Command.Create(signedPath).CaptureStdErr().CaptureStdOut().Execute();
                 result.ExitCode.Should().Be(0, result.StdErr);
+            }
+        }
+
+        [Fact]
+        void ReadSignedMachIsTheSameAsReadAndResigned()
+        {
+            using var testArtifact = TestArtifact.Create(nameof(ReadSignedMachIsTheSameAsReadAndResigned));
+            foreach (var fileName in GetTestFilePaths(testArtifact))
+            {
+                string signedPath = fileName + ".signed";
+
+                AdHocSignFile(fileName, signedPath, fileName);
+                using (var mmap = MemoryMappedFile.CreateFromFile(signedPath))
+                using (var accessor = mmap.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite))
+                {
+                    var signedMachFile = new MemoryMappedMachOViewAccessor(accessor);
+                    var signedObject = MachObjectFile.Create(signedMachFile);
+                    var resignedObject = MachObjectFile.Create(signedMachFile);
+                    resignedObject.AdHocSignFile(signedMachFile, fileName);
+                    MachObjectFile.AssertEquivalent(signedObject, resignedObject);
+                }
+            }
+        }
+
+        [Fact]
+        void RoundTripMachObjectFileIsTheSame()
+        {
+            using var testArtifact = TestArtifact.Create(nameof(RoundTripMachObjectFileIsTheSame));
+            foreach (var fileName in GetTestFilePaths(testArtifact))
+            {
+                using (var mmap = MemoryMappedFile.CreateFromFile(fileName))
+                using (var accessor = mmap.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
+                {
+                    var machFile = new MemoryMappedMachOViewAccessor(accessor);
+                    var machObjectFile = MachObjectFile.Create(machFile);
+                    machObjectFile.Write(machFile);
+                    var rewrittenMachFile = MachObjectFile.Create(machFile);
+                    MachObjectFile.AssertEquivalent(machObjectFile, rewrittenMachFile);
+                }
             }
         }
 

@@ -11,7 +11,7 @@ namespace Microsoft.NET.HostModel.MachO;
 /// </summary>
 internal enum HashType : byte
 {
-    SHA256 = 2,
+    SHA256 = 2
 }
 
 internal static class HashTypeExtensions
