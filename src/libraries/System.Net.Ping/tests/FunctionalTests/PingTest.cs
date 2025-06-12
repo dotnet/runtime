@@ -712,7 +712,7 @@ namespace System.Net.NetworkInformation.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
-        [OuterLoop] // Depends on external host and assumption that successful ping takes long enough for cancellation to go through first
+        [OuterLoop("Depends on external host and runs long on Windows.")]
         public async Task CancelSendPingAsync_IPAddress(bool useCancellationToken)
         {
             if (await TestCore(TestSettings.UnreachableAddress)) return;
