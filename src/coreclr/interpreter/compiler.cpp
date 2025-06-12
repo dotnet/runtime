@@ -2509,7 +2509,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
             else if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && newObj)
             {
                 AddIns(INTOP_NEWMDARR);
-                m_pLastNewIns->data[0] = GetDataItemIndex(arrayClsHnd);
+                m_pLastNewIns->data[0] = GetDataItemIndex(resolvedCallToken.hClass);
                 m_pLastNewIns->data[1] = callInfo.sig.numArgs;
             }
             else
