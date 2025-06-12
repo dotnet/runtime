@@ -38,6 +38,7 @@ static Thread* g_RuntimeInitializingThread;
 
 #if defined(TARGET_ARM64)
 extern "C" void* PacSignPtr(void* ptr);
+extern "C" void* PacStripPtr(void* ptr);
 #endif // TARGET_ARM64
 
 ee_alloc_context::PerThreadRandom::PerThreadRandom()
@@ -815,7 +816,7 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         void* pvRetAddr = *ppvRetAddrLocation;
 
         ASSERT(pvRetAddr != NULL);
-        ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
+        ASSERT(StackFrameIterator::IsValidReturnAddress(PacStripPtr(pvRetAddr)));
 
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
         m_pvHijackedReturnAddress = pvRetAddr;

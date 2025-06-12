@@ -301,7 +301,7 @@ LOCAL_LABEL(TailCallWasHijacked):
         mov         lr, x1
         str         lr, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__LR)]
         str         lr, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__IP)]
-        DCD     0xD50320FF  ;; xpaclri instruction in binary to avoid error while compiling with non-PAC enabled compilers
+        xpaclri
 
 LOCAL_LABEL(ClearThreadState):
 
