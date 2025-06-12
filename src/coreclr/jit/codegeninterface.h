@@ -179,8 +179,13 @@ private:
 public:
     static bool instIsFP(instruction ins);
 #if defined(TARGET_XARCH)
-    static bool     instIsEmbeddedBroadcastCompatible(instruction ins);
+    bool        instIsEmbeddedBroadcastCompatible(instruction ins);
+    static bool instIsEmbeddedMaskingCompatible(instruction ins);
+
     static unsigned instInputSize(instruction ins);
+    static unsigned instKMaskBaseSize(instruction ins);
+
+    bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
 #endif // TARGET_XARCH
     //-------------------------------------------------------------------------
     // Liveness-related fields & methods
@@ -822,10 +827,6 @@ public:
 
     virtual const char* siStackVarName(size_t offs, size_t size, unsigned reg, unsigned stkOffs) = 0;
 #endif // LATE_DISASM
-
-#if defined(TARGET_XARCH)
-    bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
-#endif
 };
 
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)

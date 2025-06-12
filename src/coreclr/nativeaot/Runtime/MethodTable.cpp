@@ -7,8 +7,8 @@
 #include "rhassert.h"
 #include "rhbinder.h"
 #include "MethodTable.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 
 #include "CommonMacros.inl"
 #include "MethodTable.inl"
@@ -95,7 +95,7 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
 //-----------------------------------------------------------------------------------------------------------
 MethodTable::Kinds MethodTable::GetKind()
 {
-	return (Kinds)(m_uFlags & (uint16_t)EETypeKindMask);
+	return (Kinds)(m_uFlags & EETypeKindMask);
 }
 
 //-----------------------------------------------------------------------------------------------------------

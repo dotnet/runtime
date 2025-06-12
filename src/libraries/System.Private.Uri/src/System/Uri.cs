@@ -585,7 +585,7 @@ namespace System
         // The assumptions:
         //  - baseUri is a valid absolute Uri
         //  - relative part is not null and not empty
-        private static unsafe void GetCombinedString(Uri baseUri, string relativeStr,
+        private static void GetCombinedString(Uri baseUri, string relativeStr,
             bool dontEscape, ref string? result)
         {
             // NB: This is not RFC2396 compliant although it is inline with w3c.org recommendations
@@ -1903,7 +1903,7 @@ namespace System
         //  This method is called first to figure out the scheme or a simple file path
         //  Is called only at the .ctor time
         //
-        private static unsafe ParsingError ParseScheme(string uriString, ref Flags flags, ref UriParser? syntax)
+        private static ParsingError ParseScheme(string uriString, ref Flags flags, ref UriParser? syntax)
         {
             Debug.Assert((flags & Flags.Debug_LeftConstructor) == 0);
 

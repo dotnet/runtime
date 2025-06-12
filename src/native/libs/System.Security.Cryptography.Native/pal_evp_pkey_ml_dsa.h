@@ -13,7 +13,7 @@ typedef enum
     PalMLDsaId_MLDsa87 = 3,
 } PalMLDsaId;
 
-PALEXPORT int32_t CryptoNative_MLDsaGetPalId(const EVP_PKEY* pKey, int32_t* mldsaId);
+PALEXPORT int32_t CryptoNative_MLDsaGetPalId(const EVP_PKEY* pKey, int32_t* mldsaId, int32_t* hasSeed, int32_t* hasSecretKey);
 
 /*
 Generates a new EVP_PKEY with random parameters or if seed is not NULL, uses the seed to generate the key.

@@ -816,15 +816,21 @@ bool deps_resolver_t::resolve_probe_dirs(
         }
     }
 
-    // If the deps file is missing add known locations.
-    if (!get_app_deps().exists())
+    // If the deps file is missing for the app, add known locations.
+    // For libhost scenarios, there is no app or app path
+    if (m_host_mode != host_mode_t::libhost && !get_app_deps().exists())
     {
+        assert(!m_app_dir.empty());
+
         // App local path
         add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, core_servicing);
 
-        // deps_resolver treats being able to get the coreclr path as optional, so we ignore the return value here.
-        // The caller is responsible for checking whether coreclr path is set and handling as appropriate.
-        (void) file_exists_in_dir(m_app_dir, LIBCORECLR_NAME, &m_coreclr_path);
+        if (m_coreclr_path.empty())
+        {
+            // deps_resolver treats being able to get the coreclr path as optional, so we ignore the return value here.
+            // The caller is responsible for checking whether coreclr path is set and handling as appropriate.
+            (void) file_exists_in_dir(m_app_dir, LIBCORECLR_NAME, &m_coreclr_path);
+        }
     }
 
     // Handle any additional deps.json that were specified.
@@ -851,19 +857,6 @@ bool deps_resolver_t::resolve_probe_dirs(
             {
                 return false;
             }
-        }
-    }
-
-    // If this is a single-file app, add the app's dir to the native search directories.
-    if (bundle::info_t::is_single_file_bundle() && !is_resources)
-    {
-        auto bundle = bundle::runner_t::app();
-        add_unique_path(asset_type, bundle->base_path(), &items, output, &non_serviced, core_servicing);
-
-        // Add the extraction path if it exists.
-        if (pal::directory_exists(bundle->extraction_path()))
-        {
-            add_unique_path(asset_type, bundle->extraction_path(), &items, output, &non_serviced, core_servicing);
         }
     }
 

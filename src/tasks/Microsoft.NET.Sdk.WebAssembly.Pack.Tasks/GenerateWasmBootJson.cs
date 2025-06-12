@@ -64,8 +64,6 @@ public class GenerateWasmBootJson : Task
 
     public string? RuntimeConfigJsonPath { get; set; }
 
-    public string StartupMemoryCache { get; set; }
-
     public string Jiterpreter { get; set; }
 
     public string RuntimeOptions { get; set; }
@@ -117,7 +115,6 @@ public class GenerateWasmBootJson : Task
         var result = new BootJsonData
         {
             resources = new ResourcesData(),
-            startupMemoryCache = helper.ParseOptionalBool(StartupMemoryCache)
         };
 
         if (IsTargeting100OrLater())
@@ -130,8 +127,11 @@ public class GenerateWasmBootJson : Task
             result.mainAssemblyName = entryAssemblyName;
             result.globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant();
 
-            if (CacheBootResources)
-                result.cacheBootResources = CacheBootResources;
+            if (!IsTargeting100OrLater())
+            {
+                if (CacheBootResources)
+                    result.cacheBootResources = CacheBootResources;
+            }
 
             if (LinkerEnabled)
                 result.linkerEnabled = LinkerEnabled;
@@ -450,7 +450,7 @@ public class GenerateWasmBootJson : Task
         if (browserProfiler != null)
         {
             result.environmentVariables ??= new();
-            result.environmentVariables["DOTNET_WasmPerfInstrumentation"] = browserProfiler.Substring("browser:".Length);
+            result.environmentVariables["DOTNET_WasmPerformanceInstrumentation"] = browserProfiler.Substring("browser:".Length);
         }
 
         helper.ComputeResourcesHash(result);

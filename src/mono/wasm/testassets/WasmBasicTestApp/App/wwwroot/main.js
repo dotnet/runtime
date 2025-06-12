@@ -312,10 +312,12 @@ try {
             break;
         case "BrowserProfilerTest":
             console.log("not ready yet")
-            const origMeasure = globalThis.performance.measure
+            let foundB = false;
             globalThis.performance.measure = (method, options) => {
                 console.log(`performance.measure: ${method}`);
-                origMeasure(method, options);
+                if (method === "TestMeaning") {
+                    foundB = true;
+                }
             };
             const myExportsB = await getAssemblyExports(config.mainAssemblyName);
             const testMeaningB = myExportsB.BrowserProfilerTest.TestMeaning;
@@ -325,7 +327,7 @@ try {
             document.getElementById("out").innerHTML = retB;
             console.debug(`ret: ${retB}`);
 
-            exit(retB == 42 ? 0 : 1);
+            exit(foundB && retB == 42 ? 0 : 1);
 
             break;
         case "OverrideBootConfigName":

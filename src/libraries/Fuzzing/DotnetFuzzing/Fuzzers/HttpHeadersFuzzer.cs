@@ -73,7 +73,22 @@ internal sealed class HttpHeadersFuzzer : IFuzzer
                 }
                 catch (FormatException) { }
 
-                foreach (var _ in headers) { }
+                // If values were added with validation, they should not contain CR or LF characters.
+                foreach ((_, HeaderStringValues values) in headers.NonValidated)
+                {
+                    foreach (string headerValue in values)
+                    {
+                        Assert.False(headerValue.ContainsAny('\r', '\n'));
+                    }
+                }
+
+                foreach ((_, IEnumerable<string> values) in headers)
+                {
+                    foreach (string headerValue in values)
+                    {
+                        Assert.False(headerValue.ContainsAny('\r', '\n'));
+                    }
+                }
             }
         }
     }
