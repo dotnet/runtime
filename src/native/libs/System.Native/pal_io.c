@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <fnmatch.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -506,12 +507,18 @@ static const size_t dirent_alignment = 8;
 int32_t SystemNative_GetReadDirRBufferSize(void)
 {
 #if HAVE_READDIR_R
-    size_t result = sizeof(struct dirent);
+    size_t result = offsetof(struct dirent, d_name);
 #ifdef TARGET_SUNOS
     // The d_name array is declared with only a single byte in it.
     // We have to add pathconf("dir", _PC_NAME_MAX) more bytes.
     // MAXNAMELEN is the largest possible value returned from pathconf.
     result += MAXNAMELEN;
+#else
+    // Don't rely on sizeof(dirent->d_name) or NAME_MAX + 1, there's several filesystems where the filename size is larger than 255 bytes.
+    // 1024 is what macOS uses and it can hold the largest filename we are aware of (OpenZFS).
+    // https://github.com/apple-oss-distributions/Libc/blob/63976b830a836a22649b806fe62e8614fe3e5555/exclave/dirent.h#L69
+    // pathconf("dir", _PC_NAME_MAX) was also considered but it returned 255 on NTFS and ZFS directories, which is wrong.
+    result += 1024;
 #endif
     // dirent should be under 2k in size
     assert(result < 2048);
@@ -539,7 +546,7 @@ int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, Dir
     struct dirent* entry = (struct dirent*)((size_t)(buffer + dirent_alignment - 1) & ~(dirent_alignment - 1));
 
     // check there is dirent size available at entry
-    if ((buffer + bufferSize) < ((uint8_t*)entry + sizeof(struct dirent)))
+    if ((buffer + bufferSize) < ((uint8_t*)entry + SystemNative_GetReadDirRBufferSize()))
     {
         assert(false && "Buffer size too small; use GetReadDirRBufferSize to get required buffer size");
         return ERANGE;

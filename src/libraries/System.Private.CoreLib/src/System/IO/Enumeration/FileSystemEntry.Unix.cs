@@ -11,6 +11,7 @@ namespace System.IO.Enumeration
     /// </summary>
     public unsafe ref partial struct FileSystemEntry
     {
+        private const int DecodedNameMaxLength = 256;
         private Interop.Sys.DirectoryEntry _directoryEntry;
         private bool _isDirectory;
         private FileStatus _status;
@@ -22,7 +23,7 @@ namespace System.IO.Enumeration
         // Wrap the fixed buffer to workaround visibility issues in api compat verification
         private struct FileNameBuffer
         {
-            internal fixed char _buffer[Interop.Sys.DirectoryEntry.NameBufferSize];
+            internal fixed char _buffer[DecodedNameMaxLength];
         }
 
         internal static FileAttributes Initialize(
@@ -95,7 +96,7 @@ namespace System.IO.Enumeration
             {
                 if (_directoryEntry.NameLength != 0 && _fileName.Length == 0)
                 {
-                    Span<char> buffer = MemoryMarshal.CreateSpan(ref _fileNameBuffer._buffer[0], Interop.Sys.DirectoryEntry.NameBufferSize);
+                    Span<char> buffer = MemoryMarshal.CreateSpan(ref _fileNameBuffer._buffer[0], DecodedNameMaxLength);
                     _fileName = _directoryEntry.GetName(buffer);
                 }
 
