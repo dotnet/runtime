@@ -1892,6 +1892,8 @@ public class InterpreterTest
     public static extern int writeToStdout(string s);
     [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
     public static extern void missingPInvoke();
+    [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void missingPInvokeWithMarshaling(string s);
 
     public static bool TestPInvoke()
     {
@@ -1905,23 +1907,53 @@ public class InterpreterTest
         // Test marshaling wrappers
         writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
 
-        // This currently asserts in PreStubWorker in a way that isn't handled correctly:
-        /*
-            Assert failure(PID 43968 [0x0000abc0], Thread: 64548 [0xfc24]): ohThrowable
-            CORECLR! PreStubWorker$catch$10 + 0x9E (0x00007ffc`8696308e)
-            CORECLR! CallSettingFrame_LookupContinuationIndex + 0x20 (0x00007ffc`867fed40)
-            CORECLR! _FrameHandler4::CxxCallCatchBlock + 0x1DE (0x00007ffc`867ea68e)
-            NTDLL! RtlCaptureContext2 + 0x4A6 (0x00007ffd`45ac6c56)
-            CORECLR! PreStubWorker + 0x503 (0x00007ffc`861568b3)
-            CORECLR! ThePreStub + 0x55 (0x00007ffc`8678dcb5)
-        */
-        /*
+        bool caught = false;
         try {
-            Console.WriteLine("missingPInvoke");
+            Console.WriteLine("calling missingPInvoke");
             missingPInvoke();
             return false;
         } catch (DllNotFoundException) {
+            Console.WriteLine("caught #1");
+            caught = true;
         }
+
+        if (!caught)
+            return false;
+
+        /* fails, with output:
+calling missingPInvokeWithMarshaling
+caught #2
+
+Assert failure(PID 74448 [0x000122d0], Thread: 61928 [0xf1e8]): ohThrowable
+
+CORECLR! PreStubWorker$catch$10 + 0x9E (0x00007ffc`5a0e31fe)
+CORECLR! CallSettingFrame_LookupContinuationIndex + 0x20 (0x00007ffc`59f7eeb0)
+CORECLR! _FrameHandler4::CxxCallCatchBlock + 0x1DE (0x00007ffc`59f6a7fe)
+NTDLL! RtlCaptureContext2 + 0x4A6 (0x00007ffd`45ac6c56)
+CORECLR! PreStubWorker + 0x503 (0x00007ffc`598d68b3)
+CORECLR! ThePreStub + 0x55 (0x00007ffc`59f0de25)
+CORECLR! CallJittedMethodRetVoid + 0x14 (0x00007ffc`59f0c394)
+CORECLR! InvokeCompiledMethod + 0x5CD (0x00007ffc`59b376fd)
+CORECLR! InterpExecMethod + 0x7286 (0x00007ffc`59b33056)
+CORECLR! ExecuteInterpretedMethod + 0x11B (0x00007ffc`598d528b)
+    File: Z:\runtime\src\coreclr\vm\prestub.cpp:1972
+    Image: Z:\runtime\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\corerun.exe
+
+Interpreted App returned -1073740286
+        */
+        /*
+        bool caught2 = false;
+        try {
+            Console.WriteLine("calling missingPInvokeWithMarshaling");
+            missingPInvokeWithMarshaling("test");
+            return false;
+        } catch (DllNotFoundException) {
+            Console.WriteLine("caught #2");
+            caught2 = true;
+        }
+
+        if (!caught2)
+            return false;
         */
 
         return true;
