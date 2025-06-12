@@ -25,6 +25,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Linux)] // SSLKEYLOGFILE is only supported on Linux for SslStream
         [InlineData(true)]
         [InlineData(false)]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/116473")]
         public async Task SslKeyLogFile_IsCreatedAndFilled(bool enabledBySwitch)
         {
             if (PlatformDetection.IsDebugLibrary(typeof(SslStream).Assembly) && !enabledBySwitch)
@@ -34,7 +35,7 @@ namespace System.Net.Security.Tests
                 return;
             }
 
-            if (PlatformDetection.IsOpenSslSupported && PlatformDetection.OpenSslVersion >= new Version(3, 5, 0))
+            if (PlatformDetection.IsOpenSsl3_5)
             {
                 // OpenSSL 3.5 and later versions log into file in SSLKEYLOGFILE environment variable by default,
                 // regardless of AppContext switch.
