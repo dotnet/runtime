@@ -520,10 +520,10 @@
     <value>The specified EVP_PKEY handle is not a known ML-KEM algorithm.</value>
   </data>
   <data name="Cryptography_KemNoDecapsulationKey" xml:space="preserve">
-    <value>The current instance does not contain a private seed.</value>
+    <value>The current instance does not contain a decapsulation key.</value>
   </data>
   <data name="Cryptography_KemNoSeed" xml:space="preserve">
-    <value>The current instance does not contain a decapsulation key.</value>
+    <value>The current instance does not contain a seed.</value>
   </data>
   <data name="Cryptography_KemPkcs8KeyMismatch" xml:space="preserve">
     <value>The specified PKCS#8 key contains a seed that does not match the expanded key.</value>
