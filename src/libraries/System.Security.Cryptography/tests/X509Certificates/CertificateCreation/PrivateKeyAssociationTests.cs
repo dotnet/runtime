@@ -951,11 +951,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                 using (MLDsaTestImplementation keyThatExportsRsaPkcs8 = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(MLDsaAlgorithm.MLDsa44))
                 {
-                    // Export the RSA PKCS#8
                     keyThatExportsRsaPkcs8.ExportMLDsaPublicKeyHook = MLDsaTestsData.IetfMLDsa44.PublicKey.CopyTo;
+                    keyThatExportsRsaPkcs8.ExportMLDsaPrivateSeedHook = MLDsaTestsData.IetfMLDsa44.PrivateSeed.CopyTo;
+
+                    // Export the RSA PKCS#8
                     keyThatExportsRsaPkcs8.TryExportPkcs8PrivateKeyHook = rsa.TryExportPkcs8PrivateKey;
 
-                    AssertExtensions.Throws<CryptographicException>(() => ietfCert.CopyWithPrivateKey(keyThatExportsRsaPkcs8));
+                    if (PlatformDetection.IsWindows)
+                    {
+                        // Only Windows uses PKCS#8 for pairing key to cert.
+                        AssertExtensions.Throws<CryptographicException>(() => ietfCert.CopyWithPrivateKey(keyThatExportsRsaPkcs8));
+                    }
+                    else
+                    {
+                        // Assert.NoThrow
+                        using (ietfCert.CopyWithPrivateKey(keyThatExportsRsaPkcs8)) { }
+                    }
                 }
             }
         }
@@ -965,24 +976,34 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         {
             using (X509Certificate2 ietfCert = X509CertificateLoader.LoadCertificate(MLDsaTestsData.IetfMLDsa44.Certificate))
             {
-                RSA rsa = RSA.Create();
-
-                using (MLDsaTestImplementation keyThatExportsRsaPkcs8 = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(MLDsaAlgorithm.MLDsa44))
+                using (MLDsaTestImplementation keyThatExportsMalformedPkcs8 = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(MLDsaAlgorithm.MLDsa44))
                 {
-                    // Export the RSA PKCS#8
-                    keyThatExportsRsaPkcs8.ExportMLDsaPublicKeyHook = MLDsaTestsData.IetfMLDsa44.PublicKey.CopyTo;
-                    keyThatExportsRsaPkcs8.TryExportPkcs8PrivateKeyHook = (dest, out written) =>
-                    {
-                        written = 0;
-                        return true;
-                    };
+                    keyThatExportsMalformedPkcs8.ExportMLDsaPublicKeyHook = MLDsaTestsData.IetfMLDsa44.PublicKey.CopyTo;
+                    keyThatExportsMalformedPkcs8.ExportMLDsaPrivateSeedHook = MLDsaTestsData.IetfMLDsa44.PrivateSeed.CopyTo;
 
-                    AssertExtensions.Throws<CryptographicException>(() => ietfCert.CopyWithPrivateKey(keyThatExportsRsaPkcs8));
+                    // Export malformed PKCS#8
+                    keyThatExportsMalformedPkcs8.TryExportPkcs8PrivateKeyHook =
+                        (dest, out written) =>
+                        {
+                            written = 0;
+                            return true;
+                        };
+
+                    if (PlatformDetection.IsWindows)
+                    {
+                        // Only Windows uses PKCS#8 for pairing key to cert.
+                        AssertExtensions.Throws<CryptographicException>(() => ietfCert.CopyWithPrivateKey(keyThatExportsMalformedPkcs8));
+                    }
+                    else
+                    {
+                        // Assert.NoThrow
+                        using (ietfCert.CopyWithPrivateKey(keyThatExportsMalformedPkcs8)) { }
+                    }
                 }
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void AssociatePersistedKey_CNG_MLDsa()
         {
@@ -1034,7 +1055,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void AssociateEphemeralKey_CNG_MLDsa()
         {
