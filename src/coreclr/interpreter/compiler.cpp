@@ -2513,7 +2513,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
 
                 AddIns(INTOP_NEWMDARR);
                 m_pLastNewIns->data[0] = GetDataItemIndex(arrayClsHnd);
-                m_pLastNewIns->data[1] = rank;
+                m_pLastNewIns->data[1] = callInfo.sig.numArgs;
             }
             else
             {
