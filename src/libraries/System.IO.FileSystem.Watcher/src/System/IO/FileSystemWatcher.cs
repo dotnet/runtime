@@ -225,11 +225,15 @@ namespace System.IO
 
         /// <summary>Allocates a buffer of the requested internal buffer size.</summary>
         /// <returns>The allocated buffer.</returns>
-        private byte[] AllocateBuffer()
+        private byte[] AllocateBuffer(bool pinned = false)
         {
             try
             {
-                return new byte[_internalBufferSize];
+                /*
+                 * Note: Although fixing the memory leak will arrest the probability of too many of these pinned 8K byte[] buffers
+                 *       fragmenting the SOH, we ought to take advantage of the POH to avoid fragmentation in the first place, for cleanliness sake.
+                 */
+                return pinned ? GC.AllocateArray<byte>(_internalBufferSize, pinned: true) : new byte[_internalBufferSize];
             }
             catch (OutOfMemoryException)
             {

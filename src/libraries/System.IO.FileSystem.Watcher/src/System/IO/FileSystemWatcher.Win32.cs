@@ -49,7 +49,14 @@ namespace System.IO
                 // Start ignoring all events that were initiated before this, and
                 // allocate the buffer to be pinned and used for the duration of the operation
                 int session = Interlocked.Increment(ref _currentSession);
-                byte[] buffer = AllocateBuffer();
+
+                /*
+                 * Note: This is just an illustrative PR, we have more changes to make, including:
+                 *       1. Checking if we need to use GC.AllocateArray<byte> on Linux as well
+                 *       2. Removing the need to pin the buffer using GCHandle later on when provisioning / Packing the ThreadPoolBoundHandleOverlapped,
+                 *          which is done when allocating a new PreAllocatedOverlapped below.
+                 */
+                byte[] buffer = AllocateBuffer(pinned: true);
 
                 // Store all state, including a preallocated overlapped, into the state object that'll be
                 // passed from iteration to iteration during the lifetime of the operation.  The buffer will be pinned
@@ -60,10 +67,68 @@ namespace System.IO
                     state.PreAllocatedOverlapped = new PreAllocatedOverlapped((errorCode, numBytes, overlappedPointer) =>
                     {
                         AsyncReadState state = (AsyncReadState)ThreadPoolBoundHandle.GetNativeOverlappedState(overlappedPointer)!;
+
+                        /*
+                         * Note: Freeing the NativeOverlapped via ThreadPoolBoundHandle will only call AsyncState.PreAllocatedOverlapped.Release(),
+                         *       and NOT AsyncState.PreAllocatedOverlapped.Dispose() which is what unpins and frees up the pinned 8K byte[] buffer,
+                         *       as well as the ThreadPoolBoundHandleOverlapped which is also held by a strong GCHandle and prevented from GC.
+                         *       In our process dump which has a leak of the pinned 8K byte[] buffer, we can see evidence that AsyncState.PreAllocatedOverlapped.Release()
+                         *       was performed, namely for each leaked pinned buffer we see that:
+                         *       1) AsyncState.PreAllocatedOverlapped._lifetime count = 0
+                         *       2) ThreadPoolBoundHandleOverlapped._boundHandle = NULL
+                         *       3) ThreadPoolBoundHandleOverlapped._completed = FALSE
+                         *       4) ThreadPoolBoundHandleOverlapped._nativeOverlapped is zeroed out (default for the struct)
+                         */
                         state.ThreadPoolBinding.FreeNativeOverlapped(overlappedPointer);
+
+                        /*
+                         * When we reach here, app that's using this FileSystemWatcher instance may have given it up for GC, having no use for it anywmore,
+                         * since the last time Monitor() call queued an async overlapped ReadDirectoryChangesW operation.
+                         * There are 2 sub-cases:
+                         * 1) When app has disposed the FileSystemWatcher before releasing the last reference
+                         *    Disposal of FileSystemWatcher will dispose the underlying directory SafeFileHandle and kick off a race between:
+                         *    a) The IOCP thread executing the FileSystemWatcher directory changes callback, which will come in with
+                         *       errorCode = ERROR_OPERATION_ABORTED, and simultaneously,
+                         *    b) The dedicated Server GC threads trying to collect the FileSystemWatcher after app gives up its last reference.
+                         *    If a) wins the race, everything is fine :)
+                         *          WHY? The AsycState's WeakRef<FileSystemwatcher> in this callback will be intact, so watcher.ReadDirectoryChangesCallback
+                         *          will be called, it will find out that the directory handle is invalid now, and it will kick off the next Monitor() call,
+                         *          which will in turn find out that the directory handle is invalid now and proceed to properly call PreAllocatedOverlapped.Dispose()
+                         *          to unpin and free up the pinned 8K byte[] buffer.
+                         *    However, if b) wins the race, !!  WE HAVE A HEAP LEAK !!
+                         *          WHY? The AsycState's WeakRef<FileSystemwatcher> in this callback will be nulled out as soon as watcher is queued for finalization,
+                         *          especially since its a *SHORT* WeakRef, and the callback will not be able to find the watcher anymore.
+                         *          so watcher.ReadDirectoryChangesCallback is not at all called below, so there is no chance of disposing the PreAllocatedOverlapped
+                         *          and freeing up the pinned 8K byte[] buffer and we have leaked it for eternity.
+                         * 2) When app has not disposed the FileSystemWatcher before releasing the last reference
+                         *    This case makes the heap leak fully deterministic, and not probabilistic, because the watcher is disposed from Finalizer thread,
+                         *    which will dispose the underlying directory SafeFileHandle and schedule the directory changes callback (errorCode = ERROR_OPERATION_ABORTED)
+                         *    on IOCP thread, but by that time, the AsycState's WeakRef<FileSystemwatcher> in the callback will *ALWAYS* be nulled out,
+                         *    since its a *SHORT* WeakRef.
+                         *    So watcher.ReadDirectoryChangesCallback is not at all called, so there is no chance of disposing the PreAllocatedOverlapped
+                         *    and freeing up the pinned 8K byte[] buffer and we have leaked it for eternity.
+                         *
+                         * Note: The memory leak has a higher probability of occurring in Server GC, since it pauses all threads, including the IOCP threads,
+                         *       executing this callbacks, so this enhances the ability of GC to win the above race and cause a leak.
+                         */
+
                         if (state.WeakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
                         {
                             watcher.ReadDirectoryChangesCallback(errorCode, numBytes, state);
+                        }
+                        else
+                        {
+                            /*
+                             * The app has no use for the FileSystemWatcher anymore, and it has been GCed. It may not be fully finalized yet,
+                             * so we cannot make assumptions about the state of the directory handle itself.
+                             * But we ought to cleanup the PreAllocatedOverlapped and the ThreadPoolBoundHandle properly, else we risk
+                             * leaking the pinned 8K byte[] buffer and the ThreadPoolBoundHandleOverlapped both prevented from GC by GCHandles.
+                             * The pinned 8K byte[] buffer is especially important, as it is pinned on SOH (not even on dedicated POH) so even
+                             * though its only 8K, too many of those can cause heavy heap fragmentation and prevent compaction of SOH, leading to
+                             * large memory usage (with mostly free space), poor allocation and GC performance, etc.
+                             */
+                            state.PreAllocatedOverlapped?.Dispose();
+                            state.ThreadPoolBinding?.Dispose();
                         }
                     }, state, buffer);
                 }
