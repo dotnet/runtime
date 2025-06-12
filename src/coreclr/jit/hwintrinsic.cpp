@@ -1195,7 +1195,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     {
         if (!comp->compOpportunisticallyDependsOn(InstructionSet_AVXVNNIINT))
         {
-            if (isa = InstructionSet_AVXVNNIINT)
+            if (isa == InstructionSet_AVXVNNIINT)
             {
                 isa = InstructionSet_AVXVNNIINT_V512;
             }
