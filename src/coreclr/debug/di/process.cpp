@@ -2294,10 +2294,10 @@ HRESULT CordbProcess::EnumerateHeapRegions(ICorDebugHeapSegmentEnum **ppRegions)
 
 HRESULT CordbProcess::GetObject(CORDB_ADDRESS addr, ICorDebugObjectValue **ppObject)
 {
-    return this->GetObjectInternal(addr, nullptr, ppObject);
+    return this->GetObjectInternal(addr, ppObject);
 }
 
-HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, ICorDebugObjectValue **pObject)
+HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue **pObject)
 {
     HRESULT hr = S_OK;
 
@@ -2321,7 +2321,7 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pApp
 
             CordbAppDomain *cdbAppDomain = NULL;
             CordbType *pType = NULL;
-            hr = GetTypeForObject(addr, pAppDomainOverride, &pType, &cdbAppDomain);
+            hr = GetTypeForObject(addr, &pType, &cdbAppDomain);
 
             if (SUCCEEDED(hr))
             {
@@ -2557,7 +2557,7 @@ COM_METHOD CordbProcess::EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEn
     return hr;
 }
 
-HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, CordbType **ppType, CordbAppDomain **pAppDomain)
+HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, CordbAppDomain **pAppDomain)
 {
     VMPTR_AppDomain appDomain;
     VMPTR_Module mod;
@@ -2566,10 +2566,6 @@ HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbAppDomain* pAppD
     HRESULT hr = E_FAIL;
     if (GetDAC()->GetAppDomainForObject(addr, &appDomain, &mod, &domainAssembly))
     {
-        if (pAppDomainOverride)
-        {
-            appDomain = pAppDomainOverride->GetADToken();
-        }
         CordbAppDomain *cdbAppDomain = appDomain.IsNull() ? GetAppDomain() : LookupOrCreateAppDomain(appDomain);
 
         _ASSERTE(cdbAppDomain);

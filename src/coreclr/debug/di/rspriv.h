@@ -3699,7 +3699,7 @@ public:
     // the jit attach.
     HRESULT GetAttachStateFlags(CLR_DEBUGGING_PROCESS_FLAGS *pFlags);
 
-    HRESULT GetTypeForObject(CORDB_ADDRESS obj, CordbAppDomain* pAppDomainOverride, CordbType **ppType, CordbAppDomain **pAppDomain = NULL);
+    HRESULT GetTypeForObject(CORDB_ADDRESS obj, CordbType **ppType, CordbAppDomain **pAppDomain = NULL);
 
     WriteableMetadataUpdateMode GetWriteableMetadataUpdateMode() { return m_writableMetadataUpdateMode; }
 private:
@@ -4154,7 +4154,7 @@ private:
     // controls how metadata updated in the target is handled
     WriteableMetadataUpdateMode m_writableMetadataUpdateMode;
 
-    COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, ICorDebugObjectValue **pObject);
+    COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue **pObject);
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     CUnmanagedThreadHashTableImpl m_unmanagedThreadHashTable;
