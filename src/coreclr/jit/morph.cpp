@@ -9805,16 +9805,20 @@ GenTree* Compiler::doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic*
 //
 GenTreeHWIntrinsic* Compiler::fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node)
 {
-    if (HWIntrinsicInfo::HasAllMaskVariant(node->GetHWIntrinsicId()))
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+
+    if (HWIntrinsicInfo::HasAllMaskVariant(intrinsicId))
     {
-        NamedIntrinsic maskVariant = HWIntrinsicInfo::GetMaskVariant(node->GetHWIntrinsicId());
+        NamedIntrinsic maskVariant = HWIntrinsicInfo::GetMaskVariant(intrinsicId);
 
         // As some intrinsics have many variants, check that the count of operands on the node
-        // matches the number of operands required for the mask variant of the intrinsic. The mask
-        // variant of the intrinsic must have a fixed number of operands.
-        int numArgs = HWIntrinsicInfo::lookupNumArgs(maskVariant);
-        assert(numArgs >= 0);
-        if (node->GetOperandCount() == (size_t)numArgs)
+        // matches the number of operands required for the mask variant of the intrinsic. For
+        // embedded masks, the number of args are unknown.
+        int  numArgs  = HWIntrinsicInfo::lookupNumArgs(maskVariant);
+        bool embedded = HWIntrinsicInfo::IsEmbeddedMaskedOperation(maskVariant);
+        assert(numArgs >= 0 || embedded);
+
+        if (node->GetOperandCount() == (size_t)numArgs || embedded)
         {
             // We're sure it will work at this point, so perform the pattern match on operands.
             if (canMorphAllVectorOperandsToMasks(node))

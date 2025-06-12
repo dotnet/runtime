@@ -578,6 +578,57 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> AndAcross(Vector<ulong> value) => AndAcross(value);
 
 
+        // Bitwise NAND
+
+        /// <summary>
+        /// svbool_t svnand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   NAND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static Vector<byte> AndNot(Vector<byte> left, Vector<byte> right) => AndNot(left, right);
+
+        /// <summary>
+        /// svbool_t svnand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   NAND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static Vector<short> AndNot(Vector<short> left, Vector<short> right) => AndNot(left, right);
+
+        /// <summary>
+        /// svbool_t svnand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   NAND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static Vector<int> AndNot(Vector<int> left, Vector<int> right) => AndNot(left, right);
+
+        /// <summary>
+        /// svbool_t svnand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   NAND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static Vector<long> AndNot(Vector<long> left, Vector<long> right) => AndNot(left, right);
+
+        /// <summary>
+        /// svbool_t svnand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   NAND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static Vector<sbyte> AndNot(Vector<sbyte> left, Vector<sbyte> right) => AndNot(left, right);
+
+        /// <summary>
+        /// svbool_t svnand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   NAND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static Vector<ushort> AndNot(Vector<ushort> left, Vector<ushort> right) => AndNot(left, right);
+
+        /// <summary>
+        /// svbool_t svnand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   NAND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static Vector<uint> AndNot(Vector<uint> left, Vector<uint> right) => AndNot(left, right);
+
+        /// <summary>
+        /// svbool_t svnand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   NAND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static Vector<ulong> AndNot(Vector<ulong> left, Vector<ulong> right) => AndNot(left, right);
+
+
         // Bitwise clear
 
         /// <summary>
@@ -7573,6 +7624,57 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  ORV Dresult, Pg, Zop.D</para>
         /// </summary>
         public static Vector<ulong> OrAcross(Vector<ulong> value) => OrAcross(value);
+
+
+        // Bitwise NOR
+
+        /// <summary>
+        /// svbool_t svnor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   NOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static Vector<byte> OrNot(Vector<byte> left, Vector<byte> right) => OrNot(left, right);
+
+        /// <summary>
+        /// svbool_t svnor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   NOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static Vector<short> OrNot(Vector<short> left, Vector<short> right) => OrNot(left, right);
+
+        /// <summary>
+        /// svbool_t svnor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   NOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static Vector<int> OrNot(Vector<int> left, Vector<int> right) => OrNot(left, right);
+
+        /// <summary>
+        /// svbool_t svnor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   NOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static Vector<long> OrNot(Vector<long> left, Vector<long> right) => OrNot(left, right);
+
+        /// <summary>
+        /// svbool_t svnor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   NOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static Vector<sbyte> OrNot(Vector<sbyte> left, Vector<sbyte> right) => OrNot(left, right);
+
+        /// <summary>
+        /// svbool_t svnor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   NOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static Vector<ushort> OrNot(Vector<ushort> left, Vector<ushort> right) => OrNot(left, right);
+
+        /// <summary>
+        /// svbool_t svnor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   NOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static Vector<uint> OrNot(Vector<uint> left, Vector<uint> right) => OrNot(left, right);
+
+        /// <summary>
+        /// svbool_t svnor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   NOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static Vector<ulong> OrNot(Vector<ulong> left, Vector<ulong> right) => OrNot(left, right);
 
 
         // Count nonzero bits

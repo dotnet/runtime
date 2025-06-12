@@ -25,9 +25,11 @@ public class PredicateInstructions
             TransposeEven();
             ReverseElement();
             And();
+            AndNot();
             BitwiseClear();
             Xor();
             Or();
+            OrNot();
             ConditionalSelect();
         }
     }
@@ -93,6 +95,17 @@ public class PredicateInstructions
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> AndNot()
+    {
+        //ARM64-FULL-LINE: nand {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
+        return Sve.ConditionalSelect(
+            Sve.CreateTrueMaskInt16(),
+            Sve.AndNot(Sve.CreateTrueMaskInt16(), Sve.CreateTrueMaskInt16()),
+            Vector<short>.Zero
+        );
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector<short> BitwiseClear()
     {
         //ARM64-FULL-LINE: bic {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
@@ -121,6 +134,17 @@ public class PredicateInstructions
         return Sve.ConditionalSelect(
             Sve.CreateTrueMaskInt16(),
             Sve.Or(Sve.CreateTrueMaskInt16(), Sve.CreateTrueMaskInt16()),
+            Vector<short>.Zero
+        );
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> OrNot()
+    {
+        //ARM64-FULL-LINE: nor {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
+        return Sve.ConditionalSelect(
+            Sve.CreateTrueMaskInt16(),
+            Sve.OrNot(Sve.CreateTrueMaskInt16(), Sve.CreateTrueMaskInt16()),
             Vector<short>.Zero
         );
     }

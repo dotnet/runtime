@@ -702,9 +702,25 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                             }
 
+                            case NI_Sve_AndNot:
+                                // Emit an unpredicated AND (to avoid the RMW constraints), then a predicated NOT
+                                GetEmitter()->emitIns_R_R_R(INS_sve_and, emitSize, targetReg, embMaskOp1Reg,
+                                                            embMaskOp2Reg, opt);
+                                GetEmitter()->emitIns_R_R_R(INS_sve_not, emitSize, targetReg, maskReg, targetReg, opt);
+                                break;
+
+                            case NI_Sve_OrNot:
+                                // Emit an unpredicated OR (to avoid the RMW constraints), then a predicated NOT
+                                GetEmitter()->emitIns_R_R_R(INS_sve_orr, emitSize, targetReg, embMaskOp1Reg,
+                                                            embMaskOp2Reg, opt);
+                                GetEmitter()->emitIns_R_R_R(INS_sve_not, emitSize, targetReg, maskReg, targetReg, opt);
+                                break;
+
                             case NI_Sve_And_Predicates:
+                            case NI_Sve_AndNot_Predicates:
                             case NI_Sve_BitwiseClear_Predicates:
                             case NI_Sve_Or_Predicates:
+                            case NI_Sve_OrNot_Predicates:
                             case NI_Sve_Xor_Predicates:
                                 GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
                                                               embMaskOp2Reg, INS_OPTS_SCALABLE_B);
