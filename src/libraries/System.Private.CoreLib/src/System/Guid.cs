@@ -516,25 +516,25 @@ namespace System
             }
 
             Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result));
-            uint invalidIfGreaterThan7F = 0;
-            bytes[0] = DecodeByte(guidString[6],   guidString[7],  ref invalidIfGreaterThan7F);
-            bytes[1] = DecodeByte(guidString[4],   guidString[5],  ref invalidIfGreaterThan7F);
-            bytes[2] = DecodeByte(guidString[2],   guidString[3],  ref invalidIfGreaterThan7F);
-            bytes[3] = DecodeByte(guidString[0],   guidString[1],  ref invalidIfGreaterThan7F);
-            bytes[4] = DecodeByte(guidString[11],  guidString[12], ref invalidIfGreaterThan7F);
-            bytes[5] = DecodeByte(guidString[9],   guidString[10], ref invalidIfGreaterThan7F);
-            bytes[6] = DecodeByte(guidString[16],  guidString[17], ref invalidIfGreaterThan7F);
-            bytes[7] = DecodeByte(guidString[14],  guidString[15], ref invalidIfGreaterThan7F);
-            bytes[8] = DecodeByte(guidString[19],  guidString[20], ref invalidIfGreaterThan7F);
-            bytes[9] = DecodeByte(guidString[21],  guidString[22], ref invalidIfGreaterThan7F);
-            bytes[10] = DecodeByte(guidString[24], guidString[25], ref invalidIfGreaterThan7F);
-            bytes[11] = DecodeByte(guidString[26], guidString[27], ref invalidIfGreaterThan7F);
-            bytes[12] = DecodeByte(guidString[28], guidString[29], ref invalidIfGreaterThan7F);
-            bytes[13] = DecodeByte(guidString[30], guidString[31], ref invalidIfGreaterThan7F);
-            bytes[14] = DecodeByte(guidString[32], guidString[33], ref invalidIfGreaterThan7F);
-            bytes[15] = DecodeByte(guidString[34], guidString[35], ref invalidIfGreaterThan7F);
+            int invalidIfNegative = 0;
+            bytes[0] = DecodeByte(guidString[6],   guidString[7],  ref invalidIfNegative);
+            bytes[1] = DecodeByte(guidString[4],   guidString[5],  ref invalidIfNegative);
+            bytes[2] = DecodeByte(guidString[2],   guidString[3],  ref invalidIfNegative);
+            bytes[3] = DecodeByte(guidString[0],   guidString[1],  ref invalidIfNegative);
+            bytes[4] = DecodeByte(guidString[11],  guidString[12], ref invalidIfNegative);
+            bytes[5] = DecodeByte(guidString[9],   guidString[10], ref invalidIfNegative);
+            bytes[6] = DecodeByte(guidString[16],  guidString[17], ref invalidIfNegative);
+            bytes[7] = DecodeByte(guidString[14],  guidString[15], ref invalidIfNegative);
+            bytes[8] = DecodeByte(guidString[19],  guidString[20], ref invalidIfNegative);
+            bytes[9] = DecodeByte(guidString[21],  guidString[22], ref invalidIfNegative);
+            bytes[10] = DecodeByte(guidString[24], guidString[25], ref invalidIfNegative);
+            bytes[11] = DecodeByte(guidString[26], guidString[27], ref invalidIfNegative);
+            bytes[12] = DecodeByte(guidString[28], guidString[29], ref invalidIfNegative);
+            bytes[13] = DecodeByte(guidString[30], guidString[31], ref invalidIfNegative);
+            bytes[14] = DecodeByte(guidString[32], guidString[33], ref invalidIfNegative);
+            bytes[15] = DecodeByte(guidString[34], guidString[35], ref invalidIfNegative);
 
-            if (invalidIfGreaterThan7F <= 0x7F)
+            if (invalidIfNegative >= 0)
             {
                 if (!BitConverter.IsLittleEndian)
                 {
@@ -602,25 +602,25 @@ namespace System
             }
 
             Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result));
-            uint invalidIfGreaterThan7F = 0;
-            bytes[0] = DecodeByte(guidString[6], guidString[7], ref invalidIfGreaterThan7F);
-            bytes[1] = DecodeByte(guidString[4], guidString[5], ref invalidIfGreaterThan7F);
-            bytes[2] = DecodeByte(guidString[2], guidString[3], ref invalidIfGreaterThan7F);
-            bytes[3] = DecodeByte(guidString[0], guidString[1], ref invalidIfGreaterThan7F);
-            bytes[4] = DecodeByte(guidString[10], guidString[11], ref invalidIfGreaterThan7F);
-            bytes[5] = DecodeByte(guidString[8], guidString[9], ref invalidIfGreaterThan7F);
-            bytes[6] = DecodeByte(guidString[14], guidString[15], ref invalidIfGreaterThan7F);
-            bytes[7] = DecodeByte(guidString[12], guidString[13], ref invalidIfGreaterThan7F);
-            bytes[8] = DecodeByte(guidString[16], guidString[17], ref invalidIfGreaterThan7F);
-            bytes[9] = DecodeByte(guidString[18], guidString[19], ref invalidIfGreaterThan7F);
-            bytes[10] = DecodeByte(guidString[20], guidString[21], ref invalidIfGreaterThan7F);
-            bytes[11] = DecodeByte(guidString[22], guidString[23], ref invalidIfGreaterThan7F);
-            bytes[12] = DecodeByte(guidString[24], guidString[25], ref invalidIfGreaterThan7F);
-            bytes[13] = DecodeByte(guidString[26], guidString[27], ref invalidIfGreaterThan7F);
-            bytes[14] = DecodeByte(guidString[28], guidString[29], ref invalidIfGreaterThan7F);
-            bytes[15] = DecodeByte(guidString[30], guidString[31], ref invalidIfGreaterThan7F);
+            int invalidIfNegative = 0;
+            bytes[0] = DecodeByte(guidString[6], guidString[7], ref invalidIfNegative);
+            bytes[1] = DecodeByte(guidString[4], guidString[5], ref invalidIfNegative);
+            bytes[2] = DecodeByte(guidString[2], guidString[3], ref invalidIfNegative);
+            bytes[3] = DecodeByte(guidString[0], guidString[1], ref invalidIfNegative);
+            bytes[4] = DecodeByte(guidString[10], guidString[11], ref invalidIfNegative);
+            bytes[5] = DecodeByte(guidString[8], guidString[9], ref invalidIfNegative);
+            bytes[6] = DecodeByte(guidString[14], guidString[15], ref invalidIfNegative);
+            bytes[7] = DecodeByte(guidString[12], guidString[13], ref invalidIfNegative);
+            bytes[8] = DecodeByte(guidString[16], guidString[17], ref invalidIfNegative);
+            bytes[9] = DecodeByte(guidString[18], guidString[19], ref invalidIfNegative);
+            bytes[10] = DecodeByte(guidString[20], guidString[21], ref invalidIfNegative);
+            bytes[11] = DecodeByte(guidString[22], guidString[23], ref invalidIfNegative);
+            bytes[12] = DecodeByte(guidString[24], guidString[25], ref invalidIfNegative);
+            bytes[13] = DecodeByte(guidString[26], guidString[27], ref invalidIfNegative);
+            bytes[14] = DecodeByte(guidString[28], guidString[29], ref invalidIfNegative);
+            bytes[15] = DecodeByte(guidString[30], guidString[31], ref invalidIfNegative);
 
-            if (invalidIfGreaterThan7F <= 0x7F)
+            if (invalidIfNegative >= 0)
             {
                 if (!BitConverter.IsLittleEndian)
                 {
@@ -813,21 +813,19 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static byte DecodeByte<TChar>(TChar ch1, TChar ch2, ref uint invalidIfGreaterThan7F)
-            where TChar : unmanaged, IUtfChar<TChar>
+        private static byte DecodeByte<TChar>(TChar ch1, TChar ch2, ref int invalidIfNegative) where TChar : unmanaged, IUtfChar<TChar>
         {
             ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
             Debug.Assert(lookup.Length == 256);
 
             uint c1 = typeof(TChar) == typeof(byte) ? TChar.CastToUInt32(ch1) : Math.Min(TChar.CastToUInt32(ch1), 0x7F);
-            uint upper = lookup[(int)c1];
-            invalidIfGreaterThan7F |= upper;
-
             uint c2 = typeof(TChar) == typeof(byte) ? TChar.CastToUInt32(ch2) : Math.Min(TChar.CastToUInt32(ch2), 0x7F);
-            uint lower = lookup[(int)c2];
-            invalidIfGreaterThan7F |= lower;
+            int upper = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), c1);
+            int lower = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), c2);
 
-            return (byte)((upper << 4) | lower);
+            int result = (upper << 4) | lower;
+            invalidIfNegative |= result;
+            return (byte)result;
         }
 
         private static bool TryParseHex<TChar>(ReadOnlySpan<TChar> guidString, out ushort result, ref bool overflow) where TChar : unmanaged, IUtfChar<TChar>
