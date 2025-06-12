@@ -2806,7 +2806,7 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
     }
 }
 
-void InterpCompiler::EmitStaticFieldIntrinsic(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken)
+void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad)
 {
     switch (pFieldInfo->fieldAccessor)
     {
@@ -2815,20 +2815,8 @@ void InterpCompiler::EmitStaticFieldIntrinsic(InterpType interpFieldType, CORINF
             PushInterpType(InterpTypeI, NULL);
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             return;
-        default:
-            assert(!"Static field intrinsic not implemented");
-            return;
-    }
-}
-
-void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad)
-{
-    switch (pFieldInfo->fieldAccessor)
-    {
-        case CORINFO_FIELD_INTRINSIC_ZERO:
-        case CORINFO_FIELD_INTRINSIC_EMPTY_STRING:
         case CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN:
-            EmitStaticFieldIntrinsic(interpFieldType, pFieldInfo, pResolvedToken);
+            assert(!"Static field intrinsic IsLittleEndian not implemented");
             return;
         default:
             break;
