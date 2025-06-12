@@ -2678,7 +2678,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<int> Narrow(Vector128<long> lower, Vector128<long> upper)
             => Narrow<long, int>(lower, upper);
 
-        /// <summary>Narrows two vector of <see cref="byte"/> instances into one vector of <see cref="ushort" />.</summary>
+        /// <summary>Narrows two vector of <see cref="ushort"/> instances into one vector of <see cref="byte" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
         /// <returns>A vector of <see cref="byte" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
@@ -2771,7 +2771,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<int> NarrowWithSaturation(Vector128<long> lower, Vector128<long> upper)
             => NarrowWithSaturation<long, int>(lower, upper);
 
-        /// <summary>Narrows two vector of <see cref="byte"/> instances into one vector of <see cref="ushort" /> using a saturating conversion.</summary>
+        /// <summary>Narrows two vector of <see cref="ushort"/> instances into one vector of <see cref="byte" /> using a saturating conversion.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
         /// <returns>A vector of <see cref="byte" /> containing elements narrowed with saturation from <paramref name="lower" /> and <paramref name="upper" />.</returns>
