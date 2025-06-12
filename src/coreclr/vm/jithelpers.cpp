@@ -344,9 +344,6 @@ HCIMPLEND
 //
 //========================================================================
 
-// Define the t_ThreadStatics variable here, so that these helpers can use
-// the most optimal TLS access pattern for the platform when inlining the
-// GetThreadLocalStaticBaseIfExistsAndInitialized function.
 // Using compiler specific thread local storage directives due to linkage issues.
 #ifdef _MSC_VER
 __declspec(selectany)

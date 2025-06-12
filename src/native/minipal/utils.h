@@ -49,7 +49,7 @@
 // storage mechanism:
 //  * Better performance characteristics compared to C++'s thread_local keyword.
 //  * Makes consuming TLS variables from assembly code easier.
-#ifdef defined(_MSC_VER)
+#if defined(_MSC_VER)
 #define PLATFORM_THREAD_LOCAL __declspec(thread)
 #else
 #define PLATFORM_THREAD_LOCAL __thread
