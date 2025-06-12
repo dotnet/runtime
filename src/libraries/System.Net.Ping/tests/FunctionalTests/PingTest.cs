@@ -13,7 +13,6 @@ using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 using System.Threading;
-using System.Runtime.CompilerServices;
 
 namespace System.Net.NetworkInformation.Tests
 {
