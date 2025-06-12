@@ -265,6 +265,11 @@ bool pal::is_path_rooted(const pal::string_t& path)
     return path.front() == '/';
 }
 
+bool pal::is_path_absolute(const pal::string_t& path)
+{
+    return is_path_rooted(path);
+}
+
 bool pal::get_default_breadcrumb_store(string_t* recv)
 {
     recv->clear();
