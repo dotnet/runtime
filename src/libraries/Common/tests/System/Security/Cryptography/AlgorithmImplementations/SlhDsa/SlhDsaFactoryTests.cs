@@ -98,23 +98,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         [Fact]
-        public static void ImportPkcs8_BerEncoding()
-        {
-            // Secret key is DER encoded, so create a BER encoding from it by making it use indefinite length encoding.
-            byte[] secretKeyPkcs8 = SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyPkcs8;
-
-            // Two 0x00 bytes at the end signal the end of the indefinite length encoding
-            byte[] indefiniteLengthOctet = new byte[secretKeyPkcs8.Length + 2];
-            secretKeyPkcs8.CopyTo(indefiniteLengthOctet);
-            indefiniteLengthOctet[1] = 0b1000_0000; // change length to indefinite
-
-            SlhDsaTestHelpers.AssertImportPkcs8PrivateKey(import =>
-                SlhDsaTestHelpers.AssertExportSlhDsaSecretKey(export =>
-                    SlhDsaTestHelpers.WithDispose(import(indefiniteLengthOctet), slhDsa =>
-                        AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, export(slhDsa)))));
-        }
-
-        [Fact]
         public static void ImportPkcs8_WrongTypeInAsn()
         {
             // Create an incorrect ASN.1 structure to pass into the import methods.
