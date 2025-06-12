@@ -92,17 +92,17 @@ bool emitter::IsApxOnlyInstruction(instruction ins)
 
 bool emitter::IsAVXVNNIInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_AVXVNNI_INSTRUCTION) && (ins <= INS_LAST_AVXVNNI_INSTRUCTION);
+    return (ins >= FIRST_AVXVNNI_INSTRUCTION) && (ins <= LAST_AVXVNNI_INSTRUCTION);
 }
 
 bool emitter::IsAVXVNNIINT8Instruction(instruction ins)
 {
-    return (ins >= INS_FIRST_AVXVNNIINT8_INSTRUCTION) && (ins <= INS_LAST_AVXVNNIINT8_INSTRUCTION);
+    return (ins >= FIRST_AVXVNNIINT8_INSTRUCTION) && (ins <= LAST_AVXVNNIINT8_INSTRUCTION);
 }
 
 bool emitter::IsAVXVNNIINT16Instruction(instruction ins)
 {
-    return (ins >= INS_FIRST_AVXVNNIINT16_INSTRUCTION) && (ins <= INS_LAST_AVXVNNIINT16_INSTRUCTION);
+    return (ins >= FIRST_AVXVNNIINT16_INSTRUCTION) && (ins <= LAST_AVXVNNIINT16_INSTRUCTION);
 }
 
 bool emitter::IsAVXVNNIFamilyInstruction(instruction ins)
@@ -132,9 +132,9 @@ bool emitter::Is3OpRmwInstruction(instruction ins)
 
         default:
         {
-            return ((ins >= INS_FIRST_FMA_INSTRUCTION) && (ins <= INS_LAST_FMA_INSTRUCTION)) ||
+            return ((ins >= FIRST_FMA_INSTRUCTION) && (ins <= LAST_FMA_INSTRUCTION)) ||
                    (IsAVXVNNIFamilyInstruction(ins)) ||
-                   ((ins >= INS_FIRST_AVXIFMA_INSTRUCTION) && (ins <= INS_LAST_AVXIFMA_INSTRUCTION));
+                   ((ins >= FIRST_AVXIFMA_INSTRUCTION) && (ins <= LAST_AVXIFMA_INSTRUCTION));
         }
     }
 }
@@ -298,6 +298,23 @@ bool emitter::IsVexEncodableInstruction(instruction ins) const
             return emitComp->compSupportsHWIntrinsic(InstructionSet_AVXVNNI);
         }
 
+        case INS_vpdpwsud:
+        case INS_vpdpwsuds:
+        case INS_vpdpwusd:
+        case INS_vpdpwusds:
+        case INS_vpdpwuud:
+        case INS_vpdpwuuds:
+        case INS_vpdpbssd:
+        case INS_vpdpbssds:
+        case INS_vpdpbsud:
+        case INS_vpdpbsuds:
+        case INS_vpdpbuud:
+        case INS_vpdpbuuds:
+        {
+            // Vex versions of AvxVnniInt8 + AvxVnniInt16
+            return emitComp->compOpportunisticallyDependsOn(InstructionSet_AVXVNNIINT);
+        }
+
         case INS_vpmadd52huq:
         case INS_vpmadd52luq:
         {
@@ -358,9 +375,8 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         case INS_vpdpbuud:
         case INS_vpdpbuuds:
         {
-            // Evex versions of AvxVnniInt8 and AvxVnniInt16 will be supported
-            // with Avx10.2 ISA.
-            return emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
+            // Evex versions of AvxVnniInt8 + AvxVnniInt16 will be supported
+            return emitComp->compOpportunisticallyDependsOn(InstructionSet_AVXVNNIINT_V512);
         }
 
         case INS_vpdpbusd:
