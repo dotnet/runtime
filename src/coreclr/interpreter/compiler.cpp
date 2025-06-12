@@ -1503,7 +1503,7 @@ void InterpCompiler::CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* met
                 pFinallyCallIslandBB = (*ppLastBBNext);
                 break;
             }
-            ppLastBBNext = &((*ppLastBBNext)->pFinallyCallIslandBB);
+            ppLastBBNext = &((*ppLastBBNext)->pNextBB);
         }
 
         if (pFinallyCallIslandBB == NULL)
