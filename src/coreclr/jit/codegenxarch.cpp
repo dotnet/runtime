@@ -6505,7 +6505,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                 noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
                 CORINFO_CONST_LOOKUP helperLookup = compiler->compGetHelperFtn(helperNum);
-                addr = helperLookup.addr;
+                addr                              = helperLookup.addr;
                 assert(helperLookup.accessType == IAT_VALUE);
             }
             else
@@ -8833,10 +8833,10 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg)
 {
     EmitCallParams params;
-    params.callType    = EC_FUNC_TOKEN;
+    params.callType = EC_FUNC_TOKEN;
 
     CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
-    regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+    regMaskTP            killMask       = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
     if (helperFunction.accessType == IAT_VALUE)
     {

@@ -1679,7 +1679,7 @@ CORINFO_CONST_LOOKUP Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum)
     else
     {
         // If we don't have a matched VM, we won't get valid results when asking for a helper function.
-        lookup.addr = (void*)(uintptr_t)(0xCA11CA11); // "callcall"
+        lookup.addr       = (void*)(uintptr_t)(0xCA11CA11); // "callcall"
         lookup.accessType = IAT_VALUE;
     }
 

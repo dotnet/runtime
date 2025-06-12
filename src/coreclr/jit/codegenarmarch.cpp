@@ -3453,7 +3453,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
                     CORINFO_CONST_LOOKUP helperLookup = compiler->compGetHelperFtn(helperNum);
-                    params.addr = helperLookup.addr;
+                    params.addr                       = helperLookup.addr;
                     assert(helperLookup.accessType == IAT_VALUE);
                 }
                 else

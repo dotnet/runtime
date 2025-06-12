@@ -5137,9 +5137,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     EmitCallParams params;
 
     CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
-    regMaskTP killSet = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+    regMaskTP            killSet        = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
-    params.callType   = EC_FUNC_TOKEN;
+    params.callType = EC_FUNC_TOKEN;
 
     if (helperFunction.accessType == IAT_VALUE)
     {

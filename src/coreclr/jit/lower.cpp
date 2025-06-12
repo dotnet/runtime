@@ -6114,8 +6114,8 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
         noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
         CORINFO_CONST_LOOKUP addrInfo = comp->compGetHelperFtn(helperNum);
-        addr = addrInfo.addr;
-        accessType = addrInfo.accessType;
+        addr                          = addrInfo.addr;
+        accessType                    = addrInfo.accessType;
     }
     else
     {

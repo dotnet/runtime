@@ -3768,9 +3768,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     EmitCallParams params;
 
     CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
-    regMaskTP killSet = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+    regMaskTP            killSet        = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
-    params.callType   = EC_FUNC_TOKEN;
+    params.callType = EC_FUNC_TOKEN;
 
     if (helperFunction.accessType == IAT_VALUE)
     {
@@ -5809,7 +5809,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
                     CORINFO_CONST_LOOKUP helperLookup = compiler->compGetHelperFtn(helperNum);
-                    params.addr = helperLookup.addr;
+                    params.addr                       = helperLookup.addr;
                     assert(helperLookup.accessType == IAT_VALUE);
                 }
                 else
@@ -6499,7 +6499,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
         //  we will jump around it in the normal non-exception case.
 
         EmitCallParams params;
-        
+
         // maybe optimize
         // ins = (instruction)(ins^((ins != INS_beq)+(ins != INS_bne)));
         if (ins == INS_blt)
@@ -6523,7 +6523,8 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             ins = ins == INS_beq ? INS_bne : INS_beq;
         }
 
-        CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
+        CORINFO_CONST_LOOKUP helperFunction =
+            compiler->compGetHelperFtn((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
         if (helperFunction.accessType == IAT_VALUE)
         {
             // If the helper is a value, we need to use the address of the helper.
