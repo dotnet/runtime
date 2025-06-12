@@ -716,8 +716,9 @@ class EEFileLoadException : public EEException
 // EX_CATCH
 // {
 //      EX_RETHROW()
+//      RethrowTerminalExceptions();
 // }
-// EX_END_CATCH(RethrowTerminalExceptions)
+// EX_END_CATCH
 // --------------------------------------------------------------------------------------------------------
 
 // In DAC builds, we don't want to override the normal utilcode exception handling.
@@ -858,7 +859,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
         }                                                                       \
         _ASSERTE(FAILED(_hr));                                                  \
     }                                                                           \
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 #else // FEATURE_COMINTEROP
 #define EX_CATCH_HRESULT(_hr)                                                   \
     EX_CATCH                                                                    \
@@ -866,7 +867,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
         (_hr) = GET_EXCEPTION()->GetHR();                                       \
         _ASSERTE(FAILED(_hr));                                                  \
     }                                                                           \
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 #endif // FEATURE_COMINTEROP
 
 #endif // !DACCESS_COMPILE
@@ -877,8 +878,9 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
     {                                                                           \
     /* Swallow the exception and keep going unless COR_E_OPERATIONCANCELED */   \
     /* was thrown. Used generating dumps, where rethrow will cancel dump. */    \
+    RethrowCancelExceptions();                                                    \
     }                                                                           \
-    EX_END_CATCH(RethrowCancelExceptions)
+    EX_END_CATCH
 
 // Only use this version to wrap single source lines, or it makes debugging painful.
 #define CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED(sourceCode)           \

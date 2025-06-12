@@ -165,7 +165,7 @@ void PendingTypeLoadTable::Entry::SetException(Exception *pException)
     {
         m_pException=NULL;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 void PendingTypeLoadTable::Entry::SetResult(TypeHandle typeHnd)
@@ -312,7 +312,7 @@ PendingTypeLoadTable::Entry* PendingTypeLoadTable::Shard::InsertPendingTypeLoadE
         dynamicResult->Init(m_pLinkedListOfActiveEntries, hash, typeHnd);
         result = dynamicResult.Extract();
     }
-    
+
     m_pLinkedListOfActiveEntries = result;
     return result;
 }

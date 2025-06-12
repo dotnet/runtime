@@ -475,7 +475,7 @@ EXTERN_C void CheckStacksAndPitch()
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
     }
 }

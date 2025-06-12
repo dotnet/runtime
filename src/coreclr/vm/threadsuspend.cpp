@@ -4480,7 +4480,7 @@ BOOL Thread::WaitSuspendEventsHelper(void)
     }
     EX_CATCH {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return result != WAIT_OBJECT_0;
 }

@@ -199,7 +199,7 @@ OBJECTREF CLRException::GetThrowable()
                 throwable = CLRException::GetThrowableFromException(pException);
             }
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
     }
 
@@ -239,7 +239,7 @@ OBJECTREF CLRException::GetThrowable()
         {
             // No matter... we just don't get to cache the throwable.
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     GCPROTECT_END();
@@ -289,7 +289,7 @@ HRESULT CLRException::SetErrorInfo()
         pErrorInfo = NULL;
         LOG((LF_EH, LL_INFO100, "CLRException::SetErrorInfo: caught exception (hr = %08X) while trying to get IErrorInfo\n", hr));
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (!pErrorInfo)
     {
@@ -316,7 +316,7 @@ HRESULT CLRException::SetErrorInfo()
             // Log the failure
             LOG((LF_EH, LL_INFO100, "CLRException::SetErrorInfo: caught exception (hr = %08X) while trying to set IErrorInfo\n", hr));
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     return hr;
@@ -532,7 +532,7 @@ OBJECTREF CLRException::GetBestException(HRESULT hr, PTR_MethodTable mt)
     {
         retVal = GetPreallocatedOutOfMemoryException();
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     _ASSERTE(retVal != NULL);
 
@@ -659,7 +659,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
         GCPROTECT_END ();
 
         return throwable;
@@ -750,7 +750,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
                 }
 
             }
-            EX_END_CATCH(SwallowAllExceptions)
+            EX_END_CATCH
         }
         GCPROTECT_END();
 
