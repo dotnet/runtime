@@ -197,6 +197,12 @@ public:
 
     MethodTable * GetRelatedParameterType();
 
+    MethodTable* GetNonArrayBaseType()
+    {
+        ASSERT(!IsArray());
+        return PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_pBaseType));
+    }
+
     bool IsValueType()
         { return GetElementType() < ElementType_Class; }
 

@@ -1410,7 +1410,7 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, const ReturnTypeDesc* retTypeDesc
     inst_Mov(TYP_INT, reg0, opReg, /* canSkip */ false);
 
     // reg1 = opRef[61:32]
-    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         inst_RV_TT_IV(INS_pextrd, EA_4BYTE, reg1, src, 1, INS_OPTS_NONE);
     }
@@ -2427,7 +2427,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
 
         inst_Mov(TYP_FLOAT, targetReg, reg0, /* canSkip */ false);
         const emitAttr size = emitTypeSize(TYP_SIMD8);
-        if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+        if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
         {
             GetEmitter()->emitIns_SIMD_R_R_R_I(INS_pinsrd, size, targetReg, targetReg, reg1, 1, INS_OPTS_NONE);
         }
@@ -4855,7 +4855,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
     // Only the non-RMW case here.
     assert(tree->OperIsShiftOrRotate());
     assert(tree->GetRegNum() != REG_NA);
-    assert(tree->AsOp()->gtOp1->isUsedFromReg() || compiler->compIsaSupportedDebugOnly(InstructionSet_BMI2));
+    assert(tree->AsOp()->gtOp1->isUsedFromReg() || compiler->compIsaSupportedDebugOnly(InstructionSet_AVX2));
 
     genConsumeOperands(tree->AsOp());
 
@@ -4902,7 +4902,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         {
             int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
 
-            if (tree->OperIsRotate() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) &&
+            if (tree->OperIsRotate() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) &&
                 !tree->gtSetFlags())
             {
                 // If we have a contained source operand, we must emit rorx.
@@ -4930,7 +4930,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             return;
         }
     }
-    else if (tree->OperIsShift() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) &&
+    else if (tree->OperIsShift() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) &&
              !tree->gtSetFlags())
     {
         // Emit shlx, sarx, shrx if BMI2 is available instead of mov+shl, mov+sar, mov+shr.
@@ -5758,8 +5758,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         }
 
                         case NI_X86Base_Extract:
-                        case NI_SSE41_Extract:
-                        case NI_SSE41_X64_Extract:
+                        case NI_SSE42_Extract:
+                        case NI_SSE42_X64_Extract:
                         case NI_AVX_ExtractVector128:
                         case NI_AVX2_ExtractVector128:
                         case NI_AVX512_ExtractVector128:
@@ -5771,8 +5771,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
                             if (intrinsicId == NI_X86Base_Extract)
                             {
-                                // The encoding that supports containment is SSE4.1 only
-                                ins = INS_pextrw_sse41;
+                                ins = INS_pextrw_sse42;
                             }
 
                             // The hardware intrinsics take unsigned bytes between [0, 255].
@@ -7742,7 +7741,7 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
 }
 
 //-----------------------------------------------------------------------------------------
-// genSSE41RoundOp - generate SSE41 code for the given tree as a round operation
+// genSSE42RoundOp - generate SSE42 code for the given tree as a round operation
 //
 // Arguments:
 //    treeNode  - tree node
@@ -7751,16 +7750,16 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
 //    None
 //
 // Assumptions:
-//     i) SSE4.1 is supported by the underlying hardware
+//     i) SSE4.2 is supported by the underlying hardware
 //    ii) treeNode oper is a GT_INTRINSIC
 //   iii) treeNode type is a floating point type
 //    iv) treeNode is not used from memory
 //     v) tree oper is NI_System_Math{F}_Round, _Ceiling, _Floor, or _Truncate
 //    vi) caller of this routine needs to call genProduceReg()
-void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
+void CodeGen::genSSE42RoundOp(GenTreeOp* treeNode)
 {
-    // i) SSE4.1 is supported by the underlying hardware
-    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_SSE41));
+    // i) SSE4.2 is supported by the underlying hardware
+    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_SSE42));
 
     // ii) treeNode oper is a GT_INTRINSIC
     assert(treeNode->OperIs(GT_INTRINSIC));
@@ -7804,7 +7803,7 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 
         default:
             ins = INS_invalid;
-            assert(!"genSSE41RoundOp: unsupported intrinsic");
+            assert(!"genSSE42RoundOp: unsupported intrinsic");
             unreached();
     }
 
@@ -7834,7 +7833,7 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
         case NI_System_Math_Floor:
         case NI_System_Math_Truncate:
         case NI_System_Math_Round:
-            genSSE41RoundOp(treeNode->AsOp());
+            genSSE42RoundOp(treeNode->AsOp());
             break;
 
         case NI_System_Math_Sqrt:
@@ -9576,7 +9575,7 @@ void CodeGen::genAmd64EmitterUnitTestsCCMP()
     theEmitter->emitIns_R_R(INS_ccmpe, EA_1BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
 
     // Test all CC codes
-    for (uint32_t ins = INS_FIRST_CCMP_INSTRUCTION + 1; ins < INS_LAST_CCMP_INSTRUCTION; ins++)
+    for (uint32_t ins = FIRST_CCMP_INSTRUCTION; ins <= LAST_CCMP_INSTRUCTION; ins++)
     {
         theEmitter->emitIns_R_R((instruction)ins, EA_4BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
     }
@@ -9598,7 +9597,7 @@ void CodeGen::genAmd64EmitterUnitTestsCCMP()
     theEmitter->emitIns_R_S(INS_ccmpe, EA_1BYTE, REG_RAX, 0, 0, INS_OPTS_EVEX_dfv_cf);
 
     // Test all CC codes
-    for (uint32_t ins = INS_FIRST_CCMP_INSTRUCTION + 1; ins < INS_LAST_CCMP_INSTRUCTION; ins++)
+    for (uint32_t ins = FIRST_CCMP_INSTRUCTION; ins <= LAST_CCMP_INSTRUCTION; ins++)
     {
         theEmitter->emitIns_R_S((instruction)ins, EA_4BYTE, REG_RAX, 0, 0, INS_OPTS_EVEX_dfv_cf);
     }
