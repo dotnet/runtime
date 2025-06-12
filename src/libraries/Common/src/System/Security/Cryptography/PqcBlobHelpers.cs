@@ -10,13 +10,13 @@ using BCRYPT_PQDSA_KEY_BLOB = Interop.BCrypt.BCRYPT_PQDSA_KEY_BLOB;
 
 namespace System.Security.Cryptography
 {
-    internal static class PqcBlobHelpers
+    internal static partial class PqcBlobHelpers
     {
         internal const string BCRYPT_MLDSA_PARAMETER_SET_44 = "44";
         internal const string BCRYPT_MLDSA_PARAMETER_SET_65 = "65";
         internal const string BCRYPT_MLDSA_PARAMETER_SET_87 = "87";
 
-        internal static string GetParameterSet(MLDsaAlgorithm algorithm)
+        internal static string GetMLDsaParameterSet(MLDsaAlgorithm algorithm)
         {
             if (algorithm == MLDsaAlgorithm.MLDsa44)
             {
@@ -32,25 +32,6 @@ namespace System.Security.Cryptography
             }
 
             Debug.Fail($"Unknown MLDsaAlgorithm: {algorithm}");
-            throw new PlatformNotSupportedException();
-        }
-
-        internal static MLDsaAlgorithm GetMLDsaAlgorithmFromParameterSet(ReadOnlySpan<char> parameterSet)
-        {
-            if (parameterSet.SequenceEqual(BCRYPT_MLDSA_PARAMETER_SET_44))
-            {
-                return MLDsaAlgorithm.MLDsa44;
-            }
-            else if (parameterSet.SequenceEqual(BCRYPT_MLDSA_PARAMETER_SET_65))
-            {
-                return MLDsaAlgorithm.MLDsa65;
-            }
-            else if (parameterSet.SequenceEqual(BCRYPT_MLDSA_PARAMETER_SET_87))
-            {
-                return MLDsaAlgorithm.MLDsa87;
-            }
-
-            Debug.Fail($"Unknown parameter set: {parameterSet.ToString()}");
             throw new PlatformNotSupportedException();
         }
 
