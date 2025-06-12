@@ -97,7 +97,7 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
     memcpy(ObjRefTable, curThread->dangerousObjRefs, sizeof(ObjRefTable));
 
     // If the current thread owns spinlock or unbreakable lock, it cannot call managed code.
-    _ASSERTE(!curThread->HasUnbreakableLock() &&
+    _ASSERTE(!curThread->HasLock() &&
              (curThread->m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 
 #ifdef TARGET_ARM

@@ -417,7 +417,7 @@ void CrstBase::PostEnter()
     Thread * pThread = GetThreadNULLOk();
     if (pThread)
     {
-        pThread->IncUnbreakableLockCount();
+        pThread->IncLockCount();
     }
 
     if ((ThreadStore::s_pThreadStore != NULL)
@@ -471,7 +471,7 @@ void CrstBase::PreLeave()
 
     if (pThread)
     {
-        pThread->DecUnbreakableLockCount();
+        pThread->DecLockCount();
     }
 
     if (m_countNoTriggerGC > 0 && !ThreadStore::s_pThreadStore->IsCrstForThreadStore(this))
