@@ -30,8 +30,10 @@ namespace System.Net.Security
                 LocalCertificateSelectionCallback = options.LocalCertificateSelectionCallback,
                 RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback,
                 TargetHost = options.TargetHost,
+#pragma warning disable CA1416 // Ignore SupportedOSPlatform checks, the value will be validated at runtime inside SslStream
                 AllowRsaPssPadding = options.AllowRsaPssPadding,
                 AllowRsaPkcs1Padding = options.AllowRsaPkcs1Padding
+#pragma warning restore CA1416
             };
 
 #if DEBUG
