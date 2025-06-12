@@ -168,8 +168,7 @@ bool JitConfigValues::MethodSet::contains(CORINFO_METHOD_HANDLE methodHnd,
         {
             printer.Truncate(0);
             bool success = comp->eeRunFunctorWithSPMIErrorTrap([&]() {
-                comp->eePrintMethod(&printer, classHnd, methodHnd,
-                                    sigInfo,
+                comp->eePrintMethod(&printer, classHnd, methodHnd, sigInfo,
                                     /* includeAssembly */ name->m_containsAssemblyName,
                                     /* includeClass */ name->m_containsClassName,
                                     /* includeClassInstantiation */ name->m_classNameContainsInstantiation,
