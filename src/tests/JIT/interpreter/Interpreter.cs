@@ -1902,9 +1902,8 @@ public class InterpreterTest
         if (summed != 3)
             return false;
 
-        // This asserts at compile time because we do not have a way to get the IL stub for the marshaling
-        //  in order to invoke it from the interpreter.
-        // writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
+        // Test marshaling wrappers
+        writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
 
         // This currently asserts in PreStubWorker in a way that isn't handled correctly:
         /*
