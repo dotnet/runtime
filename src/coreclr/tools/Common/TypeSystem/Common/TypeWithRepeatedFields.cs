@@ -103,6 +103,8 @@ namespace Internal.TypeSystem
 
         public override bool IsExtendedLayout => MetadataType.IsExtendedLayout;
 
+        public override bool IsAutoLayout => MetadataType.IsAutoLayout;
+
         public override bool IsBeforeFieldInit => MetadataType.IsBeforeFieldInit;
 
         public override ModuleDesc Module => MetadataType.Module;
