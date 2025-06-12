@@ -2794,7 +2794,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitInsSve_R_R_I(ins, emitSize, targetReg, op1Reg, opt);
             }
             default:
+            {
                 unreached();
+                break;
+            }
         }
     }
 
