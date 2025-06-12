@@ -2052,8 +2052,8 @@ Return Value:
     NTSTATUS Status;
     PEXCEPTION_ROUTINE ExceptionHandler = NULL;
     PVOID ExceptionHandlerData = NULL;
-    ULONG_PTR UnwindCodePtr = NULL;
-    ULONG_PTR UnwindCodesEndPtr = NULL;
+    ULONG_PTR UnwindCodePtr;
+    ULONG_PTR UnwindCodesEndPtr;
     ULONG ControlPcRva;
     ULONG UnwindType;
     ARM64_UNWIND_PARAMS UnwindParams;
@@ -2223,8 +2223,8 @@ Return Value:
     NTSTATUS Status;
     PEXCEPTION_ROUTINE ExceptionHandler = NULL;
     PVOID ExceptionHandlerData = NULL;
-    ULONG_PTR UnwindCodePtr = NULL;
-    ULONG_PTR UnwindCodesEndPtr = NULL;
+    ULONG_PTR UnwindCodePtr;
+    ULONG_PTR UnwindCodesEndPtr;
 
     UNREFERENCED_PARAMETER(UnwindFlags);
 

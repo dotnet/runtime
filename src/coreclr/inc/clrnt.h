@@ -372,6 +372,7 @@ RtlVirtualUnwind(
 EXTERN_C
 NTSYSAPI
 BOOLEAN
+NTAPI
 RtlpUnwindIsPacPresent (
     _In_ ULONG_PTR ImageBase,
     _In_ ULONG_PTR ControlPc,
