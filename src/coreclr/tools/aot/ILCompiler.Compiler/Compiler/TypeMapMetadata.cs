@@ -68,7 +68,7 @@ namespace ILCompiler
                 }
             }
 
-            public void SetExternalTypeMapStub(ModuleDesc stubModule, TypeSystemException exception)
+            public void SetExternalTypeMapException(ModuleDesc stubModule, TypeSystemException exception)
             {
                 if (_externalTypeMapExceptionStub?.Exception is TypeSystemException.FileNotFoundException)
                 {
@@ -78,7 +78,7 @@ namespace ILCompiler
                 _externalTypeMapExceptionStub ??= new ThrowingMethodStub(stubModule.GetGlobalModuleType(), TypeMapGroup, externalTypeMap: true, exception);
             }
 
-            public void SetAssociatedTypeMapStub(ModuleDesc stubModule, TypeSystemException exception)
+            public void SetAssociatedTypeMapException(ModuleDesc stubModule, TypeSystemException exception)
             {
                 if (_associatedTypeMapExceptionStub?.Exception is TypeSystemException.FileNotFoundException)
                 {
@@ -195,12 +195,12 @@ namespace ILCompiler
 
                         if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget or TypeMapAttributeKind.TypeMap)
                         {
-                            value.SetExternalTypeMapStub(typeSystemContext.GeneratedAssembly, ex);
+                            value.SetExternalTypeMapException(typeSystemContext.GeneratedAssembly, ex);
                         }
 
                         if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget or TypeMapAttributeKind.TypeMapAssociation)
                         {
-                            value.SetAssociatedTypeMapStub(typeSystemContext.GeneratedAssembly, ex);
+                            value.SetAssociatedTypeMapException(typeSystemContext.GeneratedAssembly, ex);
                         }
                     }
                 }

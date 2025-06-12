@@ -57,7 +57,7 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            return new Dictionary<string, Type>(); // Return an empty dictionary if no valid type map is found.
+            return EmptyExternalTypeMapDictionary.Instance;
         }
 
         public static IReadOnlyDictionary<Type, Type> CreateProxyTypeMap(RuntimeType typeMapGroup)
@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            return new Dictionary<Type, Type>(); // Return an empty dictionary if no valid type map is found.
+            return EmptyAssociatedTypeMapDictionary.Instance;
         }
 
         private static unsafe bool TryGetNativeReaderForBlob(TypeManagerHandle module, ReflectionMapBlob blob, out NativeReader reader)
@@ -118,9 +118,23 @@ namespace System.Runtime.InteropServices
             return false;
         }
 
-        private sealed class ExternalTypeMapDictionary(NativeHashtable table, ExternalReferencesTable externalReferences) : IReadOnlyDictionary<string, Type>
+        private abstract class TypeMapDictionaryBase<TKey> : IReadOnlyDictionary<TKey, Type>
         {
-            public Type this[string key]
+            public abstract Type this[TKey key] { get; }
+            public abstract bool TryGetValue(TKey key, [MaybeNullWhen(false)] out Type value);
+            // Not supported to avoid exposing TypeMap entries in a manner that
+            // would violate invariants the Trimmer is attempting to enforce.
+            public IEnumerable<TKey> Keys => throw new NotSupportedException();
+            public IEnumerable<Type> Values => throw new NotSupportedException();
+            public int Count => throw new NotSupportedException();
+            public bool ContainsKey(TKey key) => throw new NotSupportedException();
+            public IEnumerator<KeyValuePair<TKey, Type>> GetEnumerator() => throw new NotSupportedException();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        private sealed class ExternalTypeMapDictionary(NativeHashtable table, ExternalReferencesTable externalReferences) : TypeMapDictionaryBase<string>
+        {
+            public override Type this[string key]
             {
                 get
                 {
@@ -132,7 +146,7 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            public bool TryGetValue(string key, [MaybeNullWhen(false)] out Type value)
+            public override  bool TryGetValue(string key, [MaybeNullWhen(false)] out Type value)
             {
                 var lookup = table.Lookup(TypeHashingAlgorithms.ComputeNameHashCode(key));
                 NativeParser entryParser;
@@ -149,23 +163,25 @@ namespace System.Runtime.InteropServices
                 value = null;
                 return false;
             }
-
-            // Not supported to avoid exposing TypeMap entries in a manner that
-            // would violate invariants the Trimmer is attempting to enforce.
-            public IEnumerable<string> Keys => throw new NotSupportedException();
-
-            public IEnumerable<Type> Values => throw new NotSupportedException();
-
-            public int Count => throw new NotSupportedException();
-
-            public bool ContainsKey(string key) => throw new NotSupportedException();
-            public IEnumerator<KeyValuePair<string, Type>> GetEnumerator() => throw new NotSupportedException();
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        private sealed class AssociatedTypeMapDictionary(NativeHashtable table, ExternalReferencesTable externalReferences) : IReadOnlyDictionary<Type, Type>
+        private sealed class EmptyExternalTypeMapDictionary : TypeMapDictionaryBase<string>
         {
-            public Type this[Type key]
+            internal static readonly EmptyExternalTypeMapDictionary Instance = new EmptyExternalTypeMapDictionary();
+
+            private EmptyExternalTypeMapDictionary() { }
+
+            public override Type this[string key] => throw new KeyNotFoundException(key);
+            public override bool TryGetValue(string key, [MaybeNullWhen(false)] out Type value)
+            {
+                value = null;
+                return false;
+            }
+        }
+
+        private sealed class AssociatedTypeMapDictionary(NativeHashtable table, ExternalReferencesTable externalReferences) : TypeMapDictionaryBase<Type>
+        {
+            public override Type this[Type key]
             {
                 get
                 {
@@ -177,7 +193,7 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            public bool TryGetValue(Type key, [MaybeNullWhen(false)] out Type value)
+            public override bool TryGetValue(Type key, [MaybeNullWhen(false)] out Type value)
             {
                 RuntimeTypeHandle handle = key.TypeHandle;
                 if (handle.IsNull)
@@ -201,18 +217,19 @@ namespace System.Runtime.InteropServices
                 value = null;
                 return false;
             }
+        }
 
-            // Not supported to avoid exposing TypeMap entries in a manner that
-            // would violate invariants the Trimmer is attempting to enforce.
-            public IEnumerable<Type> Keys => throw new NotSupportedException();
+        private sealed class EmptyAssociatedTypeMapDictionary : TypeMapDictionaryBase<Type>
+        {
+            internal static readonly EmptyAssociatedTypeMapDictionary Instance = new EmptyAssociatedTypeMapDictionary();
 
-            public IEnumerable<Type> Values => throw new NotSupportedException();
-
-            public int Count => throw new NotSupportedException();
-
-            public bool ContainsKey(Type key) => throw new NotSupportedException();
-            public IEnumerator<KeyValuePair<Type, Type>> GetEnumerator() => throw new NotSupportedException();
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            private EmptyAssociatedTypeMapDictionary() { }
+            public override Type this[Type key] => throw new KeyNotFoundException(key.ToString()!);
+            public override bool TryGetValue(Type key, [MaybeNullWhen(false)] out Type value)
+            {
+                value = null;
+                return false;
+            }
         }
     }
 }
