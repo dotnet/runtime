@@ -8229,12 +8229,18 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
         {
             // If the parent type is not Object, ValueType or Sequential, then we need to use Auto layout.
             bmtLayout->layoutType = EEClassLayoutInfo::LayoutType::Auto;
+
+            // Set the packing size so a non-blittable native layout can use it.
+            pLayoutInfo->SetPackingSize(bmtLayout->packingSize);
         }
 
         if (hasGCFields)
         {
             // If this type has GC fields, we will use Auto layout instead of Sequential layout.
             bmtLayout->layoutType = EEClassLayoutInfo::LayoutType::Auto;
+
+            // Set the packing size so a non-blittable native layout can use it.
+            pLayoutInfo->SetPackingSize(bmtLayout->packingSize);
         }
     }
 

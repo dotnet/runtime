@@ -136,6 +136,9 @@ public unsafe partial class Program
         succeeded &= TestMyVector128();
         succeeded &= TestMyVector256();
 
+        // Test data types that invalidate managed sequential layout
+        succeeded &= TestAction();
+
         return succeeded ? Pass : Fail;
     }
 
@@ -1629,6 +1632,45 @@ public unsafe partial class Program
 
         return succeeded;
     }
+    static bool TestAction()
+    {
+        bool succeeded = true;
+
+        if (Environment.Is64BitProcess)
+        {
+            succeeded &= Test<SequentialLayoutMinPacking<Action>>(
+                expectedSize: 16,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 8,
+                expectedNativeSize: 9
+            );
+
+            succeeded &= Test<SequentialLayoutMaxPacking<Action>>(
+                expectedSize: 16,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 8,
+                expectedNativeSize: 9
+            );
+        }
+        else
+        {
+            succeeded &= Test<SequentialLayoutMinPacking<Action>>(
+                expectedSize: 8,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 4,
+                expectedNativeSize: 5
+            );
+
+            succeeded &= Test<SequentialLayoutMaxPacking<Action>>(
+                expectedSize: 8,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 4,
+                expectedNativeSize: 5
+            );
+        }
+
+        return succeeded;
+    }
 
     static bool Test<T>(int expectedSize, int expectedOffsetByte, int expectedOffsetValue) where T : ITestStructure
     {
@@ -1656,6 +1698,26 @@ public unsafe partial class Program
         {
             Console.WriteLine($"Unexpected Offset for {testStructure.GetType()}.Value.");
             Console.WriteLine($"     Expected: {expectedOffsetValue}; Actual: {offsetValue}");
+            succeeded = false;
+        }
+
+        if (!succeeded)
+        {
+            Console.WriteLine();
+        }
+
+        return succeeded;
+    }
+
+    static bool Test<T>(int expectedSize, int expectedOffsetByte, int expectedOffsetValue, int expectedNativeSize) where T : ITestStructure
+    {
+        bool succeeded = Test<T>(expectedSize, expectedOffsetByte, expectedOffsetValue);
+
+        int nativeSize = Marshal.SizeOf<T>();
+        if (nativeSize != expectedNativeSize)
+        {
+            Console.WriteLine($"Unexpected Native Size for {typeof(T)}.");
+            Console.WriteLine($"     Expected: {expectedNativeSize}; Actual: {nativeSize}");
             succeeded = false;
         }
 
