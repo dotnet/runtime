@@ -118,7 +118,7 @@ namespace System.Runtime.InteropServices
             return false;
         }
 
-        private class ExternalTypeMapDictionary(NativeHashtable table, ExternalReferencesTable externalReferences) : IReadOnlyDictionary<string, Type>
+        private sealed class ExternalTypeMapDictionary(NativeHashtable table, ExternalReferencesTable externalReferences) : IReadOnlyDictionary<string, Type>
         {
             public Type this[string key]
             {
@@ -163,7 +163,7 @@ namespace System.Runtime.InteropServices
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        private class AssociatedTypeMapDictionary(NativeHashtable table, ExternalReferencesTable externalReferences) : IReadOnlyDictionary<Type, Type>
+        private sealed class AssociatedTypeMapDictionary(NativeHashtable table, ExternalReferencesTable externalReferences) : IReadOnlyDictionary<Type, Type>
         {
             public Type this[Type key]
             {
