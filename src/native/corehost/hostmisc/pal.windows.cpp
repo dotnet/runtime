@@ -671,7 +671,7 @@ bool pal::is_path_rooted(const string_t& path)
         || (path.length() >= 2 && path[1] == L':');
 }
 
-bool pal::is_path_absolute(const string_t& path)
+bool pal::is_path_fully_qualified(const string_t& path)
 {
     if (path.length() < 2)
         return false;
