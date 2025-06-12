@@ -1144,6 +1144,11 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task DisableUnusedRsaPadding_Connects(bool clientDisable, bool serverDisable)
         {
+            if (PlatformDetection.IsWindowsNanoServer)
+            {
+                throw new SkipTestException("Windows Nano Server does not support sigalg disabling.");
+            }
+
             (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
 
             using SslStream clientSslStream = new SslStream(client);
@@ -1180,6 +1185,11 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task DisableUsedRsaPadding_Throws(bool clientDisable, bool serverDisable)
         {
+            if (PlatformDetection.IsWindowsNanoServer)
+            {
+                throw new SkipTestException("Windows Nano Server does not support sigalg disabling.");
+            }
+
             (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
 
             using SslStream clientSslStream = new SslStream(client);
