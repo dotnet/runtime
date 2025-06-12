@@ -165,6 +165,12 @@
   <data name="Cryptography_KemPkcs8KeyMismatch" xml:space="preserve">
     <value>The specified PKCS#8 key contains a seed that does not match the expanded key.</value>
   </data>
+  <data name="Cryptography_KemNoDecapsulationKey" xml:space="preserve">
+    <value>The current instance does not contain a private seed.</value>
+  </data>
+  <data name="Cryptography_KemNoSeed" xml:space="preserve">
+    <value>The current instance does not contain a decapsulation key.</value>
+  </data>
   <data name="Cryptography_KeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The specified key is not the correct size for the indicated algorithm.</value>
   </data>

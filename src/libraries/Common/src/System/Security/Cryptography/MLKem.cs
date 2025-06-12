@@ -1843,6 +1843,22 @@ namespace System.Security.Cryptography
 #endif
         }
 
+        private protected static void ThrowExceptionIfNoSeed(bool hasSeed)
+        {
+            if (!hasSeed)
+            {
+                throw new CryptographicException(SR.Cryptography_KemNoSeed);
+            }
+        }
+
+        private protected static void ThrowExceptionIfNoDecapsulationKey(bool hasDecapsulationKey)
+        {
+            if (!hasDecapsulationKey)
+            {
+                throw new CryptographicException(SR.Cryptography_KemNoDecapsulationKey);
+            }
+        }
+
         private delegate TResult ExportPkcs8PrivateKeyFunc<TResult>(ReadOnlySpan<byte> pkcs8);
 
         private delegate AsnWriter WriteEncryptedPkcs8Func<TChar>(
