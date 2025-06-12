@@ -1843,7 +1843,7 @@ namespace System.Security.Cryptography
 #endif
         }
 
-        private protected static void ThrowExceptionIfNoSeed(bool hasSeed)
+        private protected static void ThrowIfNoSeed(bool hasSeed)
         {
             if (!hasSeed)
             {
@@ -1851,7 +1851,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private protected static void ThrowExceptionIfNoDecapsulationKey(bool hasDecapsulationKey)
+        private protected static void ThrowIfNoDecapsulationKey(bool hasDecapsulationKey)
         {
             if (!hasDecapsulationKey)
             {

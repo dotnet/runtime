@@ -85,14 +85,14 @@ namespace System.Security.Cryptography
         /// <inheritdoc />
         protected override void ExportPrivateSeedCore(Span<byte> destination)
         {
-            ThrowExceptionIfNoSeed(_hasSeed);
+            ThrowIfNoSeed(_hasSeed);
             Interop.Crypto.EvpKemExportPrivateSeed(_key, destination);
         }
 
         /// <inheritdoc />
         protected override void ExportDecapsulationKeyCore(Span<byte> destination)
         {
-            ThrowExceptionIfNoDecapsulationKey(_hasDecapsulationKey);
+            ThrowIfNoDecapsulationKey(_hasDecapsulationKey);
             Interop.Crypto.EvpKemExportDecapsulationKey(_key, destination);
         }
 
