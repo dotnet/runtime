@@ -3782,6 +3782,20 @@ const IS_INFO emitter::emitGetSchedInfo(insFormat insFmt)
     assert(!"Unsupported insFmt");
     return IS_NONE;
 }
+
+bool emitter::HasApxPpx(instruction ins)
+{
+    switch(ins)
+    {
+        case INS_push:
+        case INS_pop:
+        case INS_push2:
+        case INS_pop2:
+            return true;
+        default:
+            return false;
+    }
+}
 #endif // TARGET_XARCH
 
 //------------------------------------------------------------------------
