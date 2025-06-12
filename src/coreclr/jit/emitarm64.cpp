@@ -1418,7 +1418,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) con
     {
         rn = xRegNames[reg];
     }
-    else if ((size == EA_4BYTE))
+    else if (size == EA_4BYTE)
     {
         rn = wRegNames[reg];
     }
