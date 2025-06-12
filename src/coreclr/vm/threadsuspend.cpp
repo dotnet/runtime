@@ -5915,7 +5915,10 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool susp
         StackWalkerWalkingThreadHolder threadStackWalking(pThread);
 
         // Hijack the return address to point to the appropriate routine based on the method's return type.
-        auto isPacEnabledFrame = IsPacPresent(&codeInfo);
+        ARM64_ARG(bool isPacEnabledFrame);
+#ifdef TARGET_ARM64
+        isPacEnabledFrame = IsPacPresent(&codeInfo);
+#endif
         pThread->HijackThread(&executionState X86_ARG(returnKind) X86_ARG(hasAsyncRet) ARM64_ARG(isPacEnabledFrame));
     }
 }
