@@ -22552,7 +22552,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
 
             if (UseSveForType(simdType) && isScalable)
             {
-                intrinsic = NI_Vector_op_Equality;
+                intrinsic = NI_Vector_op_Inequality;
 
                 GenTree* cmpResult =
                     gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize, /* isScalable */true, /* wrapInCmtv*/ false);
@@ -22572,7 +22572,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
             }
             else
             {
-                intrinsic = (simdSize == 8) ? NI_Vector64_op_Equality : NI_Vector128_op_Equality;
+                intrinsic = (simdSize == 8) ? NI_Vector64_op_Inequality : NI_Vector128_op_Inequality;
                 op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,  /* isScalable */false, /* wrapInCmtv*/ false);
                 op2 = gtNewZeroConNode(simdType);
             }
