@@ -1244,7 +1244,7 @@ namespace System.Net.Security.Tests
 
             Assert.Throws<PlatformNotSupportedException>(() =>
             {
-                client.AuthenticateAsServer(new SslClientAuthenticationOptions()
+                client.AuthenticateAsClient(new SslClientAuthenticationOptions()
                 {
                     RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
                     AllowRsaPkcs1Padding = !disablePkcs1Padding,
