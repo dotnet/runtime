@@ -974,6 +974,8 @@ public:
 
     void BackoutJitData(EECodeGenManager * jitMgr) override;
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
+
+    LPVOID GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) override;
 };
 #endif // FEATURE_INTERPRETER
 
