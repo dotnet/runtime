@@ -6374,6 +6374,11 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         {
             optCallCount++;
             optIndirectCallCount++;
+            if (call->IsFastTailCall())
+            {
+                optFastTailCallCount++;
+                optIndirectFastTailCallCount++;
+            }
         }
         else if (call->gtCallType == CT_USER_FUNC)
         {
@@ -6381,6 +6386,14 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             if (call->IsVirtual())
             {
                 optIndirectCallCount++;
+            }
+            if (call->IsFastTailCall())
+            {
+                optFastTailCallCount++;
+                if (call->IsVirtual())
+                {
+                    optIndirectFastTailCallCount++;
+                }
             }
         }
     }

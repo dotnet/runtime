@@ -688,7 +688,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         [Fact]
-        public async Task HostPropagatesExceptionsThrownWithBackgroundServiceExceptionBehaviorOfStopHost()
+        public async Task HostStopsWithBackgroundServiceExceptionBehaviorOfStopHost()
         {
             using IHost host = CreateBuilder()
                 .ConfigureServices(
@@ -702,7 +702,12 @@ namespace Microsoft.Extensions.Hosting.Internal
                     })
                 .Build();
 
-            await Assert.ThrowsAsync<Exception>(() => host.StartAsync());
+            await host.StartAsync();
+
+            // host is expected to catch exception, then trigger ApplicationStopping.
+            // give the host 1 minute to stop.
+            var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+            Assert.True(lifetime.ApplicationStopping.WaitHandle.WaitOne(TimeSpan.FromMinutes(1)));
         }
 
         [Fact]
