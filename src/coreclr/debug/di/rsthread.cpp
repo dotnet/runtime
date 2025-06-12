@@ -1910,7 +1910,7 @@ HRESULT CordbThread::GetObject(ICorDebugValue ** ppThreadObject)
             {
                 // fall back to some domain to avoid crashes in retail -
                 // safe enough for getting the name of the thread etc.
-                pThreadCurrentDomain = GetProcess()->GetDefaultAppDomain();
+                pThreadCurrentDomain = GetProcess()->GetAppDomain();
             }
 
             lockHolder.Release();

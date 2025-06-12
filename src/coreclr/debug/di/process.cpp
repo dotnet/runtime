@@ -955,7 +955,6 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_iFirstPatch(0),
     m_hHelperThread(NULL),
     m_dispatchedEvent(DB_IPCE_DEBUGGER_INVALID),
-    m_pDefaultAppDomain(NULL),
     m_hDacModule(hDacModule),
     m_pDacPrimitives(NULL),
     m_pEventChannel(NULL),
@@ -1284,8 +1283,6 @@ void CordbProcess::NeuterChildren()
     m_ContinueNeuterList.NeuterAndClear(this);
 
     m_userThreads.NeuterAndClear(GetProcessLock());
-
-    m_pDefaultAppDomain = NULL;
 
     // Frees per-appdomain left-side resources. See assumptions above.
     m_appDomains.NeuterAndClear(GetProcessLock());
@@ -5360,19 +5357,6 @@ void CordbProcess::RawDispatchEvent(
             }
             _ASSERTE (pAppDomain != NULL);
 
-            // See if this is the default AppDomain exiting.  This should only happen very late in
-            // the shutdown cycle, and so we shouldn't do anything significant with m_pDefaultDomain==NULL.
-            // We should try and remove m_pDefaultDomain entirely since we can't count on it always existing.
-            if (pAppDomain == m_pDefaultAppDomain)
-            {
-                m_pDefaultAppDomain = NULL;
-            }
-
-            // Update any threads which were last seen in this AppDomain.  We don't
-            // get any notification when a thread leaves an AppDomain, so our idea
-            // of what AppDomain the thread is in may be out of date.
-            UpdateThreadsForAdUnload( pAppDomain );
-
             // This will still maintain weak references so we could call Continue.
             AddToNeuterOnContinueList(pAppDomain);
 
@@ -8712,8 +8696,18 @@ CordbAppDomain * CordbProcess::GetAppDomain()
 {
     // Return the one and only app domain
     const ULONG appDomainId = 1; // DefaultADID in appdomain.hpp
+    HASHFIND find;
+    CordbAppDomain* appDomain = m_appDomains.FindFirst(&find);
+    if (appDomain != NULL)
+    {
+        ULONG32 id;
+        HRESULT hr = appDomain->GetID(&id);
+        TargetConsistencyCheck(SUCCEEDED(hr) && id == appDomainId);
+        return appDomain;
+    }
+
     VMPTR_AppDomain vmAppDomain = GetDAC()->GetAppDomainFromId(appDomainId);
-    CordbAppDomain* appDomain = LookupOrCreateAppDomain(vmAppDomain);
+    appDomain = LookupOrCreateAppDomain(vmAppDomain);
     return appDomain;
 }
 
@@ -8749,10 +8743,6 @@ CordbAppDomain * CordbProcess::CacheAppDomain(VMPTR_AppDomain vmAppDomain)
     // Caller ensures we're not already cached.
     // The cache will take ownership.
     m_appDomains.AddBaseOrThrow(pAppDomain);
-
-    // If this assert fires, then it likely means the target is corrupted.
-    TargetConsistencyCheck(m_pDefaultAppDomain == NULL);
-    m_pDefaultAppDomain = pAppDomain;
 
     CordbAppDomain * pReturn = pAppDomain;
     pAppDomain.ClearAndMarkDontNeuter();
@@ -15246,46 +15236,6 @@ HRESULT CordbProcess::IsReadyForDetach()
     }
 
     return S_OK;
-}
-
-
-/*
- * Look for any thread which was last seen in the specified AppDomain.
- * The CordbAppDomain object is about to be neutered due to an AD Unload
- * So the thread must no longer be considered to be in that domain.
- * Note that this is a workaround due to the existence of the (possibly incorrect)
- * cached AppDomain value.  Ideally we would remove the cached value entirely
- * and there would be no need for this.
- *
- * @dbgtodo: , appdomain: We should remove CordbThread::m_pAppDomain in the V3 architecture.
- * If we need the thread's current domain, we should get it accurately with DAC.
- */
-void CordbProcess::UpdateThreadsForAdUnload(CordbAppDomain * pAppDomain)
-{
-    INTERNAL_API_ENTRY(this);
-
-    // If we're doing an AD unload then we should have already seen the ATTACH
-    // notification for the default domain.
-    //_ASSERTE( m_pDefaultAppDomain != NULL );
-    // @dbgtodo appdomain: fix Default domain invariants with DAC-izing Appdomain work.
-
-    RSLockHolder lockHolder(GetProcessLock());
-
-    CordbThread* t;
-    HASHFIND find;
-
-    // We don't need to prepopulate here (to collect LS state) because we're just updating RS state.
-    for (t =  m_userThreads.FindFirst(&find);
-         t != NULL;
-         t =  m_userThreads.FindNext(&find))
-    {
-        if( t->GetAppDomain() == pAppDomain )
-        {
-            // This thread cannot actually be in this AppDomain anymore (since it's being
-            // unloaded).  Reset it to point to the default AppDomain
-            t->m_pAppDomain = m_pDefaultAppDomain;
-        }
-    }
 }
 
 // CordbProcess::LookupClass
