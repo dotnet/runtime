@@ -21,7 +21,7 @@ FCDECL1(double, JIT_ULng2Dbl, uint64_t val);
 FCDECL1(float, JIT_Lng2Flt, int64_t val);
 FCDECL1(double, JIT_Lng2Dbl, int64_t val);
 
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
+void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE overrideTarget = (PCODE)NULL)
 {
     CONTRACTL
     {
@@ -54,7 +54,10 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
         }
     }
 
-    pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode()); // The method to call
+    if (overrideTarget)
+        pHeader->SetTarget(overrideTarget);
+    else
+        pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode()); // The method to call
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
@@ -1459,12 +1462,17 @@ MAIN_LOOP:
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
+                    int32_t targetAddrSlot = ip[4];
 
-                    ip += 4;
+                    ip += 5;
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
+                    PCODE callTarget = *(PCODE*)pMethod->pDataItems[targetAddrSlot];
 
-                    // Interpreter-FIXME: Create InlinedCallFrame.
-                    InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset);
+                    {
+                        // Interpreter-FIXME: Create InlinedCallFrame.
+                        GCX_PREEMP();
+                        InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+                    }
                     break;
                 }
 

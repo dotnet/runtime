@@ -2311,8 +2311,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
         doCallInsteadOfNew = true;
     }
 
-    uint32_t mflags = m_compHnd->getMethodAttribs(callInfo.hMethod);
-    bool isPInvoke = mflags & CORINFO_FLG_PINVOKE;
+    bool isPInvoke = callInfo.methodFlags & CORINFO_FLG_PINVOKE;
     bool isMarshaledPInvoke = isPInvoke && m_compHnd->pInvokeMarshalingRequired(callInfo.hMethod, &callInfo.sig);
 
     // Process sVars
@@ -2533,6 +2532,13 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
                 }
                 AddIns((isPInvoke && !isMarshaledPInvoke) ? INTOP_CALL_PINVOKE : INTOP_CALL);
                 m_pLastNewIns->data[0] = GetMethodDataItemIndex(callInfo.hMethod);
+                if (isPInvoke && !isMarshaledPInvoke)
+                {
+                    CORINFO_CONST_LOOKUP lookup;
+                    m_compHnd->getAddressOfPInvokeTarget(callInfo.hMethod, &lookup);
+                    assert(lookup.accessType == IAT_PVALUE);
+                    m_pLastNewIns->data[1] = GetDataItemIndex(lookup.addr);
+                }
             }
             break;
 
