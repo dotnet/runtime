@@ -1679,7 +1679,7 @@ configuration:
     - if:
       - payloadType: Pull_Request
       - filesMatchPattern:
-          pattern: (?i)src/coreclr/.*jit.*
+          pattern: src/coreclr/inc/jiteeversionguid.h
           matchAny: true
       - isPullRequest
       - isOpen
@@ -1688,9 +1688,9 @@ configuration:
           mentionees:
           - dotnet/jit-contrib
           replyTemplate: >-
-            Tagging @dotnet/jit-contrib for JIT-related changes
+            Tagging @dotnet/jit-contrib for JIT-EE GUID update
           assignMentionees: False
-      description: '@Mention for JIT-related changes'
+      description: '@Mention for JIT-EE GUID update'
     - if:
       - payloadType: Pull_Request
       - filesMatchPattern:
