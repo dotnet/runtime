@@ -819,12 +819,12 @@ namespace System
             ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
             Debug.Assert(lookup.Length == 256);
 
-            int c1 = typeof(TChar) == typeof(byte) ? byte.CreateTruncating(ch1) : (int)Math.Min(TChar.CastToUInt32(ch1), 0x7F);
-            uint upper = lookup[c1];
+            uint c1 = typeof(TChar) == typeof(byte) ? TChar.CastToUInt32(ch1) : Math.Min(TChar.CastToUInt32(ch1), 0x7F);
+            uint upper = lookup[(int)c1];
             invalidIfGreaterThan7F |= upper;
 
-            int c2 = typeof(TChar) == typeof(byte) ? byte.CreateTruncating(ch2) : (int)Math.Min(TChar.CastToUInt32(ch2), 0x7F);
-            uint lower = lookup[c2];
+            uint c2 = typeof(TChar) == typeof(byte) ? TChar.CastToUInt32(ch2) : Math.Min(TChar.CastToUInt32(ch2), 0x7F);
+            uint lower = lookup[(int)c2];
             invalidIfGreaterThan7F |= lower;
 
             return (byte)((upper << 4) | lower);
