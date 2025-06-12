@@ -10,8 +10,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public class GetFunctionPointerForDelegateTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOTOrBrowser))]
         public void GetFunctionPointerForDelegate_NormalDelegateNonGeneric_ReturnsExpected()
         {
             MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
@@ -23,8 +22,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(pointer1, pointer2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOTOrBrowser))]
         public void GetFunctionPointerForDelegate_MarshalledDelegateNonGeneric_ReturnsExpected()
         {
             MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
@@ -40,8 +38,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(pointer1, pointer2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOTOrBrowser))]
         public void GetFunctionPointerForDelegate_NormalDelegateGeneric_ReturnsExpected()
         {
             MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
@@ -53,8 +50,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(pointer1, pointer2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOTOrBrowser))]
         public void GetFunctionPointerForDelegate_MarshalledDelegateGeneric_ReturnsExpected()
         {
             MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
