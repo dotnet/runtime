@@ -1451,6 +1451,23 @@ MAIN_LOOP:
                     goto CALL_INTERP_METHOD;
                 }
 
+                case INTOP_CALL_PINVOKE:
+                {
+                    // This opcode handles p/invokes that don't use a managed wrapper for marshaling. These
+                    //  calls are special in that they need an InlinedCallFrame in order for proper EH to happen
+
+                    returnOffset = ip[1];
+                    callArgsOffset = ip[2];
+                    methodSlot = ip[3];
+
+                    ip += 4;
+                    targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
+
+                    // Interpreter-FIXME: Create InlinedCallFrame.
+                    InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset);
+                    break;
+                }
+
                 case INTOP_CALL:
                 {
                     returnOffset = ip[1];
@@ -1477,6 +1494,7 @@ CALL_INTERP_METHOD:
                             // Attempt to setup the interpreter code for the target method.
                             if (!(
                                 targetMethod->IsFCall() ||
+                                // Interpreter-FIXME: Even if the p/invoke needs a managed marshaling wrapper, PrepareInitialCode does not work.
                                 targetMethod->IsNDirect() ||
                                 (targetMethod->IsCtor() && targetMethod->GetMethodTable()->IsString())
                             ))
