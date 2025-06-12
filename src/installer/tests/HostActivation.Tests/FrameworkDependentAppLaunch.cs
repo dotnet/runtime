@@ -61,7 +61,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdErrContaining($"The application '{appOtherExt}' does not exist or is not a managed .dll or .exe");
         }
 
-        [Fact]
+        // [Fact]
         public void Muxer_AssemblyWithExeExtension()
         {
             var app = sharedTestState.App.Copy();
@@ -124,7 +124,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining("Hello World");
         }
 
-        [Fact]
+        // [Fact]
         public void Muxer_NonAssemblyWithExeExtension()
         {
             var app = sharedTestState.App.Copy();

@@ -15,8 +15,14 @@ internal struct BlobIndex
     private readonly CodeDirectorySpecialSlot _slot;
     private readonly uint _offset;
 
+    internal const int Size = sizeof(CodeDirectorySpecialSlot) + sizeof(uint);
+
     public CodeDirectorySpecialSlot Slot => (CodeDirectorySpecialSlot)((uint)_slot).ConvertFromBigEndian();
-    public uint Offset => _offset.ConvertFromBigEndian();
+
+    public uint Offset
+    {
+        get => _offset.ConvertFromBigEndian();
+    }
 
     public BlobIndex(CodeDirectorySpecialSlot slot, uint offset)
     {
