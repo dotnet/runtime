@@ -251,17 +251,17 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_X86Base_CompareScalarUnorderedLessThan:
                 case NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
                 case NI_X86Base_CompareScalarUnorderedGreaterThan:
-                case NI_SSE41_TestC:
-                case NI_SSE41_TestZ:
-                case NI_SSE41_TestNotZAndNotC:
+                case NI_SSE42_TestC:
+                case NI_SSE42_TestZ:
+                case NI_SSE42_TestNotZAndNotC:
                 case NI_AVX_TestC:
                 case NI_AVX_TestZ:
                 case NI_AVX_TestNotZAndNotC:
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
                 case NI_X86Base_Extract:
-                case NI_SSE41_Extract:
-                case NI_SSE41_X64_Extract:
+                case NI_SSE42_Extract:
+                case NI_SSE42_X64_Extract:
                 case NI_Vector128_ToScalar:
                 case NI_Vector256_ToScalar:
                 case NI_Vector512_ToScalar:
@@ -274,12 +274,12 @@ bool IntegralRange::Contains(int64_t value) const
                     }
                     break;
 
-                case NI_BMI1_TrailingZeroCount:
-                case NI_BMI1_X64_TrailingZeroCount:
-                case NI_LZCNT_LeadingZeroCount:
-                case NI_LZCNT_X64_LeadingZeroCount:
-                case NI_POPCNT_PopCount:
-                case NI_POPCNT_X64_PopCount:
+                case NI_AVX2_LeadingZeroCount:
+                case NI_AVX2_TrailingZeroCount:
+                case NI_AVX2_X64_LeadingZeroCount:
+                case NI_AVX2_X64_TrailingZeroCount:
+                case NI_SSE42_PopCount:
+                case NI_SSE42_X64_PopCount:
                     // Note: No advantage in using a precise range for IntegralRange.
                     // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
@@ -3191,7 +3191,12 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
     if (lclNumIsCSE(lclNum))
     {
-        return nullptr;
+        // Ignore the CSE flag in Global Assertion Prop for checked bound as those usually
+        // unlock more opportunities for BCE.
+        if (optLocalAssertionProp || !vnStore->IsVNCheckedBound(optConservativeNormalVN(tree)))
+        {
+            return nullptr;
+        }
     }
 
     GenTree* newTree       = tree;
@@ -4285,6 +4290,11 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
     GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
     assert(node->IsPhiDefn());
 
+    // Keep track of the set of phi-preds
+    //
+    BitVecTraits traits(fgBBNumMax + 1, this);
+    BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
+
     for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
     {
         GenTreePhiArg* phiArg     = use.GetNode()->AsPhiArg();
@@ -4293,6 +4303,22 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
         if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
         {
             // The visitor wants to abort the walk.
+            return AssertVisit::Abort;
+        }
+        BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
+    }
+
+    // Verify the set of phi-preds covers the set of block preds
+    //
+    for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
+    {
+        if (!BitVecOps::IsMember(&traits, visitedBlocks, pred->bbNum))
+        {
+            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": pred " FMT_BB " not a phi-pred\n",
+                    ssaDef->GetBlock()->bbNum, pred->bbNum);
+
+            // We missed examining a block pred. Fail the phi inference.
+            //
             return AssertVisit::Abort;
         }
     }
@@ -4431,6 +4457,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     // and if all of them are known to be non-null, we can bash the comparison to true/false.
     if (op2->IsIntegralConst(0) && op1->TypeIs(TYP_REF))
     {
+        JITDUMP("Checking PHI [%06u] arguments for non-nullness\n", dspTreeID(op1))
         auto visitor = [this](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
             return optAssertionVNIsNonNull(reachingVN, reachingAssertions) ? AssertVisit::Continue : AssertVisit::Abort;
         };
@@ -5005,6 +5032,7 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
             }
         }
     }
+
     return false;
 }
 

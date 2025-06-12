@@ -8265,7 +8265,7 @@ void emitter::emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, reg
 
     if ((dataSize == 16) && (constValue->u64[1] == constValue->u64[0]))
     {
-        if (((cnsSize == 16) && emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE3)) ||
+        if (((cnsSize == 16) && emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE42)) ||
             emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX))
         {
             dataSize = 8;

@@ -4296,11 +4296,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #ifdef FEATURE_HW_INTRINSICS
             case NI_System_Math_FusedMultiplyAdd:
             {
+                assert(varTypeIsFloating(callType));
 #ifdef TARGET_XARCH
-                if (compOpportunisticallyDependsOn(InstructionSet_FMA))
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
-                    assert(varTypeIsFloating(callType));
-
                     // We are constructing a chain of intrinsics similar to:
                     //    return FMA.MultiplyAddScalar(
                     //        Vector128.CreateScalarUnsafe(x),
@@ -4317,45 +4316,40 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, callJitType, 16);
 
                     retNode =
-                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_FMA_MultiplyAddScalar, callJitType, 16);
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_AVX2_MultiplyAddScalar, callJitType, 16);
 
                     retNode = gtNewSimdToScalarNode(callType, retNode, callJitType, 16);
                     break;
                 }
 #elif defined(TARGET_ARM64)
-                if (compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
-                {
-                    assert(varTypeIsFloating(callType));
+                // We are constructing a chain of intrinsics similar to:
+                //    return AdvSimd.FusedMultiplyAddScalar(
+                //        Vector64.Create{ScalarUnsafe}(z),
+                //        Vector64.Create{ScalarUnsafe}(y),
+                //        Vector64.Create{ScalarUnsafe}(x)
+                //    ).ToScalar();
 
-                    // We are constructing a chain of intrinsics similar to:
-                    //    return AdvSimd.FusedMultiplyAddScalar(
-                    //        Vector64.Create{ScalarUnsafe}(z),
-                    //        Vector64.Create{ScalarUnsafe}(y),
-                    //        Vector64.Create{ScalarUnsafe}(x)
-                    //    ).ToScalar();
+                impSpillSideEffect(true, stackState.esStackDepth -
+                                             3 DEBUGARG("Spilling op1 side effects for FusedMultiplyAdd"));
 
-                    impSpillSideEffect(true, stackState.esStackDepth -
-                                                 3 DEBUGARG("Spilling op1 side effects for FusedMultiplyAdd"));
+                impSpillSideEffect(true, stackState.esStackDepth -
+                                             2 DEBUGARG("Spilling op2 side effects for FusedMultiplyAdd"));
 
-                    impSpillSideEffect(true, stackState.esStackDepth -
-                                                 2 DEBUGARG("Spilling op2 side effects for FusedMultiplyAdd"));
+                GenTree* op3 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
 
-                    GenTree* op3 = impImplicitR4orR8Cast(impPopStack().val, callType);
-                    GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
-                    GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                op3 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op3, callJitType, 8);
+                op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op2, callJitType, 8);
+                op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op1, callJitType, 8);
 
-                    op3 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op3, callJitType, 8);
-                    op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op2, callJitType, 8);
-                    op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op1, callJitType, 8);
+                // Note that AdvSimd.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 + op2 * op3
+                // while Math{F}.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 * op2 + op3
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op3, op2, op1, NI_AdvSimd_FusedMultiplyAddScalar,
+                                                   callJitType, 8);
 
-                    // Note that AdvSimd.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 + op2 * op3
-                    // while Math{F}.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 * op2 + op3
-                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op3, op2, op1, NI_AdvSimd_FusedMultiplyAddScalar,
-                                                       callJitType, 8);
-
-                    retNode = gtNewSimdToScalarNode(callType, retNode, callJitType, 8);
-                    break;
-                }
+                retNode = gtNewSimdToScalarNode(callType, retNode, callJitType, 8);
+                break;
 #endif
 
                 // TODO-CQ-XArch: Ideally we would create a GT_INTRINSIC node for fma, however, that currently
@@ -5569,7 +5563,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* op1 = nullptr;
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-            if ((intrinsic == NI_PRIMITIVE_ConvertToIntegerNative) && IsBaselineSimdIsaSupported())
+            if (intrinsic == NI_PRIMITIVE_ConvertToIntegerNative)
             {
                 NamedIntrinsic hwIntrinsicId = NI_Illegal;
 
@@ -5773,15 +5767,15 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
-            if (compOpportunisticallyDependsOn(InstructionSet_LZCNT))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
                 // Pop the value from the stack
                 impPopStack();
 
-                hwintrinsic = varTypeIsLong(baseType) ? NI_LZCNT_X64_LeadingZeroCount : NI_LZCNT_LeadingZeroCount;
+                hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_LeadingZeroCount : NI_AVX2_LeadingZeroCount;
                 result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
             }
-            else if (compOpportunisticallyDependsOn(InstructionSet_X86Base))
+            else
             {
                 // Pop the value from the stack
                 impPopStack();
@@ -5822,15 +5816,12 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 result = gtNewLclvNode(tmp, baseType);
             }
 #elif defined(TARGET_ARM64)
-            if (compOpportunisticallyDependsOn(InstructionSet_ArmBase))
-            {
-                // Pop the value from the stack
-                impPopStack();
+            // Pop the value from the stack
+            impPopStack();
 
-                hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
-                result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
-                baseType    = TYP_INT;
-            }
+            hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
+            result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
+            baseType    = TYP_INT;
 #endif // TARGET_*
 #endif // FEATURE_HW_INTRINSICS
 
@@ -5956,19 +5947,16 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
-            if (compOpportunisticallyDependsOn(InstructionSet_POPCNT))
+            if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
             {
                 // Pop the value from the stack
                 impPopStack();
 
-                hwintrinsic = varTypeIsLong(baseType) ? NI_POPCNT_X64_PopCount : NI_POPCNT_PopCount;
+                hwintrinsic = varTypeIsLong(baseType) ? NI_SSE42_X64_PopCount : NI_SSE42_PopCount;
                 result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
             }
 #elif defined(TARGET_ARM64)
-            if (compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
-            {
-                // TODO-ARM64-CQ: PopCount should be handled as an intrinsic for non-constant cases
-            }
+            // TODO-ARM64-CQ: PopCount should be handled as an intrinsic for non-constant cases
 #endif // TARGET_*
 #endif // FEATURE_HW_INTRINSICS
 
@@ -6120,15 +6108,15 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
-            if (compOpportunisticallyDependsOn(InstructionSet_BMI1))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
                 // Pop the value from the stack
                 impPopStack();
 
-                hwintrinsic = varTypeIsLong(baseType) ? NI_BMI1_X64_TrailingZeroCount : NI_BMI1_TrailingZeroCount;
+                hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_TrailingZeroCount : NI_AVX2_TrailingZeroCount;
                 result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
             }
-            else if (compOpportunisticallyDependsOn(InstructionSet_X86Base))
+            else
             {
                 // Pop the value from the stack
                 impPopStack();
@@ -6167,19 +6155,15 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 result = gtNewLclvNode(tmp, baseType);
             }
 #elif defined(TARGET_ARM64)
-            if (compOpportunisticallyDependsOn(InstructionSet_ArmBase))
-            {
-                // Pop the value from the stack
-                impPopStack();
+            // Pop the value from the stack
+            impPopStack();
 
-                hwintrinsic =
-                    varTypeIsLong(baseType) ? NI_ArmBase_Arm64_ReverseElementBits : NI_ArmBase_ReverseElementBits;
-                op1 = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+            hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_ReverseElementBits : NI_ArmBase_ReverseElementBits;
+            op1         = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
 
-                hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
-                result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
-                baseType    = TYP_INT;
-            }
+            hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
+            result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
+            baseType    = TYP_INT;
 #endif // TARGET_*
 #endif // FEATURE_HW_INTRINSICS
 
@@ -7934,10 +7918,10 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Floor:
         case NI_System_Math_Round:
         case NI_System_Math_Truncate:
-            return compOpportunisticallyDependsOn(InstructionSet_SSE41);
+            return compOpportunisticallyDependsOn(InstructionSet_SSE42);
 
         case NI_System_Math_FusedMultiplyAdd:
-            return compOpportunisticallyDependsOn(InstructionSet_FMA);
+            return compOpportunisticallyDependsOn(InstructionSet_AVX2);
 
         default:
             return false;
@@ -7948,6 +7932,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Abs:
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
+        case NI_System_Math_FusedMultiplyAdd:
         case NI_System_Math_Max:
         case NI_System_Math_Min:
         case NI_System_Math_MultiplyAddEstimate:
@@ -7957,9 +7942,6 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Sqrt:
         case NI_System_Math_Truncate:
             return true;
-
-        case NI_System_Math_FusedMultiplyAdd:
-            return compOpportunisticallyDependsOn(InstructionSet_AdvSimd);
 
         default:
             return false;
@@ -9461,10 +9443,10 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             assert(sig->numArgs == 3);
 
 #if defined(TARGET_XARCH)
-            if (compExactlyDependsOn(InstructionSet_FMA))
+            if (compExactlyDependsOn(InstructionSet_AVX2))
             {
                 simdType    = TYP_SIMD16;
-                intrinsicId = NI_FMA_MultiplyAddScalar;
+                intrinsicId = NI_AVX2_MultiplyAddScalar;
             }
 #elif defined(TARGET_ARM64)
             if (compExactlyDependsOn(InstructionSet_AdvSimd))
@@ -9914,7 +9896,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
             }
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-            if (!isMagnitude && compOpportunisticallyDependsOn(InstructionSet_X86Base))
+            if (!isMagnitude)
             {
                 bool needsFixup = false;
                 bool canHandle  = false;

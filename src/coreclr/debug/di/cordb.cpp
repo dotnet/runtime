@@ -13,7 +13,6 @@
 #include "classfactory.h"
 #include "corsym.h"
 #include "contract.h"
-#include "metadataexports.h"
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
 #include "dbgtransportsession.h"
 #include "dbgtransportmanager.h"

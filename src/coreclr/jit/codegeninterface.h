@@ -179,7 +179,7 @@ private:
 public:
     static bool instIsFP(instruction ins);
 #if defined(TARGET_XARCH)
-    static bool instIsEmbeddedBroadcastCompatible(instruction ins);
+    bool        instIsEmbeddedBroadcastCompatible(instruction ins);
     static bool instIsEmbeddedMaskingCompatible(instruction ins);
 
     static unsigned instInputSize(instruction ins);

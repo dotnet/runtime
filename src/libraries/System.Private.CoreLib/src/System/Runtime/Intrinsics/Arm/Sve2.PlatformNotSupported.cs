@@ -154,6 +154,82 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> AbsoluteDifferenceAddWideningUpper(Vector<ulong> addend, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
 
+        // Absolute difference long (bottom)
+
+        /// <summary>
+        /// svint16_t svabdlb[_s16](svint8_t op1, svint8_t op2)
+        ///   SABDLB Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<short> AbsoluteDifferenceWideningLower(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svabdlb[_s32](svint16_t op1, svint16_t op2)
+        ///   SABDLB Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<int> AbsoluteDifferenceWideningLower(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svabdlb[_s64](svint32_t op1, svint32_t op2)
+        ///   SABDLB Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<long> AbsoluteDifferenceWideningLower(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svabdlb[_u16](svuint8_t op1, svuint8_t op2)
+        ///   UABDLB Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<ushort> AbsoluteDifferenceWideningLower(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svabdlb[_u32](svuint16_t op1, svuint16_t op2)
+        ///   UABDLB Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<uint> AbsoluteDifferenceWideningLower(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svabdlb[_u64](svuint32_t op1, svuint32_t op2)
+        ///   UABDLB Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ulong> AbsoluteDifferenceWideningLower(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        // Absolute difference long (top)
+
+        /// <summary>
+        /// svint16_t svabdlt[_s16](svint8_t op1, svint8_t op2)
+        ///   SABDLT Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<short> AbsoluteDifferenceWideningUpper(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svabdlt[_s32](svint16_t op1, svint16_t op2)
+        ///   SABDLT Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<int> AbsoluteDifferenceWideningUpper(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svabdlt[_s64](svint32_t op1, svint32_t op2)
+        ///   SABDLT Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<long> AbsoluteDifferenceWideningUpper(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svabdlt[_u16](svuint8_t op1, svuint8_t op2)
+        ///   UABDLT Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<ushort> AbsoluteDifferenceWideningUpper(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svabdlt[_u32](svuint16_t op1, svuint16_t op2)
+        ///   UABDLT Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<uint> AbsoluteDifferenceWideningUpper(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svabdlt[_u64](svuint32_t op1, svuint32_t op2)
+        ///   UABDLT Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ulong> AbsoluteDifferenceWideningUpper(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
         // Bitwise clear and exclusive OR
 
         /// <summary>
