@@ -10,13 +10,13 @@ using BCRYPT_PQDSA_KEY_BLOB = Interop.BCrypt.BCRYPT_PQDSA_KEY_BLOB;
 
 namespace System.Security.Cryptography
 {
-    internal static class PqcBlobHelpers
+    internal static partial class PqcBlobHelpers
     {
         internal const string BCRYPT_MLDSA_PARAMETER_SET_44 = "44";
         internal const string BCRYPT_MLDSA_PARAMETER_SET_65 = "65";
         internal const string BCRYPT_MLDSA_PARAMETER_SET_87 = "87";
 
-        internal static string GetParameterSet(MLDsaAlgorithm algorithm)
+        internal static string GetMLDsaParameterSet(MLDsaAlgorithm algorithm)
         {
             if (algorithm == MLDsaAlgorithm.MLDsa44)
             {

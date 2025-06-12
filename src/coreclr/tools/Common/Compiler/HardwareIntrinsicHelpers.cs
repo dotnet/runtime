@@ -85,27 +85,13 @@ namespace ILCompiler
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
                 if ((flags & Sse42) != 0)
-                {
-                    builder.AddSupportedInstructionSet("sse3");
-                    builder.AddSupportedInstructionSet("ssse3");
-                    builder.AddSupportedInstructionSet("sse4.1");
-                    builder.AddSupportedInstructionSet("sse4.2");
-                    builder.AddSupportedInstructionSet("popcnt");
-                }
+                    builder.AddSupportedInstructionSet("sse42");
                 if ((flags & Avx) != 0)
                     builder.AddSupportedInstructionSet("avx");
                 if ((flags & Avx2) != 0)
-                {
                     builder.AddSupportedInstructionSet("avx2");
-                    builder.AddSupportedInstructionSet("bmi");
-                    builder.AddSupportedInstructionSet("bmi2");
-                    builder.AddSupportedInstructionSet("fma");
-                    builder.AddSupportedInstructionSet("lznct");
-                    builder.AddSupportedInstructionSet("movbe");
-                }
                 if ((flags & Avx512) != 0)
                     builder.AddSupportedInstructionSet("avx512");
-
                 if ((flags & Avx512v2) != 0)
                     builder.AddSupportedInstructionSet("avx512v2");
                 if ((flags & Avx512v3) != 0)
@@ -120,7 +106,12 @@ namespace ILCompiler
                 if ((flags & Aes) != 0)
                 {
                     builder.AddSupportedInstructionSet("aes");
-                    builder.AddSupportedInstructionSet("pclmul");
+                    if ((flags & Vaes) != 0)
+                    {
+                        builder.AddSupportedInstructionSet("aes_v256");
+                        if ((flags & Avx512) != 0)
+                            builder.AddSupportedInstructionSet("vaes_v512");
+                    }
                 }
                 if ((flags & Avx512Vp2intersect) != 0)
                     builder.AddSupportedInstructionSet("avx512vp2intersect");
@@ -138,16 +129,6 @@ namespace ILCompiler
                 }
                 if ((flags & Sha) != 0)
                     builder.AddSupportedInstructionSet("sha");
-                if ((flags & Vaes) != 0)
-                {
-                    builder.AddSupportedInstructionSet("vaes");
-                    builder.AddSupportedInstructionSet("vpclmul");
-                    if ((flags & Avx512) != 0)
-                    {
-                        builder.AddSupportedInstructionSet("vaes_v512");
-                        builder.AddSupportedInstructionSet("vpclmul_v512");
-                    }
-                }
                 if ((flags & WaitPkg) != 0)
                     builder.AddSupportedInstructionSet("waitpkg");
                 if ((flags & X86Serialize) != 0)
@@ -157,43 +138,26 @@ namespace ILCompiler
             public static int FromInstructionSet(InstructionSet instructionSet)
             {
                 Debug.Assert(InstructionSet.X64_AES == InstructionSet.X86_AES);
-                Debug.Assert(InstructionSet.X64_SSE41 == InstructionSet.X86_SSE41);
-                Debug.Assert(InstructionSet.X64_LZCNT == InstructionSet.X86_LZCNT);
+                Debug.Assert(InstructionSet.X64_SSE42 == InstructionSet.X86_SSE42);
+                Debug.Assert(InstructionSet.X64_AVX2 == InstructionSet.X86_AVX2);
 
                 return instructionSet switch
                 {
                     // Optional ISAs - only available via opt-in or opportunistic light-up
-                    InstructionSet.X64_SSE3 => Sse42,
-                    InstructionSet.X64_SSE3_X64 => Sse42,
-                    InstructionSet.X64_SSSE3 => Sse42,
-                    InstructionSet.X64_SSSE3_X64 => Sse42,
-                    InstructionSet.X64_SSE41 => Sse42,
-                    InstructionSet.X64_SSE41_X64 => Sse42,
                     InstructionSet.X64_SSE42 => Sse42,
                     InstructionSet.X64_SSE42_X64 => Sse42,
-                    InstructionSet.X64_POPCNT => Sse42,
-                    InstructionSet.X64_POPCNT_X64 => Sse42,
 
                     InstructionSet.X64_AVX => Avx,
                     InstructionSet.X64_AVX_X64 => Avx,
 
                     InstructionSet.X64_AVX2 => Avx2,
                     InstructionSet.X64_AVX2_X64 => Avx2,
-                    InstructionSet.X64_BMI1 => Avx2,
-                    InstructionSet.X64_BMI1_X64 => Avx2,
-                    InstructionSet.X64_BMI2 => Avx2,
-                    InstructionSet.X64_BMI2_X64 => Avx2,
-                    InstructionSet.X64_FMA => Avx2,
-                    InstructionSet.X64_FMA_X64 => Avx2,
-                    InstructionSet.X64_LZCNT => Avx2,
-                    InstructionSet.X64_LZCNT_X64 => Avx2,
-                    InstructionSet.X64_MOVBE => Avx2,
 
                     InstructionSet.X64_AVX512 => Avx512,
                     InstructionSet.X64_AVX512_X64 => Avx512,
 
-                    InstructionSet.X64_AVX512VBMI => Avx512v2,
-                    InstructionSet.X64_AVX512VBMI_X64 => Avx512v2,
+                    InstructionSet.X64_AVX512v2 => Avx512v2,
+                    InstructionSet.X64_AVX512v2_X64 => Avx512v2,
 
                     InstructionSet.X64_AVX512v3 => Avx512v3,
                     InstructionSet.X64_AVX512v3_X64 => Avx512v3,
@@ -210,11 +174,6 @@ namespace ILCompiler
                     InstructionSet.X64_AES_X64 => Aes,
                     InstructionSet.X64_AES_V256 => (Vaes | Avx),
                     InstructionSet.X64_AES_V512 => (Vaes | Avx512),
-
-                    InstructionSet.X64_PCLMULQDQ => Aes,
-                    InstructionSet.X64_PCLMULQDQ_X64 => Aes,
-                    InstructionSet.X64_PCLMULQDQ_V256 => (Vaes | Avx),
-                    InstructionSet.X64_PCLMULQDQ_V512 => (Vaes | Avx512),
 
                     InstructionSet.X64_AVX512VP2INTERSECT => Avx512Vp2intersect,
                     InstructionSet.X64_AVX512VP2INTERSECT_X64 => Avx512Vp2intersect,

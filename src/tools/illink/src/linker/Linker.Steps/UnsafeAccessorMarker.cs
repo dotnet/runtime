@@ -40,6 +40,8 @@ namespace Mono.Linker.Steps
 							}
 						}
 
+						ProcessUnsafeAccessorTypeAttributes (method);
+
 						switch (kind) {
 						case UnsafeAccessorKind.Constructor:
 							ProcessConstructorAccessor (method, name);
@@ -63,6 +65,39 @@ namespace Mono.Linker.Steps
 						// Intentionally only process the first such attribute
 						// if there's more than one runtime will fail on it anyway.
 						break;
+					}
+				}
+			}
+		}
+
+		void ProcessUnsafeAccessorTypeAttributes (MethodDefinition method)
+		{
+			// A type named in UnsafeAccessorType may point to a type that is forwarded.
+			// Mark the type forwarders so we can avoid needing to rewrite the type name
+			// in the UnsafeAccessorTypeAttribute.
+
+			foreach (CustomAttribute attr in method.MethodReturnType.CustomAttributes) {
+				if (attr.Constructor.DeclaringType.FullName == "System.Runtime.CompilerServices.UnsafeAccessorTypeAttribute") {
+					if (attr.HasConstructorArguments && attr.ConstructorArguments[0].Value is string typeName) {
+						if (!_context.TypeNameResolver.TryResolveTypeName (method.Module.Assembly, typeName, out _, out System.Collections.Generic.List<TypeNameResolver.TypeResolutionRecord>? records))
+							return; // We can't find the target type, so there's nothing to rewrite.
+
+						foreach (var typeResolutionRecord in records) {
+							_context.MarkingHelpers.MarkMatchingExportedType (typeResolutionRecord.ResolvedType, typeResolutionRecord.ReferringAssembly, new DependencyInfo (DependencyKind.AccessedViaReflection, method), new MessageOrigin(method));
+						}
+					}
+				}
+			}
+
+			foreach (var param in method.Parameters) {
+				foreach (CustomAttribute attr in param.CustomAttributes) {
+					if (attr.HasConstructorArguments && attr.ConstructorArguments[0].Value is string typeName) {
+						if (!_context.TypeNameResolver.TryResolveTypeName (method.Module.Assembly, typeName, out _, out System.Collections.Generic.List<TypeNameResolver.TypeResolutionRecord>? records))
+							return; // We can't find the target type, so there's nothing to rewrite.
+
+						foreach (var typeResolutionRecord in records) {
+							_context.MarkingHelpers.MarkMatchingExportedType (typeResolutionRecord.ResolvedType, typeResolutionRecord.ReferringAssembly, new DependencyInfo (DependencyKind.AccessedViaReflection, method), new MessageOrigin (method));
+						}
 					}
 				}
 			}

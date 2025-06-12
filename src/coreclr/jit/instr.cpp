@@ -901,7 +901,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
             var_types           simdBaseType = hwintrinsic->GetSimdBaseType();
             switch (intrinsicId)
             {
-                case NI_SSE3_LoadAndDuplicateToVector128:
+                case NI_SSE42_LoadAndDuplicateToVector128:
                 case NI_AVX_BroadcastScalarToVector128:
                 case NI_AVX_BroadcastScalarToVector256:
                 {
@@ -925,13 +925,13 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
                     }
                 }
 
-                case NI_SSE3_MoveAndDuplicate:
+                case NI_SSE42_MoveAndDuplicate:
                 case NI_AVX2_BroadcastScalarToVector128:
                 case NI_AVX2_BroadcastScalarToVector256:
                 case NI_AVX512_BroadcastScalarToVector512:
                 {
                     assert(hwintrinsic->isContained());
-                    if (intrinsicId == NI_SSE3_MoveAndDuplicate)
+                    if (intrinsicId == NI_SSE42_MoveAndDuplicate)
                     {
                         assert(simdBaseType == TYP_DOUBLE);
                     }

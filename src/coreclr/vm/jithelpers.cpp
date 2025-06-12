@@ -212,36 +212,6 @@ HCIMPL1_V(int64_t, JIT_Dbl2Lng, double val)
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL1_V(uint32_t, JIT_Dbl2UInt, double val)
-{
-    FCALL_CONTRACT;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    const double uint_max = 4294967295.0;
-    // Note that this expression also works properly for val = NaN case
-    return (val >= 0) ? ((val >= uint_max) ? UINT32_MAX : (uint32_t)val) : 0;
-#else
-    return (uint32_t)val;
-#endif
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(int32_t, JIT_Dbl2Int, double val)
-{
-    FCALL_CONTRACT;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    const double int32_min = -2147483648.0;
-    const double int32_max_plus_1 = 2147483648.0;
-    return (val != val) ? 0 : (val <= int32_min) ? INT32_MIN : (val >= int32_max_plus_1) ? INT32_MAX : (int32_t)val;
-#else
-    return (int32_t)val;
-#endif
-}
-HCIMPLEND
-
-/*********************************************************************/
 HCIMPL1_V(uint64_t, JIT_Dbl2ULng, double val)
 {
     FCALL_CONTRACT;

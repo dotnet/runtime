@@ -93,8 +93,8 @@ unsafe class Program
         bool? ExpectedSsse3 = true;
         bool? ExpectedSse41 = true;
         bool? ExpectedSse42 = true;
+        bool? ExpectedPopcnt = true;
 
-        bool? ExpectedPopcnt = null;
         bool? ExpectedAes = null;
         bool? ExpectedPclmulqdq = null;
         bool? ExpectedGfni = null;
@@ -180,11 +180,6 @@ unsafe class Program
         bool? ExpectedPopcnt = true;
         bool? ExpectedAvx = true;
 
-        bool? ExpectedBmi1 = null;
-        bool? ExpectedBmi2 = null;
-        bool? ExpectedF16c = null;
-        bool? ExpectedFma = null;
-        bool? ExpectedLzcnt = null;
         bool? ExpectedAes = null;
         bool? ExpectedPclmulqdq = null;
         bool? ExpectedGfni = null;
@@ -196,6 +191,11 @@ unsafe class Program
         bool? ExpectedX86Serialize = null;
 
         bool? ExpectedAvx2 = false;
+        bool? ExpectedBmi1 = false;
+        bool? ExpectedBmi2 = false;
+        bool? ExpectedF16c = false;
+        bool? ExpectedFma = false;
+        bool? ExpectedLzcnt = false;
         bool? ExpectedAvx512F = false;
         bool? ExpectedAvx512BW = false;
         bool? ExpectedAvx512CD = false;
