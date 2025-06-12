@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
@@ -1761,13 +1762,14 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             cms.ComputeSignature(signer);
 
-            byte[] defaultDigestSignature = cms.SignerInfos[0].GetSignature();
-            byte[] messageHash = Convert.FromBase64String(
-                PlatformDetection.IsNetFramework
+            FrameworkName fwkName = new FrameworkName(AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName);
+            bool defaultHashIsSha1 = PlatformDetection.IsNetFramework && fwkName.Version <= new Version(4, 7, 0);
+            byte[] expectedMessageHash = Convert.FromBase64String(
+                defaultHashIsSha1
                     ? "Lve95gjOVATpfV8EL5X4nxwjKHE="                    // Sha1
                     : "f4OxZX/x/FO5LcGBSKHWXfwtSx+j1ncoSt3SABJtkGk=");  // Sha256
 
-            Assert.Equal(messageHash, defaultDigestSignature);
+            Assert.Equal(expectedMessageHash, cms.SignerInfos[0].GetSignature());
         }
 
         private static void CheckNoSignature(byte[] encoded, bool badOid=false)
