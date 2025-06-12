@@ -481,7 +481,7 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 #endif
 
 // This thread local variable is used for delegate marshalling
-DECLSPEC_THREAD intptr_t tls_thunkData;
+PLATFORM_THREAD_LOCAL intptr_t tls_thunkData;
 
 #ifdef FEATURE_EMULATED_TLS
 EXTERN_C intptr_t* RhpGetThunkData()
@@ -1061,8 +1061,8 @@ int32_t PalGetProcessCpuCount()
     return g_RhNumberOfProcessors;
 }
 
-__thread void* pStackHighOut = NULL;
-__thread void* pStackLowOut = NULL;
+PLATFORM_THREAD_LOCAL void* pStackHighOut = NULL;
+PLATFORM_THREAD_LOCAL void* pStackLowOut = NULL;
 
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than

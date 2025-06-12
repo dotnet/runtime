@@ -185,17 +185,6 @@ EXTERN_C Thread* STDCALL GetThreadHelper();
 
 void SetThread(Thread*);
 
-// Define a macro to declare TLS variables. There are scenarios
-// where we want to use the platform-specific thread local storage
-// mechanism:
-//  * It can have better performance characteristics than C++'s thread_local keyword.
-//  * Generally makes consuming these variables from assembly easier.
-#ifdef _MSC_VER
-#define PLATFORM_THREAD_LOCAL __declspec(thread)
-#else
-#define PLATFORM_THREAD_LOCAL __thread
-#endif // _MSC_VER
-
 // This is a mechanism by which macros can make the Thread pointer available to inner scopes
 // that is robust to code changes.  If the outer Thread no longer is available for some reason
 // (e.g. code refactoring), this GET_THREAD() macro will fall back to calling GetThread().

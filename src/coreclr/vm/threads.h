@@ -331,13 +331,13 @@ void    DestroyThread(Thread *th);
 
 DWORD GetRuntimeId();
 
-#define CREATETHREAD_IF_NULL_FAILFAST(__thread, __msg)                  \
+#define CREATETHREAD_IF_NULL_FAILFAST(thread__, msg__)                  \
 {                                                                       \
-    HRESULT __ctinffhr;                                                 \
-    __thread = SetupThreadNoThrow(&__ctinffhr);                         \
-    if (__thread == NULL)                                               \
+    HRESULT ctinffhr__;                                                 \
+    thread__ = SetupThreadNoThrow(&ctinffhr__);                         \
+    if (thread__ == NULL)                                               \
     {                                                                   \
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(__ctinffhr, __msg);    \
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(ctinffhr__, msg__);    \
         UNREACHABLE();                                                  \
     }                                                                   \
 }
