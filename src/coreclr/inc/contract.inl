@@ -619,15 +619,12 @@ inline UINT GetDbgStateLockCount(DbgStateLockType dbgStateLockType)
 
 #define ASSERT_NO_USER_LOCKS_HELD()   \
     _ASSERTE(GetDbgStateLockCount(kDbgStateLockType_User) == 0)
-#define ASSERT_NO_HOST_BREAKABLE_CRSTS_HELD()   \
-    _ASSERTE(GetDbgStateLockCount(kDbgStateLockType_HostBreakableCrst) == 0)
 #define ASSERT_NO_EE_LOCKS_HELD()   \
     _ASSERTE(GetDbgStateLockCount(kDbgStateLockType_EE) == 0)
 
 #else  // ENABLE_CONTRACTS_IMPL
 
 #define ASSERT_NO_USER_LOCKS_HELD()
-#define ASSERT_NO_HOST_BREAKABLE_CRSTS_HELD()
 #define ASSERT_NO_EE_LOCKS_HELD()
 
 #endif  // ENABLE_CONTRACTS_IMPL
