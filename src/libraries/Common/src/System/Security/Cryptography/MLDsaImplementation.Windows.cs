@@ -115,17 +115,31 @@ namespace System.Security.Cryptography
                 Algorithm.PublicKeySizeInBytes,
                 destination);
 
-        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination) =>
+        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination)
+        {
+            if (!_hasSecretKey)
+            {
+                throw new CryptographicException(SR.Cryptography_MLDsaNoSecretKey);
+            }
+
             ExportKey(
                 Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB,
                 Algorithm.SecretKeySizeInBytes,
                 destination);
+        }
 
-        protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination) =>
+        protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination)
+        {
+            if (!_hasSeed)
+            {
+                throw new CryptographicException(SR.Cryptography_MLDsaNoSeed);
+            }
+
             ExportKey(
                 Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB,
                 Algorithm.PrivateSeedSizeInBytes,
                 destination);
+        }
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
