@@ -73,6 +73,8 @@ namespace Mono.Linker.Steps
 		// method body scanner.
 		readonly Dictionary<MethodBody, bool> _compilerGeneratedMethodRequiresScanner;
 
+		TypeMapHandler _typeMapHandler;
+
 		MarkStepContext? _markContext;
 		MarkStepContext MarkContext {
 			get {
@@ -89,6 +91,8 @@ namespace Mono.Linker.Steps
 				return _dynamicallyAccessedMembersTypeHierarchy;
 			}
 		}
+
+		internal TypeMapHandler TypeMapHandler => _typeMapHandler;
 
 #if DEBUG
 		static readonly DependencyKind[] _entireTypeReasons = new DependencyKind[] {
@@ -221,6 +225,7 @@ namespace Mono.Linker.Steps
 			_pending_isinst_instr = new List<(TypeDefinition, MethodBody, Instruction)> ();
 			_entireTypesMarked = new HashSet<TypeDefinition> ();
 			_compilerGeneratedMethodRequiresScanner = new Dictionary<MethodBody, bool> ();
+			_typeMapHandler = new TypeMapHandler ();
 		}
 
 		public AnnotationStore Annotations => Context.Annotations;
@@ -243,6 +248,12 @@ namespace Mono.Linker.Steps
 		{
 			InitializeCorelibAttributeXml ();
 			Context.Pipeline.InitializeMarkHandlers (Context, MarkContext);
+
+			if (Annotations.GetEntryPointAssembly() is AssemblyDefinition entryPoint) {
+				_typeMapHandler = new TypeMapHandler (entryPoint);
+			}
+
+			_typeMapHandler.Initialize (Context, this);
 
 			ProcessMarkedPending ();
 		}
@@ -1059,7 +1070,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		protected virtual void MarkCustomAttribute (CustomAttribute ca, in DependencyInfo reason, MessageOrigin origin)
+		protected internal virtual void MarkCustomAttribute (CustomAttribute ca, in DependencyInfo reason, MessageOrigin origin)
 		{
 			Annotations.Mark (ca, reason);
 			MarkMethod (ca.Constructor, new DependencyInfo (DependencyKind.AttributeConstructor, ca), origin);
@@ -1918,6 +1929,8 @@ namespace Mono.Linker.Steps
 				break;
 			}
 
+			_typeMapHandler.ProcessType (type);
+
 			// Treat cctors triggered by a called method specially and mark this case up-front.
 			if (type.HasMethods && ShouldMarkTypeStaticConstructor (type) && reason.Kind == DependencyKind.DeclaringTypeOfCalledMethod)
 				MarkStaticConstructor (type, new DependencyInfo (DependencyKind.TriggersCctorForCalledMethod, reason.Source), origin);
@@ -1929,8 +1942,11 @@ namespace Mono.Linker.Steps
 				// or because of a copy assembly with a reference and so on) then we should not spam the warnings due to the type itself.
 				// Also don't warn when the type is marked due to an assembly being rooted.
 				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type) &&
-					reason.Kind is not DependencyKind.TypeInAssembly)
-					Context.LogWarning (origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName ());
+					reason.Kind is not DependencyKind.TypeInAssembly) {
+					// Don't warn for type map attribute types. They're marked as "remove attributes" but we explicitly keep the ones needed.
+					if (type is not { Namespace: "System.Runtime.InteropServices", Name: "TypeMapAttribute`1" or "TypeMapAssociationAttribute`1" or "TypeMapAssemblyTargetAttribute`1"})
+						Context.LogWarning (origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName ());
+				}
 			}
 
 			if (CheckProcessed (type))
@@ -3233,6 +3249,8 @@ namespace Mono.Linker.Steps
 
 			MarkImplicitlyUsedFields (type, typeOrigin);
 
+			_typeMapHandler.ProcessInstantiated (type);
+
 			DoAdditionalInstantiatedTypeProcessing (type);
 		}
 
@@ -3667,6 +3685,8 @@ namespace Mono.Linker.Steps
 
 					if (type.IsInterface)
 						break;
+
+					_typeMapHandler.ProcessType (type);
 
 					if (!Annotations.IsInstantiated (type)) {
 						_pending_isinst_instr.Add ((type, method.Body, instruction));
