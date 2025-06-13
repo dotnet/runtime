@@ -6164,8 +6164,6 @@ public:
 
     void fgCompactBlock(BasicBlock* block);
 
-    bool fgRenumberBlocks();
-
     bool fgExpandRarelyRunBlocks();
 
     bool fgEhAllowsMoveBlock(BasicBlock* bBefore, BasicBlock* bAfter);
