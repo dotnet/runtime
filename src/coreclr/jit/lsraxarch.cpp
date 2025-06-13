@@ -3241,48 +3241,6 @@ int LinearScan::BuildMul(GenTree* tree)
     int              dstCount      = 1;
     SingleTypeRegSet dstCandidates = RBM_NONE;
 
-    // Start with building the uses, ensuring that one of the operands is in the implicit register (RAX or RDX)
-    // Place first operand in implicit register, unless:
-    //  * it is a memory address
-    // *  or the second operand is already in the register
-    if (useMulx)
-    {
-        // Lowering has ensured that op1 is never the memory operand
-        assert(!op1->isUsedFromMemory());
-
-        SingleTypeRegSet srcCandidates1 = RBM_NONE;
-
-        // If one of the operands is a memory address, specify RDX for the other operand
-        if (op2->isUsedFromMemory())
-        {
-            // If op2 is a memory operand, we place it in RDX
-            srcCandidates1 = SRBM_RDX;
-        }
-
-        // In lowering, we place any memory operand in op2 so we default to placing op1 in RDX
-        // By selecting RDX here we don't have to kill it
-        srcCount = BuildOperandUses(op1, srcCandidates1);
-        srcCount += BuildOperandUses(op2, RBM_NONE);
-    }
-    else
-    {
-        assert(!op1->isUsedFromMemory() || !op2->isUsedFromMemory());
-
-        SingleTypeRegSet srcCandidates1 = RBM_NONE;
-        SingleTypeRegSet srcCandidates2 = RBM_NONE;
-
-        // If one of the operands is a memory address, specify RAX for the other operand
-        if (op1->isUsedFromMemory())
-        {
-            srcCandidates2 = SRBM_RAX;
-        }
-        else if (op2->isUsedFromMemory())
-        {
-            srcCandidates1 = SRBM_RAX;
-        }
-        srcCount = BuildRMWUses(tree, op1, op2, srcCandidates1, srcCandidates2);
-    }
-
     // There are three forms of x86 multiply in base instruction set
     // one-op form:     RDX:RAX = RAX * r/m
     // two-op form:     reg *= r/m
@@ -3298,48 +3256,61 @@ int LinearScan::BuildMul(GenTree* tree)
         assert((tree->gtFlags & GTF_MUL_64RSLT) == 0);
     }
 
-    // We do use the widening multiply to implement
-    // the overflow checking for unsigned multiply
-    //
-    if (isUnsignedMultiply && requiresOverflowCheck)
+    if (useMulx)
     {
-        // The only encoding provided is RDX:RAX = RAX * rm
-        //
-        // Here we set RAX as the only destination candidate
-        // In LSRA we set the kill set for this operation to RBM_RAX|RBM_RDX
-        //
-        dstCandidates = SRBM_RAX;
+        // Lowering has ensured that op1 is never the memory operand
+        assert(!op1->isUsedFromMemory());
+
+        // If one of the operands is a memory address, specify RDX for the other operand
+        SingleTypeRegSet srcCandidates1 = RBM_NONE;
+        if (op2->isUsedFromMemory())
+        {
+            srcCandidates1 = SRBM_RDX;
+        }
+
+        srcCount = BuildOperandUses(op1, srcCandidates1);
+        srcCount += BuildOperandUses(op2, RBM_NONE);
+
+#if defined(TARGET_X86)
+        if (tree->OperIs(GT_MUL_LONG))
+        {
+            dstCount = 2;
+        }
+#endif
     }
-    else if (tree->OperIs(GT_MULHI))
+    else
     {
-        if (!useMulx)
+        assert(!op1->isUsedFromMemory() || !op2->isUsedFromMemory());
+        srcCount = BuildRMWUses(tree, op1, op2, RBM_NONE, RBM_NONE);
+
+        // We do use the widening multiply to implement
+        // the overflow checking for unsigned multiply
+        //
+        if (isUnsignedMultiply && requiresOverflowCheck)
+        {
+            // The only encoding provided is RDX:RAX = RAX * rm
+            //
+            // Here we set RAX as the only destination candidate
+            // In LSRA we set the kill set for this operation to RBM_RAX|RBM_RDX
+            //
+            dstCandidates = SRBM_RAX;
+        }
+        else if (tree->OperIs(GT_MULHI))
         {
             // Have to use the encoding:RDX:RAX = RAX * rm. Since we only care about the
             // upper 32 bits of the result set the destination candidate to REG_RDX.
             dstCandidates = SRBM_RDX;
         }
-    }
 #if defined(TARGET_X86)
-    else if (tree->OperIs(GT_MUL_LONG))
-    {
-        dstCount = 2;
-        if (!useMulx)
+        else if (tree->OperIs(GT_MUL_LONG))
         {
             // We have to use the encoding:RDX:RAX = RAX * rm
             dstCandidates = SRBM_RAX | SRBM_RDX;
+            dstCount = 2;
         }
-    }
 #endif
-    GenTree* containedMemOp = nullptr;
-    if (op1->isContained() && !op1->IsCnsIntOrI())
-    {
-        assert(!op2->isContained() || op2->IsCnsIntOrI());
-        containedMemOp = op1;
     }
-    else if (op2->isContained() && !op2->IsCnsIntOrI())
-    {
-        containedMemOp = op2;
-    }
+
     regMaskTP killMask = getKillSetForMul(tree->AsOp());
     BuildDefWithKills(tree, dstCount, dstCandidates, killMask);
     return srcCount;
