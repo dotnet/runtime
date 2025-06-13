@@ -787,8 +787,18 @@ regMaskTP LinearScan::getKillSetForMul(GenTreeOp* mulNode)
         // If we can use the mulx instruction, we don't need to kill RAX
         if (mulNode->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
-            // For mulx we force one arg to RDX, but we do not modify it
-            // keep killMask set to RBM_NONE
+            // While we do not need to kill RDX, the register allocator
+            // seems to produce less spills if we kill it than if we specify it as fixed register
+            // for one of the operands.
+            // If second operand is used from memory, we define op1 as fixed rd register, so we don't need to kill it.
+            if (mulNode->gtGetOp2()->isUsedFromMemory())
+            {
+                killMask = RBM_NONE;
+            }
+            else
+            {
+                killMask = RBM_RDX;
+            }
         }
         else
         {

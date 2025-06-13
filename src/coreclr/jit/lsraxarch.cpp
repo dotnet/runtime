@@ -3233,7 +3233,7 @@ int LinearScan::BuildMul(GenTree* tree)
 
     bool isUnsignedMultiply    = tree->IsUnsigned();
     bool requiresOverflowCheck = tree->gtOverflowEx();
-    bool useMulx               = tree->OperGet() != GT_MUL && isUnsignedMultiply &&
+    bool useMulx               = !tree->OperIs(GT_MUL) && isUnsignedMultiply &&
                    compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2);
 
     // ToDo-APX : imul currently doesn't have rex2 support. So, cannot use R16-R31.
@@ -3250,15 +3250,18 @@ int LinearScan::BuildMul(GenTree* tree)
         // Lowering has ensured that op1 is never the memory operand
         assert(!op1->isUsedFromMemory());
 
-        // prefer to have the constant in RDX (op1) this is especially useful for MUL_HI usage
-        if (op2->IsCnsIntOrI())
+        SingleTypeRegSet srcCandidates1 = RBM_NONE;
+
+        // If one of the operands is a memory address, specify RDX for the other operand
+        if (op2->isUsedFromMemory())
         {
-            std::swap(op1, op2);
+            // If op2 is a memory operand, we place it in RDX
+            srcCandidates1 = SRBM_RDX;
         }
 
         // In lowering, we place any memory operand in op2 so we default to placing op1 in RDX
         // By selecting RDX here we don't have to kill it
-        srcCount = BuildOperandUses(op1, SRBM_RDX);
+        srcCount = BuildOperandUses(op1, srcCandidates1);
         srcCount += BuildOperandUses(op2, RBM_NONE);
     }
     else
