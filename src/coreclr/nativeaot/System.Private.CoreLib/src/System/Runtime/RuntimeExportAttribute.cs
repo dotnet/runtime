@@ -8,8 +8,6 @@ namespace System.Runtime
     {
         public string EntryPoint;
 
-        public bool Weak;
-
         public Type? ConditionalConstructedDependency;
 
         public RuntimeExportAttribute(string entry)
