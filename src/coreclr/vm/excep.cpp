@@ -469,7 +469,7 @@ void WrapNonCompliantException(OBJECTREF *ppThrowable)
 
         *ppThrowable = orReplacement;
 
-    } EX_END_CATCH(SwallowAllExceptions);
+    } EX_END_CATCH
 }
 
 // Before presenting an exception object to a handler (filter or catch, not finally or fault), it
@@ -612,7 +612,7 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
             *pInitException = pInnerException ? *pInnerException : NULL;
             *pThrowable = GET_THROWABLE();
         }
-    } EX_END_CATCH(SwallowAllExceptions);
+    } EX_END_CATCH
 
     CONSISTENCY_CHECK(*pInitException != NULL || !pInnerException);
 
@@ -3151,7 +3151,7 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 void UnwindFrameChain(Thread* pThread, LPVOID pvLimitSP)
@@ -3359,7 +3359,7 @@ LONG NotifyDebuggerLastChance(Thread *pThread,
     EX_CATCH // if we fail to intercept just continue as is
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif // DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
 
     return retval;
@@ -3844,7 +3844,7 @@ LaunchCreateDump(LPCWSTR lpCommandLine)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return fSuccess;
 }
@@ -4819,7 +4819,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
 #endif
     }
@@ -4993,14 +4993,14 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 
                 PrintToStdErrW(buf);
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
         EX_CATCH
         {   // If we got here, we can't even print the localized error message.  Print non-localized.
             LOG((LF_EH, LL_INFO10, "Exception occurred while logging processing uncaught exception\n"));
             PrintToStdErrA("\n   Error: Can't print exception string because Exception.ToString() failed.\n");
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
 #if defined(_DEBUG)
@@ -5615,7 +5615,7 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
             // exception.
             result = GET_THROWABLE();
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
     return result;
@@ -7752,7 +7752,7 @@ bool DebugIsEECxxExceptionPointer(void* pv)
     {
         // Swallow any exception out of the exception constructors above and simply return false.
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return retVal;
 }
@@ -8071,7 +8071,7 @@ BOOL SetupWatsonBucketsForNonPreallocatedExceptions(OBJECTREF oThrowable /* = NU
                     // OOM can bring us here
                     fSetupWatsonBuckets = FALSE;
                 }
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
 
                 if (!fSetupWatsonBuckets)
                 {
@@ -9146,7 +9146,7 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
                     {
                         fCopiedBuckets = FALSE;
                     }
-                    EX_END_CATCH(SwallowAllExceptions);
+                    EX_END_CATCH
 
                     if (fCopiedBuckets)
                     {
@@ -9313,7 +9313,7 @@ phase1:
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
 
             LOG((LF_EH, LL_INFO100, "SetupInitialThrowBucketDetails - Copied watson bucket details from the innermost exception\n"));
         }
@@ -9804,7 +9804,7 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
                         // the native watson helper functions failing under OOM
                         fCopied = FALSE;
                     }
-                    EX_END_CATCH(SwallowAllExceptions);
+                    EX_END_CATCH
                 }
             }
             else
@@ -9827,7 +9827,7 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
                         // Dont do anything if we fail to copy the buckets - this is no different than
                         // the native watson helper functions failing under OOM
                     }
-                    EX_END_CATCH(SwallowAllExceptions);
+                    EX_END_CATCH
                 }
                 else if (ipForWatsonBuckets != NULL)
                 {
@@ -10250,8 +10250,9 @@ void ExceptionNotifications::GetEventArgsForNotification(ExceptionNotificationHa
         // Set event args to be NULL incase of any error (e.g. OOM)
         *pOutEventArgs = NULL;
         LOG((LF_EH, LL_INFO100, "ExceptionNotifications::GetEventArgsForNotification: Setting event args to NULL due to an exception.\n"));
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 }
 
 // This SEH filter will be invoked when an exception escapes out of the exception notification

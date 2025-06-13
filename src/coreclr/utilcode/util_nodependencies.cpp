@@ -281,7 +281,7 @@ void GetDebuggerSettingInfo(SString &ssDebuggerString, BOOL *pfAuto)
             *pfAuto = FALSE;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 } // GetDebuggerSettingInfo
 
 //---------------------------------------------------------------------------------------
@@ -426,7 +426,7 @@ HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *p
             *pfAuto = FALSE;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return S_OK;
 } // GetDebuggerSettingInfoWorker

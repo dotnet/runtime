@@ -1266,7 +1266,7 @@ bool EEDbgInterfaceImpl::TraceManager(Thread *thread,
         _ASSERTE(!"Fail to trace a stub through TraceManager()");
         fResult = false;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
 #ifdef _DEBUG
     StubManager::DbgWriteLog("Doing TraceManager on %s (0x%p) for IP=0x%p, yields:\n", stubManager->DbgGetName(), stubManager, GetIP(context));

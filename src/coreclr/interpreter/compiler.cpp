@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "gcinfoencoder.h"
 
-// HACK: debugreturn.h (included by gcinfoencoder.h) breaks constexpr
-#if defined(debug_instrumented_return) || defined(_DEBUGRETURN_H_)
-#undef return
-#endif // debug_instrumented_return
-
 #include "interpreter.h"
 #include "stackmap.h"
 

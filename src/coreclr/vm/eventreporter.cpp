@@ -688,7 +688,7 @@ void DoReportForUnhandledNativeException(PEXCEPTION_POINTERS pExceptionInfo)
         {
             // We are reporting an exception.  If we throw while working on this, it is not fatal.
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 
         reporter.Report();
     }

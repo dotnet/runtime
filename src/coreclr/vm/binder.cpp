@@ -1045,7 +1045,7 @@ void CoreLibBinder::CheckExtended()
         {
             fError = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (fError)
         {
@@ -1068,7 +1068,7 @@ void CoreLibBinder::CheckExtended()
         {
             fError = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (fError)
         {
@@ -1091,7 +1091,7 @@ void CoreLibBinder::CheckExtended()
         {
             fError = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (fError)
         {
@@ -1150,7 +1150,7 @@ void CoreLibBinder::CheckExtended()
             }
             minipal_log_print_error("CheckExtended: Unable to load class from System.Private.CoreLib: %s.%s\n", pszNameSpace, pszClassName);
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         MethodDesc *pMD = MemberLoader::FindMethod(type.AsMethodTable(), td);
         _ASSERTE(pMD);

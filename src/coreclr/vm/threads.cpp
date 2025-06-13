@@ -802,7 +802,7 @@ Thread* SetupThreadNoThrow(HRESULT *pHR)
         hr = GET_EXCEPTION()->GetHR();
     }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (pHR)
     {
@@ -1687,8 +1687,9 @@ BOOL Thread::AllocHandles()
         if (!m_EventWait.IsValid()) {
             m_EventWait.CloseEvent();
         }
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 
     return fOK;
 }
@@ -1767,7 +1768,7 @@ BOOL Thread::HasStarted()
         }
         res = FALSE;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (res == FALSE)
         goto FAILURE;
@@ -3758,7 +3759,7 @@ DWORD EnterMonitorForRestore(SyncBlock *pSB)
             }
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return state;
 }
@@ -4198,7 +4199,7 @@ OBJECTREF Thread::SafeSetLastThrownObject(OBJECTREF throwable)
         ret = CLRException::GetPreallocatedOutOfMemoryException();
         SetLastThrownObject(ret);
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return ret;
 }
@@ -4250,7 +4251,7 @@ OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable DEBUG_ARG(ThreadExceptio
         SetThrowable(ret DEBUG_ARG(stecFlags));
         SetLastThrownObject(ret, isUnhandled);
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
 
     return ret;
@@ -4327,7 +4328,7 @@ void Thread::SafeUpdateLastThrownObject(void)
             // If we can't create a duplicate handle, we set both throwables to the preallocated OOM exception.
             SafeSetThrowables(CLRException::GetPreallocatedOutOfMemoryException());
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 }
 
@@ -5390,7 +5391,7 @@ BOOL CLREventWaitWithTry(CLREventBase *pEvent, DWORD timeout, BOOL fAlertable, D
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return fLoop;
 }
@@ -5691,7 +5692,7 @@ BOOL StartUniqueStackMapHelper()
     {
         fOK = FALSE;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return fOK;
 }
@@ -5854,7 +5855,7 @@ void UniqueStackHelper(size_t stackTraceHash, size_t *stackTrace)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 /***********************************************************************/
@@ -6980,7 +6981,7 @@ static void ManagedThreadBase_DispatchMiddle(ManagedThreadCallState *pCallState)
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 /*

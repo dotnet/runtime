@@ -1060,7 +1060,7 @@ TypeHandle SigPointer::GetTypeHandleNT(Module* pModule,
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     return(th);
 }
 
