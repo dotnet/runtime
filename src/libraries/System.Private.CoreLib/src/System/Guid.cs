@@ -815,16 +815,13 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static byte DecodeByte<TChar>(TChar ch1, TChar ch2, ref int invalidIfNegative) where TChar : unmanaged, IUtfChar<TChar>
         {
-            // TODO: https://github.com/dotnet/runtime/issues/116593
-            // Restore to (sbyte)lookup[c1] and (sbyte)lookup[c2] once issue is resolved.
-
             ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
             Debug.Assert(lookup.Length == 256);
 
             uint c1 = typeof(TChar) == typeof(byte) ? TChar.CastToUInt32(ch1) : Math.Min(TChar.CastToUInt32(ch1), 0x7F);
             uint c2 = typeof(TChar) == typeof(byte) ? TChar.CastToUInt32(ch2) : Math.Min(TChar.CastToUInt32(ch2), 0x7F);
-            int upper = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), c1);
-            int lower = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), c2);
+            int upper = (sbyte)lookup[(int)c1];
+            int lower = (sbyte)lookup[(int)c2];
 
             int result = (upper << 4) | lower;
             invalidIfNegative |= result;
