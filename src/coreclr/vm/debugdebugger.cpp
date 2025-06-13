@@ -1014,13 +1014,272 @@ void DebugStackTrace::Element::InitPass1(
 
 #ifndef DACCESS_COMPILE
 
+struct WalkILOffsetsData
+{
+    WalkILOffsetsData(DWORD dwSearchNativeOffset, bool skipPrologsParam = false)
+        : dwSearchNativeOffset(dwSearchNativeOffset),
+        skipPrologs(skipPrologsParam)
+    {
+    }
+    DWORD prevILOffsetFound = 0;
+    DWORD dwILOffsetFound = 0;
+    DWORD dwCurrentNativeOffset = 0;
+    int greatestILOffsetFound = 0;
+    const DWORD dwSearchNativeOffset;
+
+    DWORD dwFinalILOffset = 0;
+    const bool skipPrologs;
+    bool skipPrologCase = false;
+    bool firstCall = true;
+    bool epilogCase = false;
+};
+
+size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
+{
+    WalkILOffsetsData *pWalkData = (WalkILOffsetsData *)pContext;
+    // Callbacks into this api are sorted by native offset, but not sorted by IL offset.
+    // In addition, there are several special IL offsets that are not actual IL offsets.
+
+    // Also, ignore all the callsite mappings since they are not relevant for the standard Native-IL mapping
+
+    if ((pOffsetMapping->source & (DWORD)ICorDebugInfo::CALL_INSTRUCTION) == (DWORD)ICorDebugInfo::CALL_INSTRUCTION)
+    {
+        // This is a call instruction mapping, so we don't care about it.
+        return 0;
+    }
+
+    if ((int)pOffsetMapping->ilOffset > pWalkData->greatestILOffsetFound)
+    {
+        // Calculate the greatest IL offset found so far. We use this as the IL offset for epilogs
+        pWalkData->greatestILOffsetFound = (int)pOffsetMapping->ilOffset;
+    }
+
+    if (pWalkData->epilogCase)
+    {
+        if (pOffsetMapping->nativeOffset == 0xFFFFFFFF)
+        {
+            pWalkData->dwFinalILOffset = pWalkData->greatestILOffsetFound;
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    // The general rule is that we need to find the lowest IL offset that applies to the given native offset
+    // An IL offset in the mapping of ICorDebugInfo::NO_MAPPING indicates that the IL offset we report should be 0
+    // An IL offset in the mapping of ICorDebugInfo::PROLOG indicates that we should report the "next" IL offset.
+    // An IL offset in the mapping of ICorDebugInfo::EPILOG indicates that we should report the "previous" IL offset.
+
+    if (pWalkData->firstCall)
+    {
+        pWalkData->firstCall = false;
+        // This is the first time we are called, so set the current native offset to the one we are looking for
+        pWalkData->dwCurrentNativeOffset = pOffsetMapping->nativeOffset;
+        pWalkData->dwILOffsetFound = pOffsetMapping->ilOffset;
+    }
+    else
+    {
+        // If the current native offset is less than the one we are looking for, then we need to set the IL offset
+        // to the one we are looking for.
+        if (pOffsetMapping->nativeOffset > pWalkData->dwCurrentNativeOffset)
+        {
+            if (pWalkData->skipPrologCase)
+            {
+                if (pWalkData->prevILOffsetFound != ICorDebugInfo::NO_MAPPING &&
+                    pWalkData->prevILOffsetFound != ICorDebugInfo::PROLOG && 
+                    pWalkData->prevILOffsetFound != ICorDebugInfo::EPILOG)
+                {
+                    // We found a valid IL offset after the prolog, so set the final IL offset to the one we found
+                    pWalkData->dwFinalILOffset = pWalkData->dwILOffsetFound;
+                }
+                else
+                {
+                    pWalkData->dwFinalILOffset = 0;
+                }
+                return 1;
+            }
+            if (pOffsetMapping->nativeOffset > pWalkData->dwSearchNativeOffset)
+            {
+                // We were searching for the IL offset, and we found it (unless we were in a PROLOG)
+                if (pWalkData->dwILOffsetFound == (DWORD)ICorDebugInfo::EPILOG)
+                {
+                    // We found we were in an EPILOG. Report the last il offset reported as part of the method.
+                    pWalkData->epilogCase = true;
+                    if (pOffsetMapping->nativeOffset == 0xFFFFFFFF)
+                    {
+                        pWalkData->dwFinalILOffset = pWalkData->greatestILOffsetFound;
+                        return 1;
+                    }
+                }
+                else if (pWalkData->dwILOffsetFound == (DWORD)ICorDebugInfo::NO_MAPPING)
+                {
+                    pWalkData->dwFinalILOffset = 0;
+                    return 1;
+                }
+                else if (!(pWalkData->dwILOffsetFound == (DWORD)ICorDebugInfo::PROLOG))
+                {
+                    pWalkData->dwFinalILOffset = pWalkData->dwILOffsetFound;
+                    return 1;
+                }
+                else
+                {
+                    // PROLOG case
+                    if (pWalkData->skipPrologs)
+                    {
+                        _ASSERTE(pWalkData->dwILOffsetFound == ICorDebugInfo::PROLOG);
+                        pWalkData->skipPrologCase = true;
+                    }
+                    else
+                    {
+                        pWalkData->dwFinalILOffset = 0;
+                        return 1;
+                    }
+                }
+            }
+            pWalkData->dwCurrentNativeOffset = pOffsetMapping->nativeOffset;
+            pWalkData->prevILOffsetFound = pWalkData->dwILOffsetFound;
+            pWalkData->dwCurrentNativeOffset = pOffsetMapping->nativeOffset;
+            pWalkData->dwILOffsetFound = pOffsetMapping->ilOffset;
+        }
+        else if ((pOffsetMapping->ilOffset < pWalkData->dwILOffsetFound) && (pOffsetMapping->ilOffset != (DWORD)ICorDebugInfo::NO_MAPPING))
+        {
+            // We found a new IL offset that is less than the one we are looking for
+            pWalkData->dwILOffsetFound = pOffsetMapping->ilOffset;
+        }
+    }
+
+    return 0;
+}
+
+#ifndef DACCESS_COMPILE
+// This is an implementation of a cache of the Native->IL offset mappings used by managed stack traces. It exists for the following reasons:
+// 1. When a large server experiences a large number of exceptions due to some other system failing, it can cause a tremendous number of stack traces to be generated, if customers are attempting to log.
+// 2. The native->IL offset mapping is somewhat expensive to compute, and it is not necessary to compute it repeatedly for the same IP.
+// 3. Often when these mappings are needed, the system is under stress, and throwing on MANY different threads with similar callstacks, so the cost of having locking around the cache may be significant.
+//
+// The cache is implemented as a simple hash table, where the key is the IP + fAdjustOffset
+// flag, and the value is the IL offset. We use a version number to indicate when the cache
+// is being updated, and to indicate that a found value is valid, and we use a simple linear
+// probing algorithm to find the entry in the cache. The fallback from the cache is now
+// designed to avoid locks when possible, and while it is substantially slower than the cache,
+// it is still fast enough that we don't need to go to great lengths to avoid it.
+
+static LONG s_stackWalkILToNativeCacheVersion = 0;
+const DWORD s_stackWalkCacheSize = 1024; // This is the total size of the cache (We use a pointer+4 bytes for each entry, so on 64bit platforms 12KB of memory)
+const DWORD s_stackWalkCacheWalk = 8; // Walk up to this many entries in the cache before giving up
+const DWORD s_stackWalkCacheAdjustOffsetFlag = 0x80000000; // 2^31, put into the IL offset portion of the cache entry to check if the native offset was adjusted by STACKWALK_CONTROLPC_ADJUST_OFFSET
+static void* s_stackWalkILToNativeCacheIP[s_stackWalkCacheSize];
+static uint32_t s_stackWalkILToNativeCacheIL[s_stackWalkCacheSize];
+
+bool CheckILToNativeCacheCore(void* ip, bool fAdjustOffset, uint32_t* pILOffset)
+{
+    // Check the cache for the IP
+    int hashCode = MixPointerIntoHash(ip);
+    int index = hashCode % s_stackWalkCacheSize;
+
+    int count = 0;
+    do
+    {
+        if (VolatileLoadWithoutBarrier(&s_stackWalkILToNativeCacheIP[index]) == ip)
+        {
+            // Cache hit
+            uint32_t dwILOffset = VolatileLoad(&s_stackWalkILToNativeCacheIL[index]);
+            if (fAdjustOffset != ((dwILOffset & s_stackWalkCacheAdjustOffsetFlag) == s_stackWalkCacheAdjustOffsetFlag))
+            {
+                continue; // The cache entry did not match on the adjust offset flag, so move to the next entry.
+            }
+
+            dwILOffset &= ~s_stackWalkCacheAdjustOffsetFlag; // Clear the adjust offset flag
+            *pILOffset = dwILOffset;
+            return true;
+        }
+    } while (index = (index + 1) % s_stackWalkCacheSize, count++ < s_stackWalkCacheWalk);
+
+    return false; // Not found in cache
+}
+
+bool CheckILToNativeCache(void* ip, bool fAdjustOffset, uint32_t* pILOffset)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    LONG versionStart = VolatileLoad(&s_stackWalkILToNativeCacheVersion);
+
+    if ((versionStart & 1) == 1)
+    {
+        // Cache is being updated, so we cannot use it
+        return false;
+    }
+
+    if (CheckILToNativeCacheCore(ip, fAdjustOffset, pILOffset))
+    {
+        LONG versionEnd = VolatileLoadWithoutBarrier(&s_stackWalkILToNativeCacheVersion);
+        if (versionEnd == versionStart)
+        {
+            // Cache was not updated while we were checking it, so we can use it
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void InsertIntoILToNativeCache(void* ip, bool fAdjustOffset, uint32_t dwILOffset)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Insert the IP and IL offset into the cache
+    
+    LONG versionStart = VolatileLoadWithoutBarrier(&s_stackWalkILToNativeCacheVersion);
+    if ((versionStart & 1) == 1)
+    {
+        // Cache is being updated by someone else, so we can't modify it
+        return;
+    }
+
+    if (versionStart != InterlockedCompareExchange(&s_stackWalkILToNativeCacheVersion, versionStart, versionStart | 1))
+    {
+        // Someone else updated the cache version while we were attempting to take the lock, so abort updating the cache
+        return;
+    }
+    // Now we have the lock, so we can safely update the cache
+
+    // First check to see if the cache already has an entry
+    uint32_t dwILOffsetFound;
+    if (CheckILToNativeCacheCore(ip, fAdjustOffset, &dwILOffsetFound))
+    {
+        // The entry already exists, so we don't need to insert it again
+        _ASSERTE(dwILOffsetFound == dwILOffset);
+
+        // Store back the original version to indicate that the cache has not been updated, and is ready for use.
+        VolatileStore(&s_stackWalkILToNativeCacheVersion, versionStart);
+    }
+    else
+    {
+        // Insert the IP and IL offset into the cache
+
+        int hashCode = MixPointerIntoHash(ip);
+
+        // Insert the entry into a semi-random location in the set of cache entries. The idea is to attempt to be somewhat collision resistant
+        int index = (hashCode + (MixOneValueIntoHash(versionStart) % s_stackWalkCacheWalk)) % s_stackWalkCacheSize;
+
+        s_stackWalkILToNativeCacheIP[index] = ip;
+        s_stackWalkILToNativeCacheIL[index] = dwILOffset | (fAdjustOffset ? s_stackWalkCacheAdjustOffsetFlag : 0);
+
+        // Increment the version to indicate that the cache has been updated, and is ready for use.
+        VolatileStore(&s_stackWalkILToNativeCacheVersion, versionStart + 2);
+    }
+}
+#endif // !DACCESS_COMPILE
+
 // Initialization done outside the TSL.
 // This may need to call locking operations that aren't safe under the TSL.
 void DebugStackTrace::Element::InitPass2()
 {
     CONTRACTL
     {
-        MODE_ANY;
+        MODE_COOPERATIVE;
         GC_TRIGGERS;
         THROWS;
     }
@@ -1030,7 +1289,9 @@ void DebugStackTrace::Element::InitPass2()
 
     bool bRes = false;
 
-#ifdef DEBUGGING_SUPPORTED
+    bool fAdjustOffset = (this->flags & STEF_IP_ADJUSTED) == 0 && this->dwOffset > 0;
+#if defined(DEBUGGING_SUPPORTED) && defined(DEBUG)
+
     // Calculate the IL offset using the debugging services
     if ((this->ip != (PCODE)NULL) && g_pDebugInterface)
     {
@@ -1051,15 +1312,58 @@ void DebugStackTrace::Element::InitPass2()
         // When the dwOffset needs to be adjusted it is a lot simpler to decrement instead of trying to figure out
         // the beginning of the instruction. It is enough for GetILOffsetFromNative to return the IL offset of the
         // instruction throwing the exception.
-        bool fAdjustOffset = (this->flags & STEF_IP_ADJUSTED) == 0 && this->dwOffset > 0;
         bRes = g_pDebugInterface->GetILOffsetFromNative(
             pFunc,
             (LPCBYTE)this->ip,
             fAdjustOffset ? this->dwOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET : this->dwOffset,
             &this->dwILOffset);
     }
+#endif // DEBUG
 
-#endif // !DEBUGGING_SUPPORTED
+    if (this->ip != (PCODE)NULL)
+    {
+        // Check the cache!
+        uint32_t dwILOffsetFromCache;
+        if (CheckILToNativeCache((void*)this->ip, fAdjustOffset, &dwILOffsetFromCache))
+        {
+#if defined(DEBUGGING_SUPPORTED) && defined(DEBUG)
+            _ASSERTE(this->dwILOffset == dwILOffsetFromCache); // This asserts that the IL offset computed here is the same as would be computed by g_pDebugInterface->GetILOffsetFromNative
+#endif // DEBUGGING_SUPPORTED && DEBUG
+            this->dwILOffset = dwILOffsetFromCache;
+            bRes = true;
+        }
+        else
+        {
+            // Get IL Offset from the JitManager directly
+            EECodeInfo codeInfo(this->ip);
+            if (codeInfo.IsValid())
+            {
+                TADDR startAddress = codeInfo.GetStartAddress();
+                WalkILOffsetsData data(fAdjustOffset ? this->dwOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET : this->dwOffset);
+                DebugInfoRequest request;
+                request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
+                if (codeInfo.GetJitManager()->WalkILOffsets(request, &data, WalkILOffsetsCallback))
+                {
+#if defined(DEBUGGING_SUPPORTED) && defined(DEBUG)
+                    _ASSERTE(this->dwILOffset == data.dwFinalILOffset); // This asserts that the IL offset computed here is the same as would be computed by g_pDebugInterface->GetILOffsetFromNative
+#endif // DEBUGGING_SUPPORTED && DEBUG
+                    this->dwILOffset = data.dwFinalILOffset;
+                    bRes = true;
+
+                    MethodDesc* pMD = codeInfo.GetMethodDesc();
+                    if (!pMD->IsLCGMethod() && !pMD->GetLoaderAllocator()->IsCollectible())
+                    {
+                        // Only insert into the cache if the value found will not change throughout the lifetime of the process.
+                        InsertIntoILToNativeCache(
+                            (void*)this->ip,
+                            fAdjustOffset,
+                            this->dwILOffset);
+                    }
+                }
+            }
+        }
+    }
+
 
     // If there was no mapping information, then set to an invalid value
     if (!bRes)

@@ -1728,6 +1728,11 @@ public:
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars) = 0;
 
+    virtual size_t WalkILOffsets(
+        const DebugInfoRequest & request,
+        void* pContext,
+        size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)) = 0;
+
     virtual BOOL GetRichDebugInfo(
         const DebugInfoRequest& request,
         IN FP_IDS_NEW fpNew, IN void* pNewData,
@@ -1855,6 +1860,11 @@ protected:
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars);
+
+    size_t WalkILOffsetsWorker(
+        PTR_BYTE pDebugInfo,
+        void* pContext,
+        size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext));
 
     BOOL GetRichDebugInfoWorker(
         PTR_BYTE pDebugInfo,
@@ -2061,6 +2071,11 @@ public:
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars);
+
+    virtual size_t WalkILOffsets(
+        const DebugInfoRequest & request,
+        void* pContext,
+        size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext));
 
     virtual BOOL GetRichDebugInfo(
         const DebugInfoRequest& request,
@@ -2623,6 +2638,11 @@ public:
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars);
 
+    virtual size_t WalkILOffsets(
+        const DebugInfoRequest & request,
+        void* pContext,
+        size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext));
+
     virtual BOOL GetRichDebugInfo(
         const DebugInfoRequest & request,
         IN FP_IDS_NEW fpNew, IN void * pNewData,
@@ -2741,6 +2761,11 @@ public:
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars);
+
+    virtual size_t WalkILOffsets(
+        const DebugInfoRequest & request,
+        void* pContext,
+        size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext));
 
     virtual BOOL GetRichDebugInfo(
         const DebugInfoRequest& request,
