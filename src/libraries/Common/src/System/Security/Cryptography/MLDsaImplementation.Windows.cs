@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using Internal.NativeCrypto;
 using Microsoft.Win32.SafeHandles;
 
@@ -29,6 +31,7 @@ namespace System.Security.Cryptography
             _hasSecretKey = hasSecretKey;
         }
 
+        [MemberNotNullWhen(true, nameof(s_algHandle))]
         internal static partial bool SupportsAny() => s_algHandle is not null;
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
@@ -39,7 +42,7 @@ namespace System.Security.Cryptography
 
         internal static partial MLDsaImplementation GenerateKeyImpl(MLDsaAlgorithm algorithm)
         {
-            Debug.Assert(s_algHandle is not null, $"Check {nameof(SupportsAny)}() before calling.");
+            Debug.Assert(SupportsAny());
 
             string parameterSet = PqcBlobHelpers.GetMLDsaParameterSet(algorithm);
             SafeBCryptKeyHandle keyHandle = Interop.BCrypt.BCryptGenerateKeyPair(s_algHandle, keyLength: 0);
@@ -60,7 +63,7 @@ namespace System.Security.Cryptography
 
         internal static partial MLDsaImplementation ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            Debug.Assert(s_algHandle is not null, $"Check {nameof(SupportsAny)}() before calling.");
+            Debug.Assert(SupportsAny());
 
             const string PublicBlobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB;
 
@@ -76,7 +79,7 @@ namespace System.Security.Cryptography
 
         internal static partial MLDsaImplementation ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            Debug.Assert(s_algHandle is not null, $"Check {nameof(SupportsAny)}() before calling.");
+            Debug.Assert(SupportsAny());
 
             const string PrivateBlobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB;
 
@@ -92,7 +95,7 @@ namespace System.Security.Cryptography
 
         internal static partial MLDsaImplementation ImportSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            Debug.Assert(s_algHandle is not null, $"Check {nameof(SupportsAny)}() before calling.");
+            Debug.Assert(SupportsAny());
 
             const string PrivateSeedBlobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB;
 
@@ -140,34 +143,6 @@ namespace System.Security.Cryptography
             _key = null!;
         }
 
-        internal CngKey CreateEphemeralCng()
-        {
-            string bcryptBlobType =
-                _hasSeed ? Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB :
-                _hasSecretKey ? Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB :
-                Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB;
-
-            CngKeyBlobFormat cngBlobFormat =
-                _hasSecretKey ? CngKeyBlobFormat.PQDsaPrivateBlob :
-                _hasSeed ? CngKeyBlobFormat.PQDsaPrivateSeedBlob :
-                CngKeyBlobFormat.PQDsaPublicBlob;
-
-            ArraySegment<byte> keyBlob = Interop.BCrypt.BCryptExportKey(_key, bcryptBlobType);
-            CngKey key;
-
-            try
-            {
-                key = CngKey.Import(keyBlob, cngBlobFormat);
-            }
-            finally
-            {
-                CryptoPool.Return(keyBlob);
-            }
-
-            key.ExportPolicy = CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport;
-            return key;
-        }
-
         private void ExportKey(string keyBlobType, int expectedKeySize, Span<byte> destination)
         {
             ArraySegment<byte> keyBlob = Interop.BCrypt.BCryptExportKey(_key, keyBlobType);
@@ -187,7 +162,7 @@ namespace System.Security.Cryptography
                 {
                     Debug.Fail(
                         $"{nameof(blobType)}: {blobType}, " +
-                        $"{nameof(parameterSet)}: {parameterSet}, " +
+                        $"{nameof(parameterSet)}: {parameterSet.ToString()}, " +
                         $"{nameof(keyBytes)}.Length: {keyBytes.Length} / {expectedKeySize}");
 
                     throw new CryptographicException();
@@ -203,6 +178,13 @@ namespace System.Security.Cryptography
 
         private static SafeBCryptAlgorithmHandle? OpenAlgorithmHandle()
         {
+#if !NETFRAMEWORK
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return null;
+            }
+#endif
+
             NTSTATUS status = Interop.BCrypt.BCryptOpenAlgorithmProvider(
                 out SafeBCryptAlgorithmHandle hAlgorithm,
                 BCryptNative.AlgorithmName.MLDsa,
