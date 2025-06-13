@@ -124,7 +124,6 @@
 class     Thread;
 class     ThreadStore;
 class     MethodDesc;
-class     DynamicMethodDesc;
 struct    PendingSync;
 class     AppDomain;
 class     NDirect;
