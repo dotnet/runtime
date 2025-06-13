@@ -158,18 +158,19 @@ void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdw
         memcpy(pGuidSignature, &pdbInfoLast.m_pPdb70->signature, sizeof(GUID));
         *pdwAge = pdbInfoLast.m_pPdb70->age;
 
-        // Convert build path from ANSI to UNICODE
-        errno_t ret;
-        size_t cchConverted;
-        ret = mbstowcs_s(
-            &cchConverted,
-            wszPath,
-            cchPath,
-            pdbInfoLast.m_pPdb70->path,
-            _countof(pdbInfoLast.m_pPdb70->path) - 1);
-        if ((ret != 0) && (ret != STRUNCATE))
+        // Convert build path from ANSI (UTF-8) to UNICODE (UTF-16)
+        int result = MultiByteToWideChar(
+            CP_UTF8,                // Code page for UTF-8
+            0,                      // No special flags
+            pdbInfoLast.m_pPdb70->path, // Source UTF-8 string
+            -1,                     // Source string length (-1 for null-terminated)
+            wszPath,                // Destination buffer for UTF-16 string
+            cchPath                 // Size of destination buffer
+        );
+
+        if (result == 0)
         {
-            // PDB path isn't essential.  An empty string will do if we hit an error.
+            // Conversion failed. PDB path isn't essential. An empty string will do.
             ASSERT(cchPath > 0);        // Guaranteed at top of function
             wszPath[0] = L'\0';
         }
