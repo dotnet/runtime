@@ -195,7 +195,7 @@ TEST_ARCH=$(_AndroidArchitecture)
       <TestRunErrorMessage Condition="Exists('$(TestResultsPath)')">$(TestRunErrorMessage) Please check $(TestResultsPath) for details!</TestRunErrorMessage>
     </PropertyGroup>
 
-    <!-- Note: The substring 'interactive' with two leading '-' needs to be in this message as a workaround for https://github.com/dotnet/msbuild/issues/9667 -->
+    <!-- Note: The substring 'interactive' with two leading '-' needs to be in this message. -->
     <Message Importance="High" Condition="'$(TestRunExitCode)' != '0'" Text="--interactive test output, because a test failed--$([System.Environment]::NewLine)@(TestRunConsoleOutput, '$([System.Environment]::NewLine)')" />
     <Error Condition="'$(TestRunExitCode)' != '0'" Text="$(TestRunErrorMessage)" />
   </Target>
