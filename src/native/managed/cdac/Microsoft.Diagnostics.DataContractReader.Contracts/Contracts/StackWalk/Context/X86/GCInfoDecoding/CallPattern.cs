@@ -9,11 +9,11 @@ internal static class CallPattern
 {
 
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> decodeCallPattern
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> DecodeCallPattern
     /// </summary>
     public static void DecodeCallPattern(uint pattern, out uint argCnt, out uint regMask, out uint argMask, out uint codeDelta)
     {
-        uint val = callPatternTable[pattern];
+        uint val = CallPatternTable[(int)pattern];
         byte[] fld = BitConverter.GetBytes(val);
         argCnt = fld[0];
         regMask = fld[1];      // EBP,EBX,ESI,EDI
@@ -22,14 +22,14 @@ internal static class CallPattern
     }
 
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> callCommonDelta
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> CallCommonDelta
     /// </summary>
-    public static readonly uint[] callCommonDelta = [6, 8, 10, 12];
+    public static ReadOnlySpan<uint> CallCommonDelta => [6, 8, 10, 12];
 
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> callPatternTable
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> CallPatternTable
     /// </summary>
-    private static readonly uint[] callPatternTable =
+    private static ReadOnlySpan<uint> CallPatternTable =>
     [
         0x0a000200, //   30109
         0x0c000200, //   22970

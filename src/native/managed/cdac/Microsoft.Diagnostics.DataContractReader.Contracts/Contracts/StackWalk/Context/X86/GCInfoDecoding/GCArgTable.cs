@@ -465,7 +465,7 @@ public class GCArgTable
                         val = _target.Read<byte>(offset++);
                         callPndMask = val & 0x7;
                         callArgCnt = (val >> 3) & 0x7;
-                        lastSkip = CallPattern.callCommonDelta[val >> 6];
+                        lastSkip = CallPattern.CallCommonDelta[(int)(val >> 6)];
                         curOffs += lastSkip;
                         SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
                         AddNewTransition(new StackDepthTransition((int)curOffs, (int)callArgCnt));
