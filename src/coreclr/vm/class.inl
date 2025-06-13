@@ -10,7 +10,7 @@
 inline PTR_MethodDescChunk EEClass::GetChunks()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_pChunksBegin;
+    return m_pChunks;
 }
 
 //*******************************************************************************

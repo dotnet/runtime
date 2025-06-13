@@ -695,7 +695,7 @@ typedef DPTR(EEClassOptionalFields) PTR_EEClassOptionalFields;
 //
 // EEClasses hold the following important fields
 //     * code:EEClass.m_pMethodTable - Points a MethodTable associated with
-//     * code:EEClass.m_pChunksBegin - a list of code:MethodDescChunk which is simply a list of code:MethodDesc
+//     * code:EEClass.m_pChunks - a list of code:MethodDescChunk which is simply a list of code:MethodDesc
 //         which represent the methods.
 //     * code:EEClass.m_pFieldDescList - a list of fields in the type.
 //
@@ -1387,17 +1387,13 @@ public:
     inline void SetChunks (MethodDescChunk* pChunks)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(pChunks != NULL);
-        _ASSERTE(m_pChunksBegin == NULL);
-        _ASSERTE(m_pChunksCurrent == NULL);
-        m_pChunksBegin = pChunks;
-        m_pChunksCurrent = pChunks;
+        m_pChunks = pChunks;
     }
 #endif // !DACCESS_COMPILE
     void AddChunk (MethodDescChunk* pNewChunk);
+
     void AddChunkIfItHasNotBeenAdded (MethodDescChunk* pNewChunk);
 
-public:
     inline PTR_GuidInfo GetGuidInfo()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1698,12 +1694,7 @@ private:
     PTR_MethodTable m_pMethodTable;
 
     PTR_FieldDesc m_pFieldDescList;
-
-    // Chain of MethodDescChunks. The "begin" pointer shouldn't be updated
-    // after being set. The "current" pointer will be updated as new MethodDescChunks
-    // are added.
-    PTR_MethodDescChunk m_pChunksBegin;
-    PTR_MethodDescChunk m_pChunksCurrent;
+    PTR_MethodDescChunk m_pChunks;
 
 #ifdef FEATURE_COMINTEROP
     union
