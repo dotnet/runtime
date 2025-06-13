@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+
 using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -15,9 +17,11 @@ namespace Microsoft.NET.HostModel
     /// </summary>
     public class ResourceUpdater : IDisposable
     {
-        private readonly FileStream stream;
+        private readonly FileStream? stream;
+        private readonly MemoryMappedFile? _memoryMappedFile;
+        private Stream Stream => (Stream?)stream ?? _memoryMappedFile!.CreateViewStream(0, 0, MemoryMappedFileAccess.ReadWrite);
         private readonly PEReader _reader;
-        private ResourceData _resourceData;
+        private ResourceData? _resourceData;
         private readonly bool leaveOpen;
 
         /// <summary>
@@ -55,6 +59,23 @@ namespace Microsoft.NET.HostModel
             }
         }
 
+        public ResourceUpdater(MemoryMappedFile memoryMappedFile, bool leaveOpen = false)
+        {
+            this._memoryMappedFile = memoryMappedFile;
+            this.leaveOpen = leaveOpen;
+            try
+            {
+                _reader = new PEReader(this.Stream, PEStreamOptions.LeaveOpen);
+                _resourceData = new ResourceData(_reader);
+            }
+            catch (Exception)
+            {
+                if (!leaveOpen)
+                    this.stream?.Dispose();
+                throw;
+            }
+        }
+
         /// <summary>
         /// Add all resources from a source PE file. It is assumed
         /// that the input is a valid PE file. If it is not, an
@@ -69,7 +90,7 @@ namespace Microsoft.NET.HostModel
 
             using var module = new PEReader(File.OpenRead(peFile));
             var moduleResources = new ResourceData(module);
-            _resourceData.CopyResourcesFrom(moduleResources);
+            _resourceData!.CopyResourcesFrom(moduleResources);
             return this;
         }
 
@@ -95,7 +116,7 @@ namespace Microsoft.NET.HostModel
             if (_resourceData == null)
                 ThrowExceptionForInvalidUpdate();
 
-            _resourceData.AddResource((ushort)lpName, (ushort)lpType, LangID_LangNeutral_SublangNeutral, data);
+            _resourceData!.AddResource((ushort)lpName, (ushort)lpType, LangID_LangNeutral_SublangNeutral, data);
 
             return this;
         }
@@ -115,7 +136,7 @@ namespace Microsoft.NET.HostModel
             if (_resourceData == null)
                 ThrowExceptionForInvalidUpdate();
 
-            _resourceData.AddResource((ushort)lpName, lpType, LangID_LangNeutral_SublangNeutral, data);
+            _resourceData!.AddResource((ushort)lpName, lpType, LangID_LangNeutral_SublangNeutral, data);
 
             return this;
         }
@@ -173,7 +194,7 @@ namespace Microsoft.NET.HostModel
             }
 
             var objectDataBuilder = new ObjectDataBuilder();
-            _resourceData.WriteResources(rsrcVirtualAddress, ref objectDataBuilder);
+            _resourceData!.WriteResources(rsrcVirtualAddress, ref objectDataBuilder);
             var rsrcSectionData = objectDataBuilder.ToData();
 
             int rsrcSectionDataSize = rsrcSectionData.Length;
@@ -185,12 +206,12 @@ namespace Microsoft.NET.HostModel
 
             int trailingSectionVirtualStart = rsrcVirtualAddress + rsrcOriginalVirtualSize;
             int trailingSectionStart = rsrcPointerToRawData + rsrcOriginalRawDataSize;
-            int trailingSectionLength = (int)(stream.Length - trailingSectionStart);
+            int trailingSectionLength = (int)(Stream.Length - trailingSectionStart);
 
             bool needsMoveTrailingSections = !isRsrcIsLastSection && delta > 0;
             long finalImageSize = trailingSectionStart + Math.Max(delta, 0) + trailingSectionLength;
 
-            using (var mmap = MemoryMappedFile.CreateFromFile(stream, null, finalImageSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
+            using (var mmap = _memoryMappedFile ?? MemoryMappedFile.CreateFromFile(stream!, null, finalImageSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
             using (MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor(0, finalImageSize, MemoryMappedFileAccess.ReadWrite))
             {
                 int peSignatureOffset = ReadI32(accessor, PEOffsets.DosStub.PESignatureOffset);
@@ -336,7 +357,8 @@ namespace Microsoft.NET.HostModel
             if (disposing && !leaveOpen)
             {
                 _reader.Dispose();
-                stream.Dispose();
+                stream?.Dispose();
+                _memoryMappedFile?.Dispose();
             }
         }
     }
