@@ -1508,7 +1508,7 @@ void InterpCompiler::CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* met
                 pFinallyCallIslandBB = (*ppLastBBNext);
                 break;
             }
-            ppLastBBNext = &((*ppLastBBNext)->pFinallyCallIslandBB);
+            ppLastBBNext = &((*ppLastBBNext)->pNextBB);
         }
 
         if (pFinallyCallIslandBB == NULL)
@@ -2242,6 +2242,32 @@ InterpCompiler::InterpEmbedGenericResult InterpCompiler::EmitGenericHandle(CORIN
     return result;
 }
 
+void InterpCompiler::EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup)
+{
+    PushStackType(StackTypeI, NULL);
+    int resultVar = m_pStackPointer[-1].var;
+
+    CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind = lookup.lookupKind.runtimeLookupKind;
+    if (runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM)
+    {
+        AddIns(INTOP_GENERICLOOKUP_METHOD);
+    }
+    else if (runtimeLookupKind == CORINFO_LOOKUP_THISOBJ)
+    {
+        AddIns(INTOP_GENERICLOOKUP_THIS);
+    }
+    else
+    {
+        AddIns(INTOP_GENERICLOOKUP_CLASS);
+    }
+    CORINFO_RUNTIME_LOOKUP *pRuntimeLookup = (CORINFO_RUNTIME_LOOKUP*)AllocMethodData(sizeof(CORINFO_RUNTIME_LOOKUP));
+    *pRuntimeLookup = lookup.runtimeLookup;
+    m_pLastNewIns->data[0] = GetDataItemIndex(pRuntimeLookup);
+
+    m_pLastNewIns->SetSVar(getParamArgIndex());
+    m_pLastNewIns->SetDVar(resultVar);
+}
+
 int InterpCompiler::EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo)
 {
     PushStackType(StackTypeI, NULL);
@@ -2281,27 +2307,49 @@ int InterpCompiler::EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &e
     return resultVar;
 }
 
-void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall, bool newObj)
+void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall, bool newObj, bool isCalli)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
     bool isVirtual = (*m_ip == CEE_CALLVIRT);
 
     CORINFO_RESOLVED_TOKEN resolvedCallToken;
+    CORINFO_CALL_INFO callInfo;
     bool doCallInsteadOfNew = false;
 
-    ResolveToken(token, newObj ? CORINFO_TOKENKIND_Method : CORINFO_TOKENKIND_NewObj, &resolvedCallToken);
+    int callIFunctionPointerVar = -1;
+    void* calliCookie = NULL;
 
-    CORINFO_CALL_INFO callInfo;
-    CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
-    if (isVirtual)
+    if (isCalli)
+    {
+        // Suppress uninitialized use warning.
+        memset(&resolvedCallToken, 0, sizeof(resolvedCallToken));
+        memset(&callInfo, 0, sizeof(callInfo));
+
+        resolvedCallToken.token        = token;
+        resolvedCallToken.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
+        resolvedCallToken.tokenScope   = m_methodInfo->scope;
+
+        m_compHnd->findSig(m_methodInfo->scope, token, METHOD_BEING_COMPILED_CONTEXT(), &callInfo.sig);
+
+        callIFunctionPointerVar = m_pStackPointer[-1].var;
+        m_pStackPointer--;
+        calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+    }
+    else
+    {
+
+        ResolveToken(token, newObj ? CORINFO_TOKENKIND_Method : CORINFO_TOKENKIND_NewObj, &resolvedCallToken);
+        
+        CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
+        if (isVirtual)
         flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
-    m_compHnd->getCallInfo(&resolvedCallToken, constrainedClass, m_methodInfo->ftn, flags, &callInfo);
-
-    if (EmitCallIntrinsics(callInfo.hMethod, callInfo.sig))
-    {
-        m_ip += 5;
-        return;
+        m_compHnd->getCallInfo(&resolvedCallToken, constrainedClass, m_methodInfo->ftn, flags, &callInfo);
+        if (EmitCallIntrinsics(callInfo.hMethod, callInfo.sig))
+        {
+            m_ip += 5;
+            return;
+        }
     }
 
     if (callInfo.classFlags & CORINFO_FLG_VAROBJSIZE)
@@ -2505,6 +2553,12 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
                     }
                 }
                 m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
+            }
+            else if (isCalli)
+            {
+                AddIns(INTOP_CALLI);
+                m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
+                m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
             }
             else if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && !readonly)
             {
@@ -3985,14 +4039,20 @@ retry_emit:
                 break;
             case CEE_CALLVIRT:
             case CEE_CALL:
-                EmitCall(constrainedClass, readonly, tailcall, false /*newObj*/);
+                EmitCall(constrainedClass, readonly, tailcall, false /*newObj*/, false /*isCalli*/);
+                constrainedClass = NULL;
+                readonly = false;
+                tailcall = false;
+                break;
+            case CEE_CALLI:
+                EmitCall(NULL /*constrainedClass*/, false /* readonly*/, false /* tailcall*/, false /*newObj*/, true /*isCalli*/);
                 constrainedClass = NULL;
                 readonly = false;
                 tailcall = false;
                 break;
             case CEE_NEWOBJ:
             {
-                EmitCall(NULL /*constrainedClass*/, false /* readonly*/, false /* tailcall*/, true /*newObj*/);
+                EmitCall(NULL /*constrainedClass*/, false /* readonly*/, false /* tailcall*/, true /*newObj*/, false /*isCalli*/);
                 constrainedClass = NULL;
                 readonly = false;
                 tailcall = false;
@@ -4460,6 +4520,45 @@ retry_emit:
                         m_ip++;
                         linkBBlocks = false;
                         break;
+
+                    case CEE_LDFTN:
+                    {
+                        CORINFO_RESOLVED_TOKEN resolvedToken;
+                        uint32_t token = getU4LittleEndian(m_ip + 1);
+                        ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
+
+                        CORINFO_CALL_INFO callInfo;
+                        m_compHnd->getCallInfo(&resolvedToken, constrainedClass, m_methodInfo->ftn, (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS| CORINFO_CALLINFO_LDFTN), &callInfo);
+                        constrainedClass = NULL;
+
+                        if (callInfo.kind == CORINFO_CALL)
+                        {
+                            CORINFO_CONST_LOOKUP embedInfo;
+                            m_compHnd->getFunctionFixedEntryPoint(callInfo.hMethod, true, &embedInfo);
+
+                            switch (embedInfo.accessType)
+                            {
+                            case IAT_VALUE:
+                                AddIns(INTOP_LDPTR);
+                                break;
+                            case IAT_PVALUE:
+                                AddIns(INTOP_LDPTR_DEREF);
+                                break;
+                            default:
+                                assert(!"Unexpected access type for function pointer");
+                            }
+                            PushInterpType(InterpTypeI, NULL);
+                            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                            m_pLastNewIns->data[0] = GetDataItemIndex(embedInfo.handle);
+                        }
+                        else
+                        {
+                            EmitPushCORINFO_LOOKUP(callInfo.codePointerLookup);
+                        }
+
+                        m_ip += 5;
+                        break;
+                    }
                     default:
                         assert(0);
                         break;
