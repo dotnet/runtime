@@ -70,8 +70,8 @@ void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdw
 
     IMAGE_DATA_DIRECTORY const * pDebugDataDirectory = &rgDataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG];
 
-    // In Redhawk, modules are loaded as MAPPED, so we don't have to worry about dealing
-    // with FLAT files (with padding missing), so header addresses can be used as is
+    // We don't have to worry about dealing with FLAT files (with padding missing), so header addresses
+    // can be used as is
     IMAGE_DEBUG_DIRECTORY const *rgDebugEntries = (IMAGE_DEBUG_DIRECTORY const *) (pbModule + pDebugDataDirectory->VirtualAddress);
     DWORD cbDebugEntries = pDebugDataDirectory->Size;
     if (cbDebugEntries < sizeof(IMAGE_DEBUG_DIRECTORY))
@@ -88,7 +88,7 @@ void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdw
         DWORD          magic; 
         GUID           signature;       // unique identifier 
         DWORD          age;             // an always-incrementing value 
-        _Field_z_ char  path[MAX_PATH];  // zero terminated string with the name of the PDB file 
+        char           path[1];         // zero terminated string with the name of the PDB file 
     };
 
     // Temporary storage for a CV_INFO_PDB70 and its size (which could be less than
@@ -99,15 +99,8 @@ void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdw
         ULONG               m_cbPdb70;
     };
 
-    // Grab module bounds so we can do some rough sanity checking before we follow any
-    // RVAs
-    uint8_t * pbModuleLowerBound = NULL;
-    uint8_t * pbModuleUpperBound = NULL;
-    PalGetModuleBounds(hOsHandle, &pbModuleLowerBound, &pbModuleUpperBound);
-
     // Iterate through all debug directory entries. The convention is that debuggers &
-    // profilers typically just use the very last IMAGE_DEBUG_TYPE_CODEVIEW entry.  Treat raw
-    // bytes we read as untrusted.
+    // profilers typically just use the very last IMAGE_DEBUG_TYPE_CODEVIEW entry.
     PdbInfo pdbInfoLast = {0};
     int cEntries = cbDebugEntries / sizeof(IMAGE_DEBUG_DIRECTORY);
     for (int i = 0; i < cEntries; i++)
@@ -123,14 +116,15 @@ void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdw
 
         // Get raw data pointed to by this IMAGE_DEBUG_DIRECTORY
 
-        // AddressOfRawData is generally set properly for Redhawk modules, so we don't
-        // have to worry about using PointerToRawData and converting it to an RVA
         if (rgDebugEntries[i].AddressOfRawData == NULL)
+        {
+            // No data. Skip.
             continue;
+        }
 
         DWORD rvaOfRawData = rgDebugEntries[i].AddressOfRawData;
         ULONG cbDebugData = rgDebugEntries[i].SizeOfData;
-        if (cbDebugData < size_t(&((CV_INFO_PDB70*)0)->magic) + sizeof(((CV_INFO_PDB70*)0)->magic))
+        if (cbDebugData < offsetof(CV_INFO_PDB70, magic) + sizeof(((CV_INFO_PDB70*)0)->magic))
         {
             // raw data too small to contain magic number at expected spot, so its format
             // is not recognizable. Skip
@@ -140,36 +134,12 @@ void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdw
         // Verify the magic number is as expected
         const DWORD CV_SIGNATURE_RSDS = 0x53445352;
         CV_INFO_PDB70 * pPdb70 = (CV_INFO_PDB70 *) (pbModule + rvaOfRawData);
-        if ((uint8_t*)(pPdb70) + cbDebugData >= pbModuleUpperBound)
-        {
-            // Bogus pointer
-            return;
-        }
-
         if (pPdb70->magic != CV_SIGNATURE_RSDS)
         {
             // Unrecognized magic number.  Skip
             continue;
         }
 
-        // From this point forward, the format should adhere to the expected layout of
-        // CV_INFO_PDB70. If we find otherwise, then assume the IMAGE_DEBUG_DIRECTORY is
-        // outright corrupt.
-
-        // Verify sane size of raw data
-        if (cbDebugData > sizeof(CV_INFO_PDB70))
-            return;
-
-        // cbDebugData actually can be < sizeof(CV_INFO_PDB70), since the "path" field
-        // can be truncated to its actual data length (i.e., fewer than MAX_PATH chars
-        // may be present in the PE file). In some cases, though, cbDebugData will
-        // include all MAX_PATH chars even though path gets null-terminated well before
-        // the MAX_PATH limit.
-        
-        // Gotta have at least one byte of the path
-        if (cbDebugData < offsetof(CV_INFO_PDB70, path) + sizeof(char))
-            return;
-        
         // How much space is available for the path?
         size_t cchPathMaxIncludingNullTerminator = (cbDebugData - offsetof(CV_INFO_PDB70, path)) / sizeof(char);
         ASSERT(cchPathMaxIncludingNullTerminator >= 1);   // Guaranteed above
