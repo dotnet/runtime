@@ -83,189 +83,635 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<ulong> AlignRight64(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected] byte mask) => AlignRight64(left, right, mask);
 
             /// <summary>
-            ///   <para>__m128i _mm_cmpge_epi32 (__m128i a, __m128i b)</para>
+            ///   <para>__m128d _mm_mask_blendv_pd (__m128d a, __m128d b, __mmask8 mask)</para>
+            ///   <para>  VBLENDMPD xmm1 {k1}, xmm2, xmm3/m128/m64bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector128<double> BlendVariable(Vector128<double> left, Vector128<double> right, Vector128<double> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_blendv_epi32 (__m128i a, __m128i b, __mmask8 mask)</para>
+            ///   <para>  VPBLENDMD xmm1 {k1}, xmm2, xmm3/m128/m32bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector128<int> BlendVariable(Vector128<int> left, Vector128<int> right, Vector128<int> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_blendv_epi64 (__m128i a, __m128i b, __mmask8 mask)</para>
+            ///   <para>  VPBLENDMQ xmm1 {k1}, xmm2, xmm3/m128/m64bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector128<long> BlendVariable(Vector128<long> left, Vector128<long> right, Vector128<long> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m128 _mm_mask_blendv_ps (__m128 a, __m128 b, __mmask8 mask)</para>
+            ///   <para>  VBLENDMPS xmm1 {k1}, xmm2, xmm3/m128/m32bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector128<float> BlendVariable(Vector128<float> left, Vector128<float> right, Vector128<float> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_blendv_epu32 (__m128i a, __m128i b, __mmask8 mask)</para>
+            ///   <para>  VPBLENDMD xmm1 {k1}, xmm2, xmm3/m128/m32bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector128<uint> BlendVariable(Vector128<uint> left, Vector128<uint> right, Vector128<uint> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_blendv_epu64 (__m128i a, __m128i b, __mmask8 mask)</para>
+            ///   <para>  VPBLENDMQ xmm1 {k1}, xmm2, xmm3/m128/m64bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector128<ulong> BlendVariable(Vector128<ulong> left, Vector128<ulong> right, Vector128<ulong> mask) => BlendVariable(left, right, mask);
+
+            /// <summary>
+            ///   <para>__m256d _mm256_mask_blendv_pd (__m256d a, __m256d b, __mmask8 mask)</para>
+            ///   <para>  VBLENDMPD ymm1 {k1}, ymm2, ymm3/m256/m64bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector256<double> BlendVariable(Vector256<double> left, Vector256<double> right, Vector256<double> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_blendv_epi32 (__m256i a, __m256i b, __mmask8 mask)</para>
+            ///   <para>  VPBLENDMD ymm1 {k1}, ymm2, ymm3/m256/m32bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector256<int> BlendVariable(Vector256<int> left, Vector256<int> right, Vector256<int> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_blendv_epi64 (__m256i a, __m256i b, __mmask8 mask)</para>
+            ///   <para>  VPBLENDMQ ymm1 {k1}, ymm2, ymm3/m256/m64bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector256<long> BlendVariable(Vector256<long> left, Vector256<long> right, Vector256<long> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m256 _mm256_mask_blendv_ps (__m256 a, __m256 b, __mmask8 mask)</para>
+            ///   <para>  VBLENDMPS ymm1 {k1}, ymm2, ymm3/m256/m32bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector256<float> BlendVariable(Vector256<float> left, Vector256<float> right, Vector256<float> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_blendv_epu32 (__m256i a, __m256i b, __mmask8 mask)</para>
+            ///   <para>  VPBLENDMD ymm1 {k1}, ymm2, ymm3/m256/m32bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector256<uint> BlendVariable(Vector256<uint> left, Vector256<uint> right, Vector256<uint> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_blendv_epu64 (__m256i a, __m256i b, __mmask8 mask)</para>
+            ///   <para>  VPBLENDMQ ymm1 {k1}, ymm2, ymm3/m256/m64bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector256<ulong> BlendVariable(Vector256<ulong> left, Vector256<ulong> right, Vector256<ulong> mask) => BlendVariable(left, right, mask);
+
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmp_pd_mask (__m128d a, __m128d b, const int imm8)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8</para>
+            /// </summary>
+            public static Vector128<double> Compare(Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) => Compare(left, right, mode);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpeq_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(0)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareEqual(Vector128<double> left, Vector128<double> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpgt_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(14)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareGreaterThan(Vector128<double> left, Vector128<double> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpge_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(13)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) => CompareGreaterThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmplt_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(1)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareLessThan(Vector128<double> left, Vector128<double> right) => CompareLessThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmple_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(2)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareLessThanOrEqual(Vector128<double> left, Vector128<double> right) => CompareLessThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpneq_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(4)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareNotEqual(Vector128<double> left, Vector128<double> right) => CompareNotEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpngt_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(10)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareNotGreaterThan(Vector128<double> left, Vector128<double> right) => CompareNotGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpnge_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(9)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareNotGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) => CompareNotGreaterThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpnlt_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(5)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareNotLessThan(Vector128<double> left, Vector128<double> right) => CompareNotLessThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpnle_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(6)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareNotLessThanOrEqual(Vector128<double> left, Vector128<double> right) => CompareNotLessThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpord_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(7)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareOrdered(Vector128<double> left, Vector128<double> right) => CompareOrdered(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpunord_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(3)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareUnordered(Vector128<double> left, Vector128<double> right) => CompareUnordered(left, right);
+
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmp_pd_mask (__m256d a, __m256d b, const int imm8)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8</para>
+            /// </summary>
+            public static Vector256<double> Compare(Vector256<double> left, Vector256<double> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) => Compare(left, right, mode);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpeq_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(0)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareEqual(Vector256<double> left, Vector256<double> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpgt_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(14)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareGreaterThan(Vector256<double> left, Vector256<double> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpge_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(13)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareGreaterThanOrEqual(Vector256<double> left, Vector256<double> right) => CompareGreaterThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmplt_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(1)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareLessThan(Vector256<double> left, Vector256<double> right) => CompareLessThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmple_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(2)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareLessThanOrEqual(Vector256<double> left, Vector256<double> right) => CompareLessThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpneq_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(4)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareNotEqual(Vector256<double> left, Vector256<double> right) => CompareNotEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpngt_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(10)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareNotGreaterThan(Vector256<double> left, Vector256<double> right) => CompareNotGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpnge_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(9)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareNotGreaterThanOrEqual(Vector256<double> left, Vector256<double> right) => CompareNotGreaterThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpnlt_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(5)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareNotLessThan(Vector256<double> left, Vector256<double> right) => CompareNotLessThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpnle_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(6)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareNotLessThanOrEqual(Vector256<double> left, Vector256<double> right) => CompareNotLessThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpord_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(7)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareOrdered(Vector256<double> left, Vector256<double> right) => CompareOrdered(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpunord_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(3)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareUnordered(Vector256<double> left, Vector256<double> right) => CompareUnordered(left, right);
+
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpeq_epi32_mask (__m128i a, __m128i b)</para>
+            ///   <para>  VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(0)</para>
+            /// </summary>
+            public static Vector128<int> CompareEqual(Vector128<int> left, Vector128<int> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpgt_epi32_mask (__m128i a, __m128i b)</para>
+            ///   <para>  VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(6)</para>
+            /// </summary>
+            public static Vector128<int> CompareGreaterThan(Vector128<int> left, Vector128<int> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpge_epi32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(5)</para>
             /// </summary>
             public static Vector128<int> CompareGreaterThanOrEqual(Vector128<int> left, Vector128<int> right) => CompareGreaterThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmplt_epi32 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmplt_epi32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(1)</para>
             /// </summary>
             public static Vector128<int> CompareLessThan(Vector128<int> left, Vector128<int> right) => CompareLessThan(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmple_epi32 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmple_epi32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(2)</para>
             /// </summary>
             public static Vector128<int> CompareLessThanOrEqual(Vector128<int> left, Vector128<int> right) => CompareLessThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmpne_epi32 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmpne_epi32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(4)</para>
             /// </summary>
             public static Vector128<int> CompareNotEqual(Vector128<int> left, Vector128<int> right) => CompareNotEqual(left, right);
 
             /// <summary>
-            ///   <para>__m256i _mm256_cmpge_epi32 (__m256i a, __m256i b)</para>
+            ///   <para>__mmask8 _mm_cmpeq_epi32_mask (__m128i a, __m128i b)</para>
+            ///   <para>  VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(0)</para>
+            /// </summary>
+            public static Vector256<int> CompareEqual(Vector256<int> left, Vector256<int> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpgt_epi32_mask (__m128i a, __m128i b)</para>
+            ///   <para>  VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(6)</para>
+            /// </summary>
+            public static Vector256<int> CompareGreaterThan(Vector256<int> left, Vector256<int> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpge_epi32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(5)</para>
             /// </summary>
             public static Vector256<int> CompareGreaterThanOrEqual(Vector256<int> left, Vector256<int> right) => CompareGreaterThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmplt_epi32 (__m256i a, __m256i b)</para>
+            ///   <para>__mmask8 _mm256_cmplt_epi32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(1)</para>
             /// </summary>
             public static Vector256<int> CompareLessThan(Vector256<int> left, Vector256<int> right) => CompareLessThan(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmple_epi32 (__m256i a, __m256i b)</para>
+            ///   <para>__mmask8 _mm256_cmple_epi32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(2)</para>
             /// </summary>
             public static Vector256<int> CompareLessThanOrEqual(Vector256<int> left, Vector256<int> right) => CompareLessThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmpne_epi32 (__m256i a, __m256i b)</para>
+            ///   <para>__mmask8 _mm256_cmpne_epi32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(4)</para>
             /// </summary>
             public static Vector256<int> CompareNotEqual(Vector256<int> left, Vector256<int> right) => CompareNotEqual(left, right);
 
             /// <summary>
-            ///   <para>__m128i _mm_cmpge_epi64 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmpeq_epi64_mask (__m128i a, __m128i b)</para>
+            ///   <para>  VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(0)</para>
+            /// </summary>
+            public static Vector128<long> CompareEqual(Vector128<long> left, Vector128<long> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpgt_epi64_mask (__m128i a, __m128i b)</para>
+            ///   <para>  VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(6)</para>
+            /// </summary>
+            public static Vector128<long> CompareGreaterThan(Vector128<long> left, Vector128<long> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpge_epi64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(5)</para>
             /// </summary>
             public static Vector128<long> CompareGreaterThanOrEqual(Vector128<long> left, Vector128<long> right) => CompareGreaterThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmplt_epi64 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmplt_epi64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(1)</para>
             /// </summary>
             public static Vector128<long> CompareLessThan(Vector128<long> left, Vector128<long> right) => CompareLessThan(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmple_epi64 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmple_epi64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(2)</para>
             /// </summary>
             public static Vector128<long> CompareLessThanOrEqual(Vector128<long> left, Vector128<long> right) => CompareLessThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmpne_epi64 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmpne_epi64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(4)</para>
             /// </summary>
             public static Vector128<long> CompareNotEqual(Vector128<long> left, Vector128<long> right) => CompareNotEqual(left, right);
 
             /// <summary>
-            ///   <para>__m256i _mm256_cmpge_epi64 (__m256i a, __m256i b)</para>
+            ///   <para>__mmask8 _mm256_cmpeq_epi64_mask (__m256i a, __m256i b)</para>
+            ///   <para>  VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(0)</para>
+            /// </summary>
+            public static Vector256<long> CompareEqual(Vector256<long> left, Vector256<long> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpgt_epi64_mask (__m256i a, __m256i b)</para>
+            ///   <para>  VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(6)</para>
+            /// </summary>
+            public static Vector256<long> CompareGreaterThan(Vector256<long> left, Vector256<long> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpge_epi64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(5)</para>
             /// </summary>
             public static Vector256<long> CompareGreaterThanOrEqual(Vector256<long> left, Vector256<long> right) => CompareGreaterThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmplt_epi64 (__m256i a, __m256i b)</para>
+            ///   <para>__mmask8 _mm256_cmplt_epi64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(1)</para>
             /// </summary>
             public static Vector256<long> CompareLessThan(Vector256<long> left, Vector256<long> right) => CompareLessThan(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmple_epi64 (__m256i a, __m256i b)</para>
+            ///   <para>__mmask8 _mm256_cmple_epi64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(2)</para>
             /// </summary>
             public static Vector256<long> CompareLessThanOrEqual(Vector256<long> left, Vector256<long> right) => CompareLessThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmpne_epi64 (__m256i a, __m256i b)</para>
+            ///   <para>__mmask8 _mm256_cmpne_epi64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(4)</para>
             /// </summary>
             public static Vector256<long> CompareNotEqual(Vector256<long> left, Vector256<long> right) => CompareNotEqual(left, right);
 
             /// <summary>
-            ///   <para>__m128i _mm_cmpgt_epu32 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmp_ps_mask (__m128 a, __m128 b, const int imm8)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8</para>
+            /// </summary>
+            public static Vector128<float> Compare(Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) => Compare(left, right, mode);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpeq_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(0)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareEqual(Vector128<float> left, Vector128<float> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpgt_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(14)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareGreaterThan(Vector128<float> left, Vector128<float> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpge_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(13)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareGreaterThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmplt_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(1)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareLessThan(Vector128<float> left, Vector128<float> right) => CompareLessThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmple_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(2)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareLessThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareLessThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpneq_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(4)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareNotEqual(Vector128<float> left, Vector128<float> right) => CompareNotEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpngt_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(10)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareNotGreaterThan(Vector128<float> left, Vector128<float> right) => CompareNotGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpnge_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(9)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareNotGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareNotGreaterThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpnlt_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(5)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareNotLessThan(Vector128<float> left, Vector128<float> right) => CompareNotLessThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpnle_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(6)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareNotLessThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareNotLessThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpord_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(7)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareOrdered(Vector128<float> left, Vector128<float> right) => CompareOrdered(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpunord_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(3)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareUnordered(Vector128<float> left, Vector128<float> right) => CompareUnordered(left, right);
+
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmp_ps_mask (__m256 a, __m256 b, const int imm8)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8</para>
+            /// </summary>
+            public static Vector256<float> Compare(Vector256<float> left, Vector256<float> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) => Compare(left, right, mode);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpeq_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(0)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareEqual(Vector256<float> left, Vector256<float> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpgt_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(14)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareGreaterThan(Vector256<float> left, Vector256<float> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpge_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(13)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareGreaterThanOrEqual(Vector256<float> left, Vector256<float> right) => CompareGreaterThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmplt_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(1)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareLessThan(Vector256<float> left, Vector256<float> right) => CompareLessThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmple_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(2)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareLessThanOrEqual(Vector256<float> left, Vector256<float> right) => CompareLessThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpneq_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(4)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareNotEqual(Vector256<float> left, Vector256<float> right) => CompareNotEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpngt_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(10)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareNotGreaterThan(Vector256<float> left, Vector256<float> right) => CompareNotGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpnge_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(9)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareNotGreaterThanOrEqual(Vector256<float> left, Vector256<float> right) => CompareNotGreaterThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpnlt_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(5)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareNotLessThan(Vector256<float> left, Vector256<float> right) => CompareNotLessThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpnle_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(6)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareNotLessThanOrEqual(Vector256<float> left, Vector256<float> right) => CompareNotLessThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpord_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(7)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareOrdered(Vector256<float> left, Vector256<float> right) => CompareOrdered(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpunord_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(3)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareUnordered(Vector256<float> left, Vector256<float> right) => CompareUnordered(left, right);
+
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpeq_epu32_mask (__m128i a, __m128i b)</para>
+            ///   <para>  VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(0)</para>
+            /// </summary>
+            public static Vector128<uint> CompareEqual(Vector128<uint> left, Vector128<uint> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpgt_epu32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(6)</para>
             /// </summary>
             public static Vector128<uint> CompareGreaterThan(Vector128<uint> left, Vector128<uint> right) => CompareGreaterThan(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmpge_epu32 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmpge_epu32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(5)</para>
             /// </summary>
             public static Vector128<uint> CompareGreaterThanOrEqual(Vector128<uint> left, Vector128<uint> right) => CompareGreaterThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmplt_epu32 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmplt_epu32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(1)</para>
             /// </summary>
             public static Vector128<uint> CompareLessThan(Vector128<uint> left, Vector128<uint> right) => CompareLessThan(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmple_epu32 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmple_epu32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(2)</para>
             /// </summary>
             public static Vector128<uint> CompareLessThanOrEqual(Vector128<uint> left, Vector128<uint> right) => CompareLessThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmpne_epu32 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmpne_epu32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(4)</para>
             /// </summary>
             public static Vector128<uint> CompareNotEqual(Vector128<uint> left, Vector128<uint> right) => CompareNotEqual(left, right);
 
             /// <summary>
-            ///   <para>__m256i _mm256_cmpgt_epu32 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmpeq_epu32_mask (__m256i a, __m256i b)</para>
+            ///   <para>  VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(0)</para>
+            /// </summary>
+            public static Vector256<uint> CompareEqual(Vector256<uint> left, Vector256<uint> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mask8 _mm256_cmpgt_epu32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(6)</para>
             /// </summary>
             public static Vector256<uint> CompareGreaterThan(Vector256<uint> left, Vector256<uint> right) => CompareGreaterThan(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmpge_epu32 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmpge_epu32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(5)</para>
             /// </summary>
             public static Vector256<uint> CompareGreaterThanOrEqual(Vector256<uint> left, Vector256<uint> right) => CompareGreaterThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmplt_epu32 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmplt_epu32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(1)</para>
             /// </summary>
             public static Vector256<uint> CompareLessThan(Vector256<uint> left, Vector256<uint> right) => CompareLessThan(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmple_epu32 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmple_epu32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(2)</para>
             /// </summary>
             public static Vector256<uint> CompareLessThanOrEqual(Vector256<uint> left, Vector256<uint> right) => CompareLessThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmpne_epu32 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmpne_epu32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(4)</para>
             /// </summary>
             public static Vector256<uint> CompareNotEqual(Vector256<uint> left, Vector256<uint> right) => CompareNotEqual(left, right);
 
             /// <summary>
-            ///   <para>__m128i _mm_cmpgt_epu64 (__m128i a, __m128i b)</para>
+            ///   <para>__mask8 _mm_cmpeq_epu64_mask (__m128i a, __m128i b)</para>
+            ///   <para>  VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(0)</para>
+            /// </summary>
+            public static Vector128<ulong> CompareEqual(Vector128<ulong> left, Vector128<ulong> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mask8 _mm_cmpgt_epu64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(6)</para>
             /// </summary>
             public static Vector128<ulong> CompareGreaterThan(Vector128<ulong> left, Vector128<ulong> right) => CompareGreaterThan(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmpge_epu64 (__m128i a, __m128i b)</para>
+            ///   <para>__mask8 _mm_cmpge_epu64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(5)</para>
             /// </summary>
             public static Vector128<ulong> CompareGreaterThanOrEqual(Vector128<ulong> left, Vector128<ulong> right) => CompareGreaterThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmplt_epu64 (__m128i a, __m128i b)</para>
+            ///   <para>__mask8 _mm_cmplt_epu64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(1)</para>
             /// </summary>
             public static Vector128<ulong> CompareLessThan(Vector128<ulong> left, Vector128<ulong> right) => CompareLessThan(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmple_epu64 (__m128i a, __m128i b)</para>
+            ///   <para>__mask8 _mm_cmple_epu64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(2)</para>
             /// </summary>
             public static Vector128<ulong> CompareLessThanOrEqual(Vector128<ulong> left, Vector128<ulong> right) => CompareLessThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmpne_epu64 (__m128i a, __m128i b)</para>
+            ///   <para>__mask8 _mm_cmpne_epu64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(4)</para>
             /// </summary>
             public static Vector128<ulong> CompareNotEqual(Vector128<ulong> left, Vector128<ulong> right) => CompareNotEqual(left, right);
 
             /// <summary>
-            ///   <para>__m256i _mm256_cmpgt_epu64 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmpeq_epu64_mask (__m256i a, __m256i b)</para>
+            ///   <para>  VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(0)</para>
+            /// </summary>
+            public static Vector256<ulong> CompareEqual(Vector256<ulong> left, Vector256<ulong> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mask8 _mm256_cmpgt_epu64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(6)</para>
             /// </summary>
             public static Vector256<ulong> CompareGreaterThan(Vector256<ulong> left, Vector256<ulong> right) => CompareGreaterThan(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmpge_epu64 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmpge_epu64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(5)</para>
             /// </summary>
             public static Vector256<ulong> CompareGreaterThanOrEqual(Vector256<ulong> left, Vector256<ulong> right) => CompareGreaterThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmplt_epu64 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmplt_epu64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(1)</para>
             /// </summary>
             public static Vector256<ulong> CompareLessThan(Vector256<ulong> left, Vector256<ulong> right) => CompareLessThan(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmple_epu64 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmple_epu64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(2)</para>
             /// </summary>
             public static Vector256<ulong> CompareLessThanOrEqual(Vector256<ulong> left, Vector256<ulong> right) => CompareLessThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmpne_epu64 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmpne_epu64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(4)</para>
             /// </summary>
             public static Vector256<ulong> CompareNotEqual(Vector256<ulong> left, Vector256<ulong> right) => CompareNotEqual(left, right);
@@ -1654,32 +2100,32 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ulong> AndNot(Vector512<ulong> left, Vector512<ulong> right) => AndNot(left, right);
 
         /// <summary>
-        ///   <para>__m512d _mm512_blendv_pd (__m512d a, __m512d b, __m512d mask)</para>
+        ///   <para>__m512d _mm512_mask_blendv_pd (__m512d a, __m512d b, __mmask8 mask)</para>
         ///   <para>  VBLENDMPD zmm1 {k1}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>
         public static Vector512<double> BlendVariable(Vector512<double> left, Vector512<double> right, Vector512<double> mask) => BlendVariable(left, right, mask);
         /// <summary>
-        ///   <para>__m512i _mm512_blendv_epi32 (__m512i a, __m512i b, __m512i mask)</para>
+        ///   <para>__m512i _mm512_mask_blendv_epi32 (__m512i a, __m512i b, __mmask16 mask)</para>
         ///   <para>  VPBLENDMD zmm1 {k1}, zmm2, zmm3/m512/m32bcst</para>
         /// </summary>
         public static Vector512<int> BlendVariable(Vector512<int> left, Vector512<int> right, Vector512<int> mask) => BlendVariable(left, right, mask);
         /// <summary>
-        ///   <para>__m512i _mm512_blendv_epi64 (__m512i a, __m512i b, __m512i mask)</para>
+        ///   <para>__m512i _mm512_mask_blendv_epi64 (__m512i a, __m512i b, __mmask8 mask)</para>
         ///   <para>  VPBLENDMQ zmm1 {k1}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>
         public static Vector512<long> BlendVariable(Vector512<long> left, Vector512<long> right, Vector512<long> mask) => BlendVariable(left, right, mask);
         /// <summary>
-        ///   <para>__m512 _mm512_blendv_ps (__m512 a, __m512 b, __m512 mask)</para>
+        ///   <para>__m512 _mm512_mask_blendv_ps (__m512 a, __m512 b, __mmask16 mask)</para>
         ///   <para>  VBLENDMPS zmm1 {k1}, zmm2, zmm3/m512/m32bcst</para>
         /// </summary>
         public static Vector512<float> BlendVariable(Vector512<float> left, Vector512<float> right, Vector512<float> mask) => BlendVariable(left, right, mask);
         /// <summary>
-        ///   <para>__m512i _mm512_blendv_epu32 (__m512i a, __m512i b, __m512i mask)</para>
+        ///   <para>__m512i _mm512_mask_blendv_epu32 (__m512i a, __m512i b, __mmask16 mask)</para>
         ///   <para>  VPBLENDMD zmm1 {k1}, zmm2, zmm3/m512/m32bcst</para>
         /// </summary>
         public static Vector512<uint> BlendVariable(Vector512<uint> left, Vector512<uint> right, Vector512<uint> mask) => BlendVariable(left, right, mask);
         /// <summary>
-        ///   <para>__m512i _mm512_blendv_epu64 (__m512i a, __m512i b, __m512i mask)</para>
+        ///   <para>__m512i _mm512_mask_blendv_epu64 (__m512i a, __m512i b, __mmask8 mask)</para>
         ///   <para>  VPBLENDMQ zmm1 {k1}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>
         public static Vector512<ulong> BlendVariable(Vector512<ulong> left, Vector512<ulong> right, Vector512<ulong> mask) => BlendVariable(left, right, mask);
@@ -1748,156 +2194,156 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector512<double> BroadcastVector256ToVector512(double* address) => BroadcastVector256ToVector512(address);
 
         /// <summary>
-        ///   <para>__m512d _mm512_cmp_pd (__m512d a, __m512d b, const int imm8)</para>
+        ///   <para>__mmask8 _mm512_cmp_pd_mask (__m512d a, __m512d b, const int imm8)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8</para>
         /// </summary>
         public static Vector512<double> Compare(Vector512<double> left, Vector512<double> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) => Compare(left, right, mode);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpeq_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpeq_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(0)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareEqual(Vector512<double> left, Vector512<double> right) => CompareEqual(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpgt_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpgt_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(14)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareGreaterThan(Vector512<double> left, Vector512<double> right) => CompareGreaterThan(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpge_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpge_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(13)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareGreaterThanOrEqual(Vector512<double> left, Vector512<double> right) => CompareGreaterThanOrEqual(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmplt_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmplt_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(1)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareLessThan(Vector512<double> left, Vector512<double> right) => CompareLessThan(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmple_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmple_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(2)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareLessThanOrEqual(Vector512<double> left, Vector512<double> right) => CompareLessThanOrEqual(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpneq_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpneq_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(4)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareNotEqual(Vector512<double> left, Vector512<double> right) => CompareNotEqual(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpngt_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpngt_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(10)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareNotGreaterThan(Vector512<double> left, Vector512<double> right) => CompareNotGreaterThan(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpnge_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpnge_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(9)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareNotGreaterThanOrEqual(Vector512<double> left, Vector512<double> right) => CompareNotGreaterThanOrEqual(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpnlt_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpnlt_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(5)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareNotLessThan(Vector512<double> left, Vector512<double> right) => CompareNotLessThan(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpnle_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpnle_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(6)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareNotLessThanOrEqual(Vector512<double> left, Vector512<double> right) => CompareNotLessThanOrEqual(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpord_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpord_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(7)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareOrdered(Vector512<double> left, Vector512<double> right) => CompareOrdered(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpunord_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpunord_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(3)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareUnordered(Vector512<double> left, Vector512<double> right) => CompareUnordered(left, right);
 
         /// <summary>
-        ///   <para>__m512 _mm512_cmp_ps (__m512 a, __m512 b, const int imm8)</para>
+        ///   <para>__mmask16 _mm512_cmp_ps_mask (__m512 a, __m512 b, const int imm8)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8</para>
         /// </summary>
         public static Vector512<float> Compare(Vector512<float> left, Vector512<float> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) => Compare(left, right, mode);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpeq_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpeq_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(0)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareEqual(Vector512<float> left, Vector512<float> right) => CompareEqual(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpgt_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpgt_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(14)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareGreaterThan(Vector512<float> left, Vector512<float> right) => CompareGreaterThan(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpge_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpge_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(13)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareGreaterThanOrEqual(Vector512<float> left, Vector512<float> right) => CompareGreaterThanOrEqual(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmplt_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmplt_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(1)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareLessThan(Vector512<float> left, Vector512<float> right) => CompareLessThan(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmple_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmple_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(2)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareLessThanOrEqual(Vector512<float> left, Vector512<float> right) => CompareLessThanOrEqual(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpneq_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpneq_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(4)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareNotEqual(Vector512<float> left, Vector512<float> right) => CompareNotEqual(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpngt_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpngt_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(10)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareNotGreaterThan(Vector512<float> left, Vector512<float> right) => CompareNotGreaterThan(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpnge_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpnge_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(9)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareNotGreaterThanOrEqual(Vector512<float> left, Vector512<float> right) => CompareNotGreaterThanOrEqual(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpnlt_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpnlt_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(5)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareNotLessThan(Vector512<float> left, Vector512<float> right) => CompareNotLessThan(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpnle_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpnle_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(6)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareNotLessThanOrEqual(Vector512<float> left, Vector512<float> right) => CompareNotLessThanOrEqual(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpord_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpord_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(7)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareOrdered(Vector512<float> left, Vector512<float> right) => CompareOrdered(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpunord_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpunord_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(3)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
