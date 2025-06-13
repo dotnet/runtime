@@ -3233,8 +3233,8 @@ int LinearScan::BuildMul(GenTree* tree)
 
     bool isUnsignedMultiply    = tree->IsUnsigned();
     bool requiresOverflowCheck = tree->gtOverflowEx();
-    bool useMulx               = !tree->OperIs(GT_MUL) && isUnsignedMultiply &&
-                   compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2);
+    bool useMulx =
+        !tree->OperIs(GT_MUL) && isUnsignedMultiply && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2);
 
     // ToDo-APX : imul currently doesn't have rex2 support. So, cannot use R16-R31.
     int              srcCount      = 0;
