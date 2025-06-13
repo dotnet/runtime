@@ -32922,44 +32922,6 @@ GenTreeMskCon* Compiler::gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree,
     return mskCon;
 }
 
-//------------------------------------------------------------------------
-// IsTrueMask: Is the given node a true mask
-//
-// Arguments:
-//   simdBaseType - the base type of the mask
-//
-// Returns true if the node is a true mask for the given simdBaseType.
-//
-// Note that a byte true mask (1111...) is different to an int true mask
-// (10001000...), therefore the simdBaseType of the mask needs to be
-// taken into account.
-//
-bool GenTree::IsTrueMask(var_types simdBaseType) const
-{
-#ifdef TARGET_ARM64
-    // TODO-SVE: For agnostic VL, vector type may not be simd16_t
-
-    if (IsCnsMsk())
-    {
-        return SveMaskPatternAll == EvaluateSimdMaskToPattern<simd16_t>(simdBaseType, AsMskCon()->gtSimdMaskVal);
-    }
-#endif
-
-    return false;
-}
-
-bool GenTree::IsFalseMask() const
-{
-#ifdef TARGET_ARM64
-    if (IsCnsMsk())
-    {
-        return AsMskCon()->IsZero();
-    }
-#endif
-
-    return false;
-}
-
 #endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------

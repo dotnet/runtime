@@ -1804,8 +1804,8 @@ public:
     inline bool IsVectorBroadcast(var_types simdBaseType) const;
 
 #ifdef FEATURE_HW_INTRINSICS
-    bool IsTrueMask(var_types simdBaseType) const;
-    bool IsFalseMask() const;
+    inline bool IsTrueMask(var_types simdBaseType) const;
+    inline bool IsFalseMask() const;
 #endif
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
@@ -9549,6 +9549,49 @@ inline bool GenTree::IsVectorBroadcast(var_types simdBaseType) const
         return AsVecCon()->IsBroadcast(simdBaseType);
     }
 #endif // FEATURE_SIMD
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsTrueMask: Is the given node a true mask
+//
+// Arguments:
+//   simdBaseType - the base type of the mask
+//
+// Returns true if the node is a true mask for the given simdBaseType.
+//
+// Note that a byte true mask (1111...) is different to an int true mask
+// (10001000...), therefore the simdBaseType of the mask needs to be
+// taken into account.
+//
+inline bool GenTree::IsTrueMask(var_types simdBaseType) const
+{
+#ifdef TARGET_ARM64
+    // TODO-SVE: For agnostic VL, vector type may not be simd16_t
+
+    if (IsCnsMsk())
+    {
+        return SveMaskPatternAll == EvaluateSimdMaskToPattern<simd16_t>(simdBaseType, AsMskCon()->gtSimdMaskVal);
+    }
+#endif
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsFalseMask: Is the given node a false mask
+//
+// Returns true if the node is a false mask, ie all zeros
+//
+inline bool GenTree::IsFalseMask() const
+{
+#ifdef TARGET_ARM64
+    if (IsCnsMsk())
+    {
+        return AsMskCon()->IsZero();
+    }
+#endif
 
     return false;
 }
