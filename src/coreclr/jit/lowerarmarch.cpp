@@ -3947,8 +3947,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     // When we are merging with zero, we can specialize
                     // and avoid instantiating the vector constant.
                     MakeSrcContained(node, op1);
-                    JITDUMP("Containing false mask op1 inside ConditionalSelect\n");
-                    DISPTREERANGE(BlockRange(), op1);
+                    LABELEDDISPTREERANGE("Contained false mask op1 in ConditionalSelect", BlockRange(), op1);
                 }
 
                 // Handle op2
@@ -3993,8 +3992,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         {
                             MakeSrcContained(node, op2);
                             op2->MakeEmbMaskOp();
-                            JITDUMP("Containing op2 inside ConditionalSelect\n");
-                            DISPTREERANGE(BlockRange(), node);
+                            LABELEDDISPTREERANGE("Contained op2 in ConditionalSelect", BlockRange(), node);
                         }
                     }
 
@@ -4006,8 +4004,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (embOp->Op(2)->IsCnsIntOrI())
                         {
                             MakeSrcContained(op2, embOp->Op(2));
-                            JITDUMP("Containing ShiftRight op2 inside ConditionalSelect\n");
-                            DISPTREERANGE(BlockRange(), op2);
+                            LABELEDDISPTREERANGE("Contained ShiftRight in ConditionalSelect", BlockRange(), op2);
                         }
                     }
                 }
@@ -4019,8 +4016,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     // and avoid instantiating the vector constant.
                     // Do this only if op1 was AllTrueMask
                     MakeSrcContained(node, op3);
-                    JITDUMP("Containing false mask op3 inside ConditionalSelect\n");
-                    DISPTREERANGE(BlockRange(), op3);
+                    LABELEDDISPTREERANGE("Contained false mask op3 in ConditionalSelect", BlockRange(), op3);
                 }
 
                 break;
@@ -4137,13 +4133,14 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             // op3 is all zeros. Such a Csel operation is absorbed into the instruction when emitted. Skip this
             // optimisation when the nestedOp is a reduce operation.
 
-            if (nestedOp1->IsTrueMask(cndSelNode->GetSimdBaseType()) && !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) &&
+            if (nestedOp1->IsTrueMask(cndSelNode->GetSimdBaseType()) &&
+                !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) &&
                 (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsVectorZero()))
             {
                 GenTree* nestedOp2 = nestedCndSel->Op(2);
                 GenTree* nestedOp3 = nestedCndSel->Op(3);
 
-                LABELEDDISPTREERANGE("Removed nested conditionalselect (before):", BlockRange(), cndSelNode);
+                LABELEDDISPTREERANGE("Removed nested conditionalselect (before)", BlockRange(), cndSelNode);
 
                 // Transform:
                 //
