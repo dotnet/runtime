@@ -92,6 +92,24 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public string Bundle(BundleOptions options, out Manifest manifest, Version? bundleVersion = null)
         {
             string bundleDirectory = GetUniqueSubdirectory("bundle");
+            return Bundle(options, bundleDirectory, out manifest, bundleVersion);
+        }
+
+        public string ReBundle(string bundleDirectory, BundleOptions options, out Manifest manifest, Version? bundleVersion = null)
+        {
+            // Reuse the existing bundle directory if it exists
+            if (!Directory.Exists(bundleDirectory))
+            {
+                throw new InvalidOperationException(
+                    $"The bundle directory '{bundleDirectory}' does not exist. " +
+                    "Please ensure the directory is created before rebundling.");
+            }
+
+            return Bundle(options, bundleDirectory, out manifest, bundleVersion);
+        }
+
+        private string Bundle(BundleOptions options, string bundleDirectory, out Manifest manifest, Version? bundleVersion = null)
+        {
             var bundler = new Bundler(
                 Binaries.GetExeName(AppName),
                 bundleDirectory,
