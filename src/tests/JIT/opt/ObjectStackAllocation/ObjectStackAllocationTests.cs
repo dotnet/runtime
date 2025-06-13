@@ -454,7 +454,7 @@ namespace ObjectStackAllocation
             return array.Length + 42;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int SpanCaptureArray1()
         {
             Span<int> span = new int[100];
@@ -465,6 +465,7 @@ namespace ObjectStackAllocation
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int SpanCaptureArray2() => SpanCaptureArray2Helper(null);
 
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int SpanCaptureArray2Helper(int[]? x)
         {
             Span<int> span = x ?? new int[100];
@@ -472,7 +473,7 @@ namespace ObjectStackAllocation
             return span[10] + span[42];
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int SpanCaptureArray3()
         {
             Span<int> span = new int[128];
@@ -481,7 +482,7 @@ namespace ObjectStackAllocation
             return x[10] + span[42];
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
         static int SpanCaptureArrayT<T>()
         {
             Span<T> span = new T[37];
