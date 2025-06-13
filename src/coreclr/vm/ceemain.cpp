@@ -1672,7 +1672,7 @@ static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
 #define FLS_STATE_ARMED 1
 #define FLS_STATE_INVOKED 2
 
-static thread_local byte t_flsState;
+static PLATFORM_THREAD_LOCAL byte t_flsState;
 
 // This is called when each *fiber* is destroyed. When the home fiber of a thread is destroyed,
 // it means that the thread itself is destroyed.

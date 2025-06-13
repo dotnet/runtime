@@ -570,8 +570,9 @@ public:
 
     virtual void WriteCode(EECodeGenManager * jitMgr) = 0;
 
-    void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
-                       void **            ppIndirection) override;  /* OUT */
+    void getHelperFtn(CorInfoHelpFunc         tnNum,                     /* IN  */
+                      CORINFO_CONST_LOOKUP *  pNativeEntrypoint,         /* OUT */
+                      CORINFO_METHOD_HANDLE * pMethodHandle) override;   /* OUT */
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
 
     InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override;

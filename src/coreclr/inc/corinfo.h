@@ -3100,10 +3100,11 @@ public:
             void                  **ppIndirection = NULL
             ) = 0;
 
-    // return the native entry point to an EE helper (see CorInfoHelpFunc)
-    virtual void* getHelperFtn (
+    // return the native entry point and/or managed method of an EE helper (see CorInfoHelpFunc)
+    virtual void getHelperFtn (
             CorInfoHelpFunc         ftnNum,
-            void                  **ppIndirection = NULL
+            CORINFO_CONST_LOOKUP *  pNativeEntrypoint,
+            CORINFO_METHOD_HANDLE * pMethodHandle = NULL /* OUT */
             ) = 0;
 
     // return a callable address of the function (native code). This function
