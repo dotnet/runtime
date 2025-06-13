@@ -893,12 +893,11 @@ bool DynamicMethodDesc::TryDestroy()
     LOG((LF_BCL, LL_INFO1000, "Level3 - Destroying DynamicMethodDesc {%p}\n", this));
 
     PTR_LCGMethodResolver methodResolver = GetLCGMethodResolver();
-    PTR_EECodeGenManager codegenManager = methodResolver->GetJitManager();
 
     // Destroy the code heap memory associated with this method first.
     // This is done before any other destruction to ensure that CodeHeap
     // iteration won't find this method while it is being destroyed.
-    if (!codegenManager->TryDestroyCodeHeapMemory(methodResolver))
+    if (!methodResolver->TryDestroyCodeHeapMemory())
     {
         // We failed to destroy the code heap memory, so we cannot continue with the destruction.
         return false;
@@ -994,7 +993,7 @@ void LCGMethodResolver::RecycleIndCells()
     }
 }
 
-void LCGMethodResolver::DestroyCodeHeapMemory()
+bool LCGMethodResolver::TryDestroyCodeHeapMemory()
 {
     CONTRACTL
     {
@@ -1014,7 +1013,8 @@ void LCGMethodResolver::DestroyCodeHeapMemory()
 
         HostCodeHeap *pHeap = HostCodeHeap::GetCodeHeap((TADDR)m_recordCodePointer);
         LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%zx)} \n", this, pHeap, *(size_t*)pHeap));
-        pHeap->GetJitManager()->FreeHostCodeHeapMemoryWorker(pHeap, m_recordCodePointer);
+        if (!pHeap->GetJitManager()->TryFreeHostCodeHeapMemory(pHeap, m_recordCodePointer))
+            return false;
 
         m_recordCodePointer = NULL;
     }
@@ -1028,7 +1028,13 @@ void LCGMethodResolver::DestroyCodeHeapMemory()
 
             HostCodeHeap *pHeap = current->GetHostCodeHeap();
             LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%zx)} \n", current, pHeap, *(size_t*)pHeap));
-            pHeap->GetJitManager()->FreeHostCodeHeapMemoryWorker(pHeap, current);
+            if (!pHeap->GetJitManager()->TryFreeHostCodeHeapMemory(pHeap, current))
+            {
+                // We were unable to destroy this code heap memory.
+                // Update the JumpStub cache in place so clean-up can be done later.
+                m_pJumpStubCache->m_pBlocks = current;
+                return false;
+            }
 
             current = next;
         }
@@ -1037,6 +1043,8 @@ void LCGMethodResolver::DestroyCodeHeapMemory()
         delete m_pJumpStubCache;
         m_pJumpStubCache = NULL;
     }
+
+    return true;
 }
 
 void LCGMethodResolver::DestroyResolver()
@@ -1529,17 +1537,6 @@ OBJECTREF LCGMethodResolver::GetManagedResolver()
 {
     LIMITED_METHOD_CONTRACT;
     return ObjectFromHandle(m_managedResolver);
-}
-
-PTR_EECodeGenManager LCGMethodResolver::GetJitManager()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    void* codeStart = GetRecordCodePointer();
-    _ASSERTE(codeStart != NULL);
-
-    HostCodeHeap* pHeap = HostCodeHeap::GetCodeHeap((TADDR)codeStart);
-    return pHeap->GetJitManager();
 }
 
 //

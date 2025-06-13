@@ -445,6 +445,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     STANDARD_VM_CONTRACT;
 
     // CodeHeapIterator ensures code heaps don't get deallocated while being walked
+    // and only walks methods that are allocated at the time of iterator creation.
     CodeHeapIterator heapIterator = ExecutionManager::GetEEJitManager()->GetCodeHeapIterator();
     while(heapIterator.Next())
     {
@@ -4023,13 +4024,14 @@ void EECodeGenManager::AddToCleanupList(HostCodeHeap *pCodeHeap)
     }
 }
 
-bool EECodeGenManager::TryDestroyCodeHeapMemory(LCGMethodResolver* pLCGMethodResolver)
+bool EECodeGenManager::TryFreeHostCodeHeapMemory(HostCodeHeap* pCodeHeap, void* codeStart)
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-        PRECONDITION(pLCGMethodResolver != NULL);
+        PRECONDITION(pCodeHeap != NULL);
+        PRECONDITION(codeStart != NULL);
     }
     CONTRACTL_END;
 
@@ -4040,7 +4042,7 @@ bool EECodeGenManager::TryDestroyCodeHeapMemory(LCGMethodResolver* pLCGMethodRes
         return false;
     }
 
-    pLCGMethodResolver->DestroyCodeHeapMemory();
+    FreeHostCodeHeapMemoryWorker(pCodeHeap, codeStart);
     return true;
 }
 

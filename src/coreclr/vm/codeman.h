@@ -72,7 +72,6 @@ Abstract:
 #endif
 
 class MethodDesc;
-class LCGMethodResolver;
 class ICorJitCompiler;
 class IJitManager;
 class EEJitManager;
@@ -1860,7 +1859,6 @@ class EECodeGenManager : public IJitManager
     friend class CheckDuplicatedStructLayouts;
     friend class EECodeInfo;
     friend class CodeHeapIterator;
-    friend class LCGMethodResolver;
 
     VPTR_ABSTRACT_VTABLE_CLASS(EECodeGenManager, IJitManager)
 
@@ -1980,7 +1978,7 @@ public:
     // Heap Management functions
     void NibbleMapSet(HeapList * pHp, TADDR pCode, size_t codeSize);
     void AddToCleanupList(HostCodeHeap* pCodeHeap);
-    bool TryDestroyCodeHeapMemory(LCGMethodResolver* pLCGMethodResolver);
+    bool TryFreeHostCodeHeapMemory(HostCodeHeap* pCodeHeap, void* codeStart);
     CodeHeapIterator GetCodeHeapIterator(LoaderAllocator* pLoaderAllocatorFilter = NULL);
 
 private:
