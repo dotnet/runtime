@@ -417,9 +417,9 @@ inline UINT DbgStateLockData::GetCombinedLockCount()
 {
     // If this fires, the set of lock types must have changed.  You'll need to
     // fix the sum below to include all lock types
-    _ASSERTE(kDbgStateLockType_Count == 3);
+    _ASSERTE(kDbgStateLockType_Count == 2);
 
-    return m_rgcLocksTaken[0] + m_rgcLocksTaken[1] + m_rgcLocksTaken[2];
+    return m_rgcLocksTaken[0] + m_rgcLocksTaken[1];
 }
 
 inline void DbgStateLockState::SetStartingValues()
