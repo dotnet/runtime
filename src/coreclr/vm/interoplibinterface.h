@@ -73,10 +73,7 @@ class JavaNative
 {
 public: // GC interaction
     static bool TriggerClientBridgeProcessing(
-        _In_ size_t sccsLen,
-        _In_ StronglyConnectedComponent* sccs,
-        _In_ size_t ccrsLen,
-        _In_ ComponentCrossReference* ccrs);
+        _In_ MarkCrossReferencesArgs* args);
 };
 
 extern "C" BOOL QCALLTYPE JavaMarshal_Initialize(
@@ -87,7 +84,7 @@ extern "C" void* QCALLTYPE JavaMarshal_CreateReferenceTrackingHandle(
     _In_ void* context);
 
 extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
-    _In_ MarkCrossReferences *crossReferences,
+    _In_ MarkCrossReferencesArgs *crossReferences,
     _In_ int length,
     _In_ void* unreachableObjectHandles);
 
@@ -133,13 +130,10 @@ public:
     static void WaitForGCBridgeFinish();
 
     static void TriggerClientBridgeProcessing(
-        _In_ size_t sccsLen,
-        _In_ StronglyConnectedComponent* sccs,
-        _In_ size_t ccrsLen,
-        _In_ ComponentCrossReference* ccrs);
+        _In_ MarkCrossReferencesArgs* args);
 
     static void FinishCrossReferenceProcessing(
-        _In_ MarkCrossReferences *crossReferences,
+        _In_ MarkCrossReferencesArgs *crossReferences,
         _In_ int length,
         _In_ void* unreachableObjectHandles);
 

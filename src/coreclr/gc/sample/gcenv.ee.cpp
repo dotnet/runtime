@@ -164,7 +164,7 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     return false;
 }
 
-void GCToEEInterface::TriggerClientBridgeProcessing(size_t sccsLen, StronglyConnectedComponent* sccs, size_t ccrsLen, ComponentCrossReference* ccrs)
+void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
 {
 }
 

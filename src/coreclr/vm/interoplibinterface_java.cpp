@@ -11,7 +11,7 @@
 
 #include "interoplibinterface.h"
 
-using CrossreferenceHandleCallback = void(STDMETHODCALLTYPE *)(MarkCrossReferences*);
+using CrossreferenceHandleCallback = void(STDMETHODCALLTYPE *)(MarkCrossReferencesArgs*);
 
 namespace
 {
@@ -65,7 +65,7 @@ extern "C" void* QCALLTYPE JavaMarshal_CreateReferenceTrackingHandle(
 }
 
 extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
-    _In_ MarkCrossReferences *crossReferences,
+    _In_ MarkCrossReferencesArgs *crossReferences,
     _In_ int length,
     _In_ void* unreachableObjectHandles)
 {
@@ -97,10 +97,7 @@ extern "C" BOOL QCALLTYPE JavaMarshal_GetContext(
 }
 
 bool JavaNative::TriggerClientBridgeProcessing(
-    _In_ size_t sccsLen,
-    _In_ StronglyConnectedComponent* sccs,
-    _In_ size_t ccrsLen,
-    _In_ ComponentCrossReference* ccrs)
+    _In_ MarkCrossReferencesArgs *args)
 {
     CONTRACTL
     {
@@ -113,13 +110,7 @@ bool JavaNative::TriggerClientBridgeProcessing(
     if (g_MarkCrossReferences == NULL)
         return false;
 
-    MarkCrossReferences arg;
-    arg.ComponentCount = sccsLen;
-    arg.Components = sccs;
-    arg.CrossReferenceCount = ccrsLen;
-    arg.CrossReferences = ccrs;
-
-    g_MarkCrossReferences(&arg);
+    g_MarkCrossReferences(args);
     return true;
 }
 

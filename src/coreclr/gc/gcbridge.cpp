@@ -1169,7 +1169,7 @@ static bool tarjan_scc_algorithm ()
     return true;
 }
 
-static void build_scc_callback_data (BridgeProcessorResult *bp_res)
+static MarkCrossReferencesArgs* build_scc_callback_data ()
 {
     ColorBucket *cur;
     int j;
@@ -1279,24 +1279,19 @@ static void build_scc_callback_data (BridgeProcessorResult *bp_res)
         printf("\t%ld -> %ld\n", api_xrefs[i].SourceGroupIndex, api_xrefs[i].DestinationGroupIndex);
 #endif
 
-    bp_res->sccsLen = num_sccs;
-    bp_res->sccs = api_sccs;
-    bp_res->ccrsLen = xref_count;
-    bp_res->ccrs = api_xrefs;
+    return new (nothrow) MarkCrossReferencesArgs(num_sccs, api_sccs, xref_count, api_xrefs); 
 }
 
-BridgeProcessorResult ProcessBridgeObjects()
+MarkCrossReferencesArgs* ProcessBridgeObjects()
 {
-    BridgeProcessorResult bp_res = { 0 };
-
     if (!tarjan_scc_algorithm())
-        return bp_res;
+        return NULL;
 
-    build_scc_callback_data(&bp_res);
+    MarkCrossReferencesArgs* args = build_scc_callback_data();
 
     reset_objects_header();
 
     bridge_finish();
 
-    return bp_res;
+    return args;
 }

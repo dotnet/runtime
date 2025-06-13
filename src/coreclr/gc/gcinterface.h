@@ -156,12 +156,24 @@ struct ComponentCrossReference
     size_t DestinationGroupIndex;
 };
 
-struct MarkCrossReferences
+struct MarkCrossReferencesArgs
 {
     size_t ComponentCount;
     StronglyConnectedComponent* Components;
     size_t CrossReferenceCount;
     ComponentCrossReference* CrossReferences;
+
+    MarkCrossReferencesArgs(
+        size_t ComponentCount,
+        StronglyConnectedComponent* Components,
+        size_t CrossReferenceCount,
+        ComponentCrossReference* CrossReferences)
+    {
+        this->ComponentCount = ComponentCount;
+        this->Components = Components;
+        this->CrossReferenceCount = CrossReferenceCount;
+        this->CrossReferences = CrossReferences;
+    }
 };
 
 

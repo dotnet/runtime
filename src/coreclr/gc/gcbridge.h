@@ -8,17 +8,8 @@
 #include "common.h"
 #include "gcinterface.h"
 
-struct BridgeProcessorResult
-{
-    int sccsLen;
-    StronglyConnectedComponent *sccs;
-
-    int ccrsLen;
-    ComponentCrossReference *ccrs;
-};
-
 void BridgeResetData();
-BridgeProcessorResult ProcessBridgeObjects();
+MarkCrossReferencesArgs* ProcessBridgeObjects();
 
 void RegisterBridgeObject(Object *object, uintptr_t context);
 uint8_t** GetRegisteredBridges(size_t *pNumBridges);

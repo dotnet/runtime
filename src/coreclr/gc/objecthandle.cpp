@@ -1624,9 +1624,12 @@ uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext
     }
 
     // The callee here will free the allocated memory.
-    BridgeProcessorResult bpResult = ProcessBridgeObjects();
+    MarkCrossReferencesArgs *args = ProcessBridgeObjects();
 
-    GCToEEInterface::TriggerClientBridgeProcessing(bpResult.sccsLen, bpResult.sccs, bpResult.ccrsLen, bpResult.ccrs);
+    if (args != NULL)
+    {
+        GCToEEInterface::TriggerClientBridgeProcessing(args);
+    }
 
     return GetRegisteredBridges(numObjs);
 }

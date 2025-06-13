@@ -163,9 +163,7 @@ namespace
     CLREvent* g_bridgeFinished = nullptr;
 
     void ReleaseGCBridgeArgumentsWorker(
-        _In_ size_t sccsLen,
-        _In_ StronglyConnectedComponent* sccs,
-        _In_ ComponentCrossReference* ccrs)
+        _In_ MarkCrossReferencesArgs* args)
     {
         CONTRACTL
         {
@@ -178,12 +176,13 @@ namespace
         // See callers of GCToEEInterface::TriggerGCBridge().
 
         // Free memory in each of the SCCs
-        for (size_t i = 0; i < sccsLen; i++)
+        for (size_t i = 0; i < args->ComponentCount; i++)
         {
-            free(sccs[i].Context);
+            free(args->Components[i].Context);
         }
-        free(sccs);
-        free(ccrs);
+        free(args->Components);
+        free(args->CrossReferences);
+        free(args);
     }
 }
 
@@ -213,10 +212,7 @@ void Interop::WaitForGCBridgeFinish()
 }
 
 void Interop::TriggerClientBridgeProcessing(
-    _In_ size_t sccsLen,
-    _In_ StronglyConnectedComponent* sccs,
-    _In_ size_t ccrsLen,
-    _In_ ComponentCrossReference* ccrs)
+    _In_ MarkCrossReferencesArgs* args)
 {
     CONTRACTL
     {
@@ -229,21 +225,21 @@ void Interop::TriggerClientBridgeProcessing(
     {
         // Release the memory allocated since the GCBridge
         // is already running and we're not passing them to it.
-        ReleaseGCBridgeArgumentsWorker(sccsLen, sccs, ccrs);
+        ReleaseGCBridgeArgumentsWorker(args);
         return;
     }
 
     bool gcBridgeTriggered = false;
 
 #ifdef FEATURE_JAVAMARSHAL
-    gcBridgeTriggered = JavaNative::TriggerClientBridgeProcessing(sccsLen, sccs, ccrsLen, ccrs);
+    gcBridgeTriggered = JavaNative::TriggerClientBridgeProcessing(args);
 #endif // FEATURE_JAVAMARSHAL
 
     if (!gcBridgeTriggered)
     {
         // Release the memory allocated since the GCBridge
         // wasn't trigger for some reason.
-        ReleaseGCBridgeArgumentsWorker(sccsLen, sccs, ccrs);
+        ReleaseGCBridgeArgumentsWorker(args);
         return;
     }
 
@@ -263,7 +259,7 @@ void Interop::TriggerClientBridgeProcessing(
 }
 
 void Interop::FinishCrossReferenceProcessing(
-    _In_ MarkCrossReferences *crossReferences,
+    _In_ MarkCrossReferencesArgs *args,
     _In_ int length,
     _In_ void* unreachableObjectHandles)
 {
@@ -285,7 +281,7 @@ void Interop::FinishCrossReferenceProcessing(
         g_bridgeFinished->Set();
     }
 
-    ReleaseGCBridgeArgumentsWorker(crossReferences->ComponentCount, crossReferences->Components, crossReferences->CrossReferences);
+    ReleaseGCBridgeArgumentsWorker(args);
 }
 
 #endif // FEATURE_GCBRIDGE
