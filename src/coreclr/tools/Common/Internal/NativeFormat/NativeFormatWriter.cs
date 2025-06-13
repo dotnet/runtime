@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
+using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Text;
-using System.Xml.Linq;
+using System.Numerics;
 
 // Managed mirror of NativeFormatWriter.h/.cpp
 namespace Internal.NativeFormat
@@ -388,13 +387,6 @@ namespace Internal.NativeFormat
                     Debug.Assert(_tentativelyWritten.Count == 0);
                     Debug.Assert(_compressionDepth == 0);
 #endif
-                }
-
-                if (_offsetAdjustment > 0)
-                {
-                    _paddingSize += _offsetAdjustment;
-                    WritePad(_offsetAdjustment);
-
                 }
 
                 if (_offsetAdjustment == 0)

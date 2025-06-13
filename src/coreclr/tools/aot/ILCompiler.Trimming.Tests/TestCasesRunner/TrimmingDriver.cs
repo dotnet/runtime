@@ -118,34 +118,34 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider, logger);
 
 			UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(
-                compilationGroup,
-                typeSystemContext,
-                new NoMetadataBlockingPolicy(),
-                new ManifestResourceBlockingPolicy(logger, options.FeatureSwitches, new Dictionary<ModuleDesc, IReadOnlySet<string>>()),
-                logFile: null,
-                stackTracePolicy: new NoStackTraceEmissionPolicy(),
-                invokeThunkGenerationPolicy: new DefaultDynamicInvokeThunkGenerationPolicy(),
-                flowAnnotations: new FlowAnnotations(logger, ilProvider, compilerGeneratedState),
-                generationOptions: UsageBasedMetadataGenerationOptions.ReflectionILScanning,
-                options: default,
-                logger: logger,
-                featureSwitchValues: options.FeatureSwitches,
-                rootEntireAssembliesModules: Array.Empty<string>(),
-                additionalRootedAssemblies: options.AdditionalRootAssemblies.ToArray(),
-                trimmedAssemblies: options.TrimAssemblies.ToArray(),
-                satelliteAssemblyFilePaths: Array.Empty<string>());
+				compilationGroup,
+				typeSystemContext,
+				new NoMetadataBlockingPolicy(),
+				new ManifestResourceBlockingPolicy(logger, options.FeatureSwitches, new Dictionary<ModuleDesc, IReadOnlySet<string>>()),
+				logFile: null,
+				stackTracePolicy: new NoStackTraceEmissionPolicy(),
+				invokeThunkGenerationPolicy: new DefaultDynamicInvokeThunkGenerationPolicy(),
+				flowAnnotations: new FlowAnnotations(logger, ilProvider, compilerGeneratedState),
+				generationOptions: UsageBasedMetadataGenerationOptions.ReflectionILScanning,
+				options: default,
+				logger: logger,
+				featureSwitchValues: options.FeatureSwitches,
+				rootEntireAssembliesModules: Array.Empty<string>(),
+				additionalRootedAssemblies: options.AdditionalRootAssemblies.ToArray(),
+				trimmedAssemblies: options.TrimAssemblies.ToArray(),
+				satelliteAssemblyFilePaths: Array.Empty<string>());
 
 			PInvokeILEmitterConfiguration pinvokePolicy = new ILCompilerTestPInvokePolicy ();
 			InteropStateManager interopStateManager = new InteropStateManager (typeSystemContext.GeneratedAssembly);
 			InteropStubManager interopStubManager = new UsageBasedInteropStubManager (interopStateManager, pinvokePolicy, logger);
 
-            TypeMapManager typeMapManager = new UsageBasedTypeMapManager (TypeMapMetadata.Empty);
-            if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
-            {
-                typeMapManager = new UsageBasedTypeMapManager (TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext));
-            }
+			TypeMapManager typeMapManager = new UsageBasedTypeMapManager (TypeMapMetadata.Empty);
+			if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
+			{
+				typeMapManager = new UsageBasedTypeMapManager (TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext));
+			}
 
-            CompilationBuilder builder = new RyuJitCompilationBuilder (typeSystemContext, compilationGroup)
+			CompilationBuilder builder = new RyuJitCompilationBuilder (typeSystemContext, compilationGroup)
 				.UseILProvider (ilProvider)
 				.UseCompilationUnitPrefix("");
 
@@ -154,7 +154,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.UseMetadataManager (metadataManager)
 				.UseParallelism (System.Diagnostics.Debugger.IsAttached ? 1 : -1)
 				.UseInteropStubManager (interopStubManager)
-                .UseTypeMapManager (typeMapManager)
+				.UseTypeMapManager (typeMapManager)
 				.ToILScanner ();
 
 			return scanner.Scan ();
