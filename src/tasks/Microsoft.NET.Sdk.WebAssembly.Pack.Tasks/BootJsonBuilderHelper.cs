@@ -256,7 +256,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 );
             }
 
-            assets.libraryInitializers = MapJsAssets(resources.libraryInitializers, subFolder: "..");
+            assets.libraryInitializers = resources.libraryInitializers;
             assets.modulesAfterConfigLoaded = MapJsAssets(resources.modulesAfterConfigLoaded);
             assets.modulesAfterRuntimeReady = MapJsAssets(resources.modulesAfterRuntimeReady);
 

@@ -317,10 +317,9 @@ public class AssetsData
 
     /// <summary>
     /// JavaScript module initializers that Blazor will be in charge of loading.
-    /// Used in .NET < 8
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
-    public List<JsAsset> libraryInitializers { get; set; }
+    public ResourceHashesByNameDictionary libraryInitializers { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
     public List<JsAsset> modulesAfterConfigLoaded { get; set; }
