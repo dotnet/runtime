@@ -32870,6 +32870,17 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     return resultNode;
 }
 
+//------------------------------------------------------------------------------
+// gtFoldExprConvertVecCnsToMask: Folds a constant vector plus conversion to
+//                                mask into a constant mask.
+//
+// Arguments:
+//    tree   -  The convert vector to mask node
+//    vecCon -  The vector constant converted by the convert
+//
+// Return Value:
+//    Returns a constant mask
+//
 GenTreeMskCon* Compiler::gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon)
 {
     assert(tree->OperIsConvertVectorToMask());
