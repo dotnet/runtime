@@ -184,10 +184,6 @@ export function normalizeConfig () {
         config.debugLevel = -1;
     }
 
-    if (config.cachedResourcesPurgeDelay === undefined) {
-        config.cachedResourcesPurgeDelay = 10000;
-    }
-
     if (!config.applicationEnvironment) {
         config.applicationEnvironment = "Production";
     }

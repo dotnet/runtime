@@ -17,8 +17,9 @@
 #define INTERP_STACK_SLOT_SIZE 8    // Alignment of each var offset on the interpreter stack
 #define INTERP_STACK_ALIGNMENT 16   // Alignment of interpreter stack at the start of a frame
 
-#define INTERP_METHOD_HANDLE_TAG 4 // Tag of a MethodDesc in the interp method dataItems
 #define INTERP_INDIRECT_HELPER_TAG 1 // When a helper ftn's address is indirect we tag it with this tag bit
+
+struct CallStubHeader;
 
 struct InterpMethod
 {
@@ -28,6 +29,8 @@ struct InterpMethod
     CORINFO_METHOD_HANDLE methodHnd;
     int32_t allocaSize;
     void** pDataItems;
+    // This stub is used for calling the interpreted method from JITted/AOTed code
+    CallStubHeader *pCallStub;
     bool initLocals;
 
     InterpMethod(CORINFO_METHOD_HANDLE methodHnd, int32_t allocaSize, void** pDataItems, bool initLocals)
@@ -39,6 +42,7 @@ struct InterpMethod
         this->allocaSize = allocaSize;
         this->pDataItems = pDataItems;
         this->initLocals = initLocals;
+        pCallStub = NULL;
     }
 
     bool CheckIntegrity()
@@ -48,6 +52,19 @@ struct InterpMethod
 #else
         return true;
 #endif
+    }
+};
+
+struct InterpByteCodeStart
+{
+#ifndef DPTR
+    InterpMethod* const Method; // Pointer to the InterpMethod structure
+#else
+    DPTR(InterpMethod) const Method; // Pointer to the InterpMethod structure
+#endif
+    const int32_t* GetByteCodes() const
+    {
+        return reinterpret_cast<const int32_t*>(this + 1);
     }
 };
 
