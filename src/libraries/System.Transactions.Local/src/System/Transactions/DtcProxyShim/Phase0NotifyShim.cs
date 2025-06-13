@@ -18,7 +18,7 @@ internal sealed partial class Phase0NotifyShim : NotificationShimBase, ITransact
     public void Phase0Request(bool fAbortHint)
     {
         AbortingHint = fAbortHint;
-        NotificationType = ShimNotificationType.Phase0RequestNotify;
+        NotificationType = Interop.Xolehlp.ShimNotificationType.Phase0RequestNotify;
         ShimFactory.NewNotification(this);
     }
 
