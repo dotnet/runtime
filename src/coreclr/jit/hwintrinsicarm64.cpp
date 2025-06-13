@@ -342,8 +342,17 @@ void HWIntrinsicInfo::lookupImmBounds(
 
     if (category == HW_Category_ShiftLeftByImmediate)
     {
+        int size = genTypeSize(baseType);
+
+        if (intrinsic == NI_Sve2_ShiftLeftLogicalWideningEven || intrinsic == NI_Sve2_ShiftLeftLogicalWideningOdd)
+        {
+            // Edge case for widening shifts. The base type is the wide type, but the maximum shift is the number
+            // of bits in the narrow type.
+            size /= 2;
+        }
+
         // The left shift amount is in the range 0 to the element width in bits minus 1.
-        immUpperBound = BITS_PER_BYTE * genTypeSize(baseType) - 1;
+        immUpperBound = BITS_PER_BYTE * size - 1;
     }
     else if (category == HW_Category_ShiftRightByImmediate)
     {
