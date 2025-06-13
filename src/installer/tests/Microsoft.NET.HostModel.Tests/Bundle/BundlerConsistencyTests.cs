@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -312,6 +313,34 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             var alignment = OperatingSystem.IsLinux() && RuntimeInformation.OSArchitecture == Architecture.Arm64 ? 4096 : (OperatingSystem.IsLinux() && RuntimeInformation.OSArchitecture == Architecture.LoongArch64 ? 16384 : 16);
             bundler.BundleManifest.Files.ForEach(file =>
                 Assert.True((file.Type != FileType.Assembly) || (file.Offset % alignment == 0)));
+        }
+
+        [Fact]
+        [Conditional("DEBUG")] // Relies on debug asserts in product code
+        public void LongFileNames()
+        {
+            var app = sharedTestState.App;
+            List<FileSpec> fileSpecs = new List<FileSpec>
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(app.AppDll, Path.Join(
+                    Path.GetDirectoryName(Path.GetRelativePath(app.Location, app.AppDll)),
+                    Path.GetFileNameWithoutExtension(app.AppDll) + new string('a', 260) + Path.GetExtension(app.AppDll))),
+            };
+
+            fileSpecs.AddRange(SingleFileTestApp.GetRuntimeFilesToBundle());
+            Bundler bundler = CreateBundlerInstance();
+            // Debug asserts in the Manifest and Bundler should catch size calculation issues related to long file names
+            var bundledPath = bundler.GenerateBundle(fileSpecs);
+
+            fileSpecs.Add(new FileSpec(app.AppDll, Path.Join(
+                Path.GetDirectoryName(Path.GetRelativePath(app.Location, app.AppDll)),
+                Path.GetFileNameWithoutExtension(app.AppDll) + new string('a', 16385) + Path.GetExtension(app.AppDll))));
+            Assert.Throws<ArgumentException>(() =>
+            {
+                // This should throw an exception due to the long file name exceeding the maximum allowed length
+                bundler.GenerateBundle(fileSpecs);
+            });
         }
 
         [Theory]

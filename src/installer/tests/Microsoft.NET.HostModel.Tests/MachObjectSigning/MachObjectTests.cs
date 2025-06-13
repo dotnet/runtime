@@ -40,7 +40,8 @@ public class MachObjectTests
     [MemberData(nameof(GetTestFilePaths), nameof(RoundTripMachObjectFileIsTheSame))]
     void RoundTripMachObjectFileIsTheSame(string filePath, TestArtifact testArtifact)
     {
-        using var testArtifactLocation = testArtifact;
+        var backupFilePath = filePath + ".bak";
+        File.Copy(filePath, backupFilePath);
         using (var mmap = MemoryMappedFile.CreateFromFile(filePath))
         using (var accessor = mmap.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
         {
@@ -49,6 +50,24 @@ public class MachObjectTests
             machObjectFile.Write(machFile);
             var rewrittenMachFile = MachObjectFile.Create(machFile);
             MachObjectFile.AssertEquivalent(machObjectFile, rewrittenMachFile);
+        }
+        using (FileStream original = new FileStream(backupFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        using (FileStream written = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            Assert.Equal(original.Length, written.Length);
+            byte[] originalBuffer = new byte[4096];
+            byte[] writtenBuffer = new byte[4096];
+            while (true)
+            {
+                int bytesReadOriginal = original.Read(originalBuffer, 0, originalBuffer.Length);
+                int bytesReadWritten = written.Read(writtenBuffer, 0, writtenBuffer.Length);
+                Assert.Equal(bytesReadOriginal, bytesReadWritten);
+
+                if (bytesReadOriginal == 0)
+                    break;
+
+                Assert.True(originalBuffer.Take(bytesReadOriginal).SequenceEqual(writtenBuffer.Take(bytesReadWritten)));
+            }
         }
     }
 

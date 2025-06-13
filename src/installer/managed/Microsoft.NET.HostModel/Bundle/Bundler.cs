@@ -500,13 +500,10 @@ namespace Microsoft.NET.HostModel.Bundle
             // Prefixed length of bundle ID is 7-bit encoded
             // Strings 0-127 chars: 1 byte prefix
             // Strings 128-16,383 chars: 2 byte prefix
-            // Strings 16,384-2,097,151 chars: 3 byte prefix
-            // Strings 2,097,152-268,435,455 chars: 4 byte prefix
-            // Strings 268,435,456+ chars: 5 byte prefix
+            // Strings longer than 16,383 bytes are not supported and fail at runtime.
             uint lengthPrefixLength = (stringLength < 128) ? 1u :
                            (stringLength < 16384) ? 2u :
-                           (stringLength < 2097152) ? 3u :
-                           (stringLength < 268435456) ? 4u : 5u;
+                           throw new ArgumentException("Cannot write strings longer than 16,383 bytes to the bundle.");
             return lengthPrefixLength + stringLength;
         }
     }

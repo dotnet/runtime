@@ -108,7 +108,9 @@ internal sealed class CodeDirectoryBlob : IBlob
         uint pageSize = MachObjectFile.DefaultPageSize)
     {
         uint codeSlotCount = GetCodeSlotCount((uint)signatureStart, pageSize);
-        uint specialCodeSlotCount = (uint)CodeDirectorySpecialSlot.Requirements;
+        uint specialCodeSlotCount = (uint)(derEntitlementsBlob != null ? CodeDirectorySpecialSlot.DerEntitlements :
+            entitlementsBlob != null ? CodeDirectorySpecialSlot.Entitlements :
+            CodeDirectorySpecialSlot.Requirements);
 
         var specialSlotHashes = new byte[specialCodeSlotCount][];
         var codeHashes = new byte[codeSlotCount][];
