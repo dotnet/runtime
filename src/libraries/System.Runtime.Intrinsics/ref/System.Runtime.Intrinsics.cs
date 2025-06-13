@@ -7764,6 +7764,10 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe System.Runtime.Intrinsics.Vector512<int> BroadcastVector256ToVector512(int* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector512<float> BroadcastVector256ToVector512(float* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector512<uint> BroadcastVector256ToVector512(uint* address) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> Classify(System.Runtime.Intrinsics.Vector512<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> Classify(System.Runtime.Intrinsics.Vector512<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> ClassifyScalar(System.Runtime.Intrinsics.Vector128<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> ClassifyScalar(System.Runtime.Intrinsics.Vector128<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> ConvertToVector256Single(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> ConvertToVector256Single(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> ConvertToVector512Double(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
@@ -7821,6 +7825,10 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector256<int> BroadcastPairScalarToVector256(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<float> BroadcastPairScalarToVector256(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<uint> BroadcastPairScalarToVector256(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> Classify(System.Runtime.Intrinsics.Vector128<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> Classify(System.Runtime.Intrinsics.Vector128<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> Classify(System.Runtime.Intrinsics.Vector256<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> Classify(System.Runtime.Intrinsics.Vector256<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> ConvertToVector128Double(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> ConvertToVector128Double(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<long> ConvertToVector128Int64(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }

@@ -21045,6 +21045,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_comisd:
         case INS_ucomiss:
         case INS_ucomisd:
+        case INS_vfpclasspd:
+        case INS_vfpclassps:
+        case INS_vfpclasssd:
+        case INS_vfpclassss:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_3C;
             break;

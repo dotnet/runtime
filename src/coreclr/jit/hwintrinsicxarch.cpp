@@ -4985,6 +4985,28 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AVX512_Classify:
+        case NI_AVX512_ClassifyScalar:
+        {
+            assert(sig->numArgs == 2);
+
+            if (intrinsic == NI_AVX512_Classify)
+            {
+                intrinsic = NI_AVX512_ClassifyMask;
+            }
+            else
+            {
+                intrinsic = NI_AVX512_ClassifyScalarMask;
+            }
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack();
+
+            retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, intrinsic, simdBaseJitType, simdSize);
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_AVX_Compare:
         case NI_AVX_CompareScalar:
         case NI_AVX512_Compare:

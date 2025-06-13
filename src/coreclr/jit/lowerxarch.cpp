@@ -9744,6 +9744,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_Permute4x64:
                         case NI_AVX2_ShuffleHigh:
                         case NI_AVX2_ShuffleLow:
+                        case NI_AVX512_ClassifyMask:
+                        case NI_AVX512_ClassifyScalarMask:
                         case NI_AVX512_Permute2x64:
                         case NI_AVX512_Permute4x32:
                         case NI_AVX512_Permute4x64:
