@@ -58,6 +58,9 @@ namespace ILCompiler.ObjectWriter
         private readonly Dictionary<int, CoffSectionSymbol> _sectionNumberToComdatAuxRecord = new();
         private readonly HashSet<string> _referencedMethods = new();
 
+        // Linkage options
+        private SectionWriter _drectveSectionWriter;
+
         // Exception handling
         private SectionWriter _pdataSectionWriter;
 
@@ -72,6 +75,7 @@ namespace ILCompiler.ObjectWriter
         private static readonly ObjectNodeSection GfidsSection = new ObjectNodeSection(".gfids$y", SectionType.ReadOnly);
         private static readonly ObjectNodeSection DebugTypesSection = new ObjectNodeSection(".debug$T", SectionType.ReadOnly);
         private static readonly ObjectNodeSection DebugSymbolSection = new ObjectNodeSection(".debug$S", SectionType.ReadOnly);
+        private static readonly ObjectNodeSection LinkerDirectivesSection = new ObjectNodeSection(".drectve", SectionType.ReadOnly); // TODO: mark with IMAGE_SCN_LNK_INFO | IMAGE_SCN_LNK_REMOVE on writing
 
         public CoffObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
@@ -115,6 +119,11 @@ namespace ILCompiler.ObjectWriter
                 sectionHeader.SectionCharacteristics =
                     SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData |
                     SectionCharacteristics.MemDiscardable;
+            }
+
+            if (section == LinkerDirectivesSection)
+            {
+                sectionHeader.SectionCharacteristics = SectionCharacteristics.LinkerInfo | SectionCharacteristics.LinkerRemove;
             }
 
             if (comdatName is not null)
@@ -224,14 +233,25 @@ namespace ILCompiler.ObjectWriter
                 }
                 else
                 {
-                    _symbolNameToIndex.Add(symbolName, (uint)_symbols.Count);
-                    _symbols.Add(new CoffSymbol
+                    CoffSymbol symbol = new CoffSymbol
                     {
                         Name = symbolName,
                         Value = (uint)symbolDefinition.Value,
                         SectionIndex = (uint)(1 + symbolDefinition.SectionIndex),
                         StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_EXTERNAL,
-                    });
+                    };
+
+                    if (symbolDefinition.Flags.HasFlag(SymbolFlags.Weak))
+                    {
+                        // generate a symbol name for the weak symbol and emit an /ALTERNATENAME directive
+                        string newName = $"$$weakSym.{symbolName}.{_symbols.Count}";
+                        _drectveSectionWriter = GetOrCreateSection(LinkerDirectivesSection);
+                        _drectveSectionWriter.Write(Encoding.ASCII.GetBytes($"/alternatename:{symbolName}={newName} "));
+                        symbol.Name = newName;
+                    }
+
+                    _symbols.Add(symbol);
+                    _symbolNameToIndex.Add(symbolName, (uint)_symbols.Count);
                 }
             }
 

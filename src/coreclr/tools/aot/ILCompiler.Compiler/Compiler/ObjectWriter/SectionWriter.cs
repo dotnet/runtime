@@ -60,14 +60,14 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             long relativeOffset = 0,
             int size = 0,
-            bool global = false)
+            SymbolFlags flags = SymbolFlags.Hidden)
         {
             _objectWriter.EmitSymbolDefinition(
                 SectionIndex,
                 symbolName,
                 Position + relativeOffset,
                 size,
-                global);
+                flags);
         }
 
         public readonly void EmitSymbolReference(

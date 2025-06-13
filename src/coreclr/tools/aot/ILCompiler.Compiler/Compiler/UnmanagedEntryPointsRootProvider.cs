@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.Reflection.Metadata;
-
+using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -60,17 +60,18 @@ namespace ILCompiler
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
+            SymbolFlags flags = Hidden ? SymbolFlags.Hidden : SymbolFlags.None;
             foreach (var ecmaMethod in ExportedMethods)
             {
                 if (ecmaMethod.IsUnmanagedCallersOnly)
                 {
                     string unmanagedCallersOnlyExportName = ecmaMethod.GetUnmanagedCallersOnlyExportName();
-                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Native callable", unmanagedCallersOnlyExportName, Hidden);
+                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Native callable", unmanagedCallersOnlyExportName, flags);
                 }
                 else
                 {
                     string runtimeExportName = ecmaMethod.GetRuntimeExportName();
-                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Runtime export", runtimeExportName, Hidden);
+                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Runtime export", runtimeExportName, flags);
                 }
             }
         }

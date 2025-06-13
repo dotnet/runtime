@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -10,7 +11,7 @@ namespace ILCompiler
     /// </summary>
     public interface IRootingServiceProvider
     {
-        void AddCompilationRoot(MethodDesc method, string reason, string exportName = null, bool exportHidden = false);
+        void AddCompilationRoot(MethodDesc method, string reason, string exportName = null, SymbolFlags flags = SymbolFlags.None);
         void AddCompilationRoot(TypeDesc type, string reason);
         void AddReflectionRoot(TypeDesc type, string reason);
         void AddReflectionRoot(MethodDesc method, string reason);

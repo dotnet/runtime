@@ -264,14 +264,17 @@ namespace ILCompiler.ObjectWriter
                 var type =
                     (section.SectionHeader.Flags & SHF_TLS) == SHF_TLS ? STT_TLS :
                     definition.Size > 0 ? STT_FUNC : STT_NOTYPE;
+
+                var binding = definition.Flags.HasFlag(SymbolFlags.Weak) ? STB_WEAK : STB_GLOBAL;
+
                 sortedSymbols.Add(new ElfSymbol
                 {
                     Name = name,
                     Value = (ulong)definition.Value,
                     Size = (ulong)definition.Size,
                     Section = _sections[definition.SectionIndex],
-                    Info = (byte)(type | (STB_GLOBAL << 4)),
-                    Other = definition.Global ? STV_DEFAULT : STV_HIDDEN,
+                    Info = (byte)(type | (binding << 4)),
+                    Other = definition.Flags.HasFlag(SymbolFlags.Hidden) ? STV_HIDDEN : STV_DEFAULT,
                 });
             }
 
