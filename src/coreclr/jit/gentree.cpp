@@ -21980,18 +21980,35 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps        op,
     if (intrinsic != NI_Illegal)
     {
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-
-        bool wrapCallInConvertMaskToVector = (lookupType != type);
 #if defined(TARGET_ARM64)
-        wrapCallInConvertMaskToVector &= isScalable;
-        wrapCallInConvertMaskToVector &= wrapInCmtv;
-#endif
-        if (wrapCallInConvertMaskToVector)
+    if (isScalable)
+    {
+        if (wrapInCmtv)
+        {
+            // cndsel(result, 0xFF, 0)
+            assert(varTypeIsMask(lookupType));
+            GenTree* retNode = gtNewSimdHWIntrinsicNode(lookupType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+            GenTree* allOnes = gtNewAllBitsSetConNode(type);
+            GenTree* allZeros = gtNewZeroConNode(Compiler::getSIMDTypeForSize(simdSize));
+            return gtNewSimdHWIntrinsicNode(type, retNode, allOnes, allZeros, NI_Sve_ConditionalSelect,
+                simdBaseJitType, simdSize);
+        }
+        else
+        {
+            // will be wrapped by GetActiveElementCount
+            return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
+        }
+    }
+    else
+#endif // TARGET_ARM64
+    {
+        if (lookupType != type)
         {
             assert(varTypeIsMask(lookupType));
             GenTree* retNode = gtNewSimdHWIntrinsicNode(lookupType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             return gtNewSimdCvtMaskToVectorNode(type, retNode, simdBaseJitType, simdSize);
         }
+    }
 #else
         assert(lookupType == type);
 #endif // !FEATURE_MASKED_HW_INTRINSICS
@@ -22352,7 +22369,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
 
                 intrinsic = NI_Vector_op_Equality;
                 GenTree* cmpResult =
-                    gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize, /* isScalable */true, /* wrapInCmtv*/ false);
+                    gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize, /* isScalable */true, /* wrapInCmtv */ false);
 
                 // The operation `p1 = SVE_CMP_CC(a, b)` returns predicate mask, having `1` for lanes for which `a CC b`
                 // is true. For `All` operation, we can perform `r1 = CNTP(p1)` and then if `r1 == VL`, it means `ALL`
@@ -22395,7 +22412,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
                 intrinsic = NI_Vector_op_Equality;
 
                 GenTree* cmpResult =
-                    gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize /* isScalable */ARM64_ARG(true) /* wrapInCmtv */ARM64_ARG(false));
+                    gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize /* isScalable */ARM64_ARG(true) /* wrapInCmtv */ ARM64_ARG(false));
 
                 // The operation `p1 = SVE_CMP_CC(a, b)` returns predicate mask, having `1` for lanes for which `a CC b`
                 // is true. For `All` operation, we can perform `r1 = CNTP(p1)` and then if `r1 == VL`, it means `ALL`
@@ -22421,7 +22438,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
             else
             {
                 intrinsic = (simdSize == 8) ? NI_Vector64_op_Equality : NI_Vector128_op_Equality;
-                op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize, isScalable);
+                op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize, /* isScalable */false, /* wrapInCmtv */ false);
                 op2 = gtNewAllBitsSetConNode(simdType);
             }
 
@@ -22555,7 +22572,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
                 intrinsic = NI_Vector_op_Inequality;
 
                 GenTree* cmpResult =
-                    gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize, /* isScalable */true, /* wrapInCmtv*/ false);
+                    gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize, /* isScalable */true, /* wrapInCmtv */ false);
 
                 // The operation `p1 = SVE_CMP_CC(a, b)` returns predicate mask, having `1` for lanes for which `a CC b`
                 // is true. For `Any` operation, we can perform `r1 = CNTP(p1)` and then if `r1 != 0`, it means `SOME`
@@ -22573,7 +22590,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
             else
             {
                 intrinsic = (simdSize == 8) ? NI_Vector64_op_Inequality : NI_Vector128_op_Inequality;
-                op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,  /* isScalable */false, /* wrapInCmtv*/ false);
+                op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,  /* isScalable */false, /* wrapInCmtv */false);
                 op2 = gtNewZeroConNode(simdType);
             }
 
@@ -22597,7 +22614,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
                 intrinsic = NI_Vector_op_Inequality;
 
                 GenTree* cmpResult =
-                    gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,  /* isScalable */true, /* wrapInCmtv*/ false);
+                    gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,  /* isScalable */true, /* wrapInCmtv */false);
 
                 // The operation `p1 = SVE_CMP_CC(a, b)` returns predicate mask, having `1` for lanes for which `a CC b`
                 // is true. For `Any` operation, we can perform `r1 = CNTP(p1)` and then if `r1 != 0`, it means `SOME`
@@ -23812,7 +23829,7 @@ GenTree* Compiler::gtNewSimdIsNaNNode(var_types type, GenTree* op1, CorInfoType 
     if (varTypeIsFloating(simdBaseType))
     {
         GenTree* op1Dup = fgMakeMultiUse(&op1);
-        return gtNewSimdCmpOpNode(GT_NE, type, op1, op1Dup, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+        return gtNewSimdCmpOpNode(GT_NE, type, op1, op1Dup, simdBaseJitType, simdSize ARM64_ARG(isScalable) ARM64_ARG(true));
     }
     return gtNewZeroConNode(type);
 }
@@ -24035,7 +24052,7 @@ GenTree* Compiler::gtNewSimdIsPositiveNode(var_types type, GenTree* op1, CorInfo
     {
         return gtNewAllBitsSetConNode(type);
     }
-    return gtNewSimdCmpOpNode(GT_GE, type, op1, gtNewZeroConNode(type), simdBaseJitType, simdSize ARM64_ARG(isScalable));
+    return gtNewSimdCmpOpNode(GT_GE, type, op1, gtNewZeroConNode(type), simdBaseJitType, simdSize ARM64_ARG(isScalable) ARM64_ARG(true));
 }
 
 //----------------------------------------------------------------------------------------------
@@ -24085,7 +24102,7 @@ GenTree* Compiler::gtNewSimdIsPositiveInfinityNode(var_types   type,
         }
         cnsNode = gtNewSimdCreateBroadcastNode(type, cnsNode, simdBaseJitType, simdSize);
 
-        return gtNewSimdCmpOpNode(GT_EQ, type, op1, cnsNode, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+        return gtNewSimdCmpOpNode(GT_EQ, type, op1, cnsNode, simdBaseJitType, simdSize ARM64_ARG(isScalable) ARM64_ARG(true));
     }
     return gtNewZeroConNode(type);
 }

@@ -1403,7 +1403,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdCmpOpNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize, intrinsic == NI_Vector_Equals);
+            retNode = gtNewSimdCmpOpNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize, intrinsic == NI_Vector_Equals, true);
             break;
         }
 
@@ -1771,7 +1771,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdCmpOpNode(GT_GT, retType, op1, op2, simdBaseJitType, simdSize, intrinsic == NI_Vector_GreaterThan);
+            retNode = gtNewSimdCmpOpNode(GT_GT, retType, op1, op2, simdBaseJitType, simdSize, intrinsic == NI_Vector_GreaterThan, true);
             break;
         }
 
@@ -1820,7 +1820,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdCmpOpNode(GT_GE, retType, op1, op2, simdBaseJitType, simdSize, intrinsic == NI_Vector_GreaterThanOrEqual);
+            retNode = gtNewSimdCmpOpNode(GT_GE, retType, op1, op2, simdBaseJitType, simdSize, intrinsic == NI_Vector_GreaterThanOrEqual, true);
             //if (intrinsic == NI_Vector_GreaterThanOrEqual)
             //{
             //    intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(retType, retNode->AsHWIntrinsic()->GetHWIntrinsicId());
@@ -2012,7 +2012,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdCmpOpNode(GT_LT, retType, op1, op2, simdBaseJitType, simdSize, intrinsic == NI_Vector_LessThan);
+            retNode = gtNewSimdCmpOpNode(GT_LT, retType, op1, op2, simdBaseJitType, simdSize, intrinsic == NI_Vector_LessThan, true);
             //if (intrinsic == NI_Vector_LessThan)
             //{
             //    intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(retType, retNode->AsHWIntrinsic()->GetHWIntrinsicId());
@@ -2066,7 +2066,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdCmpOpNode(GT_LE, retType, op1, op2, simdBaseJitType, simdSize, intrinsic == NI_Vector_LessThanOrEqual);
+            retNode = gtNewSimdCmpOpNode(GT_LE, retType, op1, op2, simdBaseJitType, simdSize, intrinsic == NI_Vector_LessThanOrEqual, true);
             break;
         }
 
