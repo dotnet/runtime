@@ -308,7 +308,7 @@ namespace System.Security.Cryptography
             {
                 ReadOnlySpan<byte> keyBytes = PqcBlobHelpers.DecodeMLDsaBlob(blob, out ReadOnlySpan<char> parameterSet, out string blobType);
 
-                string expectedParameterSet = PqcBlobHelpers.GetParameterSet(Algorithm);
+                string expectedParameterSet = PqcBlobHelpers.GetMLDsaParameterSet(Algorithm);
 
                 if (blobType != blobFormat.Format ||
                     keyBytes.Length != expectedKeySize ||

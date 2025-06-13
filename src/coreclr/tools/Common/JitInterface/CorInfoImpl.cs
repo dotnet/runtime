@@ -3627,6 +3627,9 @@ namespace Internal.JitInterface
             }
         }
 
+        private void* GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
+        { throw new NotImplementedException("GetCookieForInterpreterCalliSig"); }
+
         private void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, ref void* ppIndirection)
         { throw new NotImplementedException("GetCookieForPInvokeCalliSig"); }
 #pragma warning disable CA1822 // Mark members as static

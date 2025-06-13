@@ -6169,6 +6169,45 @@ LPVOID MethodContext::repGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig
     return (CORINFO_VARARGS_HANDLE)value.B;
 }
 
+void MethodContext::recGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig, LPVOID result)
+{
+    if (GetCookieForInterpreterCalliSig == nullptr)
+        GetCookieForInterpreterCalliSig = new LightWeightMap<GetCookieForInterpreterCalliSigValue, DLDL>();
+
+    GetCookieForInterpreterCalliSigValue key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.cbSig      = (DWORD)szMetaSig->cbSig;
+    key.pSig_Index = (DWORD)GetCookieForInterpreterCalliSig->AddBuffer((unsigned char*)szMetaSig->pSig, szMetaSig->cbSig);
+    key.scope      = CastHandle(szMetaSig->scope);
+    key.token      = (DWORD)szMetaSig->token;
+
+    DLDL value;
+    value.A = CastPointer(result);
+
+    GetCookieForInterpreterCalliSig->Add(key, value);
+    DEBUG_REC(dmpGetCookieForInterpreterCalliSig(key, value));
+}
+
+void MethodContext::dmpGetCookieForInterpreterCalliSig(const GetCookieForInterpreterCalliSigValue& key, DLDL value)
+{
+    printf("GetCookieForInterpreterCalliSig NYI");
+}
+LPVOID MethodContext::repGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
+{
+    GetCookieForInterpreterCalliSigValue key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.cbSig      = (DWORD)szMetaSig->cbSig;
+    key.pSig_Index = (DWORD)GetCookieForInterpreterCalliSig->Contains((unsigned char*)szMetaSig->pSig, szMetaSig->cbSig);
+    key.scope      = CastHandle(szMetaSig->scope);
+    key.token      = (DWORD)szMetaSig->token;
+
+    DLDL value = LookupByKeyOrMissNoMessage(GetCookieForInterpreterCalliSig, key);
+
+    DEBUG_REP(dmpGetCookieForInterpreterCalliSig(key, value));
+
+    return (LPVOID)value.A;
+}
+
 void MethodContext::recCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, bool result)
 {
     if (CanGetCookieForPInvokeCalliSig == nullptr)

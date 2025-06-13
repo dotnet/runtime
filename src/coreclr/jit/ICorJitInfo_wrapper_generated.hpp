@@ -1397,6 +1397,15 @@ void* WrapICorJitInfo::GetCookieForPInvokeCalliSig(
     return temp;
 }
 
+void* WrapICorJitInfo::GetCookieForInterpreterCalliSig(
+          CORINFO_SIG_INFO* szMetaSig)
+{
+    API_ENTER(GetCookieForInterpreterCalliSig);
+    void* temp = wrapHnd->GetCookieForInterpreterCalliSig(szMetaSig);
+    API_LEAVE(GetCookieForInterpreterCalliSig);
+    return temp;
+}
+
 bool WrapICorJitInfo::canGetCookieForPInvokeCalliSig(
           CORINFO_SIG_INFO* szMetaSig)
 {

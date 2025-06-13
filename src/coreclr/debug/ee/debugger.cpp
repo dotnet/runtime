@@ -15001,9 +15001,11 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
     }
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
-    if (pThread->m_hasPendingActivation)
+    if (pThread->m_hasPendingActivation && Thread::AreShadowStacksEnabled())
     {
-        _ASSERTE(!"Should never get here with a pending activation. (Debugger::FuncEvalSetup)");
+        // Debugger::FuncEvalSetup will attempt to hijack the thread's context
+        // to set up the function evaluation, but this is not allowed if the thread
+        // has a pending activation via an APC and CET is enabled
         return CORDBG_E_ILLEGAL_IN_NATIVE_CODE;
     }
 #endif
@@ -16779,15 +16781,6 @@ void Debugger::ExternalMethodFixupNextStep(PCODE address)
 {
     DebuggerController::DispatchExternalMethodFixup(address);
 }
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-void Debugger::SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext)
-{
-    pThread->SetThreadState(Thread::TS_SSToExitApcCall);
-    g_pEEInterface->SetThreadFilterContext(pThread, interruptedContext);
-    DebuggerController::EnableSingleStep(pThread);
-    g_pEEInterface->SetThreadFilterContext(pThread, NULL);
-}
-#endif //FEATURE_SPECIAL_USER_MODE_APC
 #endif //DACCESS_COMPILE
 
 unsigned FuncEvalFrame::GetFrameAttribs_Impl(void)

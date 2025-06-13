@@ -1149,6 +1149,13 @@ void* interceptor_ICJI::GetCookieForPInvokeCalliSig(
     return original_ICorJitInfo->GetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
 }
 
+void* interceptor_ICJI::GetCookieForInterpreterCalliSig(
+          CORINFO_SIG_INFO* szMetaSig)
+{
+    mcs->AddCall("GetCookieForInterpreterCalliSig");
+    return original_ICorJitInfo->GetCookieForInterpreterCalliSig(szMetaSig);
+}
+
 bool interceptor_ICJI::canGetCookieForPInvokeCalliSig(
           CORINFO_SIG_INFO* szMetaSig)
 {
