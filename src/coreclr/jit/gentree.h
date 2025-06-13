@@ -1802,11 +1802,8 @@ public:
     inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
     inline bool IsVectorBroadcast(var_types simdBaseType) const;
-
-#ifdef FEATURE_HW_INTRINSICS
     inline bool IsTrueMask(var_types simdBaseType) const;
     inline bool IsFalseMask() const;
-#endif
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
 
