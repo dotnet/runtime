@@ -8,13 +8,14 @@ extern "C" void* STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTran
 
 extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData * pCallDescrData)
 {
-    PCODE code = pCallDescrData->pMD->GetNativeCode();
-    if (!code)
+    MethodDesc* pMethod = pCallDescrData->pMD;
+    InterpByteCodeStart* targetIp = pMethod->GetInterpreterCode();
+    if (targetIp == NULL)
     {
         GCX_PREEMP();
-        pCallDescrData->pMD->PrepareInitialCode(CallerGCMode::Coop);
-        code = pCallDescrData->pMD->GetNativeCode();
+        pMethod->PrepareInitialCode(CallerGCMode::Coop);
+        targetIp = pMethod->GetInterpreterCode();
     }
 
-    ExecuteInterpretedMethodWithArgs(((TransitionBlock*)pCallDescrData->pSrc) - 1, code, (int8_t*)pCallDescrData->pSrc, pCallDescrData->nArgsSize, pCallDescrData->returnValue);
+    ExecuteInterpretedMethodWithArgs(((TransitionBlock*)pCallDescrData->pSrc) - 1, (TADDR)targetIp, (int8_t*)pCallDescrData->pSrc, pCallDescrData->nArgsSize, pCallDescrData->returnValue);
 }
