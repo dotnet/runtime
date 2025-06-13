@@ -28,7 +28,7 @@ internal class ARMUnwinder(Target target)
         uint startingSp = context.Sp;
 
         TargetPointer imageBase = _eman.GetUnwindInfoBaseAddress(cbh);
-        Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh));
+        Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh, context.InstructionPointer.Value));
 
         if ((functionEntry.UnwindData & 0x3) != 0)
         {
