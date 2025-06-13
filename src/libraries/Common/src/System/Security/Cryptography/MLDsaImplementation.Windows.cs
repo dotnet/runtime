@@ -109,48 +109,20 @@ namespace System.Security.Cryptography
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
             ExportKey(
                 Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB,
-                static algorithm => algorithm.PublicKeySizeInBytes,
+                Algorithm.PublicKeySizeInBytes,
                 destination);
 
         protected override void ExportMLDsaSecretKeyCore(Span<byte> destination) =>
             ExportKey(
                 Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB,
-                static algorithm => algorithm.SecretKeySizeInBytes,
+                Algorithm.SecretKeySizeInBytes,
                 destination);
 
         protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination) =>
             ExportKey(
                 Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB,
-                static algorithm => algorithm.PrivateSeedSizeInBytes,
+                Algorithm.PrivateSeedSizeInBytes,
                 destination);
-
-        private void ExportKey(string keyBlobType, Func<MLDsaAlgorithm, int> expectedSizeFunc, Span<byte> destination)
-        {
-            ArraySegment<byte> keyBlob = Interop.BCrypt.BCryptExportKey(_key, keyBlobType);
-
-            try
-            {
-                ReadOnlySpan<byte> keyBytes = PqcBlobHelpers.DecodeMLDsaBlob(
-                    keyBlob,
-                    out ReadOnlySpan<char> parameterSet,
-                    out string blobType);
-
-                MLDsaAlgorithm algorithm = PqcBlobHelpers.GetMLDsaAlgorithmFromParameterSet(parameterSet);
-                int expectedSize = expectedSizeFunc(algorithm);
-
-                if (blobType != keyBlobType || keyBytes.Length != expectedSize)
-                {
-                    Debug.Fail($"blobType: {blobType}, keyBytes.Length: {keyBytes.Length} / {expectedSize}");
-                    throw new CryptographicException();
-                }
-
-                keyBytes.CopyTo(destination);
-            }
-            finally
-            {
-                CryptoPool.Return(keyBlob);
-            }
-        }
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
@@ -166,6 +138,67 @@ namespace System.Security.Cryptography
         {
             _key?.Dispose();
             _key = null!;
+        }
+
+        internal CngKey CreateEphemeralCng()
+        {
+            string bcryptBlobType =
+                _hasSeed ? Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB :
+                _hasSecretKey ? Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB :
+                Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB;
+
+            CngKeyBlobFormat cngBlobFormat =
+                _hasSecretKey ? CngKeyBlobFormat.PQDsaPrivateBlob :
+                _hasSeed ? CngKeyBlobFormat.PQDsaPrivateSeedBlob :
+                CngKeyBlobFormat.PQDsaPublicBlob;
+
+            ArraySegment<byte> keyBlob = Interop.BCrypt.BCryptExportKey(_key, bcryptBlobType);
+            CngKey key;
+
+            try
+            {
+                key = CngKey.Import(keyBlob, cngBlobFormat);
+            }
+            finally
+            {
+                CryptoPool.Return(keyBlob);
+            }
+
+            key.ExportPolicy = CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport;
+            return key;
+        }
+
+        private void ExportKey(string keyBlobType, int expectedKeySize, Span<byte> destination)
+        {
+            ArraySegment<byte> keyBlob = Interop.BCrypt.BCryptExportKey(_key, keyBlobType);
+
+            try
+            {
+                ReadOnlySpan<byte> keyBytes = PqcBlobHelpers.DecodeMLDsaBlob(
+                    keyBlob,
+                    out ReadOnlySpan<char> parameterSet,
+                    out string blobType);
+
+                string expectedParameterSet = PqcBlobHelpers.GetMLDsaParameterSet(Algorithm);
+
+                if (blobType != keyBlobType ||
+                    keyBytes.Length != expectedKeySize ||
+                    !parameterSet.SequenceEqual(expectedParameterSet))
+                {
+                    Debug.Fail(
+                        $"{nameof(blobType)}: {blobType}, " +
+                        $"{nameof(parameterSet)}: {parameterSet}, " +
+                        $"{nameof(keyBytes)}.Length: {keyBytes.Length} / {expectedKeySize}");
+
+                    throw new CryptographicException();
+                }
+
+                keyBytes.CopyTo(destination);
+            }
+            finally
+            {
+                CryptoPool.Return(keyBlob);
+            }
         }
 
         private static SafeBCryptAlgorithmHandle? OpenAlgorithmHandle()

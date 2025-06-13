@@ -307,6 +307,7 @@ FUNCTIONS
     void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
     void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE   method, CORINFO_CONST_LOOKUP *pLookup);
     void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void           ** ppIndirection);
+    void* GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig);
     bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
     CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(CORINFO_METHOD_HANDLE       method, CORINFO_JUST_MY_CODE_HANDLE**ppIndirection);
     void GetProfilingHandle(bool* pbHookFunction, void **pProfilerHandle, bool* pbIndirectedHandles);

@@ -50,7 +50,7 @@ ep_rt_aot_walk_managed_stack_for_thread (
     EP_ASSERT (thread != NULL);
     EP_ASSERT (stack_contents != NULL);
 
-    StackFrameIterator frameIterator(thread, thread->GetTransitionFrameForSampling()); 
+    StackFrameIterator frameIterator(thread, thread->GetTransitionFrameForSampling());
 
     while (frameIterator.IsValid())
     {
@@ -223,11 +223,7 @@ ep_rt_aot_diagnostics_command_line_get (void)
 
 namespace
 {
-    #ifdef TARGET_UNIX
-    __thread EventPipeThreadHolder* eventpipe_tls_instance;
-    #else
-    thread_local EventPipeThreadHolder* eventpipe_tls_instance;
-    #endif
+    PLATFORM_THREAD_LOCAL EventPipeThreadHolder* eventpipe_tls_instance;
 
     void free_thread_holder ()
     {
