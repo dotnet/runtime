@@ -2266,6 +2266,8 @@ public class InterpreterTest
         {
         }
 
+        ref readonly object cElt2 = ref c[0, 0];
+
         return true;
     }
 
