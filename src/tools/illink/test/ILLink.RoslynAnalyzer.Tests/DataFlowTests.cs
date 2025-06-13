@@ -174,6 +174,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task FunctionPointerDataflow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task GenericParameterDataFlow ()
 		{
 			return RunTest ();

@@ -26,12 +26,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 bool emitter::IsSSEInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_SSE_INSTRUCTION);
+    return (ins >= FIRST_SSE_INSTRUCTION) && (ins <= LAST_SSE_INSTRUCTION);
 }
 
 bool emitter::IsSSEOrAVXInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
+    return (ins >= FIRST_SSE_INSTRUCTION) && (ins <= LAST_AVX_INSTRUCTION);
 }
 
 //------------------------------------------------------------------------
@@ -68,7 +68,7 @@ bool emitter::IsKInstructionWithLBit(instruction ins)
 
 bool emitter::IsAVXOnlyInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_AVX_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
+    return (ins >= FIRST_AVX_INSTRUCTION) && (ins <= LAST_AVX_INSTRUCTION);
 }
 
 //------------------------------------------------------------------------
@@ -82,12 +82,12 @@ bool emitter::IsAVXOnlyInstruction(instruction ins)
 //
 bool emitter::IsAvx512OnlyInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_AVX512_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION);
+    return (ins >= FIRST_AVX512_INSTRUCTION) && (ins <= LAST_AVX512_INSTRUCTION);
 }
 
 bool emitter::IsApxOnlyInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_APX_INSTRUCTION) && (ins <= INS_LAST_APX_INSTRUCTION);
+    return (ins >= FIRST_APX_INSTRUCTION) && (ins <= LAST_APX_INSTRUCTION);
 }
 
 bool emitter::Is3OpRmwInstruction(instruction ins)
@@ -112,16 +112,16 @@ bool emitter::Is3OpRmwInstruction(instruction ins)
 
         default:
         {
-            return ((ins >= INS_FIRST_FMA_INSTRUCTION) && (ins <= INS_LAST_FMA_INSTRUCTION)) ||
-                   ((ins >= INS_FIRST_AVXVNNI_INSTRUCTION) && (ins <= INS_LAST_AVXVNNI_INSTRUCTION)) ||
-                   ((ins >= INS_FIRST_AVXIFMA_INSTRUCTION) && (ins <= INS_LAST_AVXIFMA_INSTRUCTION));
+            return ((ins >= FIRST_FMA_INSTRUCTION) && (ins <= LAST_FMA_INSTRUCTION)) ||
+                   ((ins >= FIRST_AVXVNNI_INSTRUCTION) && (ins <= LAST_AVXVNNI_INSTRUCTION)) ||
+                   ((ins >= FIRST_AVXIFMA_INSTRUCTION) && (ins <= LAST_AVXIFMA_INSTRUCTION));
         }
     }
 }
 
 bool emitter::IsBMIInstruction(instruction ins)
 {
-    return (ins >= INS_FIRST_BMI_INSTRUCTION) && (ins <= INS_LAST_BMI_INSTRUCTION);
+    return (ins >= FIRST_BMI_INSTRUCTION) && (ins <= LAST_BMI_INSTRUCTION);
 }
 
 //------------------------------------------------------------------------
@@ -320,13 +320,9 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         case INS_aesdeclast:
         case INS_aesenc:
         case INS_aesenclast:
-        {
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_AES_V256);
-        }
-
         case INS_pclmulqdq:
         {
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_PCLMULQDQ_V256);
+            return emitComp->compSupportsHWIntrinsic(InstructionSet_AES_V512);
         }
 
         case INS_vpdpbusd:
@@ -340,7 +336,7 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         case INS_vpmadd52huq:
         case INS_vpmadd52luq:
         {
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVX512VBMI);
+            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVX512v2);
         }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -858,7 +854,7 @@ bool emitter::DoJitUseApxNDD(instruction ins) const
 
 inline bool emitter::IsCCMP(instruction ins)
 {
-    return (ins > INS_FIRST_CCMP_INSTRUCTION && ins < INS_LAST_CCMP_INSTRUCTION);
+    return (ins >= FIRST_CCMP_INSTRUCTION && ins <= LAST_CCMP_INSTRUCTION);
 }
 
 //------------------------------------------------------------------------
@@ -3893,7 +3889,7 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_pextrd:
         case INS_pextrq:
         case INS_pextrw:
-        case INS_pextrw_sse41:
+        case INS_pextrw_sse42:
         case INS_rorx:
         case INS_shlx:
         case INS_sarx:
@@ -4957,7 +4953,17 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
     // If Byte 4 (which is 0xFF00) is zero, that's where the RM encoding goes.
     // Otherwise, it will be placed after the 4 byte encoding, making the total 5 bytes.
     // This would probably be better expressed as a different format or something?
-    code_t code = insCodeRM(ins);
+    code_t code = 0;
+
+    if (hasCodeRM(ins))
+    {
+        code = insCodeRM(ins);
+    }
+    else
+    {
+        code = insCodeMR(ins);
+    }
+
     if (IsKInstruction(ins))
     {
         code = AddVexPrefix(ins, code, EA_SIZE(id->idOpSize()));
@@ -6936,7 +6942,7 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
     // Store lower 8 bytes
     emitIns_S_R(INS_movsd_simd, EA_8BYTE, dataReg, varNum, offset);
 
-    if (emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    if (emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         // Extract and store upper 4 bytes
         emitIns_S_R_I(INS_extractps, EA_16BYTE, varNum, offset + 8, dataReg, 2);
@@ -13639,7 +13645,7 @@ void emitter::emitDispIns(
                 case INS_extractps:
                 case INS_pextrb:
                 case INS_pextrw:
-                case INS_pextrw_sse41:
+                case INS_pextrw_sse42:
                 case INS_pextrd:
                 {
                     tgtAttr = EA_4BYTE;
@@ -16693,6 +16699,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     emitAttr    size = id->idOpSize();
 
     assert(!id->idHasReg3());
+    bool isInsCodeMR = false;
 
     if (IsSimdInstruction(ins))
     {
@@ -16709,13 +16716,43 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 code |= 0x01;
             }
         }
-        else if (((ins != INS_movd32) && (ins != INS_movd64)) || isFloatReg(reg1))
-        {
-            code = insCodeRM(ins);
-        }
         else
         {
-            code = insCodeMR(ins);
+            switch (ins)
+            {
+                case INS_vcompresspd:
+                case INS_vcompressps:
+                case INS_vpcompressb:
+                case INS_vpcompressd:
+                case INS_vpcompressq:
+                case INS_vpcompressw:
+                {
+                    isInsCodeMR = true;
+                    break;
+                }
+
+                case INS_movd32:
+                case INS_movd64:
+                {
+                    isInsCodeMR = !isFloatReg(reg1);
+                    break;
+                }
+
+                default:
+                {
+                    isInsCodeMR = false;
+                    break;
+                }
+            }
+
+            if (isInsCodeMR)
+            {
+                code = insCodeMR(ins);
+            }
+            else
+            {
+                code = insCodeRM(ins);
+            }
         }
         code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeRMreg(id, code);
@@ -16874,21 +16911,20 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 
     regNumber regFor012Bits = reg2;
     regNumber regFor345Bits = REG_NA;
+
     if (IsBMIInstruction(ins))
     {
         regFor345Bits = getBmiRegNumber(ins);
     }
+
     if (regFor345Bits == REG_NA)
     {
         regFor345Bits = reg1;
     }
-    if ((ins == INS_movd32) || (ins == INS_movd64))
+
+    if (isInsCodeMR)
     {
-        assert(isFloatReg(reg1) != isFloatReg(reg2));
-        if (isFloatReg(reg2))
-        {
-            std::swap(regFor012Bits, regFor345Bits);
-        }
+        std::swap(regFor012Bits, regFor345Bits);
     }
 
     unsigned regCode;
@@ -21534,6 +21570,24 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
+        case INS_vcompresspd:
+        case INS_vcompressps:
+        case INS_vpcompressb:
+        case INS_vpcompressd:
+        case INS_vpcompressq:
+        case INS_vpcompressw:
+        case INS_vexpandpd:
+        case INS_vexpandps:
+        case INS_vpexpandb:
+        case INS_vpexpandd:
+        case INS_vpexpandq:
+        case INS_vpexpandw:
+        {
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency += PERFSCORE_LATENCY_6C;
+            break;
+        }
+
         case INS_bswap:
             if (opSize == EA_8BYTE)
             {
@@ -21633,7 +21687,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pextrd:
         case INS_pextrw:
         case INS_pextrq:
-        case INS_pextrw_sse41:
+        case INS_pextrw_sse42:
         case INS_addsubps:
         case INS_addsubpd:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;

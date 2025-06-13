@@ -271,6 +271,69 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<ulong> CompareNotEqual(Vector256<ulong> left, Vector256<ulong> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            ///   <para>__m128d _mm_mask_compress_pd (__m128d s, __mmask8 k, __m128d a)</para>
+            ///   <para>  VCOMPRESSPD xmm1/m128 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<double> Compress(Vector128<double> merge, Vector128<double> mask, Vector128<double> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m128i _mm_mask_compress_epi32 (__m128i s, __mmask8 k, __m128i a)</para>
+            ///   <para>  VPCOMPRESSD xmm1/m128 {k1}{z}, xmm2</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector128<int> Compress(Vector128<int> merge, Vector128<int> mask, Vector128<int> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m128i _mm_mask_compress_epi64 (__m128i s, __mmask8 k, __m128i a)</para>
+            ///   <para>  VPCOMPRESSQ xmm1/m128 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<long> Compress(Vector128<long> merge, Vector128<long> mask, Vector128<long> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m128 _mm_mask_compress_ps (__m128 s, __mmask8 k, __m128 a)</para>
+            ///   <para>  VCOMPRESSPS xmm1/m128 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<float> Compress(Vector128<float> merge, Vector128<float> mask, Vector128<float> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m128i _mm_mask_compress_epi32 (__m128i s, __mmask8 k, __m128i a)</para>
+            ///   <para>  VPCOMPRESSD xmm1/m128 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<uint> Compress(Vector128<uint> merge, Vector128<uint> mask, Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m128i _mm_mask_compress_epi64 (__m128i s, __mmask8 k, __m128i a)</para>
+            ///   <para>  VPCOMPRESSQ xmm1/m128 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<ulong> Compress(Vector128<ulong> merge, Vector128<ulong> mask, Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>__m256d _mm256_mask_compress_pd (__m256d s, __mmask8 k, __m256d a)</para>
+            ///   <para>  VCOMPRESSPD ymm1/m256 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<double> Compress(Vector256<double> merge, Vector256<double> mask, Vector256<double> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_compress_epi32 (__m256i s, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPCOMPRESSD ymm1/m256 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<int> Compress(Vector256<int> merge, Vector256<int> mask, Vector256<int> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_compress_epi64 (__m256i s, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPCOMPRESSQ ymm1/m256 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<long> Compress(Vector256<long> merge, Vector256<long> mask, Vector256<long> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m256 _mm256_mask_compress_ps (__m256 s, __mmask8 k, __m256 a)</para>
+            ///   <para>  VCOMPRESSPS ymm1/m256 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<float> Compress(Vector256<float> merge, Vector256<float> mask, Vector256<float> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_compress_epi32 (__m256s s, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPCOMPRESSD ymm1/m256 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<uint> Compress(Vector256<uint> merge, Vector256<uint> mask, Vector256<uint> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_compress_epi64 (__m256i s, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPCOMPRESSQ ymm1/m256 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<ulong> Compress(Vector256<ulong> merge, Vector256<ulong> mask, Vector256<ulong> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             ///   <para>__m128i _mm_cvtepi32_epi8 (__m128i a)</para>
             ///   <para>  VPMOVDB xmm1/m32 {k1}{z}, xmm2</para>
             /// </summary>
@@ -640,6 +703,68 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<uint> ConvertToVector256UInt32WithTruncation(Vector256<float> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            ///   <para>__m128d _mm_mask_expand_pd (__m128d s, __mmask8 k, __m128d a)</para>
+            ///   <para>  VEXPANDPD xmm1 {k1}{z}, xmm2/m128</para>
+            /// </summary>
+            public static Vector128<double> Expand(Vector128<double> merge, Vector128<double> mask, Vector128<double> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m128i _mm_mask_expand_epi32 (__m128i s, __mmask8 k, __m128i a)</para>
+            ///   <para>  VPEXPANDD xmm1 {k1}{z}, xmm2/m128</para>
+            /// </summary>
+            public static Vector128<int> Expand(Vector128<int> merge, Vector128<int> mask, Vector128<int> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m128i _mm_mask_expand_epi64 (__m128i s, __mmask8 k, __m128i a)</para>
+            ///   <para>  VPEXPANDQ xmm1 {k1}{z}, xmm2/m128</para>
+            /// </summary>
+            public static Vector128<long> Expand(Vector128<long> merge, Vector128<long> mask, Vector128<long> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m128 _mm_mask_expand_ps (__m128 s, __mmask8 k, __m128 a)</para>
+            ///   <para>  VEXPANDPS xmm1 {k1}{z}, xmm2/m128</para>
+            /// </summary>
+            public static Vector128<float> Expand(Vector128<float> merge, Vector128<float> mask, Vector128<float> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m128i _mm_mask_expand_epi32 (__m128i s, __mmask8 k, __m128i a)</para>
+            ///   <para>  VPEXPANDD xmm1 {k1}{z}, xmm2/m128</para>
+            /// </summary>
+            public static Vector128<uint> Expand(Vector128<uint> merge, Vector128<uint> mask, Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m128i _mm_mask_expand_epi64 (__m128i s, __mmask8 k, __m128i a)</para>
+            ///   <para>  VPEXPANDQ xmm1 {k1}{z}, xmm2/m128</para>
+            /// </summary>
+            public static Vector128<ulong> Expand(Vector128<ulong> merge, Vector128<ulong> mask, Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>__m256d _mm256_mask_expand_pd (__m256d s, __mmask8 k, __m256d a)</para>
+            ///   <para>  VEXPANDPD ymm1 {k1}{z}, ymm2/m256</para>
+            /// </summary>
+            public static Vector256<double> Expand(Vector256<double> merge, Vector256<double> mask, Vector256<double> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_expand_epi32 (__m256i s, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPEXPANDD ymm1 {k1}{z}, ymm2/m256</para>
+            /// </summary>
+            public static Vector256<int> Expand(Vector256<int> merge, Vector256<int> mask, Vector256<int> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_expand_epi64 (__m256i s, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPEXPANDQ ymm1 {k1}{z}, ymm2/m256</para>
+            /// </summary>
+            public static Vector256<long> Expand(Vector256<long> merge, Vector256<long> mask, Vector256<long> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m256 _mm256_mask_expand_ps (__m256 s, __mmask8 k, __m256 a)</para>
+            ///   <para>  VEXPANDPS ymm1 {k1}{z}, ymm2/m256</para>
+            /// </summary>
+            public static Vector256<float> Expand(Vector256<float> merge, Vector256<float> mask, Vector256<float> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_expand_epi32 (__m256i s, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPEXPANDD ymm1 {k1}{z}, ymm2/m256</para>
+            /// </summary>
+            public static Vector256<uint> Expand(Vector256<uint> merge, Vector256<uint> mask, Vector256<uint> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_expand_epi64 (__m256i s, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPEXPANDQ ymm1 {k1}{z}, ymm2/m256</para>
+            /// </summary>
+            public static Vector256<ulong> Expand(Vector256<ulong> merge, Vector256<ulong> mask, Vector256<ulong> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             ///   <para>__m128 _mm_fixupimm_ps(__m128 a, __m128 b, __m128i tbl, int imm);</para>
             ///   <para>  VFIXUPIMMPS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8</para>
             /// </summary>
@@ -783,19 +908,22 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector128<float> PermuteVar4x32x2(Vector128<float> lower, Vector128<int> indices, Vector128<float> upper) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            ///   <para>__m256i _mm256_permute4x64_epi64 (__m256i a, __m256i b)</para>
+            ///   <para>__m256i _mm256_permutexvar_epi64 (__m256i idx, __m256i a)</para>
             ///   <para>  VPERMQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector256<long> PermuteVar4x64(Vector256<long> value, Vector256<long> control) { throw new PlatformNotSupportedException(); }
             /// <summary>
-            ///   <para>__m256i _mm256_permute4x64_pd (__m256d a, __m256i b)</para>
+            ///   <para>__m256i _mm256_permutexvar_epi64 (__m256i idx, __m256i a)</para>
             ///   <para>  VPERMQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector256<ulong> PermuteVar4x64(Vector256<ulong> value, Vector256<ulong> control) { throw new PlatformNotSupportedException(); }
             /// <summary>
-            ///   <para>__m256d _mm256_permute4x64_pd (__m256d a, __m256i b)</para>
+            ///   <para>__m256d _mm256_permutexvar_pd (__m256i idx, __m256d a)</para>
             ///   <para>  VPERMPD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector256<double> PermuteVar4x64(Vector256<double> value, Vector256<long> control) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
@@ -1899,6 +2027,37 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ulong> CompareNotEqual(Vector512<ulong> left, Vector512<ulong> right)  { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        ///   <para>__m512d _mm512_mask_compress_pd (__m512d s, __mmask8 k, __m512d a)</para>
+        ///   <para>  VCOMPRESSPD zmm1/m512 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<double> Compress(Vector512<double> merge, Vector512<double> mask, Vector512<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_compress_epi32 (__m512i s, __mmask16 k, __m512i a)</para>
+        ///   <para>  VPCOMPRESSD zmm1/m512 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<int> Compress(Vector512<int> merge, Vector512<int> mask, Vector512<int> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_compress_epi64 (__m512i s, __mmask8 k, __m512i a)</para>
+        ///   <para>  VPCOMPRESSQ zmm1/m512 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<long> Compress(Vector512<long> merge, Vector512<long> mask, Vector512<long> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>__m512 _mm512_mask_compress_ps (__m512 s, __mmask16 k, __m512 a)</para>
+        ///   <para>  VCOMPRESSPS zmm1/m512 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<float> Compress(Vector512<float> merge, Vector512<float> mask, Vector512<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_compress_epi32 (__m512i s, __mmask16 k, __m512i a)</para>
+        ///   <para>  VPCOMPRESSD zmm1/m512 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<uint> Compress(Vector512<uint> merge, Vector512<uint> mask, Vector512<uint> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_compress_epi64 (__m512i s, __mmask8 k, __m512i a)</para>
+        ///   <para>  VPCOMPRESSQ zmm1/m512 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<ulong> Compress(Vector512<ulong> merge, Vector512<ulong> mask, Vector512<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         ///   <para>__m128 _mm_cvtsi32_ss (__m128 a, int b)</para>
         ///   <para>  VCVTUSI2SS xmm1, xmm2, r/m32</para>
         /// </summary>
@@ -2374,6 +2533,37 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVSHDUP zmm1 {k1}{z}, zmm2/m512</para>
         /// </summary>
         public static Vector512<float> DuplicateOddIndexed(Vector512<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>__m512d _mm512_mask_expand_pd (__m512d s, __mmask8 k, __m512d a)</para>
+        ///   <para>  VEXPANDPD zmm1 {k1}{z}, zmm2/m512</para>
+        /// </summary>
+        public static Vector512<double> Expand(Vector512<double> merge, Vector512<double> mask, Vector512<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_expand_epi32 (__m512i s, __mmask16 k, __m512i a)</para>
+        ///   <para>  VPEXPANDD zmm1 {k1}{z}, zmm2/m512</para>
+        /// </summary>
+        public static Vector512<int> Expand(Vector512<int> merge, Vector512<int> mask, Vector512<int> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_expand_epi64 (__m512i s, __mmask8 k, __m512i a)</para>
+        ///   <para>  VPEXPANDQ zmm1 {k1}{z}, zmm2/m512</para>
+        /// </summary>
+        public static Vector512<long> Expand(Vector512<long> merge, Vector512<long> mask, Vector512<long> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>__m512 _mm512_mask_expand_ps (__m512 s, __mmask16 k, __m512 a)</para>
+        ///   <para>  VEXPANDPS zmm1 {k1}{z}, zmm2/m512</para>
+        /// </summary>
+        public static Vector512<float> Expand(Vector512<float> merge, Vector512<float> mask, Vector512<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_expand_epi32 (__m512i s, __mmask16 k, __m512i a)</para>
+        ///   <para>  VPEXPANDD zmm1 {k1}{z}, zmm2/m512</para>
+        /// </summary>
+        public static Vector512<uint> Expand(Vector512<uint> merge, Vector512<uint> mask, Vector512<uint> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_expand_epi64 (__m512i s, __mmask8 k, , __m512i a)</para>
+        ///   <para>  VPEXPANDQ zmm1 {k1}{z}, zmm2/m512</para>
+        /// </summary>
+        public static Vector512<ulong> Expand(Vector512<ulong> merge, Vector512<ulong> mask, Vector512<ulong> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>__m128i _mm512_extracti128_si512 (__m512i a, const int imm8)</para>
@@ -3171,19 +3361,22 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<float> PermuteVar4x32(Vector512<float> left, Vector512<int> control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>__m512i _mm512_permutevar8x64_epi64 (__m512i a, __m512i b)</para>
+        ///   <para>__m512i _mm512_permutexvar_epi64 (__m512i idx, __m512i a)</para>
         ///   <para>  VPERMQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<long> PermuteVar8x64(Vector512<long> value, Vector512<long> control) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        ///   <para>__m512i _mm512_permutevar8x64_epi64 (__m512i a, __m512i b)</para>
+        ///   <para>__m512i _mm512_permutexvar_epi64 (__m512i idx, __m512i a)</para>
         ///   <para>  VPERMQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<ulong> PermuteVar8x64(Vector512<ulong> value, Vector512<ulong> control) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        ///   <para>__m512d _mm512_permutevar8x64_pd (__m512d a, __m512i b)</para>
+        ///   <para>__m512d _mm512_permutexvar_pd (__m512i idx, __m512d a)</para>
         ///   <para>  VPERMPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<double> PermuteVar8x64(Vector512<double> value, Vector512<long> control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -3206,19 +3399,22 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<double> PermuteVar8x64x2(Vector512<double> lower, Vector512<long> indices, Vector512<double> upper) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>__m512i _mm512_permutevar16x32_epi32 (__m512i a, __m512i b)</para>
+        ///   <para>__m512i _mm512_permutexvar_epi32 (__m512i idx, __m512i a)</para>
         ///   <para>  VPERMD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<int> PermuteVar16x32(Vector512<int> left, Vector512<int> control) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        ///   <para>__m512i _mm512_permutevar16x32_epi32 (__m512i a, __m512i b)</para>
+        ///   <para>__m512i _mm512_permutexvar_epi32 (__m512i idx, __m512i a)</para>
         ///   <para>  VPERMD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<uint> PermuteVar16x32(Vector512<uint> left, Vector512<uint> control) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        ///   <para>__m512 _mm512_permutevar16x32_ps (__m512 a, __m512i b)</para>
+        ///   <para>__m512 _mm512_permutexvar_ps (__m512i idx, __m512 a)</para>
         ///   <para>  VPERMPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<float> PermuteVar16x32(Vector512<float> left, Vector512<int> control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
