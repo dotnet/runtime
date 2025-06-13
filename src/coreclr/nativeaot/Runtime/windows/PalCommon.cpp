@@ -105,12 +105,6 @@ void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdw
     int cEntries = cbDebugEntries / sizeof(IMAGE_DEBUG_DIRECTORY);
     for (int i = 0; i < cEntries; i++)
     {
-        if ((uint8_t*)(&rgDebugEntries[i]) + sizeof(rgDebugEntries[i]) >= pbModuleUpperBound)
-        {
-            // Bogus pointer
-            return;
-        }
-
         if (rgDebugEntries[i].Type != IMAGE_DEBUG_TYPE_CODEVIEW)
             continue;
 
