@@ -1446,373 +1446,373 @@ namespace System.Runtime.Intrinsics.Arm
         // Conditionally extract element after last
 
         /// <summary>
-        ///   <para>svuint8_t svclasta[_u8](svbool_t pg, svuint8_t fallback, svuint8_t data)</para>
+        ///   <para>svuint8_t svclasta[_u8](svbool_t pg, svuint8_t defaultScalar, svuint8_t data)</para>
         ///   <para>  CLASTA Btied, Pg, Btied, Zdata.B</para>
         /// </summary>
-        public static Vector<byte> ConditionalExtractAfterLastActiveElement(Vector<byte> mask, Vector<byte> defaultValue, Vector<byte> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> ConditionalExtractAfterLastActiveElement(Vector<byte> mask, Vector<byte> defaultScalar, Vector<byte> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>uint8_t svclasta[_n_u8](svbool_t pg, uint8_t fallback, svuint8_t data)</para>
+        ///   <para>uint8_t svclasta[_n_u8](svbool_t pg, uint8_t defaultValue, svuint8_t data)</para>
         ///   <para>  CLASTA Wtied, Pg, Wtied, Zdata.B</para>
         /// </summary>
-        public static byte ConditionalExtractAfterLastActiveElement(Vector<byte> mask, byte defaultValues, Vector<byte> data) { throw new PlatformNotSupportedException(); }
+        public static byte ConditionalExtractAfterLastActiveElement(Vector<byte> mask, byte defaultValue, Vector<byte> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svfloat64_t svclasta[_f64](svbool_t pg, svfloat64_t fallback, svfloat64_t data)</para>
+        ///   <para>svfloat64_t svclasta[_f64](svbool_t pg, svfloat64_t defaultScalar, svfloat64_t data)</para>
         ///   <para>  CLASTA Dtied, Pg, Dtied, Zdata.D</para>
         /// </summary>
-        public static Vector<double> ConditionalExtractAfterLastActiveElement(Vector<double> mask, Vector<double> defaultValue, Vector<double> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<double> ConditionalExtractAfterLastActiveElement(Vector<double> mask, Vector<double> defaultScalar, Vector<double> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>float64_t svclasta[_n_f64](svbool_t pg, float64_t fallback, svfloat64_t data)</para>
+        ///   <para>float64_t svclasta[_n_f64](svbool_t pg, float64_t defaultValue, svfloat64_t data)</para>
         ///   <para>  CLASTA Dtied, Pg, Dtied, Zdata.D</para>
         /// </summary>
-        public static double ConditionalExtractAfterLastActiveElement(Vector<double> mask, double defaultValues, Vector<double> data) { throw new PlatformNotSupportedException(); }
+        public static double ConditionalExtractAfterLastActiveElement(Vector<double> mask, double defaultValue, Vector<double> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svint16_t svclasta[_s16](svbool_t pg, svint16_t fallback, svint16_t data)</para>
+        ///   <para>svint16_t svclasta[_s16](svbool_t pg, svint16_t defaultScalar, svint16_t data)</para>
         ///   <para>  CLASTA Htied, Pg, Htied, Zdata.H</para>
         /// </summary>
-        public static Vector<short> ConditionalExtractAfterLastActiveElement(Vector<short> mask, Vector<short> defaultValue, Vector<short> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> ConditionalExtractAfterLastActiveElement(Vector<short> mask, Vector<short> defaultScalar, Vector<short> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>int16_t svclasta[_n_s16](svbool_t pg, int16_t fallback, svint16_t data)</para>
+        ///   <para>int16_t svclasta[_n_s16](svbool_t pg, int16_t defaultValue, svint16_t data)</para>
         ///   <para>  CLASTA Wtied, Pg, Wtied, Zdata.H</para>
         /// </summary>
-        public static short ConditionalExtractAfterLastActiveElement(Vector<short> mask, short defaultValues, Vector<short> data) { throw new PlatformNotSupportedException(); }
+        public static short ConditionalExtractAfterLastActiveElement(Vector<short> mask, short defaultValue, Vector<short> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svint32_t svclasta[_s32](svbool_t pg, svint32_t fallback, svint32_t data)</para>
+        ///   <para>svint32_t svclasta[_s32](svbool_t pg, svint32_t defaultScalar, svint32_t data)</para>
         ///   <para>  CLASTA Stied, Pg, Stied, Zdata.S</para>
         /// </summary>
-        public static Vector<int> ConditionalExtractAfterLastActiveElement(Vector<int> mask, Vector<int> defaultValue, Vector<int> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> ConditionalExtractAfterLastActiveElement(Vector<int> mask, Vector<int> defaultScalar, Vector<int> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>int32_t svclasta[_n_s32](svbool_t pg, int32_t fallback, svint32_t data)</para>
+        ///   <para>int32_t svclasta[_n_s32](svbool_t pg, int32_t defaultValue, svint32_t data)</para>
         ///   <para>  CLASTA Wtied, Pg, Wtied, Zdata.S</para>
         /// </summary>
-        public static int ConditionalExtractAfterLastActiveElement(Vector<int> mask, int defaultValues, Vector<int> data) { throw new PlatformNotSupportedException(); }
+        public static int ConditionalExtractAfterLastActiveElement(Vector<int> mask, int defaultValue, Vector<int> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svint64_t svclasta[_s64](svbool_t pg, svint64_t fallback, svint64_t data)</para>
+        ///   <para>svint64_t svclasta[_s64](svbool_t pg, svint64_t defaultScalar, svint64_t data)</para>
         ///   <para>  CLASTA Dtied, Pg, Dtied, Zdata.D</para>
         /// </summary>
-        public static Vector<long> ConditionalExtractAfterLastActiveElement(Vector<long> mask, Vector<long> defaultValue, Vector<long> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> ConditionalExtractAfterLastActiveElement(Vector<long> mask, Vector<long> defaultScalar, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>int64_t svclasta[_n_s64](svbool_t pg, int64_t fallback, svint64_t data)</para>
+        ///   <para>int64_t svclasta[_n_s64](svbool_t pg, int64_t defaultValue, svint64_t data)</para>
         ///   <para>  CLASTA Xtied, Pg, Xtied, Zdata.D</para>
         /// </summary>
-        public static long ConditionalExtractAfterLastActiveElement(Vector<long> mask, long defaultValues, Vector<long> data) { throw new PlatformNotSupportedException(); }
+        public static long ConditionalExtractAfterLastActiveElement(Vector<long> mask, long defaultValue, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svint8_t svclasta[_s8](svbool_t pg, svint8_t fallback, svint8_t data)</para>
+        ///   <para>svint8_t svclasta[_s8](svbool_t pg, svint8_t defaultScalar, svint8_t data)</para>
         ///   <para>  CLASTA Btied, Pg, Btied, Zdata.B</para>
         /// </summary>
-        public static Vector<sbyte> ConditionalExtractAfterLastActiveElement(Vector<sbyte> mask, Vector<sbyte> defaultValue, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> ConditionalExtractAfterLastActiveElement(Vector<sbyte> mask, Vector<sbyte> defaultScalar, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>int8_t svclasta[_n_s8](svbool_t pg, int8_t fallback, svint8_t data)</para>
+        ///   <para>int8_t svclasta[_n_s8](svbool_t pg, int8_t defaultValue, svint8_t data)</para>
         ///   <para>  CLASTA Wtied, Pg, Wtied, Zdata.B</para>
         /// </summary>
-        public static sbyte ConditionalExtractAfterLastActiveElement(Vector<sbyte> mask, sbyte defaultValues, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
+        public static sbyte ConditionalExtractAfterLastActiveElement(Vector<sbyte> mask, sbyte defaultValue, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svfloat32_t svclasta[_f32](svbool_t pg, svfloat32_t fallback, svfloat32_t data)</para>
+        ///   <para>svfloat32_t svclasta[_f32](svbool_t pg, svfloat32_t defaultScalar, svfloat32_t data)</para>
         ///   <para>  CLASTA Stied, Pg, Stied, Zdata.S</para>
         /// </summary>
-        public static Vector<float> ConditionalExtractAfterLastActiveElement(Vector<float> mask, Vector<float> defaultValue, Vector<float> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<float> ConditionalExtractAfterLastActiveElement(Vector<float> mask, Vector<float> defaultScalar, Vector<float> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>float32_t svclasta[_n_f32](svbool_t pg, float32_t fallback, svfloat32_t data)</para>
+        ///   <para>float32_t svclasta[_n_f32](svbool_t pg, float32_t defaultValue, svfloat32_t data)</para>
         ///   <para>  CLASTA Stied, Pg, Stied, Zdata.S</para>
         /// </summary>
-        public static float ConditionalExtractAfterLastActiveElement(Vector<float> mask, float defaultValues, Vector<float> data) { throw new PlatformNotSupportedException(); }
+        public static float ConditionalExtractAfterLastActiveElement(Vector<float> mask, float defaultValue, Vector<float> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svuint16_t svclasta[_u16](svbool_t pg, svuint16_t fallback, svuint16_t data)</para>
+        ///   <para>svuint16_t svclasta[_u16](svbool_t pg, svuint16_t defaultScalar, svuint16_t data)</para>
         ///   <para>  CLASTA Htied, Pg, Htied, Zdata.H</para>
         /// </summary>
-        public static Vector<ushort> ConditionalExtractAfterLastActiveElement(Vector<ushort> mask, Vector<ushort> defaultValue, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> ConditionalExtractAfterLastActiveElement(Vector<ushort> mask, Vector<ushort> defaultScalar, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>uint16_t svclasta[_n_u16](svbool_t pg, uint16_t fallback, svuint16_t data)</para>
+        ///   <para>uint16_t svclasta[_n_u16](svbool_t pg, uint16_t defaultValue, svuint16_t data)</para>
         ///   <para>  CLASTA Wtied, Pg, Wtied, Zdata.H</para>
         /// </summary>
-        public static ushort ConditionalExtractAfterLastActiveElement(Vector<ushort> mask, ushort defaultValues, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
+        public static ushort ConditionalExtractAfterLastActiveElement(Vector<ushort> mask, ushort defaultValue, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svuint32_t svclasta[_u32](svbool_t pg, svuint32_t fallback, svuint32_t data)</para>
+        ///   <para>svuint32_t svclasta[_u32](svbool_t pg, svuint32_t defaultScalar, svuint32_t data)</para>
         ///   <para>  CLASTA Stied, Pg, Stied, Zdata.S</para>
         /// </summary>
-        public static Vector<uint> ConditionalExtractAfterLastActiveElement(Vector<uint> mask, Vector<uint> defaultValue, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> ConditionalExtractAfterLastActiveElement(Vector<uint> mask, Vector<uint> defaultScalar, Vector<uint> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>uint32_t svclasta[_n_u32](svbool_t pg, uint32_t fallback, svuint32_t data)</para>
+        ///   <para>uint32_t svclasta[_n_u32](svbool_t pg, uint32_t defaultValue, svuint32_t data)</para>
         ///   <para>  CLASTA Wtied, Pg, Wtied, Zdata.S</para>
         /// </summary>
-        public static uint ConditionalExtractAfterLastActiveElement(Vector<uint> mask, uint defaultValues, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+        public static uint ConditionalExtractAfterLastActiveElement(Vector<uint> mask, uint defaultValue, Vector<uint> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svuint64_t svclasta[_u64](svbool_t pg, svuint64_t fallback, svuint64_t data)</para>
+        ///   <para>svuint64_t svclasta[_u64](svbool_t pg, svuint64_t defaultScalar, svuint64_t data)</para>
         ///   <para>  CLASTA Dtied, Pg, Dtied, Zdata.D</para>
         /// </summary>
-        public static Vector<ulong> ConditionalExtractAfterLastActiveElement(Vector<ulong> mask, Vector<ulong> defaultValue, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> ConditionalExtractAfterLastActiveElement(Vector<ulong> mask, Vector<ulong> defaultScalar, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>uint64_t svclasta[_n_u64](svbool_t pg, uint64_t fallback, svuint64_t data)</para>
+        ///   <para>uint64_t svclasta[_n_u64](svbool_t pg, uint64_t defaultValue, svuint64_t data)</para>
         ///   <para>  CLASTA Xtied, Pg, Xtied, Zdata.D</para>
         /// </summary>
-        public static ulong ConditionalExtractAfterLastActiveElement(Vector<ulong> mask, ulong defaultValues, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+        public static ulong ConditionalExtractAfterLastActiveElement(Vector<ulong> mask, ulong defaultValue, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
         // Conditionally extract element after last
 
         /// <summary>
-        ///   <para>svuint8_t svclasta[_u8](svbool_t pg, svuint8_t fallback, svuint8_t data)</para>
+        ///   <para>svuint8_t svclasta[_u8](svbool_t pg, svuint8_t defaultValues, svuint8_t data)</para>
         ///   <para>  CLASTA Ztied.B, Pg, Ztied.B, Zdata.B</para>
         /// </summary>
-        public static Vector<byte> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<byte> mask, Vector<byte> defaultScalar, Vector<byte> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<byte> mask, Vector<byte> defaultValues, Vector<byte> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svfloat64_t svclasta[_f64](svbool_t pg, svfloat64_t fallback, svfloat64_t data)</para>
+        ///   <para>svfloat64_t svclasta[_f64](svbool_t pg, svfloat64_t defaultValues, svfloat64_t data)</para>
         ///   <para>  CLASTA Ztied.D, Pg, Ztied.D, Zdata.D</para>
         /// </summary>
-        public static Vector<double> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<double> mask, Vector<double> defaultScalar, Vector<double> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<double> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<double> mask, Vector<double> defaultValues, Vector<double> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svint16_t svclasta[_s16](svbool_t pg, svint16_t fallback, svint16_t data)</para>
+        ///   <para>svint16_t svclasta[_s16](svbool_t pg, svint16_t defaultValues, svint16_t data)</para>
         ///   <para>  CLASTA Ztied.H, Pg, Ztied.H, Zdata.H</para>
         /// </summary>
-        public static Vector<short> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<short> mask, Vector<short> defaultScalar, Vector<short> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<short> mask, Vector<short> defaultValues, Vector<short> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svint32_t svclasta[_s32](svbool_t pg, svint32_t fallback, svint32_t data)</para>
+        ///   <para>svint32_t svclasta[_s32](svbool_t pg, svint32_t defaultValues, svint32_t data)</para>
         ///   <para>  CLASTA Ztied.S, Pg, Ztied.S, Zdata.S</para>
         /// </summary>
-        public static Vector<int> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<int> mask, Vector<int> defaultScalar, Vector<int> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<int> mask, Vector<int> defaultValues, Vector<int> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svint64_t svclasta[_s64](svbool_t pg, svint64_t fallback, svint64_t data)</para>
+        ///   <para>svint64_t svclasta[_s64](svbool_t pg, svint64_t defaultValues, svint64_t data)</para>
         ///   <para>  CLASTA Ztied.D, Pg, Ztied.D, Zdata.D</para>
         /// </summary>
-        public static Vector<long> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<long> mask, Vector<long> defaultScalar, Vector<long> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<long> mask, Vector<long> defaultValues, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svint8_t svclasta[_s8](svbool_t pg, svint8_t fallback, svint8_t data)</para>
+        ///   <para>svint8_t svclasta[_s8](svbool_t pg, svint8_t defaultValues, svint8_t data)</para>
         ///   <para>  CLASTA Ztied.B, Pg, Ztied.B, Zdata.B</para>
         /// </summary>
-        public static Vector<sbyte> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<sbyte> mask, Vector<sbyte> defaultScalar, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<sbyte> mask, Vector<sbyte> defaultValues, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svfloat32_t svclasta[_f32](svbool_t pg, svfloat32_t fallback, svfloat32_t data)</para>
+        ///   <para>svfloat32_t svclasta[_f32](svbool_t pg, svfloat32_t defaultValues, svfloat32_t data)</para>
         ///   <para>  CLASTA Ztied.S, Pg, Ztied.S, Zdata.S</para>
         /// </summary>
-        public static Vector<float> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<float> mask, Vector<float> defaultScalar, Vector<float> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<float> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<float> mask, Vector<float> defaultValues, Vector<float> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svuint16_t svclasta[_u16](svbool_t pg, svuint16_t fallback, svuint16_t data)</para>
+        ///   <para>svuint16_t svclasta[_u16](svbool_t pg, svuint16_t defaultValues, svuint16_t data)</para>
         ///   <para>  CLASTA Ztied.H, Pg, Ztied.H, Zdata.H</para>
         /// </summary>
-        public static Vector<ushort> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<ushort> mask, Vector<ushort> defaultScalar, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<ushort> mask, Vector<ushort> defaultValues, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svuint32_t svclasta[_u32](svbool_t pg, svuint32_t fallback, svuint32_t data)</para>
+        ///   <para>svuint32_t svclasta[_u32](svbool_t pg, svuint32_t defaultValues, svuint32_t data)</para>
         ///   <para>  CLASTA Ztied.S, Pg, Ztied.S, Zdata.S</para>
         /// </summary>
-        public static Vector<uint> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<uint> mask, Vector<uint> defaultScalar, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<uint> mask, Vector<uint> defaultValues, Vector<uint> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svuint64_t svclasta[_u64](svbool_t pg, svuint64_t fallback, svuint64_t data)</para>
+        ///   <para>svuint64_t svclasta[_u64](svbool_t pg, svuint64_t defaultValues, svuint64_t data)</para>
         ///   <para>  CLASTA Ztied.D, Pg, Ztied.D, Zdata.D</para>
         /// </summary>
-        public static Vector<ulong> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<ulong> mask, Vector<ulong> defaultScalar, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<ulong> mask, Vector<ulong> defaultValues, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
         // Conditionally extract last element
 
         /// <summary>
-        ///   <para>svuint8_t svclastb[_u8](svbool_t pg, svuint8_t fallback, svuint8_t data)</para>
+        ///   <para>svuint8_t svclastb[_u8](svbool_t pg, svuint8_t defaultScalar, svuint8_t data)</para>
         ///   <para>  CLASTB Btied, Pg, Btied, Zdata.B</para>
         /// </summary>
-        public static Vector<byte> ConditionalExtractLastActiveElement(Vector<byte> mask, Vector<byte> defaultValue, Vector<byte> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> ConditionalExtractLastActiveElement(Vector<byte> mask, Vector<byte> defaultScalar, Vector<byte> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>uint8_t svclastb[_n_u8](svbool_t pg, uint8_t fallback, svuint8_t data)</para>
+        ///   <para>uint8_t svclastb[_n_u8](svbool_t pg, uint8_t defaultValue, svuint8_t data)</para>
         ///   <para>  CLASTB Wtied, Pg, Wtied, Zdata.B</para>
         /// </summary>
-        public static byte ConditionalExtractLastActiveElement(Vector<byte> mask, byte defaultValues, Vector<byte> data) { throw new PlatformNotSupportedException(); }
+        public static byte ConditionalExtractLastActiveElement(Vector<byte> mask, byte defaultValue, Vector<byte> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svfloat64_t svclastb[_f64](svbool_t pg, svfloat64_t fallback, svfloat64_t data)</para>
+        ///   <para>svfloat64_t svclastb[_f64](svbool_t pg, svfloat64_t defaultScalar, svfloat64_t data)</para>
         ///   <para>  CLASTB Dtied, Pg, Dtied, Zdata.D</para>
         /// </summary>
-        public static Vector<double> ConditionalExtractLastActiveElement(Vector<double> mask, Vector<double> defaultValue, Vector<double> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<double> ConditionalExtractLastActiveElement(Vector<double> mask, Vector<double> defaultScalar, Vector<double> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>float64_t svclastb[_n_f64](svbool_t pg, float64_t fallback, svfloat64_t data)</para>
+        ///   <para>float64_t svclastb[_n_f64](svbool_t pg, float64_t defaultValue, svfloat64_t data)</para>
         ///   <para>  CLASTB Dtied, Pg, Dtied, Zdata.D</para>
         /// </summary>
-        public static double ConditionalExtractLastActiveElement(Vector<double> mask, double defaultValues, Vector<double> data) { throw new PlatformNotSupportedException(); }
+        public static double ConditionalExtractLastActiveElement(Vector<double> mask, double defaultValue, Vector<double> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svint16_t svclastb[_s16](svbool_t pg, svint16_t fallback, svint16_t data)</para>
+        ///   <para>svint16_t svclastb[_s16](svbool_t pg, svint16_t defaultScalar, svint16_t data)</para>
         ///   <para>  CLASTB Htied, Pg, Htied, Zdata.H</para>
         /// </summary>
-        public static Vector<short> ConditionalExtractLastActiveElement(Vector<short> mask, Vector<short> defaultValue, Vector<short> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> ConditionalExtractLastActiveElement(Vector<short> mask, Vector<short> defaultScalar, Vector<short> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>int16_t svclastb[_n_s16](svbool_t pg, int16_t fallback, svint16_t data)</para>
+        ///   <para>int16_t svclastb[_n_s16](svbool_t pg, int16_t defaultValue, svint16_t data)</para>
         ///   <para>  CLASTB Wtied, Pg, Wtied, Zdata.H</para>
         /// </summary>
-        public static short ConditionalExtractLastActiveElement(Vector<short> mask, short defaultValues, Vector<short> data) { throw new PlatformNotSupportedException(); }
+        public static short ConditionalExtractLastActiveElement(Vector<short> mask, short defaultValue, Vector<short> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svint32_t svclastb[_s32](svbool_t pg, svint32_t fallback, svint32_t data)</para>
+        ///   <para>svint32_t svclastb[_s32](svbool_t pg, svint32_t defaultScalar, svint32_t data)</para>
         ///   <para>  CLASTB Stied, Pg, Stied, Zdata.S</para>
         /// </summary>
-        public static Vector<int> ConditionalExtractLastActiveElement(Vector<int> mask, Vector<int> defaultValue, Vector<int> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> ConditionalExtractLastActiveElement(Vector<int> mask, Vector<int> defaultScalar, Vector<int> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>int32_t svclastb[_n_s32](svbool_t pg, int32_t fallback, svint32_t data)</para>
+        ///   <para>int32_t svclastb[_n_s32](svbool_t pg, int32_t defaultValue, svint32_t data)</para>
         ///   <para>  CLASTB Wtied, Pg, Wtied, Zdata.S</para>
         /// </summary>
-        public static int ConditionalExtractLastActiveElement(Vector<int> mask, int defaultValues, Vector<int> data) { throw new PlatformNotSupportedException(); }
+        public static int ConditionalExtractLastActiveElement(Vector<int> mask, int defaultValue, Vector<int> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svint64_t svclastb[_s64](svbool_t pg, svint64_t fallback, svint64_t data)</para>
+        ///   <para>svint64_t svclastb[_s64](svbool_t pg, svint64_t defaultScalar, svint64_t data)</para>
         ///   <para>  CLASTB Dtied, Pg, Dtied, Zdata.D</para>
         /// </summary>
-        public static Vector<long> ConditionalExtractLastActiveElement(Vector<long> mask, Vector<long> defaultValue, Vector<long> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> ConditionalExtractLastActiveElement(Vector<long> mask, Vector<long> defaultScalar, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>int64_t svclastb[_n_s64](svbool_t pg, int64_t fallback, svint64_t data)</para>
+        ///   <para>int64_t svclastb[_n_s64](svbool_t pg, int64_t defaultValue, svint64_t data)</para>
         ///   <para>  CLASTB Xtied, Pg, Xtied, Zdata.D</para>
         /// </summary>
-        public static long ConditionalExtractLastActiveElement(Vector<long> mask, long defaultValues, Vector<long> data) { throw new PlatformNotSupportedException(); }
+        public static long ConditionalExtractLastActiveElement(Vector<long> mask, long defaultValue, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svint8_t svclastb[_s8](svbool_t pg, svint8_t fallback, svint8_t data)</para>
+        ///   <para>svint8_t svclastb[_s8](svbool_t pg, svint8_t defaultScalar, svint8_t data)</para>
         ///   <para>  CLASTB Btied, Pg, Btied, Zdata.B</para>
         /// </summary>
-        public static Vector<sbyte> ConditionalExtractLastActiveElement(Vector<sbyte> mask, Vector<sbyte> defaultValue, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> ConditionalExtractLastActiveElement(Vector<sbyte> mask, Vector<sbyte> defaultScalar, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>int8_t svclastb[_n_s8](svbool_t pg, int8_t fallback, svint8_t data)</para>
+        ///   <para>int8_t svclastb[_n_s8](svbool_t pg, int8_t defaultValue, svint8_t data)</para>
         ///   <para>  CLASTB Wtied, Pg, Wtied, Zdata.B</para>
         /// </summary>
-        public static sbyte ConditionalExtractLastActiveElement(Vector<sbyte> mask, sbyte defaultValues, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
+        public static sbyte ConditionalExtractLastActiveElement(Vector<sbyte> mask, sbyte defaultValue, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svfloat32_t svclastb[_f32](svbool_t pg, svfloat32_t fallback, svfloat32_t data)</para>
+        ///   <para>svfloat32_t svclastb[_f32](svbool_t pg, svfloat32_t defaultScalar, svfloat32_t data)</para>
         ///   <para>  CLASTB Stied, Pg, Stied, Zdata.S</para>
         /// </summary>
-        public static Vector<float> ConditionalExtractLastActiveElement(Vector<float> mask, Vector<float> defaultValue, Vector<float> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<float> ConditionalExtractLastActiveElement(Vector<float> mask, Vector<float> defaultScalar, Vector<float> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>float32_t svclastb[_n_f32](svbool_t pg, float32_t fallback, svfloat32_t data)</para>
+        ///   <para>float32_t svclastb[_n_f32](svbool_t pg, float32_t defaultValue, svfloat32_t data)</para>
         ///   <para>  CLASTB Stied, Pg, Stied, Zdata.S</para>
         /// </summary>
-        public static float ConditionalExtractLastActiveElement(Vector<float> mask, float defaultValues, Vector<float> data) { throw new PlatformNotSupportedException(); }
+        public static float ConditionalExtractLastActiveElement(Vector<float> mask, float defaultValue, Vector<float> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svuint16_t svclastb[_u16](svbool_t pg, svuint16_t fallback, svuint16_t data)</para>
+        ///   <para>svuint16_t svclastb[_u16](svbool_t pg, svuint16_t defaultScalar, svuint16_t data)</para>
         ///   <para>  CLASTB Htied, Pg, Htied, Zdata.H</para>
         /// </summary>
-        public static Vector<ushort> ConditionalExtractLastActiveElement(Vector<ushort> mask, Vector<ushort> defaultValue, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> ConditionalExtractLastActiveElement(Vector<ushort> mask, Vector<ushort> defaultScalar, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>uint16_t svclastb[_n_u16](svbool_t pg, uint16_t fallback, svuint16_t data)</para>
+        ///   <para>uint16_t svclastb[_n_u16](svbool_t pg, uint16_t defaultValue, svuint16_t data)</para>
         ///   <para>  CLASTB Wtied, Pg, Wtied, Zdata.H</para>
         /// </summary>
-        public static ushort ConditionalExtractLastActiveElement(Vector<ushort> mask, ushort defaultValues, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
+        public static ushort ConditionalExtractLastActiveElement(Vector<ushort> mask, ushort defaultValue, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svuint32_t svclastb[_u32](svbool_t pg, svuint32_t fallback, svuint32_t data)</para>
+        ///   <para>svuint32_t svclastb[_u32](svbool_t pg, svuint32_t defaultScalar, svuint32_t data)</para>
         ///   <para>  CLASTB Stied, Pg, Stied, Zdata.S</para>
         /// </summary>
-        public static Vector<uint> ConditionalExtractLastActiveElement(Vector<uint> mask, Vector<uint> defaultValue, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> ConditionalExtractLastActiveElement(Vector<uint> mask, Vector<uint> defaultScalar, Vector<uint> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>uint32_t svclastb[_n_u32](svbool_t pg, uint32_t fallback, svuint32_t data)</para>
+        ///   <para>uint32_t svclastb[_n_u32](svbool_t pg, uint32_t defaultValue, svuint32_t data)</para>
         ///   <para>  CLASTB Wtied, Pg, Wtied, Zdata.S</para>
         /// </summary>
-        public static uint ConditionalExtractLastActiveElement(Vector<uint> mask, uint defaultValues, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+        public static uint ConditionalExtractLastActiveElement(Vector<uint> mask, uint defaultValue, Vector<uint> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svuint64_t svclastb[_u64](svbool_t pg, svuint64_t fallback, svuint64_t data)</para>
+        ///   <para>svuint64_t svclastb[_u64](svbool_t pg, svuint64_t defaultScalar, svuint64_t data)</para>
         ///   <para>  CLASTB Dtied, Pg, Dtied, Zdata.D</para>
         /// </summary>
-        public static Vector<ulong> ConditionalExtractLastActiveElement(Vector<ulong> mask, Vector<ulong> defaultValue, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> ConditionalExtractLastActiveElement(Vector<ulong> mask, Vector<ulong> defaultScalar, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>uint64_t svclastb[_n_u64](svbool_t pg, uint64_t fallback, svuint64_t data)</para>
+        ///   <para>uint64_t svclastb[_n_u64](svbool_t pg, uint64_t defaultValue, svuint64_t data)</para>
         ///   <para>  CLASTB Xtied, Pg, Xtied, Zdata.D</para>
         /// </summary>
-        public static ulong ConditionalExtractLastActiveElement(Vector<ulong> mask, ulong defaultValues, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+        public static ulong ConditionalExtractLastActiveElement(Vector<ulong> mask, ulong defaultValue, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
         // Conditionally extract last element
 
         /// <summary>
-        ///   <para>svuint8_t svclastb[_u8](svbool_t pg, svuint8_t fallback, svuint8_t data)</para>
+        ///   <para>svuint8_t svclastb[_u8](svbool_t pg, svuint8_t defaultValues, svuint8_t data)</para>
         ///   <para>  CLASTB Ztied.B, Pg, Ztied.B, Zdata.B</para>
         /// </summary>
-        public static Vector<byte> ConditionalExtractLastActiveElementAndReplicate(Vector<byte> mask, Vector<byte> fallback, Vector<byte> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> ConditionalExtractLastActiveElementAndReplicate(Vector<byte> mask, Vector<byte> defaultValues, Vector<byte> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svfloat64_t svclastb[_f64](svbool_t pg, svfloat64_t fallback, svfloat64_t data)</para>
+        ///   <para>svfloat64_t svclastb[_f64](svbool_t pg, svfloat64_t defaultValues, svfloat64_t data)</para>
         ///   <para>  CLASTB Ztied.D, Pg, Ztied.D, Zdata.D</para>
         /// </summary>
-        public static Vector<double> ConditionalExtractLastActiveElementAndReplicate(Vector<double> mask, Vector<double> fallback, Vector<double> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<double> ConditionalExtractLastActiveElementAndReplicate(Vector<double> mask, Vector<double> defaultValues, Vector<double> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svint16_t svclastb[_s16](svbool_t pg, svint16_t fallback, svint16_t data)</para>
+        ///   <para>svint16_t svclastb[_s16](svbool_t pg, svint16_t defaultValues, svint16_t data)</para>
         ///   <para>  CLASTB Ztied.H, Pg, Ztied.H, Zdata.H</para>
         /// </summary>
-        public static Vector<short> ConditionalExtractLastActiveElementAndReplicate(Vector<short> mask, Vector<short> fallback, Vector<short> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> ConditionalExtractLastActiveElementAndReplicate(Vector<short> mask, Vector<short> defaultValues, Vector<short> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svint32_t svclastb[_s32](svbool_t pg, svint32_t fallback, svint32_t data)</para>
+        ///   <para>svint32_t svclastb[_s32](svbool_t pg, svint32_t defaultValues, svint32_t data)</para>
         ///   <para>  CLASTB Ztied.S, Pg, Ztied.S, Zdata.S</para>
         /// </summary>
-        public static Vector<int> ConditionalExtractLastActiveElementAndReplicate(Vector<int> mask, Vector<int> fallback, Vector<int> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> ConditionalExtractLastActiveElementAndReplicate(Vector<int> mask, Vector<int> defaultValues, Vector<int> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svint64_t svclastb[_s64](svbool_t pg, svint64_t fallback, svint64_t data)</para>
+        ///   <para>svint64_t svclastb[_s64](svbool_t pg, svint64_t defaultValues, svint64_t data)</para>
         ///   <para>  CLASTB Ztied.D, Pg, Ztied.D, Zdata.D</para>
         /// </summary>
-        public static Vector<long> ConditionalExtractLastActiveElementAndReplicate(Vector<long> mask, Vector<long> fallback, Vector<long> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> ConditionalExtractLastActiveElementAndReplicate(Vector<long> mask, Vector<long> defaultValues, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svint8_t svclastb[_s8](svbool_t pg, svint8_t fallback, svint8_t data)</para>
+        ///   <para>svint8_t svclastb[_s8](svbool_t pg, svint8_t defaultValues, svint8_t data)</para>
         ///   <para>  CLASTB Ztied.B, Pg, Ztied.B, Zdata.B</para>
         /// </summary>
-        public static Vector<sbyte> ConditionalExtractLastActiveElementAndReplicate(Vector<sbyte> mask, Vector<sbyte> fallback, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> ConditionalExtractLastActiveElementAndReplicate(Vector<sbyte> mask, Vector<sbyte> defaultValues, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svfloat32_t svclastb[_f32](svbool_t pg, svfloat32_t fallback, svfloat32_t data)</para>
+        ///   <para>svfloat32_t svclastb[_f32](svbool_t pg, svfloat32_t defaultValues, svfloat32_t data)</para>
         ///   <para>  CLASTB Ztied.S, Pg, Ztied.S, Zdata.S</para>
         /// </summary>
-        public static Vector<float> ConditionalExtractLastActiveElementAndReplicate(Vector<float> mask, Vector<float> fallback, Vector<float> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<float> ConditionalExtractLastActiveElementAndReplicate(Vector<float> mask, Vector<float> defaultValues, Vector<float> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svuint16_t svclastb[_u16](svbool_t pg, svuint16_t fallback, svuint16_t data)</para>
+        ///   <para>svuint16_t svclastb[_u16](svbool_t pg, svuint16_t defaultValues, svuint16_t data)</para>
         ///   <para>  CLASTB Ztied.H, Pg, Ztied.H, Zdata.H</para>
         /// </summary>
-        public static Vector<ushort> ConditionalExtractLastActiveElementAndReplicate(Vector<ushort> mask, Vector<ushort> fallback, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> ConditionalExtractLastActiveElementAndReplicate(Vector<ushort> mask, Vector<ushort> defaultValues, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svuint32_t svclastb[_u32](svbool_t pg, svuint32_t fallback, svuint32_t data)</para>
+        ///   <para>svuint32_t svclastb[_u32](svbool_t pg, svuint32_t defaultValues, svuint32_t data)</para>
         ///   <para>  CLASTB Ztied.S, Pg, Ztied.S, Zdata.S</para>
         /// </summary>
-        public static Vector<uint> ConditionalExtractLastActiveElementAndReplicate(Vector<uint> mask, Vector<uint> fallback, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> ConditionalExtractLastActiveElementAndReplicate(Vector<uint> mask, Vector<uint> defaultValues, Vector<uint> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svuint64_t svclastb[_u64](svbool_t pg, svuint64_t fallback, svuint64_t data)</para>
+        ///   <para>svuint64_t svclastb[_u64](svbool_t pg, svuint64_t defaultValues, svuint64_t data)</para>
         ///   <para>  CLASTB Ztied.D, Pg, Ztied.D, Zdata.D</para>
         /// </summary>
-        public static Vector<ulong> ConditionalExtractLastActiveElementAndReplicate(Vector<ulong> mask, Vector<ulong> fallback, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> ConditionalExtractLastActiveElementAndReplicate(Vector<ulong> mask, Vector<ulong> defaultValues, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
         // Conditionally select elements
@@ -2090,49 +2090,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<byte> CreateBreakAfterMask(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> CreateBreakAfterMask(Vector<byte> totalMask, Vector<byte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<short> CreateBreakAfterMask(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> CreateBreakAfterMask(Vector<short> totalMask, Vector<short> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<int> CreateBreakAfterMask(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> CreateBreakAfterMask(Vector<int> totalMask, Vector<int> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<long> CreateBreakAfterMask(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> CreateBreakAfterMask(Vector<long> totalMask, Vector<long> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<sbyte> CreateBreakAfterMask(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> CreateBreakAfterMask(Vector<sbyte> totalMask, Vector<sbyte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<ushort> CreateBreakAfterMask(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> CreateBreakAfterMask(Vector<ushort> totalMask, Vector<ushort> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<uint> CreateBreakAfterMask(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> CreateBreakAfterMask(Vector<uint> totalMask, Vector<uint> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<ulong> CreateBreakAfterMask(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> CreateBreakAfterMask(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
 
 
         // Break after first true condition, propagating from previous partition
@@ -2192,49 +2192,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<byte> CreateBreakBeforeMask(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> CreateBreakBeforeMask(Vector<byte> totalMask, Vector<byte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<short> CreateBreakBeforeMask(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> CreateBreakBeforeMask(Vector<short> totalMask, Vector<short> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<int> CreateBreakBeforeMask(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> CreateBreakBeforeMask(Vector<int> totalMask, Vector<int> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<long> CreateBreakBeforeMask(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> CreateBreakBeforeMask(Vector<long> totalMask, Vector<long> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<sbyte> CreateBreakBeforeMask(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> CreateBreakBeforeMask(Vector<sbyte> totalMask, Vector<sbyte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<ushort> CreateBreakBeforeMask(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> CreateBreakBeforeMask(Vector<ushort> totalMask, Vector<ushort> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<uint> CreateBreakBeforeMask(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> CreateBreakBeforeMask(Vector<uint> totalMask, Vector<uint> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<ulong> CreateBreakBeforeMask(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> CreateBreakBeforeMask(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
 
 
         // Break before first true condition, propagating from previous partition
@@ -2435,49 +2435,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<byte> CreateMaskForFirstActiveElement(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> CreateMaskForFirstActiveElement(Vector<byte> totalMask, Vector<byte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<short> CreateMaskForFirstActiveElement(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> CreateMaskForFirstActiveElement(Vector<short> totalMask, Vector<short> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<int> CreateMaskForFirstActiveElement(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> CreateMaskForFirstActiveElement(Vector<int> totalMask, Vector<int> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<long> CreateMaskForFirstActiveElement(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> CreateMaskForFirstActiveElement(Vector<long> totalMask, Vector<long> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<sbyte> CreateMaskForFirstActiveElement(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> CreateMaskForFirstActiveElement(Vector<sbyte> totalMask, Vector<sbyte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<ushort> CreateMaskForFirstActiveElement(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> CreateMaskForFirstActiveElement(Vector<ushort> totalMask, Vector<ushort> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<uint> CreateMaskForFirstActiveElement(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> CreateMaskForFirstActiveElement(Vector<uint> totalMask, Vector<uint> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<ulong> CreateMaskForFirstActiveElement(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> CreateMaskForFirstActiveElement(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
 
 
         // Find next active predicate
@@ -2486,25 +2486,25 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svpnext_b8(svbool_t pg, svbool_t op)</para>
         ///   <para>  PNEXT Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<byte> CreateMaskForNextActiveElement(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> CreateMaskForNextActiveElement(Vector<byte> totalMask, Vector<byte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpnext_b16(svbool_t pg, svbool_t op)</para>
         ///   <para>  PNEXT Ptied.H, Pg, Ptied.H</para>
         /// </summary>
-        public static Vector<ushort> CreateMaskForNextActiveElement(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> CreateMaskForNextActiveElement(Vector<ushort> totalMask, Vector<ushort> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpnext_b32(svbool_t pg, svbool_t op)</para>
         ///   <para>  PNEXT Ptied.S, Pg, Ptied.S</para>
         /// </summary>
-        public static Vector<uint> CreateMaskForNextActiveElement(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> CreateMaskForNextActiveElement(Vector<uint> totalMask, Vector<uint> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpnext_b64(svbool_t pg, svbool_t op)</para>
         ///   <para>  PNEXT Ptied.D, Pg, Ptied.D</para>
         /// </summary>
-        public static Vector<ulong> CreateMaskForNextActiveElement(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> CreateMaskForNextActiveElement(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
 
 
         // Set predicate elements to true
@@ -2948,6 +2948,251 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> DuplicateSelectedScalarToVector(Vector<ulong> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
+
+        // Extract element after last
+
+        /// <summary>
+        ///   <para>svuint8_t svlasta[_u8](svbool_t pg, svuint8_t data)</para>
+        ///   <para>  LASTA Btied, Pg, Zdata.B</para>
+        /// </summary>
+        public static Vector<byte> ExtractAfterLastActiveElement(Vector<byte> mask, Vector<byte> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>uint8_t svlasta[_n_u8](svbool_t pg, svuint8_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.B</para>
+        /// </summary>
+        public static byte ExtractAfterLastActiveElementScalar(Vector<byte> mask, Vector<byte> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svfloat64_t svlasta[_f64](svbool_t pg, svfloat64_t data)</para>
+        ///   <para>  LASTA Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<double> ExtractAfterLastActiveElement(Vector<double> mask, Vector<double> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>float64_t svlasta[_n_f64](svbool_t pg, svfloat64_t data)</para>
+        ///   <para>  LASTA Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static double ExtractAfterLastActiveElementScalar(Vector<double> mask, Vector<double> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svint16_t svlasta[_s16](svbool_t pg, svint16_t data)</para>
+        ///   <para>  LASTA Htied, Pg, Htied, Zdata.H</para>
+        /// </summary>
+        public static Vector<short> ExtractAfterLastActiveElement(Vector<short> mask, Vector<short> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>int16_t svlasta[_n_s16](svbool_t pg, svint16_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.H</para>
+        /// </summary>
+        public static short ExtractAfterLastActiveElementScalar(Vector<short> mask, Vector<short> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svint32_t svlasta[_s32](svbool_t pg, svint32_t data)</para>
+        ///   <para>  LASTA Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<int> ExtractAfterLastActiveElement(Vector<int> mask, Vector<int> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>int32_t svlasta[_n_s32](svbool_t pg, svint32_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.S</para>
+        /// </summary>
+        public static int ExtractAfterLastActiveElementScalar(Vector<int> mask, Vector<int> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svint64_t svlasta[_s64](svbool_t pg, svint64_t data)</para>
+        ///   <para>  LASTA Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<long> ExtractAfterLastActiveElement(Vector<long> mask, Vector<long> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>int64_t svlasta[_n_s64](svbool_t pg, svint64_t data)</para>
+        ///   <para>  LASTA Xtied, Pg, Xtied, Zdata.D</para>
+        /// </summary>
+        public static long ExtractAfterLastActiveElementScalar(Vector<long> mask, Vector<long> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svint8_t svlasta[_s8](svbool_t pg, svint8_t data)</para>
+        ///   <para>  LASTA Btied, Pg, Btied, Zdata.B</para>
+        /// </summary>
+        public static Vector<sbyte> ExtractAfterLastActiveElement(Vector<sbyte> mask, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>int8_t svlasta[_n_s8](svbool_t pg, svint8_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.B</para>
+        /// </summary>
+        public static sbyte ExtractAfterLastActiveElementScalar(Vector<sbyte> mask, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svfloat32_t svlasta[_f32](svbool_t pg, svfloat32_t data)</para>
+        ///   <para>  LASTA Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<float> ExtractAfterLastActiveElement(Vector<float> mask, Vector<float> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>float32_t svlasta[_n_f32](svbool_t pg, svfloat32_t data)</para>
+        ///   <para>  LASTA Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static float ExtractAfterLastActiveElementScalar(Vector<float> mask, Vector<float> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svuint16_t svlasta[_u16](svbool_t pg, svuint16_t data)</para>
+        ///   <para>  LASTA Htied, Pg, Htied, Zdata.H</para>
+        /// </summary>
+        public static Vector<ushort> ExtractAfterLastActiveElement(Vector<ushort> mask, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>uint16_t svlasta[_n_u16](svbool_t pg, svuint16_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.H</para>
+        /// </summary>
+        public static ushort ExtractAfterLastActiveElementScalar(Vector<ushort> mask, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svuint32_t svlasta[_u32](svbool_t pg, svuint32_t data)</para>
+        ///   <para>  LASTA Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<uint> ExtractAfterLastActiveElement(Vector<uint> mask, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>uint32_t svlasta[_n_u32](svbool_t pg, svuint32_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.S</para>
+        /// </summary>
+        public static uint ExtractAfterLastActiveElementScalar(Vector<uint> mask, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svuint64_t svlasta[_u64](svbool_t pg, svuint64_t data)</para>
+        ///   <para>  LASTA Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<ulong> ExtractAfterLastActiveElement(Vector<ulong> mask, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>uint64_t svlasta[_n_u64](svbool_t pg, svuint64_t data)</para>
+        ///   <para>  LASTA Xtied, Pg, Xtied, Zdata.D</para>
+        /// </summary>
+        public static ulong ExtractAfterLastActiveElementScalar(Vector<ulong> mask, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+
+
+        // Extract last element
+
+        /// <summary>
+        ///   <para>svuint8_t svlastb[_u8](svbool_t pg, svuint8_t data)</para>
+        ///   <para>  LASTB Btied, Pg, Zdata.B</para>
+        /// </summary>
+        public static Vector<byte> ExtractLastActiveElement(Vector<byte> mask, Vector<byte> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>uint8_t svlastb[_n_u8](svbool_t pg, svuint8_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.B</para>
+        /// </summary>
+        public static byte ExtractLastActiveElementScalar(Vector<byte> mask, Vector<byte> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svfloat64_t svlastb[_f64](svbool_t pg, svfloat64_t data)</para>
+        ///   <para>  LASTB Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<double> ExtractLastActiveElement(Vector<double> mask, Vector<double> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>float64_t svlastb[_n_f64](svbool_t pg, svfloat64_t data)</para>
+        ///   <para>  LASTB Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static double ExtractLastActiveElementScalar(Vector<double> mask, Vector<double> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svint16_t svlastb[_s16](svbool_t pg, svint16_t data)</para>
+        ///   <para>  LASTB Htied, Pg, Htied, Zdata.H</para>
+        /// </summary>
+        public static Vector<short> ExtractLastActiveElement(Vector<short> mask, Vector<short> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>int16_t svlastb[_n_s16](svbool_t pg, svint16_t data)</para>
+        ///   <para>  LASTB Wtied, Pg, Wtied, Zdata.H</para>
+        /// </summary>
+        public static short ExtractLastActiveElementScalar(Vector<short> mask, Vector<short> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svint32_t svlastb[_s32](svbool_t pg, svint32_t data)</para>
+        ///   <para>  LASTB Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<int> ExtractLastActiveElement(Vector<int> mask, Vector<int> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>int32_t svlastb[_n_s32](svbool_t pg, svint32_t data)</para>
+        ///   <para>  LASTB Wtied, Pg, Wtied, Zdata.S</para>
+        /// </summary>
+        public static int ExtractLastActiveElementScalar(Vector<int> mask, Vector<int> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svint64_t svlastb[_s64](svbool_t pg, svint64_t data)</para>
+        ///   <para>  LASTB Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<long> ExtractLastActiveElement(Vector<long> mask, Vector<long> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>int64_t svlastb[_n_s64](svbool_t pg, svint64_t data)</para>
+        ///   <para>  LASTB Xtied, Pg, Xtied, Zdata.D</para>
+        /// </summary>
+        public static long ExtractLastActiveElementScalar(Vector<long> mask, Vector<long> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svint8_t svlastb[_s8](svbool_t pg, svint8_t data)</para>
+        ///   <para>  LASTB Btied, Pg, Btied, Zdata.B</para>
+        /// </summary>
+        public static Vector<sbyte> ExtractLastActiveElement(Vector<sbyte> mask, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>int8_t svlastb[_n_s8](svbool_t pg, svint8_t data)</para>
+        ///   <para>  LASTB Wtied, Pg, Wtied, Zdata.B</para>
+        /// </summary>
+        public static sbyte ExtractLastActiveElementScalar(Vector<sbyte> mask, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svfloat32_t svlastb[_f32](svbool_t pg, svfloat32_t data)</para>
+        ///   <para>  LASTB Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<float> ExtractLastActiveElement(Vector<float> mask, Vector<float> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>float32_t svlastb[_n_f32](svbool_t pg, svfloat32_t data)</para>
+        ///   <para>  LASTB Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static float ExtractLastActiveElementScalar(Vector<float> mask, Vector<float> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svuint16_t svlastb[_u16](svbool_t pg, svuint16_t data)</para>
+        ///   <para>  LASTB Htied, Pg, Htied, Zdata.H</para>
+        /// </summary>
+        public static Vector<ushort> ExtractLastActiveElement(Vector<ushort> mask, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>uint16_t svlastb[_n_u16](svbool_t pg, svuint16_t data)</para>
+        ///   <para>  LASTB Wtied, Pg, Wtied, Zdata.H</para>
+        /// </summary>
+        public static ushort ExtractLastActiveElementScalar(Vector<ushort> mask, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svuint32_t svlastb[_u32](svbool_t pg, svuint32_t data)</para>
+        ///   <para>  LASTB Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<uint> ExtractLastActiveElement(Vector<uint> mask, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>uint32_t svlastb[_n_u32](svbool_t pg, svuint32_t data)</para>
+        ///   <para>  LASTB Wtied, Pg, Wtied, Zdata.S</para>
+        /// </summary>
+        public static uint ExtractLastActiveElementScalar(Vector<uint> mask, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svuint64_t svlastb[_u64](svbool_t pg, svuint64_t data)</para>
+        ///   <para>  LASTB Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<ulong> ExtractLastActiveElement(Vector<ulong> mask, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>uint64_t svlastb[_n_u64](svbool_t pg, svuint64_t data)</para>
+        ///   <para>  LASTB Xtied, Pg, Xtied, Zdata.D</para>
+        /// </summary>
+        public static ulong ExtractLastActiveElementScalar(Vector<ulong> mask, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svuint8_t svext[_u8](svuint8_t op1, svuint8_t op2, uint64_t imm3)</para>
@@ -7422,22 +7667,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> PopCount(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
 
 
-        // Prefetch bytes
-
-        /// <summary>
-        ///   <para>void svprfb(svbool_t pg, const void *base, enum svprfop op)</para>
-        ///   <para>  PRFB op, Pg, [Xbase, #0, MUL VL]</para>
-        /// </summary>
-        public static unsafe void PrefetchBytes(Vector<byte> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
-
-
         // Prefetch halfwords
 
         /// <summary>
         ///   <para>void svprfh(svbool_t pg, const void *base, enum svprfop op)</para>
         ///   <para>  PRFH op, Pg, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe void PrefetchInt16(Vector<ushort> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+        public static unsafe void Prefetch16Bit(Vector<ushort> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
 
         // Prefetch words
@@ -7446,7 +7682,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>void svprfw(svbool_t pg, const void *base, enum svprfop op)</para>
         ///   <para>  PRFW op, Pg, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe void PrefetchInt32(Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+        public static unsafe void Prefetch32Bit(Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
 
         // Prefetch doublewords
@@ -7455,7 +7691,16 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>void svprfd(svbool_t pg, const void *base, enum svprfop op)</para>
         ///   <para>  PRFD op, Pg, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe void PrefetchInt64(Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+        public static unsafe void Prefetch64Bit(Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+
+
+        // Prefetch bytes
+
+        /// <summary>
+        ///   <para>void svprfb(svbool_t pg, const void *base, enum svprfop op)</para>
+        ///   <para>  PRFB op, Pg, [Xbase, #0, MUL VL]</para>
+        /// </summary>
+        public static unsafe void Prefetch8Bit(Vector<byte> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
 
         // Reciprocal estimate
@@ -9781,49 +10026,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestAnyTrue(Vector<byte> mask, Vector<byte> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestAnyTrue(Vector<short> mask, Vector<short> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestAnyTrue(Vector<int> mask, Vector<int> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestAnyTrue(Vector<long> mask, Vector<long> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestAnyTrue(Vector<sbyte> mask, Vector<sbyte> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestAnyTrue(Vector<ushort> mask, Vector<ushort> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestAnyTrue(Vector<uint> mask, Vector<uint> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestAnyTrue(Vector<ulong> mask, Vector<ulong> rightMask) { throw new PlatformNotSupportedException(); }
 
 
         // Test whether the first active element is true
@@ -9832,49 +10077,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestFirstTrue(Vector<byte> leftMask, Vector<byte> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestFirstTrue(Vector<short> leftMask, Vector<short> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestFirstTrue(Vector<int> leftMask, Vector<int> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestFirstTrue(Vector<long> leftMask, Vector<long> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestFirstTrue(Vector<sbyte> leftMask, Vector<sbyte> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestFirstTrue(Vector<ushort> leftMask, Vector<ushort> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestFirstTrue(Vector<uint> leftMask, Vector<uint> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestFirstTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) { throw new PlatformNotSupportedException(); }
 
 
         // Test whether the last active element is true
@@ -9883,49 +10128,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestLastTrue(Vector<byte> leftMask, Vector<byte> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestLastTrue(Vector<short> leftMask, Vector<short> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestLastTrue(Vector<int> leftMask, Vector<int> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestLastTrue(Vector<long> leftMask, Vector<long> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestLastTrue(Vector<sbyte> leftMask, Vector<sbyte> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestLastTrue(Vector<ushort> leftMask, Vector<ushort> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestLastTrue(Vector<uint> leftMask, Vector<uint> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestLastTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) { throw new PlatformNotSupportedException(); }
 
 
         // Interleave even elements from two inputs

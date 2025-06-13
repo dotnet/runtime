@@ -14,7 +14,7 @@ namespace System.Reflection.Internal
         private byte* _memory;
         private int _size;
 
-        public unsafe ExternalMemoryBlockProvider(byte* memory, int size)
+        public ExternalMemoryBlockProvider(byte* memory, int size)
         {
             _memory = memory;
             _size = size;
