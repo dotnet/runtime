@@ -1847,7 +1847,7 @@ namespace System.Security.Cryptography
         {
             if (!hasSeed)
             {
-                throw new CryptographicException(SR.Cryptography_KemNoSeed);
+                throw new CryptographicException(SR.Cryptography_PqcNoSeed);
             }
         }
 
