@@ -889,9 +889,15 @@ namespace System
             {
                 // Overflow if signs of operands was different and result's sign was opposite.
                 // >> 63 gives the sign bit (either 64 1's or 64 0's).
-                ThrowHelper.ThrowOverflowException_TimeSpanTooLong();
+                ThrowOverflowException_TimeSpanTooLong(t1, t2);
             }
             return new TimeSpan(result);
+
+            static void ThrowOverflowException_TimeSpanTooLong(TimeSpan t1, TimeSpan t2)
+            {
+                if (t1.Ticks == 8000000000000000) System.Environment.FailFast("!!!!");
+                throw new OverflowException(t1.Ticks.ToString("x") + " " + t2.Ticks.ToString("x"));
+            }
         }
 
         public static TimeSpan operator +(TimeSpan t) => t;
