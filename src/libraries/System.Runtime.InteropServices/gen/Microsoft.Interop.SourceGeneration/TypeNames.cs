@@ -45,6 +45,9 @@ namespace Microsoft.Interop
 
         private static NameSyntax? _System_Runtime_CompilerServices_FixedAddressValueTypeAttribute;
         public static NameSyntax System_Runtime_CompilerServices_FixedAddressValueTypeAttribute => _System_Runtime_CompilerServices_FixedAddressValueTypeAttribute ??= ParseName(TypeNames.GlobalAlias + TypeNames.System_Runtime_CompilerServices_FixedAddressValueTypeAttribute);
+
+        private static NameSyntax? _System_Runtime_InteropServices_StructLayoutAttribute;
+        public static NameSyntax System_Runtime_InteropServices_StructLayoutAttribute => _System_Runtime_InteropServices_StructLayoutAttribute ??= ParseName(TypeNames.GlobalAlias + TypeNames.System_Runtime_InteropServices_StructLayoutAttribute);
     }
 
     public static class TypeSyntaxes
@@ -128,6 +131,9 @@ namespace Microsoft.Interop
 
         private static TypeSyntax? _System_Runtime_CompilerServices_Unsafe;
         public static TypeSyntax System_Runtime_CompilerServices_Unsafe => _System_Runtime_CompilerServices_Unsafe ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.System_Runtime_CompilerServices_Unsafe);
+
+        private static TypeSyntax? _System_Runtime_InteropServices_LayoutKind;
+        public static TypeSyntax System_Runtime_InteropServices_LayoutKind => _System_Runtime_InteropServices_LayoutKind ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.System_Runtime_InteropServices_LayoutKind);
 
         private static TypeSyntax? _CallConvCdecl;
         private static TypeSyntax? _CallConvFastcall;
@@ -311,6 +317,8 @@ namespace Microsoft.Interop
         public const string System_Runtime_InteropServices_CULong = "System.Runtime.InteropServices.CULong";
 
         public const string System_Runtime_InteropServices_NFloat = "System.Runtime.InteropServices.NFloat";
+
+        public const string System_Runtime_InteropServices_LayoutKind = "System.Runtime.InteropServices.LayoutKind";
 
         public const string CallConvCdeclName = "System.Runtime.CompilerServices.CallConvCdecl";
         public const string CallConvFastcallName = "System.Runtime.CompilerServices.CallConvFastcall";
