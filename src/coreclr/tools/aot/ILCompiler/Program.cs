@@ -629,9 +629,7 @@ namespace ILCompiler
                     foreach (var compilationRoot in compilationRoots)
                     {
                         if (compilationRoot is UnmanagedEntryPointsRootProvider provider && !provider.Hidden)
-                        {
                             defFileWriter.AddExportedMethods(provider.ExportedMethods);
-                        }
                     }
                 }
 

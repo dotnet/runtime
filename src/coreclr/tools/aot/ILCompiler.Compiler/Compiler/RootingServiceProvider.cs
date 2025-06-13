@@ -23,7 +23,7 @@ namespace ILCompiler
             _rootAdder = rootAdder;
         }
 
-        public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null, bool hidden = false)
+        public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null, bool exportHidden = false)
         {
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             IMethodNode methodEntryPoint = _factory.MethodEntrypoint(canonMethod);
@@ -32,7 +32,7 @@ namespace ILCompiler
             if (exportName != null)
             {
                 exportName = _factory.NameMangler.NodeMangler.ExternMethod(exportName, method);
-                _factory.NodeAliases.Add(methodEntryPoint, (exportName, hidden));
+                _factory.NodeAliases.Add(methodEntryPoint, (exportName, exportHidden));
             }
 
             if (canonMethod != method && method.HasInstantiation)

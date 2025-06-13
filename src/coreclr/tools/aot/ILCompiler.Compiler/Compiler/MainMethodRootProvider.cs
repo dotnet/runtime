@@ -40,7 +40,7 @@ namespace ILCompiler
             TypeDesc owningType = _module.GetGlobalModuleType();
             var startupCodeMain = new StartupCodeMainMethod(owningType, mainMethod, _libraryInitializers, _generateLibraryAndModuleInitializers);
 
-            rootProvider.AddCompilationRoot(startupCodeMain, "Startup Code Main Method", ManagedEntryPointMethodName, _generateLibraryAndModuleInitializers);
+            rootProvider.AddCompilationRoot(startupCodeMain, "Startup Code Main Method", ManagedEntryPointMethodName);
         }
     }
 }
