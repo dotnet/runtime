@@ -70,25 +70,40 @@ eventpipe_collect_tracing_command_try_parse_stackwalk_requested (
 
 static
 bool
+eventpipe_collect_tracing_command_try_parse_logging_level (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	EventPipeEventLevel *logging_level);
+
+static
+bool
 eventpipe_collect_tracing_command_try_parse_event_ids (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
 	const uint32_t length,
-	uint32_t **event_ids);
+	const uint32_t **event_ids);
 
 static
 bool
 eventpipe_collect_tracing_command_try_parse_event_filter (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	EventPipeProviderEventFilter *event_filter);
+	const EventPipeProviderEventFilter **event_filter);
+
+static
+bool
+eventpipe_collect_tracing_command_try_parse_tracepoint_sets (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	const uint32_t length,
+	const EventPipeProviderTracepointSet **tracepoint_sets);
 
 static
 bool
 eventpipe_collect_tracing_command_try_parse_tracepoint_config (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	EventPipeProviderTracepointConfiguration *tracepoint_config);
+	const EventPipeProviderTracepointConfiguration **tracepoint_config);
 
 static
 bool
@@ -277,26 +292,53 @@ eventpipe_collect_tracing_command_try_parse_stackwalk_requested (
 
 static
 bool
+eventpipe_collect_tracing_command_try_parse_logging_level (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	EventPipeEventLevel *logging_level)
+{
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (buffer_len != NULL);
+	EP_ASSERT (logging_level != NULL);
+
+	uint32_t log_level = 0;
+	bool can_parse = ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &log_level);
+
+	*logging_level = (EventPipeEventLevel)log_level;
+	return can_parse && (0 <= (int32_t)log_level) && ((int32_t)log_level <= (int32_t)EP_EVENT_LEVEL_VERBOSE);
+}
+
+/*
+ *  eventpipe_collect_tracing_command_try_parse_event_ids
+ *
+ *  Parses an array of event IDs from the IPC buffer. Allocates memory for the array
+ *  and transfers ownership to the caller.
+ */
+static
+bool
 eventpipe_collect_tracing_command_try_parse_event_ids (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
 	const uint32_t length,
-	uint32_t **event_ids)
+	const uint32_t **event_ids)
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
 	EP_ASSERT (event_ids != NULL);
 
 	bool result = false;
-
 	*event_ids = NULL;
+
 	if (length == 0)
 		return true;
 
-	*event_ids = ep_rt_object_array_alloc (uint32_t, length);
-	ep_raise_error_if_nok (*event_ids != NULL);
+	uint32_t *ids = ep_rt_object_array_alloc (uint32_t, length);
+	ep_raise_error_if_nok (ids != NULL);
 	for (uint32_t i = 0; i < length; ++i)
-		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &(*event_ids)[i]));
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &ids[i]));
+
+	*event_ids = ids;
+	ids = NULL;
 
 	result = true;
 
@@ -304,45 +346,41 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	ep_rt_object_array_free (*event_ids);
-	*event_ids = NULL;
-
+	ep_rt_object_array_free (ids);
 	ep_exit_error_handler ();
 }
 
 /*
  *  eventpipe_collect_tracing_command_try_parse_event_filter
  *
- *  Introduced in CollectTracing5, the event filter provides EventPipe Sessions
- *  additional control over which events are enabled/disabled for a particular provider.
- *
- *  event_filter format:
- *  - bool enable: 0 to disable events, 1 to enable events
- *  - array<uint> event_ids: If specified, a list of Event IDs to disable or enable
- *
- *  Dynamically allocates memory for the event_ids hashset and passes ownership to the caller.
+ *  Parses an EventPipeProviderEventFilter from the IPC Stream. Allocates memory for the EventPipeProviderEventFilter
+ *  and transfers ownership to the caller.
  */
 static
 bool
 eventpipe_collect_tracing_command_try_parse_event_filter (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	EventPipeProviderEventFilter *event_filter)
+	const EventPipeProviderEventFilter **event_filter)
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
 	EP_ASSERT (event_filter != NULL);
 
 	bool result = false;
-	uint32_t *event_ids = NULL;
+	*event_filter = NULL;
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_bool (buffer, buffer_len, &event_filter->enable));
+	EventPipeProviderEventFilter *filter = ep_rt_object_alloc (EventPipeProviderEventFilter);
+	ep_raise_error_if_nok (filter != NULL);
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &event_filter->length));
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_bool (buffer, buffer_len, &filter->enable));
 
-	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_ids (buffer, buffer_len, event_filter->length, &event_ids));
-	event_filter->event_ids = event_ids;
-	event_ids = NULL; // Ownership transferred to event_filter.
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &filter->length));
+
+	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_ids (buffer, buffer_len, filter->length, &filter->event_ids));
+
+	*event_filter = filter;
+	filter = NULL;
 
 	result = true;
 
@@ -350,70 +388,93 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
+	eventpipe_collect_tracing_command_free_event_filter (filter);
+	ep_exit_error_handler ();
+}
+
+/*
+ *  eventpipe_collect_tracing_command_try_parse_tracepoint_sets
+ *
+ *  Parses an array of EventPipeProviderTracepointSets from the IPC buffer.
+ *  Allocates memory for the array and its contents, passing ownership to the caller.
+ */
+static
+bool
+eventpipe_collect_tracing_command_try_parse_tracepoint_sets (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	const uint32_t length,
+	const EventPipeProviderTracepointSet **tracepoint_sets)
+{
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (buffer_len != NULL);
+	EP_ASSERT (tracepoint_set != NULL);
+
+	bool result = false;
+	*tracepoint_sets = NULL;
+
+	if (length == 0)
+		return false;
+
+	EventPipeProviderTracepointSet *sets = ep_rt_object_array_alloc (EventPipeProviderTracepointSet, length);
+	ep_raise_error_if_nok (sets != NULL);
+
+	for (uint32_t i = 0; i < length; ++i) {
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &sets[i].tracepoint_name));
+		ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (sets[i].tracepoint_name));
+
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &sets[i].event_ids_length));
+
+		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_ids (buffer, buffer_len, sets[i].event_ids_length, &sets[i].event_ids));
+	}
+
+	*tracepoint_sets = sets;
+	sets = NULL;
+
+	result = true;
+
+ep_on_exit:
+	return result;
+
+ep_on_error:
+	eventpipe_collect_tracing_command_free_tracepoint_sets (sets, length);
 	ep_exit_error_handler ();
 }
 
 /*
  *  eventpipe_collect_tracing_command_try_parse_tracepoint_config
  *
- *  Introduced in CollectTracing5, user_events-based EventPipe Sessions are required to
- *  specify a tracepoint configuration per-provider that details which events should be
- *  written to which tracepoints. Atleast one of default_tracepoint_name or tracepoints
- *  must be specified.
- *
- *  tracepoint_config format:
- *  - string default_tracepoint_name: If specified, the default tracepoint to write unmapped enabled events to.
- *  - array<tracepoint_set> tracepoints: If specified, maps enabled events to tracepoints.
- *
- *  tracepoint_set format:
- *  - string tracepoint_name: the tracepoint to write the following enabled events_ids to.
- *  - array<uint> event_ids: The Event IDs to be written to tracepoint_name.
+ *  Parses an EventPipeProviderTracepointConfiguration from the IPC Stream.
+ *  Allocates memory for the EventPipeProviderTracepointConfiguration and its fields,
+ *  passing ownership to the caller.
  */
 static
 bool
 eventpipe_collect_tracing_command_try_parse_tracepoint_config (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	EventPipeProviderTracepointConfiguration *tracepoint_config)
+	const EventPipeProviderTracepointConfiguration **tracepoint_config)
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
 	EP_ASSERT (tracepoint_config != NULL);
 
 	bool result = false;
+	*tracepoint_config = NULL;
 
-	ep_char8_t *tracepoint_name = NULL;
-	EventPipeProviderTracepointSet *non_default_tracepoints = NULL;
-	uint32_t *event_ids = NULL;
+	EventPipeProviderTracepointConfiguration *config = ep_rt_object_alloc (EventPipeProviderTracepointConfiguration);
+	ep_raise_error_if_nok (config != NULL);
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &tracepoint_name));
-	tracepoint_config->default_tracepoint_name = tracepoint_name;
-	tracepoint_name = NULL; // Ownership transferred to tracepoint_config.
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &config->default_tracepoint_name));
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &tracepoint_config->non_default_tracepoints_length));
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &config->non_default_tracepoints_length));
 
-	if (tracepoint_config->non_default_tracepoints_length > 0) {
-		non_default_tracepoints = ep_rt_object_array_alloc (EventPipeProviderTracepointSet, tracepoint_config->non_default_tracepoints_length);
-		ep_raise_error_if_nok (non_default_tracepoints != NULL);
-	}
+	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_tracepoint_sets (buffer, buffer_len, config->non_default_tracepoints_length, &config->non_default_tracepoints));
 
-	for (uint32_t i = 0; i < tracepoint_config->non_default_tracepoints_length; ++i) {
-		ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &tracepoint_name));
-		ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (tracepoint_name));
-		non_default_tracepoints[i].tracepoint_name = tracepoint_name;
-		tracepoint_name = NULL; // Ownership transferred to tracepoint_set.
+	ep_raise_error_if_nok (config->default_tracepoint_name != NULL || config->non_default_tracepoints_length > 0);
 
-		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &non_default_tracepoints[i].event_ids_length));
-
-		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_ids (buffer, buffer_len, non_default_tracepoints[i].event_ids_length, &event_ids));
-		non_default_tracepoints[i].event_ids = event_ids;
-		event_ids = NULL; // Ownership transferred to tracepoint_set.
-	}
-
-	tracepoint_config->non_default_tracepoints = non_default_tracepoints;
-	non_default_tracepoints = NULL; // Ownership transferred to tracepoint_config.
-
-	ep_raise_error_if_nok (tracepoint_config->default_tracepoint_name != NULL || tracepoint_config->non_default_tracepoints_length > 0);
+	*tracepoint_config = config;
+	config = NULL;
 
 	result = true;
 
@@ -421,10 +482,7 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	ep_rt_object_array_free (event_ids);
-	eventpipe_collect_tracing_command_free_tracepoint_sets ((EventPipeProviderTracepointSet *)non_default_tracepoints, tracepoint_config->non_default_tracepoints_length);
-	ep_rt_utf8_string_free (tracepoint_name);
-
+	eventpipe_collect_tracing_command_free_tracepoint_config (config);
 	ep_exit_error_handler ();
 }
 
@@ -449,13 +507,6 @@ eventpipe_collect_tracing_command_try_parse_provider_config (
 
 	bool result = false;
 
-	uint32_t log_level = 0;
-
-	ep_char8_t *provider_name = NULL;
-	ep_char8_t *filter_data = NULL;
-	EventPipeProviderEventFilter *event_filter = NULL;
-	EventPipeProviderTracepointConfiguration *tracepoint_config = NULL;
-
 	provider_config->keywords = 0;
 	provider_config->logging_level = (EventPipeEventLevel)0;
 	provider_config->provider_name = NULL;
@@ -465,34 +516,18 @@ eventpipe_collect_tracing_command_try_parse_provider_config (
 
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint64_t (buffer, buffer_len, &provider_config->keywords));
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &log_level));
-	provider_config->logging_level = (EventPipeEventLevel)log_level;
-	ep_raise_error_if_nok (provider_config->logging_level <= EP_EVENT_LEVEL_VERBOSE);
+	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_logging_level (buffer, buffer_len, &provider_config->logging_level));
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &provider_name));
-	ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (provider_name));
-	provider_config->provider_name = provider_name;
-	provider_name = NULL; // Ownership transferred to provider_config.
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &provider_config->provider_name));
+	ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (provider_config->provider_name));
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &filter_data));
-	provider_config->filter_data = filter_data;
-	filter_data = NULL; // Ownership transferred to provider_config.
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &provider_config->filter_data));
 
-	if ((optional_field_flags & EP_PROVIDER_OPTFIELD_EVENT_FILTER) != 0) {
-		event_filter = ep_rt_object_alloc (EventPipeProviderEventFilter);
-		ep_raise_error_if_nok (event_filter != NULL);
-		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_filter (buffer, buffer_len, event_filter));
-		provider_config->event_filter = event_filter;
-		event_filter = NULL; // Ownership transferred to provider_config.
-	}
+	if ((optional_field_flags & EP_PROVIDER_OPTFIELD_EVENT_FILTER) != 0)
+		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_filter (buffer, buffer_len, &provider_config->event_filter));
 
-	if ((optional_field_flags & EP_PROVIDER_OPTFIELD_TRACEPOINT_CONFIG) != 0) {
-		tracepoint_config = ep_rt_object_alloc (EventPipeProviderTracepointConfiguration);
-		ep_raise_error_if_nok (tracepoint_config != NULL);
-		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_tracepoint_config (buffer, buffer_len, tracepoint_config));
-		provider_config->tracepoint_config = tracepoint_config;
-		tracepoint_config = NULL; // Ownership transferred to provider_config.
-	}
+	if ((optional_field_flags & EP_PROVIDER_OPTFIELD_TRACEPOINT_CONFIG) != 0)
+		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_tracepoint_config (buffer, buffer_len, &provider_config->tracepoint_config));
 
 	result = true;
 
@@ -500,11 +535,6 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	eventpipe_collect_tracing_command_free_tracepoint_config (tracepoint_config);
-	eventpipe_collect_tracing_command_free_event_filter (event_filter);
-	ep_rt_utf8_string_free (filter_data);
-	ep_rt_utf8_string_free (provider_name);
-
 	ep_exit_error_handler ();
 }
 

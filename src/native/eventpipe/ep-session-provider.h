@@ -51,8 +51,8 @@ ep_session_provider_get_tracepoint_for_event (
 /*
  * EventPipeSessionProviderEventFilter.
  *
- * Used in conjunction with keywords and logging level to determine
- * whether an event should be enabled for the session.
+ * Introduced in CollectTracing5, the event filter provides EventPipe Sessions
+ * additional control over which events are enabled/disabled for a particular provider.
  */
 
 #if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
@@ -72,6 +72,11 @@ struct _EventPipeSessionProviderEventFilter {
 
 /*
  * EventPipeSessionProviderTracepointConfiguration.
+ *
+ * Introduced in CollectTracing5, user_events-based EventPipe Sessions are required to
+ * specify a tracepoint configuration per-provider that details which events should be
+ * written to which tracepoints. Atleast one of default_tracepoint_name or tracepoints
+ * must be specified.
  */
 
 #if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
