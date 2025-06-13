@@ -360,5 +360,20 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal(0, pool.CurrentlyRentedBlocks);
             Assert.Equal(0, Pipe.Writer.UnflushedBytes);
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.Is64BitProcess))]
+        public void UnflushedBytes_HandlesLargeValues()
+        {
+            PipeWriter writer = PipeWriter.Create(Stream.Null);
+            int bufferSize = 10000;
+
+            while (writer.UnflushedBytes >= 0 && writer.UnflushedBytes <= int.MaxValue)
+            {
+                writer.GetMemory(bufferSize);
+                writer.Advance(bufferSize);
+            }
+
+            Assert.Equal(2147490000, writer.UnflushedBytes);
+        }
     }
 }
