@@ -34,6 +34,8 @@ import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
 import { replaceEmscriptenPThreadInit } from "./pthreads/worker-thread";
 
+const ptrSize = 8;
+
 export async function configureRuntimeStartup (module: DotnetModuleInternal): Promise<void> {
     if (!module.out) {
         // eslint-disable-next-line no-console
@@ -470,13 +472,13 @@ export function mono_wasm_set_runtime_options (options: string[]): void {
     if (!Array.isArray(options))
         throw new Error("Expected runtimeOptions to be an array of strings");
 
-    const argv = malloc(options.length * 4);
+    const argv = malloc(options.length * ptrSize);
     let aindex = 0;
     for (let i = 0; i < options.length; ++i) {
         const option = options[i];
         if (typeof (option) !== "string")
             throw new Error("Expected runtimeOptions to be an array of strings");
-        Module.setValue(<any>argv + (aindex * 4), cwraps.mono_wasm_strdup(option), "i32");
+        Module.setValue(<any>argv + (aindex * ptrSize), cwraps.mono_wasm_strdup(option), "i64");
         aindex += 1;
     }
     cwraps.mono_wasm_parse_runtime_options(options.length, argv);
@@ -666,12 +668,12 @@ export function mono_wasm_asm_loaded (assembly_name: CharPtr, assembly_ptr: numb
 
 export function mono_wasm_set_main_args (name: string, allRuntimeArguments: string[]): void {
     const main_argc = allRuntimeArguments.length + 1;
-    const main_argv = <any>malloc(main_argc * 4);
+    const main_argv = <any>malloc(main_argc * ptrSize);
     let aindex = 0;
-    Module.setValue(main_argv + (aindex * 4), cwraps.mono_wasm_strdup(name), "i32");
+    Module.setValue(main_argv + (aindex * ptrSize), cwraps.mono_wasm_strdup(name), "i64");
     aindex += 1;
     for (let i = 0; i < allRuntimeArguments.length; ++i) {
-        Module.setValue(main_argv + (aindex * 4), cwraps.mono_wasm_strdup(allRuntimeArguments[i]), "i32");
+        Module.setValue(main_argv + (aindex * ptrSize), cwraps.mono_wasm_strdup(allRuntimeArguments[i]), "i64");
         aindex += 1;
     }
     cwraps.mono_wasm_set_main_args(main_argc, main_argv);

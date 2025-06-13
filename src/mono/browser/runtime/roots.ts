@@ -16,6 +16,7 @@ let _scratch_root_free_indices: Int32Array | null = null;
 let _scratch_root_free_indices_count = 0;
 const _scratch_root_free_instances: WasmRoot<any>[] = [];
 const _external_root_free_instances: WasmExternalRoot<any>[] = [];
+const ptrSize = 8;
 
 /**
  * Allocates a block of memory that can safely contain pointers into the managed heap.
@@ -30,9 +31,9 @@ export function mono_wasm_new_root_buffer (capacity: number, name?: string): Was
 
     capacity = capacity | 0;
 
-    const capacityBytes = capacity * 4;
+    const capacityBytes = capacity * ptrSize;
     const offset = malloc(capacityBytes);
-    if ((<any>offset % 4) !== 0)
+    if ((<any>offset % ptrSize) !== 0)
         throw new Error("Malloc returned an unaligned offset");
 
     _zero_region(offset, capacityBytes);
@@ -191,7 +192,7 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
 
     get_address (index: number): MonoObjectRef {
         this._check_in_range(index);
-        return <any>this.__offset + (index * 4);
+        return <any>this.__offset + (index * ptrSize);
     }
 
     get_address_32 (index: number): number {
@@ -230,14 +231,14 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
 
     clear (): void {
         if (this.__offset)
-            _zero_region(this.__offset, this.__count * 4);
+            _zero_region(this.__offset, this.__count * ptrSize);
     }
 
     release (): void {
         if (this.__offset && this.__ownsAllocation) {
             mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when disposing a GC root");
             cwraps.mono_wasm_deregister_root(this.__offset);
-            _zero_region(this.__offset, this.__count * 4);
+            _zero_region(this.__offset, this.__count * ptrSize);
             free(this.__offset);
         }
 

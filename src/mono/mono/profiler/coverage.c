@@ -234,7 +234,7 @@ parse_generic_type_names(char *name)
 	if (name == NULL || *name == '\0')
 		return g_strdup ("");
 
-	if (!(ret = new_name = (char *) g_calloc (strlen (name) * 4 + 1, sizeof (char))))
+	if (!(ret = new_name = (char *) g_calloc (strlen (name) * sizeof(char*) + 1, sizeof (char))))
 		return NULL;
 
 	do {

@@ -983,9 +983,9 @@ compute_gen_set_cb (TransformData *td, int *pvar, gpointer data)
 // in the bblock).
 static void
 compute_gen_kill_sets (TransformData *td)
-{
+{	
 	int bitsize = mono_bitset_alloc_size (td->renamable_vars_size, 0);
-	char *mem = (char *)mono_mempool_alloc0 (td->opt_mempool, bitsize * td->bblocks_count_no_eh * 4);
+	char *mem = (char *)mono_mempool_alloc0 (td->opt_mempool, bitsize * td->bblocks_count_no_eh * sizeof(char*));
 
 	for (int i = 0; i < td->bblocks_count_no_eh; i++) {
 		InterpBasicBlock *bb = td->bblocks [i];
