@@ -26,6 +26,7 @@ declare interface EmscriptenModule {
     ccall<T>(ident: string, returnType?: string | null, argTypes?: string[], args?: any[], opts?: any): T;
     cwrap<T extends Function>(ident: string, returnType: string, argTypes?: string[], opts?: any): T;
     cwrap<T extends Function>(ident: string, ...args: any[]): T;
+    setValue(ptr: VoidPtr, value: VoidPtr, type: string, noSafe?: number | boolean): void;
     setValue(ptr: VoidPtr, value: number, type: string, noSafe?: number | boolean): void;
     setValue(ptr: Int32Ptr, value: number, type: string, noSafe?: number | boolean): void;
     getValue(ptr: number, type: string, noSafe?: number | boolean): number;

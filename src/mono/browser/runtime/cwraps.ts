@@ -31,7 +31,7 @@ const threading_cwraps: SigLine[] = WasmEnableThreads ? [
 
 // when the method is assigned/cached at usage, instead of being invoked directly from cwraps, it can't be marked lazy, because it would be re-bound on each call
 const fn_signatures: SigLine[] = [
-    [true, "mono_wasm_register_root", "number", ["pointer", "number", "string"]],
+    [true, "mono_wasm_register_root", "number", ["pointer", "pointer", "string"]],
     [true, "mono_wasm_deregister_root", null, ["pointer"]],
     [true, "mono_wasm_string_get_data_ref", null, ["pointer", "pointer", "pointer", "pointer"]],
     [true, "mono_wasm_set_is_debugger_attached", "void", ["bool"]],
@@ -39,7 +39,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_send_dbg_command_with_parms", "bool", ["number", "number", "number", "pointer", "number", "number", "string"]],
     [true, "mono_wasm_setenv", null, ["string", "string"]],
     [true, "mono_wasm_parse_runtime_options", null, ["number", "pointer"]],
-    [true, "mono_wasm_strdup", "number", ["string"]],
+    [true, "mono_wasm_strdup", "pointer", ["string"]],
     [true, "mono_background_exec", null, []],
     [true, "mono_wasm_ds_exec", null, []],
     [true, "mono_wasm_execute_timer", null, []],
@@ -64,15 +64,15 @@ const fn_signatures: SigLine[] = [
     [() => !runtimeHelpers.emscriptenBuildOptions.enableLogProfiler, "mono_wasm_profiler_init_log", "void", ["string"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
     [false, "mono_wasm_invoke_jsexport", "void", ["pointer", "pointer"]],
-    [true, "mono_wasm_write_managed_pointer_unsafe", "void", ["number", "number"]],
+    [true, "mono_wasm_write_managed_pointer_unsafe", "void", ["pointer", "pointer"]],
     [true, "mono_wasm_copy_managed_pointer", "void", ["pointer", "pointer"]],
     [true, "mono_wasm_i52_to_f64", "number", ["pointer", "pointer"]],
     [true, "mono_wasm_u52_to_f64", "number", ["pointer", "pointer"]],
-    [true, "mono_wasm_f64_to_i52", "number", ["pointer", "pointer"]],
-    [true, "mono_wasm_f64_to_u52", "number", ["pointer", "pointer"]],
-    [true, "mono_wasm_method_get_name", "pointer", ["pointer"]],
-    [true, "mono_wasm_method_get_name_ex", "pointer", ["pointer"]],
-    [true, "mono_wasm_method_get_full_name", "pointer", ["pointer"]],
+    [true, "mono_wasm_f64_to_i52", "number", ["pointer", "number"]],
+    [true, "mono_wasm_f64_to_u52", "number", ["pointer", "number"]],
+    [true, "mono_wasm_method_get_name", "string", ["pointer"]],
+    [true, "mono_wasm_method_get_name_ex", "string", ["pointer"]],
+    [true, "mono_wasm_method_get_full_name", "string", ["pointer"]],
     [true, "mono_wasm_gc_lock", "void", []],
     [true, "mono_wasm_gc_unlock", "void", []],
     [true, "mono_wasm_get_i32_unaligned", "number", ["pointer"]],
@@ -165,7 +165,7 @@ export interface t_Cwraps {
     mono_wasm_send_dbg_command(id: number, command_set: number, command: number, data: VoidPtr, size: number): boolean;
     mono_wasm_send_dbg_command_with_parms(id: number, command_set: number, command: number, data: VoidPtr, size: number, valtype: number, newvalue: string): boolean;
     mono_wasm_setenv(name: string, value: string): void;
-    mono_wasm_strdup(value: string): number;
+    mono_wasm_strdup(value: string): VoidPtr;
     mono_wasm_parse_runtime_options(length: number, argv: VoidPtr): void;
     mono_background_exec(): void;
     mono_wasm_ds_exec(): void;

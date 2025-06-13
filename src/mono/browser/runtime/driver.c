@@ -37,6 +37,14 @@
 #include "runtime.h"
 
 #include "gc-common.h"
+#ifndef MH_LOG
+#define MH_LOG(msg, ...) { \
+  printf("MH_NATIVE_LOG: %s : %s | %d :: ", __func__, __FILE__, __LINE__); \
+  printf((msg), ##__VA_ARGS__); \
+  printf("\n"); \
+  fflush(stdout); \
+}
+#endif
 
 void bindings_initialize_internals ();
 
@@ -420,6 +428,7 @@ mono_wasm_set_main_args (int argc, char* argv[])
 EMSCRIPTEN_KEEPALIVE d_handle
 mono_wasm_strdup (const char *s)
 {
+    MH_LOG("duplicating %s", s);
 	return (d_handle)strdup (s);
 }
 
