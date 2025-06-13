@@ -374,16 +374,15 @@ NTSYSAPI
 BOOLEAN
 NTAPI
 RtlpUnwindIsPacPresent (
-    _In_ ULONG_PTR ImageBase,
-    _In_ ULONG_PTR ControlPc,
-    _In_ PRUNTIME_FUNCTION FunctionEntry,
-    _Out_ PVOID *HandlerData,
-    _Inout_opt_ PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
-    _Out_ PULONG_PTR EstablisherFrame,
-    _In_opt_ PULONG_PTR LowLimit,
-    _In_opt_ PULONG_PTR HighLimit,
-    _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine,
-    _In_ ULONG UnwindFlags
+    IN ULONG_PTR ImageBase,
+    IN ULONG_PTR ControlPc,
+    IN PRUNTIME_FUNCTION FunctionEntry,
+    OUT PVOID *HandlerData,
+    IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
+    OUT PULONG_PTR EstablisherFrame,
+    IN PULONG_PTR LowLimit,
+    IN PULONG_PTR HighLimit,
+    IN ULONG UnwindFlags
     );
 // Mirror the XSTATE_ARM64_SVE flags from winnt.h
 

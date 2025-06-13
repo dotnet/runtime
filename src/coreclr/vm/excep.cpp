@@ -6950,8 +6950,6 @@ bool IsPacPresent(EECodeInfo *pCodeInfo)
     DWORD_PTR ImageBase = 0;
     NTSTATUS Status;
     PVOID HandlerData;
-    PEXCEPTION_ROUTINE HandlerRoutine = NULL;
-    PEXCEPTION_ROUTINE personalityRoutine = NULL;
 
     // Lookup the function entry for the IP
     PTR_RUNTIME_FUNCTION FunctionEntry = pCodeInfo->GetFunctionEntry();
@@ -6973,7 +6971,6 @@ bool IsPacPresent(EECodeInfo *pCodeInfo)
     &EstablisherFrame,
     NULL,
     NULL,
-    &HandlerRoutine,
     0);
 }
 #endif // TARGET_ARM64

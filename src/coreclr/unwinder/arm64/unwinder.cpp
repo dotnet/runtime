@@ -1990,16 +1990,15 @@ NTSTATUS GetControlPcRva (
 
 BOOLEAN
 RtlpUnwindIsPacPresent (
-    _In_ ULONG_PTR ImageBase,
-    _In_ ULONG_PTR ControlPc,
-    _In_ PRUNTIME_FUNCTION FunctionEntry,
-    _Out_ PVOID *HandlerData,
-    _Inout_opt_ PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
-    _Out_ PULONG_PTR EstablisherFrame,
-    _In_opt_ PULONG_PTR LowLimit,
-    _In_opt_ PULONG_PTR HighLimit,
-    _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine,
-    _In_ ULONG UnwindFlags
+    IN ULONG_PTR ImageBase,
+    IN ULONG_PTR ControlPc,
+    IN PRUNTIME_FUNCTION FunctionEntry,
+    OUT PVOID *HandlerData,
+    IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
+    OUT PULONG_PTR EstablisherFrame,
+    IN PULONG_PTR LowLimit,
+    IN PULONG_PTR HighLimit,
+    IN ULONG UnwindFlags
     )
 /*++
 
@@ -2031,13 +2030,6 @@ Arguments:
 
     HighLimit - Supplies an optional high limit used to bound the establisher
         frame. This must be supplied in conjunction with a low limit.
-
-    HandlerRoutine - Supplies an optional pointer to a variable that receives
-        the handler routine address.  If control did not leave the specified
-        function in either the prolog or an epilog and a handler of the
-        proper type is associated with the function, then the address of the
-        language specific exception handler is returned. Otherwise, NULL is
-        returned.
 
     UnwindFlags - Supplies additional flags for the unwind operation.
 
