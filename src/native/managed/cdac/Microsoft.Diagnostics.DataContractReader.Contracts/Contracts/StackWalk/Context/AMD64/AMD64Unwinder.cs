@@ -11,8 +11,6 @@ using static Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.AMD64;
 
-// TODO(cdacamd64): Convert Debug.Assert to throw in release builds.
-
 internal class AMD64Unwinder(Target target)
 {
     private const byte SIZE64_PREFIX = 0x48;
@@ -139,7 +137,7 @@ internal class AMD64Unwinder(Target target)
                 {
                     if (unwindOp.UnwindOp == UnwindCode.OpCodes.UWOP_SET_FPREG_LARGE)
                     {
-                        Debug.Assert(unwindInfo.FrameOffset == 15, "FrameOffset should be 15 for UWOP_SET_FPREG_LARGE.");
+                        UnwinderAssert(unwindInfo.FrameOffset == 15, "FrameOffset should be 15 for UWOP_SET_FPREG_LARGE.");
                         frameOffset = GetUnwindCode(unwindInfo, index + 1).FrameOffset;
                         frameOffset += (uint)(GetUnwindCode(unwindInfo, index + 2).FrameOffset << 16);
                         break;
@@ -516,7 +514,7 @@ internal class AMD64Unwinder(Target target)
         }
         else if (unwindInfo.CountOfUnwindCodes != 0)
         {
-            Debug.Assert(unwindInfo.Version >= 2);
+            UnwinderAssert(unwindInfo.Version >= 2);
 
             //
             // Capture the first unwind code and check if it is an epilogue code.
@@ -531,7 +529,7 @@ internal class AMD64Unwinder(Target target)
             {
                 uint epilogueSize = unwindOp.CodeOffset;
 
-                Debug.Assert(epilogueSize != 0);
+                UnwinderAssert(epilogueSize != 0);
 
                 //
                 // If the low bit of the OpInfo field of the first epilogue code
@@ -581,7 +579,7 @@ internal class AMD64Unwinder(Target target)
                             epilogueOffset = functionEntry.EndAddress.Value - epilogueOffset;
                             if (relativePC - epilogueOffset < epilogueSize)
                             {
-                                Debug.Assert(epilogueOffset != functionEntry.EndAddress.Value);
+                                UnwinderAssert(epilogueOffset != functionEntry.EndAddress.Value);
                                 inEpilogue = true;
                                 break;
                             }
@@ -929,11 +927,11 @@ internal class AMD64Unwinder(Target target)
                         //
                         case UnwindCode.OpCodes.UWOP_SET_FPREG_LARGE:
                         {
-                            Debug.Assert(_unix);
-                            Debug.Assert(unwindInfo.FrameOffset == 15);
+                            UnwinderAssert(_unix);
+                            UnwinderAssert(unwindInfo.FrameOffset == 15);
                             uint frameOffset = GetUnwindCode(unwindInfo, index + 1).FrameOffset;
                             frameOffset += (uint)(GetUnwindCode(unwindInfo, index + 2).FrameOffset << 16);
-                            Debug.Assert((frameOffset & 0xF0000000) == 0);
+                            UnwinderAssert((frameOffset & 0xF0000000) == 0);
 
                             context.Rsp = GetRegister(context, unwindInfo.FrameRegister);
                             context.Rsp -= frameOffset * 16;
@@ -967,7 +965,7 @@ internal class AMD64Unwinder(Target target)
                         // Spare unused codes.
                         //
                         case UnwindCode.OpCodes.UWOP_SPARE_CODE:
-                            Debug.Assert(false);
+                            UnwinderAssert(false);
                             index += 2;
                             break;
 
@@ -1056,7 +1054,7 @@ internal class AMD64Unwinder(Target target)
             // entries.
             //
             chainCount += 1;
-            Debug.Assert(chainCount <= UNWIND_CHAIN_LIMIT);
+            UnwinderAssert(chainCount <= UNWIND_CHAIN_LIMIT);
         }
 
         return true;
@@ -1149,7 +1147,7 @@ internal class AMD64Unwinder(Target target)
 
         public uint UnwindOpSlots()
         {
-            Debug.Assert(UnwindOp != OpCodes.UWOP_SPARE_CODE);
+            UnwinderAssert(UnwindOp != OpCodes.UWOP_SPARE_CODE);
             return UnwindOp switch
             {
                 OpCodes.UWOP_PUSH_NONVOL => 1u,
@@ -1212,7 +1210,7 @@ internal class AMD64Unwinder(Target target)
             //
 
             chainCount += 1;
-            Debug.Assert(chainCount <= UNWIND_CHAIN_LIMIT, "Unwind chain limit exceeded.");
+            UnwinderAssert(chainCount <= UNWIND_CHAIN_LIMIT, "Unwind chain limit exceeded.");
         }
 
         return functionEntry;
@@ -1290,6 +1288,14 @@ internal class AMD64Unwinder(Target target)
             case 15: context.R15 = value; break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(register), "Invalid register number for AMD64 context.");
+        }
+    }
+
+    private static void UnwinderAssert(bool condition, string? message = null)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException(message);
         }
     }
 
