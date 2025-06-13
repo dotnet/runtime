@@ -815,6 +815,9 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static byte DecodeByte<TChar>(TChar ch1, TChar ch2, ref int invalidIfNegative) where TChar : unmanaged, IUtfChar<TChar>
         {
+            // TODO: https://github.com/dotnet/runtime/issues/116593
+            // Restore to (sbyte)lookup[c1] and (sbyte)lookup[c2] once issue is resolved.
+
             ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
             Debug.Assert(lookup.Length == 256);
 
