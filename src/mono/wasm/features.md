@@ -137,7 +137,7 @@ When you want to call JavaScript functions from C# or managed code from JavaScri
 * or [the documentation](https://learn.microsoft.com/aspnet/core/client-side/dotnet-interop).
 
 ### Embedding dotnet in existing JavaScript applications
-The default build output rely on exact file names produced during .NET build. In our testing the dynamic loading of assets provides faster startup and shorter download times.
+The default build output relies on exact file names produced during .NET build. In our testing the dynamic loading of assets provides faster startup and shorter download times.
 
 JavaScript tools like [webpack](https://github.com/webpack/webpack) or [rollup](https://github.com/rollup/rollup) can be used for further file modifications.
 An msbuild property `<WasmBundlerFriendlyBootConfig>true</WasmBundlerFriendlyBootConfig>` can be used to generate a different JavaScript files that are not runnable
