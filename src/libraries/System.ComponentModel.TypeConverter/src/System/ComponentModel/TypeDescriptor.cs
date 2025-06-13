@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel.Design;
 using System.Diagnostics;
@@ -67,12 +65,12 @@ namespace System.ComponentModel
         internal static readonly object s_commonSyncObject = new object();
 
         // A direct mapping from type to provider.
-        private static readonly ConcurrentDictionary<Type, TypeDescriptionNode> s_providerTypeTable = new ConcurrentDictionary<Type, TypeDescriptionNode>();
+        private static readonly ContextAwareConcurrentHashtable<Type, TypeDescriptionNode> s_providerTypeTable = new ContextAwareConcurrentHashtable<Type, TypeDescriptionNode>();
 
         // Tracks DefaultTypeDescriptionProviderAttributes.
         // A value of `null` indicates initialization is in progress.
         // A value of s_initializedDefaultProvider indicates the provider is initialized.
-        private static readonly ConcurrentDictionary<Type, object?> s_defaultProviderInitialized = new ConcurrentDictionary<Type, object?>();
+        private static readonly ContextAwareConcurrentHashtable<Type, object?> s_defaultProviderInitialized = new ContextAwareConcurrentHashtable<Type, object?>();
 
         private static readonly object s_initializedDefaultProvider = new object();
 
@@ -293,7 +291,7 @@ namespace System.ComponentModel
                 refreshNeeded = s_providerTable.ContainsKey(instance);
                 TypeDescriptionNode node = NodeFor(instance, true);
                 var head = new TypeDescriptionNode(provider) { Next = node };
-                s_providerTable.SetWeak(instance, head);
+                s_providerTable[instance] = head;
                 s_providerTypeTable.Clear();
             }
 
@@ -363,7 +361,7 @@ namespace System.ComponentModel
         {
             bool providerAdded = false;
 
-            if (s_defaultProviderInitialized.ContainsKey(type))
+            if (s_defaultProviderInitialized.Contains(type))
             {
                 // Either another thread finished initializing for this type, or we are recursing on the same thread.
                 return;
@@ -433,7 +431,7 @@ namespace System.ComponentModel
                     if (associations == null)
                     {
                         associations = new ArrayList(4);
-                        associationTable.SetWeak(primary, associations);
+                        associationTable[primary] = associations;
                     }
                 }
             }
