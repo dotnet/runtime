@@ -1058,7 +1058,7 @@ ConnectionPoint *SimpleComCallWrapper::TryCreateConnectionPoint(ComCallWrapper *
 
     EX_TRY
     {
-        return CreateConnectionPoint(pWrap, pEventMT);
+        RETURN CreateConnectionPoint(pWrap, pEventMT);
     }
     EX_SWALLOW_NONTERMINAL
 
