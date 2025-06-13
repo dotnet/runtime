@@ -331,13 +331,13 @@ void    DestroyThread(Thread *th);
 
 DWORD GetRuntimeId();
 
-#define CREATETHREAD_IF_NULL_FAILFAST(__thread, __msg)                  \
+#define CREATETHREAD_IF_NULL_FAILFAST(thread__, msg__)                  \
 {                                                                       \
-    HRESULT __ctinffhr;                                                 \
-    __thread = SetupThreadNoThrow(&__ctinffhr);                         \
-    if (__thread == NULL)                                               \
+    HRESULT ctinffhr__;                                                 \
+    thread__ = SetupThreadNoThrow(&ctinffhr__);                         \
+    if (thread__ == NULL)                                               \
     {                                                                   \
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(__ctinffhr, __msg);    \
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(ctinffhr__, msg__);    \
         UNREACHABLE();                                                  \
     }                                                                   \
 }
@@ -433,11 +433,11 @@ struct RuntimeThreadLocals
 
 #ifdef _MSC_VER
 // use selectany to avoid initialization de-optimization issues in the compiler
-__declspec(selectany) thread_local
+__declspec(selectany)
 #else
-extern __thread
+extern
 #endif
-RuntimeThreadLocals t_runtime_thread_locals;
+PLATFORM_THREAD_LOCAL RuntimeThreadLocals t_runtime_thread_locals;
 
 typedef DPTR(struct RuntimeThreadLocals) PTR_RuntimeThreadLocals;
 typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
