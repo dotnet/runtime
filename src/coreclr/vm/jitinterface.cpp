@@ -8676,15 +8676,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                     return false;
                 }
 
-                MethodDesc* interfaceMD = interfaceMT->GetParallelMethodDesc(pBaseMD);
-                
-                if (interfaceMD == nullptr)
-                {
-                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
-                    return false;
-                }
-                
-                pDevirtMD = pObjMT->GetMethodDescForInterfaceMethod(TypeHandle(interfaceMT), interfaceMD, FALSE /* throwOnConflict */);
+                pDevirtMD = pObjMT->GetMethodDescForInterfaceMethod(TypeHandle(interfaceMT), pBaseMD, FALSE /* throwOnConflict */);
             }
             else
             {
