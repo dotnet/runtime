@@ -141,7 +141,7 @@ The default build output relies on exact file names produced during .NET build. 
 
 JavaScript tools like [webpack](https://github.com/webpack/webpack) or [rollup](https://github.com/rollup/rollup) can be used for further file modifications.
 An msbuild property `<WasmBundlerFriendlyBootConfig>true</WasmBundlerFriendlyBootConfig>` can be used to generate different JavaScript files that are not runnable
-in the browsers, but they can consumed by these JavaScript tools. Some examples:
+in the browsers, but they can be consumed by these JavaScript tools. Some examples:
   - Merge all JavaScript files, resolve wasm & other files as files, copying them to the output directory, optionally fingerprinting them, etc.
   - Embed all JavaScripts files and wasm & other files as base64 encoded blobs directly into a single file.
 
