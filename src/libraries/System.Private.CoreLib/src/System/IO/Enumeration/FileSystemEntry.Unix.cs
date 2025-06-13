@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace System.IO.Enumeration
 {
@@ -11,9 +11,8 @@ namespace System.IO.Enumeration
     /// </summary>
     public unsafe ref partial struct FileSystemEntry
     {
-        // This value originated from NAME_MAX + 1 and was used as the size for DirectoryEntry.Name (d_name).
-        // It was later revealed that some filesystems can have filenames larger than that; however,
-        // it's still a reasonable size for a decoding buffer. If it's not enough, we fall back to allocating a string.
+        // A reasonable size for a decoding buffer. If it's not enough, we fall back to allocating a string.
+        // Some filesystem can have filenames larger than that.
         private const int DecodedNameBufferLength = 256;
         private Interop.Sys.DirectoryEntry _directoryEntry;
         private bool _isDirectory;
@@ -24,9 +23,10 @@ namespace System.IO.Enumeration
         private FileNameBuffer _fileNameBuffer;
 
         // Wrap the fixed buffer to workaround visibility issues in api compat verification
+        [InlineArray(DecodedNameBufferLength)]
         private struct FileNameBuffer
         {
-            internal fixed char _buffer[DecodedNameBufferLength];
+            internal char _char0;
         }
 
         internal static FileAttributes Initialize(
@@ -99,8 +99,7 @@ namespace System.IO.Enumeration
             {
                 if (_directoryEntry.NameLength != 0 && _fileName.Length == 0)
                 {
-                    Span<char> buffer = MemoryMarshal.CreateSpan(ref _fileNameBuffer._buffer[0], DecodedNameBufferLength);
-                    _fileName = _directoryEntry.GetName(buffer);
+                    _fileName = _directoryEntry.GetName(_fileNameBuffer);
                 }
 
                 return _fileName;
