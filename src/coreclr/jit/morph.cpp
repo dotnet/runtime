@@ -9727,7 +9727,10 @@ GenTreeHWIntrinsic* Compiler::fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* n
         return node;
     }
 #elif defined(TARGET_ARM64)
-    return fgMorphTryUseAllMaskVariant(node);
+    // TODO-SVE: This optimisation is too naive. It needs to calculate the full cost of the instruction
+    //           vs using the predicate version, taking into account all input arguements and all uses
+    //           of the result.
+    // return fgMorphTryUseAllMaskVariant(node);
 #else
 #error Unsupported platform
 #endif
