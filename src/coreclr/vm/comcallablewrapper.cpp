@@ -3862,7 +3862,7 @@ void ComCallWrapperTemplate::Init()
 {
     WRAPPER_NO_CONTRACT;
 
-    g_CreateWrapperTemplateCrst.Init(CrstWrapperTemplate, (CrstFlags)(CRST_REENTRANCY | CRST_HOST_BREAKABLE));
+    g_CreateWrapperTemplateCrst.Init(CrstWrapperTemplate, (CrstFlags)(CRST_REENTRANCY));
 }
 
 ComCallWrapperTemplate::ComCallWrapperTemplate()

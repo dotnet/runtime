@@ -10489,6 +10489,18 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                             }
 
+                            case NI_AVX512_CompressMask:
+                            case NI_AVX512_ExpandMask:
+                            {
+                                if (op1->IsVectorZero())
+                                {
+                                    // When we are merging with zero, we can specialize
+                                    // and avoid instantiating the vector constant.
+                                    MakeSrcContained(node, op1);
+                                }
+                                break;
+                            }
+
                             case NI_AVX2_MultiplyNoFlags:
                             case NI_AVX2_X64_MultiplyNoFlags:
                             {

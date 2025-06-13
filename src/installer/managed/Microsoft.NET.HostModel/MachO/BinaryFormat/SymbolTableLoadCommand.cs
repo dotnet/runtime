@@ -10,7 +10,7 @@ namespace Microsoft.NET.HostModel.MachO;
 /// See https://github.com/apple-oss-distributions/cctools/blob/7a5450708479bbff61527d5e0c32a3f7b7e4c1d0/include/mach-o/loader.h#L908 for reference.
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
-internal struct SymbolTableCommand
+internal struct SymbolTableLoadCommand
 {
     private readonly MachLoadCommandType _command;
     private readonly uint _commandSize;
@@ -19,7 +19,7 @@ internal struct SymbolTableCommand
     private uint _stringTableOffset;
     private uint _stringTableSize; // in bytes
 
-    public bool IsDefault => this.Equals(default(SymbolTableCommand));
+    public bool IsDefault => this.Equals(default(SymbolTableLoadCommand));
 
     public uint GetSymbolTableOffset(MachHeader header) => header.ConvertValue(_symbolTableOffset);
     public void SetSymbolTableOffset(uint value, MachHeader header) => _symbolTableOffset = header.ConvertValue(value);

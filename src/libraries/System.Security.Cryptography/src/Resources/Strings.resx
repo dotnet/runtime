@@ -549,6 +549,12 @@
   <data name="Cryptography_MLDsaInvalidAlgorithmHandle" xml:space="preserve">
     <value>The specified EVP_PKEY handle is not a known ML-DSA algorithm.</value>
   </data>
+  <data name="Cryptography_MLDsaNoSecretKey" xml:space="preserve">
+    <value>The current instance does not contain a secret key.</value>
+  </data>
+  <data name="Cryptography_MLDsaNoSeed" xml:space="preserve">
+    <value>The current instance does not contain a seed.</value>
+  </data>
   <data name="Cryptography_MLDsaPkcs8KeyMismatch" xml:space="preserve">
     <value>The specified PKCS#8 key contains a seed that does not match the expanded key.</value>
   </data>

@@ -10494,6 +10494,24 @@ namespace JIT.HardwareIntrinsics.Arm
             return (left & select) | (~right & ~select);
         }
 
+        public static T[] InterleavingXorEvenOdd<T>(T[] odd, T[] left, T[] right) where T : IBinaryInteger<T>
+        {
+            for (int i = 0; i < odd.Length; i += 2)
+            {
+                odd[i] = left[i] ^ right[i + 1];
+            }
+            return odd;
+        }
+
+        public static T[] InterleavingXorOddEven<T>(T[] even, T[] left, T[] right) where T : IBinaryInteger<T>
+        {
+            for (int i = 0; i < even.Length; i += 2)
+            {
+                even[i+1] = left[i+1] ^ right[i];
+            }
+            return even;
+        }
+
         public static T Xor<T>(params T[] ops) where T : IBitwiseOperators<T, T, T>
         {
             T result = ops[0];

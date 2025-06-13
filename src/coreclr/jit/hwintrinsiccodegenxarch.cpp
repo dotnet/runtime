@@ -849,6 +849,28 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
+                        case NI_AVX512_CompressMask:
+                        case NI_AVX512_ExpandMask:
+                        {
+                            bool mergeWithZero = false;
+
+                            if (op1->isContained())
+                            {
+                                op1Reg        = targetReg;
+                                mergeWithZero = true;
+                            }
+
+                            assert(emitter::isMaskReg(op2Reg));
+                            assert(mergeWithZero == op1->IsVectorZero());
+
+                            emitAttr attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
+                            emit->emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
+
+                            instOptions = AddEmbMaskingMode(instOptions, op2Reg, mergeWithZero);
+                            emit->emitIns_R_R(ins, attr, targetReg, op3Reg, instOptions);
+                            break;
+                        }
+
                         default:
                         {
                             assert(intrinsicId >= FIRST_NI_AVXVNNI && intrinsicId <= LAST_NI_AVXVNNIINT_V512);
@@ -1285,9 +1307,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins,
 
     if (op1->isContained())
     {
-        assert(node->GetHWIntrinsicId() == NI_AVX512_BlendVariableMask);
         assert(op1->IsVectorZero());
-
         instOptions = AddEmbMaskingMode(instOptions, REG_K0, true);
         op1Reg      = targetReg;
     }
