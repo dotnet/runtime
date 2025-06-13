@@ -150,7 +150,7 @@ initDistroRid()
 
 showSubsetHelp()
 {
-  "$scriptroot/common/build.sh" "-restore" "-build" "/p:Subset=help" "/clp:nosummary /tl:false"
+  "$scriptroot/common/build.sh" "-restore" "-build" "/p:Subset=help" "/clp:nosummary /v:detailed"
 }
 
 arguments=()
@@ -568,9 +568,6 @@ fi
 if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
     arguments+=("-warnAsError" "false")
 fi
-
-# disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
-arguments+=("-tl:false")
 
 initDistroRid "$os" "$arch" "$crossBuild"
 

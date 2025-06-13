@@ -1,2 +1,0 @@
-# disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
--tl:false
