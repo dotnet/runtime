@@ -7195,6 +7195,34 @@ bool GenTree::OperMayThrow(Compiler* comp)
 }
 
 //------------------------------------------------------------------------------
+// NodeOrContainedOperandsMayThrow : Check whether the operation or any contained
+//                                   children will throw
+//
+// Arguments:
+//    comp      -  Compiler instance
+//
+// Return Value:
+//    True if the given operator or contained children may cause an exception
+//
+bool GenTree::NodeOrContainedOperandsMayThrow(Compiler* comp)
+{
+    if (OperMayThrow(comp))
+    {
+        return true;
+    }
+
+    // Check all contained children
+    for (GenTree* operand : Operands())
+    {
+        if (operand->isContained() && operand->NodeOrContainedOperandsMayThrow(comp))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
 // OperRequiresGlobRefFlag : Check whether the operation requires GTF_GLOB_REF
 //                           flag regardless of the children's flags.
 //
@@ -20421,6 +20449,19 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
             }
 
             return false;
+        }
+
+        case NI_AVX512_CompressMask:
+        case NI_AVX512_ExpandMask:
+        {
+            GenTree* op1 = hwintrinsic->Op(1);
+
+            if (op1->isContained())
+            {
+                assert(op1->IsVectorZero());
+                return false;
+            }
+            return true;
         }
 
         case NI_AVX512_Fixup:
