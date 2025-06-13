@@ -50,7 +50,7 @@ namespace System.Linq
                 }
 
                 // Otherwise, just produce an incrementing sequence.
-                return Incrementing(start, endInclusive, step);
+                return IncrementingIterator(start, endInclusive, step);
             }
             else if (step < T.Zero)
             {
@@ -61,7 +61,7 @@ namespace System.Linq
                 }
 
                 // Then produce the decrementing sequence.
-                return Decrementing(start, endInclusive, step);
+                return DecrementingIterator(start, endInclusive, step);
             }
             else
             {
@@ -75,7 +75,7 @@ namespace System.Linq
                 return Repeat(start, 1);
             }
 
-            static async IAsyncEnumerable<T> Incrementing(T start, T endInclusive, T step)
+            static async IAsyncEnumerable<T> IncrementingIterator(T start, T endInclusive, T step)
             {
                 Debug.Assert(step > T.Zero);
 
@@ -85,7 +85,7 @@ namespace System.Linq
                 {
                     T next = start + step;
 
-                    if (next >= endInclusive || next < start)
+                    if (next >= endInclusive || next <= start)
                     {
                         if (next == endInclusive && start != next)
                         {
@@ -101,7 +101,7 @@ namespace System.Linq
             }
 
 
-            static async IAsyncEnumerable<T> Decrementing(T start, T endInclusive, T step)
+            static async IAsyncEnumerable<T> DecrementingIterator(T start, T endInclusive, T step)
             {
                 Debug.Assert(step < T.Zero);
 
@@ -111,7 +111,7 @@ namespace System.Linq
                 {
                     T next = start + step;
 
-                    if (next <= endInclusive || next > start)
+                    if (next <= endInclusive || next >= start)
                     {
                         if (next == endInclusive && start != next)
                         {

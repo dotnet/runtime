@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -77,10 +78,10 @@ namespace System.Linq.Tests
         [Fact]
         public void MultipleGetEnumeratorCalls_ReturnsUniqueInstances()
         {
-            var sequence = Enumerable.Sequence(0, 4, 2);
+            IEnumerable<int> sequence = Enumerable.Sequence(0, 4, 2);
 
-            using var enumerator1 = sequence.GetEnumerator();
-            using var enumerator2 = sequence.GetEnumerator();
+            using IEnumerator<int> enumerator1 = sequence.GetEnumerator();
+            using IEnumerator<int> enumerator2 = sequence.GetEnumerator();
             Assert.NotSame(enumerator1, enumerator2);
         }
 
@@ -122,7 +123,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void Integers_ProducesExpectedSequence()
+        public void Numbers_ProduceExpectedSequence()
         {
             ValidateUnsigned<byte>();
             ValidateUnsigned<ushort>();
@@ -172,6 +173,34 @@ namespace System.Linq.Tests
 
                 Assert.Equal([T.MinValue], Enumerable.Sequence(T.MinValue, T.MinValue, T.CreateTruncating(-11)));
             }
+        }
+
+        [Fact]
+        public void FloatingPoint_ProduceExpectedSequence()
+        {
+            float[] results;
+
+            results = Enumerable.Sequence(0.123f, 0.456f, 0.123f).ToArray();
+            Assert.Equal(3, results.Length);
+            Assert.Equal(0.123f, results[0], 3);
+            Assert.Equal(0.246f, results[1], 3);
+            Assert.Equal(0.369f, results[2], 3);
+
+            results = Enumerable.Sequence(0.123f, -0.456f, -0.123f).ToArray();
+            Assert.Equal(5, results.Length);
+            Assert.Equal(0.123f, results[0], 3);
+            Assert.Equal(0.0f, results[1], 3);
+            Assert.Equal(-0.123f, results[2], 3);
+            Assert.Equal(-0.246f, results[3], 3);
+            Assert.Equal(-0.369f, results[4], 3);
+
+            results = Enumerable.Sequence(16_777_216f, float.MaxValue, 1.0f).ToArray();
+            Assert.Equal(1, results.Length);
+            Assert.Equal(16_777_216f, results[0], 3);
+
+            results = Enumerable.Sequence(-16_777_217f, float.MinValue, -1.0f).ToArray();
+            Assert.Equal(1, results.Length);
+            Assert.Equal(-16_777_216f, results[0], 3);
         }
 
         [Fact]

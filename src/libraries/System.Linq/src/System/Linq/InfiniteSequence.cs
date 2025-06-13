@@ -28,9 +28,9 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.step);
             }
 
-            return InfiniteSequence(start, step);
+            return Iterator(start, step);
 
-            static IEnumerable<T> InfiniteSequence(T start, T step)
+            static IEnumerable<T> Iterator(T start, T step)
             {
                 while (true)
                 {

@@ -65,7 +65,7 @@ namespace System.Linq
                 if (typeof(T) == typeof(nint) && (range = TryUseRange<Int128>(start, endInclusive, step, nint.MaxValue)) is not null) return range;
 
                 // Otherwise, just produce an incrementing sequence.
-                return Incrementing(start, endInclusive, step);
+                return IncrementingIterator(start, endInclusive, step);
             }
             else if (step < T.Zero)
             {
@@ -76,7 +76,7 @@ namespace System.Linq
                 }
 
                 // Then produce the decrementing sequence.
-                return Decrementing(start, endInclusive, step);
+                return DecrementingIterator(start, endInclusive, step);
             }
             else
             {
@@ -101,7 +101,7 @@ namespace System.Linq
                 return null;
             }
 
-            static IEnumerable<T> Incrementing(T start, T endInclusive, T step)
+            static IEnumerable<T> IncrementingIterator(T start, T endInclusive, T step)
             {
                 Debug.Assert(step > T.Zero);
 
@@ -111,7 +111,7 @@ namespace System.Linq
                 {
                     T next = start + step;
 
-                    if (next >= endInclusive || next < start)
+                    if (next >= endInclusive || next <= start)
                     {
                         if (next == endInclusive && start != next)
                         {
@@ -127,7 +127,7 @@ namespace System.Linq
             }
 
 
-            static IEnumerable<T> Decrementing(T start, T endInclusive, T step)
+            static IEnumerable<T> DecrementingIterator(T start, T endInclusive, T step)
             {
                 Debug.Assert(step < T.Zero);
 
@@ -137,7 +137,7 @@ namespace System.Linq
                 {
                     T next = start + step;
 
-                    if (next <= endInclusive || next > start)
+                    if (next <= endInclusive || next >= start)
                     {
                         if (next == endInclusive && start != next)
                         {

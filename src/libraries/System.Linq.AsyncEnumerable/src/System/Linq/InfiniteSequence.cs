@@ -28,9 +28,9 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(nameof(step));
             }
 
-            return Impl(start, step);
+            return Iterator(start, step);
 
-            static async IAsyncEnumerable<T> Impl(T start, T step)
+            static async IAsyncEnumerable<T> Iterator(T start, T step)
             {
                 while (true)
                 {

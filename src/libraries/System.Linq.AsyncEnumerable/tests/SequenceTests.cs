@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -78,10 +79,10 @@ namespace System.Linq.Tests
         [Fact]
         public async Task MultipleGetEnumeratorCalls_ReturnsUniqueInstances()
         {
-            var sequence = AsyncEnumerable.Sequence(0, 4, 2);
+            IAsyncEnumerable<int> sequence = AsyncEnumerable.Sequence(0, 4, 2);
 
-            await using var enumerator1 = sequence.GetAsyncEnumerator();
-            await using var enumerator2 = sequence.GetAsyncEnumerator();
+            await using IAsyncEnumerator<int> enumerator1 = sequence.GetAsyncEnumerator();
+            await using IAsyncEnumerator<int> enumerator2 = sequence.GetAsyncEnumerator();
             Assert.NotSame(enumerator1, enumerator2);
         }
 
@@ -123,7 +124,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public async Task Integers_ProducesExpectedSequence()
+        public async Task Numbers_ProduceExpectedSequence()
         {
             await ValidateUnsignedAsync<byte>();
             await ValidateUnsignedAsync<ushort>();
@@ -173,6 +174,34 @@ namespace System.Linq.Tests
 
                 await AssertEqual([T.MinValue], AsyncEnumerable.Sequence(T.MinValue, T.MinValue, T.CreateTruncating(-11)));
             }
+        }
+
+        [Fact]
+        public async Task FloatingPoints_ProduceExpectedSequence()
+        {
+            float[] results;
+
+            results = await AsyncEnumerable.Sequence(0.123f, 0.456f, 0.123f).ToArrayAsync();
+            Assert.Equal(3, results.Length);
+            Assert.Equal(0.123f, results[0], 3);
+            Assert.Equal(0.246f, results[1], 3);
+            Assert.Equal(0.369f, results[2], 3);
+
+            results = await AsyncEnumerable.Sequence(0.123f, -0.456f, -0.123f).ToArrayAsync();
+            Assert.Equal(5, results.Length);
+            Assert.Equal(0.123f, results[0], 3);
+            Assert.Equal(0.0f, results[1], 3);
+            Assert.Equal(-0.123f, results[2], 3);
+            Assert.Equal(-0.246f, results[3], 3);
+            Assert.Equal(-0.369f, results[4], 3);
+
+            results = await AsyncEnumerable.Sequence(16_777_216f, float.MaxValue, 1.0f).ToArrayAsync();
+            Assert.Equal(1, results.Length);
+            Assert.Equal(16_777_216f, results[0], 3);
+
+            results = await AsyncEnumerable.Sequence(-16_777_217f, float.MinValue, -1.0f).ToArrayAsync();
+            Assert.Equal(1, results.Length);
+            Assert.Equal(-16_777_216f, results[0], 3);
         }
 
         [Fact]
