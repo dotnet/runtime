@@ -532,6 +532,95 @@ namespace System.Runtime.Intrinsics.X86
         public static new Vector512<float> InsertVector256(Vector512<float> value, Vector256<float> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector128<double> value) { throw null; }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector128<short> value) { throw null; }
+
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector128<int> value) { throw null; }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector128<long> value) { throw null; }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector128<float> value) { throw null; }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector128<ushort> value) { throw null; }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector128<uint> value) { throw null; }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector128<ulong> value) { throw null; }
+
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector256<double> value) { throw null; }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector256<int> value) { throw null; }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector256<long> value) { throw null; }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector256<float> value) { throw null; }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector256<uint> value) { throw null; }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector256<ulong> value) { throw null; }
+
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector512<double> value) { throw null; }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector512<long> value) { throw null; }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector512<ulong> value) { throw null; }
+
+        /// <summary>
         ///   <para>__m512i _mm512_mullo_epi64 (__m512i a, __m512i b)</para>
         ///   <para>  VPMULLQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>

@@ -6960,6 +6960,7 @@ namespace System.Runtime.Intrinsics.X86
         public static new System.Runtime.Intrinsics.Vector128<long> CompareEqual(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
         public static new System.Runtime.Intrinsics.Vector128<sbyte> CompareEqual(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
         public static new System.Runtime.Intrinsics.Vector128<short> CompareEqual(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<uint> CompareEqual(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
         public static new System.Runtime.Intrinsics.Vector128<ulong> CompareEqual(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
         public static new System.Runtime.Intrinsics.Vector128<ushort> CompareEqual(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
         public static new System.Runtime.Intrinsics.Vector256<byte> CompareEqual(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
@@ -7313,6 +7314,26 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector128<ulong> Min(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<long> Min(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ulong> Min(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector256<byte> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector256<sbyte> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<long> MultiplyLow(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ulong> MultiplyLow(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<long> MultiplyLow(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
@@ -7566,6 +7587,9 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector512<uint> LeadingZeroCount(System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<long> LeadingZeroCount(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<ulong> LeadingZeroCount(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+            public static int MoveMask(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+            public static int MoveMask(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+            public static int MoveMask(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<long> MultiplyLow(System.Runtime.Intrinsics.Vector512<long> left, System.Runtime.Intrinsics.Vector512<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<ulong> MultiplyLow(System.Runtime.Intrinsics.Vector512<ulong> left, System.Runtime.Intrinsics.Vector512<ulong> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<byte> MultiShift(System.Runtime.Intrinsics.Vector512<byte> control, System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
@@ -7714,6 +7738,12 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<short> Min(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<sbyte> Min(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ushort> Min(System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector256<byte> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector256<sbyte> value) { throw null; }
+        public static long MoveMask(System.Runtime.Intrinsics.Vector512<byte> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector512<short> value) { throw null; }
+        public static long MoveMask(System.Runtime.Intrinsics.Vector512<sbyte> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector512<ushort> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> MultiplyAddAdjacent(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> MultiplyAddAdjacent(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> MultiplyHigh(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
@@ -7969,6 +7999,23 @@ namespace System.Runtime.Intrinsics.X86
         public static new System.Runtime.Intrinsics.Vector512<int> InsertVector256(System.Runtime.Intrinsics.Vector512<int> value, System.Runtime.Intrinsics.Vector256<int> data, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
         public static new System.Runtime.Intrinsics.Vector512<float> InsertVector256(System.Runtime.Intrinsics.Vector512<float> value, System.Runtime.Intrinsics.Vector256<float> data, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
         public static new System.Runtime.Intrinsics.Vector512<uint> InsertVector256(System.Runtime.Intrinsics.Vector512<uint> value, System.Runtime.Intrinsics.Vector256<uint> data, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> MultiplyLow(System.Runtime.Intrinsics.Vector512<long> left, System.Runtime.Intrinsics.Vector512<long> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> MultiplyLow(System.Runtime.Intrinsics.Vector512<ulong> left, System.Runtime.Intrinsics.Vector512<ulong> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Or(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right) { throw null; }
@@ -8379,6 +8426,13 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<float> Min(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<uint> Min(System.Runtime.Intrinsics.Vector512<uint> left, System.Runtime.Intrinsics.Vector512<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> Min(System.Runtime.Intrinsics.Vector512<ulong> left, System.Runtime.Intrinsics.Vector512<ulong> right) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> Multiply(System.Runtime.Intrinsics.Vector512<int> left, System.Runtime.Intrinsics.Vector512<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> Multiply(System.Runtime.Intrinsics.Vector512<uint> left, System.Runtime.Intrinsics.Vector512<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> Multiply(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }

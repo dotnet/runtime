@@ -951,6 +951,11 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<ushort> CompareNotEqual(Vector256<ushort> left, Vector256<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        ///   <para>__mmask8 _mm_cmpeq_epu32_mask (__m128i a, __m128i b)</para>
+        ///   <para>  VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(0)</para>
+        /// </summary>
+        public static Vector128<uint> CompareEqual(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
         ///   <para>__m128i _mm_cmpgt_epu32 (__m128i a, __m128i b)</para>
         ///   <para>  VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(6)</para>
         /// </summary>
@@ -2213,6 +2218,108 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMINUQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst</para>
         /// </summary>
         public static Vector256<ulong> Min(Vector256<ulong> left, Vector256<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>unsigned int _cvtmask32_u32 (__mmask32 a)</para>
+        ///   <para>  KMOVD r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector256<byte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector256<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector256<short> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector256<int> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector256<long> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask32_u32 (__mmask32 a)</para>
+        ///   <para>  KMOVD r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector256<sbyte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector256<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector256<ushort> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector256<uint> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+        ///   <para>  KMOVB r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector256<ulong> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>__m128i _mm_mullo_epi64 (__m128i a, __m128i b)</para>
@@ -3603,6 +3710,22 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VPLZCNTQ zmm1 {k1}{z}, zmm2/m512/m64bcst</para>
             /// </summary>
             public static Vector512<ulong> LeadingZeroCount(Vector512<ulong> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+            ///   <para>  KMOVB r32, k1</para>
+            /// </summary>
+            public static int MoveMask(Vector512<double> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+            ///   <para>  KMOVB r32, k1</para>
+            /// </summary>
+            public static int MoveMask(Vector512<long> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///   <para>unsigned int _cvtmask8_u32 (__mmask8 a)</para>
+            ///   <para>  KMOVB r32, k1</para>
+            /// </summary>
+            public static int MoveMask(Vector512<ulong> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>__m512i _mm512_mullo_epi64 (__m512i a, __m512i b)</para>

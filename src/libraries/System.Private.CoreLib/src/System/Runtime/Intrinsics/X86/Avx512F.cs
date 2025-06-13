@@ -3680,6 +3680,44 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<double> Min(Vector512<double> left, Vector512<double> right) => Min(left, right);
 
         /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector128<byte> value) => MoveMask(value);
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector128<sbyte> value) => MoveMask(value);
+
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector256<short> value) => MoveMask(value);
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector256<ushort> value) => MoveMask(value);
+
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector512<int> value) => MoveMask(value);
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector512<float> value) => MoveMask(value);
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector512<uint> value) => MoveMask(value);
+
+        /// <summary>
         ///   <para>__m512i _mm512_mul_epi32 (__m512i a, __m512i b)</para>
         ///   <para>  VPMULDQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>

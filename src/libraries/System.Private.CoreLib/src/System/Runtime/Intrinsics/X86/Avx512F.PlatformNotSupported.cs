@@ -3283,7 +3283,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VFNMSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>
         public static Vector512<double> FusedMultiplySubtractNegated(Vector512<double> a, Vector512<double> b, Vector512<double> c) { throw new PlatformNotSupportedException(); }
-/// <summary>
+        /// <summary>
         ///   <para>__m512d _mm512_fnmsub_round_pd (__m512d a, __m512d b, __m512d c, int r)</para>
         ///   <para>  VFNMSUBPS zmm1, zmm2, zmm3 {er}</para>
         /// </summary>
@@ -3673,6 +3673,44 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMINPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{sae}</para>
         /// </summary>
         public static Vector512<double> Min(Vector512<double> left, Vector512<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector256<short> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector256<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector512<int> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector512<float> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector512<uint> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>__m512i _mm512_mul_epi32 (__m512i a, __m512i b)</para>
