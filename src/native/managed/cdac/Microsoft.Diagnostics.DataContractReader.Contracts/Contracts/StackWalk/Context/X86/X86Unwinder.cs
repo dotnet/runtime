@@ -56,13 +56,13 @@ public class X86Unwinder(Target target)
             throw new InvalidOperationException("Unwind failed, unable to find code block for the instruction pointer.");
         }
 
-        eman.GetGCInfo(cbh, out TargetPointer gcInfoAddress, out uint _);
+        eman.GetGCInfo(cbh, out TargetPointer gcInfoAddress, out uint gcInfoVersion);
         uint relOffset = (uint)eman.GetRelativeOffset(cbh).Value;
         TargetPointer methodStart = eman.GetStartAddress(cbh).AsTargetPointer;
         TargetPointer funcletStart = eman.GetFuncletStartAddress(cbh).AsTargetPointer;
         bool isFunclet = eman.IsFunclet(cbh);
 
-        GCInfo gcInfo = new(_target, gcInfoAddress, relOffset);
+        GCInfo gcInfo = new(_target, gcInfoAddress, gcInfoVersion, relOffset);
 
         if (gcInfo.IsInEpilog)
         {

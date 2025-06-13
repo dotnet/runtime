@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
@@ -30,6 +29,8 @@ public enum RegMask
 
 public record GCInfo
 {
+    private const uint MAXIMUM_SUPPORTED_GCINFO_VERSION = 4;
+
     private readonly Target _target;
 
     private readonly TargetPointer _gcInfoAddress;
@@ -67,8 +68,13 @@ public record GCInfo
     public uint PushedArgSize => _pushedArgSize.Value;
     private readonly Lazy<uint> _pushedArgSize;
 
-    public GCInfo(Target target, TargetPointer gcInfoAddress, uint relativeOffset)
+    public GCInfo(Target target, TargetPointer gcInfoAddress, uint gcInfoVersion, uint relativeOffset)
     {
+        if (gcInfoVersion > MAXIMUM_SUPPORTED_GCINFO_VERSION)
+        {
+            throw new NotSupportedException($"GCInfo version {gcInfoVersion} is not supported. Maximum supported version is {MAXIMUM_SUPPORTED_GCINFO_VERSION}.");
+        }
+
         _target = target;
 
         _gcInfoAddress = gcInfoAddress;

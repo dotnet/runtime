@@ -102,7 +102,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             // see readytorun.h for the versioning details
             return header.MajorVersion switch
             {
-                >= 11 and < 15 => 4,
+                >= 11 => 4,
                 _ => throw new NotSupportedException($"Unsupported ReadyToRun major version: {header.MajorVersion}.{header.MinorVersion}"),
             };
         }
