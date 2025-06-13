@@ -481,7 +481,7 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 #endif
 
 // This thread local variable is used for delegate marshalling
-DECLSPEC_THREAD intptr_t tls_thunkData;
+PLATFORM_THREAD_LOCAL intptr_t tls_thunkData;
 
 #ifdef FEATURE_EMULATED_TLS
 EXTERN_C intptr_t* RhpGetThunkData()
@@ -1061,48 +1061,45 @@ int32_t PalGetProcessCpuCount()
     return g_RhNumberOfProcessors;
 }
 
-__thread void* pStackHighOut = NULL;
-__thread void* pStackLowOut = NULL;
-
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than
 // the maximum bounds.
 bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
 {
-    if (pStackHighOut == NULL)
-    {
+    void* pStackHighOut = NULL;
+    void* pStackLowOut = NULL;
+
 #ifdef __APPLE__
-        // This is a Mac specific method
-        pStackHighOut = pthread_get_stackaddr_np(pthread_self());
-        pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));
+    // This is a Mac specific method
+    pStackHighOut = pthread_get_stackaddr_np(pthread_self());
+    pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));
 #else // __APPLE__
-        pthread_attr_t attr;
-        size_t stackSize;
-        int status;
+    pthread_attr_t attr;
+    size_t stackSize;
+    int status;
 
-        pthread_t thread = pthread_self();
+    pthread_t thread = pthread_self();
 
-        status = pthread_attr_init(&attr);
-        ASSERT_MSG(status == 0, "pthread_attr_init call failed");
+    status = pthread_attr_init(&attr);
+    ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
 #if HAVE_PTHREAD_ATTR_GET_NP
-        status = pthread_attr_get_np(thread, &attr);
+    status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
-        status = pthread_getattr_np(thread, &attr);
+    status = pthread_getattr_np(thread, &attr);
 #else
 #error Dont know how to get thread attributes on this platform!
 #endif
-        ASSERT_MSG(status == 0, "pthread_getattr_np call failed");
+    ASSERT_MSG(status == 0, "pthread_getattr_np call failed");
 
-        status = pthread_attr_getstack(&attr, &pStackLowOut, &stackSize);
-        ASSERT_MSG(status == 0, "pthread_attr_getstack call failed");
+    status = pthread_attr_getstack(&attr, &pStackLowOut, &stackSize);
+    ASSERT_MSG(status == 0, "pthread_attr_getstack call failed");
 
-        status = pthread_attr_destroy(&attr);
-        ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
+    status = pthread_attr_destroy(&attr);
+    ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
 
-        pStackHighOut = (uint8_t*)pStackLowOut + stackSize;
+    pStackHighOut = (uint8_t*)pStackLowOut + stackSize;
 #endif // __APPLE__
-    }
 
     *ppStackLowOut = pStackLowOut;
     *ppStackHighOut = pStackHighOut;

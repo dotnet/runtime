@@ -8323,6 +8323,8 @@ public:
                        CORINFO_CLASS_HANDLE  clsHnd,
                        CORINFO_METHOD_HANDLE methodHnd,
                        CORINFO_SIG_INFO*     sig,
+                       bool                  includeAssembly,
+                       bool                  includeClass,
                        bool                  includeClassInstantiation,
                        bool                  includeMethodInstantiation,
                        bool                  includeSignature,
@@ -10898,8 +10900,7 @@ public:
 
     //------------ Some utility functions --------------
 
-    void* compGetHelperFtn(CorInfoHelpFunc ftnNum, /* IN  */
-                           void**          ppIndirection);  /* OUT */
+    CORINFO_CONST_LOOKUP compGetHelperFtn(CorInfoHelpFunc ftnNum);
 
     // Several JIT/EE interface functions return a CorInfoType, and also return a
     // class handle as an out parameter if the type is a value class.  Returns the
