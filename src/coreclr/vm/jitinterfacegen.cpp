@@ -30,7 +30,7 @@ void InitJITAllocationHelpers()
         {
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST, RhpNewFast);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, RhpNewArrayFast);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, RhpNewObjectArrayFast);
+            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_PTR, RhpNewPtrArrayFast);
 
 #if defined(FEATURE_64BIT_ALIGNMENT)
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, RhpNewFastAlign8);
@@ -49,7 +49,7 @@ void InitJITAllocationHelpers()
             // InlineGetThread versions because there is no need to call GetThread
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST, RhpNewFast_UP);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, RhpNewArrayFast_UP);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, RhpNewObjectArrayFast_UP);
+            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_PTR, RhpNewPtrArrayFast_UP);
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(RhNewString_UP), ECall::FastAllocateString);
 #else

@@ -1764,10 +1764,9 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     //
     if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries() && !compiler->IsAot())
     {
-        void* ignored;
         for (int i = CORINFO_HELP_ASSIGN_REF; i <= CORINFO_HELP_BULK_WRITEBARRIER; i++)
         {
-            compiler->compGetHelperFtn((CorInfoHelpFunc)i, &ignored);
+            compiler->compGetHelperFtn((CorInfoHelpFunc)i);
         }
     }
 #endif
@@ -7214,36 +7213,6 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
             }
 
             assert(use == nullptr);
-            continue;
-        }
-#endif
-
-#if FEATURE_ARG_SPLIT
-        if (argNode->OperIs(GT_PUTARG_SPLIT))
-        {
-            assert(compFeatureArgSplit());
-            genConsumeArgSplitStruct(argNode->AsPutArgSplit());
-            unsigned regIndex = 0;
-            for (const ABIPassingSegment& seg : abiInfo.Segments())
-            {
-                if (!seg.IsPassedInRegister())
-                {
-                    continue;
-                }
-
-                regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(regIndex);
-                var_types type     = argNode->AsPutArgSplit()->GetRegType(regIndex);
-                inst_Mov(genActualType(type), seg.GetRegister(), allocReg, /* canSkip */ true);
-
-                if (call->IsFastTailCall())
-                {
-                    // We won't actually consume the register here -- keep it alive into the epilog.
-                    gcInfo.gcMarkRegPtrVal(seg.GetRegister(), type);
-                }
-
-                regIndex++;
-            }
-
             continue;
         }
 #endif

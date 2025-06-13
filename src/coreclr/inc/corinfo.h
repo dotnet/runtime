@@ -340,11 +340,9 @@ enum CorInfoHelpFunc
     CORINFO_HELP_LNG2DBL,               // Convert a signed int64 to a double
     CORINFO_HELP_ULNG2FLT,              // Convert a unsigned int64 to a float
     CORINFO_HELP_ULNG2DBL,              // Convert a unsigned int64 to a double
-    CORINFO_HELP_DBL2INT,
     CORINFO_HELP_DBL2INT_OVF,
     CORINFO_HELP_DBL2LNG,
     CORINFO_HELP_DBL2LNG_OVF,
-    CORINFO_HELP_DBL2UINT,
     CORINFO_HELP_DBL2UINT_OVF,
     CORINFO_HELP_DBL2ULNG,
     CORINFO_HELP_DBL2ULNG_OVF,
@@ -365,7 +363,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEW_MDARR_RARE,// rare multi-dim array helper (Rank == 1)
     CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
     CORINFO_HELP_NEWARR_1_MAYBEFROZEN, // allocator for arrays that *might* allocate them on a frozen segment
-    CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
+    CORINFO_HELP_NEWARR_1_PTR,      // optimized 1-D arrays with pointer sized elements
     CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
     CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
@@ -1206,7 +1204,8 @@ enum CorInfoAccessAllowedHelperArgType
     CORINFO_HELPER_ARG_TYPE_Field   = 1,
     CORINFO_HELPER_ARG_TYPE_Method  = 2,
     CORINFO_HELPER_ARG_TYPE_Class   = 3,
-    CORINFO_HELPER_ARG_TYPE_Const   = 4,
+    CORINFO_HELPER_ARG_TYPE_Module  = 4,
+    CORINFO_HELPER_ARG_TYPE_Const   = 5,
 };
 struct CORINFO_HELPER_ARG
 {
@@ -1358,7 +1357,7 @@ enum CORINFO_CALLINFO_FLAGS
     CORINFO_CALLINFO_ALLOWINSTPARAM = 0x0001,   // Can the compiler generate code to pass an instantiation parameters? Simple compilers should not use this flag
     CORINFO_CALLINFO_CALLVIRT       = 0x0002,   // Is it a virtual call?
     // UNUSED                       = 0x0004,
-    // UNUSED                       = 0x0008,
+    CORINFO_CALLINFO_DISALLOW_STUB  = 0x0008,   // Do not use a stub for this call, even if it is a virtual call.
     CORINFO_CALLINFO_SECURITYCHECKS = 0x0010,   // Perform security checks.
     CORINFO_CALLINFO_LDFTN          = 0x0020,   // Resolving target of LDFTN
     // UNUSED                       = 0x0040,
@@ -3101,10 +3100,11 @@ public:
             void                  **ppIndirection = NULL
             ) = 0;
 
-    // return the native entry point to an EE helper (see CorInfoHelpFunc)
-    virtual void* getHelperFtn (
+    // return the native entry point and/or managed method of an EE helper (see CorInfoHelpFunc)
+    virtual void getHelperFtn (
             CorInfoHelpFunc         ftnNum,
-            void                  **ppIndirection = NULL
+            CORINFO_CONST_LOOKUP *  pNativeEntrypoint,
+            CORINFO_METHOD_HANDLE * pMethodHandle = NULL /* OUT */
             ) = 0;
 
     // return a callable address of the function (native code). This function
@@ -3137,6 +3137,11 @@ public:
             CORINFO_MODULE_HANDLE   handle
             ) = 0;
 
+    virtual CORINFO_MODULE_HANDLE embedModuleHandle(
+            CORINFO_MODULE_HANDLE   handle,
+            void                  **ppIndirection = NULL
+            ) = 0;
+
     virtual CORINFO_CLASS_HANDLE embedClassHandle(
             CORINFO_CLASS_HANDLE    handle,
             void                  **ppIndirection = NULL
@@ -3144,6 +3149,11 @@ public:
 
     virtual CORINFO_METHOD_HANDLE embedMethodHandle(
             CORINFO_METHOD_HANDLE   handle,
+            void                  **ppIndirection = NULL
+            ) = 0;
+
+    virtual CORINFO_FIELD_HANDLE embedFieldHandle(
+            CORINFO_FIELD_HANDLE    handle,
             void                  **ppIndirection = NULL
             ) = 0;
 
@@ -3180,8 +3190,7 @@ public:
             CORINFO_CONST_LOOKUP *  pLookup
             ) = 0;
 
-    // Generate a cookie based on the signature that would needs to be passed
-    // to CORINFO_HELP_PINVOKE_CALLI
+    // Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
     virtual void* GetCookieForPInvokeCalliSig(
             CORINFO_SIG_INFO*   szMetaSig,
             void**              ppIndirection = NULL
@@ -3192,6 +3201,10 @@ public:
     virtual bool canGetCookieForPInvokeCalliSig(
             CORINFO_SIG_INFO*   szMetaSig
             ) = 0;
+
+    // Generate a cookie based on the signature to pass to INTOP_CALLI in the interpreter.
+    virtual void* GetCookieForInterpreterCalliSig(
+            CORINFO_SIG_INFO*   szMetaSig) = 0;
 
     // Gets a handle that is checked to see if the current method is
     // included in "JustMyCode"

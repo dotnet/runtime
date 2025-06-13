@@ -73,9 +73,7 @@
 //    |   +-CallCountingHelperFrame - represents a call into the call counting helper when the
 //    |   |                           call count threshold is reached
 //    |   |
-//    |   +-ExternalMethodFrame  - represents a call from an ExternalMethdThunk
-//    |   |
-//    |   +-TPMethodFrame       - for calls on transparent proxy
+//    |   +-ExternalMethodFrame  - represents a call from an ExternalMethodThunk
 //    |
 #ifdef FEATURE_COMINTEROP
 //    +-UnmanagedToManagedFrame - this frame represents a transition from
@@ -93,8 +91,6 @@
 //    +-TailCallFrame           - padding for tailcalls
 //    |
 #endif
-//    +-ProtectByRefsFrame
-//    |
 //    +-ProtectValueClassFrame
 //    |
 //    +-DebuggerClassInitMarkFrame - marker frame to indicate that "class init" code is running
@@ -1230,7 +1226,7 @@ public:
     {
 #ifdef TARGET_AMD64
         // Floating point spill area is between return value and transition block for frames that need it
-        // (code:TPMethodFrame and code:CLRToCOMMethodFrame)
+        // (see code:CLRToCOMMethodFrame)
         return -(4 * 0x10 /* floating point args */ + 0x8 /* alignment pad */ + TransitionBlock::GetNegSpaceSize()) + (iArg * 0x10);
 #endif
     }
@@ -1256,7 +1252,7 @@ public:
         TADDR p = GetTransitionBlock() - TransitionBlock::GetNegSpaceSize();
 #endif
         // Return value is right before the transition block (or floating point spill area on AMD64) for frames that need it
-        // (code:TPMethodFrame and code:CLRToCOMMethodFrame)
+        // (see code:CLRToCOMMethodFrame)
 #ifdef ENREGISTERED_RETURNTYPE_MAXSIZE
         p -= ENREGISTERED_RETURNTYPE_MAXSIZE;
 #else
@@ -1919,45 +1915,6 @@ private:
     UINT          m_numObjRefs;
     BOOL          m_MaybeInterior;
 };
-
-//-----------------------------------------------------------------------------
-
-struct ByRefInfo;
-typedef DPTR(ByRefInfo) PTR_ByRefInfo;
-
-struct ByRefInfo
-{
-    PTR_ByRefInfo pNext;
-    INT32      argIndex;
-    CorElementType typ;
-    TypeHandle typeHandle;
-    char       data[1];
-};
-
-//-----------------------------------------------------------------------------
-// ProtectByRefsFrame
-//-----------------------------------------------------------------------------
-
-typedef DPTR(class ProtectByRefsFrame) PTR_ProtectByRefsFrame;
-
-class ProtectByRefsFrame : public Frame
-{
-public:
-#ifndef DACCESS_COMPILE
-    ProtectByRefsFrame(Thread *pThread, ByRefInfo *brInfo)
-        : Frame(FrameIdentifier::ProtectByRefsFrame), m_brInfo(brInfo)
-    {
-        WRAPPER_NO_CONTRACT;
-        Frame::Push(pThread);
-    }
-#endif
-
-    void GcScanRoots_Impl(promote_func *fn, ScanContext *sc);
-
-private:
-    PTR_ByRefInfo m_brInfo;
-};
-
 
 //-----------------------------------------------------------------------------
 

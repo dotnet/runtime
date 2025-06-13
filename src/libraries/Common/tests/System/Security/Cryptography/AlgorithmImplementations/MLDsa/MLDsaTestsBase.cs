@@ -49,7 +49,8 @@ namespace System.Security.Cryptography.Tests
             ExerciseSuccessfulVerify(mldsa, data, signature, context);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116461", TestPlatforms.Windows)]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyEmptyMessageNoContext(MLDsaAlgorithm algorithm)
         {
@@ -60,7 +61,8 @@ namespace System.Security.Cryptography.Tests
             ExerciseSuccessfulVerify(mldsa, [], signature, []);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116461", TestPlatforms.Windows)]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyEmptyMessageWithContext(MLDsaAlgorithm algorithm)
         {
