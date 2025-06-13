@@ -3306,7 +3306,7 @@ int LinearScan::BuildMul(GenTree* tree)
         {
             // We have to use the encoding:RDX:RAX = RAX * rm
             dstCandidates = SRBM_RAX | SRBM_RDX;
-            dstCount = 2;
+            dstCount      = 2;
         }
 #endif
     }
