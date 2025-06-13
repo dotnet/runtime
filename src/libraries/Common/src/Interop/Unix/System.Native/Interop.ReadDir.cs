@@ -53,12 +53,8 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_OpenDir", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static partial IntPtr OpenDir(string path);
 
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetReadDirRBufferSize", SetLastError = false)]
-        [SuppressGCTransition]
-        internal static partial int GetReadDirRBufferSize();
-
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadDirR")]
-        internal static unsafe partial int ReadDirR(IntPtr dir, byte* buffer, int bufferSize, DirectoryEntry* outputEntry);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadDir")]
+        internal static unsafe partial int ReadDir(IntPtr dir, DirectoryEntry* outputEntry);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_CloseDir", SetLastError = true)]
         internal static partial int CloseDir(IntPtr dir);
