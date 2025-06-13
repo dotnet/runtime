@@ -52,6 +52,12 @@ void DECLSPEC_NORETURN Interp_NOMEM()
     throw std::bad_alloc();
 }
 
+void DECLSPEC_NORETURN Interp_CompilationFail(const char *msg)
+{
+    // This is a fatal error, so we don't return.
+    throw std::exception();
+}
+
 // GCInfoEncoder needs an IAllocator implementation. This is a simple one that forwards to the Compiler.
 class InterpIAllocator : public IAllocator
 {
@@ -2312,6 +2318,47 @@ int InterpCompiler::EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &e
     return resultVar;
 }
 
+void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo)
+{
+    const bool isInterface = (pCallInfo->classFlags & CORINFO_FLG_INTERFACE) == CORINFO_FLG_INTERFACE;
+
+    if ((pCallInfo->methodFlags & CORINFO_FLG_EnC) && !isInterface)
+    {
+        Interp_CompilationFail("Virtual call to a function added via EnC is not supported");
+    }
+
+    // Get the exact descriptor for the static callsite
+    CORINFO_GENERICHANDLE_RESULT embedInfo;
+    m_compHnd->embedGenericHandle(pResolvedToken, true, m_methodInfo->ftn, &embedInfo);
+    assert(embedInfo.compileTimeHandle != NULL);
+    int typeVar = EmitGenericHandleAsVar(embedInfo);
+
+    m_compHnd->embedGenericHandle(pResolvedToken, false, m_methodInfo->ftn, &embedInfo);
+    assert(embedInfo.compileTimeHandle != NULL);
+    int methodVar = EmitGenericHandleAsVar(embedInfo);
+
+    CORINFO_METHOD_HANDLE getVirtualFunctionPtrHelper;
+    m_compHnd->getHelperFtn(CORINFO_HELP_VIRTUAL_FUNC_PTR, NULL, &getVirtualFunctionPtrHelper);
+    assert(getVirtualFunctionPtrHelper != NULL);
+
+    PushInterpType(InterpTypeI, NULL);
+    int32_t dVar = m_pStackPointer[-1].var;
+
+    int *callArgs = (int*) AllocMemPool((3 + 1) * sizeof(int));
+    callArgs[0] = thisVar;
+    callArgs[1] = typeVar;
+    callArgs[2] = methodVar;
+    callArgs[3] = -1;
+
+    AddIns(INTOP_CALL);
+    m_pLastNewIns->data[0] = GetMethodDataItemIndex(getVirtualFunctionPtrHelper);
+    m_pLastNewIns->SetDVar(dVar);
+    m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
+    m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
+    m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
+    m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
+}
+
 void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall, bool newObj, bool isCalli)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
@@ -2586,15 +2633,25 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
             break;
 
         case CORINFO_CALL_CODE_POINTER:
+        {
             if (callInfo.nullInstanceCheck)
             {
                 // If the call is a normal call, we need to check for null instance
                 // before the call.
                 // TODO: Add null checking behavior somewhere here!
             }
-            assert(!"Need to support calling a code pointer");
-            break;
 
+            EmitPushCORINFO_LOOKUP(callInfo.codePointerLookup);
+            m_pStackPointer--;
+            int codePointerLookupResult = m_pStackPointer[0].var;
+
+            calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+
+            AddIns(INTOP_CALLI);
+            m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
+            m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, codePointerLookupResult);
+            break;
+        }
         case CORINFO_VIRTUALCALL_VTABLE:
             // Traditional virtual call. In theory we could optimize this to using the vtable
             AddIns(INTOP_CALLVIRT);
@@ -2602,10 +2659,18 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
             break;
 
         case CORINFO_VIRTUALCALL_LDVIRTFTN:
-            if (callInfo.exactContextNeedsRuntimeLookup)
+            if (callInfo.sig.sigInst.methInstCount != 0)
             {
-                // Resolve a virtual call using the helper function to a function pointer, and then call through that
-                assert(!"Need to support ldvirtftn path");
+                assert(extraParamArgLocation == INT_MAX);
+                EmitPushLdvirtftn(callArgs[0], &resolvedCallToken, &callInfo);
+                m_pStackPointer--;
+                int synthesizedLdvirtftnPtrVar = m_pStackPointer[0].var;
+
+                calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+
+                AddIns(INTOP_CALLI);
+                m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
+                m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, synthesizedLdvirtftnPtrVar);
             }
             else
             {
@@ -2893,6 +2958,7 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     bool volatile_ = false;
     CORINFO_RESOLVED_TOKEN* constrainedClass = NULL;
     CORINFO_RESOLVED_TOKEN constrainedToken;
+    CORINFO_CALL_INFO callInfo;
     uint8_t *codeEnd;
     int numArgs = m_methodInfo->args.hasThis() + m_methodInfo->args.numArgs;
     bool emittedBBlocks, linkBBlocks, needsRetryEmit;
@@ -4520,16 +4586,50 @@ retry_emit:
                         linkBBlocks = false;
                         break;
 
+                    case CEE_LDVIRTFTN:
+                    {
+                        CORINFO_RESOLVED_TOKEN resolvedToken;
+                        uint32_t token = getU4LittleEndian(m_ip + 1);
+                        ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
+
+                        memset(&callInfo, 0, sizeof(callInfo));
+                        m_compHnd->getCallInfo(&resolvedToken, constrainedClass, m_methodInfo->ftn, (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS| CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_CALLVIRT), &callInfo);
+
+                        // This check really only applies to intrinsic Array.Address methods
+                        if (callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE)
+                        {
+                            Interp_CompilationFail("Currently do not support LDFTN of Parameterized functions");
+                        }
+
+                        m_pStackPointer--;
+                        int thisVar = m_pStackPointer[0].var;
+
+                        if (callInfo.methodFlags & (CORINFO_FLG_FINAL | CORINFO_FLG_STATIC) || !(callInfo.methodFlags & CORINFO_FLG_VIRTUAL))
+                        {
+                            goto DO_LDFTN;
+                        }
+                        
+                        EmitPushLdvirtftn(thisVar, &resolvedToken, &callInfo);
+                        m_ip += 5;
+                        break;
+                    }
                     case CEE_LDFTN:
                     {
                         CORINFO_RESOLVED_TOKEN resolvedToken;
                         uint32_t token = getU4LittleEndian(m_ip + 1);
                         ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
 
-                        CORINFO_CALL_INFO callInfo;
+                        memset(&callInfo, 0, sizeof(callInfo));
                         m_compHnd->getCallInfo(&resolvedToken, constrainedClass, m_methodInfo->ftn, (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS| CORINFO_CALLINFO_LDFTN), &callInfo);
                         constrainedClass = NULL;
 
+                        // This check really only applies to intrinsic Array.Address methods
+                        if (callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE)
+                        {
+                            Interp_CompilationFail("Currently do not support LDFTN of Parameterized functions");
+                        }
+
+DO_LDFTN:
                         if (callInfo.kind == CORINFO_CALL)
                         {
                             CORINFO_CONST_LOOKUP embedInfo;
