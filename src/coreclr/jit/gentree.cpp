@@ -32951,18 +32951,7 @@ bool GenTree::IsTrueMask(var_types simdBaseType) const
 bool GenTree::IsFalseMask() const
 {
 #ifdef TARGET_ARM64
-    if (OperIsHWIntrinsic())
-    {
-        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
-        if (id == NI_Sve_ConvertMaskToVector)
-        {
-            GenTree* op1 = AsHWIntrinsic()->Op(1);
-            assert(op1->OperIsHWIntrinsic());
-            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
-        }
-        return (id == NI_Sve_CreateFalseMaskByte);
-    }
-    else if (IsCnsMsk())
+    if (IsCnsMsk())
     {
         return AsMskCon()->IsZero();
     }
