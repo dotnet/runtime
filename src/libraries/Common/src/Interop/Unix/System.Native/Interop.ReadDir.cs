@@ -40,10 +40,13 @@ internal static partial class Interop
 
                 Debug.Assert(nameBytes.Length > 0, "we shouldn't have gotten a garbage value from the OS");
 
-                int charCount = Encoding.UTF8.GetChars(nameBytes, buffer);
-                ReadOnlySpan<char> value = buffer.Slice(0, charCount);
-                Debug.Assert(!value.Contains('\0'), "should not have embedded nulls");
-                return value;
+                ReadOnlySpan<char> result = !Encoding.UTF8.TryGetChars(nameBytes, buffer, out int charsWritten)
+                    ? Encoding.UTF8.GetString(nameBytes) // Fallback to allocation since this is a rare case
+                    : buffer.Slice(0, charsWritten);
+
+                Debug.Assert(!result.Contains('\0'), "should not have embedded nulls");
+
+                return result;
             }
         }
 
