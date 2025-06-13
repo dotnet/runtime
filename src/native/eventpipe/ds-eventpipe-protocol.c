@@ -408,7 +408,7 @@ eventpipe_collect_tracing_command_try_parse_tracepoint_sets (
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
-	EP_ASSERT (tracepoint_set != NULL);
+	EP_ASSERT (tracepoint_sets != NULL);
 
 	bool result = false;
 	*tracepoint_sets = NULL;
