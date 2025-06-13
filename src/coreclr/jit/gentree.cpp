@@ -29534,7 +29534,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(var_types simdType, 
                 sveId = NI_Sve_Subtract;
                 break;
             case NI_AdvSimd_ZeroExtendWideningLower:
-                sveId = NI_Sve_ZeroExtendWideningUpper;
+                sveId = NI_Sve_ZeroExtendWideningLower;
                 break;
             case NI_AdvSimd_ZeroExtendWideningUpper:
                 sveId = NI_Sve_ZeroExtendWideningUpper;
