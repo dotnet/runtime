@@ -75,7 +75,8 @@ namespace System.Net.Test.Common
                         }
                     }
                 }
-                catch { }
+                catch {
+                }
                 ;
             }
 
