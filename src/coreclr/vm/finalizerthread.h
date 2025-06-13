@@ -48,6 +48,7 @@ public:
 
     static void DelayDestroyDynamicMethodDesc(DynamicMethodDesc* pDMD);
 
+    // returns if there is some extra work for the finalizer thread.
     static bool HaveExtraWorkForFinalizer();
 
     static OBJECTREF GetNextFinalizableObject();

@@ -839,14 +839,6 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
-    void DelayDestroyDynamicMethodDesc(DynamicMethodDesc* pDMD);
-
-    // returns if there is some extra work for the finalizer thread.
-    bool HaveExtraWorkForFinalizer();
-
-    // do the extra finalizer work.
-    void DoExtraWorkForFinalizer();
-
 #ifndef DACCESS_COMPILE
     DWORD CatchAtSafePoint()
     {
