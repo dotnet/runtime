@@ -2123,16 +2123,12 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         newPreheader->setBBProfileWeight(newCondToNewPreheader->getLikelyWeight());
         exit->decreaseBBProfileWeight(newCondToNewExit->getLikelyWeight());
 
-        // Update the weight for the duplicated blocks. Normally, this reduces
-        // the weight of condBlock, except in odd cases of stress modes with
-        // inconsistent weights.
+        // Update the duplicated blocks' weights
 
         for (int i = 0; i < (duplicatedBlocks.Height() - 1); i++)
         {
             BasicBlock* block = duplicatedBlocks.Bottom(i);
-            JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", block->bbNum, weightCond,
-                    weightStayInLoopSucc);
-            block->setBBProfileWeight(weightStayInLoopSucc);
+            block->setBBProfileWeight(block->computeIncomingWeight());
         }
 
         condBlock->setBBProfileWeight(condBlock->computeIncomingWeight());
