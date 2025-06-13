@@ -2499,7 +2499,6 @@ BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
 {
 #ifdef _DEBUG
 		STATIC_CONTRACT_NOTHROW;                                        \
-		ANNOTATION_DEBUG_ONLY;                                          \
 		STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 #endif
 

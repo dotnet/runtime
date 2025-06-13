@@ -109,7 +109,7 @@ namespace System
         {
             get
             {
-                if (IsWindows || IsAndroid || UsesMobileAppleCrypto || IsBrowser)
+                if (IsWindows || IsAndroid || IsApplePlatform || IsBrowser)
                 {
                     return false;
                 }
@@ -250,7 +250,7 @@ namespace System
                     else if (line.StartsWith("VERSION_ID=", StringComparison.Ordinal))
                     {
                         string versionId = line.Substring(11).Trim('"', '\'');
-                        int dashIndex = versionId.IndexOf('_'); // Strip prerelease info if any (needed for Alpine Edge) 
+                        int dashIndex = versionId.IndexOf('_'); // Strip prerelease info if any (needed for Alpine Edge)
                         if (dashIndex != -1)
                         {
                             versionId = versionId.Substring(0, dashIndex);

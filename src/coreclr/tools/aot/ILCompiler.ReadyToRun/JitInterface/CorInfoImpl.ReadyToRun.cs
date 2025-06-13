@@ -1148,9 +1148,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.UMod;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2INT:
-                    id = ReadyToRunHelper.Dbl2Int;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2INT_OVF:
                     id = ReadyToRunHelper.Dbl2IntOvf;
                     break;
@@ -1159,9 +1156,6 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2LNG_OVF:
                     id = ReadyToRunHelper.Dbl2LngOvf;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT:
-                    id = ReadyToRunHelper.Dbl2UInt;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT_OVF:
                     id = ReadyToRunHelper.Dbl2UIntOvf;

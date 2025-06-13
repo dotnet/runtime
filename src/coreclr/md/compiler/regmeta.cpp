@@ -25,12 +25,7 @@
 
 #include "mdinternalrw.h"
 
-
 #include <metamodelrw.h>
-
-#define DEFINE_CUSTOM_NODUPCHECK    1
-#define DEFINE_CUSTOM_DUPCHECK      2
-#define SET_CUSTOM                  3
 
 #if defined(_DEBUG)
 #define LOGGING
@@ -57,6 +52,8 @@ RegMeta::RegMeta() :
     m_pAppDomain(NULL),
     m_OpenFlags(0),
     m_cRef(0),
+	m_pFreeThreadedMarshaler(NULL),
+    m_bCached(false),
     m_SetAPICaller(EXTERNAL_CALLER),
     m_ModuleType(ValidatorModuleTypeInvalid),
     m_ReorderingOptions(NoReordering)
@@ -77,6 +74,8 @@ RegMeta::RegMeta() :
 
 RegMeta::~RegMeta()
 {
+    _ASSERTE(!m_bCached);
+
     HRESULT hr = S_OK;
 
     LOCKWRITENORET();
@@ -101,6 +100,12 @@ RegMeta::~RegMeta()
 #endif //FEATURE_METADATA_INTERNAL_APIS
 
         UNLOCKWRITE();
+    }
+
+    if (m_pFreeThreadedMarshaler)
+    {
+        m_pFreeThreadedMarshaler->Release();
+        m_pFreeThreadedMarshaler = NULL;
     }
 
     if (m_pSemReadWrite && m_fOwnSem)
@@ -513,17 +518,6 @@ ULONG RegMeta::AddRef()
     return InterlockedIncrement(&m_cRef);
 } // ULONG RegMeta::AddRef()
 
-ULONG RegMeta::Release()
-{
-    ULONG cRef = InterlockedDecrement(&m_cRef);
-    // If no references left...
-    if (cRef == 0)
-    {
-        delete this;
-    }
-
-    return cRef;
-} // RegMeta::Release
 
 HRESULT
 RegMeta::QueryInterface(
@@ -628,6 +622,38 @@ RegMeta::QueryInterface(
     }
 #endif //FEATURE_METADATA_EMIT && FEATURE_METADATA_INTERNAL_APIS
 
+#ifdef FEATURE_METADATA_IN_VM
+#ifdef FEATURE_COMINTEROP
+    else if (riid == IID_IMarshal)
+    {
+        // We will only repond to this interface if scope is opened for ReadOnly
+        if (IsOfReadOnly(m_OpenFlags))
+        {
+            if (m_pFreeThreadedMarshaler == NULL)
+            {
+                // Guard ourselves against first time QI on IMarshal from two different threads..
+                LOCKWRITE();
+                if (m_pFreeThreadedMarshaler == NULL)
+                {
+                    // First time! Create the FreeThreadedMarshaler
+                    IfFailGo(CoCreateFreeThreadedMarshaler((IUnknown *)(IMetaDataEmit2 *)this, &m_pFreeThreadedMarshaler));
+                }
+            }
+
+            _ASSERTE(m_pFreeThreadedMarshaler != NULL);
+
+            IfFailGo(m_pFreeThreadedMarshaler->QueryInterface(riid, ppUnk));
+
+            // AddRef has happened in the QueryInterface and thus should just return
+            goto ErrExit;
+        }
+        else
+        {
+            IfFailGo(E_NOINTERFACE);
+        }
+    }
+#endif // FEATURE_COMINTEROP
+#endif //FEATURE_METADATA_IN_VM
     else
     {
         IfFailGo(E_NOINTERFACE);
@@ -1379,9 +1405,9 @@ ErrExit:
 //*****************************************************************************
 // This function returns the requested public interface based on the given
 // internal import interface.
-// A common path to call this is updating the matedata for dynamic modules.
+// A common path to call this is updating the metadata for dynamic modules.
 //*****************************************************************************
-STDAPI MDReOpenMetaDataWithMemoryEx(
+STDAPI MDReOpenMetaDataWithMemory(
     void        *pImport,               // [IN] Given scope. public interfaces
     LPCVOID     pData,                  // [in] Location of scope data.
     ULONG       cbData,                 // [in] Size of the data pointed to by pData.
@@ -1404,53 +1430,7 @@ ErrExit:
         pMDImport->Release();
 
     return hr;
-} // MDReOpenMetaDataWithMemoryEx
-
-STDAPI MDReOpenMetaDataWithMemory(
-    void        *pImport,               // [IN] Given scope. public interfaces
-    LPCVOID     pData,                  // [in] Location of scope data.
-    ULONG       cbData)                 // [in] Size of the data pointed to by pData.
-{
-    return MDReOpenMetaDataWithMemoryEx(pImport, pData, cbData, 0);
-}
-
-// --------------------------------------------------------------------------------------
-//
-// Zeros used by public APIs as return value (or pointer to this memory) for invalid input.
-// It is used by methods:
-//  * code:RegMeta::GetPublicApiCompatibilityZeros, and
-//  * code:RegMeta::GetPublicApiCompatibilityZerosOfSize.
-//
-const BYTE
-RegMeta::s_rgMetaDataPublicApiCompatibilityZeros[64] =
-{
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-};
-
-// --------------------------------------------------------------------------------------
-//
-// Returns pointer to zeros of size (cbSize).
-// Used by public APIs to return compatible values with previous releases.
-//
-const BYTE *
-RegMeta::GetPublicApiCompatibilityZerosOfSize(UINT32 cbSize)
-{
-    if (cbSize <= sizeof(s_rgMetaDataPublicApiCompatibilityZeros))
-    {
-        return s_rgMetaDataPublicApiCompatibilityZeros;
-    }
-    _ASSERTE(!"Dangerous call to this method! Reconsider fixing the caller.");
-    return NULL;
-} // RegMeta::GetPublicApiCompatibilityZerosOfSize
-
-
+} // MDReOpenMetaDataWithMemory
 
 
 //

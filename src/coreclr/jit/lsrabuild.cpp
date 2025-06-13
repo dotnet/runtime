@@ -1826,13 +1826,6 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
             }
         }
 
-        if (tree->OperIsPutArgSplit())
-        {
-            // While we have attempted to account for any "specialPutArg" defs above, we're only looking at RefPositions
-            // created for this node. We must be defining at least one register in the PutArgSplit, so conservatively
-            // add one less than the maximum number of registers args to 'minRegCount'.
-            minRegCount += MAX_REG_ARG - 1;
-        }
         for (refPositionMark++; refPositionMark != refPositions.end(); refPositionMark++)
         {
             RefPosition* newRefPosition    = &(*refPositionMark);
@@ -3113,19 +3106,6 @@ int LinearScan::BuildCallArgUses(GenTreeCall* call)
         }
 #endif
 
-#if FEATURE_ARG_SPLIT
-        if (argNode->OperIs(GT_PUTARG_SPLIT))
-        {
-            unsigned regCount = argNode->AsPutArgSplit()->gtNumRegs;
-            for (unsigned int i = 0; i < regCount; i++)
-            {
-                BuildUse(argNode, genSingleTypeRegMask(argNode->AsPutArgSplit()->GetRegNumByIdx(i)), i);
-            }
-            srcCount += regCount;
-            continue;
-        }
-#endif
-
         // Each register argument corresponds to one source.
         if (argNode->OperIsPutArgReg())
         {
@@ -4151,7 +4131,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
             BuildUse(op1, RBM_NONE, i);
         }
 #if defined(FEATURE_SIMD) && defined(TARGET_X86)
-        if (TargetOS::IsWindows && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+        if (TargetOS::IsWindows && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
         {
             if (varTypeIsSIMD(storeLoc) && op1->IsCall())
             {

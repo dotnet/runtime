@@ -20,7 +20,6 @@
 #include "eedbginterfaceimpl.h" //so we can clearexception in RealCOMPlusThrow
 #include "dllimportcallback.h"
 #include "stackwalk.h" //for CrawlFrame, in SetIPFromSrcToDst
-#include "shimload.h"
 #include "eeconfig.h"
 #include "virtualcallstub.h"
 #include "typestring.h"
@@ -6192,7 +6191,7 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
     {
         if (pExceptionRecord->ExceptionInformation[1] < NULL_AREA_SIZE)
         {
-            exceptionCode = 0; //STATUS_REDHAWK_NULL_REFERENCE;
+            exceptionCode = 0; //STATUS_NATIVEAOT_NULL_REFERENCE;
         }
     }
 

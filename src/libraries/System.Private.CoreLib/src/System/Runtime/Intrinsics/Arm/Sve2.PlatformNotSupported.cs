@@ -154,6 +154,82 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> AbsoluteDifferenceAddWideningUpper(Vector<ulong> addend, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
 
+        // Absolute difference long (bottom)
+
+        /// <summary>
+        /// svint16_t svabdlb[_s16](svint8_t op1, svint8_t op2)
+        ///   SABDLB Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<short> AbsoluteDifferenceWideningLower(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svabdlb[_s32](svint16_t op1, svint16_t op2)
+        ///   SABDLB Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<int> AbsoluteDifferenceWideningLower(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svabdlb[_s64](svint32_t op1, svint32_t op2)
+        ///   SABDLB Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<long> AbsoluteDifferenceWideningLower(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svabdlb[_u16](svuint8_t op1, svuint8_t op2)
+        ///   UABDLB Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<ushort> AbsoluteDifferenceWideningLower(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svabdlb[_u32](svuint16_t op1, svuint16_t op2)
+        ///   UABDLB Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<uint> AbsoluteDifferenceWideningLower(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svabdlb[_u64](svuint32_t op1, svuint32_t op2)
+        ///   UABDLB Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ulong> AbsoluteDifferenceWideningLower(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        // Absolute difference long (top)
+
+        /// <summary>
+        /// svint16_t svabdlt[_s16](svint8_t op1, svint8_t op2)
+        ///   SABDLT Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<short> AbsoluteDifferenceWideningUpper(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svabdlt[_s32](svint16_t op1, svint16_t op2)
+        ///   SABDLT Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<int> AbsoluteDifferenceWideningUpper(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svabdlt[_s64](svint32_t op1, svint32_t op2)
+        ///   SABDLT Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<long> AbsoluteDifferenceWideningUpper(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svabdlt[_u16](svuint8_t op1, svuint8_t op2)
+        ///   UABDLT Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<ushort> AbsoluteDifferenceWideningUpper(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svabdlt[_u32](svuint16_t op1, svuint16_t op2)
+        ///   UABDLT Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<uint> AbsoluteDifferenceWideningUpper(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svabdlt[_u64](svuint32_t op1, svuint32_t op2)
+        ///   UABDLT Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ulong> AbsoluteDifferenceWideningUpper(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
         // Bitwise clear and exclusive OR
 
         /// <summary>
@@ -356,6 +432,186 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
         public static Vector<ulong> BitwiseSelectRightInverted(Vector<ulong> select, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        /// Interleaving Xor
+
+        /// <summary>
+        /// svint8_t sveorbt[_s8](svint8_t odd, svint8_t op1, svint8_t op2)
+        ///   EORBT Zd.B, Zn.B, Zm.B
+        /// </summary>
+        public static Vector<byte> InterleavingXorEvenOdd(Vector<byte> odd, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t sveorbt[_s16](svint16_t odd, svint16_t op1, svint16_t op2)
+        ///   EORBT Zd.H, Zn.H, Zm.H
+        /// </summary>
+        public static Vector<short> InterleavingXorEvenOdd(Vector<short> odd, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t sveorbt[_s32](svint32_t odd, svint32_t op1, svint32_t op2)
+        ///   EORBT Zd.S, Zn.S, Zm.S
+        /// </summary>
+        public static Vector<int> InterleavingXorEvenOdd(Vector<int> odd, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t sveorbt[_s64](svint64_t odd, svint64_t op1, svint64_t op2)
+        ///   EORBT Zd.D, Zn.D, Zm.D
+        /// </summary>
+        public static Vector<long> InterleavingXorEvenOdd(Vector<long> odd, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t sveorbt[_s8](svint8_t odd, svint8_t op1, svint8_t op2)
+        ///   EORBT Zd.B, Zn.B, Zm.B
+        /// </summary>
+        public static Vector<sbyte> InterleavingXorEvenOdd(Vector<sbyte> odd, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t sveorbt[_s16](svint16_t odd, svint16_t op1, svint16_t op2)
+        ///   EORBT Zd.H, Zn.H, Zm.H
+        /// </summary>
+        public static Vector<ushort> InterleavingXorEvenOdd(Vector<ushort> odd, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t sveorbt[_s32](svint32_t odd, svint32_t op1, svint32_t op2)
+        ///   EORBT Zd.S, Zn.S, Zm.S
+        /// </summary>
+        public static Vector<uint> InterleavingXorEvenOdd(Vector<uint> odd, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t sveorbt[_s64](svint64_t odd, svint64_t op1, svint64_t op2)
+        ///   EORBT Zd.D, Zn.D, Zm.D
+        /// </summary>
+        public static Vector<ulong> InterleavingXorEvenOdd(Vector<ulong> odd, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t sveortb[_s8](svint8_t even, svint8_t op1, svint8_t op2)
+        ///   EORTB Zd.B, Zn.B, Zm.B
+        /// </summary>
+        public static Vector<byte> InterleavingXorOddEven(Vector<byte> even, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t sveortb[_s16](svint16_t even, svint16_t op1, svint16_t op2)
+        ///   EORTB Zd.H, Zn.H, Zm.H
+        /// </summary>
+        public static Vector<short> InterleavingXorOddEven(Vector<short> even, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t sveortb[_s32](svint32_t even, svint32_t op1, svint32_t op2)
+        ///   EORTB Zd.S, Zn.S, Zm.S
+        /// </summary>
+        public static Vector<int> InterleavingXorOddEven(Vector<int> even, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t sveortb[_s64](svint64_t even, svint64_t op1, svint64_t op2)
+        ///   EORTB Zd.D, Zn.D, Zm.D
+        /// </summary>
+        public static Vector<long> InterleavingXorOddEven(Vector<long> even, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t sveortb[_s8](svint8_t even, svint8_t op1, svint8_t op2)
+        ///   EORTB Zd.B, Zn.B, Zm.B
+        /// </summary>
+        public static Vector<sbyte> InterleavingXorOddEven(Vector<sbyte> even, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t sveortb[_s16](svint16_t even, svint16_t op1, svint16_t op2)
+        ///   EORTB Zd.H, Zn.H, Zm.H
+        /// </summary>
+        public static Vector<ushort> InterleavingXorOddEven(Vector<ushort> even, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t sveortb[_s32](svint32_t even, svint32_t op1, svint32_t op2)
+        ///   EORTB Zd.S, Zn.S, Zm.S
+        /// </summary>
+        public static Vector<uint> InterleavingXorOddEven(Vector<uint> even, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t sveortb[_s64](svint64_t even, svint64_t op1, svint64_t op2)
+        ///   EORTB Zd.D, Zn.D, Zm.D
+        /// </summary>
+        public static Vector<ulong> InterleavingXorOddEven(Vector<ulong> even, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Rounding shift left
+
+        /// <summary>
+        /// svint16_t svrshl[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SRSHL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> ShiftArithmeticRounded(Vector<short> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svrshl[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SRSHL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> ShiftArithmeticRounded(Vector<int> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svrshl[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SRSHL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> ShiftArithmeticRounded(Vector<long> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svrshl[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SRSHL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> ShiftArithmeticRounded(Vector<sbyte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating rounding shift left
+
+        /// <summary>
+        /// svint16_t svqrshl[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SQRSHL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> ShiftArithmeticRoundedSaturate(Vector<short> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqrshl[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SQRSHL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> ShiftArithmeticRoundedSaturate(Vector<int> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqrshl[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SQRSHL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> ShiftArithmeticRoundedSaturate(Vector<long> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svqrshl[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SQRSHL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> ShiftArithmeticRoundedSaturate(Vector<sbyte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating shift left
+
+        /// <summary>
+        /// svint16_t svqshl[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SQSHL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> ShiftArithmeticSaturate(Vector<short> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqshl[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SQSHL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> ShiftArithmeticSaturate(Vector<int> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqshl[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SQSHL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> ShiftArithmeticSaturate(Vector<long> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svqshl[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SQSHL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> ShiftArithmeticSaturate(Vector<sbyte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
+
 
         // Shift left and insert
 

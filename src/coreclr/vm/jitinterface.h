@@ -147,7 +147,7 @@ EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicSta
 
 EXTERN_C FCDECL1(Object*, RhpNewFast, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL2(Object*, RhpNewArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhpNewObjectArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, DWORD stringLength);
 
 #if defined(FEATURE_64BIT_ALIGNMENT)
@@ -159,7 +159,7 @@ EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, CORINFO_CLASS_HANDLE typeHnd_, 
 #if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86))
 EXTERN_C FCDECL1(Object*, RhpNewFast_UP, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL2(Object*, RhpNewArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhpNewObjectArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhNewString_UP, CORINFO_CLASS_HANDLE typeHnd_, DWORD stringLength);
 #endif
 
@@ -570,8 +570,9 @@ public:
 
     virtual void WriteCode(EECodeGenManager * jitMgr) = 0;
 
-    void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
-                       void **            ppIndirection) override;  /* OUT */
+    void getHelperFtn(CorInfoHelpFunc         tnNum,                     /* IN  */
+                      CORINFO_CONST_LOOKUP *  pNativeEntrypoint,         /* OUT */
+                      CORINFO_METHOD_HANDLE * pMethodHandle) override;   /* OUT */
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
 
     InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override;
@@ -974,6 +975,8 @@ public:
 
     void BackoutJitData(EECodeGenManager * jitMgr) override;
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
+
+    LPVOID GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) override;
 };
 #endif // FEATURE_INTERPRETER
 
