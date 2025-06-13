@@ -268,6 +268,12 @@ struct Agnostic_CORINFO_CONST_LOOKUP
     DWORDLONG handle; // actually a union of two pointer sized things
 };
 
+struct Agnostic_GetHelperFtn
+{
+    Agnostic_CORINFO_CONST_LOOKUP helperLookup;
+    DWORDLONG                     helperMethod;
+};
+
 struct Agnostic_CORINFO_LOOKUP_KIND
 {
     DWORD needsRuntimeLookup;
