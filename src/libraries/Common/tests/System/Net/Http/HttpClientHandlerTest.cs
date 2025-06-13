@@ -2202,15 +2202,17 @@ namespace System.Net.Http.Functional.Tests
 
             using (var client = new HttpClient(handler))
             {
-                var ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
+                var ex = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(request));
+                _output.WriteLine(ex.ToString());
                 if (IsWinHttpHandler)
                 {
-                    var fex = Assert.IsType<FormatException>(ex.InnerException);
+                    var fex = Assert.IsType<FormatException>(ex);
                     Assert.Contains("Latin-1", fex.Message);
                 }
                 else
                 {
-                    var message = UseVersion == HttpVersion30 ? ex.InnerException.Message : ex.Message;
+                    var hrex = Assert.IsType<HttpRequestException>(ex);
+                    var message = UseVersion == HttpVersion30 ? hrex.InnerException.Message : hrex.Message;
                     Assert.Contains("ASCII", message);
                 }
             }

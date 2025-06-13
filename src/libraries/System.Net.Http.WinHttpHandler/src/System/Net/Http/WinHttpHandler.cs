@@ -714,18 +714,6 @@ namespace System.Net.Http
             return chunkedMode;
         }
 
-        private static bool ContainsOnlyValidLatin1(string headerString)
-        {
-            foreach (char c in headerString)
-            {
-                if (c <= 0 || c > 255)
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
         private static void AddRequestHeaders(
             SafeWinHttpHandle requestHandle,
             HttpRequestMessage requestMessage,
@@ -751,21 +739,12 @@ namespace System.Net.Http
                 string? cookieHeader = WinHttpCookieContainerAdapter.GetCookieHeader(requestMessage.RequestUri, cookies);
                 if (!string.IsNullOrEmpty(cookieHeader))
                 {
-                    if (!ContainsOnlyValidLatin1(cookieHeader))
-                    {
-                        throw new FormatException(SR.Format(SR.net_http_invalid_header_value, nameof(HttpRequestMessage)));
-                    }
                     requestHeadersBuffer.AppendLine(cookieHeader);
                 }
             }
 
             // Serialize general request headers.
-            string requestHeaders = requestMessage.Headers.ToString();
-            if (!ContainsOnlyValidLatin1(requestHeaders))
-            {
-                throw new FormatException(SR.Format(SR.net_http_invalid_header_value, nameof(HttpRequestMessage)));
-            }
-            requestHeadersBuffer.AppendLine(requestHeaders);
+            requestHeadersBuffer.AppendLine(requestMessage.Headers.ToString());
 
             // Serialize entity-body (content) headers.
             if (requestMessage.Content != null)
@@ -780,12 +759,7 @@ namespace System.Net.Http
                     requestMessage.Content.Headers.ContentLength = contentLength;
                 }
 
-                string contentHeaders = requestMessage.Content.Headers.ToString();
-                if (!ContainsOnlyValidLatin1(contentHeaders))
-                {
-                    throw new FormatException(SR.Format(SR.net_http_invalid_header_value, nameof(HttpContent)));
-                }
-                requestHeadersBuffer.AppendLine(contentHeaders);
+                requestHeadersBuffer.AppendLine(requestMessage.Content.Headers.ToString());
             }
 
             // Add request headers to WinHTTP request handle.
@@ -795,7 +769,15 @@ namespace System.Net.Http
                 (uint)requestHeadersBuffer.Length,
                 Interop.WinHttp.WINHTTP_ADDREQ_FLAG_ADD))
             {
-                WinHttpException.ThrowExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpAddRequestHeaders));
+                int lastError = Marshal.GetLastWin32Error();
+                if (lastError == Interop.WinHttp.ERROR_INVALID_PARAMETER)
+                {
+                    throw new FormatException(SR.net_http_invalid_header_value);
+                }
+                else
+                {
+                    throw WinHttpException.CreateExceptionUsingError(lastError, nameof(Interop.WinHttp.WinHttpAddRequestHeaders));
+                }
             }
         }
 
@@ -1593,7 +1575,7 @@ namespace System.Net.Http
                 // If the exception was due to the cancellation token being canceled, throw cancellation exception.
                 state.Tcs.TrySetCanceled(state.CancellationToken);
             }
-            else if (ex is WinHttpException || ex is IOException || ex is InvalidOperationException || ex is FormatException)
+            else if (ex is WinHttpException || ex is IOException || ex is InvalidOperationException)
             {
                 // Wrap expected exceptions as HttpRequestExceptions since this is considered an error during
                 // execution. All other exception types, including ArgumentExceptions and ProtocolViolationExceptions
