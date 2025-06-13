@@ -309,20 +309,25 @@ namespace ILCompiler
                         var type = (TypeDesc)targetOfLookup;
 
                         // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
-                        // If this cast happens with an object that implements IDynamicIntefaceCastable, user code will
+                        // If this cast happens with an object that implements IDynamicInterfaceCastable, user code will
                         // see a RuntimeTypeHandle representing this interface.
                         // We don't need to do this for IDynamicInterfaceCastable itself, as the type system will never ask an object
                         // that implements IDynamicInterfaceCastable statically if it dynamically implements it.
+                        // If we've determined that IDynamicInterfaceCastable is not implemented by any type,
+                        // we can return a necessary type symbol.
                         if (type.IsInterface)
                         {
-                            TypeDesc idic = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(type.Context.SystemModule, "System.Runtime.InteropServices.IDynamicInterfaceCastable");
-                            if (type == idic)
+                            if (TypeSystemContext.IsIDynamicInterfaceCastableInterface((DefType)type))
                             {
                                 return NecessaryTypeSymbolIfPossible(type);
                             }
-                            else
+                            else if (NodeFactory.DevirtualizationManager.CanHaveDynamicInterfaceImplementations())
                             {
                                 return NodeFactory.MaximallyConstructableType(type);
+                            }
+                            else
+                            {
+                                return NecessaryTypeSymbolIfPossible(type);
                             }
                         }
 
