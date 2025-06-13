@@ -134,7 +134,7 @@ namespace Microsoft.NET.HostModel.Bundle
             bundleHash.Dispose();
             bundleHash = null;
 
-            return Convert.ToBase64String(manifestHash).Substring(BundleIdLength).Replace('/', '_');
+            return Convert.ToBase64String(manifestHash).Substring(0, BundleIdLength).Replace('/', '_');
         }
 
         public long Write(BinaryWriter writer)
