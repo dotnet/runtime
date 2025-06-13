@@ -75,9 +75,9 @@ namespace System.Net.Test.Common
                         }
                     }
                 }
-                catch {
+                catch
+                {
                 }
-                ;
             }
 
             internal static X509ExtensionCollection BuildTlsServerCertExtensions(string serverName)
