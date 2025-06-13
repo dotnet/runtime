@@ -161,8 +161,11 @@ public class X86Unwinder(Target target)
             {
                 // do nothing before popping the callee-saved registers
             }
-            else if (gcInfo.RawStackSize == _target.PointerSize)
+            else if (gcInfo.RawStackSize == _target.PointerSize && ReadByteAt(epilogBase) == X86_INSTR_POP_ECX)
             {
+                // We may use "POP ecx" for doing "ADD ESP, 4",
+                // or we may not (in the case of JMP epilogs)
+
                 // "pop ecx" will make ESP point to the callee-saved registers
                 if (!InstructionAlreadyExecuted(offset, gcInfo.EpilogOffset))
                 {
