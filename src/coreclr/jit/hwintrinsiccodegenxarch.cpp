@@ -849,44 +849,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
-                        case NI_AVXVNNI_MultiplyWideningAndAdd:
-                        case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
-                        case NI_AVXVNNIINT_MultiplyWideningAndAddSByteSByte:
-                        case NI_AVXVNNIINT_MultiplyWideningAndAddSByteByte:
-                        case NI_AVXVNNIINT_MultiplyWideningAndAddByteByte:
-                        case NI_AVXVNNIINT_MultiplyWideningAndAddSByteSByteSaturate:
-                        case NI_AVXVNNIINT_MultiplyWideningAndAddSByteByteSaturate:
-                        case NI_AVXVNNIINT_MultiplyWideningAndAddByteByteSaturate:
-                        case NI_AVXVNNIINT_MultiplyWideningAndAddInt16UInt16:
-                        case NI_AVXVNNIINT_MultiplyWideningAndAddUInt16UInt16:
-                        case NI_AVXVNNIINT_MultiplyWideningAndAddUInt16Int16:
-                        case NI_AVXVNNIINT_MultiplyWideningAndAddInt16UInt16Saturate:
-                        case NI_AVXVNNIINT_MultiplyWideningAndAddUInt16UInt16Saturate:
-                        case NI_AVXVNNIINT_MultiplyWideningAndAddUInt16Int16Saturate:
-                        case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSByteSByte:
-                        case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSByteByte:
-                        case NI_AVXVNNIINT_V512_MultiplyWideningAndAddByteByte:
-                        case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSByteSByteSaturate:
-                        case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSByteByteSaturate:
-                        case NI_AVXVNNIINT_V512_MultiplyWideningAndAddByteByteSaturate:
-                        case NI_AVXVNNIINT_V512_MultiplyWideningAndAddInt16UInt16:
-                        case NI_AVXVNNIINT_V512_MultiplyWideningAndAddUInt16UInt16:
-                        case NI_AVXVNNIINT_V512_MultiplyWideningAndAddUInt16Int16:
-                        case NI_AVXVNNIINT_V512_MultiplyWideningAndAddInt16UInt16Saturate:
-                        case NI_AVXVNNIINT_V512_MultiplyWideningAndAddUInt16UInt16Saturate:
-                        case NI_AVXVNNIINT_V512_MultiplyWideningAndAddUInt16Int16Saturate:
+                        default:
                         {
+                            assert(intrinsicId >= FIRST_NI_AVXVNNI && intrinsicId <= LAST_NI_AVXVNNIINT_V512);
                             assert(targetReg != REG_NA);
                             assert(op1Reg != REG_NA);
                             assert(op2Reg != REG_NA);
 
                             genHWIntrinsic_R_R_R_RM(ins, simdSize, targetReg, op1Reg, op2Reg, op3, instOptions);
-                            break;
-                        }
-
-                        default:
-                        {
-                            unreached();
                             break;
                         };
                     }

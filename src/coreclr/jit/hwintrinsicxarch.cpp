@@ -197,13 +197,6 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
                     return InstructionSet_AVX10v2;
                 }
             }
-            else if (strncmp(className + 3, "VnniInt", 7) == 0)
-            {
-                if ((strcmp(className + 10, "8") == 0) || (strcmp(className + 10, "16") == 0))
-                {
-                    return InstructionSet_AVXVNNIINT;
-                }
-            }
             else if (strcmp(className + 3, "2") == 0)
             {
                 return InstructionSet_AVX2;
@@ -270,9 +263,19 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
             {
                 return InstructionSet_AVXIFMA;
             }
-            else if (strcmp(className + 3, "Vnni") == 0)
+            else if (strncmp(className + 3, "Vnni", 4) == 0)
             {
-                return InstructionSet_AVXVNNI;
+                if (className[7] == '\0')
+                {
+                    return InstructionSet_AVXVNNI;
+                }
+                else if (strncmp(className + 7, "Int", 3) == 0)
+                {
+                    if ((strcmp(className + 10, "8") == 0) || (strcmp(className + 10, "16") == 0))
+                    {
+                        return InstructionSet_AVXVNNIINT;
+                    }
+                }
             }
         }
     }

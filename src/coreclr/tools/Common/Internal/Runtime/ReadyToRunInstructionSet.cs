@@ -70,6 +70,10 @@ namespace Internal.ReadyToRunConstants
         Zba=57,
         Zbb=58,
         Sve2=59,
+        AvxVnniInt8=60,
+        AvxVnniInt8_V512=61,
+        AvxVnniInt16=62,
+        AvxVnniInt16_V512=63,
         Aes_V256=64,
         Aes_V512=65,
         AvxIfma=66,
@@ -90,10 +94,6 @@ namespace Internal.ReadyToRunConstants
         Avx512Vp2intersect_VL=81,
         Avx512Vpopcntdq=82,
         Avx512Vpopcntdq_VL=83,
-        AvxVnniInt8=84,
-        AvxVnniInt8_V512=85,
-        AvxVnniInt16=86,
-        AvxVnniInt16_V512=87,
 
     }
 }

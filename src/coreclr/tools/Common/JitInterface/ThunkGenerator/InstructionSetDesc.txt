@@ -114,10 +114,10 @@ instructionset     ,X86   ,                     ,VectorT256         ,40 ,VectorT
 instructionset     ,X86   ,                     ,VectorT512         ,41 ,VectorT512            ,vectort512
 
 
-instructionset     ,X86   ,AvxVnniInt8          ,                   ,84 ,AVXVNNIINT            ,avxvnniint
-instructionset     ,X86   ,AvxVnniInt8_V512     ,                   ,85 ,AVXVNNIINT_V512       ,avxvnniint_v512
-instructionset     ,X86   ,AvxVnniInt16         ,                   ,86 ,AVXVNNIINT            ,avxvnniint
-instructionset     ,X86   ,AvxVnniInt16_V512    ,                   ,87 ,AVXVNNIINT_V512       ,avxvnniint_v512
+instructionset     ,X86   ,AvxVnniInt8          ,                   ,60 ,AVXVNNIINT            ,avxvnniint
+instructionset     ,X86   ,AvxVnniInt8_V512     ,                   ,61 ,AVXVNNIINT_V512       ,avxvnniint_v512
+instructionset     ,X86   ,AvxVnniInt16         ,                   ,62 ,AVXVNNIINT            ,avxvnniint
+instructionset     ,X86   ,AvxVnniInt16_V512    ,                   ,63 ,AVXVNNIINT_V512       ,avxvnniint_v512
 
 ; 64-bit Instruction Sets
 

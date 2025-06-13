@@ -90,9 +90,11 @@ bool emitter::IsApxOnlyInstruction(instruction ins)
     return (ins >= FIRST_APX_INSTRUCTION) && (ins <= LAST_APX_INSTRUCTION);
 }
 
-bool emitter::IsAVXVNNIInstruction(instruction ins)
+bool emitter::IsAVXVNNIFamilyInstruction(instruction ins)
 {
-    return (ins >= FIRST_AVXVNNI_INSTRUCTION) && (ins <= LAST_AVXVNNI_INSTRUCTION);
+    return (ins >= FIRST_AVXVNNI_INSTRUCTION && ins <= LAST_AVXVNNI_INSTRUCTION) ||
+           (ins >= FIRST_AVXVNNIINT8_INSTRUCTION && ins <= LAST_AVXVNNIINT8_INSTRUCTION) ||
+           (ins >= FIRST_AVXVNNIINT16_INSTRUCTION && ins <= LAST_AVXVNNIINT16_INSTRUCTION);
 }
 
 bool emitter::IsAVXVNNIINT8Instruction(instruction ins)
@@ -103,11 +105,6 @@ bool emitter::IsAVXVNNIINT8Instruction(instruction ins)
 bool emitter::IsAVXVNNIINT16Instruction(instruction ins)
 {
     return (ins >= FIRST_AVXVNNIINT16_INSTRUCTION) && (ins <= LAST_AVXVNNIINT16_INSTRUCTION);
-}
-
-bool emitter::IsAVXVNNIFamilyInstruction(instruction ins)
-{
-    return (IsAVXVNNIInstruction(ins) || IsAVXVNNIINT8Instruction(ins) || IsAVXVNNIINT16Instruction(ins));
 }
 
 bool emitter::Is3OpRmwInstruction(instruction ins)

@@ -10489,37 +10489,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                             }
 
-                            case NI_AVXVNNI_MultiplyWideningAndAdd:
-                            case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
-                            case NI_AVXVNNIINT_MultiplyWideningAndAddSByteSByte:
-                            case NI_AVXVNNIINT_MultiplyWideningAndAddSByteByte:
-                            case NI_AVXVNNIINT_MultiplyWideningAndAddByteByte:
-                            case NI_AVXVNNIINT_MultiplyWideningAndAddSByteSByteSaturate:
-                            case NI_AVXVNNIINT_MultiplyWideningAndAddSByteByteSaturate:
-                            case NI_AVXVNNIINT_MultiplyWideningAndAddByteByteSaturate:
-                            case NI_AVXVNNIINT_MultiplyWideningAndAddInt16UInt16:
-                            case NI_AVXVNNIINT_MultiplyWideningAndAddUInt16UInt16:
-                            case NI_AVXVNNIINT_MultiplyWideningAndAddUInt16Int16:
-                            case NI_AVXVNNIINT_MultiplyWideningAndAddInt16UInt16Saturate:
-                            case NI_AVXVNNIINT_MultiplyWideningAndAddUInt16UInt16Saturate:
-                            case NI_AVXVNNIINT_MultiplyWideningAndAddUInt16Int16Saturate:
-                            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSByteSByte:
-                            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSByteByte:
-                            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddByteByte:
-                            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSByteSByteSaturate:
-                            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSByteByteSaturate:
-                            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddByteByteSaturate:
-                            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddInt16UInt16:
-                            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddUInt16UInt16:
-                            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddUInt16Int16:
-                            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddInt16UInt16Saturate:
-                            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddUInt16UInt16Saturate:
-                            case NI_AVXVNNIINT_V512_MultiplyWideningAndAddUInt16Int16Saturate:
-                            {
-                                TryMakeSrcContainedOrRegOptional(node, op3);
-                                break;
-                            }
-
                             case NI_AVX2_MultiplyNoFlags:
                             case NI_AVX2_X64_MultiplyNoFlags:
                             {
@@ -10575,17 +10544,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                             }
 
-                            case NI_X86Base_DivRem:
-                            case NI_X86Base_X64_DivRem:
-                            {
-                                // DIV only allows divisor (op3) in memory
-                                TryMakeSrcContainedOrRegOptional(node, op3);
-                                break;
-                            }
-
                             default:
                             {
-                                unreached();
+                                assert((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem) ||
+                                       (intrinsicId >= FIRST_NI_AVXVNNI && intrinsicId <= LAST_NI_AVXVNNIINT_V512));
+                                TryMakeSrcContainedOrRegOptional(node, op3);
                                 break;
                             }
                         }

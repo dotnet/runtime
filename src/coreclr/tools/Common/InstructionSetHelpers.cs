@@ -203,8 +203,7 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx2");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxifma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnniint8");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnniint16");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnniint");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes_v256");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v256");
 
@@ -224,8 +223,7 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512v3");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnniint8_v512");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnniint16_v512");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnniint_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vp2intersect");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v512");
