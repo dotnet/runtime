@@ -152,15 +152,15 @@ static void InterpBreakpoint()
 }
 #endif
 
-static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int32_t dimsOffset, int rank)
+static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int32_t dimsOffset, int numArgs)
 {
-    int32_t* dims = (int32_t*)alloca(rank * sizeof(int32_t));
-    for (int i = 0; i < rank; i++)
+    int32_t* dims = (int32_t*)alloca(numArgs * sizeof(int32_t));
+    for (int i = 0; i < numArgs; i++)
     {
         dims[i] = *(int32_t*)(stack + dimsOffset + i * 8);
     }
 
-    return AllocateArrayEx(arrayClass, dims, rank);
+    return AllocateArrayEx(arrayClass, dims, numArgs);
 }
 
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
