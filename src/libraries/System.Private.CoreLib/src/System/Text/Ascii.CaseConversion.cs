@@ -352,8 +352,10 @@ namespace System.Text
                     }
                     else
                     {
+                        // Narrowing operation required, we know data is all-ASCII so use extract helper.
+
                         Vector128<ushort> blockAsVectorOfUInt16 = blockAsVectorOfUInt64.AsUInt16();
-                        Vector128<uint> narrowedBlock = Vector128.Narrow(blockAsVectorOfUInt16, blockAsVectorOfUInt16).AsUInt32();
+                        Vector128<uint> narrowedBlock = ExtractAsciiVector(blockAsVectorOfUInt16, blockAsVectorOfUInt16).AsUInt32();
                         Unsafe.WriteUnaligned(&pDest[i], narrowedBlock.ToScalar());
                     }
                 }
@@ -412,8 +414,10 @@ namespace System.Text
                     }
                     else
                     {
+                        // Narrowing operation required, we know data is all-ASCII so use extract helper.
+
                         Vector128<ushort> blockAsVectorOfUInt16 = blockAsVectorOfUInt32.AsUInt16();
-                        Vector128<ushort> narrowedBlock = Vector128.Narrow(blockAsVectorOfUInt16, blockAsVectorOfUInt16).AsUInt16();
+                        Vector128<ushort> narrowedBlock = ExtractAsciiVector(blockAsVectorOfUInt16, blockAsVectorOfUInt16).AsUInt16();
                         Unsafe.WriteUnaligned(&pDest[i], narrowedBlock.ToScalar());
                     }
                 }
