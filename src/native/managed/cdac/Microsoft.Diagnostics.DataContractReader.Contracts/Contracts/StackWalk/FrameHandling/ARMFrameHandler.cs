@@ -27,4 +27,20 @@ internal class ARMFrameHandler(Target target, ContextHolder<ARMContext> contextH
         // TODO(cdacarm)
         throw new NotImplementedException();
     }
+
+    public override void HandleInlinedCallFrame(InlinedCallFrame inlinedCallFrame)
+    {
+        base.HandleInlinedCallFrame(inlinedCallFrame);
+
+        // On ARM, the InlinedCallFrame stores the value of the SP after the prolog
+        // to allow unwinding for functions with stackalloc. When a function uses
+        // stackalloc, the CallSiteSP can already have been adjusted.
+
+        if (inlinedCallFrame.SPAfterProlog is not TargetPointer spAfterProlog)
+        {
+            throw new InvalidOperationException("ARM InlinedCallFrame does not have SPAfterProlog set");
+        }
+
+        _holder.Context.R9 = (uint)spAfterProlog;
+    }
 }
