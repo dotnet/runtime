@@ -21,7 +21,7 @@
     <_WasmTestRunnerTFM Condition="'$(TargetsBrowser)' == 'true'">$(NetCoreAppCurrent)-browser</_WasmTestRunnerTFM>
     <WasmTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmTestRunner', '$(Configuration)', '$(_WasmTestRunnerTFM)'))</WasmTestRunnerDir>
 
-    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
