@@ -471,3 +471,9 @@ void _DacGlobals::Initialize()
 }
 
 int g_pDebugger;
+
+extern "C" int32_t mono_wasm_browser_entropy(uint8_t* buffer, int32_t bufferLength)
+{
+    PORTABILITY_ASSERT("mono_wasm_browser_entropy is not implemented");
+    return -1;
+}
