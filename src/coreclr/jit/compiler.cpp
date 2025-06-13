@@ -1666,22 +1666,24 @@ void Compiler::compDone()
 #endif // LATE_DISASM
 }
 
-void* Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum, /* IN  */
-                                 void**          ppIndirection)   /* OUT */
+CORINFO_CONST_LOOKUP Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum)
 {
-    void* addr;
+    CORINFO_CONST_LOOKUP lookup;
 
     if (info.compMatchedVM)
     {
-        addr = info.compCompHnd->getHelperFtn(ftnNum, ppIndirection);
+        info.compCompHnd->getHelperFtn(ftnNum, &lookup);
+        // The JIT only expects these two possible access types
+        assert(lookup.accessType == IAT_VALUE || lookup.accessType == IAT_PVALUE);
     }
     else
     {
         // If we don't have a matched VM, we won't get valid results when asking for a helper function.
-        addr = (void*)(uintptr_t)(0xCA11CA11); // "callcall"
+        lookup.addr       = (void*)(uintptr_t)(0xCA11CA11); // "callcall"
+        lookup.accessType = IAT_VALUE;
     }
 
-    return addr;
+    return lookup;
 }
 
 unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)

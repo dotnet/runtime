@@ -72,7 +72,7 @@ TailCallTls::TailCallTls()
 }
 
 #ifndef _MSC_VER
-__thread RuntimeThreadLocals t_runtime_thread_locals;
+PLATFORM_THREAD_LOCAL RuntimeThreadLocals t_runtime_thread_locals;
 #endif
 
 Thread* STDCALL GetThreadHelper()
@@ -345,7 +345,7 @@ bool Thread::DetectHandleILStubsForDebugger()
 }
 
 #ifndef _MSC_VER
-__thread ThreadLocalInfo t_CurrentThreadInfo;
+PLATFORM_THREAD_LOCAL ThreadLocalInfo t_CurrentThreadInfo;
 #endif // _MSC_VER
 
 #ifndef DACCESS_COMPILE
