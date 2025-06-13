@@ -68,7 +68,7 @@ internal unsafe partial struct QUIC_CONNECTION_EVENT
         };
 }
 
-internal unsafe partial struct QUIC_STREAM_EVENT
+internal partial struct QUIC_STREAM_EVENT
 {
     public override string ToString()
         => Type switch

@@ -140,6 +140,9 @@ export function cleanupClient () {
 }
 
 export function setupJsClient (client:IDiagnosticClient) {
+    if (nextJsClient.promise_control.isDone) {
+        throw new Error("multiple clients in parallel are not allowed");
+    }
     nextJsClient.promise_control.resolve(client);
 }
 

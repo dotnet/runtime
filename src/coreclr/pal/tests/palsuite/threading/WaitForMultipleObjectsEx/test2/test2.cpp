@@ -55,7 +55,7 @@ PALTEST(threading_WaitForMultipleObjectsEx_test2_paltest_waitformultipleobjectse
     RunTest_WFMO_test2(TRUE);
     // Make sure that the wait returns in time greater than interrupt and less than
     // wait timeout
-    if ( 
+    if (
         ((ThreadWaitDelta_WFMO_test2 >= ChildThreadWaitTime) && (ThreadWaitDelta_WFMO_test2 - ChildThreadWaitTime) > TOLERANCE)
         || (( ThreadWaitDelta_WFMO_test2 < InterruptTime) && (InterruptTime - ThreadWaitDelta_WFMO_test2) > TOLERANCE)
         )
@@ -176,7 +176,7 @@ DWORD PALAPI WaiterProc_WFMO_test2(LPVOID lpParameter)
             "Expected return of WAIT_TIMEOUT, got %d.\n", ret);
     }
 
-    ThreadWaitDelta_WFMO_test2 = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);;
+    ThreadWaitDelta_WFMO_test2 = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);
 
     ret = CloseHandle(Semaphore);
     if (!ret)

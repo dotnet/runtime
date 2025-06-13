@@ -15,7 +15,7 @@
 #include "forward_declarations.h"
 #include "RhConfig.h"
 
-#include "PalRedhawkCommon.h"
+#include "PalLimitedContext.h"
 #include "slist.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -405,7 +405,7 @@ FCIMPLEND
 
 // The MethodTable is remembered in some slow-path allocation paths. This value is used in event tracing.
 // It may statistically correlate with the most allocated type on the given stack/thread.
-DECLSPEC_THREAD
+static PLATFORM_THREAD_LOCAL
 MethodTable* tls_pLastAllocationEEType = NULL;
 
 MethodTable* GetLastAllocEEType()
@@ -655,7 +655,7 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
 //  numElements     -  number of array elements
 //  pTransitionFrame-  transition frame to make stack crawlable
 // Returns a pointer to the object allocated or NULL on failure.
-EXTERN_C void* F_CALL_CONV RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame)
+EXTERN_C void* RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 

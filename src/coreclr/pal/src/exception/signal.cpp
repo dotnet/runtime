@@ -558,8 +558,13 @@ extern "C" void signal_handler_worker(int code, siginfo_t *siginfo, void *contex
     // fault. We must disassemble the instruction at record.ExceptionAddress
     // to correctly fill in this value.
 
-    // Unmask the activation signal now that we are running on the original stack of the thread
-    UnmaskActivationSignal();
+    if (code != (SIGSEGV | StackOverflowFlag))
+    {
+        // Unmask the activation signal now that we are running on the original stack of the thread
+        // except for the stack overflow case when we are actually running on a special stack overflow
+        // stack.
+        UnmaskActivationSignal();
+    }
 
     returnPoint->returnFromHandler = common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr);
 

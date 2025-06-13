@@ -19,15 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 14
+#define READYTORUN_MAJOR_VERSION 15
 #define READYTORUN_MINOR_VERSION 0x0000
 
-// Remove the x86 special case once the general minimum version is bumped
-#ifdef TARGET_X86
-#define MINIMUM_READYTORUN_MAJOR_VERSION 14
-#else
-#define MINIMUM_READYTORUN_MAJOR_VERSION 13
-#endif
+#define MINIMUM_READYTORUN_MAJOR_VERSION 15
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -50,6 +45,7 @@
 //                to be SP/FP relative
 // R2R Version 13.1 added long/ulong to float helper calls
 // R2R Version 14 changed x86 code generation to use funclets
+// R2R Version 15 removes double to int/uint helper calls
 
 struct READYTORUN_CORE_HEADER
 {
@@ -293,6 +289,9 @@ enum ReadyToRunFixupKind
 
     READYTORUN_FIXUP_Check_IL_Body              = 0x35, /* Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. */
     READYTORUN_FIXUP_Verify_IL_Body             = 0x36, /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
+
+    READYTORUN_FIXUP_ModuleOverride             = 0x80, /* followed by sig-encoded UInt with assemblyref index into either the assemblyref table of the MSIL metadata of the master context module for the signature or */
+                                                        /* into the extra assemblyref table in the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the MSIL). */
 };
 
 //
@@ -407,11 +406,11 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_UMod                      = 0xCF,
 
     // Floating point conversions
-    READYTORUN_HELPER_Dbl2Int                   = 0xD0,
+    READYTORUN_HELPER_Dbl2Int                   = 0xD0, // Unused since READYTORUN_MAJOR_VERSION 15.0
     READYTORUN_HELPER_Dbl2IntOvf                = 0xD1,
     READYTORUN_HELPER_Dbl2Lng                   = 0xD2,
     READYTORUN_HELPER_Dbl2LngOvf                = 0xD3,
-    READYTORUN_HELPER_Dbl2UInt                  = 0xD4,
+    READYTORUN_HELPER_Dbl2UInt                  = 0xD4, // Unused since READYTORUN_MAJOR_VERSION 15.0
     READYTORUN_HELPER_Dbl2UIntOvf               = 0xD5,
     READYTORUN_HELPER_Dbl2ULng                  = 0xD6,
     READYTORUN_HELPER_Dbl2ULngOvf               = 0xD7,
