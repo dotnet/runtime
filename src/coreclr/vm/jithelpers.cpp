@@ -212,36 +212,6 @@ HCIMPL1_V(int64_t, JIT_Dbl2Lng, double val)
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL1_V(uint32_t, JIT_Dbl2UInt, double val)
-{
-    FCALL_CONTRACT;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    const double uint_max = 4294967295.0;
-    // Note that this expression also works properly for val = NaN case
-    return (val >= 0) ? ((val >= uint_max) ? UINT32_MAX : (uint32_t)val) : 0;
-#else
-    return (uint32_t)val;
-#endif
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(int32_t, JIT_Dbl2Int, double val)
-{
-    FCALL_CONTRACT;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    const double int32_min = -2147483648.0;
-    const double int32_max_plus_1 = 2147483648.0;
-    return (val != val) ? 0 : (val <= int32_min) ? INT32_MIN : (val >= int32_max_plus_1) ? INT32_MAX : (int32_t)val;
-#else
-    return (int32_t)val;
-#endif
-}
-HCIMPLEND
-
-/*********************************************************************/
 HCIMPL1_V(uint64_t, JIT_Dbl2ULng, double val)
 {
     FCALL_CONTRACT;
@@ -344,15 +314,11 @@ HCIMPLEND
 //
 //========================================================================
 
-// Define the t_ThreadStatics variable here, so that these helpers can use
-// the most optimal TLS access pattern for the platform when inlining the
-// GetThreadLocalStaticBaseIfExistsAndInitialized function.
 // Using compiler specific thread local storage directives due to linkage issues.
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread) ThreadLocalData t_ThreadStatics;
-#else
-__thread ThreadLocalData t_ThreadStatics;
+__declspec(selectany)
 #endif // _MSC_VER
+PLATFORM_THREAD_LOCAL ThreadLocalData t_ThreadStatics;
 
 extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, bool gcStatic)
 {
@@ -594,13 +560,11 @@ extern "C" void QCALLTYPE ThrowInvalidCastException(CORINFO_CLASS_HANDLE pTarget
 //
 //========================================================================
 
-extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
+CORINFO_GENERIC_HANDLE GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
 {
-    QCALL_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
     CORINFO_GENERIC_HANDLE result = NULL;
-
-    BEGIN_QCALL;
 
     _ASSERTE(pMT != NULL || pMD != NULL);
     _ASSERTE(pMT == NULL || pMD == NULL);
@@ -663,6 +627,19 @@ extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE GenericHandleWorker(MethodDesc * pMD
             InterlockedExchangeT(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDeclaringMTDictionary);
         }
     }
+
+    return result;
+}
+
+extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
+{
+    QCALL_CONTRACT;
+
+    CORINFO_GENERIC_HANDLE result = NULL;
+
+    BEGIN_QCALL;
+
+    result = GenericHandleWorkerCore(pMD, pMT, signature, dictionaryIndexAndSlot, pModule);
 
     END_QCALL;
 

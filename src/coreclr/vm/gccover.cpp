@@ -437,44 +437,16 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
 
 void ReplaceInstrAfterCall(PBYTE instrToReplace, MethodDesc* callMD)
 {
-    ReturnKind returnKind = callMD->GetReturnKind(true);
+    ReturnKind returnKind = callMD->GetReturnKind();
     if (!IsValidReturnKind(returnKind))
     {
         // SKip GC coverage after the call.
         return;
     }
-    _ASSERTE(IsValidReturnKind(returnKind));
 
-    bool ispointerKind = IsPointerReturnKind(returnKind);
-    if (ispointerKind)
+    if (IsPointerReturnKind(returnKind))
     {
-        bool protectRegister[2] = { false, false };
-
-        bool moreRegisters = false;
-
-        ReturnKind fieldKind1 = ExtractRegReturnKind(returnKind, 0, moreRegisters);
-        if (IsPointerFieldReturnKind(fieldKind1))
-        {
-            protectRegister[0] = true;
-        }
-        if (moreRegisters)
-        {
-            ReturnKind fieldKind2 = ExtractRegReturnKind(returnKind, 1, moreRegisters);
-            if (IsPointerFieldReturnKind(fieldKind2))
-            {
-                protectRegister[1] = true;
-            }
-        }
-        _ASSERTE(!moreRegisters);
-
-        if (protectRegister[0] && !protectRegister[1])
-        {
-            *instrToReplace = INTERRUPT_INSTR_PROTECT_FIRST_RET;
-        }
-        else
-        {
-            _ASSERTE(!"Not expected multi reg return with pointers.");
-        }
+        *instrToReplace = INTERRUPT_INSTR_PROTECT_FIRST_RET;
     }
     else
     {

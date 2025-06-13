@@ -77,7 +77,7 @@ NewOutOfMemory:
         jmp         RhExceptionHandling_FailedAllocation
 FASTCALL_ENDFUNC
 
-; Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArrayFast
+; Shared code for RhNewString, RhpNewArrayFast and RhpNewPtrArrayFast
 ;  EAX == string/array size
 ;  ECX == MethodTable
 ;  EDX == character/element count
@@ -204,15 +204,14 @@ ArraySizeOverflow:
         jmp         RhExceptionHandling_FailedAllocation
 FASTCALL_ENDFUNC
 
-IFNDEF FEATURE_NATIVEAOT
-; Allocate one dimensional, zero based array (SZARRAY) of objects (pointer sized elements).
+; Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements.
 ;  ECX == MethodTable
 ;  EDX == element count
-FASTCALL_FUNC   RhpNewObjectArrayFast, 8
+FASTCALL_FUNC   RhpNewPtrArrayFast, 8
         ; Delegate overflow handling to the generic helper conservatively
 
         cmp         edx, (40000000h / 4) ; sizeof(void*)
-        jae         @RhpNewVariableSizeObject@8
+        jae         @RhpNewArrayFast@8
 
         ; In this case we know the element size is sizeof(void *), or 4 for x86
         ; This helps us in two ways - we can shift instead of multiplying, and
@@ -223,7 +222,6 @@ FASTCALL_FUNC   RhpNewObjectArrayFast, 8
         NEW_ARRAY_FAST_PROLOG
         NEW_ARRAY_FAST
 FASTCALL_ENDFUNC
-ENDIF
 
 ;
 ; Object* RhpNewVariableSizeObject(MethodTable *pMT, INT_PTR size)
