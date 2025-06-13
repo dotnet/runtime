@@ -7879,16 +7879,11 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     else if (node->OperIs(GT_MUL_LONG))
     {
         hasImpliedFirstOperand = true;
-        // GT_MUL_LONG produce ULONG or LONG but work on UINT or INT
-        if (nodeType == TYP_LONG)
-        {
-            nodeType = TYP_INT;
-        }
-        else
-        {
-            assert(nodeType == TYP_ULONG);
-            nodeType = TYP_UINT;
-        }
+        // GT_MUL_LONG produce LONG but work on INT
+        assert (nodeType == TYP_LONG);
+        assert (op1->TypeIs(TYP_INT));
+        assert (op2->TypeIs(TYP_INT));
+        nodeType = TYP_INT;
     }
 #endif
     else if (IsContainableImmed(node, op2) || IsContainableImmed(node, op1))
