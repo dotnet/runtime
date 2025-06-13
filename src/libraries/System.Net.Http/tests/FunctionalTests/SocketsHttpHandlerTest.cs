@@ -28,6 +28,26 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+    public class CertificateSetup : IDisposable
+    {
+        public X509Certificate2 ServerCert => _pkiHolder.EndEntity;
+        public X509Certificate2Collection ServerChain => _pkiHolder.IssuerChain;
+
+        private readonly Configuration.Certificates.PkiHolder _pkiHolder;
+
+        public CertificateSetup()
+        {
+            _pkiHolder = Configuration.Certificates.GenerateCertificates("localhost", nameof(HttpClientHandlerTestBase), longChain: true);
+        }
+
+        public SslStreamCertificateContext CreateSslStreamCertificateContext() => _pkiHolder.CreateSslStreamCertificateContext();
+
+        public void Dispose()
+        {
+            _pkiHolder.Dispose();
+        }
+    }
+
     public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http11 : SocketsHttpHandler_HttpClientHandler_Asynchrony_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http11(ITestOutputHelper output) : base(output) { }
@@ -2475,7 +2495,7 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.True(options.AllowRenegotiation);
                 Assert.Null(options.ApplicationProtocols);
-                Assert.Equal(X509RevocationMode.NoCheck, options.CertificateRevocationCheckMode);
+                Assert.Equal(X509RevocationMode.Online, options.CertificateRevocationCheckMode);
                 Assert.Null(options.ClientCertificates);
                 Assert.Equal(SslProtocols.None, options.EnabledSslProtocols);
                 Assert.Equal(EncryptionPolicy.RequireEncryption, options.EncryptionPolicy);
@@ -4339,15 +4359,17 @@ namespace System.Net.Http.Functional.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public abstract class SocketsHttpHandler_SecurityTest : HttpClientHandlerTestBase
     {
-        public SocketsHttpHandler_SecurityTest(ITestOutputHelper output) : base(output) { }
+        private readonly CertificateSetup _certificateSetup;
+
+        public SocketsHttpHandler_SecurityTest(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output)
+        {
+            _certificateSetup = certificateSetup;
+        }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         public async Task SslOptions_CustomTrust_Ok()
         {
-            X509Certificate2Collection caCerts = new X509Certificate2Collection();
-            X509Certificate2 certificate = Configuration.Certificates.GetDynamicServerCerttificate(caCerts);
-
-            GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = true, Certificate = certificate };
+            GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = true, Certificate = new X509Certificate2(_certificateSetup.ServerCert) };
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
@@ -4360,8 +4382,8 @@ namespace System.Net.Http.Functional.Tests
                         TrustMode = X509ChainTrustMode.CustomRootTrust,
                     };
 
-                    policy.ExtraStore.AddRange(caCerts);
-                    policy.CustomTrustStore.Add(caCerts[caCerts.Count - 1]);
+                    policy.ExtraStore.AddRange(_certificateSetup.ServerChain);
+                    policy.CustomTrustStore.Add(_certificateSetup.ServerChain[^1]);
                     socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy };
                     using HttpClient client = CreateHttpClient(handler);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
@@ -4380,15 +4402,22 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SslOptions_InvalidName_Throws()
         {
-            X509Certificate2Collection caCerts = new X509Certificate2Collection();
-            using X509Certificate2 certificate = Configuration.Certificates.GetDynamicServerCerttificate(caCerts);
-
-            GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = true, Certificate = certificate };
+            GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = true, Certificate = new X509Certificate2(_certificateSetup.ServerCert) };
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
                     using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: false);
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+
+                    var policy = new X509ChainPolicy()
+                    {
+                        RevocationMode = X509RevocationMode.NoCheck,
+                        TrustMode = X509ChainTrustMode.CustomRootTrust,
+                    };
+
+                    policy.ExtraStore.AddRange(_certificateSetup.ServerChain);
+                    policy.CustomTrustStore.Add(_certificateSetup.ServerChain[^1]);
+                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy };
                     using HttpClient client = CreateHttpClient(handler);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact };
@@ -4403,17 +4432,15 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
                     }
-                    catch { };
+                    catch { }
+                    ;
                 }, options: options);
         }
 
         [Fact]
         public async Task SslOptions_CustomPolicy_IgnoresNameMismatch()
         {
-            X509Certificate2Collection caCerts = new X509Certificate2Collection();
-            X509Certificate2 certificate = Configuration.Certificates.GetDynamicServerCerttificate(caCerts);
-
-            GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = true, Certificate = certificate };
+            GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = true, Certificate = new X509Certificate2(_certificateSetup.ServerCert) };
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
@@ -4427,8 +4454,8 @@ namespace System.Net.Http.Functional.Tests
                         VerificationFlags = X509VerificationFlags.IgnoreInvalidName,
                     };
 
-                    policy.ExtraStore.AddRange(caCerts);
-                    policy.CustomTrustStore.Add(caCerts[caCerts.Count - 1]);
+                    policy.ExtraStore.AddRange(_certificateSetup.ServerChain);
+                    policy.CustomTrustStore.Add(_certificateSetup.ServerChain[^1]);
                     socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy };
 
                     using HttpClient client = CreateHttpClient(handler);
@@ -4447,9 +4474,9 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http11 : SocketsHttpHandler_SecurityTest
+    public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http11 : SocketsHttpHandler_SecurityTest, IClassFixture<CertificateSetup>
     {
-        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http11(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http11(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
         protected override Version UseVersion => HttpVersion.Version11;
 
 #if DEBUG
@@ -4499,16 +4526,17 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-    public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http2 : SocketsHttpHandler_SecurityTest
+    public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http2 : SocketsHttpHandler_SecurityTest, IClassFixture<CertificateSetup>
     {
-        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http2(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http2(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
+
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3 : SocketsHttpHandler_SecurityTest
+    public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3 : SocketsHttpHandler_SecurityTest, IClassFixture<CertificateSetup>
     {
-        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 

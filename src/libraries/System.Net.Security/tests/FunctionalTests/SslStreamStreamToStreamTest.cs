@@ -461,7 +461,7 @@ namespace System.Net.Security.Tests
         protected override async Task DoHandshake(SslStream clientSslStream, SslStream serverSslStream, X509Certificate serverCertificate = null, X509Certificate clientCertificate = null)
         {
             X509CertificateCollection clientCerts = clientCertificate != null ? new X509CertificateCollection() { clientCertificate } : null;
-            await WithServerCertificate(serverCertificate, async(certificate, name) =>
+            await WithServerCertificate(serverCertificate, async (certificate, name) =>
             {
                 Task t1 = clientSslStream.AuthenticateAsClientAsync(name, clientCerts, SslProtocols.None, checkCertificateRevocation: false);
                 Task t2 = serverSslStream.AuthenticateAsServerAsync(certificate, clientCertificateRequired: clientCertificate != null, checkCertificateRevocation: false);
@@ -626,10 +626,13 @@ namespace System.Net.Security.Tests
                     TargetHost = name,
                     ClientCertificates = clientCerts,
                     EnabledSslProtocols = SslProtocols.None,
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck
                 };
                 SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
                 {
-                    ServerCertificate = certificate, ClientCertificateRequired = clientCertificate != null,
+                    ServerCertificate = certificate,
+                    ClientCertificateRequired = clientCertificate != null,
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck
                 };
                 Task t1 = Task.Run(() => clientSslStream.AuthenticateAsClient(clientOptions));
                 Task t2 = Task.Run(() => serverSslStream.AuthenticateAsServer(serverOptions));
@@ -643,10 +646,20 @@ namespace System.Net.Security.Tests
         protected override async Task DoHandshake(SslStream clientSslStream, SslStream serverSslStream, X509Certificate serverCertificate = null, X509Certificate clientCertificate = null)
         {
             X509CertificateCollection clientCerts = clientCertificate != null ? new X509CertificateCollection() { clientCertificate } : null;
-            await WithServerCertificate(serverCertificate, async(certificate, name) =>
+            await WithServerCertificate(serverCertificate, async (certificate, name) =>
             {
-                Task t1 = clientSslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions() { TargetHost = name, ClientCertificates = clientCerts }, CancellationToken.None);
-                Task t2 = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions() { ServerCertificate = certificate, ClientCertificateRequired = clientCertificate != null }, CancellationToken.None);
+                Task t1 = clientSslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions()
+                {
+                    TargetHost = name,
+                    ClientCertificates = clientCerts,
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck
+                }, CancellationToken.None);
+                Task t2 = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions()
+                {
+                    ServerCertificate = certificate,
+                    ClientCertificateRequired = clientCertificate != null,
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck
+                }, CancellationToken.None);
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
             });
         }
