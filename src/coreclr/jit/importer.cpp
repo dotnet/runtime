@@ -9999,8 +9999,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             typGetObjLayout(elemClsHnd);
                             info.compCompHnd->isValueClass(elemClsHnd);
                         }
-                        void* pIndirection;
-                        info.compCompHnd->getHelperFtn(CORINFO_HELP_MEMZERO, &pIndirection);
+                        compGetHelperFtn(CORINFO_HELP_MEMZERO);
                     }
 #endif
                 }

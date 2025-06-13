@@ -27,7 +27,7 @@ namespace System.Security.Cryptography
 #pragma warning restore SA1001
 #endif
     {
-        private static readonly string[] s_knownOids =
+        private protected static readonly string[] KnownOids =
         [
             Oids.MLDsa44,
             Oids.MLDsa65,
@@ -907,7 +907,7 @@ namespace System.Security.Cryptography
             ThrowIfInvalidLength(source);
             ThrowIfNotSupported();
 
-            KeyFormatHelper.ReadPkcs8(s_knownOids, source, MLDsaKeyReader, out int read, out MLDsa dsa);
+            KeyFormatHelper.ReadPkcs8(KnownOids, source, MLDsaKeyReader, out int read, out MLDsa dsa);
             Debug.Assert(read == source.Length);
             return dsa;
         }
