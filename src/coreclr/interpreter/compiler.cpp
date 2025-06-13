@@ -2554,23 +2554,17 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
                 }
                 m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
             }
+            else if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && newObj)
+            {
+                AddIns(INTOP_NEWMDARR);
+                m_pLastNewIns->data[0] = GetDataItemIndex(resolvedCallToken.hClass);
+                m_pLastNewIns->data[1] = callInfo.sig.numArgs;
+            }
             else if (isCalli)
             {
                 AddIns(INTOP_CALLI);
                 m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
                 m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
-            }
-            else if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && !readonly)
-            {
-                CORINFO_SIG_INFO ctorSignature;
-                CORINFO_CLASS_HANDLE ctorClass;
-
-                m_compHnd->getMethodSig(resolvedCallToken.hMethod, &ctorSignature);
-                ctorClass = m_compHnd->getMethodClass(resolvedCallToken.hMethod);
-
-                AddIns(INTOP_NEWMDARR);
-                m_pLastNewIns->data[0] = GetDataItemIndex(ctorClass);
-                m_pLastNewIns->data[1] = numArgs;
             }
             else
             {
