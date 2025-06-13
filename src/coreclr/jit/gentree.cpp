@@ -32792,6 +32792,17 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     break;
                 }
 
+#if defined(TARGET_ARM64)
+                if (ni == NI_Sve_ConditionalSelect)
+                {
+                    assert(!op1->IsVectorAllBitsSet() && !op1->IsVectorZero());
+                }
+                else
+                {
+                    assert(!op1->IsTrueMask(simdBaseType) && !op1->IsFalseMask());
+                }
+#endif
+
                 if (op1->IsVectorAllBitsSet() || op1->IsTrueMask(simdBaseType))
                 {
                     if ((op3->gtFlags & GTF_SIDE_EFFECT) != 0)
