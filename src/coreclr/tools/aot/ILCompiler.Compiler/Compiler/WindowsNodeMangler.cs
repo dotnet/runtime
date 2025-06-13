@@ -101,7 +101,7 @@ namespace ILCompiler
             }
             else
             {
-                Debug.Assert(method is Internal.TypeSystem.Ecma.EcmaMethod ecmaMethod && (ecmaMethod.GetRuntimeImportName() != null || ecmaMethod.GetRuntimeExportName() != null));
+                Debug.Assert(method is Internal.TypeSystem.Ecma.EcmaMethod ecmaMethod && (ecmaMethod.GetRuntimeImportName() != null || ecmaMethod.GetRuntimeExportInfo().Name != null));
                 return unmangledName;
             }
 

@@ -40,24 +40,37 @@ namespace ILCompiler
             return null;
         }
 
-        public static string GetRuntimeExportName(this EcmaMethod This)
+        public static RuntimeExportInfo GetRuntimeExportInfo(this EcmaMethod This)
         {
             var decoded = This.GetDecodedCustomAttribute("System.Runtime", "RuntimeExportAttribute");
             if (decoded == null)
-                return null;
+                return default;
 
             var decodedValue = decoded.Value;
 
-            if (decodedValue.FixedArguments.Length != 0)
-                return (string)decodedValue.FixedArguments[0].Value;
+            RuntimeExportInfo exportInfo = default;
 
+            if (decodedValue.FixedArguments.Length != 0)
+            {
+                exportInfo.Name = (string)decodedValue.FixedArguments[0].Value;
+            }
             foreach (var argument in decodedValue.NamedArguments)
             {
                 if (argument.Name == "EntryPoint")
-                    return (string)argument.Value;
+                {
+                    exportInfo.Name = (string)argument.Value;
+                }
+                else if (argument.Name == "Weak")
+                {
+                    exportInfo.Weak = (bool)argument.Value;
+                }
+                else if (argument.Name == "ConditionalConstructedDependency")
+                {
+                    exportInfo.ConditionalConstructedDependency = (TypeDesc)argument.Value;
+                }
             }
 
-            return null;
+            return exportInfo;
         }
 
         public static string GetUnmanagedCallersOnlyExportName(this EcmaMethod This)
@@ -135,5 +148,12 @@ namespace ILCompiler
                 (owningType is not MetadataType mdType || !mdType.IsModuleType) && /* Compiler parks some instance methods on the <Module> type */
                 !method.IsSharedByGenericInstantiations; /* Current impl limitation; can be lifted */
         }
+    }
+
+    public struct RuntimeExportInfo
+    {
+        public string Name;
+        public bool Weak;
+        public TypeDesc ConditionalConstructedDependency;
     }
 }
