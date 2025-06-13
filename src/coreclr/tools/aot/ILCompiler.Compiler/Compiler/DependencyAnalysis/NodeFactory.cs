@@ -1468,15 +1468,15 @@ namespace ILCompiler.DependencyAnalysis
         /// Returns alternative symbol name that object writer should produce for given symbols
         /// in addition to the regular one.
         /// </summary>
-        public string GetSymbolAlternateName(ISymbolNode node, out SymbolFlags flags)
+        public string GetSymbolAlternateName(ISymbolNode node, out bool hidden)
         {
             if (!NodeAliases.TryGetValue(node, out var value))
             {
-                flags = SymbolFlags.None;
+                hidden = false;
                 return null;
             }
 
-            flags = value.Flags;
+            hidden = value.Hidden;
             return value.Name;
         }
 
@@ -1500,7 +1500,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
-        public Dictionary<ISymbolNode, (string Name, SymbolFlags Flags)> NodeAliases = new Dictionary<ISymbolNode, (string, SymbolFlags)>();
+        public Dictionary<ISymbolNode, (string Name, bool Hidden)> NodeAliases = new Dictionary<ISymbolNode, (string, bool)>();
 
         protected internal TypeManagerIndirectionNode TypeManagerIndirection = new TypeManagerIndirectionNode();
 

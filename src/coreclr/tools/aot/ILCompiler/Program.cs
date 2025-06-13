@@ -630,15 +630,7 @@ namespace ILCompiler
                     {
                         if (compilationRoot is UnmanagedEntryPointsRootProvider provider && !provider.Hidden)
                         {
-                            List<EcmaMethod> exportedMethods = [];
-                            foreach (var (method, flags) in provider.ExportedMethods)
-                            {
-                                if (method.IsUnmanagedCallersOnly)
-                                {
-                                    exportedMethods.Add(method);
-                                }
-                            }
-                            defFileWriter.AddExportedMethods(exportedMethods);
+                            defFileWriter.AddExportedMethods(provider.ExportedMethods);
                         }
                     }
                 }

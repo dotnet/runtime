@@ -23,7 +23,7 @@ namespace ILCompiler
             _rootAdder = rootAdder;
         }
 
-        public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null, SymbolFlags flags = SymbolFlags.None)
+        public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null, bool hidden = false)
         {
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             IMethodNode methodEntryPoint = _factory.MethodEntrypoint(canonMethod);
@@ -32,7 +32,7 @@ namespace ILCompiler
             if (exportName != null)
             {
                 exportName = _factory.NameMangler.NodeMangler.ExternMethod(exportName, method);
-                _factory.NodeAliases.Add(methodEntryPoint, (exportName, flags));
+                _factory.NodeAliases.Add(methodEntryPoint, (exportName, hidden));
             }
 
             if (canonMethod != method && method.HasInstantiation)
@@ -145,7 +145,7 @@ namespace ILCompiler
             var blob = _factory.ReadOnlyDataBlob("__readonlydata_" + exportName, data, alignment);
             _rootAdder(blob, reason);
             exportName = _factory.NameMangler.NodeMangler.ExternVariable(exportName);
-            _factory.NodeAliases.Add(blob, (exportName, exportHidden ? SymbolFlags.Hidden : SymbolFlags.None));
+            _factory.NodeAliases.Add(blob, (exportName, exportHidden));
         }
 
         public void RootDelegateMarshallingData(DefType type, string reason)

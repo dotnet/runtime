@@ -11,7 +11,7 @@ namespace ILCompiler
     /// </summary>
     public interface IRootingServiceProvider
     {
-        void AddCompilationRoot(MethodDesc method, string reason, string exportName = null, SymbolFlags flags = SymbolFlags.None);
+        void AddCompilationRoot(MethodDesc method, string reason, string exportName = null, bool hidden = false);
         void AddCompilationRoot(TypeDesc type, string reason);
         void AddReflectionRoot(TypeDesc type, string reason);
         void AddReflectionRoot(MethodDesc method, string reason);

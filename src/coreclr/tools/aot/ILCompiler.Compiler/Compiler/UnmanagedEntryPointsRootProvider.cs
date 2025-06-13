@@ -25,19 +25,7 @@ namespace ILCompiler
 
         public bool Hidden { get; }
 
-        public struct ExportedMethodInfo
-        {
-            public EcmaMethod Method { get; init; }
-            public SymbolFlags Flags { get; init; }
-
-            public void Deconstruct(out EcmaMethod method, out SymbolFlags flags)
-            {
-                method = Method;
-                flags = Flags;
-            }
-        }
-
-        public IEnumerable<ExportedMethodInfo> ExportedMethods
+        public IEnumerable<EcmaMethod> ExportedMethods
         {
             get
             {
@@ -61,8 +49,7 @@ namespace ILCompiler
 
                         if (exportInfo.Name != null)
                         {
-                            SymbolFlags flags = Hidden ? SymbolFlags.Hidden : SymbolFlags.None;
-                            yield return new ExportedMethodInfo { Method = method, Flags = flags };
+                            yield return method;
                         }
                     }
 
@@ -71,7 +58,7 @@ namespace ILCompiler
                     {
                         var method = (EcmaMethod)_module.GetMethod(ca.Parent);
                         if (method.GetUnmanagedCallersOnlyExportName() != null)
-                            yield return new ExportedMethodInfo { Method = method, Flags = Hidden ? SymbolFlags.Hidden : SymbolFlags.None };
+                            yield return method;
                     }
                 }
             }
@@ -79,12 +66,12 @@ namespace ILCompiler
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            foreach (var (ecmaMethod, exportedFlags) in ExportedMethods)
+            foreach (var ecmaMethod in ExportedMethods)
             {
                 if (ecmaMethod.GetUnmanagedCallersOnlyExportName() != null)
                 {
                     string unmanagedCallersOnlyExportName = ecmaMethod.GetUnmanagedCallersOnlyExportName();
-                    rootProvider.AddCompilationRoot(ecmaMethod, "Native callable", unmanagedCallersOnlyExportName, exportedFlags);
+                    rootProvider.AddCompilationRoot(ecmaMethod, "Native callable", unmanagedCallersOnlyExportName, Hidden);
                 }
                 else
                 {
@@ -92,17 +79,17 @@ namespace ILCompiler
 
                     if (runtimeExportInfo.ConditionalConstructedDependency is null)
                     {
-                        rootProvider.AddCompilationRoot(ecmaMethod, "Runtime export", runtimeExportInfo.Name, exportedFlags);
+                        rootProvider.AddCompilationRoot(ecmaMethod, "Runtime export", runtimeExportInfo.Name, Hidden);
                     }
                     else
                     {
-                        rootProvider.AddCompilationRoot(new ConditionalRuntimeExportNode(ecmaMethod, runtimeExportInfo.Name, exportedFlags, runtimeExportInfo.ConditionalConstructedDependency), "Runtime export");
+                        rootProvider.AddCompilationRoot(new ConditionalRuntimeExportNode(ecmaMethod, runtimeExportInfo.Name, Hidden, runtimeExportInfo.ConditionalConstructedDependency), "Runtime export");
                     }
                 }
             }
         }
 
-        private sealed class ConditionalRuntimeExportNode(EcmaMethod method, string exportName, SymbolFlags flags, TypeDesc dependency) : DependencyNodeCore<NodeFactory>
+        private sealed class ConditionalRuntimeExportNode(EcmaMethod method, string exportName, bool hidden, TypeDesc dependency) : DependencyNodeCore<NodeFactory>
         {
             public override bool StaticDependenciesAreComputed => true;
             public override bool HasConditionalStaticDependencies => true;
@@ -122,7 +109,7 @@ namespace ILCompiler
                 if (exportName != null)
                 {
                     exportName = context.NameMangler.NodeMangler.ExternMethod(exportName, method);
-                    context.NodeAliases.Add(methodEntryPoint, (exportName, flags));
+                    context.NodeAliases.Add(methodEntryPoint, (exportName, hidden));
                 }
 
                 if (canonMethod != method && method.HasInstantiation)

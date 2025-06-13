@@ -413,14 +413,14 @@ namespace ILCompiler.ObjectWriter
                         n == node ? currentSymbolName : GetMangledName(n),
                         n.Offset + thumbBit,
                         n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0);
-                    if (_nodeFactory.GetSymbolAlternateName(n, out SymbolFlags flags) is string alternateName)
+                    if (_nodeFactory.GetSymbolAlternateName(n, out bool hidden) is string alternateName)
                     {
                         string alternateCName = ExternCName(alternateName);
                         sectionWriter.EmitSymbolDefinition(
                             alternateCName,
                             n.Offset + thumbBit,
                             n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0,
-                            global: !flags.HasFlag(SymbolFlags.Hidden));
+                            global: !hidden);
 
                         if (n is IMethodNode)
                         {

@@ -60,10 +60,6 @@ namespace ILCompiler
                 {
                     exportInfo.Name = (string)argument.Value;
                 }
-                else if (argument.Name == "Weak")
-                {
-                    exportInfo.Weak = (bool)argument.Value;
-                }
                 else if (argument.Name == "ConditionalConstructedDependency")
                 {
                     exportInfo.ConditionalConstructedDependency = (TypeDesc)argument.Value;
@@ -153,7 +149,6 @@ namespace ILCompiler
     public struct RuntimeExportInfo
     {
         public string Name;
-        public bool Weak;
         public TypeDesc ConditionalConstructedDependency;
     }
 }
