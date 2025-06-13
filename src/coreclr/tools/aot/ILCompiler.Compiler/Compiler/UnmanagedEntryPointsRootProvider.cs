@@ -62,8 +62,6 @@ namespace ILCompiler
                         if (exportInfo.Name != null)
                         {
                             SymbolFlags flags = Hidden ? SymbolFlags.Hidden : SymbolFlags.None;
-                            if (exportInfo.Weak)
-                                flags |= SymbolFlags.Weak;
                             yield return new ExportedMethodInfo { Method = method, Flags = flags };
                         }
                     }

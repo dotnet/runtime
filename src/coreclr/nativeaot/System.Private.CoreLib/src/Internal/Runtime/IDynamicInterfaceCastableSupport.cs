@@ -15,24 +15,6 @@ namespace Internal.Runtime
 {
     internal static unsafe class IDynamicCastableSupport
     {
-#pragma warning disable IDE0060 // Remove unused parameter
-        internal static unsafe class DefaultImplementation
-        {
-            [RuntimeExport("IDynamicCastableIsInterfaceImplemented", Weak = true)]
-            internal static bool IDynamicCastableIsInterfaceImplemented(object instance, MethodTable* interfaceType, bool throwIfNotImplemented)
-            {
-                return false;
-            }
-
-            [RuntimeExport("IDynamicCastableGetInterfaceImplementation", Weak = true)]
-            internal static IntPtr IDynamicCastableGetInterfaceImplementation(object instance, MethodTable* interfaceType, ushort slot)
-            {
-                InternalCalls.RhpFallbackFailFast();
-                return default;
-            }
-        }
-#pragma warning restore IDE0060 // Remove unused parameter
-
         [RuntimeExport("IDynamicCastableIsInterfaceImplemented", ConditionalConstructedDependency = typeof(IDynamicInterfaceCastable))]
         internal static bool IDynamicCastableIsInterfaceImplemented(IDynamicInterfaceCastable instance, MethodTable* interfaceType, bool throwIfNotImplemented)
         {

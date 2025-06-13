@@ -475,16 +475,6 @@ namespace ILCompiler.ObjectWriter
             foreach ((string name, SymbolDefinition definition) in definedSymbols)
             {
                 MachSection section = _sections[definition.SectionIndex];
-                byte type = (byte)(N_SECT | N_EXT);
-                if (definition.Flags.HasFlag(SymbolFlags.Hidden))
-                {
-                    type |= N_PEXT;
-                }
-                if (definition.Flags.HasFlag(SymbolFlags.Weak))
-                {
-                    type |= (byte)N_WEAK_DEF;
-                }
-
                 // Sections in our object file should not be altered during native linking as the runtime
                 // depends on the layout generated during compilation. For this reason we mark all symbols
                 // with N_NO_DEAD_STRIP to prevent breaking up sections into subsections during linking.
@@ -494,7 +484,7 @@ namespace ILCompiler.ObjectWriter
                     Section = section,
                     Value = section.VirtualAddress + (ulong)definition.Value,
                     Descriptor = N_NO_DEAD_STRIP,
-                    Type = type,
+                    Type = (byte)(N_SECT | N_EXT | (definition.Global ? 0 : N_PEXT)),
                 });
             }
             sortedDefinedSymbols.Sort((symA, symB) => string.CompareOrdinal(symA.Name, symB.Name));

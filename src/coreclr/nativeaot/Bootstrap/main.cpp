@@ -108,7 +108,7 @@ void* PalGetModuleHandleFromPointer(void* pointer);
 #define STRINGIFY(s) #s
 #define MANAGED_RUNTIME_EXPORT_ALTNAME(_method) STRINGIFY(/alternatename:_##_method=_method)
 #define MANAGED_RUNTIME_EXPORT(_name) \
-    __pragma(comment (linker, MANAGED_RUNTIME_EXPORT_ALTNAME(_name))) \
+    _Pragma(comment (linker, MANAGED_RUNTIME_EXPORT_ALTNAME(_name))) \
     extern "C" void __cdecl _name();
 #define MANAGED_RUNTIME_EXPORT_NAME(_name) _name
 #define CDECL __cdecl
@@ -133,6 +133,49 @@ MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetIsTrackedReferenceCallback)
 MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback)
 MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetUnhandledExceptionPropagationHandler)
 #endif
+
+// Define "default" implementations for IDynamicInterfaceCastable methods.
+// The runtime will only export these if IDynamicInterfaceCastable is used in the application.
+
+#if defined(HOST_WINDOWS)
+#if defined(HOST_X86)
+
+#pragma comment(linker, "/alternatename:_IDynamicCastableIsInterfaceImplemented=_IDynamicCastableIsInterfaceImplementedFallback")
+extern "C" void __cdecl IDynamicCastableIsInterfaceImplementedFallback()
+{
+    abort();
+}
+
+#pragma comment(linker, "/alternatename:_IDynamicCastableGetInterfaceImplementation=_IDynamicCastableGetInterfaceImplementationFallback")
+extern "C" void __cdecl IDynamicCastableGetInterfaceImplementationFallback()
+{
+    abort();
+}
+#else
+#pragma comment(linker, "/alternatename:IDynamicCastableIsInterfaceImplemented=IDynamicCastableIsInterfaceImplementedFallback")
+extern "C" void __cdecl IDynamicCastableIsInterfaceImplementedFallback()
+{
+    abort();
+}
+
+#pragma comment(linker, "/alternatename:IDynamicCastableGetInterfaceImplementation=IDynamicCastableGetInterfaceImplementationFallback")
+extern "C" void __cdecl IDynamicCastableGetInterfaceImplementationFallback()
+{
+    abort();
+}
+#endif // HOST_X86
+
+#else
+extern "C" __attribute__((weak)) void IDynamicCastableIsInterfaceImplemented()
+{
+    abort();
+}
+
+extern "C" __attribute__((weak)) void IDynamicCastableGetInterfaceImplementation()
+{
+    abort();
+}
+#endif // HOST_WINDOWS
 
 typedef void (CDECL *pfn)();
 

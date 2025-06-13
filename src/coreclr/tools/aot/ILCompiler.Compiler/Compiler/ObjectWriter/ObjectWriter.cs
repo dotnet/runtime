@@ -18,7 +18,7 @@ namespace ILCompiler.ObjectWriter
 {
     public abstract class ObjectWriter
     {
-        private protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, SymbolFlags Flags = SymbolFlags.Hidden);
+        private protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
         private protected sealed record SymbolicRelocation(long Offset, RelocType Type, string SymbolName, long Addend = 0);
         private protected sealed record BlockToRelocate(int SectionIndex, long Offset, byte[] Data, Relocation[] Relocations);
 
@@ -237,28 +237,11 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             long offset = 0,
             int size = 0,
-            SymbolFlags flags = SymbolFlags.Hidden)
+            bool global = false)
         {
-            SymbolDefinition newSymbol = new(sectionIndex, offset, size, flags);
-            if (_definedSymbols.TryGetValue(symbolName, out SymbolDefinition existingSymbol))
-            {
-                if (existingSymbol.Flags.HasFlag(SymbolFlags.Weak) && !flags.HasFlag(SymbolFlags.Weak))
-                {
-                    // If the existing symbol is weak, we can replace it with a strong symbol.
-                    _definedSymbols[symbolName] = newSymbol;
-                    return;
-                }
-                else if (flags.HasFlag(SymbolFlags.Weak))
-                {
-                    // If the new symbol is weak, we can ignore it.
-                    return;
-                }
-                // We have a conflict of two strong symbols.
-                // Fall through to the Add below that will throw.
-            }
             _definedSymbols.Add(
                 symbolName,
-                new SymbolDefinition(sectionIndex, offset, size, flags));
+                new SymbolDefinition(sectionIndex, offset, size, global));
         }
 
         /// <summary>
@@ -437,7 +420,7 @@ namespace ILCompiler.ObjectWriter
                             alternateCName,
                             n.Offset + thumbBit,
                             n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0,
-                            flags);
+                            global: !flags.HasFlag(SymbolFlags.Hidden));
 
                         if (n is IMethodNode)
                         {

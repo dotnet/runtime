@@ -98,6 +98,5 @@ namespace ILCompiler.DependencyAnalysis
     {
         None = 0,
         Hidden = 1 << 0, // Symbol should not be exported
-        Weak = 1 << 1, // Symbol is weak the implementation can be replaced by another symbol with the same name
     }
 }
