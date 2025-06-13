@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if defined(FEATURE_INTERPRETER) && defined(FEATURE_JIT)
+#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
 
 #include "callstubgenerator.h"
 #include "ecall.h"
@@ -1780,4 +1780,4 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
     return ReturnTypeVoid;
 }
 
-#endif // FEATURE_INTERPRETER && FEATURE_JIT
+#endif // FEATURE_INTERPRETER && !TARGET_WASM

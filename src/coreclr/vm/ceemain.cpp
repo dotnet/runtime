@@ -663,7 +663,7 @@ void EEStartupHelper()
 
         Thread::StaticInitialize();
 
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
         InitCallStubGenerator();
 #endif // FEATURE_INTERPRETER
 

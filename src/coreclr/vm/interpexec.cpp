@@ -20,7 +20,7 @@ FCDECL1(double, JIT_ULng2Dbl, uint64_t val);
 FCDECL1(float, JIT_Lng2Flt, int64_t val);
 FCDECL1(double, JIT_Lng2Dbl, int64_t val);
 
-#ifdef FEATURE_JIT
+#ifndef TARGET_WASM
 #include "callstubgenerator.h"
 
 void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
@@ -116,7 +116,7 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
     return pHeader;
 }
 
-#endif // FEATURE_JIT
+#endif // !TARGET_WASM
 
 typedef void* (*HELPER_FTN_PP)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
@@ -1481,6 +1481,7 @@ MAIN_LOOP:
 
                 case INTOP_CALLI:
                 {
+#ifndef TARGET_WASM
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     int32_t calliFunctionPointerVar = ip[3];
@@ -1490,6 +1491,9 @@ MAIN_LOOP:
                     ip += 5;
 
                     InvokeCalliStub(LOCAL_VAR(calliFunctionPointerVar, PCODE), pCallStub, stack + callArgsOffset, stack + returnOffset);
+#else
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Attempted to execute calli instruction on a non-JIT build"));
+#endif // TARGET_WASM
                     break;
                 }
 
@@ -1525,12 +1529,13 @@ CALL_INTERP_METHOD:
                         }
                         if (targetIp == NULL)
                         {
-#ifdef FEATURE_JIT
+#ifndef TARGET_WASM
                             // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
                             InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset);
 #else
-                        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Attempted to execute non-interpreter code from interpreter on a non-JIT build"));
-#endif // FEATURE_JIT                            break;
+                            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Attempted to execute non-interpreter code from interpreter on a non-JIT build"));
+#endif // !TARGET_WASM
+                            break;
                         }
                     }
 
