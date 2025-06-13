@@ -164,6 +164,10 @@
 #include "cdacplatformmetadata.hpp"
 #include "minipal/time.h"
 
+#ifdef FEATURE_INTERPRETER
+#include "callstubgenerator.h"
+#endif
+
 #ifndef TARGET_UNIX
 #include "dwreport.h"
 #endif // !TARGET_UNIX
@@ -658,6 +662,10 @@ void EEStartupHelper()
         }
 
         Thread::StaticInitialize();
+
+#ifdef FEATURE_INTERPRETER
+        InitCallStubGenerator();
+#endif // FEATURE_INTERPRETER
 
         JITInlineTrackingMap::StaticInitialize();
         MethodDescBackpatchInfoTracker::StaticInitialize();
