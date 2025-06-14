@@ -1226,7 +1226,7 @@ enum mcPackets
     Packet_NotifyInstructionSetUsage = 229,
     Packet_GetAsyncInfo = 230,
     Packet_GetAsyncResumptionStub = 231,
-    Packet_GetTargetVectorLength = 232,
+    Packet_GetCookieForInterpreterCalliSig = 232,
     Packet_GetHelperFtn = 233,
     Packet_GetTargetVectorLength = 234,
 };
