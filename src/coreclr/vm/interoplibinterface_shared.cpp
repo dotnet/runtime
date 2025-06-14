@@ -218,6 +218,7 @@ void Interop::TriggerClientBridgeProcessing(
     {
         NOTHROW;
         GC_NOTRIGGER;
+        PRECONDITION(GCHeapUtilities::IsGCInProgress());
     }
     CONTRACTL_END;
 
@@ -260,7 +261,7 @@ void Interop::TriggerClientBridgeProcessing(
 
 void Interop::FinishCrossReferenceProcessing(
     _In_ MarkCrossReferencesArgs *args,
-    _In_ int length,
+    _In_ size_t length,
     _In_ void* unreachableObjectHandles)
 {
     STANDARD_VM_CONTRACT;
@@ -274,7 +275,7 @@ void Interop::FinishCrossReferenceProcessing(
         GCHeapUtilities::GetGCHeap()->NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
 
         IGCHandleManager* pHandleManager = GCHandleUtilities::GetGCHandleManager();
-        for (int i = 0; i < length; i++)
+        for (size_t i = 0; i < length; i++)
             pHandleManager->DestroyHandleOfUnknownType(((OBJECTHANDLE*)unreachableObjectHandles)[i]);
 
         g_GCBridgeActive = FALSE;

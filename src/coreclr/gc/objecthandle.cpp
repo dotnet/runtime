@@ -1536,11 +1536,11 @@ void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* s
 
 static void NullBridgeObjectWeakRef(Object **handle, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2)
 {
-    int length = (int)param1;
+    size_t length = (size_t)param1;
     Object*** bridgeHandleArray = (Object***)param2;
 
     Object* weakRef = *handle;
-    for (int i = 0; i < length; i++)
+    for (size_t i = 0; i < length; i++)
     {
         Object* bridgeRef = *bridgeHandleArray[i];
         // FIXME Store these objects in a hashtable in order to optimize lookup
@@ -1552,7 +1552,7 @@ static void NullBridgeObjectWeakRef(Object **handle, uintptr_t *pExtraInfo, uint
     }
 }
 
-void Ref_NullBridgeObjectsWeakRefs(int length, void* unreachableObjectHandles)
+void Ref_NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles)
 {
     CONTRACTL
     {

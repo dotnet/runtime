@@ -66,7 +66,7 @@ extern "C" void* QCALLTYPE JavaMarshal_CreateReferenceTrackingHandle(
 
 extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
     _In_ MarkCrossReferencesArgs *crossReferences,
-    _In_ int length,
+    _In_ size_t length,
     _In_ void* unreachableObjectHandles)
 {
     QCALL_CONTRACT;
@@ -103,6 +103,7 @@ bool JavaNative::TriggerClientBridgeProcessing(
     {
         NOTHROW;
         GC_NOTRIGGER;
+        PRECONDITION(GCHeapUtilities::IsGCInProgress());
     }
     CONTRACTL_END;
 

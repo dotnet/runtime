@@ -71,7 +71,7 @@ namespace System.Runtime.InteropServices.Java
             {
                 FinishCrossReferenceProcessing(
                     crossReferences,
-                    unreachableObjectHandles.Length,
+                    (nuint)unreachableObjectHandles.Length,
                     pHandles);
             }
 #endif
@@ -86,7 +86,7 @@ namespace System.Runtime.InteropServices.Java
         private static unsafe partial IntPtr CreateReferenceTrackingHandleInternal(ObjectHandleOnStack obj, void* context);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_FinishCrossReferenceProcessing")]
-        private static unsafe partial void FinishCrossReferenceProcessing(MarkCrossReferencesArgs* crossReferences, int length, void* unreachableObjectHandles);
+        private static unsafe partial void FinishCrossReferenceProcessing(MarkCrossReferencesArgs* crossReferences, nuint length, void* unreachableObjectHandles);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_GetContext")]
         [SuppressGCTransition]

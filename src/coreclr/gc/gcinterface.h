@@ -1067,7 +1067,7 @@ public:
     // Walk the heap object by object outside of a GC.
     virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
 
-    virtual void NullBridgeObjectsWeakRefs(int length, void* unreachableObjectHandles) PURE_VIRTUAL;
+    virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles) PURE_VIRTUAL;
 };
 
 #ifdef WRITE_BARRIER_CHECK

@@ -85,7 +85,7 @@ extern "C" void* QCALLTYPE JavaMarshal_CreateReferenceTrackingHandle(
 
 extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
     _In_ MarkCrossReferencesArgs *crossReferences,
-    _In_ int length,
+    _In_ size_t length,
     _In_ void* unreachableObjectHandles);
 
 extern "C" BOOL QCALLTYPE JavaMarshal_GetContext(
@@ -134,7 +134,7 @@ public:
 
     static void FinishCrossReferenceProcessing(
         _In_ MarkCrossReferencesArgs *crossReferences,
-        _In_ int length,
+        _In_ size_t length,
         _In_ void* unreachableObjectHandles);
 
 #endif // FEATURE_GCBRIDGE

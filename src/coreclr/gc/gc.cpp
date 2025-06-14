@@ -53309,7 +53309,7 @@ void GCHeap::DiagGetGCSettings(EtwGCSettingsInfo* etw_settings)
 #endif //FEATURE_EVENT_TRACE
 }
 
-void GCHeap::NullBridgeObjectsWeakRefs(int length, void* unreachableObjectHandles)
+void GCHeap::NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles)
 {
 #ifdef FEATURE_GCBRIDGE
     Ref_NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
