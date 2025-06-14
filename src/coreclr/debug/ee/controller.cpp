@@ -5144,7 +5144,6 @@ DebuggerStepper::DebuggerStepper(Thread *thread,
     m_rgfMappingStop(rgfMappingStop),
     m_range(NULL),
     m_rangeCount(0),
-    m_realRangeCount(0),
     m_fp(LEAF_MOST_FRAME),
 #if defined(FEATURE_EH_FUNCLETS)
     m_fpParentMethod(LEAF_MOST_FRAME),
@@ -6977,7 +6976,6 @@ bool DebuggerStepper::SetRangesFromIL(DebuggerJitInfo *dji, COR_DEBUG_STEP_RANGE
 
 
     m_rangeCount = rangeCount;
-    m_realRangeCount = rangeCount;
 
     return true;
 }
@@ -7051,7 +7049,6 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
         DeleteInteropSafe(m_range);
         m_range = NULL;
         m_rangeCount = 0;
-        m_realRangeCount = 0;
     }
 
     if (rangeCount > 0)
@@ -7076,11 +7073,10 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
             }
 
             memcpy(m_range, ranges, sizeof(COR_DEBUG_STEP_RANGE) * rangeCount);
-            m_realRangeCount  = m_rangeCount = rangeCount;
+            m_rangeCount = rangeCount;
         }
         _ASSERTE(m_range != NULL);
         _ASSERTE(m_rangeCount > 0);
-        _ASSERTE(m_realRangeCount > 0);
     }
     else
     {
