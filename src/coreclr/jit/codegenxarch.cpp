@@ -828,17 +828,19 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     GenTree* regOp = op1;
     GenTree* rmOp  = op2;
 
-    // Lowering has ensured that op1 is never the memory operand to simplify checks here
-    assert(!op1->isUsedFromMemory());
+    if (op1->isUsedFromMemory())
+    {
+        regOp = op2;
+        rmOp  = op1;
+    }
+    assert(regOp->isUsedFromReg());
 
     if (treeNode->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
     {
-        if (op2->isUsedFromReg() && (op2->GetRegNum() == REG_RDX))
+        if (rmOp->isUsedFromReg() && (rmOp->GetRegNum() == REG_RDX))
         {
-            regOp = op2;
-            rmOp  = op1;
+            std::swap(regOp, rmOp);
         }
-        assert(regOp->isUsedFromReg());
 
         // Setup targetReg when neither of the source operands was a matching register
         inst_Mov(targetType, REG_RDX, regOp->GetRegNum(), /* canSkip */ true);
@@ -864,12 +866,10 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     else // Generate MUL or IMUL instruction
     {
         // If op2 is already present in RAX use that as implicit operand
-        if (op2->isUsedFromReg() && (op2->GetRegNum() == REG_RAX))
+        if (rmOp->isUsedFromReg() && (rmOp->GetRegNum() == REG_RAX))
         {
-            regOp = op2;
-            rmOp  = op1;
+            std::swap(regOp, rmOp);
         }
-        assert(regOp->isUsedFromReg());
 
         // Setup targetReg when neither of the source operands was a matching register
         inst_Mov(targetType, REG_RAX, regOp->GetRegNum(), /* canSkip */ true);

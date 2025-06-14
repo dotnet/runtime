@@ -3258,18 +3258,20 @@ int LinearScan::BuildMul(GenTree* tree)
 
     if (useMulx)
     {
-        // Lowering has ensured that op1 is never the memory operand
-        assert(!op1->isUsedFromMemory());
-
         // If one of the operands is a memory address, specify RDX for the other operand
         SingleTypeRegSet srcCandidates1 = RBM_NONE;
-        if (op2->isUsedFromMemory())
+        SingleTypeRegSet srcCandidates2 = RBM_NONE;
+        if (op1->isUsedFromMemory())
+        {
+            srcCandidates2 = SRBM_RDX;
+        }
+        else if (op2->isUsedFromMemory())
         {
             srcCandidates1 = SRBM_RDX;
         }
 
         srcCount = BuildOperandUses(op1, srcCandidates1);
-        srcCount += BuildOperandUses(op2, RBM_NONE);
+        srcCount += BuildOperandUses(op2, srcCandidates2);
 
 #if defined(TARGET_X86)
         if (tree->OperIs(GT_MUL_LONG))
