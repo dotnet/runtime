@@ -114,10 +114,11 @@ bool InitUnwindFtns()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
-#ifndef TARGET_UNIX
+#ifdef TARGET_WINDOWS
     if (!RtlUnwindFtnsInited)
     {
         HINSTANCE hNtdll = GetModuleHandle(W("ntdll.dll"));
@@ -148,10 +149,9 @@ bool InitUnwindFtns()
         }
         RtlUnwindFtnsInited = true;
     }
+#endif // TARGET_WINDOWS
+
     return (pRtlAddGrowableFunctionTable != NULL);
-#else // !TARGET_UNIX
-    return false;
-#endif // !TARGET_UNIX
 }
 
 /****************************************************************************/
