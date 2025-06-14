@@ -10,33 +10,81 @@ namespace System.Security.Cryptography.Tests
     [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
     public sealed class MLDsaCngTests_AllowPlaintextExport : MLDsaTestsBase
     {
-        protected override MLDsaCng GenerateKey(MLDsaAlgorithm algorithm) =>
+        protected override MLDsa GenerateKey(MLDsaAlgorithm algorithm) =>
             MLDsaTestHelpers.GenerateKey(algorithm, CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
 
-        protected override MLDsaCng ImportPrivateSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        protected override MLDsa ImportPrivateSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             MLDsaTestHelpers.ImportPrivateSeed(algorithm, source, CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
 
-        protected override MLDsaCng ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        protected override MLDsa ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             MLDsaTestHelpers.ImportSecretKey(algorithm, source, CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
 
-        protected override MLDsaCng ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        protected override MLDsa ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             MLDsaTestHelpers.ImportPublicKey(algorithm, source);
+
+        [Fact]
+        public override void ImportPublicKey_ExportPrivateSeed()
+        {
+            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
+            using MLDsa mldsa = ImportPublicKey(info.Algorithm, info.PublicKey);
+
+            MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
+                Assert.Equal(
+                    MLDsaTestHelpers.NTE_NOT_SUPPORTED,
+                    Assert.ThrowsAny<CryptographicException>(() => export(mldsa)).HResult));
+        }
+
+        [Fact]
+        public override void ImportPublicKey_ExportSecretKey()
+        {
+            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
+            using MLDsa mldsa = ImportPublicKey(info.Algorithm, info.PublicKey);
+
+            MLDsaTestHelpers.AssertExportMLDsaSecretKey(export =>
+                Assert.Equal(
+                    MLDsaTestHelpers.NTE_NOT_SUPPORTED,
+                    Assert.ThrowsAny<CryptographicException>(() => export(mldsa)).HResult));
+        }
     }
 
     [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
     public sealed class MLDsaCngTests_AllowExport : MLDsaTestsBase
     {
-        protected override MLDsaCng GenerateKey(MLDsaAlgorithm algorithm) =>
+        protected override MLDsa GenerateKey(MLDsaAlgorithm algorithm) =>
             MLDsaTestHelpers.GenerateKey(algorithm, CngExportPolicies.AllowExport);
 
-        protected override MLDsaCng ImportPrivateSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        protected override MLDsa ImportPrivateSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             MLDsaTestHelpers.ImportPrivateSeed(algorithm, source, CngExportPolicies.AllowExport);
 
-        protected override MLDsaCng ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        protected override MLDsa ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             MLDsaTestHelpers.ImportSecretKey(algorithm, source, CngExportPolicies.AllowExport);
 
-        protected override MLDsaCng ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        protected override MLDsa ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             MLDsaTestHelpers.ImportPublicKey(algorithm, source);
+
+        [Fact]
+        public override void ImportPublicKey_ExportPrivateSeed()
+        {
+            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
+            using MLDsa mldsa = ImportPublicKey(info.Algorithm, info.PublicKey);
+
+            MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
+                Assert.Equal(
+                    MLDsaTestHelpers.NTE_NOT_SUPPORTED,
+                    Assert.ThrowsAny<CryptographicException>(() => export(mldsa)).HResult));
+        }
+
+        [Fact]
+        public override void ImportPublicKey_ExportSecretKey()
+        {
+            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
+            using MLDsa mldsa = ImportPublicKey(info.Algorithm, info.PublicKey);
+
+            MLDsaTestHelpers.AssertExportMLDsaSecretKey(export =>
+                Assert.Equal(
+                    MLDsaTestHelpers.NTE_NOT_SUPPORTED,
+                    Assert.ThrowsAny<CryptographicException>(() => export(mldsa)).HResult));
+        }
     }
 
     [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
@@ -52,10 +100,10 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)));
 
             MLDsaTestHelpers.AssertExportMLDsaSecretKey(export =>
-                AssertExtensions.ThrowsContains<CryptographicException>(() => export(mldsa), "The requested operation is not supported"));
+                Assert.Equal(MLDsaTestHelpers.NTE_NOT_SUPPORTED, Assert.ThrowsAny<CryptographicException>(() => export(mldsa)).HResult));
 
             MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
-                AssertExtensions.ThrowsContains<CryptographicException>(() => export(mldsa), "The requested operation is not supported"));
+                Assert.Equal(MLDsaTestHelpers.NTE_NOT_SUPPORTED, Assert.ThrowsAny<CryptographicException>(() => export(mldsa)).HResult));
 
             byte[] signature = new byte[info.Algorithm.SignatureSizeInBytes];
             mldsa.SignData("test"u8, signature);
@@ -72,10 +120,10 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)));
 
             MLDsaTestHelpers.AssertExportMLDsaSecretKey(export =>
-                AssertExtensions.ThrowsContains<CryptographicException>(() => export(mldsa), "The requested operation is not supported"));
+                Assert.Equal(MLDsaTestHelpers.NTE_NOT_SUPPORTED, Assert.ThrowsAny<CryptographicException>(() => export(mldsa)).HResult));
 
             MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
-                AssertExtensions.ThrowsContains<CryptographicException>(() => export(mldsa), "The requested operation is not supported"));
+                Assert.Equal(MLDsaTestHelpers.NTE_NOT_SUPPORTED, Assert.ThrowsAny<CryptographicException>(() => export(mldsa)).HResult));
 
             byte[] signature = new byte[info.Algorithm.SignatureSizeInBytes];
             mldsa.SignData("test"u8, signature);
