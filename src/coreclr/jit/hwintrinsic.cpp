@@ -930,6 +930,8 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      VectorT128
     { NI_Illegal, NI_Illegal },                                 //      VectorT256
     { NI_Illegal, NI_Illegal },                                 //      VectorT512
+    { FIRST_NI_AVXVNNIINT, LAST_NI_AVXVNNIINT },                // AVXVNNIINT
+    { FIRST_NI_AVXVNNIINT_V512, LAST_NI_AVXVNNIINT_V512 },      // AVXVNNIINT_V512
 
     { FIRST_NI_X86Base_X64, LAST_NI_X86Base_X64 },              // X86Base_X64
     { FIRST_NI_SSE42_X64, LAST_NI_SSE42_X64 },                  // SSE42_X64
@@ -945,6 +947,8 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      AVXIFMA_X64
     { NI_Illegal, NI_Illegal },                                 //      AVXVNNI_X64
     { NI_Illegal, NI_Illegal },                                 //      GFNI_X64
+    { NI_Illegal, NI_Illegal },                                 //      AVXVNNIINT_X64
+    { NI_Illegal, NI_Illegal },                                 //      AVXVNNIINT_V512_X64
     { NI_Illegal, NI_Illegal },                                 //      SHA_X64
     { NI_Illegal, NI_Illegal },                                 //      WAITPKG_X64
     { NI_Illegal, NI_Illegal },                                 //      X86Serialize_X64
@@ -1182,6 +1186,26 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
     CORINFO_InstructionSet isa = lookupIsa(className, innerEnclosingClassName, outerEnclosingClassName);
 
+#ifdef TARGET_XARCH
+    // This handling makes sure that if we dont have VEX version of AVXVNNIINT instructions,
+    // we try to use the EVEX version.
+    // AVXVNNIINT tracks the VEX instructions where as
+    // AVXVNNIINT_V512 tracks the EVEX versions of same instructions.
+    if (isa == InstructionSet_AVXVNNIINT || isa == InstructionSet_AVXVNNIINT_X64)
+    {
+        if (!comp->compOpportunisticallyDependsOn(InstructionSet_AVXVNNIINT))
+        {
+            if (isa == InstructionSet_AVXVNNIINT)
+            {
+                isa = InstructionSet_AVXVNNIINT_V512;
+            }
+            else
+            {
+                isa = InstructionSet_AVXVNNIINT_V512_X64;
+            }
+        }
+    }
+#endif
     if (isa == InstructionSet_ILLEGAL)
     {
         return NI_Illegal;
@@ -2374,6 +2398,310 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 switch (intrinsic)
                 {
 #if defined(TARGET_XARCH)
+                    case NI_AVXVNNIINT_MultiplyWideningAndAdd:
+                    {
+                        var_types op2Type = JitType2PreciseVarType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
+                        var_types op3Type = JitType2PreciseVarType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
+                        switch (op2Type)
+                        {
+                            case TYP_UBYTE:
+                            {
+                                intrinsic = NI_AVXVNNIINT_MultiplyWideningAndAddByteByte;
+                                break;
+                            }
+
+                            case TYP_BYTE:
+                            {
+                                switch (op3Type)
+                                {
+                                    case TYP_UBYTE:
+                                    {
+                                        intrinsic = NI_AVXVNNIINT_MultiplyWideningAndAddSByteByte;
+                                        break;
+                                    }
+
+                                    case TYP_BYTE:
+                                    {
+                                        intrinsic = NI_AVXVNNIINT_MultiplyWideningAndAddSByteSByte;
+                                        break;
+                                    }
+
+                                    default:
+                                    {
+                                        unreached();
+                                    }
+                                }
+                                break;
+                            }
+
+                            case TYP_SHORT:
+                            {
+                                intrinsic = NI_AVXVNNIINT_MultiplyWideningAndAddInt16UInt16;
+                                break;
+                            }
+
+                            case TYP_USHORT:
+                            {
+                                switch (op3Type)
+                                {
+                                    case TYP_USHORT:
+                                    {
+                                        intrinsic = NI_AVXVNNIINT_MultiplyWideningAndAddUInt16UInt16;
+                                        break;
+                                    }
+
+                                    case TYP_SHORT:
+                                    {
+                                        intrinsic = NI_AVXVNNIINT_MultiplyWideningAndAddUInt16Int16;
+                                        break;
+                                    }
+
+                                    default:
+                                    {
+                                        unreached();
+                                    }
+                                }
+                                break;
+                            }
+
+                            default:
+                            {
+                                unreached();
+                            }
+                        }
+                        retNode =
+                            gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+                        break;
+                    }
+
+                    case NI_AVXVNNIINT_MultiplyWideningAndAddSaturate:
+                    {
+                        var_types op2Type = JitType2PreciseVarType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
+                        var_types op3Type = JitType2PreciseVarType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
+                        switch (op2Type)
+                        {
+                            case TYP_UBYTE:
+                            {
+                                intrinsic = NI_AVXVNNIINT_MultiplyWideningAndAddByteByteSaturate;
+                                break;
+                            }
+
+                            case TYP_BYTE:
+                            {
+                                switch (op3Type)
+                                {
+                                    case TYP_UBYTE:
+                                    {
+                                        intrinsic = NI_AVXVNNIINT_MultiplyWideningAndAddSByteByteSaturate;
+                                        break;
+                                    }
+
+                                    case TYP_BYTE:
+                                    {
+                                        intrinsic = NI_AVXVNNIINT_MultiplyWideningAndAddSByteSByteSaturate;
+                                        break;
+                                    }
+
+                                    default:
+                                    {
+                                        unreached();
+                                    }
+                                }
+                                break;
+                            }
+
+                            case TYP_SHORT:
+                            {
+                                intrinsic = NI_AVXVNNIINT_MultiplyWideningAndAddInt16UInt16Saturate;
+                                break;
+                            }
+
+                            case TYP_USHORT:
+                            {
+                                switch (op3Type)
+                                {
+                                    case TYP_USHORT:
+                                    {
+                                        intrinsic = NI_AVXVNNIINT_MultiplyWideningAndAddUInt16UInt16Saturate;
+                                        break;
+                                    }
+
+                                    case TYP_SHORT:
+                                    {
+                                        intrinsic = NI_AVXVNNIINT_MultiplyWideningAndAddUInt16Int16Saturate;
+                                        break;
+                                    }
+
+                                    default:
+                                    {
+                                        unreached();
+                                    }
+                                }
+                                break;
+                            }
+
+                            default:
+                            {
+                                unreached();
+                            }
+                        }
+                        retNode =
+                            gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+                        break;
+                    }
+
+                    case NI_AVXVNNIINT_V512_MultiplyWideningAndAdd:
+                    {
+                        var_types op2Type = JitType2PreciseVarType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
+                        var_types op3Type = JitType2PreciseVarType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
+                        switch (op2Type)
+                        {
+                            case TYP_UBYTE:
+                            {
+                                intrinsic = NI_AVXVNNIINT_V512_MultiplyWideningAndAddByteByte;
+                                break;
+                            }
+
+                            case TYP_BYTE:
+                            {
+                                switch (op3Type)
+                                {
+                                    case TYP_UBYTE:
+                                    {
+                                        intrinsic = NI_AVXVNNIINT_V512_MultiplyWideningAndAddSByteByte;
+                                        break;
+                                    }
+
+                                    case TYP_BYTE:
+                                    {
+                                        intrinsic = NI_AVXVNNIINT_V512_MultiplyWideningAndAddSByteSByte;
+                                        break;
+                                    }
+
+                                    default:
+                                    {
+                                        unreached();
+                                    }
+                                }
+                                break;
+                            }
+
+                            case TYP_SHORT:
+                            {
+                                intrinsic = NI_AVXVNNIINT_V512_MultiplyWideningAndAddInt16UInt16;
+                                break;
+                            }
+
+                            case TYP_USHORT:
+                            {
+                                switch (op3Type)
+                                {
+                                    case TYP_USHORT:
+                                    {
+                                        intrinsic = NI_AVXVNNIINT_V512_MultiplyWideningAndAddUInt16UInt16;
+                                        break;
+                                    }
+
+                                    case TYP_SHORT:
+                                    {
+                                        intrinsic = NI_AVXVNNIINT_V512_MultiplyWideningAndAddUInt16Int16;
+                                        break;
+                                    }
+
+                                    default:
+                                    {
+                                        unreached();
+                                    }
+                                }
+                                break;
+                            }
+
+                            default:
+                            {
+                                unreached();
+                            }
+                        }
+                        retNode =
+                            gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+                        break;
+                    }
+
+                    case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSaturate:
+                    {
+                        var_types op2Type = JitType2PreciseVarType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
+                        var_types op3Type = JitType2PreciseVarType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
+                        switch (op2Type)
+                        {
+                            case TYP_UBYTE:
+                            {
+                                intrinsic = NI_AVXVNNIINT_V512_MultiplyWideningAndAddByteByteSaturate;
+                                break;
+                            }
+
+                            case TYP_BYTE:
+                            {
+                                switch (op3Type)
+                                {
+                                    case TYP_UBYTE:
+                                    {
+                                        intrinsic = NI_AVXVNNIINT_V512_MultiplyWideningAndAddSByteByteSaturate;
+                                        break;
+                                    }
+
+                                    case TYP_BYTE:
+                                    {
+                                        intrinsic = NI_AVXVNNIINT_V512_MultiplyWideningAndAddSByteSByteSaturate;
+                                        break;
+                                    }
+
+                                    default:
+                                    {
+                                        unreached();
+                                    }
+                                }
+                                break;
+                            }
+
+                            case TYP_SHORT:
+                            {
+                                intrinsic = NI_AVXVNNIINT_V512_MultiplyWideningAndAddInt16UInt16Saturate;
+                                break;
+                            }
+
+                            case TYP_USHORT:
+                            {
+                                switch (op3Type)
+                                {
+                                    case TYP_USHORT:
+                                    {
+                                        intrinsic = NI_AVXVNNIINT_V512_MultiplyWideningAndAddUInt16UInt16Saturate;
+                                        break;
+                                    }
+
+                                    case TYP_SHORT:
+                                    {
+                                        intrinsic = NI_AVXVNNIINT_V512_MultiplyWideningAndAddUInt16Int16Saturate;
+                                        break;
+                                    }
+
+                                    default:
+                                    {
+                                        unreached();
+                                    }
+                                }
+                                break;
+                            }
+
+                            default:
+                            {
+                                unreached();
+                            }
+                        }
+                        retNode =
+                            gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+                        break;
+                    }
+
                     case NI_AVX2_GatherVector128:
                     case NI_AVX2_GatherVector256:
                         assert(varTypeIsSIMD(op2->TypeGet()));

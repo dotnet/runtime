@@ -44,6 +44,10 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVXIFMA_X64;
         case InstructionSet_AVXVNNI:
             return InstructionSet_AVXVNNI_X64;
+        case InstructionSet_AVXVNNIINT:
+            return InstructionSet_AVXVNNIINT_X64;
+        case InstructionSet_AVXVNNIINT_V512:
+            return InstructionSet_AVXVNNIINT_V512_X64;
         case InstructionSet_GFNI:
             return InstructionSet_GFNI_X64;
         case InstructionSet_SHA:
@@ -143,6 +147,12 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
         case InstructionSet_GFNI:
         {
             return InstructionSet_GFNI_V512;
+        }
+
+        case InstructionSet_AVXVNNIINT:
+        case InstructionSet_AVXVNNIINT_V512:
+        {
+            return InstructionSet_AVXVNNIINT_V512;
         }
 
         default:
@@ -253,9 +263,19 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
             {
                 return InstructionSet_AVXIFMA;
             }
-            else if (strcmp(className + 3, "Vnni") == 0)
+            else if (strncmp(className + 3, "Vnni", 4) == 0)
             {
-                return InstructionSet_AVXVNNI;
+                if (className[7] == '\0')
+                {
+                    return InstructionSet_AVXVNNI;
+                }
+                else if (strncmp(className + 7, "Int", 3) == 0)
+                {
+                    if ((strcmp(className + 10, "8") == 0) || (strcmp(className + 10, "16") == 0))
+                    {
+                        return InstructionSet_AVXVNNIINT;
+                    }
+                }
             }
         }
     }
