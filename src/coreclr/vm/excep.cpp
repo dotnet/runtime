@@ -6930,6 +6930,54 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
     return fIsInEpilog;
 }
 
+#if defined(TARGET_ARM64)
+// This function is used to check if Pointer Authentication (PAC) is enabled for this stack frame or not.
+bool IsPacPresent(EECodeInfo *pCodeInfo)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    TADDR ControlPc = pCodeInfo->GetCodeAddress();
+
+    _ASSERTE(pCodeInfo->IsValid());
+
+    DWORD_PTR EstablisherFrame = 0;
+    DWORD_PTR ImageBase = 0;
+    NTSTATUS Status;
+    PVOID HandlerData;
+    PEXCEPTION_ROUTINE HandlerRoutine = NULL;
+    PEXCEPTION_ROUTINE personalityRoutine = NULL;
+
+    // Lookup the function entry for the IP
+    PTR_RUNTIME_FUNCTION FunctionEntry = pCodeInfo->GetFunctionEntry();
+
+    // We should always get a function entry for a managed method
+    _ASSERTE(FunctionEntry != NULL);
+
+    ImageBase = pCodeInfo->GetModuleBase();
+
+    KNONVOLATILE_CONTEXT_POINTERS ContextPointers;
+    ZeroMemory(&ContextPointers, sizeof(ContextPointers));
+
+    return RtlpUnwindIsPacPresent (
+    ImageBase,
+    ControlPc,
+    (PIMAGE_ARM64_RUNTIME_FUNCTION_ENTRY)FunctionEntry,
+    &HandlerData,
+    &ContextPointers,
+    &EstablisherFrame,
+    NULL,
+    NULL,
+    &HandlerRoutine,
+    0);
+}
+#endif // TARGET_ARM64
+
 #endif // FEATURE_HIJACK && (!TARGET_X86 || TARGET_UNIX)
 
 #define EXCEPTION_VISUALCPP_DEBUGGER        ((DWORD) (1<<30 | 0x6D<<16 | 5000))

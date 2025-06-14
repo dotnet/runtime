@@ -36,6 +36,11 @@ static Thread* g_RuntimeInitializingThread;
 
 #endif //!DACCESS_COMPILE
 
+#if defined(TARGET_ARM64)
+extern "C" void* PacSignPtr(void* ptr);
+extern "C" void* PacStripPtr(void* ptr);
+#endif // TARGET_ARM64
+
 ee_alloc_context::PerThreadRandom::PerThreadRandom()
 {
     minipal_xoshiro128pp_init(&random_state, (uint32_t)minipal_lowres_ticks());
@@ -809,8 +814,14 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         CrossThreadUnhijack();
 
         void* pvRetAddr = *ppvRetAddrLocation;
+
         ASSERT(pvRetAddr != NULL);
+
+#if defined(TARGET_ARM64)
         ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
+#else
+        ASSERT(StackFrameIterator::IsValidReturnAddress(PacStripPtr(pvRetAddr)));
+#endif // TARGET_ARM64
 
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
         m_pvHijackedReturnAddress = pvRetAddr;
@@ -820,7 +831,15 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
                                                                 frameIterator->GetRegisterSet()));
 #endif
 
-        *ppvRetAddrLocation = (void*)pfnHijackFunction;
+        void* pvHijacedkAddr = (void*)pfnHijackFunction;
+#if defined(TARGET_ARM64)
+        uint64_t isJitPacEnabled;
+        if (g_pRhConfig->ReadConfigValue("JitPacEnabled", &isJitPacEnabled, true /* decimal */) && isJitPacEnabled != 0)
+        {
+            pvHijacedkAddr = PacSignPtr(pvHijacedkAddr);
+        }
+#endif // TARGET_ARM64
+        *ppvRetAddrLocation = pvHijacedkAddr;
 
         STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
             GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
@@ -948,6 +967,7 @@ void Thread::UnhijackWorker()
 
     // Restore the original return address.
     ASSERT(m_ppvHijackedReturnAddressLocation != NULL);
+
     *m_ppvHijackedReturnAddressLocation = m_pvHijackedReturnAddress;
 
     // Clear the hijack state.
