@@ -2176,6 +2176,11 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
     }
     frames(NULL);
 
+    // Use the InterpreterFrame address as a representation of the caller SP of the funclet
+    // Note: this needs to match what the VirtualUnwindInterpreterCallFrame sets as the SP
+    // when it unwinds out of a block of interpreter frames belonging to that InterpreterFrame.
+    pExInfo->m_csfEHClause.SP = (TADDR)&frames.interpreterFrame;
+
     InterpMethodContextFrame *pOriginalFrame = (InterpMethodContextFrame*)GetRegdisplaySP(pRD);
 
     StackVal retVal;
@@ -2433,11 +2438,14 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
     else
     {
         // This indicates that there are no more interpreter frames to unwind in the current InterpExecMethod
-        // The stack walker will not find any code manager for the address 0 and move on to the next explicit
-        // frame which is the InterpreterFrame.
+        // The stack walker will not find any code manager for the address InterpreterFrame::DummyCallerIP (0) 
+        // and move on to the next explicit frame which is the InterpreterFrame.
+        // The SP is set to the address of the InterpreterFrame. For the case of interpreted exception handling
+        // funclets, this matches the pExInfo->m_csfEHClause.SP that the CallFunclet sets.
         // Interpreter-TODO: Consider returning the context of the JITted / AOTed code that called the interpreter instead
-        SetIP(pContext, 0);
-        SetSP(pContext, sp);
+        SetIP(pContext, InterpreterFrame::DummyCallerIP);
+        TADDR interpreterFrameAddress = GetFirstArgReg(pContext);
+        SetSP(pContext, interpreterFrameAddress);
     }
     pContext->ContextFlags = CONTEXT_FULL;
 }
