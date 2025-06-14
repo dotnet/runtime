@@ -350,12 +350,20 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     var_types tempType = RegSet::tmpNormalizeType(treeType);
     regMaskTP mask;
     bool      floatSpill = false;
+    bool      maskSpill = false;
 
     if (isFloatRegType(treeType))
     {
         floatSpill = true;
         mask       = genRegMaskFloat(reg ARM_ARG(treeType));
     }
+#if defined(TARGET_ARM64)
+    if (varTypeUsesMaskReg(treeType))
+    {
+        maskSpill = true;
+        mask = genRegMask(reg);
+    }
+#endif
     else
     {
         mask = genRegMask(reg);
@@ -426,6 +434,10 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
 
     // Generate the code to spill the register
     var_types storeType = floatSpill ? treeType : tempType;
+
+#if defined(TARGET_ARM64)
+    storeType = maskSpill ? treeType : storeType;
+#endif
 
     m_rsCompiler->codeGen->spillReg(storeType, temp, reg);
 
@@ -604,6 +616,15 @@ var_types RegSet::tmpNormalizeType(var_types type)
     {
         type = TYP_SIMD16;
     }
+
+#if defined(TARGET_ARM64)
+    if (Compiler::UseSveForType(type))
+    {
+        // TODO-VL: temporary work around to allow scalable registers
+        type = TYP_SIMD16;
+    }
+#endif
+
 #endif // defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
 
     return type;
@@ -681,6 +702,13 @@ void RegSet::tmpPreAllocateTemps(var_types type, unsigned count)
 {
     assert(type == tmpNormalizeType(type));
     unsigned size = genTypeSize(type);
+
+#ifdef TARGET_ARM64
+    if (Compiler::UseSveForType(type))
+    {
+        size = 16; // SIMD registers overlap with SVE registers
+    }
+#endif
 
     // If TYP_STRUCT ever gets in here we do bad things (tmpSlot returns -1)
     noway_assert(size >= sizeof(int));

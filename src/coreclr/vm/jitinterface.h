@@ -713,7 +713,7 @@ public:
             int32_t                  addlDelta) override;
 
     uint16_t getRelocTypeHint(void * target) override;
-
+    uint32_t getTargetVectorLength() override final;
     uint32_t getExpectedTargetArchitecture() override;
 
     void BackoutJitData(EECodeGenManager * jitMgr) override;

@@ -1699,7 +1699,7 @@ private:
                         // Handle case 1 or the float field of case 2
                         GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
                         hwiNode            = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode,
-                                                                                 CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                                                                                 CORINFO_TYPE_FLOAT, genTypeSize(varDsc) ARM64_ARG(false));
                         break;
                     }
 
@@ -1777,7 +1777,7 @@ private:
 
                         GenTree* indexNode1 = m_compiler->gtNewIconNode(3, TYP_INT);
                         simdLclNode         = m_compiler->gtNewSimdGetElementNode(TYP_FLOAT, simdLclNode, indexNode1,
-                                                                                  CORINFO_TYPE_FLOAT, 16);
+                                                                                  CORINFO_TYPE_FLOAT, 16 ARM64_ARG(false));
 
                         GenTree* indexNode2 = m_compiler->gtNewIconNode(3, TYP_INT);
                         hwiNode = m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode2, simdLclNode,

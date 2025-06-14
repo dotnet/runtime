@@ -21,6 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 #include "instr.h"
+#include "codegen.h"
 
 /*****************************************************************************/
 
@@ -2206,9 +2207,18 @@ void emitter::emitInsSve_R_R(instruction     ins,
             {
                 assert(size == EA_8BYTE);
             }
-            else
+            else if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert(size == EA_4BYTE);
+            }
+            else if (opt == INS_OPTS_SCALABLE_H)
+            {
+                assert(size == EA_2BYTE);
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_B);
+                assert(size == EA_1BYTE);
             }
 #endif // DEBUG
             reg2 = encodingSPtoZR(reg2);
@@ -2663,12 +2673,32 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
 
         case INS_sve_ldr:
             assert(insOptsNone(opt));
-            assert(isScalableVectorSize(size));
+            assert(isScalableVectorSize(size) || (size == EA_16BYTE));
             assert(isGeneralRegister(reg2)); // nnnnn
             assert(isValidSimm<9>(imm));     // iii
                                              // iiiiii
 
             assert(insScalableOptsNone(sopt));
+
+            // Since SVE uses "mul vl", we need to make sure that we calculate
+            // the offset correctly.
+            if (Compiler::UseSveForVectorT())
+            {
+                if ((imm % Compiler::GetVectorTLength()) == 0)
+                {
+                    // If imm is a multiple of Compiler::compVectorTLength,
+                    // we can use the `[#imm mul vl]`
+                    imm = imm / Compiler::GetVectorTLength();
+                }
+                else
+                {
+                    regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                    // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
+                    codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                    reg2 = rsvdReg;
+                    imm = 0;
+                }
+            }
             if (isVectorRegister(reg1))
             {
                 fmt = IF_SVE_IE_2A;
@@ -2682,12 +2712,32 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
 
         case INS_sve_str:
             assert(insOptsNone(opt));
-            assert(isScalableVectorSize(size));
+            assert(isScalableVectorSize(size) || (size == EA_16BYTE));
             assert(isGeneralRegister(reg2)); // nnnnn
             assert(isValidSimm<9>(imm));     // iii
                                              // iiiiii
 
             assert(insScalableOptsNone(sopt));
+
+            // Since SVE uses "mul vl", we need to make sure that we calculate
+            // the offset correctly.
+            if (Compiler::UseSveForVectorT())
+            {
+                if ((imm % Compiler::GetVectorTLength()) == 0)
+                {
+                    // If imm is a multiple of Compiler::compVectorTLength,
+                    // we can use the `[#imm mul vl]`
+                    imm = imm / Compiler::GetVectorTLength();
+                }
+                else
+                {
+                    regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                    // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
+                    codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                    reg2 = rsvdReg;
+                    imm = 0;
+                }
+            }
             if (isVectorRegister(reg1))
             {
                 fmt = IF_SVE_JH_2A;
@@ -14186,7 +14236,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
         case IF_SVE_IE_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE load vector register
         case IF_SVE_JH_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE store vector register
             assert(insOptsNone(id->idInsOpt()));
-            assert(isScalableVectorSize(id->idOpSize()));
+            assert(isScalableVectorSize(id->idOpSize()) || (id->idOpSize() == EA_16BYTE));
             assert(isVectorRegister(id->idReg1()));      // ttttt
             assert(isGeneralRegisterOrZR(id->idReg2())); // nnnnn
             assert(isValidSimm<9>(emitGetInsSC(id)));    // iii
@@ -16213,9 +16263,12 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
 
         // <Zd>.<T>, <R><n|SP>
         case IF_SVE_CB_2A: // ........xx...... ......nnnnnddddd -- SVE broadcast general register
+        {
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
-            emitDispReg(encodingZRtoSP(id->idReg2()), size, false);
+            emitAttr gprSize = (size == EA_8BYTE) ? size : EA_4BYTE;
+            emitDispReg(encodingZRtoSP(id->idReg2()), gprSize, false);
             break;
+        }
 
         // <Zd>.H, <Zn>.B
         case IF_SVE_HH_2A: // ................ ......nnnnnddddd -- SVE2 FP8 upconverts

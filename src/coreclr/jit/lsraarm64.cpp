@@ -1741,6 +1741,9 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                 case NI_Sve_MultiplyAddRotateComplex:
                     needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
                     break;
+                case NI_Sve_DuplicateScalarToVector:
+                    needBranchTargetReg = !intrin.op1->isContainedIntOrIImmed();
+                    break;
 
                 default:
                     unreached();
@@ -2171,6 +2174,7 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
             case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
                 isLowVectorOpNum = (opNum == 3);
                 break;
+            case NI_Sve_MultiplyByScalar:
             case NI_Sve_MultiplyBySelectedScalar:
                 isLowVectorOpNum = (opNum == 2);
                 break;
