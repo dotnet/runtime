@@ -327,3 +327,16 @@ TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
 ```csharp
 string GetFrameName(TargetPointer frameIdentifier);
 ```
+
+### x86 Specifics
+
+The x86 platform has some major differences to other platforms. In general this stems from the platform being older and not having a defined unwinding codes. Instead, to unwind managed frames, we rely on GCInfo associated with JITted code. For the unwind, we do not defer to a 'Windows like' native unwinder, instead the custom unwinder implementation was ported to managed code.
+
+#### GCInfo Parsing
+The GCInfo structure is encoded using a variety of formats to optimize for speed of decoding and size on disk. For information on decoding and parsing refer to [GC Information Encoding for x86](../coreclr/jit/jit-gc-info-x86.md).
+
+#### Unwinding Algorithm
+
+The x86 architecture uses a custom unwinding algorithm defined in `gc_unwind_x86.inl`. The cDAC uses a copy of this algorithm ported to managed code in `X86Unwinder.cs`.
+
+Currently there isn't great documentation on the algorithm, beyond inspecting the implementations.

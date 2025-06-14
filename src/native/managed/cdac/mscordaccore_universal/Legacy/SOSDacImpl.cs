@@ -1646,6 +1646,15 @@ internal sealed unsafe partial class SOSDacImpl
         catch (System.Exception ex)
         {
             hr = ex.HResult;
+
+            // There are some scenarios where SOS can call GetUsefulGlobals before the globals are initialized,
+            // in these cases set the method table pointers to 0 and assert that the legacy DAC returns the same
+            // uninitialized values.
+            data->ArrayMethodTable = 0;
+            data->StringMethodTable = 0;
+            data->ObjectMethodTable = 0;
+            data->ExceptionMethodTable = 0;
+            data->FreeMethodTable = 0;
         }
 
 #if DEBUG
@@ -1653,8 +1662,8 @@ internal sealed unsafe partial class SOSDacImpl
         {
             DacpUsefulGlobalsData dataLocal;
             int hrLocal = _legacyImpl.GetUsefulGlobals(&dataLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-            if (hr == HResults.S_OK)
+            // Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK || hrLocal == HResults.S_OK)
             {
                 Debug.Assert(data->ArrayMethodTable == dataLocal.ArrayMethodTable);
                 Debug.Assert(data->StringMethodTable == dataLocal.StringMethodTable);

@@ -66,6 +66,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
         public abstract bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info);
         public abstract TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress);
+        public abstract void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion);
     }
 
     private sealed class RangeSection
@@ -180,18 +181,41 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.StartAddress;
     }
 
-    TargetPointer IExecutionManager.GetUnwindInfo(CodeBlockHandle codeInfoHandle, TargetCodePointer ip)
+    TargetCodePointer IExecutionManager.GetFuncletStartAddress(CodeBlockHandle codeInfoHandle)
     {
         if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
             throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
 
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, ip);
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeInfoHandle.Address.Value);
+        if (range.Data == null)
+            throw new InvalidOperationException("Unable to get runtime function address");
+
+        JitManager jitManager = GetJitManager(range.Data);
+        TargetPointer runtimeFunctionPtr = jitManager.GetUnwindInfo(range, codeInfoHandle.Address.Value);
+
+        if (runtimeFunctionPtr == TargetPointer.Null)
+            throw new InvalidOperationException("Unable to get runtime function address");
+
+        Data.RuntimeFunction runtimeFunction = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(runtimeFunctionPtr);
+
+        // TODO(cdac): EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS, implement iterating over fragments until finding
+        // non-fragment RuntimeFunction
+
+        return range.Data.RangeBegin + runtimeFunction.BeginAddress;
+    }
+
+    TargetPointer IExecutionManager.GetUnwindInfo(CodeBlockHandle codeInfoHandle)
+    {
+        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
+            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeInfoHandle.Address.Value);
         if (range.Data == null)
             return TargetPointer.Null;
 
         JitManager jitManager = GetJitManager(range.Data);
 
-        return jitManager.GetUnwindInfo(range, ip);
+        return jitManager.GetUnwindInfo(range, codeInfoHandle.Address.Value);
     }
 
     TargetPointer IExecutionManager.GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle)
@@ -204,5 +228,30 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             throw new InvalidOperationException($"{nameof(RangeSection)} not found for {codeInfoHandle.Address}");
 
         return range.Data.RangeBegin;
+    }
+
+    void IExecutionManager.GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion)
+    {
+        gcInfo = TargetPointer.Null;
+        gcVersion = 0;
+
+        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
+            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeInfoHandle.Address.Value);
+        if (range.Data == null)
+            return;
+
+        JitManager jitManager = GetJitManager(range.Data);
+        jitManager.GetGCInfo(range, codeInfoHandle.Address.Value, out gcInfo, out gcVersion);
+    }
+
+
+    TargetNUInt IExecutionManager.GetRelativeOffset(CodeBlockHandle codeInfoHandle)
+    {
+        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
+            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+
+        return info.RelativeOffset;
     }
 }
