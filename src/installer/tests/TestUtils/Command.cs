@@ -153,11 +153,6 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return this;
         }
 
-        public CommandResult Execute([CallerMemberName] string caller = "")
-        {
-            return Execute(false, caller);
-        }
-
         public Command Start([CallerMemberName] string caller = "")
         {
             ThrowIfRunning();
@@ -245,17 +240,9 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         /// <summary>
         /// Execute the command and wait for it to exit.
         /// </summary>
-        /// <param name="expectedToFail">Whether or not the command is expected to fail (non-zero exit code)</param>
         /// <returns>Result of the command</returns>
-        public CommandResult Execute(bool expectedToFail, [CallerMemberName] string caller = "")
+        public CommandResult Execute([CallerMemberName] string caller = "")
         {
-            // Clear out any enabling of dump creation if failure is expected
-            if (expectedToFail)
-            {
-                RemoveEnvironmentVariable("COMPlus_DbgEnableMiniDump");
-                RemoveEnvironmentVariable("DOTNET_DbgEnableMiniDump");
-            }
-
             Start(caller);
             return WaitForExit(caller: caller);
         }

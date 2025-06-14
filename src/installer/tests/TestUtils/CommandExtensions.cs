@@ -41,6 +41,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 .CaptureStdErr();
         }
 
+        public static Command DisableDumps(this Command command)
+        {
+            return command
+                .RemoveEnvironmentVariable("COMPlus_DbgEnableMiniDump")
+                .RemoveEnvironmentVariable("DOTNET_DbgEnableMiniDump");
+        }
+
         public static Command DotNetRoot(this Command command, string dotNetRoot, string architecture = null)
         {
             if (!string.IsNullOrEmpty(architecture))
