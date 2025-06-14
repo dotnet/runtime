@@ -7,8 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using Microsoft.VisualBasic;
 
 namespace System.Numerics.Tensors
 {
@@ -614,6 +612,24 @@ namespace System.Numerics.Tensors
             return 0;
         }
 
+        public static bool AdjustToNextIndex(Span<NRange> ranges, int dimension, ReadOnlySpan<nint> lengths)
+        {
+            NRange curRange = ranges[dimension];
+            ranges[dimension] = new NRange(curRange.Start.Value + 1, curRange.End.Value + 1);
+
+            for (int i = dimension; i >= 0; i--)
+            {
+                if (ranges[i].Start.Value >= lengths[i])
+                {
+                    ranges[i] = 0..1;
+                    if (i == 0)
+                        return false;
+                    ranges[i - 1] = new NRange(ranges[i - 1].Start.Value + 1, ranges[i - 1].End.Value + 1);
+                }
+            }
+            return true;
+        }
+
         // Answer the question: Can shape2 turn into shape1 or vice-versa if allowBidirectional?
         public static bool AreCompatible(in TensorShape shape1, in TensorShape shape2, bool allowBidirectional)
         {
@@ -1104,11 +1120,33 @@ namespace System.Numerics.Tensors
 
             for (int i = 0; i < state.Length; i++)
             {
-                nint length = lengths[i];
-                nint stride = strides[i];
+                nint offset = TGetOffsetAndLength.GetOffset(state[i], lengths[i]);
+                linearOffset += (offset * strides[i]);
+            }
 
-                nint offset = TGetOffsetAndLength.GetOffset(state, i, length);
-                linearOffset += (offset * stride);
+            return linearOffset;
+        }
+
+        public nint GetLinearOffset(nint index, int dimension)
+        {
+            ReadOnlySpan<nint> lengths = Lengths;
+            ReadOnlySpan<nint> strides = Strides;
+
+            if ((uint)dimension > (uint)lengths.Length)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
+
+            nint linearOffset = 0;
+
+            for (int i = 0; i < dimension; i++)
+            {
+                int rankIndex = dimension - (i + 1);
+
+                nint length = lengths[rankIndex];
+                (index, nint remainder) = nint.DivRem(index, length);
+
+                linearOffset += (remainder * strides[rankIndex]);
             }
 
             return linearOffset;
@@ -1185,7 +1223,7 @@ namespace System.Numerics.Tensors
                 nint previousLength = previousLengths[linearRankIndex];
                 nint previousStride = previousStrides[linearRankIndex];
 
-                (nint offset, nint length) = TGetOffsetAndLength.GetOffsetAndLength(state, linearRankIndex, previousLength);
+                (nint offset, nint length) = TGetOffsetAndLength.GetOffsetAndLength(state[linearRankIndex], previousLength);
                 nint stride = (length > 1) ? previousStride : 0;
 
                 if (stride != 0)
@@ -1297,8 +1335,8 @@ namespace System.Numerics.Tensors
 
         public interface IGetOffsetAndLength<T>
         {
-            static abstract nint GetOffset(ReadOnlySpan<T> state, int rankIndex, nint previousLength);
-            static abstract (nint Offset, nint Length) GetOffsetAndLength(ReadOnlySpan<T> state, int rankIndex, nint previousLength);
+            static abstract nint GetOffset(T state, nint length);
+            static abstract (nint Offset, nint Length) GetOffsetAndLength(T state, nint length);
         }
 
         [InlineArray(MaxInlineRank)]
@@ -1309,54 +1347,54 @@ namespace System.Numerics.Tensors
 
         public readonly struct GetOffsetAndLengthForNInt : IGetOffsetAndLength<nint>
         {
-            public static nint GetOffset(ReadOnlySpan<nint> indexes, int rankIndex, nint previousLength)
+            public static nint GetOffset(nint index, nint length)
             {
-                nint offset = indexes[rankIndex];
+                nint offset = index;
 
-                if ((offset < 0) || (offset >= previousLength))
+                if ((offset < 0) || (offset >= length))
                 {
                     ThrowHelper.ThrowIndexOutOfRangeException();
                 }
                 return offset;
             }
 
-            public static (nint Offset, nint Length) GetOffsetAndLength(ReadOnlySpan<nint> indexes, int rankIndex, nint previousLength)
+            public static (nint Offset, nint Length) GetOffsetAndLength(nint index, nint length)
             {
-                nint offset = GetOffset(indexes, rankIndex, previousLength);
-                return (offset, previousLength - offset);
+                nint offset = GetOffset(index, length);
+                return (offset, length - offset);
             }
         }
 
         public readonly struct GetOffsetAndLengthForNIndex : IGetOffsetAndLength<NIndex>
         {
-            public static nint GetOffset(ReadOnlySpan<NIndex> indexes, int rankIndex, nint previousLength)
+            public static nint GetOffset(NIndex index, nint length)
             {
-                nint offset = indexes[rankIndex].GetOffset(previousLength);
+                nint offset = index.GetOffset(length);
 
-                if ((offset < 0) || (offset >= previousLength))
+                if ((offset < 0) || (offset >= length))
                 {
                     ThrowHelper.ThrowIndexOutOfRangeException();
                 }
                 return offset;
             }
 
-            public static (nint Offset, nint Length) GetOffsetAndLength(ReadOnlySpan<NIndex> indexes, int rankIndex, nint previousLength)
+            public static (nint Offset, nint Length) GetOffsetAndLength(NIndex index, nint length)
             {
-                nint offset = GetOffset(indexes, rankIndex, previousLength);
-                return (offset, previousLength - offset);
+                nint offset = GetOffset(index, length);
+                return (offset, length - offset);
             }
         }
 
         public readonly struct GetOffsetAndLengthForNRange : IGetOffsetAndLength<NRange>
         {
-            public static nint GetOffset(ReadOnlySpan<NRange> ranges, int rankIndex, nint previousLength)
+            public static nint GetOffset(NRange range, nint length)
             {
-                return ranges[rankIndex].Start.GetOffset(previousLength);
+                return range.Start.GetOffset(length);
             }
 
-            public static (nint Offset, nint Length) GetOffsetAndLength(ReadOnlySpan<NRange> ranges, int rankIndex, nint previousLength)
+            public static (nint Offset, nint Length) GetOffsetAndLength(NRange range, nint length)
             {
-                return ranges[rankIndex].GetOffsetAndLength(previousLength);
+                return range.GetOffsetAndLength(length);
             }
         }
     }

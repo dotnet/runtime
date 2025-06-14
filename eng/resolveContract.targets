@@ -126,7 +126,7 @@
   <PropertyGroup>
     <GenAPIExcludeAttributesList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</GenAPIExcludeAttributesList>
     <GenAPIHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GenAPIHeaderFile>
-    <GenAPITargetPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</GenAPITargetPath>
+    <GenAPITargetPath Condition="'$(GenAPITargetPath)' == ''">$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</GenAPITargetPath>
     <GenAPILangVersion Condition="'$(LangVersion)' != ''">$(LangVersion)</GenAPILangVersion>
     <ProjectForGenAPIDocIdGeneration Condition="'$(ProjectForGenAPIDocIdGeneration)' == ''">$(CoreLibProject)</ProjectForGenAPIDocIdGeneration>
   </PropertyGroup>

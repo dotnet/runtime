@@ -6,6 +6,7 @@
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for operating over tensors.</PackageDescription>
     <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
+    <GenAPITargetPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).netcore.cs'))</GenAPITargetPath>
     <!-- SYSLIB5001: Tensor<T> and related APIs in System.Numerics.Tensors are experimental in .NET 9 -->
     <NoWarn>$(NoWarn);SYSLIB5001</NoWarn>
   </PropertyGroup>
@@ -36,9 +37,11 @@
     <Compile Include="System\Numerics\Tensors\netcore\IReadOnlyTensor_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ITensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ITensor_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorDimensionSpan_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorSpan_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorDimensionSpan_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorOperation.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Abs.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Acos.cs" />
@@ -167,7 +170,7 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Truncate.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Xor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorShape.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorSpan.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorSpan_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorSpanDebugView.cs" />
   </ItemGroup>
 

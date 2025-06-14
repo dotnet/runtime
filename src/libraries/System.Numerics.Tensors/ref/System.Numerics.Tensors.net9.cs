@@ -11,4 +11,20 @@ namespace System.Numerics.Tensors
         public static void ConvertToIntegerNative<TFrom, TTo>(System.ReadOnlySpan<TFrom> source, System.Span<TTo> destination) where TFrom : System.Numerics.IFloatingPoint<TFrom> where TTo : System.Numerics.IBinaryInteger<TTo> { }
         public static void ConvertToInteger<TFrom, TTo>(System.ReadOnlySpan<TFrom> source, System.Span<TTo> destination) where TFrom : System.Numerics.IFloatingPoint<TFrom> where TTo : System.Numerics.IBinaryInteger<TTo> { }
     }
+    public readonly ref partial struct ReadOnlyTensorDimensionSpan<T>
+    {
+        public ref partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Numerics.Tensors.ReadOnlyTensorSpan<T>>, System.Collections.IEnumerator, System.IDisposable
+        {
+            readonly object? System.Collections.IEnumerator.Current { get { throw null; } }
+            void System.IDisposable.Dispose() { }
+        }
+    }
+    public readonly ref partial struct TensorDimensionSpan<T>
+    {
+        public ref partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Numerics.Tensors.TensorSpan<T>>, System.Collections.IEnumerator, System.IDisposable
+        {
+            readonly object? System.Collections.IEnumerator.Current { get { throw null; } }
+            void System.IDisposable.Dispose() { }
+        }
+    }
 }
