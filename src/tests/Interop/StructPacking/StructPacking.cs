@@ -1640,15 +1640,15 @@ public unsafe partial class Program
         {
             succeeded &= Test<SequentialLayoutMinPacking<Action>>(
                 expectedSize: 16,
-                expectedOffsetByte: 0,
-                expectedOffsetValue: 8,
+                expectedOffsetByte: 8,
+                expectedOffsetValue: 0,
                 expectedNativeSize: 9
             );
 
             succeeded &= Test<SequentialLayoutMaxPacking<Action>>(
                 expectedSize: 16,
-                expectedOffsetByte: 0,
-                expectedOffsetValue: 8,
+                expectedOffsetByte: 8,
+                expectedOffsetValue: 0,
                 expectedNativeSize: 9
             );
         }
@@ -1656,15 +1656,15 @@ public unsafe partial class Program
         {
             succeeded &= Test<SequentialLayoutMinPacking<Action>>(
                 expectedSize: 8,
-                expectedOffsetByte: 0,
-                expectedOffsetValue: 4,
+                expectedOffsetByte: 4,
+                expectedOffsetValue: 0,
                 expectedNativeSize: 5
             );
 
             succeeded &= Test<SequentialLayoutMaxPacking<Action>>(
                 expectedSize: 8,
-                expectedOffsetByte: 0,
-                expectedOffsetValue: 4,
+                expectedOffsetByte: 4,
+                expectedOffsetValue: 0,
                 expectedNativeSize: 5
             );
         }
