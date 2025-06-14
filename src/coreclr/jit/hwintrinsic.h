@@ -1159,12 +1159,16 @@ struct HWIntrinsicInfo
         {
             case NI_Sve_And:
                 return NI_Sve_And_Predicates;
+            case NI_Sve_AndNot:
+                return NI_Sve_AndNot_Predicates;
             case NI_Sve_BitwiseClear:
                 return NI_Sve_BitwiseClear_Predicates;
             case NI_Sve_Xor:
                 return NI_Sve_Xor_Predicates;
             case NI_Sve_Or:
                 return NI_Sve_Or_Predicates;
+            case NI_Sve_OrNot:
+                return NI_Sve_OrNot_Predicates;
             case NI_Sve_ZipHigh:
                 return NI_Sve_ZipHigh_Predicates;
             case NI_Sve_ZipLow:
