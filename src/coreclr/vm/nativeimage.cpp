@@ -301,11 +301,11 @@ IMDInternalImport *NativeImage::LoadManifestMetadata()
     }
 
     IMDInternalImport *pNewImport = NULL;
-    IfFailThrow(GetMetaDataInternalInterface((BYTE *)m_pImageLayout->GetBase() + VAL32(pMeta->VirtualAddress),
-                                             VAL32(pMeta->Size),
-                                             ofRead,
-                                             IID_IMDInternalImport,
-                                             (void **) &pNewImport));
+    IfFailThrow(GetMDInternalInterface((BYTE *)m_pImageLayout->GetBase() + VAL32(pMeta->VirtualAddress),
+                                        VAL32(pMeta->Size),
+                                        ofRead,
+                                        IID_IMDInternalImport,
+                                        (void **) &pNewImport));
 
     return pNewImport;
 }

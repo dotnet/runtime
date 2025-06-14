@@ -34,7 +34,7 @@ usage()
   echo "                                  tvossimulator, ios, iossimulator, android, browser, wasi, netbsd, illumos, solaris"
   echo "                                  linux-musl, linux-bionic, tizen, or haiku."
   echo "                                  [Default: Your machine's OS.]"
-  echo "  --outputrid <rid>               Optional argument that overrides the target rid name."
+  echo "  --targetrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
   echo "  --runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
   echo "                                  Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
@@ -153,9 +153,9 @@ showSubsetHelp()
   "$scriptroot/common/build.sh" "-restore" "-build" "/p:Subset=help" "/clp:nosummary /tl:false"
 }
 
-arguments=''
+arguments=()
 cmakeargs=''
-extraargs=''
+extraargs=()
 crossBuild=0
 portableBuild=1
 bootstrap=0
@@ -178,7 +178,7 @@ while [[ $# > 0 ]]; do
       exit 0
     fi
 
-    arguments="$arguments /p:Subset=$1"
+    arguments+=("/p:Subset=$1")
     shift 1
     continue
   fi
@@ -201,7 +201,7 @@ while [[ $# > 0 ]]; do
           showSubsetHelp
           exit 0
         fi
-        arguments="$arguments /p:Subset=$2"
+        arguments+=("/p:Subset=$2")
         shift 2
       fi
       ;;
@@ -241,7 +241,7 @@ while [[ $# > 0 ]]; do
           exit 1
           ;;
       esac
-      arguments="$arguments -configuration $val"
+      arguments+=("-configuration" "$val")
       shift 2
       ;;
 
@@ -251,7 +251,7 @@ while [[ $# > 0 ]]; do
         exit 1
       fi
       val="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
-      arguments="$arguments /p:BuildTargetFramework=$val"
+      arguments+=("/p:BuildTargetFramework=$val")
       shift 2
       ;;
 
@@ -306,12 +306,12 @@ while [[ $# > 0 ]]; do
           exit 1
           ;;
       esac
-      arguments="$arguments /p:TargetOS=$os"
+      arguments+=("/p:TargetOS=$os")
       shift 2
       ;;
 
      -pack)
-      arguments="$arguments --pack /p:BuildAllConfigurations=true"
+      arguments+=("--pack" "/p:BuildAllConfigurations=true")
       shift 1
       ;;
 
@@ -320,17 +320,17 @@ while [[ $# > 0 ]]; do
         echo "No test scope supplied. See help (--help) for supported test scope values." 1>&2
         exit 1
       fi
-      arguments="$arguments /p:TestScope=$2"
+      arguments+=("/p:TestScope=$2")
       shift 2
       ;;
 
      -testnobuild)
-      arguments="$arguments /p:TestNoBuild=true"
+      arguments+=("/p:TestNoBuild=true")
       shift 1
       ;;
 
      -coverage)
-      arguments="$arguments /p:Coverage=true"
+      arguments+=("/p:Coverage=true")
       shift 1
       ;;
 
@@ -350,7 +350,7 @@ while [[ $# > 0 ]]; do
           exit 1
           ;;
       esac
-      arguments="$arguments /p:RuntimeConfiguration=$val"
+      arguments+=("/p:RuntimeConfiguration=$val")
       shift 2
       ;;
 
@@ -370,12 +370,12 @@ while [[ $# > 0 ]]; do
           exit 1
           ;;
       esac
-      arguments="$arguments /p:RuntimeFlavor=$val"
+      arguments+=("/p:RuntimeFlavor=$val")
       shift 2
       ;;
 
      -usemonoruntime)
-      arguments="$arguments /p:PrimaryRuntimeFlavor=Mono"
+      arguments+=("/p:PrimaryRuntimeFlavor=Mono")
       shift 1
       ;;
 
@@ -395,7 +395,7 @@ while [[ $# > 0 ]]; do
           exit 1
           ;;
       esac
-      arguments="$arguments /p:LibrariesConfiguration=$val"
+      arguments+=("/p:LibrariesConfiguration=$val")
       shift 2
       ;;
 
@@ -415,25 +415,25 @@ while [[ $# > 0 ]]; do
           exit 1
           ;;
       esac
-      arguments="$arguments /p:HostConfiguration=$val"
+      arguments+=("/p:HostConfiguration=$val")
       shift 2
       ;;
 
      -cross)
       crossBuild=1
-      arguments="$arguments /p:CrossBuild=True"
+      arguments+=("/p:CrossBuild=True")
       shift 1
       ;;
 
      *crossbuild=true*)
       crossBuild=1
-      extraargs="$extraargs $1"
+      extraargs+=("$1")
       shift 1
       ;;
 
      -clang*)
       compiler="${opt/#-/}" # -clang-9 => clang-9 or clang-9 => (unchanged)
-      arguments="$arguments /p:Compiler=$compiler /p:CppCompilerAndLinker=$compiler"
+      arguments+=("/p:Compiler=$compiler" "/p:CppCompilerAndLinker=$compiler")
       shift 1
       ;;
 
@@ -448,16 +448,16 @@ while [[ $# > 0 ]]; do
 
      -gcc*)
       compiler="${opt/#-/}" # -gcc-9 => gcc-9 or gcc-9 => (unchanged)
-      arguments="$arguments /p:Compiler=$compiler /p:CppCompilerAndLinker=$compiler"
+      arguments+=("/p:Compiler=$compiler" "/p:CppCompilerAndLinker=$compiler")
       shift 1
       ;;
 
-     -outputrid)
+     -targetrid|-outputrid)
       if [ -z ${2+x} ]; then
-        echo "No value for outputrid is supplied. See help (--help) for supported values." 1>&2
+        echo "No value for targetrid is supplied. See help (--help) for supported values." 1>&2
         exit 1
       fi
-      arguments="$arguments /p:OutputRID=$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      arguments+=("/p:TargetRid=$(echo "$2" | tr "[:upper:]" "[:lower:]")")
       shift 2
       ;;
 
@@ -469,7 +469,7 @@ while [[ $# > 0 ]]; do
       passedPortable="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       if [ "$passedPortable" = false ]; then
         portableBuild=0
-        arguments="$arguments /p:PortableBuild=false"
+        arguments+=("/p:PortableBuild=false")
       fi
       shift 2
       ;;
@@ -481,7 +481,7 @@ while [[ $# > 0 ]]; do
       fi
       passedKeepNativeSymbols="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       if [ "$passedKeepNativeSymbols" = true ]; then
-        arguments="$arguments /p:KeepNativeSymbols=true"
+        arguments+=("/p:KeepNativeSymbols=true")
       fi
       shift 2
       ;;
@@ -489,30 +489,30 @@ while [[ $# > 0 ]]; do
 
       -ninja)
       if [ -z ${2+x} ]; then
-        arguments="$arguments /p:Ninja=true"
+        arguments+=("/p:Ninja=true")
         shift 1
       else
         ninja="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
         if [ "$ninja" = true ]; then
-          arguments="$arguments /p:Ninja=true"
+          arguments+=("/p:Ninja=true")
           shift 2
         elif [ "$ninja" = false ]; then
-          arguments="$arguments /p:Ninja=false"
+          arguments+=("/p:Ninja=false")
           shift 2
         else
-          arguments="$arguments /p:Ninja=true"
+          arguments+=("/p:Ninja=true")
           shift 1
         fi
       fi
       ;;
 
       -pgoinstrument)
-      arguments="$arguments /p:PgoInstrument=true"
+      arguments+=("/p:PgoInstrument=true")
       shift 1
       ;;
 
       -use-bootstrap)
-      arguments="$arguments /p:UseBootstrap=true"
+      arguments+=("/p:UseBootstrap=true")
       shift 1
       ;;
 
@@ -526,30 +526,30 @@ while [[ $# > 0 ]]; do
         echo "No value for -fsanitize is supplied. See help (--help) for supported values." 1>&2
         exit 1
       fi
-      arguments="$arguments /p:EnableNativeSanitizers=$2"
+      arguments+=("/p:EnableNativeSanitizers=$2")
       shift 2
       ;;
 
       -fsanitize=*)
       sanitizers="${opt/#-fsanitize=/}" # -fsanitize=address => address
-      arguments="$arguments /p:EnableNativeSanitizers=$sanitizers"
+      arguments+=("/p:EnableNativeSanitizers=$sanitizers")
       shift 2
       ;;
 
       -verbose)
-      arguments="$arguments /p:CoreclrVerbose=true"
+      arguments+=("/p:CoreclrVerbose=true")
       shift 1
       ;;
 
       *)
-      extraargs="$extraargs $1"
+      extraargs+=("$1")
       shift 1
       ;;
   esac
 done
 
 if [ ${#actInt[@]} -eq 0 ]; then
-    arguments="-restore -build $arguments"
+    arguments=("-restore" "-build" ${arguments[@]+"${arguments[@]}"})
 fi
 
 if [[ "$os" == "browser" ]]; then
@@ -566,11 +566,11 @@ if [[ "$os" == "wasi" ]]; then
 fi
 
 if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
-    arguments="$arguments -warnAsError false"
+    arguments+=("-warnAsError" "false")
 fi
 
 # disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
-arguments="$arguments -tl:false"
+arguments+=("-tl:false")
 
 initDistroRid "$os" "$arch" "$crossBuild"
 
@@ -581,23 +581,31 @@ export DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
 # In *proj files (XML docs), URL-encoded string are rendered in their decoded form.
 cmakeargs="${cmakeargs// /%20}"
-arguments="$arguments /p:TargetArchitecture=$arch /p:BuildArchitecture=$hostArch"
-arguments="$arguments /p:CMakeArgs=\"$cmakeargs\" $extraargs"
+arguments+=("/p:TargetArchitecture=$arch" "/p:BuildArchitecture=$hostArch")
+arguments+=("/p:CMakeArgs=\"$cmakeargs\"" ${extraargs[@]+"${extraargs[@]}"})
 
 if [[ "$bootstrap" == "1" ]]; then
   # Strip build actions other than -restore and -build from the arguments for the bootstrap build.
-  bootstrapArguments="$arguments"
-  for flag in --sign --publish --pack --test -sign -publish -pack -test; do
-    bootstrapArguments="${bootstrapArguments//$flag/}"
+  bootstrapArguments=()
+  for argument in "${arguments[@]}"; do
+    add=1
+    for flag in --sign --publish --pack --test -sign -publish -pack -test; do
+      if [[ "$argument" == "$flag" ]]; then
+        add=0
+      fi
+    done
+    if [[ $add == 1 ]]; then
+      bootstrapArguments+=("$argument")
+    fi
   done
-  "$scriptroot/common/build.sh" $bootstrapArguments /p:Subset=bootstrap -bl:$scriptroot/../artifacts/log/bootstrap.binlog
+  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap -bl:$scriptroot/../artifacts/log/bootstrap.binlog
 
   # Remove artifacts from the bootstrap build so the product build is a "clean" build.
   echo "Cleaning up artifacts from bootstrap build..."
   rm -r "$scriptroot/../artifacts/bin"
   # Remove all directories in obj except for the source-built-upstream-cache directory to avoid breaking SourceBuild.
   find "$scriptroot/../artifacts/obj" -mindepth 1 -maxdepth 1 ! -name 'source-built-upstream-cache' -exec rm -rf {} +
-  arguments="$arguments /p:UseBootstrap=true"
+  arguments+=("/p:UseBootstrap=true")
 fi
 
-"$scriptroot/common/build.sh" $arguments
+"$scriptroot/common/build.sh" ${arguments[@]+"${arguments[@]}"}

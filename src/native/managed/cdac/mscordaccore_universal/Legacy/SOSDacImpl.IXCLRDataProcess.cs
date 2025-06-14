@@ -86,16 +86,16 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     int IXCLRDataProcess.SetDesiredExecutionState(uint state)
         => _legacyProcess is not null ? _legacyProcess.SetDesiredExecutionState(state) : HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.GetAddressType(ulong address, /*CLRDataAddressType*/ uint* type)
+    int IXCLRDataProcess.GetAddressType(ClrDataAddress address, /*CLRDataAddressType*/ uint* type)
         => _legacyProcess is not null ? _legacyProcess.GetAddressType(address, type) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetRuntimeNameByAddress(
-        ulong address,
+        ClrDataAddress address,
         uint flags,
         uint bufLen,
         uint* nameLen,
         char* nameBuf,
-        ulong* displacement)
+        ClrDataAddress* displacement)
         => _legacyProcess is not null ? _legacyProcess.GetRuntimeNameByAddress(address, flags, bufLen, nameLen, nameBuf, displacement) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.StartEnumAppDomains(ulong* handle)
@@ -128,7 +128,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     int IXCLRDataProcess.EndEnumModules(ulong handle)
         => _legacyProcess is not null ? _legacyProcess.EndEnumModules(handle) : HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.GetModuleByAddress(ulong address, /*IXCLRDataModule*/ void** mod)
+    int IXCLRDataProcess.GetModuleByAddress(ClrDataAddress address, /*IXCLRDataModule*/ void** mod)
         => _legacyProcess is not null ? _legacyProcess.GetModuleByAddress(address, mod) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.StartEnumMethodInstancesByAddress(ulong address, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle)
@@ -141,7 +141,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         => _legacyProcess is not null ? _legacyProcess.EndEnumMethodInstancesByAddress(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetDataByAddress(
-        ulong address,
+        ClrDataAddress address,
         uint flags,
         /*IXCLRDataAppDomain*/ void* appDomain,
         /*IXCLRDataTask*/ void* tlsTask,
@@ -149,7 +149,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         uint* nameLen,
         char* nameBuf,
         /*IXCLRDataValue*/ void** value,
-        ulong* displacement)
+        ClrDataAddress* displacement)
         => _legacyProcess is not null ? _legacyProcess.GetDataByAddress(address, flags, appDomain, tlsTask, bufLen, nameLen, nameBuf, value, displacement) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetExceptionStateByExceptionRecord(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionState*/ void** exState)
@@ -165,7 +165,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         /*IXCLRDataAppDomain*/ void* appDomain,
         /*IXCLRDataTask*/ void* tlsTask,
         /*IXCLRDataTypeInstance*/ void* type,
-        ulong addr,
+        ClrDataAddress addr,
         /*IXCLRDataValue*/ void** value)
         => _legacyProcess is not null ? _legacyProcess.CreateMemoryValue(appDomain, tlsTask, type, addr, value) : HResults.E_NOTIMPL;
 
@@ -215,7 +215,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     int IXCLRDataProcess.SetOtherNotificationFlags(uint flags)
         => _legacyProcess is not null ? _legacyProcess.SetOtherNotificationFlags(flags) : HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.StartEnumMethodDefinitionsByAddress(ulong address, ulong* handle)
+    int IXCLRDataProcess.StartEnumMethodDefinitionsByAddress(ClrDataAddress address, ulong* handle)
         => _legacyProcess is not null ? _legacyProcess.StartEnumMethodDefinitionsByAddress(address, handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EnumMethodDefinitionByAddress(ulong* handle, /*IXCLRDataMethodDefinition*/ void** method)
@@ -226,9 +226,9 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
 
     int IXCLRDataProcess.FollowStub(
         uint inFlags,
-        ulong inAddr,
+        ClrDataAddress inAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* inBuffer,
-        ulong* outAddr,
+        ClrDataAddress* outAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* outBuffer,
         uint* outFlags)
         => _legacyProcess is not null ? _legacyProcess.FollowStub(inFlags, inAddr, inBuffer, outAddr, outBuffer, outFlags) : HResults.E_NOTIMPL;
@@ -236,15 +236,15 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     int IXCLRDataProcess.FollowStub2(
         /*IXCLRDataTask*/ void* task,
         uint inFlags,
-        ulong inAddr,
+        ClrDataAddress inAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* inBuffer,
-        ulong* outAddr,
+        ClrDataAddress* outAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* outBuffer,
         uint* outFlags)
         => _legacyProcess is not null ? _legacyProcess.FollowStub2(task, inFlags, inAddr, inBuffer, outAddr, outBuffer, outFlags) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.DumpNativeImage(
-        ulong loadedBase,
+        ClrDataAddress loadedBase,
         char* name,
         /*IXCLRDataDisplay*/ void* display,
         /*IXCLRLibrarySupport*/ void* libSupport,
