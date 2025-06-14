@@ -2934,9 +2934,13 @@ GenTree* Compiler::impInlineUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenT
     //  result._hasValue = true;
     //  result._value = MethodTableLookup(obj);
     //
-    CORINFO_FIELD_HANDLE valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
-    CORINFO_CLASS_HANDLE valueStructCls;
-    var_types            valueType = JITtype2varType(info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls));
+    CORINFO_FIELD_HANDLE valueFldHnd    = info.compCompHnd->getFieldInClass(nullableCls, 1);
+    CORINFO_CLASS_HANDLE valueStructCls = NO_CLASS_HANDLE;
+    ClassLayout*         layout         = nullptr;
+
+    CorInfoType corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+    var_types   valueType  = TypeHandleToVarType(corFldType, valueStructCls, &layout);
+
     static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
     unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
     unsigned valueOffset  = info.compCompHnd->getFieldOffset(valueFldHnd);
@@ -2944,8 +2948,8 @@ GenTree* Compiler::impInlineUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenT
     GenTree* boxedContentAddr =
         gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(objClone), gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL));
     // Load the boxed content from the object (op1):
-    GenTree* boxedContent = valueType == TYP_STRUCT ? gtNewBlkIndir(typGetObjLayout(valueStructCls), boxedContentAddr)
-                                                    : gtNewIndir(valueType, boxedContentAddr);
+    GenTree* boxedContent = gtNewLoadValueNode(valueType, layout, boxedContentAddr);
+
     // Now do two stores via a comma:
     GenTree* setHasValue = gtNewStoreLclFldNode(resultTmp, TYP_UBYTE, hasValOffset, gtNewIconNode(1));
     GenTree* setValue    = gtNewStoreLclFldNode(resultTmp, valueType, valueOffset, boxedContent);
@@ -3889,7 +3893,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
 #ifdef FEATURE_SIMD
                 // First, let's check whether field is a SIMD vector and import it as GT_CNS_VEC
                 int simdWidth = getSIMDTypeSizeInBytes(fieldClsHnd);
-                if ((simdWidth > 0) && IsBaselineSimdIsaSupported())
+                if (simdWidth > 0)
                 {
                     assert((totalSize <= 64) && (totalSize <= MaxStructSize));
                     var_types simdType = getSIMDTypeForSize(simdWidth);
@@ -3907,7 +3911,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                     else
 #endif // TARGET_XARCH
                     {
-                        // SIMD8, SIMD12, SIMD16 are covered by IsBaselineSimdIsaSupported check
+                        // SIMD8, SIMD12, SIMD16 are covered by baseline ISA requirement
                         assert((simdType == TYP_SIMD8) || (simdType == TYP_SIMD12) || (simdType == TYP_SIMD16));
                     }
 
@@ -4384,6 +4388,9 @@ void Compiler::impInsertHelperCall(CORINFO_HELPER_DESC* helperInfo)
             case CORINFO_HELPER_ARG_TYPE_Class:
                 info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(helperArg.classHandle);
                 currentArg = gtNewIconEmbClsHndNode(helperArg.classHandle);
+                break;
+            case CORINFO_HELPER_ARG_TYPE_Module:
+                currentArg = gtNewIconEmbScpHndNode(helperArg.moduleHandle);
                 break;
             case CORINFO_HELPER_ARG_TYPE_Const:
                 currentArg = gtNewIconNode(helperArg.constant);
@@ -10004,8 +10011,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             typGetObjLayout(elemClsHnd);
                             info.compCompHnd->isValueClass(elemClsHnd);
                         }
-                        void* pIndirection;
-                        info.compCompHnd->getHelperFtn(CORINFO_HELP_MEMZERO, &pIndirection);
+                        compGetHelperFtn(CORINFO_HELP_MEMZERO);
                     }
 #endif
                 }

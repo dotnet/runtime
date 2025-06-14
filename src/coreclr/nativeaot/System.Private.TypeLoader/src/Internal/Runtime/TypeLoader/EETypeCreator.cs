@@ -399,26 +399,19 @@ namespace Internal.Runtime.TypeLoader
                     pEEType->ContainsGCPointers = false;
                 }
             }
-            else if (gcBitfield != null)
+            else
             {
-                if (cbGCDesc != 0)
+                Debug.Assert(gcBitfield == null);
+
+                if (pTemplateEEType != null)
                 {
-                    pEEType->ContainsGCPointers = true;
-                    CreateGCDesc(gcBitfield, baseSize, isValueType, false, ((void**)pEEType) - 1);
+                    Buffer.MemoryCopy((byte*)pTemplateEEType - cbGCDesc, (byte*)pEEType - cbGCDesc, cbGCDesc, cbGCDesc);
+                    pEEType->ContainsGCPointers = pTemplateEEType->ContainsGCPointers;
                 }
                 else
                 {
                     pEEType->ContainsGCPointers = false;
                 }
-            }
-            else if (pTemplateEEType != null)
-            {
-                Buffer.MemoryCopy((byte*)pTemplateEEType - cbGCDesc, (byte*)pEEType - cbGCDesc, cbGCDesc, cbGCDesc);
-                pEEType->ContainsGCPointers = pTemplateEEType->ContainsGCPointers;
-            }
-            else
-            {
-                pEEType->ContainsGCPointers = false;
             }
         }
 
@@ -442,24 +435,24 @@ namespace Internal.Runtime.TypeLoader
                     return series > 0 ? (series + 2) * IntPtr.Size : 0;
                 }
             }
-            else if (gcBitfield != null)
-            {
-                int series = CreateGCDesc(gcBitfield, 0, isValueType, false, null);
-                return series > 0 ? (series * 2 + 1) * IntPtr.Size : 0;
-            }
-            else if (pTemplateEEType != null)
-            {
-                return RuntimeAugments.GetGCDescSize(pTemplateEEType->ToRuntimeTypeHandle());
-            }
             else
             {
-                return 0;
+                Debug.Assert(gcBitfield == null);
+
+                if (pTemplateEEType != null)
+                {
+                    return RuntimeAugments.GetGCDescSize(pTemplateEEType->ToRuntimeTypeHandle());
+                }
+                else
+                {
+                    return 0;
+                }
             }
         }
 
-        private static bool IsAllGCPointers(LowLevelList<bool> bitfield)
+        private static bool IsAllGCPointers(bool[] bitfield)
         {
-            int count = bitfield.Count;
+            int count = bitfield.Length;
             Debug.Assert(count > 0);
 
             for (int i = 0; i < count; i++)
@@ -471,7 +464,7 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        private static unsafe int CreateArrayGCDesc(LowLevelList<bool> bitfield, int rank, bool isSzArray, void* gcdesc)
+        private static unsafe int CreateArrayGCDesc(bool[] bitfield, int rank, bool isSzArray, void* gcdesc)
         {
             if (bitfield == null)
                 return 0;
@@ -495,7 +488,7 @@ namespace Internal.Runtime.TypeLoader
             int first = -1;
             int last = 0;
             short numPtrs = 0;
-            while (i < bitfield.Count)
+            while (i < bitfield.Length)
             {
                 if (bitfield[i])
                 {
@@ -513,7 +506,7 @@ namespace Internal.Runtime.TypeLoader
                     numSeries++;
                     numPtrs = 0;
 
-                    while ((i < bitfield.Count) && (bitfield[i]))
+                    while ((i < bitfield.Length) && (bitfield[i]))
                     {
                         numPtrs++;
                         i++;
@@ -531,75 +524,12 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (numSeries > 0)
                 {
-                    *ptr-- = (short)((first + bitfield.Count - last) * IntPtr.Size);
+                    *ptr-- = (short)((first + bitfield.Length - last) * IntPtr.Size);
                     *ptr-- = numPtrs;
 
                     *(void**)gcdesc = (void*)-numSeries;
                     *baseOffsetPtr = (void*)(baseOffset * IntPtr.Size);
                 }
-            }
-
-            return numSeries;
-        }
-
-        private static unsafe int CreateGCDesc(LowLevelList<bool> bitfield, int size, bool isValueType, bool isStatic, void* gcdesc)
-        {
-            int offs = 0;
-            // if this type is a class we have to account for the gcdesc.
-            if (isValueType)
-                offs = IntPtr.Size;
-
-            if (bitfield == null)
-                return 0;
-
-            void** ptr = (void**)gcdesc - 1;
-
-            int* staticPtr = isStatic ? ((int*)gcdesc + 1) : null;
-
-            int numSeries = 0;
-            int i = 0;
-            while (i < bitfield.Count)
-            {
-                if (bitfield[i])
-                {
-                    numSeries++;
-                    int seriesOffset = i * IntPtr.Size + offs;
-                    int seriesSize = 0;
-
-                    while ((i < bitfield.Count) && (bitfield[i]))
-                    {
-                        seriesSize += IntPtr.Size;
-                        i++;
-                    }
-
-
-                    if (gcdesc != null)
-                    {
-                        if (staticPtr != null)
-                        {
-                            *staticPtr++ = seriesSize;
-                            *staticPtr++ = seriesOffset;
-                        }
-                        else
-                        {
-                            seriesSize -= size;
-                            *ptr-- = (void*)seriesOffset;
-                            *ptr-- = (void*)seriesSize;
-                        }
-                    }
-                }
-                else
-                {
-                    i++;
-                }
-            }
-
-            if (gcdesc != null)
-            {
-                if (staticPtr != null)
-                    *(int*)gcdesc = numSeries;
-                else
-                    *(void**)gcdesc = (void*)numSeries;
             }
 
             return numSeries;

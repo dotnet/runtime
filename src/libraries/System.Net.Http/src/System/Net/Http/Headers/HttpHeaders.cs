@@ -169,7 +169,7 @@ namespace System.Net.Http.Headers
         {
             ArgumentNullException.ThrowIfNull(values);
 
-            if (values is IReadOnlyList<string?> valuesList)
+            if (values is IList<string?> valuesList)
             {
                 int count = valuesList.Count;
 

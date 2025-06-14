@@ -320,7 +320,7 @@ public:
     bool                IsCurrentThreadInCooperativeMode();
 
     PInvokeTransitionFrame* GetTransitionFrameForStackTrace();
-    PInvokeTransitionFrame* GetTransitionFrameForSampling() { return GetTransitionFrame(); }
+    PInvokeTransitionFrame* GetTransitionFrameForSampling();
     void *              GetCurrentThreadPInvokeReturnAddress();
 
     //
