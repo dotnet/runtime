@@ -176,7 +176,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void FloatingPoint_ProduceExpectedSequence()
+        public void FloatingPoints_ProduceExpectedSequence()
         {
             float[] results;
 
@@ -207,24 +207,28 @@ namespace System.Linq.Tests
         public void SmallIntegers_ProducesFullRange()
         {
             byte[] bytes = Enumerable.Sequence(byte.MinValue, byte.MaxValue, (byte)1).ToArray();
+            Assert.Equal(256, bytes.Length);
             for (int i = 0; i < bytes.Length; i++)
             {
                 Assert.Equal((byte)i, bytes[i]);
             }
 
             sbyte[] sbytes = Enumerable.Sequence(sbyte.MinValue, sbyte.MaxValue, (sbyte)1).ToArray();
+            Assert.Equal(256, sbytes.Length);
             for (int i = 0; i < sbytes.Length; i++)
             {
                 Assert.Equal((sbyte)(i - 128), sbytes[i]);
             }
 
             ushort[] ushorts = Enumerable.Sequence(ushort.MinValue, ushort.MaxValue, (ushort)1).ToArray();
+            Assert.Equal(65536, ushorts.Length);
             for (int i = 0; i < ushorts.Length; i++)
             {
                 Assert.Equal((ushort)i, ushorts[i]);
             }
 
             short[] shorts = Enumerable.Sequence(short.MinValue, short.MaxValue, (short)1).ToArray();
+            Assert.Equal(65536, shorts.Length);
             for (int i = 0; i < shorts.Length; i++)
             {
                 Assert.Equal((short)(i - 32768), shorts[i]);
