@@ -8219,16 +8219,12 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
 
     if (bmtLayout->layoutType == EEClassLayoutInfo::LayoutType::Sequential)
     {
-        if (hasNonTrivialParent && !pParentMT->IsManagedSequential())
+        // If the parent type is not Object, ValueType, or Sequential, or if this type has GC fields,
+        // we will use Auto layout instead of Sequential layout and set the packing size.
+        if ((hasNonTrivialParent && !pParentMT->IsManagedSequential()) || hasGCFields)
         {
-            // If the parent type is not Object, ValueType or Sequential, then we need to use Auto layout.
             bmtLayout->layoutType = EEClassLayoutInfo::LayoutType::Auto;
-        }
-
-        if (hasGCFields)
-        {
-            // If this type has GC fields, we will use Auto layout instead of Sequential layout.
-            bmtLayout->layoutType = EEClassLayoutInfo::LayoutType::Auto;
+            pLayoutInfo->SetPackingSize(bmtLayout->packingSize);
         }
     }
 

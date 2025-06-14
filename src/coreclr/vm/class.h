@@ -460,6 +460,12 @@ class EEClassLayoutInfo
             m_ManagedLargestAlignmentRequirementOfAllMembers = alignment;
         }
 
+        void SetPackingSize(BYTE cbPackingSize)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_cbPackingSize = cbPackingSize;
+        }
+
         ULONG InitializeSequentialFieldLayout(
             FieldDesc* pFields,
             MethodTable** pByValueClassCache,
@@ -486,12 +492,6 @@ class EEClassLayoutInfo
             LIMITED_METHOD_CONTRACT;
             m_bFlags = isZeroSized ? (m_bFlags | e_ZERO_SIZED)
                                 : (m_bFlags & ~e_ZERO_SIZED);
-        }
-
-        void SetPackingSize(BYTE cbPackingSize)
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_cbPackingSize = cbPackingSize;
         }
 
         UINT32 SetInstanceBytesSize(UINT32 size)
