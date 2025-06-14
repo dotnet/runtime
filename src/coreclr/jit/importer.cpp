@@ -6935,8 +6935,20 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         JITDUMP(".... checking for GDV of IEnumerable<T>...\n");
 
-                        GenTreeCall* const   call = op1->AsRetExpr()->gtInlineCandidate;
-                        NamedIntrinsic const ni   = lookupNamedIntrinsic(call->gtCallMethHnd);
+                        GenTreeCall* const call = op1->AsRetExpr()->gtInlineCandidate;
+                        NamedIntrinsic     ni   = NI_Illegal;
+
+                        // TODO -- handle CT_INDIRECT virtuals here too
+                        // but we don't have the right method handle
+                        //
+                        if (call->gtCallType == CT_USER_FUNC)
+                        {
+                            ni = lookupNamedIntrinsic(call->gtCallMethHnd);
+                        }
+                        else if (call->IsGuardedDevirtualizationCandidate())
+                        {
+                            JITDUMP("No GDV IEnumerable<T> check for [%06u]\n", dspTreeID(call));
+                        }
 
                         if (ni == NI_System_Collections_Generic_IEnumerable_GetEnumerator)
                         {

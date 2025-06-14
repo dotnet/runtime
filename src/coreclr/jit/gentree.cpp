@@ -5977,7 +5977,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             if (call->gtCallType == CT_INDIRECT)
             {
                 // pinvoke-calli cookie is a constant, or constant indirection
-                assert(call->gtCallCookie == nullptr || call->gtCallCookie->OperIs(GT_CNS_INT, GT_IND));
+                // or a non-tree if this is a managed call.
+                assert(call->IsVirtualStub() || (call->gtCallCookie == nullptr) ||
+                       call->gtCallCookie->OperIs(GT_CNS_INT, GT_IND));
 
                 GenTree* indirect = call->gtCallAddr;
 
@@ -6725,7 +6727,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             }
             if (call->gtCallType == CT_INDIRECT)
             {
-                if (operand == call->gtCallCookie)
+                if (!call->IsVirtualStub() && (operand == call->gtCallCookie))
                 {
                     *pUse = &call->gtCallCookie;
                     return true;
@@ -9899,16 +9901,23 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     /* Copy the union */
     if (tree->gtCallType == CT_INDIRECT)
     {
-        copy->gtCallCookie = tree->gtCallCookie ? gtCloneExpr(tree->gtCallCookie) : nullptr;
-        copy->gtCallAddr   = tree->gtCallAddr ? gtCloneExpr(tree->gtCallAddr) : nullptr;
+        if (tree->IsVirtualStub())
+        {
+            copy->gtCallCookie = tree->gtCallCookie;
+        }
+        else
+        {
+            copy->gtCallCookie = tree->gtCallCookie ? gtCloneExpr(tree->gtCallCookie) : nullptr;
+        }
+        copy->gtCallAddr = tree->gtCallAddr ? gtCloneExpr(tree->gtCallAddr) : nullptr;
     }
     else
     {
         copy->gtCallMethHnd         = tree->gtCallMethHnd;
         copy->gtInlineCandidateInfo = tree->gtInlineCandidateInfo;
-        copy->gtInlineInfoCount     = tree->gtInlineInfoCount;
     }
 
+    copy->gtInlineInfoCount          = tree->gtInlineInfoCount;
     copy->gtLateDevirtualizationInfo = tree->gtLateDevirtualizationInfo;
 
     copy->gtCallType   = tree->gtCallType;
@@ -10641,7 +10650,7 @@ void GenTreeUseEdgeIterator::AdvanceCall()
             assert(call->gtCallType == CT_INDIRECT);
 
             m_advance = &GenTreeUseEdgeIterator::AdvanceCall<CALL_ADDRESS>;
-            if (call->gtCallCookie != nullptr)
+            if (!call->IsVirtualStub() && (call->gtCallCookie != nullptr))
             {
                 m_edge = &call->gtCallCookie;
                 return;
@@ -10964,6 +10973,11 @@ void Compiler::gtDispNodeName(GenTree* tree)
         }
         else if (tree->AsCall()->gtCallType == CT_INDIRECT)
         {
+            if (tree->AsCall()->IsVirtual())
+            {
+                callType = "CALLV";
+            }
+
             ctType = " ind";
         }
         else

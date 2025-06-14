@@ -7276,7 +7276,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
             if (!canResolve)
             {
-                JITDUMP("Can't figure out which method would be invoked, sorry\n");
+                JITDUMP("Can't figure out which method would be invoked, sorry. [%s]\n",
+                        devirtualizationDetailToString(dvInfo.detail));
 
                 // Continue checking other candidates, maybe some of them will succeed.
                 break;
@@ -7695,8 +7696,8 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         }
     }
 
-    /* Ignore helper calls */
-
+    // Ignore helper calls
+    //
     if (call->IsHelperCall())
     {
         assert(!call->IsGuardedDevirtualizationCandidate());
@@ -7704,11 +7705,19 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
-    /* Ignore indirect calls */
+    // Ignore indirect calls, unless they are indirect virtual stub calls with profile info.
+    //
     if (call->gtCallType == CT_INDIRECT)
     {
-        inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT_MANAGED);
-        return;
+        if (!call->IsGuardedDevirtualizationCandidate())
+        {
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT_MANAGED);
+            return;
+        }
+        else
+        {
+            assert(call->IsVirtualStub());
+        }
     }
 
     // The inliner gets confused when the unmanaged convention reverses arg order (like x86).
@@ -8924,11 +8933,6 @@ bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 //
 Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
 {
-    if (call->gtCallType == CT_INDIRECT)
-    {
-        return GDVProbeType::None;
-    }
-
     if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) || IsAot())
     {
         return GDVProbeType::None;
