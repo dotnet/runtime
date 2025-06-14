@@ -3613,7 +3613,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         // On ARM64, SIMD loads/stores provide 8-byte atomicity guarantees when aligned to 8 bytes.
         regNumber tmpSimdReg1 = REG_NA;
         regNumber tmpSimdReg2 = REG_NA;
-        if ((slots >= 4) && compiler->IsBaselineSimdIsaSupported())
+        if (slots >= 4)
         {
             tmpSimdReg1 = internalRegisters.Extract(cpObjNode, RBM_ALLFLOAT);
             tmpSimdReg2 = internalRegisters.Extract(cpObjNode, RBM_ALLFLOAT);
@@ -3644,8 +3644,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
                     // Copy at least two slots at a time
                     if (nonGcSlots >= 2)
                     {
-                        // Do 4 slots at a time if SIMD is supported
-                        if ((nonGcSlots >= 4) && compiler->IsBaselineSimdIsaSupported())
+                        // Do 4 slots at a time with SIMD instructions
+                        if (nonGcSlots >= 4)
                         {
                             // We need SIMD temp regs now
                             tmp1 = tmpSimdReg1;
@@ -5134,15 +5134,23 @@ bool CodeGen::IsSaveFpLrWithAllCalleeSavedRegisters() const
 
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
 {
-    void* pAddr = nullptr;
-
     EmitCallParams params;
-    params.callType   = EC_FUNC_TOKEN;
-    params.addr       = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
-    regMaskTP killSet = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
-    if (params.addr == nullptr)
+    CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
+    regMaskTP            killSet        = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+
+    params.callType = EC_FUNC_TOKEN;
+
+    if (helperFunction.accessType == IAT_VALUE)
     {
+        params.addr = (void*)helperFunction.addr;
+    }
+    else
+    {
+        params.addr = nullptr;
+        assert(helperFunction.accessType == IAT_PVALUE);
+        void* pAddr = helperFunction.addr;
+
         // This is call to a runtime helper.
         // adrp x, [reloc:rel page addr]
         // add x, x, [reloc:page offset]

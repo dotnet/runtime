@@ -387,7 +387,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem512PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -404,7 +404,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem512PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -424,7 +424,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem512PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -444,7 +444,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem768PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -461,7 +461,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem768PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -481,7 +481,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem768PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -501,7 +501,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem1024PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -518,7 +518,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem1024PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -538,7 +538,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem1024PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -670,7 +670,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             from ietfVector in ietfVectorWrapped
             select new object[] { storageFlag, ietfVector };
 
-        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsDraft10Pkcs8))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116463", TestPlatforms.Windows)]
         [MemberData(nameof(ReadMLDsa_Pfx_Ietf_Data))]
         public static void ReadMLDsa512PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags, MLDsaKeyInfo info)
         {
@@ -690,7 +691,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsDraft10Pkcs8))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116463", TestPlatforms.Windows)]
         [MemberData(nameof(ReadMLDsa_Pfx_Ietf_Data))]
         public static void ReadMLDsa512PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags, MLDsaKeyInfo info)
         {
@@ -711,7 +713,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsDraft10Pkcs8))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116463", TestPlatforms.Windows)]
         [MemberData(nameof(ReadMLDsa_Pfx_Ietf_Data))]
         public static void ReadMLDsa512PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags, MLDsaKeyInfo info)
         {

@@ -467,7 +467,7 @@ OFFSETOF__ee_alloc_context  EQU OFFSETOF__RuntimeThreadLocals__ee_alloc_context
 ; Pushes a TransitionBlock on the stack without saving the argument registers. See
 ; the PROLOG_WITH_TRANSITION_BLOCK macro for the stack layout.
 PUSH_COOP_PINVOKE_FRAME macro target
-        
+
         __PWTB_StackAlloc = SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES + 8 ; alignment to make the stack 16b aligned
         __PWTB_TransitionBlock = __PWTB_StackAlloc
 

@@ -37,12 +37,16 @@ class GCCoverageInfo;
 class DynamicMethodDesc;
 class ReJitManager;
 class PrepareCodeConfig;
+struct InterpMethod;
+struct InterpByteCodeStart;
 
 typedef DPTR(FCallMethodDesc)        PTR_FCallMethodDesc;
 typedef DPTR(ArrayMethodDesc)        PTR_ArrayMethodDesc;
 typedef DPTR(DynamicMethodDesc)      PTR_DynamicMethodDesc;
 typedef DPTR(InstantiatedMethodDesc) PTR_InstantiatedMethodDesc;
 typedef DPTR(GCCoverageInfo)         PTR_GCCoverageInfo;        // see code:GCCoverageInfo::savedCode
+typedef DPTR(InterpMethod) PTR_InterpMethod;
+typedef DPTR(InterpByteCodeStart) PTR_InterpByteCodeStart;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 GVAL_DECL(DWORD, g_MiniMetaDataBuffMaxSize);
@@ -1436,11 +1440,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-#if defined(FEATURE_JIT_PITCHING)
-        if (IsPitchable())
-            return false;
-#endif
-
         return !IsVersionable() && !InEnCEnabledModule();
     }
 
@@ -1578,11 +1577,6 @@ public:
     // Perf warning: takes the CodeVersionManagerLock on every call
     PCODE GetNativeCodeAnyVersion();
 
-#if defined(FEATURE_JIT_PITCHING)
-    bool IsPitchable();
-    void PitchNativeCode();
-#endif
-
     //================================================================
     // FindOrCreateAssociatedMethodDesc
     //
@@ -1688,18 +1682,13 @@ public:
     // corresponding instantiation of the target of a call.
     MethodDesc *ResolveGenericVirtualMethod(OBJECTREF *orThis);
 
-
-private:
-    ReturnKind ParseReturnKindFromSig(INDEBUG(bool supportStringConstructors = false));
-
+#if defined(TARGET_X86) && defined(HAVE_GCCOVER)
 public:
-    // This method is used to restore ReturnKind using the class handle, it is fully supported only on x64 Ubuntu,
-    // other platforms do not support multi-reg return case with pointers.
-    // Use this method only when you can't hit this case
-    // (like CLRToCOMMethodFrame::GcScanRoots) or when you can tolerate RT_Illegal return.
-    // Also, on the other platforms for a single field struct return case
-    // the function can't distinguish RT_Object and RT_ByRef.
-    ReturnKind GetReturnKind(INDEBUG(bool supportStringConstructors = false));
+    // This method is used to restore ReturnKind using the class handle. It will return
+    // RT_Illegal for rare cases like byref-like types. Use this method only when you can tolerate
+    // RT_Illegal return.
+    ReturnKind GetReturnKind();
+#endif // TARGET_X86 && HAVE_GCCOVER
 
 public:
     // In general you don't want to call GetCallTarget - you want to
@@ -1800,6 +1789,20 @@ protected:
     WORD m_wSlotNumber; // The slot number of this MethodDesc in the vtable array.
     WORD m_wFlags; // See MethodDescFlags
     PTR_MethodDescCodeData m_codeData;
+#ifdef FEATURE_INTERPRETER
+    PTR_InterpByteCodeStart m_interpreterCode;
+public:
+    const PTR_InterpByteCodeStart GetInterpreterCode() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_interpreterCode;
+    }
+    void SetInterpreterCode(PTR_InterpByteCodeStart interpreterCode)
+    {
+        LIMITED_METHOD_CONTRACT;
+        VolatileStore(&m_interpreterCode, interpreterCode);
+    }
+#endif // FEATURE_INTERPRETER
 
 #ifdef _DEBUG
 public:
