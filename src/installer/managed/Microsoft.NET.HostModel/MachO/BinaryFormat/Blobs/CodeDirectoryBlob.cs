@@ -4,6 +4,8 @@
 #nullable enable
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -96,6 +98,21 @@ internal sealed class CodeDirectoryBlob : IBlob
         + GetIdentifierLength(_identifier)
         + SpecialSlotCount * HashSize
         + CodeSlotCount * HashSize;
+
+    public string Identifier => _identifier;
+    public CodeDirectoryFlags Flags => (CodeDirectoryFlags)((uint)_cdHeader._flags).ConvertFromBigEndian();
+    public CodeDirectoryVersion Version => (CodeDirectoryVersion)((uint)_cdHeader._version).ConvertFromBigEndian();
+    public IReadOnlyList<IReadOnlyList<byte>> SpecialSlotHashes => _specialSlotHashes;
+    public IReadOnlyList<IReadOnlyList<byte>> CodeHashes => _codeHashes;
+    public ulong ExecutableSegmentBase => _cdHeader._execSegmentBase.ConvertFromBigEndian();
+    public ulong ExecutableSegmentLimit => _cdHeader._execSegmentLimit.ConvertFromBigEndian();
+    public ExecutableSegmentFlags ExecutableSegmentFlags => (ExecutableSegmentFlags)((ulong)_cdHeader._execSegmentFlags).ConvertFromBigEndian();
+
+    private uint SpecialSlotCount => _cdHeader._specialSlotCount.ConvertFromBigEndian();
+    private uint CodeSlotCount => _cdHeader._codeSlotCount.ConvertFromBigEndian();
+    private byte HashSize => _cdHeader.HashSize;
+    private uint HashesOffset => _cdHeader._hashesOffset.ConvertFromBigEndian();
+
 
     public static CodeDirectoryBlob Create(
         IMachOFileReader accessor,
@@ -225,11 +242,6 @@ internal sealed class CodeDirectoryBlob : IBlob
             _execSegmentFlags = (ExecutableSegmentFlags)((ulong)execSegmentFlags).ConvertToBigEndian();
         }
     }
-
-    public uint HashesOffset => _cdHeader._hashesOffset.ConvertFromBigEndian();
-    public uint SpecialSlotCount => _cdHeader._specialSlotCount.ConvertFromBigEndian();
-    public uint CodeSlotCount => _cdHeader._codeSlotCount.ConvertFromBigEndian();
-    public byte HashSize => _cdHeader.HashSize;
 
     public override bool Equals(object? obj)
     {
