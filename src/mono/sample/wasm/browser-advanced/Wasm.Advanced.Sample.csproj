@@ -9,7 +9,7 @@
     <EmccEnableAssertions>true</EmccEnableAssertions>
     <EmccEnvironment>web,worker</EmccEnvironment>
     <!-- add OpenGL emulation -->
-    <EmccExtraLDFlags> -s USE_CLOSURE_COMPILER=1 -s LEGACY_GL_EMULATION=1 -lGL -lSDL -lidbfs.js</EmccExtraLDFlags>
+    <EmccExtraLDFlags>-s LEGACY_GL_EMULATION=1 -lGL -lSDL -lidbfs.js</EmccExtraLDFlags>
     <!-- just to prove we don't do JS eval() -->
     <_ServeHeaders>$(_ServeHeaders) -h &quot;Content-Security-Policy: default-src 'self' 'wasm-unsafe-eval'&quot; -h &quot;Timing-Allow-Origin: *&quot; -h &quot;Cross-Origin-Opener-Policy: same-origin&quot; -h &quot;Cross-Origin-Embedder-Policy: require-corp&quot; </_ServeHeaders>
     <!-- enable reporting to profiler in browser dev tools -->
