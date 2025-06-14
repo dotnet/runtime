@@ -393,6 +393,7 @@ private:
 
     // Emit a generic dictionary lookup and push the result onto the interpreter stack
     void EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup);
+    void EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
     void* AllocMethodData(size_t numBytes);
 public:
