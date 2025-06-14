@@ -1320,26 +1320,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         return;
     }
 
-    /* The following algorithm works based on the following equation:
-     * `imm = high32 + offset1` OR `imm = high32 - offset2`
-     *
-     * high32 will be loaded with `lui + addiw`, while offset
-     * will be loaded with `slli + addi` in 11-bits chunks
-     *
-     * First, determine at which position to partition imm into high32 and offset,
-     * so that it yields the least instruction.
-     * Where high32 = imm[y:x] and imm[63:y] are all zeroes or all ones.
-     *
-     * From the above equation, the value of offset1 & offset2 are:
-     * -> offset1 = imm[x-1:0]
-     * -> offset2 = ~(imm[x-1:0] - 1)
-     * The smaller offset should yield the least instruction. (is this correct?) */
-
-    // STEP 1: Determine x & y
-
-    int x;
     int y;
-    if (((uint64_t)imm >> 63) & 0b1)
+    if ((imm >> 63) & 0b1)
     {
         // last one position from MSB
         y = 63 - BitOperations::LeadingZeroCount((uint64_t)~imm) + 1;
@@ -1349,18 +1331,6 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         // last zero position from MSB
         y = 63 - BitOperations::LeadingZeroCount((uint64_t)imm) + 1;
     }
-    if (imm & 0b1)
-    {
-        // first zero position from LSB
-        x = BitOperations::TrailingZeroCount((uint64_t)~imm);
-    }
-    else
-    {
-        // first one position from LSB
-        x = BitOperations::TrailingZeroCount((uint64_t)imm);
-    }
-
-    // STEP 2: Determine whether to utilize SRLI or not.
 
     /* SRLI can be utilized when the input has the following pattern:
      *
@@ -1399,89 +1369,25 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         insCountLimit = absMaxInsCount;
     }
 
-    bool     utilizeSRLI     = false;
-    int      srliShiftAmount = 0;
-    uint64_t originalImm     = imm;
-    bool     cond1           = (y - x) > 31;
-    if ((((uint64_t)imm >> 63) & 0b1) == 0 && cond1)
+    int     srliShiftAmount = 0;
+    ssize_t originalImm     = imm;
+    if ((((imm >> 63) & 0b1) == 0) && (y > 31))
     {
-        srliShiftAmount  = BitOperations::LeadingZeroCount((uint64_t)imm);
-        uint64_t tempImm = (uint64_t)imm << srliShiftAmount;
-        int      m       = BitOperations::LeadingZeroCount(~tempImm);
-        int      b       = 64 - m;
-        int      a       = BitOperations::TrailingZeroCount(tempImm);
-        bool     cond2   = (b - a) < 32;
-        bool     cond3   = ((y - x) - (b - a)) >= 11;
-        if (cond2 || cond3)
+        int     leadingZeroCount = BitOperations::LeadingZeroCount((uint64_t)imm);
+        ssize_t shiftedImm       = imm << leadingZeroCount;
+        int     m                = BitOperations::LeadingZeroCount((uint64_t)~shiftedImm);
+        if (m > 11)
         {
-            imm         = tempImm;
-            y           = b;
-            x           = a;
-            utilizeSRLI = true;
+            srliShiftAmount = leadingZeroCount;
+            imm             = shiftedImm;
+            y               = 64 - m;
             insCountLimit -= 1;
         }
     }
 
-    assert(y >= x);
-    assert((1 <= y) && (y <= 63));
-    assert((1 <= x) && (x <= 63));
-
     if (y < 32)
     {
         y = 31;
-        x = 0;
-    }
-    else if ((y - x) < 31)
-    {
-        y = x + 31;
-    }
-    else
-    {
-        x = y - 31;
-    }
-
-    uint32_t high32 = ((int64_t)imm >> x) & WordMask(32);
-
-    // STEP 3: Determine whether to use high32 + offset1 or high32 - offset2
-
-    /* TODO: Instead of using subtract / add mode, assume that we're always adding
-     * 12-bit chunks. However, if we encounter such 12-bit chunk with MSB == 1,
-     * add 1 to the previous chunk, and add the 12-bit chunk as is, which
-     * essentially does a subtraction. It will generate the least instruction to
-     * load offset.
-     * See the following discussion:
-     * https://github.com/dotnet/runtime/pull/113250#discussion_r1987576070 */
-
-    uint32_t offset1        = imm & WordMask((uint8_t)x);
-    uint32_t offset2        = (~(offset1 - 1)) & WordMask((uint8_t)x);
-    uint32_t offset         = offset1;
-    bool     isSubtractMode = false;
-
-    if ((high32 == 0x7FFFFFFF) && (y != 63))
-    {
-        /* Handle corner case: we cannot do subtract mode if high32 == 0x7FFFFFFF
-         * Since adding 1 to it will change the sign bit. Instead, shift x and y
-         * to the left by one. */
-        int      newX       = x + 1;
-        uint32_t newOffset1 = imm & WordMask((uint8_t)newX);
-        uint32_t newOffset2 = (~(newOffset1 - 1)) & WordMask((uint8_t)newX);
-        if (newOffset2 < offset1)
-        {
-            x              = newX;
-            high32         = ((int64_t)imm >> x) & WordMask(32);
-            offset2        = newOffset2;
-            isSubtractMode = true;
-        }
-    }
-    else if (offset2 < offset1)
-    {
-        isSubtractMode = true;
-    }
-
-    if (isSubtractMode)
-    {
-        offset = offset2;
-        high32 = (high32 + 1) & WordMask(32);
     }
 
     assert(absMaxInsCount >= 2);
@@ -1489,90 +1395,84 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     instruction ins[absMaxInsCount];
     int32_t     values[absMaxInsCount];
 
-    // STEP 4: Generate instructions to load high32
+    int32_t high32  = (imm >> (y - 31));
+    int32_t upper20 = high32 >> 12;
+    int32_t lower12 = (high32 << 20) >> 20;
 
-    uint32_t upper    = (high32 >> 12) & WordMask(20);
-    uint32_t lower    = high32 & WordMask(12);
-    int      lowerMsb = (lower >> 11) & 0b1;
-    if (lowerMsb == 1)
-    {
-        upper += 1;
-        upper &= WordMask(20);
-    }
-    if (upper != 0)
+    int     numRemainderBits = y - 31;
+    int32_t remainder        = (imm << (32 - numRemainderBits)) & WordMask(32);
+
+    if (!((upper20 == 0) || (upper20 == -1 && lower12 < 0)))
     {
         ins[numberOfInstructions]    = INS_lui;
-        values[numberOfInstructions] = ((upper >> 19) & 0b1) ? (upper + 0xFFF00000) : upper;
+        values[numberOfInstructions] = upper20;
         numberOfInstructions += 1;
     }
-    if (lower != 0)
+
+    bool defer_addiw = (lower12 == -1 && remainder < 0);
+
+    if (!((lower12 == 0) || defer_addiw))
     {
         ins[numberOfInstructions]    = INS_addiw;
-        values[numberOfInstructions] = lower;
+        values[numberOfInstructions] = lower12;
         numberOfInstructions += 1;
+        if (lower12 < 0)
+        {
+            values[numberOfInstructions - 2] += 1;
+            // Sign extend 20 bits immediate value, since the sign bit might change.
+            values[numberOfInstructions - 2] = (values[numberOfInstructions - 2] << (32 - 20)) >> (32 - 20);
+        }
     }
 
-    // STEP 5: Generate instructions to load offset in 11-bits chunks
-
-    int chunkLsbPos = (x < 11) ? 0 : (x - 11);
-    int shift       = (x < 11) ? x : 11;
-    int chunkMask   = (x < 11) ? WordMask((uint8_t)x) : WordMask(11);
-    while (true)
+    while (numRemainderBits > 0)
     {
-        uint32_t chunk = (offset >> chunkLsbPos) & chunkMask;
+        int32_t shift;
+        int     remainderMsb = (remainder >> 31) & 0b1;
+        if (remainderMsb == 0)
+        {
+            shift = 11 + BitOperations::LeadingZeroCount((uint32_t)remainder);
+        }
+        else
+        {
+            shift = 11 + BitOperations::LeadingZeroCount((uint32_t)~remainder);
+        }
+        shift         = (numRemainderBits < shift) ? numRemainderBits : shift;
+        int32_t chunk = (remainder >> (32 - shift));
+
+        if (numRemainderBits < 12 && !defer_addiw)
+        {
+            chunk &= WordMask(numRemainderBits);
+        }
+
+        numberOfInstructions += 1;
+        if (numberOfInstructions > insCountLimit)
+        {
+            break;
+        }
+        ins[numberOfInstructions - 1]    = INS_slli;
+        values[numberOfInstructions - 1] = shift;
 
         if (chunk != 0)
         {
-            /* We could move our 11 bit chunk window to the right for as many as the
-             * leading zeros.*/
-            int leadingZerosOn11BitsChunk = 11 - (32 - BitOperations::LeadingZeroCount(chunk));
-            if (leadingZerosOn11BitsChunk > 0)
-            {
-                int maxAdditionalShift =
-                    (chunkLsbPos < leadingZerosOn11BitsChunk) ? chunkLsbPos : leadingZerosOn11BitsChunk;
-                chunkLsbPos -= maxAdditionalShift;
-                shift += maxAdditionalShift;
-                chunk = (offset >> chunkLsbPos) & chunkMask;
-            }
-
-            numberOfInstructions += 2;
+            numberOfInstructions += 1;
             if (numberOfInstructions > insCountLimit)
             {
                 break;
             }
-            ins[numberOfInstructions - 2]    = INS_slli;
-            values[numberOfInstructions - 2] = shift;
-            if (isSubtractMode)
-            {
-                ins[numberOfInstructions - 1]    = INS_addi;
-                values[numberOfInstructions - 1] = -(int32_t)chunk;
-            }
-            else
-            {
-                ins[numberOfInstructions - 1]    = INS_addi;
-                values[numberOfInstructions - 1] = chunk;
-            }
-            shift = 0;
+            ins[numberOfInstructions - 1]    = INS_addi;
+            values[numberOfInstructions - 1] = chunk;
         }
-        if (chunkLsbPos == 0)
-        {
-            break;
-        }
-        shift += (chunkLsbPos < 11) ? chunkLsbPos : 11;
-        chunkMask = (chunkLsbPos < 11) ? (chunkMask >> (11 - chunkLsbPos)) : WordMask(11);
-        chunkLsbPos -= (chunkLsbPos < 11) ? chunkLsbPos : 11;
-    }
-    if (shift > 0)
-    {
-        numberOfInstructions += 1;
-        if (numberOfInstructions <= insCountLimit)
-        {
-            ins[numberOfInstructions - 1]    = INS_slli;
-            values[numberOfInstructions - 1] = shift;
-        }
-    }
 
-    // STEP 6: Determine whether to use emitDataConst or emit generated instructions
+        if (chunk >> 11)
+        {
+            values[numberOfInstructions - 3] += 1;
+            // Sign extend 12 bits immediate value, since the sign bit might change.
+            values[numberOfInstructions - 3] = (values[numberOfInstructions - 3] << (32 - 12)) >> (32 - 12);
+        }
+
+        remainder = remainder << shift;
+        numRemainderBits -= shift;
+    }
 
     if (numberOfInstructions <= insCountLimit)
     {
@@ -1580,7 +1480,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         id->idReg1(reg);
         memcpy(id->ins, ins, sizeof(instruction) * numberOfInstructions);
         memcpy(id->values, values, sizeof(int32_t) * numberOfInstructions);
-        if (utilizeSRLI)
+        if (srliShiftAmount != 0)
         {
             numberOfInstructions += 1;
             assert(numberOfInstructions < absMaxInsCount);
