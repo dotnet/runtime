@@ -44,11 +44,8 @@ public unsafe class GCBridgeTests
     internal static unsafe void BridgeProcessingFinishCallback(MarkCrossReferencesArgs* mcr)
     {
         Console.WriteLine("Bridge processing finish SCCs {0}, CCRs {1}", mcr->ComponentCount, mcr->CrossReferenceCount);
-        if (expectedSccsLen != mcr->ComponentCount || expectedCcrsLen != mcr->CrossReferenceCount)
-        {
-            Console.WriteLine("Expected SCCs {0}, CCRs {1}", expectedSccsLen, expectedCcrsLen);
-            Environment.Exit(1);
-        }
+        Assert.Equal(expectedSccsLen, mcr->ComponentCount);
+        Assert.Equal(expectedCcrsLen, mcr->CrossReferenceCount);
 
         List<GCHandle> handlesToFree = new List<GCHandle>();
 
@@ -69,51 +66,36 @@ public unsafe class GCBridgeTests
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         JavaMarshal.Initialize(GetMarkCrossReferencesFtn());
         SetBridgeProcessingFinishCallback(&BridgeProcessingFinishCallback);
 
-        int retCode;
+        RunGraphTest(SimpleTest, 2, 1);
 
-        retCode = RunGraphTest(SimpleTest, 2, 1);
-        if (retCode != 100)
-            return retCode;
+        RunGraphTest(NestedCycles, 2, 1);
 
-        retCode = RunGraphTest(NestedCycles, 2, 1);
-        if (retCode != 100)
-            return retCode;
-
-        retCode = RunGraphTest(Spider, 3, 2);
-        if (retCode != 100)
-            return retCode;
+        RunGraphTest(Spider, 3, 2);
 
         // expected result from mono implementation
-        retCode = RunGraphTest(RandomLinks, 1993, 2695);
-
-        return retCode;
+        RunGraphTest(RandomLinks, 1993, 2695);
     }
 
-    static bool CheckWeakRefs(List<WeakReference> weakRefs, bool expectedAlive)
+    static void CheckWeakRefs(List<WeakReference> weakRefs, bool expectedAlive)
     {
         foreach (WeakReference weakRef in weakRefs)
         {
             if (expectedAlive)
             {
-                if (weakRef.Target == null)
-                    return false;
-                if (!weakRef.IsAlive)
-                    return false;
+                Assert.NotNull(weakRef.Target);
+                Assert.True(weakRef.IsAlive);
             }
             else
             {
-                if (weakRef.Target != null)
-                    return false;
-                if (weakRef.IsAlive)
-                    return false;
+                Assert.Null(weakRef.Target);
+                Assert.False(weakRef.IsAlive);
             }
         }
-        return true;
     }
 
     private static void SetBPFinishArguments(bool rh, nuint expectedS, nuint expectedC)
@@ -123,10 +105,9 @@ public unsafe class GCBridgeTests
         expectedCcrsLen = expectedC;
     }
 
-    static int RunGraphTest(Func<List<WeakReference>> buildGraph, nuint expectedSCCs, nuint expectedCCRs)
+    static void RunGraphTest(Func<List<WeakReference>> buildGraph, nuint expectedSCCs, nuint expectedCCRs)
     {
-        if (!GC.TryStartNoGCRegion(10000000))
-            return 10;
+        Assert.True(GC.TryStartNoGCRegion(10000000));
         Console.WriteLine("Start test {0}", buildGraph.Method.Name);
         List<WeakReference> weakRefs = buildGraph();
         // All objects produced by buildGraph are expected to be dead, so we can compute
@@ -139,15 +120,13 @@ public unsafe class GCBridgeTests
         // The BP finish of first gc will not release any cross refs. We verify
         // that we computed the correct number of SCCs and CCRs for the object graph.
 
-        if (!GC.TryStartNoGCRegion(100000))
-            return 11;
+        Assert.True(GC.TryStartNoGCRegion(100000));
         Thread.Sleep (100);
 
         // BP might have finished or not at this point, WeakRef check should wait for
         // it to finish, so we can obtain the correct value of the weakref. All targets
         // should be alive because we haven't released any handles.
-        if (!CheckWeakRefs(weakRefs, true))
-            return 12;
+        CheckWeakRefs(weakRefs, true);
 
         Console.WriteLine(" Second GC");
         SetBPFinishArguments(true, expectedSCCs, expectedCCRs);
@@ -158,11 +137,9 @@ public unsafe class GCBridgeTests
 
         // This should wait for bridge processing to finish, detecting that the bridge objects
         // are freed on the java/client side.
-        if (!CheckWeakRefs(weakRefs, false))
-            return 13;
+        CheckWeakRefs(weakRefs, false);
 
-        if (!GC.TryStartNoGCRegion(100000))
-            return 14;
+        Assert.True(GC.TryStartNoGCRegion(100000));
         Console.WriteLine(" Third GC");
         SetBPFinishArguments(true, 0, 0);
         GC.EndNoGCRegion();
@@ -173,7 +150,6 @@ public unsafe class GCBridgeTests
         Thread.Sleep(1000);
 
         Console.WriteLine("Finished test {0}", buildGraph.Method.Name);
-        return 100;
     }
 
     // Simpler version of NestedCycles
