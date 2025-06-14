@@ -14,7 +14,7 @@ bool coreclr_resolver_t::resolve_coreclr(const pal::string_t& libcoreclr_path, c
     append_path(&coreclr_dll_path, LIBCORECLR_NAME);
 
     // We should always be loading coreclr from an absolute path
-    if (!pal::is_path_rooted(coreclr_dll_path))
+    if (!pal::is_path_fully_qualified(coreclr_dll_path))
         return false;
 
     if (!pal::load_library(&coreclr_dll_path, &coreclr_resolver_contract.coreclr))
