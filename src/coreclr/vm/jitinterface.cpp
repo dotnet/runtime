@@ -11316,7 +11316,7 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
 
     EE_TO_JIT_TRANSITION();
 #else
-    PLATFORM_UNSUPPORTED("GetCookieForInterpreterCalliSig is not supported on WebAssembly");
+    PORTABILITY_ASSERT("GetCookieForInterpreterCalliSig is not supported on wasm yet");
 #endif // !TARGET_WASM
     return result;
 }

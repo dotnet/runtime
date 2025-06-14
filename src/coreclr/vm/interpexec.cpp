@@ -1492,7 +1492,7 @@ MAIN_LOOP:
 
                     InvokeCalliStub(LOCAL_VAR(calliFunctionPointerVar, PCODE), pCallStub, stack + callArgsOffset, stack + returnOffset);
 #else
-                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Attempted to execute calli instruction on a non-JIT build"));
+                    PORTABILITY_ASSERT("Attempted to execute calli instruction on wasm, this is not yet implemented");
 #endif // TARGET_WASM
                     break;
                 }
@@ -1533,7 +1533,7 @@ CALL_INTERP_METHOD:
                             // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
                             InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset);
 #else
-                            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Attempted to execute non-interpreter code from interpreter on a non-JIT build"));
+                            PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
 #endif // !TARGET_WASM
                             break;
                         }
