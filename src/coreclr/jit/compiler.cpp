@@ -4578,10 +4578,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_2, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
 
-        // Invert loops
-        //
-        DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
-
         // Run some flow graph optimizations (but don't reorder)
         //
         DoPhase(this, PHASE_OPTIMIZE_FLOW, &Compiler::optOptimizeFlow);
@@ -4603,6 +4599,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Re-establish profile consistency, now that inlining and morph have run.
         //
         DoPhase(this, PHASE_REPAIR_PROFILE_POST_MORPH, &Compiler::fgRepairProfile);
+
+        // Invert loops
+        //
+        DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
 
         // Scale block weights and mark run rarely blocks.
         //
