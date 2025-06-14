@@ -17,6 +17,122 @@ namespace
 {
     BOOL g_Initialized;
     CrossreferenceHandleCallback g_MarkCrossReferences;
+
+    Volatile<bool> g_GCBridgeActive = false;
+    CLREvent* g_bridgeFinished = nullptr;
+
+    void ReleaseGCBridgeArgumentsWorker(
+        _In_ MarkCrossReferencesArgs* args)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
+        // Memory was allocated for the collections by the GC.
+        // See callers of GCToEEInterface::TriggerGCBridge().
+
+        // Free memory in each of the SCCs
+        for (size_t i = 0; i < args->ComponentCount; i++)
+        {
+            free(args->Components[i].Context);
+        }
+        free(args->Components);
+        free(args->CrossReferences);
+        free(args);
+    }
+}
+
+bool Interop::IsGCBridgeActive()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return g_GCBridgeActive;
+}
+
+void Interop::WaitForGCBridgeFinish()
+{
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    while (g_GCBridgeActive)
+    {
+        GCX_PREEMP();
+        g_bridgeFinished->Wait(INFINITE, false);
+        // In theory, even though we waited for bridge to finish, because we are in preemptive mode
+        // the thread could have been suspended and another GC could have happened, triggering bridge
+        // processing again. In this case we would wait again for bridge processing.
+    }
+}
+
+void Interop::TriggerClientBridgeProcessing(
+    _In_ MarkCrossReferencesArgs* args)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(GCHeapUtilities::IsGCInProgress());
+    }
+    CONTRACTL_END;
+
+    if (g_GCBridgeActive)
+    {
+        // Release the memory allocated since the GCBridge
+        // is already running and we're not passing them to it.
+        ReleaseGCBridgeArgumentsWorker(args);
+        return;
+    }
+
+    bool gcBridgeTriggered = JavaNative::TriggerClientBridgeProcessing(args);
+
+    if (!gcBridgeTriggered)
+    {
+        // Release the memory allocated since the GCBridge
+        // wasn't trigger for some reason.
+        ReleaseGCBridgeArgumentsWorker(args);
+        return;
+    }
+
+    // This runs during GC while the world is stopped, no synchronisation required
+    if (g_bridgeFinished)
+    {
+        g_bridgeFinished->Reset();
+    }
+
+    // Mark the GCBridge as active.
+    g_GCBridgeActive = true;
+}
+
+void Interop::FinishCrossReferenceProcessing(
+    _In_ MarkCrossReferencesArgs *args,
+    _In_ size_t length,
+    _In_ void* unreachableObjectHandles)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(g_GCBridgeActive);
+
+    // Mark the GCBridge as inactive.
+    // This much be synchronized with the GC so switch to cooperative mode.
+    {
+        GCX_COOP();
+
+        GCHeapUtilities::GetGCHeap()->NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
+
+        IGCHandleManager* pHandleManager = GCHandleUtilities::GetGCHandleManager();
+        for (size_t i = 0; i < length; i++)
+            pHandleManager->DestroyHandleOfUnknownType(((OBJECTHANDLE*)unreachableObjectHandles)[i]);
+
+        g_GCBridgeActive = FALSE;
+        g_bridgeFinished->Set();
+    }
+
+    ReleaseGCBridgeArgumentsWorker(args);
 }
 
 extern "C" BOOL QCALLTYPE JavaMarshal_Initialize(
@@ -38,6 +154,8 @@ extern "C" BOOL QCALLTYPE JavaMarshal_Initialize(
         {
             g_MarkCrossReferences = (CrossreferenceHandleCallback)markCrossReferences;
             success = TRUE;
+            g_bridgeFinished = new CLREvent();
+            g_bridgeFinished->CreateManualEvent(false);
         }
     }
 
