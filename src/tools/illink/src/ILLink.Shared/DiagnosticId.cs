@@ -188,6 +188,7 @@ namespace ILLink.Shared
 		RedundantSuppression = 2121,
 		TypeNameIsNotAssemblyQualified = 2122,
 		RequiresUnreferencedCodeOnEntryPoint = 2123,
+		TypeMapGroupTypeCannotBeStaticallyDetermined = 2124,
 		_EndTrimAnalysisWarningsSentinel,
 
 		// Single-file diagnostic ids.
