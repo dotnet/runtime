@@ -1270,10 +1270,10 @@ int32_t* MyICJI::getAddrOfCaptureThreadGlobal(void** ppIndirection)
 }
 
 // return the native entry point to an EE helper (see CorInfoHelpFunc)
-void* MyICJI::getHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection)
+void MyICJI::getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP *pNativeEntrypoint, CORINFO_METHOD_HANDLE *methodHandle)
 {
     jitInstance->mc->cr->AddCall("getHelperFtn");
-    return jitInstance->mc->repGetHelperFtn(ftnNum, ppIndirection);
+    jitInstance->mc->repGetHelperFtn(ftnNum, pNativeEntrypoint, methodHandle);
 }
 
 // return a callable address of the function (native code). This function
@@ -1378,8 +1378,7 @@ void MyICJI::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CON
     jitInstance->mc->repGetAddressOfPInvokeTarget(method, pLookup);
 }
 
-// Generate a cookie based on the signature that would needs to be passed
-// to CORINFO_HELP_PINVOKE_CALLI
+// Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
 LPVOID MyICJI::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection)
 {
     jitInstance->mc->cr->AddCall("GetCookieForPInvokeCalliSig");
@@ -1392,6 +1391,13 @@ bool MyICJI::canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
     jitInstance->mc->cr->AddCall("canGetCookieForPInvokeCalliSig");
     return jitInstance->mc->repCanGetCookieForPInvokeCalliSig(szMetaSig);
+}
+
+// Generate a cookie based on the signature to pass to INTOP_CALLI
+LPVOID MyICJI::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
+{
+    jitInstance->mc->cr->AddCall("GetCookieForInterpreterCalliSig");
+    return jitInstance->mc->repGetCookieForInterpreterCalliSig(szMetaSig);
 }
 
 // Gets a handle that is checked to see if the current method is

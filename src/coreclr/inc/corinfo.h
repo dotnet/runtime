@@ -3100,10 +3100,11 @@ public:
             void                  **ppIndirection = NULL
             ) = 0;
 
-    // return the native entry point to an EE helper (see CorInfoHelpFunc)
-    virtual void* getHelperFtn (
+    // return the native entry point and/or managed method of an EE helper (see CorInfoHelpFunc)
+    virtual void getHelperFtn (
             CorInfoHelpFunc         ftnNum,
-            void                  **ppIndirection = NULL
+            CORINFO_CONST_LOOKUP *  pNativeEntrypoint,
+            CORINFO_METHOD_HANDLE * pMethodHandle = NULL /* OUT */
             ) = 0;
 
     // return a callable address of the function (native code). This function
@@ -3189,8 +3190,7 @@ public:
             CORINFO_CONST_LOOKUP *  pLookup
             ) = 0;
 
-    // Generate a cookie based on the signature that would needs to be passed
-    // to CORINFO_HELP_PINVOKE_CALLI
+    // Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
     virtual void* GetCookieForPInvokeCalliSig(
             CORINFO_SIG_INFO*   szMetaSig,
             void**              ppIndirection = NULL
@@ -3201,6 +3201,10 @@ public:
     virtual bool canGetCookieForPInvokeCalliSig(
             CORINFO_SIG_INFO*   szMetaSig
             ) = 0;
+
+    // Generate a cookie based on the signature to pass to INTOP_CALLI in the interpreter.
+    virtual void* GetCookieForInterpreterCalliSig(
+            CORINFO_SIG_INFO*   szMetaSig) = 0;
 
     // Gets a handle that is checked to see if the current method is
     // included in "JustMyCode"

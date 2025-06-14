@@ -73,7 +73,8 @@ const wchar_t*,String
 uint32_t**,ref uint*
 unsigned*,ref uint
 CORJIT_FLAGS*,ref CORJIT_FLAGS
-CORINFO_CONST_LOOKUP*,ref CORINFO_CONST_LOOKUP
+REF_CORINFO_CONST_LOOKUP,ref CORINFO_CONST_LOOKUP,CORINFO_CONST_LOOKUP*,CORINFO_CONST_LOOKUP*
+CORINFO_CONST_LOOKUP*
 CORINFO_LOOKUP*,ref CORINFO_LOOKUP
 CORINFO_LOOKUP_KIND*,ref CORINFO_LOOKUP_KIND
 CORINFO_EH_CLAUSE*,ref CORINFO_EH_CLAUSE
@@ -212,10 +213,10 @@ FUNCTIONS
     const char* getClassAssemblyName(CORINFO_CLASS_HANDLE cls)
     void* LongLifetimeMalloc(size_t sz)
     void LongLifetimeFree(void* obj)
-    bool getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset)
+    bool getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, REF_CORINFO_CONST_LOOKUP addr, int* offset)
     size_t getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE clr)
     size_t getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE clr)
-    bool getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr)
+    bool getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, REF_CORINFO_CONST_LOOKUP addr)
     unsigned getClassSize(CORINFO_CLASS_HANDLE cls)
     unsigned getHeapClassSize(CORINFO_CLASS_HANDLE        cls)
     bool canAllocateOnStack(CORINFO_CLASS_HANDLE cls)
@@ -236,7 +237,7 @@ FUNCTIONS
     bool isObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
     bool getStringChar(CORINFO_OBJECT_HANDLE strObj, int index, uint16_t* value);
     CORINFO_CLASS_HANDLE getObjectType(CORINFO_OBJECT_HANDLE objPtr)
-    bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_LOOKUP_KIND * pGenericLookupKind, CorInfoHelpFunc id, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONST_LOOKUP *pLookup)
+    bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_LOOKUP_KIND * pGenericLookupKind, CorInfoHelpFunc id, CORINFO_METHOD_HANDLE callerHandle, REF_CORINFO_CONST_LOOKUP pLookup)
     void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP *pLookup)
     CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context)
     void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
@@ -294,9 +295,9 @@ FUNCTIONS
     void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
     uint32_t getThreadTLSIndex(void                  **ppIndirection);
     int32_t * getAddrOfCaptureThreadGlobal(void                  **ppIndirection);
-    void* getHelperFtn (CorInfoHelpFunc         ftnNum, void                  **ppIndirection);
-    void getFunctionEntryPoint(CORINFO_METHOD_HANDLE   ftn, CORINFO_CONST_LOOKUP *  pResult, CORINFO_ACCESS_FLAGS accessFlags);
-    void getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP *  pResult);
+    void getHelperFtn (CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE *pMethod);
+    void getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn, REF_CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags);
+    void getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, REF_CORINFO_CONST_LOOKUP pResult);
     void* getMethodSync(CORINFO_METHOD_HANDLE               ftn, void                  **ppIndirection);
     CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE   handle);
     CORINFO_MODULE_HANDLE embedModuleHandle(CORINFO_MODULE_HANDLE   handle, void                  **ppIndirection);
@@ -305,8 +306,9 @@ FUNCTIONS
     CORINFO_FIELD_HANDLE embedFieldHandle(CORINFO_FIELD_HANDLE    handle, void                  **ppIndirection);
     void embedGenericHandle(CORINFO_RESOLVED_TOKEN *        pResolvedToken, bool fEmbedParent, CORINFO_METHOD_HANDLE   callerHandle, CORINFO_GENERICHANDLE_RESULT *  pResult);
     void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
-    void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE   method, CORINFO_CONST_LOOKUP *pLookup);
+    void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, REF_CORINFO_CONST_LOOKUP pLookup);
     void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void           ** ppIndirection);
+    void* GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig);
     bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
     CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(CORINFO_METHOD_HANDLE       method, CORINFO_JUST_MY_CODE_HANDLE**ppIndirection);
     void GetProfilingHandle(bool* pbHookFunction, void **pProfilerHandle, bool* pbIndirectedHandles);
@@ -325,7 +327,7 @@ FUNCTIONS
     CORINFO_METHOD_HANDLE getAsyncResumptionStub();
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool mustConvert);
     bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,bool supportEnabled);
-    void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint);
+    void updateEntryPointForTailCall(REF_CORINFO_CONST_LOOKUP entryPoint);
     void allocMem(AllocMemArgs* pArgs);
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize)
     void allocUnwindInfo(uint8_t* pHotCode, uint8_t* pColdCode, uint32_t startOffset, uint32_t endOffset, uint32_t unwindSize, uint8_t* pUnwindBlock, CorJitFuncKind funcKind)

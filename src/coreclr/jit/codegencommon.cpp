@@ -1764,10 +1764,9 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     //
     if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries() && !compiler->IsAot())
     {
-        void* ignored;
         for (int i = CORINFO_HELP_ASSIGN_REF; i <= CORINFO_HELP_BULK_WRITEBARRIER; i++)
         {
-            compiler->compGetHelperFtn((CorInfoHelpFunc)i, &ignored);
+            compiler->compGetHelperFtn((CorInfoHelpFunc)i);
         }
     }
 #endif

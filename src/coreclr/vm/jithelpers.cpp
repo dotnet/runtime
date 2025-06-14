@@ -314,15 +314,11 @@ HCIMPLEND
 //
 //========================================================================
 
-// Define the t_ThreadStatics variable here, so that these helpers can use
-// the most optimal TLS access pattern for the platform when inlining the
-// GetThreadLocalStaticBaseIfExistsAndInitialized function.
 // Using compiler specific thread local storage directives due to linkage issues.
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread) ThreadLocalData t_ThreadStatics;
-#else
-__thread ThreadLocalData t_ThreadStatics;
+__declspec(selectany)
 #endif // _MSC_VER
+PLATFORM_THREAD_LOCAL ThreadLocalData t_ThreadStatics;
 
 extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, bool gcStatic)
 {
