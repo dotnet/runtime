@@ -589,7 +589,7 @@ public:
 #endif
 };
 
-#if defined(HOST_64BIT)
+#if defined(TARGET_AMD64)
 // On non X86 platforms, the OS defined UnwindInfo (accessed from RUNTIME_FUNCTION
 // structures) to  support the ability unwind the stack.   Unfortunatey the pre-Win8
 // APIs defined a callback API for publishing this data dynamically that ETW does
@@ -604,17 +604,9 @@ public:
 // RUNTIME_FUNCTION array as well as other bookkeeping (the current and maximum
 // size of the array, and the handle used to publish it to the OS.
 //
-// Ideally we would just use this new API when it is available, however to mininmize
-// risk and to make the change perfectly pay-for-play, we us the original mechanism
-// ALWAYS, and in addition publish via the Table ONLY WHEN ETW JIT events are turned
-// on.
-//
-// This class implements a 'catchup' routine that allows us to publish existing JITTed
-// methods when ETW turns on.  Currently this is 'sticky' (once we start publishing
-// both ways, we do so for the life of the process.
-//
 typedef DPTR(class UnwindInfoTable) PTR_UnwindInfoTable;
-class UnwindInfoTable {
+class UnwindInfoTable final
+{
 public:
     // All public functions are thread-safe.
 
@@ -629,20 +621,15 @@ private:
     static void RemoveFromUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, TADDR baseAddress, TADDR entryPoint);
 
 public:
-    // By default this publishing is off, this routine turns it on (and optionally publishes existing methods)
-    static void PublishUnwindInfo(bool publishExisting);
+    static void Initialize();
     ~UnwindInfoTable();
 
 private:
     void UnRegister();
     void Register();
     UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd, ULONG size);
-    static void PublishUnwindInfoForExistingMethods();
 
 private:
-    static Volatile<bool> s_publishingActive;            // Publishing to ETW is turned on
-    static class Crst*  s_pUnwindInfoTableLock;          // lock protects all public UnwindInfoTable functions
-
     PVOID               hHandle;          // OS handle for a published RUNTIME_FUNCTION table
     ULONG_PTR           iRangeStart;      // Start of memory described by this table
     ULONG_PTR           iRangeEnd;        // End of memory described by this table
@@ -652,7 +639,7 @@ private:
     int                 cDeletedEntries;    // Number of slots we removed.
 };
 
-#endif // defined(HOST_64BIT)
+#endif // defined(TARGET_AMD64)
 
 //-----------------------------------------------------------------------------
 // The ExecutionManager uses RangeSection as the abstraction of a contiguous

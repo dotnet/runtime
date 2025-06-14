@@ -2752,15 +2752,6 @@ extern "C"
                 }
             }
 
-#ifdef TARGET_AMD64
-            // We only do this on amd64  (NOT ARM, because ARM uses frame based stack crawling)
-            // If we have turned on the JIT keyword to the INFORMATION setting (needed to get JIT names) then
-            // we assume that we also want good stack traces so we need to publish unwind information so
-            // ETW can get at it
-            if(bIsPublicTraceHandle && ETW_CATEGORY_ENABLED(providerContext, TRACE_LEVEL_INFORMATION, CLR_RUNDOWNJIT_KEYWORD))
-                UnwindInfoTable::PublishUnwindInfo(g_fEEStarted != FALSE);
-#endif
-
             if(g_fEEStarted && !g_fEEShutDown && bIsRundownTraceHandle)
             {
                 // Start and End Method/Module Rundowns

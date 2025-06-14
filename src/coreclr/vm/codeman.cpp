@@ -93,10 +93,8 @@ static RtlGrowFunctionTableFnPtr pRtlGrowFunctionTable;
 static RtlDeleteGrowableFunctionTableFnPtr pRtlDeleteGrowableFunctionTable;
 static Volatile<bool> RtlUnwindFtnsInited;
 
-// statics for UnwindInfoTable
-Crst* UnwindInfoTable::s_pUnwindInfoTableLock = NULL;
-Volatile<bool>      UnwindInfoTable::s_publishingActive = false;
-
+static Volatile<bool> s_publishingActive;   // Publishing to ETW is turned on
+static Crst*  s_pUnwindInfoTableLock;       // lock protects all public UnwindInfoTable functions
 
 #if _DEBUG
 // Fake functions on Win7 checked build to excercize the code paths, they are no-ops
@@ -113,9 +111,11 @@ VOID WINAPI FakeRtlDeleteGrowableFunctionTable (PVOID DynamicTable) {}
 
 bool InitUnwindFtns()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
-    } CONTRACTL_END;
+    }
+    CONTRACTL_END;
 
 #ifndef TARGET_UNIX
     if (!RtlUnwindFtnsInited)
@@ -434,76 +434,25 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 }
 
 /*****************************************************************************/
-// Publish all existing JIT compiled methods by iterating through the code heap
-// Note that because we need to keep the entries in order we have to hold
-// s_pUnwindInfoTableLock so that all entries get inserted in the correct order.
-// (we rely on heapIterator walking the methods in a heap section in order).
-
-/* static */ void UnwindInfoTable::PublishUnwindInfoForExistingMethods()
+// turn on the publishing of unwind info.
+/* static */ void UnwindInfoTable::InitializeUnwindInfo()
 {
-    STANDARD_VM_CONTRACT;
-
-    // CodeHeapIterator ensures code heaps don't get deallocated while being walked
-    // and only walks methods that are allocated at the time of iterator creation.
-    CodeHeapIterator heapIterator = ExecutionManager::GetEEJitManager()->GetCodeHeapIterator();
-    while(heapIterator.Next())
+    CONTRACTL
     {
-        MethodDesc *pMD = heapIterator.GetMethod();
-        if(pMD)
-        {
-            PCODE methodEntry =(PCODE) heapIterator.GetMethodCode();
-            RangeSection * pRS = ExecutionManager::FindCodeRange(methodEntry, ExecutionManager::GetScanFlags());
-            _ASSERTE(pRS != NULL);
-            _ASSERTE(pRS->_pjit->GetCodeType() == (miManaged | miIL));
-            if (pRS != NULL && pRS->_pjit->GetCodeType() == (miManaged | miIL))
-            {
-                // This cast is justified because only EEJitManager's have the code type above.
-                EEJitManager* pJitMgr = (EEJitManager*)(pRS->_pjit);
-                CodeHeader * pHeader = pJitMgr->GetCodeHeaderFromStartAddress(methodEntry);
-                int unwindInfoCount = pHeader->GetNumberOfUnwindInfos();
-                for(int i = 0; i < unwindInfoCount; i++)
-                    AddToUnwindInfoTable(&pRS->_pUnwindInfoTable, pHeader->GetUnwindInfo(i), pRS->_range.RangeStart(), pRS->_range.RangeEndOpen());
-            }
-        }
+        THROWS;
+        GC_NOTRIGGER;
     }
-}
+    CONTRACTL_END;
 
-/*****************************************************************************/
-// turn on the publishing of unwind info.  Called when the ETW rundown provider
-// is turned on.
-
-/* static */ void UnwindInfoTable::PublishUnwindInfo(bool publishExisting)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    if (s_publishingActive)
-        return;
+    _ASSERTE(!s_publishingActive);
 
     // If we don't have the APIs we need, give up
     if (!InitUnwindFtns())
         return;
 
-    EX_TRY
-    {
-        // Create the lock
-        Crst* newCrst = new Crst(CrstUnwindInfoTableLock);
-        if (InterlockedCompareExchangeT(&s_pUnwindInfoTableLock, newCrst, NULL) == NULL)
-        {
-            s_publishingActive = true;
-            if (publishExisting)
-                PublishUnwindInfoForExistingMethods();
-        }
-        else
-            delete newCrst;    // we were in a race and failed, throw away the Crst we made.
-
-    } EX_CATCH {
-        STRESS_LOG1(LF_JIT, LL_ERROR, "Exception happened when doing unwind Info rundown. EIP of last AV = %p\n", g_LastAccessViolationEIP);
-        _ASSERTE(!"Exception thrown while publishing 'catchup' ETW unwind information");
-        s_publishingActive = false;     // Try to minimize damage.
-    } EX_END_CATCH(SwallowAllExceptions);
+    // Create the lock
+    s_pUnwindInfoTableLock = new Crst(CrstUnwindInfoTableLock);
+    s_publishingActive = true;
 }
 
 #endif // defined(TARGET_AMD64) && !defined(DACCESS_COMPILE)
