@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ExtendedLayout.cs" />
+    <Compile Include="CStruct.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="ExtendedLayoutTypes.ilproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>
