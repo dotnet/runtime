@@ -2077,7 +2077,7 @@ namespace System.Net.Http
 
             if (_connectionClose)
             {
-                throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authconnectionfailure);
+                throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authconnectionfailure, statusCode: response.StatusCode);
             }
 
             Debug.Assert(response.Content != null);
@@ -2093,7 +2093,7 @@ namespace System.Net.Http
                 if (!await responseStream.DrainAsync(_pool.Settings._maxResponseDrainSize).ConfigureAwait(false) ||
                     _connectionClose)       // Draining may have set this
                 {
-                    throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authconnectionfailure);
+                    throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authconnectionfailure, statusCode: response.StatusCode);
                 }
             }
 
