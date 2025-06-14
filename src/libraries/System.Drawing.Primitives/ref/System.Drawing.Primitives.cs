@@ -167,6 +167,7 @@ namespace System.Drawing
         public bool Equals(System.Drawing.Color other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Drawing.Color FromArgb(int argb) { throw null; }
+        public static System.Drawing.Color FromArgb(System.Numerics.Colors.Argb<byte> argb) { throw null; }
         public static System.Drawing.Color FromArgb(int alpha, System.Drawing.Color baseColor) { throw null; }
         public static System.Drawing.Color FromArgb(int red, int green, int blue) { throw null; }
         public static System.Drawing.Color FromArgb(int alpha, int red, int green, int blue) { throw null; }
@@ -178,7 +179,10 @@ namespace System.Drawing
         public float GetSaturation() { throw null; }
         public static bool operator ==(System.Drawing.Color left, System.Drawing.Color right) { throw null; }
         public static bool operator !=(System.Drawing.Color left, System.Drawing.Color right) { throw null; }
+        public static explicit operator System.Numerics.Colors.Argb<byte>(in System.Drawing.Color color) { throw null; }
+        public static implicit operator System.Drawing.Color(System.Numerics.Colors.Argb<byte> argb) { throw null; }
         public int ToArgb() { throw null; }
+        public System.Numerics.Colors.Argb<byte> ToArgbValue() { throw null; }
         public System.Drawing.KnownColor ToKnownColor() { throw null; }
         public override string ToString() { throw null; }
     }
