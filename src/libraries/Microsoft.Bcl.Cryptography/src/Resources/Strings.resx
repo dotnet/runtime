@@ -171,6 +171,12 @@
   <data name="Cryptography_KeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The specified key is not the correct size for the indicated algorithm.</value>
   </data>
+  <data name="Cryptography_MLDsaNoSecretKey" xml:space="preserve">
+    <value>The current instance does not contain a secret key.</value>
+  </data>
+  <data name="Cryptography_MLDsaNoSeed" xml:space="preserve">
+    <value>The current instance does not contain a seed.</value>
+  </data>
   <data name="Cryptography_MLDsaPkcs8KeyMismatch" xml:space="preserve">
     <value>The specified PKCS#8 key contains a seed that does not match the expanded key.</value>
   </data>
