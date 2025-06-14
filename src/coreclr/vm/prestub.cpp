@@ -1976,7 +1976,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 }
 
 #ifdef FEATURE_INTERPRETER
-extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
+extern "C" void* STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, int8_t* pArgs, size_t size, void* retBuff)
 {
     // Argument registers are in the TransitionBlock
     // The stack arguments are right after the pTransitionBlock
@@ -1987,6 +1987,12 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
         COMPlusThrow(kOutOfMemoryException);
     }
     int8_t *sp = threadContext->pStackPointer;
+
+    // copy the arguments to the stack
+    if (size > 0 && pArgs != nullptr)
+    {
+        memcpy(sp, pArgs, size);
+    }
 
     // This construct ensures that the InterpreterFrame is always stored at a higher address than the
     // InterpMethodContextFrame. This is important for the stack walking code.
@@ -2011,6 +2017,11 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
     frames.interpreterFrame.Pop();
 
     return frames.interpMethodContextFrame.pRetVal;
+}
+
+extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
+{
+    return ExecuteInterpretedMethodWithArgs(pTransitionBlock, byteCodeAddr, nullptr, 0, retBuff);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -2310,13 +2321,13 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     pCode = DoBackpatch(pMT, pDispatchingMT, FALSE);
 
 Return:
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_JIT)
     InterpByteCodeStart *pInterpreterCode = GetInterpreterCode();
     if (pInterpreterCode != NULL)
     {
         CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
     }
-#endif // FEATURE_INTERPRETER
+#endif // FEATURE_INTERPRETER && FEATURE_JIT
 
     RETURN pCode;
 }

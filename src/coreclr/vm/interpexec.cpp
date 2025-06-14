@@ -6,7 +6,6 @@
 #include "threads.h"
 #include "gcenv.h"
 #include "interpexec.h"
-#include "callstubgenerator.h"
 
 // HACK: debugreturn.h breaks constexpr which is used by <limits>
 #if defined(debug_instrumented_return) || defined(_DEBUGRETURN_H_)
@@ -20,6 +19,9 @@ FCDECL1(float, JIT_ULng2Flt, uint64_t val);
 FCDECL1(double, JIT_ULng2Dbl, uint64_t val);
 FCDECL1(float, JIT_Lng2Flt, int64_t val);
 FCDECL1(double, JIT_Lng2Dbl, int64_t val);
+
+#ifndef TARGET_WASM
+#include "callstubgenerator.h"
 
 void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
 {
@@ -113,6 +115,8 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
 
     return pHeader;
 }
+
+#endif // !TARGET_WASM
 
 typedef void* (*HELPER_FTN_PP)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
@@ -1477,6 +1481,7 @@ MAIN_LOOP:
 
                 case INTOP_CALLI:
                 {
+#ifndef TARGET_WASM
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     int32_t calliFunctionPointerVar = ip[3];
@@ -1486,6 +1491,9 @@ MAIN_LOOP:
                     ip += 5;
 
                     InvokeCalliStub(LOCAL_VAR(calliFunctionPointerVar, PCODE), pCallStub, stack + callArgsOffset, stack + returnOffset);
+#else
+                    PORTABILITY_ASSERT("Attempted to execute calli instruction on wasm, this is not yet implemented");
+#endif // TARGET_WASM
                     break;
                 }
 
@@ -1521,8 +1529,12 @@ CALL_INTERP_METHOD:
                         }
                         if (targetIp == NULL)
                         {
+#ifndef TARGET_WASM
                             // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
                             InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset);
+#else
+                            PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
+#endif // !TARGET_WASM
                             break;
                         }
                     }
