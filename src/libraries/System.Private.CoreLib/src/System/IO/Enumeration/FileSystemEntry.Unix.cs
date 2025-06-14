@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 namespace System.IO.Enumeration
@@ -22,7 +23,6 @@ namespace System.IO.Enumeration
         private ReadOnlySpan<char> _fileName;
         private FileNameBuffer _fileNameBuffer;
 
-        // Wrap the fixed buffer to workaround visibility issues in api compat verification
         [InlineArray(DecodedNameBufferLength)]
         private struct FileNameBuffer
         {
@@ -99,7 +99,10 @@ namespace System.IO.Enumeration
             {
                 if (_directoryEntry.NameLength != 0 && _fileName.Length == 0)
                 {
-                    _fileName = _directoryEntry.GetName(_fileNameBuffer);
+                    // Use unsafe API to create the Span to allow it to escape. It is safe as long as
+                    // the whole FileSystemEntry is never copied.
+                    Span<char> buffer = MemoryMarshal.CreateSpan(ref _fileNameBuffer._char0, DecodedNameBufferLength);
+                    _fileName = _directoryEntry.GetName(buffer);
                 }
 
                 return _fileName;
