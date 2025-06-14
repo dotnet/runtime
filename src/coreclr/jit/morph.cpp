@@ -1773,7 +1773,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // add as a non-standard arg.
         }
     }
-    else if (call->gtCallType == CT_INDIRECT && (call->gtCallCookie != nullptr) && !call->IsVirtualStub())
+    else if ((call->gtCallType == CT_INDIRECT) && !call->IsVirtualStub() && (call->gtCallCookie != nullptr))
     {
         assert(!call->IsUnmanaged());
 
@@ -2080,8 +2080,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             assert(reMorphing);
             continue;
         }
-
-        assert(!argx->OperIs(GT_NONE));
 
         argx        = fgMorphTree(argx);
         *parentArgx = argx;

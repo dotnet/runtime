@@ -5978,8 +5978,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             {
                 // pinvoke-calli cookie is a constant, or constant indirection
                 // or a non-tree if this is a managed call.
-                assert(call->gtCallCookie == nullptr || call->gtCallCookie->OperIs(GT_CNS_INT, GT_IND) ||
-                       call->IsVirtualStub());
+                assert(call->IsVirtualStub() || (call->gtCallCookie == nullptr) ||
+                       call->gtCallCookie->OperIs(GT_CNS_INT, GT_IND));
 
                 GenTree* indirect = call->gtCallAddr;
 
@@ -6727,7 +6727,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             }
             if (call->gtCallType == CT_INDIRECT)
             {
-                if ((operand == call->gtCallCookie) && !call->IsVirtualStub())
+                if (!call->IsVirtualStub() && (operand == call->gtCallCookie))
                 {
                     *pUse = &call->gtCallCookie;
                     return true;
@@ -10650,7 +10650,7 @@ void GenTreeUseEdgeIterator::AdvanceCall()
             assert(call->gtCallType == CT_INDIRECT);
 
             m_advance = &GenTreeUseEdgeIterator::AdvanceCall<CALL_ADDRESS>;
-            if ((call->gtCallCookie != nullptr) && !call->IsVirtualStub())
+            if (!call->IsVirtualStub() && (call->gtCallCookie != nullptr))
             {
                 m_edge = &call->gtCallCookie;
                 return;

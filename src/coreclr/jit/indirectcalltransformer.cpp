@@ -571,6 +571,7 @@ private:
 
         virtual void ClearFlag()
         {
+            // We remove the GDV flag from the call in the CreateElse
         }
 
         virtual UINT8 GetChecksCount()
