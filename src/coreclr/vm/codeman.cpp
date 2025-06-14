@@ -435,7 +435,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 
 /*****************************************************************************/
 // turn on the publishing of unwind info.
-/* static */ void UnwindInfoTable::InitializeUnwindInfo()
+/* static */ void UnwindInfoTable::Initialize()
 {
     CONTRACTL
     {
