@@ -15,15 +15,9 @@ namespace System.Runtime.InteropServices
 
 #if FEATURE_JAVAMARSHAL
         // FIXME implement waiting for bridge processing
-        internal static bool InternalTryGetBridgeWait(IntPtr handle, ref object? result)
+        internal static object? InternalGetBridgeWait(IntPtr handle)
         {
-            result = InternalGet(handle);
-            return true;
-        }
-
-        internal static void InternalGetBridgeWait(IntPtr handle, ref object? result)
-        {
-            result = InternalGet(handle);
+            return InternalGet(handle);
         }
 #endif
     }
