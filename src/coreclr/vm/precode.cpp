@@ -20,6 +20,18 @@ InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
 InterleavedLoaderHeapConfig s_fixupStubPrecodeHeapConfig;
 #endif
 
+void AssertThisIsNotInterpreterCode(PCODE code)
+{
+#ifdef FEATURE_INTERPRETER
+#ifndef DACCESS_COMPILE
+    EECodeInfo codeInfo(code);
+    if (!codeInfo.IsValid())
+        return;
+    _ASSERTE(codeInfo.GetCodeManager() != ExecutionManager::GetInterpreterCodeManager());
+#endif
+#endif
+}
+
 //==========================================================================================
 // class Precode
 //==========================================================================================
