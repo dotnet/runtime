@@ -13380,11 +13380,15 @@ static void LogJitMethodEnd(MethodDesc* ftn)
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         _In_opt_ COR_ILMETHOD_DECODER* ILHeader,
                         _Out_ bool* isTier0,
+                        _Out_ bool* isInterpreterCode,
                         _Out_ ULONG* pSizeOfCode)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(config != NULL);
     _ASSERTE(isTier0 != NULL);
+    _ASSERTE(isInterpreterCode != NULL);
+
+    *isInterpreterCode = false;
 
     NativeCodeVersion nativeCodeVersion = config->GetCodeVersion();
     MethodDesc* ftn = nativeCodeVersion.GetMethodDesc();
@@ -13431,6 +13435,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         if (ret)
         {
             sizeOfILCode = interpreterJitInfo.getMethodInfoInternal()->ILCodeSize;
+
+            AllocMemTracker amt;
+            InterpreterPrecode* pPrecode = Precode::AllocateInterpreterPrecode(ret, ftn->GetLoaderAllocator(), &amt);
+            amt.SuppressRelease();
+            ret = PINSTRToPCODE(pPrecode->GetEntryPoint());
+            *isInterpreterCode = true;
             *isTier0 = interpreterJitInfo.getJitFlagsInternal()->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
         }
     }

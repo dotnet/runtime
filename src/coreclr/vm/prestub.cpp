@@ -429,17 +429,6 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         LOG((LF_CLASSLOADER, LL_INFO1000000,
             "    In PrepareILBasedCode, calling JitCompileCode\n"));
         pCode = JitCompileCode(pConfig);
-#ifdef FEATURE_INTERPRETER
-        if (pConfig->IsInterpreterCode())
-        {
-            AllocMemTracker amt;
-            InterpreterPrecode* pPrecode = Precode::AllocateInterpreterPrecode(pCode, GetLoaderAllocator(), &amt);
-            amt.SuppressRelease();
-            pCode = PINSTRToPCODE(pPrecode->GetEntryPoint());
-            SetNativeCodeInterlocked(pCode);
-            SetInterpreterCode(dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr));
-        }
-#endif // FEATURE_INTERPRETER
     }
     else
     {
@@ -917,13 +906,14 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
 
     PCODE pCode = (PCODE)NULL;
     bool isTier0 = false;
+    bool isInterpreterCode = false;
     PCODE pOtherCode = (PCODE)NULL;
 
     EX_TRY
     {
         Thread::CurrentPrepareCodeConfigHolder threadPrepareCodeConfigHolder(GetThread(), pConfig);
 
-        pCode = UnsafeJitFunction(pConfig, pilHeader, &isTier0, pSizeOfCode);
+        pCode = UnsafeJitFunction(pConfig, pilHeader, &isTier0, &isInterpreterCode, pSizeOfCode);
     }
     EX_CATCH
     {
@@ -1001,6 +991,15 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
         // Another thread beat us to publishing its copy of the JITted code.
         return pOtherCode;
     }
+
+#ifdef FEATURE_INTERPRETER
+    if (isInterpreterCode)
+    {
+        InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
+        InterpByteCodeStart* interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+        pConfig->GetMethodDesc()->SetInterpreterCode(interpreterCode);
+    }
+#endif // FEATURE_INTERPRETER
 
 #ifdef FEATURE_CODE_VERSIONING
     pConfig->SetGeneratedOrLoadedNewCode();
