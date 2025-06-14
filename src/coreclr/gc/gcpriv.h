@@ -3741,10 +3741,10 @@ private:
     PER_HEAP_FIELD_SINGLE_GC BOOL loh_compacted_p;
 #endif //FEATURE_LOH_COMPACTION
 
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint8_t** global_bridge_list;
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC size_t num_global_bridge_objs;
-#endif //FEATURE_GCBRIDGE
+#endif //FEATURE_JAVAMARSHAL
 
     /*****************************************/
     // PER_HEAP_FIELD_SINGLE_GC_ALLOC fields //

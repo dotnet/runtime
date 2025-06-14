@@ -155,7 +155,7 @@ void Interop::OnAfterGCScanRoots(_In_ bool isConcurrent)
 #endif // FEATURE_OBJCMARSHAL
 }
 
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
 
 namespace
 {
@@ -285,4 +285,4 @@ void Interop::FinishCrossReferenceProcessing(
     ReleaseGCBridgeArgumentsWorker(args);
 }
 
-#endif // FEATURE_GCBRIDGE
+#endif // FEATURE_JAVAMARSHAL

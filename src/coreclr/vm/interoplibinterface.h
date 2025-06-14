@@ -123,7 +123,7 @@ public:
     static void OnBeforeGCScanRoots(_In_ bool isConcurrent);
     static void OnAfterGCScanRoots(_In_ bool isConcurrent);
 
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
 
     static bool IsGCBridgeActive();
 
@@ -137,7 +137,7 @@ public:
         _In_ size_t length,
         _In_ void* unreachableObjectHandles);
 
-#endif // FEATURE_GCBRIDGE
+#endif // FEATURE_JAVAMARSHAL
 };
 
 #endif // _INTEROPLIBINTERFACE_H_

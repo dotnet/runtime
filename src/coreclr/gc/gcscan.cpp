@@ -177,7 +177,7 @@ void GCScan::GcScanHandles (promote_func* fn,  int condemned, int max_gen,
     }
 }
 
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
 uint8_t** GCScan::GcProcessBridgeObjects (int condemned, int max_gen, ScanContext* sc, size_t* numObjs)
 {
     uint8_t** bridgeObjectsToPromote = 0;
@@ -188,7 +188,7 @@ uint8_t** GCScan::GcProcessBridgeObjects (int condemned, int max_gen, ScanContex
 
     return bridgeObjectsToPromote;
 }
-#endif //FEATURE_GCBRIDGE
+#endif //FEATURE_JAVAMARSHAL
 
 /*
  * Scan all handle roots in this 'namespace' for profiling

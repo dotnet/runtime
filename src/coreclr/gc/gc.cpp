@@ -2866,10 +2866,10 @@ FinalizerWorkItem* gc_heap::finalizer_work;
 BOOL gc_heap::proceed_with_gc_p = FALSE;
 GCSpinLock gc_heap::gc_lock;
 
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
 uint8_t**   gc_heap::global_bridge_list;
 size_t      gc_heap::num_global_bridge_objs;
-#endif //FEATURE_GCBRIDGE
+#endif //FEATURE_JAVAMARSHAL
 
 #ifdef BACKGROUND_GC
 uint64_t gc_heap::total_uoh_a_last_bgc = 0;
@@ -30455,7 +30455,7 @@ void gc_heap::mark_phase (int condemned_gen_number)
     mark_queue.verify_empty();
     fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
 
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
 
 #ifdef MULTIPLE_HEAPS
     dprintf(3, ("Joining for short weak handle scan"));
@@ -30488,7 +30488,7 @@ void gc_heap::mark_phase (int condemned_gen_number)
         // using GC_ROOT_DH_HANDLES temporarily. add a new value for GC_ROOT_BRIDGE
         fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
     }
-#endif //FEATURE_GCBRIDGE
+#endif //FEATURE_JAVAMARSHAL
 
 #ifdef MULTIPLE_HEAPS
     dprintf(3, ("Joining for short weak handle scan"));
@@ -39221,7 +39221,7 @@ void gc_heap::background_mark_phase ()
     dprintf (2, ("after NR 1st Hov count: %zu", bgc_overflow_count));
     bgc_overflow_count = 0;
 
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
 
     // FIXME Any reason this code should be different for BGC ? Otherwise extract it to some common method ?
 
@@ -39254,7 +39254,7 @@ void gc_heap::background_mark_phase ()
 
         drain_mark_queue();
     }
-#endif //FEATURE_GCBRIDGE
+#endif //FEATURE_JAVAMARSHAL
 
 #ifdef MULTIPLE_HEAPS
     bgc_t_join.join(this, gc_join_null_dead_short_weak);
@@ -53311,7 +53311,7 @@ void GCHeap::DiagGetGCSettings(EtwGCSettingsInfo* etw_settings)
 
 void GCHeap::NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles)
 {
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
     Ref_NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
 #else
     assert(false);

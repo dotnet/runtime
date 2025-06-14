@@ -113,7 +113,7 @@ namespace System
             }
         }
 
-#if FEATURE_GCBRIDGE
+#if FEATURE_JAVAMARSHAL
         private static object? InternalGetBridgeWait(nint wh)
         {
             object? target = null;
@@ -140,7 +140,7 @@ namespace System
                 if (wh == 0)
                     return false;
 
-#if FEATURE_GCBRIDGE
+#if FEATURE_JAVAMARSHAL
                 bool result = InternalGetBridgeWait(wh) != null;
 #else
                 bool result = GCHandle.InternalGet(wh) != null;
@@ -189,7 +189,7 @@ namespace System
                 }
 #endif
 
-#if FEATURE_GCBRIDGE
+#if FEATURE_JAVAMARSHAL
                 target = InternalGetBridgeWait(th);
 #else
                 // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive

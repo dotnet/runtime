@@ -44,9 +44,9 @@
 #include "interoputil.h"
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
 #include "interoplibinterface.h"
-#endif // FEATURE_GCBRIDGE
+#endif // FEATURE_JAVAMARSHAL
 
 // Prelink
 // Does advance loading of an N/Direct library
@@ -402,7 +402,7 @@ FCIMPL1(LPVOID, MarshalNative::GCHandleInternalGet, OBJECTHANDLE handle)
 }
 FCIMPLEND
 
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
 // Get the object referenced by a GC handle, also waiting for bridge procesing to finish.
 // Used by WeakReference
 FCIMPL2(FC_BOOL_RET, MarshalNative::GCHandleInternalTryGetBridgeWait, OBJECTHANDLE handle, Object **pObjResult)
@@ -440,7 +440,7 @@ extern "C" void QCALLTYPE GCHandle_InternalGetBridgeWait(OBJECTHANDLE handle, QC
 
     END_QCALL;
 }
-#endif // FEATURE_GCBRIDGE
+#endif // FEATURE_JAVAMARSHAL
 
 // Update the object referenced by a GC handle.
 FCIMPL2(VOID, MarshalNative::GCHandleInternalSet, OBJECTHANDLE handle, Object *obj)

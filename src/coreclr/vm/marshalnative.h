@@ -23,7 +23,7 @@ public:
     static FCDECL2(LPVOID, GCHandleInternalAlloc, Object *obj, int type);
     static FCDECL1(FC_BOOL_RET, GCHandleInternalFree, OBJECTHANDLE handle);
     static FCDECL1(LPVOID, GCHandleInternalGet, OBJECTHANDLE handle);
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
     static FCDECL2(FC_BOOL_RET, GCHandleInternalTryGetBridgeWait, OBJECTHANDLE handle, Object** pObjResult);
 #endif
     static FCDECL2(VOID, GCHandleInternalSet, OBJECTHANDLE handle, Object *obj);

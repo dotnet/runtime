@@ -411,9 +411,9 @@ void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* arg
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
     Interop::TriggerClientBridgeProcessing(args);
-#endif // FEATURE_GCBRIDGE
+#endif // FEATURE_JAVAMARSHAL
 }
 
 void GCToEEInterface::SyncBlockCacheDemote(int max_gen)

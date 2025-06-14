@@ -76,7 +76,7 @@
     <FeatureJavaMarshal>true</FeatureJavaMarshal>
   </PropertyGroup>
   <PropertyGroup>
-    <DefineConstants Condition="'$(FeatureJavaMarshal)' == 'true'">FEATURE_JAVAMARSHAL;FEATURE_GCBRIDGE;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(FeatureJavaMarshal)' == 'true'">FEATURE_JAVAMARSHAL;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <!-- Platform specific properties -->

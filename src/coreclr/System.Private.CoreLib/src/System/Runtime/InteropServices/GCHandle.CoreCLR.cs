@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalFreeWithGCTransition")]
         private static partial void _InternalFreeWithGCTransition(IntPtr dependentHandle);
 
-#if FEATURE_GCBRIDGE
+#if FEATURE_JAVAMARSHAL
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool InternalTryGetBridgeWait(IntPtr handle, ref object? result);
 

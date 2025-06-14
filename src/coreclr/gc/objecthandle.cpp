@@ -481,9 +481,9 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
 #ifdef FEATURE_SIZED_REF_HANDLES
     case    HNDTYPE_SIZEDREF:
 #endif // FEATURE_SIZED_REF_HANDLES
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
     case    HNDTYPE_CROSSREFERENCE:
-#endif // FEATURE_GCBRIDGE
+#endif // FEATURE_JAVAMARSHAL
         break;
 
     case    HNDTYPE_PINNED:
@@ -1532,7 +1532,7 @@ void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* s
 }
 #endif // FEATURE_SIZED_REF_HANDLES
 
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
 
 static void NullBridgeObjectWeakRef(Object **handle, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2)
 {
@@ -1633,7 +1633,7 @@ uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext
 
     return GetRegisteredBridges(numObjs);
 }
-#endif //FEATURE_GCBRIDGE
+#endif // FEATURE_JAVAMARSHAL
 
 void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, ScanContext *sc)
 {
@@ -1720,7 +1720,7 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
 #endif
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
         HNDTYPE_CROSSREFERENCE,
 #endif
     };
@@ -1789,7 +1789,7 @@ void Ref_ScanHandlesForProfilerAndETW(uint32_t maxgen, uintptr_t lp1, handle_sca
         HNDTYPE_SIZEDREF,
 #endif
         HNDTYPE_WEAK_INTERIOR_POINTER,
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
         HNDTYPE_CROSSREFERENCE,
 #endif
     };
@@ -1917,7 +1917,7 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
         HNDTYPE_SIZEDREF,
 #endif
         HNDTYPE_WEAK_INTERIOR_POINTER,
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
         HNDTYPE_CROSSREFERENCE,
 #endif
     };
@@ -1977,7 +1977,7 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
         HNDTYPE_SIZEDREF,
 #endif
         HNDTYPE_WEAK_INTERIOR_POINTER,
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
         HNDTYPE_CROSSREFERENCE,
 #endif
     };
@@ -2036,7 +2036,7 @@ void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #endif
         HNDTYPE_DEPENDENT,
         HNDTYPE_WEAK_INTERIOR_POINTER,
-#ifdef FEATURE_GCBRIDGE
+#ifdef FEATURE_JAVAMARSHAL
         HNDTYPE_CROSSREFERENCE,
 #endif
     };

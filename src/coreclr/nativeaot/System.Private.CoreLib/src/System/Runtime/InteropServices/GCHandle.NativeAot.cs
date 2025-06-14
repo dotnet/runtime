@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices
 
         internal static void InternalSet(IntPtr handle, object? value) => RuntimeImports.RhHandleSet(handle, value);
 
-#if FEATURE_GCBRIDGE
+#if FEATURE_JAVAMARSHAL
         // FIXME implement waiting for bridge processing
         internal static bool InternalTryGetBridgeWait(IntPtr handle, ref object? result)
         {
