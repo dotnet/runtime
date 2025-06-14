@@ -252,8 +252,6 @@ void ProfileSynthesis::AssignLikelihoods()
 
             case BBJ_COND:
                 // Two successor cases
-                block->GetTrueEdge()->setHeuristicBased();
-                block->GetFalseEdge()->setHeuristicBased();
                 AssignLikelihoodCond(block);
                 break;
 

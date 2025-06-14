@@ -173,36 +173,6 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
         }
     }
 
-    // Reduce the heuristics-derived edge likelihoods into 'block' to indicate exceptional behavior
-    for (FlowEdge* const predEdge : block->PredEdges())
-    {
-        if (predEdge->isHeuristicBased() && predEdge->getSourceBlock()->KindIs(BBJ_COND))
-        {
-            BasicBlock* const condBlock = predEdge->getSourceBlock();
-            FlowEdge* const   otherEdge =
-                condBlock->TrueEdgeIs(predEdge) ? condBlock->GetFalseEdge() : condBlock->GetTrueEdge();
-
-            // We should not have degenerate branches
-            assert(predEdge != otherEdge);
-            assert(otherEdge->isHeuristicBased());
-
-            // If the predecessor can jump to a non-throw block, bias the likelihoods to that path
-            if (!otherEdge->getDestinationBlock()->KindIs(BBJ_THROW))
-            {
-                predEdge->setLikelihood(0.0);
-                otherEdge->setLikelihood(1.0);
-            }
-            // If both branches are to throw blocks, consider them equally likely
-            else
-            {
-                predEdge->setLikelihood(0.5);
-                otherEdge->setLikelihood(0.5);
-            }
-
-            profileInconsistent = true;
-        }
-    }
-
     if (profileInconsistent)
     {
         JITDUMP("Flow removal of " FMT_BB " needs to be propagated. Data %s inconsistent.\n", block->bbNum,
