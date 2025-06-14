@@ -337,6 +337,7 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_GetGenerationBudget)
     DllImportEntry(GCHandle_InternalAllocWithGCTransition)
     DllImportEntry(GCHandle_InternalFreeWithGCTransition)
+    DllImportEntry(GCHandle_InternalGetBridgeWait)
     DllImportEntry(MarshalNative_OffsetOf)
     DllImportEntry(MarshalNative_Prelink)
     DllImportEntry(MarshalNative_IsBuiltInComSupported)
@@ -439,6 +440,12 @@ static const Entry s_QCall[] =
     DllImportEntry(ObjCMarshal_TrySetGlobalMessageSendCallback)
     DllImportEntry(ObjCMarshal_TryInitializeReferenceTracker)
     DllImportEntry(ObjCMarshal_CreateReferenceTrackingHandle)
+#endif
+#if defined(FEATURE_JAVAMARSHAL)
+    DllImportEntry(JavaMarshal_Initialize)
+    DllImportEntry(JavaMarshal_CreateReferenceTrackingHandle)
+    DllImportEntry(JavaMarshal_FinishCrossReferenceProcessing)
+    DllImportEntry(JavaMarshal_GetContext)
 #endif
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
     DllImportEntry(IsEventSourceLoggingEnabled)

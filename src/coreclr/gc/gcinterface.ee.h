@@ -239,6 +239,9 @@ public:
     virtual
     bool RefCountedHandleCallbacks(Object * pObject) PURE_VIRTUAL
 
+    virtual
+    void TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args) PURE_VIRTUAL
+
     // Performs a weak pointer scan of the sync block cache.
     virtual
     void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2) PURE_VIRTUAL
@@ -465,6 +468,9 @@ public:
 
     virtual
     uint64_t GetThreadOSThreadId(Thread* thread) PURE_VIRTUAL;
+
+    virtual
+    const char* GetMethodTableDebugName(MethodTable* pMT) PURE_VIRTUAL
 };
 
 #endif // _GCINTERFACE_EE_H_

@@ -99,6 +99,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 if(CLR_CMAKE_TARGET_UNIX)
     add_subdirectory(COM/ComWrappers/MockReferenceTrackerRuntime)
     add_subdirectory(COM/ComWrappers/WeakReference)
+    add_subdirectory(GCBridge)
 endif(CLR_CMAKE_TARGET_UNIX)
 
 if(CLR_CMAKE_TARGET_APPLE)

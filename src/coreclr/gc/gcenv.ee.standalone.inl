@@ -72,6 +72,12 @@ inline bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     return g_theGCToCLR->RefCountedHandleCallbacks(pObject);
 }
 
+inline void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->TriggerClientBridgeProcessing(args);
+}
+
 inline void GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
 {
     assert(g_theGCToCLR != nullptr);
