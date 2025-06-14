@@ -32,6 +32,17 @@
 
 #include <minipal/cpuid.h>
 
+extern "C" void QCALLTYPE ExceptionHandling_SetFatalErrorHandler(PVOID handler)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    EEPolicy::SetFatalErrorHandler(handler);
+
+    END_QCALL;
+}
+
 extern "C" VOID QCALLTYPE Environment_Exit(INT32 exitcode)
 {
     QCALL_CONTRACT;
