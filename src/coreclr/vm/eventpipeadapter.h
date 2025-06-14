@@ -385,7 +385,9 @@ public:
 			ep_provider_config_get_provider_name (&config[0]),
 			ep_provider_config_get_keywords (&config[0]),
 			(EventPipeEventLevel)ep_provider_config_get_logging_level (&config[0]),
-			ep_provider_config_get_filter_data (&config[0]));
+			ep_provider_config_get_filter_data (&config[0]),
+			NULL,
+			NULL);
 	}
 
 	static HRESULT GetProviderName(const EventPipeProvider *provider, ULONG numNameChars, ULONG *numNameCharsOut, LPWSTR name)
