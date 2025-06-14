@@ -180,6 +180,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\CodeDom\Compiler\GeneratedCodeAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CodeDom\Compiler\IndentedTextWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ArrayList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\BitArray.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Comparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\CompatibleComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Concurrent\ConcurrentQueue.cs" />
