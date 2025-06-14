@@ -100,6 +100,17 @@ struct AutoLayoutMaxPacking<T> : ITestStructure
     public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
 }
 
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+struct ManagedAutoUnmanagedSequentialLayoutMinPacking : ITestStructure
+{
+    public byte _byte;
+    public Action _value;
+
+    public int Size => Unsafe.SizeOf<ManagedAutoUnmanagedSequentialLayoutMinPacking>();
+    public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
+}
+
 public unsafe partial class Program
 {
     const int Pass = 100;
@@ -1638,14 +1649,14 @@ public unsafe partial class Program
 
         if (Environment.Is64BitProcess)
         {
-            succeeded &= Test<SequentialLayoutMinPacking<Action>>(
+            succeeded &= Test<ManagedAutoUnmanagedSequentialLayoutMinPacking>(
                 expectedSize: 16,
                 expectedOffsetByte: 8,
                 expectedOffsetValue: 0,
                 expectedNativeSize: 9
             );
 
-            succeeded &= Test<SequentialLayoutMaxPacking<Action>>(
+            succeeded &= Test<ManagedAutoUnmanagedSequentialLayoutMinPacking>(
                 expectedSize: 16,
                 expectedOffsetByte: 8,
                 expectedOffsetValue: 0,
@@ -1654,14 +1665,14 @@ public unsafe partial class Program
         }
         else
         {
-            succeeded &= Test<SequentialLayoutMinPacking<Action>>(
+            succeeded &= Test<ManagedAutoUnmanagedSequentialLayoutMinPacking>(
                 expectedSize: 8,
                 expectedOffsetByte: 4,
                 expectedOffsetValue: 0,
                 expectedNativeSize: 5
             );
 
-            succeeded &= Test<SequentialLayoutMaxPacking<Action>>(
+            succeeded &= Test<ManagedAutoUnmanagedSequentialLayoutMinPacking>(
                 expectedSize: 8,
                 expectedOffsetByte: 4,
                 expectedOffsetValue: 0,
