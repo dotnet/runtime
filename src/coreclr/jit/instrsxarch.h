@@ -1125,6 +1125,8 @@ INST3(vucomxss,         "ucomxss",          IUM_RD, BAD_CODE,               BAD_
 
 //    id                nm                  um      mr            mi            rm            tt          flags
 #define FIRST_APX_INSTRUCTION INS_ccmpo
+INST5(push2,            "push2",             IUM_RD, 0x0030FF,     BAD_CODE,     0x0030FF,     BAD_CODE,     0x0030FF,    INS_TT_NONE,    INS_Flags_Has_NDD)
+INST5(pop2,             "pop2",              IUM_WR, 0x00008F,     BAD_CODE,     0x00008F,     BAD_CODE,     0x00008F,    INS_TT_NONE,    INS_Flags_Has_NDD)
 #define FIRST_CCMP_INSTRUCTION INS_ccmpo
 INST3(ccmpo,            "ccmpo",            IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
 INST3(ccmpno,           "ccmpno",           IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)

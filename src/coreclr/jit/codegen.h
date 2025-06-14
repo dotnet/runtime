@@ -560,6 +560,9 @@ protected:
 
 #if defined(TARGET_XARCH)
     unsigned genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs);
+#ifdef TARGET_AMD64
+    unsigned genPopCalleeSavedRegistersFromMaskAPX(regMaskTP rsPopRegs);
+#endif // TARGET_AMD64
 #endif // !defined(TARGET_XARCH)
 
 #endif // !defined(TARGET_ARM64)
@@ -1586,6 +1589,10 @@ public:
                                 ssize_t   imm,
                                 insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(size_t targetHandle = 0)
                                     DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+
+#if defined(TARGET_AMD64)
+    void instGen_Push2Pop2Ppx(instruction ins, regNumber reg1, regNumber reg2);
+#endif // defined(TARGET_AMD64)
 
 #ifdef TARGET_XARCH
     instruction genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);
