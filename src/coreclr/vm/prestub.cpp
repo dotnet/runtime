@@ -44,13 +44,6 @@
 
 #ifndef DACCESS_COMPILE
 
-#if defined(FEATURE_JIT_PITCHING)
-EXTERN_C void CheckStacksAndPitch();
-EXTERN_C void SavePitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode);
-EXTERN_C void DeleteFromPitchingCandidate(MethodDesc* pMD);
-EXTERN_C void MarkMethodNotPitchingCandidate(MethodDesc* pMD);
-#endif
-
 EXTERN_C void STDCALL ThePreStubPatch();
 
 #if defined(HAVE_GCCOVER)
@@ -609,10 +602,6 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
         GetMethodTable()->GetDebugClassName(),
         m_pszDebugMethodName));
 
-#if defined(FEATURE_JIT_PITCHING)
-    CheckStacksAndPitch();
-#endif
-
     PCODE pCode = (PCODE)NULL;
     {
         // Enter the global lock which protects the list of all functions being JITd
@@ -1011,10 +1000,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     {
         pConfig->SetShouldCountCalls();
     }
-#endif
-
-#if defined(FEATURE_JIT_PITCHING)
-    SavePitchingCandidate(this, *pSizeOfCode);
 #endif
 
 #ifdef FEATURE_MULTICOREJIT
@@ -2198,9 +2183,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     {
         LOG((LF_CLASSLOADER, LL_INFO10000,
             "    In PreStubWorker, method already jitted, backpatching call point\n"));
-        #if defined(FEATURE_JIT_PITCHING)
-            MarkMethodNotPitchingCandidate(this);
-        #endif
 
         pCode = DoBackpatch(pMT, pDispatchingMT, TRUE);
         goto Return;
@@ -2760,10 +2742,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 pCode = PatchNonVirtualExternalMethod(pMD, pCode, pImportSection, pIndirection);
             }
         }
-
-#if defined (FEATURE_JIT_PITCHING)
-        DeleteFromPitchingCandidate(pMD);
-#endif
     }
 
     // Force a GC on every jit if the stress level is high enough

@@ -261,7 +261,7 @@ ep_rt_init (void)
 	extern CrstStatic _ep_rt_coreclr_config_lock;
 
 	_ep_rt_coreclr_config_lock_handle.lock = &_ep_rt_coreclr_config_lock;
-	_ep_rt_coreclr_config_lock_handle.lock->InitNoThrow (CrstEventPipe, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN | CRST_HOST_BREAKABLE));
+	_ep_rt_coreclr_config_lock_handle.lock->InitNoThrow (CrstEventPipe, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
 
 	if (CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeProcNumbers) != 0) {
 #ifndef TARGET_UNIX
