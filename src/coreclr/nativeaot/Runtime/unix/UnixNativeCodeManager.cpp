@@ -20,6 +20,8 @@
 #include "NativeContext.h"
 #include "UnwindHelpers.h"
 
+#include "eventtracebase.h"
+
 #define UBF_FUNC_KIND_MASK      0x03
 #define UBF_FUNC_KIND_ROOT      0x00
 #define UBF_FUNC_KIND_HANDLER   0x01
@@ -1439,6 +1441,8 @@ bool RhRegisterOSModule(void * pModule,
     }
 
     pUnixNativeCodeManager.SuppressRelease();
+
+    ETW::LoaderLog::ModuleLoad(pModule);
 
     return true;
 }
