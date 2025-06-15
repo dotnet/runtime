@@ -482,7 +482,7 @@ void* VMToOSInterface::CreateTemplate(void* pImageTemplate, size_t templateSize,
 #endif
 }
 
-void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStartSpecification)
+void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStartSpecification, void (*dataPageGenerator)(uint8_t* pageBase, size_t size))
 {
 #ifdef TARGET_APPLE
     vm_address_t addr, taddr;
@@ -499,6 +499,12 @@ void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templa
     if (ret != KERN_SUCCESS)
     {
         return NULL;
+    }
+
+    if (dataPageGenerator)
+    {
+        // Generate the data page before we map the code page into memory
+        dataPageGenerator(((uint8_t*) addr) + templateSize, templateSize);
     }
 
     do
@@ -547,6 +553,12 @@ void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templa
     if (pStart == MAP_FAILED)
     {
         return NULL;
+    }
+
+    if (dataPageGenerator)
+    {
+        // Generate the data page before we map the code page into memory
+        dataPageGenerator(((uint8_t*) pStart) + templateSize, templateSize);
     }
 
     void *pStartCode = mmap(pStart, templateSize, PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_FIXED, pThunkData->fdImage, fileOffset);
