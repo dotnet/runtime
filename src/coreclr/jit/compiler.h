@@ -11886,7 +11886,7 @@ public:
 
                 if (call->gtCallType == CT_INDIRECT)
                 {
-                    if (call->gtCallCookie != nullptr)
+                    if (!call->IsVirtualStub() && (call->gtCallCookie != nullptr))
                     {
                         result = WalkTree(&call->gtCallCookie, call);
                         if (result == fgWalkResult::WALK_ABORT)
