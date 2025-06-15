@@ -16,7 +16,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Http
 {
-    internal class DefaultHttpClientFactory : IHttpClientFactory, IHttpMessageHandlerFactory
+    internal class DefaultHttpClientFactory : IHttpClientFactory, IHttpMessageHandlerFactory, IDisposable
     {
         private static readonly TimerCallback _cleanupCallback = (s) => ((DefaultHttpClientFactory)s!).CleanupTimer_Tick();
         private readonly IServiceProvider _services;
@@ -33,14 +33,15 @@ namespace Microsoft.Extensions.Http
         // This seems frequent enough. We also rely on GC occurring to actually trigger disposal.
         private readonly TimeSpan DefaultCleanupInterval = TimeSpan.FromSeconds(10);
 
-        // We use a new timer for each regular cleanup cycle, protected with a lock. Note that this scheme
-        // doesn't give us anything to dispose, as the timer is started/stopped as needed.
+        // We use a new timer for each regular cleanup cycle, protected with a lock.
         //
-        // There's no need for the factory itself to be disposable. If you stop using it, eventually everything will
-        // get reclaimed.
+        // The factory implements IDisposable to ensure that resources are properly cleaned up when the hosting
+        // service provider is disposed. This prevents memory leaks in applications that create and dispose
+        // service providers frequently.
         private Timer? _cleanupTimer;
         private readonly object _cleanupTimerLock;
         private readonly object _cleanupActiveLock;
+        private bool _disposed;
 
         // Collection of 'active' handlers.
         //
@@ -104,6 +105,8 @@ namespace Microsoft.Extensions.Http
         {
             ArgumentNullException.ThrowIfNull(name);
 
+            ObjectDisposedException.ThrowIf(_disposed, nameof(DefaultHttpClientFactory));
+
             HttpMessageHandler handler = CreateHandler(name);
             var client = new HttpClient(handler, disposeHandler: false);
 
@@ -119,6 +122,8 @@ namespace Microsoft.Extensions.Http
         public HttpMessageHandler CreateHandler(string name)
         {
             ArgumentNullException.ThrowIfNull(name);
+
+            ObjectDisposedException.ThrowIf(_disposed, nameof(DefaultHttpClientFactory));
 
             ActiveHandlerTrackingEntry entry = _activeHandlers.GetOrAdd(name, _entryFactory).Value;
 
@@ -234,7 +239,7 @@ namespace Microsoft.Extensions.Http
         {
             lock (_cleanupTimerLock)
             {
-                _cleanupTimer!.Dispose();
+                _cleanupTimer?.Dispose();
                 _cleanupTimer = null;
             }
         }
@@ -242,6 +247,11 @@ namespace Microsoft.Extensions.Http
         // Internal for tests
         internal void CleanupTimer_Tick()
         {
+            // If factory is disposed, don't perform any cleanup
+            if (_disposed)
+            {
+                return;
+            }
             // Stop any pending timers, we'll restart the timer if there's anything left to process after cleanup.
             //
             // With the scheme we're using it's possible we could end up with some redundant cleanup operations.
@@ -282,8 +292,8 @@ namespace Microsoft.Extensions.Http
                     {
                         try
                         {
-                            entry.InnerHandler.Dispose();
-                            entry.Scope?.Dispose();
+                            // During normal cleanup, let the entry check CanDispose itself
+                            entry.Dispose();
                             disposedCount++;
                         }
                         catch (Exception ex)
@@ -310,6 +320,63 @@ namespace Microsoft.Extensions.Http
             if (!_expiredHandlers.IsEmpty)
             {
                 StartCleanupTimer();
+            }
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+
+            // Stop the cleanup timer
+            StopCleanupTimer();
+
+            // Stop all active handler timers to prevent more entries being added to _expiredHandlers
+            List<IDisposable> disposables = new List<IDisposable>();
+
+            // Lock to safely collect handlers from active and expired collections
+            lock (_cleanupActiveLock)
+            {
+                // Stop active handler timers and collect expired handlers
+                foreach (KeyValuePair<string, Lazy<ActiveHandlerTrackingEntry>> entry in _activeHandlers)
+                {
+                    ActiveHandlerTrackingEntry activeEntry = entry.Value.Value;
+                    activeEntry.StopTimer();
+                    disposables.Add(activeEntry);
+                }
+
+                // Collect all expired handlers for disposal
+                while (_expiredHandlers.TryDequeue(out ExpiredHandlerTrackingEntry? entry))
+                {
+                    if (entry != null)
+                    {
+                        // During explicit disposal, we force disposal of all handlers regardless of CanDispose status
+                        disposables.Add(entry);
+                    }
+                }
+
+                // Clear the collections to help with garbage collection
+                _activeHandlers.Clear();
+            }
+
+            // Dispose all handlers outside the lock
+            foreach (IDisposable disposable in disposables)
+            {
+                try
+                {
+                    disposable.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Log.CleanupItemFailed(_logger,
+                        disposable is ActiveHandlerTrackingEntry active ? active.Name :
+                        disposable is ExpiredHandlerTrackingEntry expired ? expired.Name :
+                        "Unknown", ex);
+                }
             }
         }
 
