@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void MLDsaCng_Ctor_ArgValidation()
         {
-            if (MLDsa.IsSupported && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 AssertExtensions.Throws<ArgumentNullException>("key", static () => new MLDsaCng(null));
             }
