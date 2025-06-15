@@ -72,6 +72,7 @@ void InitJITWriteBarrierHelpers();
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         COR_ILMETHOD_DECODER* header,
                         _Out_ bool* isTier0,
+                        _Out_ bool* isInterpreterCode,
                         _Out_ ULONG* pSizeOfCode);
 
 void getMethodInfoILMethodHeaderHelper(
