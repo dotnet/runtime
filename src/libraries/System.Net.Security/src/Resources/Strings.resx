@@ -417,7 +417,7 @@
     <value>CipherSuitesPolicy is not supported on this platform.</value>
   </data>
   <data name="net_ssl_allow_rsa_padding_not_supported" xml:space="preserve">
-    <value>Disabling AllowRsaRssPadding or AllowRsaPkcs1Padding is not supported on this platform.</value>
+    <value>Disabling AllowRsaPssPadding or AllowRsaPkcs1Padding is not supported on this platform.</value>
   </data>
   <data name="SystemNetSecurity_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.Security is not supported on this platform.</value>
