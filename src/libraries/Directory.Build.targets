@@ -59,7 +59,7 @@
     <UseLocalTargetingRuntimePack Condition="'$(IsNETCoreAppAnalyzer)' == 'true'">false</UseLocalTargetingRuntimePack>
     <!-- By default, disable implicit framework references for NetCoreAppCurrent libraries. -->
     <DisableImplicitFrameworkReferences Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                                                   $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)')) and
+                                                   '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)' and
                                                    ('$(IsNETCoreAppRef)' == 'true' or '$(IsNETCoreAppSrc)' == 'true')">true</DisableImplicitFrameworkReferences>
     <!-- Enable trimming for any source project that's part of the shared framework.
          Don't attempt to trim PNSE assemblies which are generated from the reference source. -->

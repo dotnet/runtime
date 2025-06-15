@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ExternallyShipping>false</ExternallyShipping>
     <!-- 436: Type conflicts on "Interop" due to InternalsVisibleTo access
          SYSLIB0037: AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete. -->
     <NoWarn>$(NoWarn);436;SYSLIB0037</NoWarn>
