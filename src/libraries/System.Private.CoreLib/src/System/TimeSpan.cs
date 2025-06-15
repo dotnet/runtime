@@ -895,8 +895,9 @@ namespace System
 
             static void ThrowOverflowException_TimeSpanTooLong(TimeSpan t1, TimeSpan t2)
             {
-                if (t1.Ticks == 8000000000000000) System.Environment.FailFast("!!!!");
-                throw new OverflowException(t1.Ticks.ToString("x") + " " + t2.Ticks.ToString("x"));
+                System.Environment.FailFast("!!!!");
+                // if (t1.Ticks == 8000000000000000) System.Environment.FailFast("!!!!");
+                // throw new OverflowException(t1.Ticks.ToString("x") + " " + t2.Ticks.ToString("x"));
             }
         }
 
