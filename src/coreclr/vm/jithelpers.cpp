@@ -538,7 +538,7 @@ HCIMPL2(BOOL, JIT_IsInstanceOfException, CORINFO_CLASS_HANDLE type, Object* obj)
 }
 HCIMPLEND
 
-extern "C" void QCALLTYPE ThrowInvalidCastException(CORINFO_CLASS_HANDLE pTargetType, CORINFO_CLASS_HANDLE pSourceType)
+extern "C" void QCALLTYPE ThrowInvalidCastException(CORINFO_CLASS_HANDLE pSourceType, CORINFO_CLASS_HANDLE pTargetType)
 {
     QCALL_CONTRACT;
 
@@ -546,8 +546,6 @@ extern "C" void QCALLTYPE ThrowInvalidCastException(CORINFO_CLASS_HANDLE pTarget
 
     TypeHandle targetType(pTargetType);
     TypeHandle sourceType(pSourceType);
-
-    GCX_COOP();
 
     COMPlusThrowInvalidCastException(sourceType, targetType);
 
