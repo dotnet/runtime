@@ -9727,7 +9727,10 @@ GenTreeHWIntrinsic* Compiler::fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* n
         return node;
     }
 #elif defined(TARGET_ARM64)
-    return fgMorphTryUseAllMaskVariant(node);
+    // TODO-SVE: This optimisation is too naive. It needs to calculate the full cost of the instruction
+    //           vs using the predicate version, taking into account all input arguements and all uses
+    //           of the result.
+    // return fgMorphTryUseAllMaskVariant(node);
 #else
 #error Unsupported platform
 #endif
@@ -9782,7 +9785,7 @@ GenTree* Compiler::doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic*
     else if (node->IsVectorZero())
     {
         // Morph the vector of zeroes into mask of zeroes.
-        GenTree* mask = gtNewSimdFalseMaskByteNode(parent->GetSimdSize());
+        GenTree* mask = gtNewSimdFalseMaskByteNode();
         mask->SetMorphed(this);
         return mask;
     }

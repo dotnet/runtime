@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+    <NoWarn>$(NoWarn),SYSLIB5003</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs">
+      <HasDisasmCheck Condition="'$(DOTNET_EnableHWIntrinsic)' != '0' and '$(DOTNET_EnableArm64Sve)' != '0'">true</HasDisasmCheck>
+    </Compile>
+
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
+  </ItemGroup>
+</Project>
