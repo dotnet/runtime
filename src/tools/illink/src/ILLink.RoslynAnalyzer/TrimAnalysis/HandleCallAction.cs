@@ -44,6 +44,45 @@ namespace ILLink.Shared.TrimAnalysis
 			_multiValueLattice = multiValueLattice;
 		}
 
+		sealed class HasGenericTypeSymbolsVisitor : SymbolVisitor<bool>
+		{
+			internal static readonly HasGenericTypeSymbolsVisitor Instance = new ();
+
+			public override bool VisitArrayType (IArrayTypeSymbol symbol) => Visit(symbol.ElementType);
+
+			public override bool VisitPointerType (IPointerTypeSymbol symbol) => Visit(symbol.PointedAtType);
+
+			public override bool VisitTypeParameter (ITypeParameterSymbol symbol) => true;
+
+			public override bool VisitFunctionPointerType (IFunctionPointerTypeSymbol symbol)
+			{
+				IMethodSymbol signature = symbol.Signature;
+
+				if (Visit (signature.ReturnType)) {
+					return true;
+				}
+
+				foreach (var param in signature.Parameters) {
+					if (Visit(param.Type)) {
+						return true;
+					}
+				}
+
+				return false;
+			}
+
+			public override bool VisitNamedType (INamedTypeSymbol symbol)
+			{
+				foreach (var arg in symbol.TypeArguments) {
+					if (Visit (arg)) {
+						return true;
+					}
+				}
+
+				return false;
+			}
+		}
+
 		private partial bool TryHandleIntrinsic (
 			MethodProxy calledMethod,
 			MultiValue instanceValue,
@@ -130,6 +169,17 @@ namespace ILLink.Shared.TrimAnalysis
 				break;
 			}
 
+			case IntrinsicId.TypeMapping_GetOrCreateProxyTypeMapping:
+			case IntrinsicId.TypeMapping_GetOrCreateExternalTypeMapping: {
+				ITypeSymbol typeMapGroup = calledMethod.Method.TypeArguments[0];
+				if (HasGenericTypeSymbolsVisitor.Instance.Visit(typeMapGroup)) {
+					// We only support GetOrCreateExternalTypeMapping or GetOrCreateProxyTypeMapping for a fully specified type.
+					_diagnosticContext.AddDiagnostic (DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined,
+						typeMapGroup.GetDisplayName ());
+				}
+				break;
+			}
+
 			// Some intrinsics are unimplemented by the analyzer.
 			// These will fall back to the usual return-value handling.
 			case IntrinsicId.Array_CreateInstance:
@@ -147,6 +197,7 @@ namespace ILLink.Shared.TrimAnalysis
 			case IntrinsicId.Marshal_SizeOf:
 			case IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo:
 				break;
+
 
 			default:
 				return false;

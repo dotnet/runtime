@@ -346,6 +346,8 @@
     <Compile Include="Compiler\BodySubstitution.cs" />
     <Compile Include="Compiler\BodySubstitutionParser.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AddressTakenMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AnalyzedExternalTypeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AnalyzedProxyTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ByRefTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DehydratableObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DehydratedDataNode.cs" />
@@ -407,6 +409,12 @@
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributesOnEntityNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExactMethodInstantiationsEntryNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\IProxyTypeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\IExternalTypeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ProxyTypeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ExternalTypeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ProxyTypeMapObjectNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ExternalTypeMapObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />
@@ -419,6 +427,7 @@
     <Compile Include="Compiler\DependencyAnalysis\InlineableStringsResourceNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceUseNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\InvalidProxyTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodParameterMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleInitializerListNode.cs" />
@@ -439,6 +448,7 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TentativeInstanceMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TentativeMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\InvalidExternalTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TrimmingDescriptorNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VariantInterfaceMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeBasedDependencyAlgorithm.cs" />
@@ -509,6 +519,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ClassConstructorContextMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ConstructedEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DictionaryLayoutNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ExternalTypeMapRequestNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternalReferencesTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternEETypeSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FatFunctionPointerNode.cs" />
@@ -523,6 +534,7 @@
     <Compile Include="Compiler\DependencyAnalysis\IEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeMethodFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeModuleFixupNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ProxyTypeMapRequestNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ResourceDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ResourceIndexNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RuntimeImportMethodNode.cs" />
@@ -623,6 +635,7 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64UnboxingStubNode.cs" />
+    <Compile Include="Compiler\TypeMapMetadata.cs" />
     <Compile Include="Compiler\UnmanagedEntryPointsRootProvider.cs" />
     <Compile Include="Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
@@ -645,9 +658,11 @@
     <Compile Include="Compiler\ILAssemblyGeneratingMethodDebugInfoProvider.cs" />
     <Compile Include="Compiler\StackTraceEmissionPolicy.cs" />
     <Compile Include="Compiler\PreinitializationManager.cs" />
+    <Compile Include="Compiler\TypeMapManager.cs" />
     <Compile Include="Compiler\TypePreinit.cs" />
     <Compile Include="Compiler\UsageBasedInteropStubManager.cs" />
     <Compile Include="Compiler\UsageBasedMetadataManager.cs" />
+    <Compile Include="Compiler\UsageBasedTypeMapManager.cs" />
     <Compile Include="Compiler\UserDefinedTypeDescriptor.cs" />
     <Compile Include="Compiler\UnixNodeMangler.cs" />
     <Compile Include="Compiler\VectorOfTFieldLayoutAlgorithm.cs" />

@@ -418,6 +418,18 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.HasMetadataParametersCount (0)
 					=> IntrinsicId.Delegate_get_Method,
 
+				// static System.Runtime.InteropServices.TypeMapping.GetOrCreateExternalTypeMapping<T> ()
+				"GetOrCreateExternalTypeMapping" when calledMethod.IsDeclaredOnType ("System.Runtime.InteropServices.TypeMapping")
+					&& calledMethod.IsStatic ()
+					&& calledMethod.HasGenericParametersCount (1)
+					=> IntrinsicId.TypeMapping_GetOrCreateExternalTypeMapping,
+
+				// static System.Runtime.InteropServices.TypeMapping.GetOrCreateProxyTypeMapping<T> ()
+				"GetOrCreateProxyTypeMapping" when calledMethod.IsDeclaredOnType ("System.Runtime.InteropServices.TypeMapping")
+					&& calledMethod.IsStatic ()
+					&& calledMethod.HasGenericParametersCount (1)
+					=> IntrinsicId.TypeMapping_GetOrCreateProxyTypeMapping,
+
 				_ => IntrinsicId.None,
 			};
 		}
