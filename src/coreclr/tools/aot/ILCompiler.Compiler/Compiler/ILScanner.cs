@@ -444,10 +444,12 @@ namespace ILCompiler
             private HashSet<TypeDesc> _disqualifiedTypes = new();
             private HashSet<MethodDesc> _overriddenMethods = new();
             private HashSet<MethodDesc> _generatedVirtualMethods = new();
+            private readonly bool _canHaveDynamicInterfaceImplementations;
 
             public ScannedDevirtualizationManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
                 var vtables = new Dictionary<TypeDesc, List<MethodDesc>>();
+                var dynamicInterfaceCastableImplementationTargets = new HashSet<TypeDesc>();
 
                 foreach (var node in markedNodes)
                 {
@@ -487,7 +489,7 @@ namespace ILCompiler
                                     // If the interface is implemented through IDynamicInterfaceCastable, there might be
                                     // no real upper bound on the number of actual classes implementing it.
                                     if (CanAssumeWholeProgramViewOnTypeUse(factory, type, baseInterface))
-                                        _disqualifiedTypes.Add(baseInterface);
+                                        dynamicInterfaceCastableImplementationTargets.Add(baseInterface);
                                 }
                             }
                         }
@@ -512,6 +514,16 @@ namespace ILCompiler
                                     if (CanAssumeWholeProgramViewOnTypeUse(factory, type, baseInterface))
                                     {
                                         RecordImplementation(baseInterface, type);
+                                    }
+
+                                    if (factory.TypeSystemContext.IsIDynamicInterfaceCastableInterface(baseInterface))
+                                    {
+                                        // We've seen a type that implements IDynamicInterfaceCastable.
+                                        // This means that we might not be able to see all interface implementations statically.
+                                        // We can't analyze what the IDynamicInterfaceCastable implementation does,
+                                        // so we have to assume it can implement any interface
+                                        // (that has a DynamicInterfaceCastableImplementation-attributed derived type).
+                                        _canHaveDynamicInterfaceImplementations = true;
                                     }
                                 }
 
@@ -618,6 +630,11 @@ namespace ILCompiler
                             }
                         }
                     }
+                }
+
+                if (_canHaveDynamicInterfaceImplementations)
+                {
+                    _disqualifiedTypes.UnionWith(dynamicInterfaceCastableImplementationTargets);
                 }
             }
 
@@ -774,6 +791,8 @@ namespace ILCompiler
                 }
                 return null;
             }
+
+            public override bool CanHaveDynamicInterfaceImplementations() => _canHaveDynamicInterfaceImplementations;
         }
 
         private sealed class ScannedInliningPolicy : IInliningPolicy

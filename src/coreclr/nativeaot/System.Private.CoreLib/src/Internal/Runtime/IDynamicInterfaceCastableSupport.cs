@@ -15,7 +15,7 @@ namespace Internal.Runtime
 {
     internal static unsafe class IDynamicCastableSupport
     {
-        [RuntimeExport("IDynamicCastableIsInterfaceImplemented")]
+        [RuntimeExport("IDynamicCastableIsInterfaceImplemented", ConditionalConstructedDependency = typeof(IDynamicInterfaceCastable))]
         internal static bool IDynamicCastableIsInterfaceImplemented(IDynamicInterfaceCastable instance, MethodTable* interfaceType, bool throwIfNotImplemented)
         {
             return instance.IsInterfaceImplemented(new RuntimeTypeHandle(interfaceType), throwIfNotImplemented);
@@ -23,7 +23,7 @@ namespace Internal.Runtime
 
         private static readonly object s_thunkPoolHeap = RuntimeAugments.CreateThunksHeap(RuntimeImports.GetInteropCommonStubAddress());
 
-        [RuntimeExport("IDynamicCastableGetInterfaceImplementation")]
+        [RuntimeExport("IDynamicCastableGetInterfaceImplementation", ConditionalConstructedDependency = typeof(IDynamicInterfaceCastable))]
         internal static IntPtr IDynamicCastableGetInterfaceImplementation(IDynamicInterfaceCastable instance, MethodTable* interfaceType, ushort slot)
         {
             RuntimeTypeHandle handle = instance.GetInterfaceImplementation(new RuntimeTypeHandle(interfaceType));
