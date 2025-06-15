@@ -22,7 +22,7 @@ namespace System.Net.Http.Headers
             Debug.Assert(index == 0);
 
             // Some headers support empty/null values. This one doesn't.
-            if (string.IsNullOrEmpty(value) || HttpRuleParser.ContainsNewLine(value))
+            if (string.IsNullOrEmpty(value) || HttpRuleParser.ContainsNewLineOrNull(value))
             {
                 parsedValue = null;
                 return false;
