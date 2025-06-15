@@ -10,6 +10,7 @@ using System.Text;
 using Microsoft.Extensions.Configuration;
 #endif
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Microsoft.Extensions
 #if BUILDING_SOURCE_GENERATOR_TESTS
@@ -19,6 +20,10 @@ namespace Microsoft.Extensions
 {
     public sealed partial class ConfigurationBinderCollectionTests : ConfigurationBinderTestsBase
     {
+        public ConfigurationBinderCollectionTests(ITestOutputHelper output) : base(output)
+        {
+        }
+
         [Fact]
         public void GetList()
         {
@@ -61,7 +66,7 @@ namespace Microsoft.Extensions
             var list = new List<string>();
             config.GetSection("StringList").Bind(list);
 
-            Assert.Empty(list);
+            Assert.Equal(DisallowNullConfigSwitch ? [] : [ null, null, null, null ], list);
         }
 
         [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
@@ -2182,9 +2187,19 @@ namespace Microsoft.Extensions
 
             var options = config.Get<ComplexOptions>()!;
 
-            Assert.Equal(2, options.InstantiatedIEnumerable.Count());
-            Assert.Equal("Yo1", options.InstantiatedIEnumerable.ElementAt(0));
-            Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(1));
+            if (DisallowNullConfigSwitch)
+            {
+                Assert.Equal(2, options.InstantiatedIEnumerable.Count());
+                Assert.Equal("Yo1", options.InstantiatedIEnumerable.ElementAt(0));
+                Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(1));
+            }
+            else
+            {
+                Assert.Equal(3, options.InstantiatedIEnumerable.Count());
+                Assert.Null(options.InstantiatedIEnumerable.ElementAt(0));
+                Assert.Equal("Yo1", options.InstantiatedIEnumerable.ElementAt(1));
+                Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(2));
+            }
         }
 
         [Fact]

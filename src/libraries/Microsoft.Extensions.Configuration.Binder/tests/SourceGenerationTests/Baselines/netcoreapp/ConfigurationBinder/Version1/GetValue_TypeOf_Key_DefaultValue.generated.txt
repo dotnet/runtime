@@ -46,17 +46,63 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             IConfigurationSection section = configuration.GetSection(key);
 
-            if (section.Value is not string value)
+            if (TryGetConfigurationValue(section, key: null, out string? value) && !string.IsNullOrEmpty(value))
             {
-                return null;
-            }
-
-            if (type == typeof(global::System.Globalization.CultureInfo))
-            {
-                return ParseSystemGlobalizationCultureInfo(value, section.Path);
+                if (type == typeof(global::System.Globalization.CultureInfo))
+                {
+                    return ParseSystemGlobalizationCultureInfo(value, section.Path);
+                }
             }
 
             return null;
+        }
+
+        /// <summary>Tries to get the configuration value for the specified key.</summary>
+        public static bool TryGetConfigurationValue(IConfiguration configuration, string key, out string? value)
+        {
+            if (configuration is ConfigurationSection section)
+            {
+                var result = section.TryGetValue(key, out value);
+                if (!DisallowNullConfigSwitch)
+                {
+                    return result;
+                }
+            }
+            else if (key != null)
+            {
+                value = configuration[key];
+            }
+            else
+            {
+                value = configuration is IConfigurationSection sec ? sec.Value : null;
+            }
+        
+            return value != null;
+        }
+        
+        /// <summary>Config switch to have the compatibility mode having the binder treat null configuration values as missing.</summary>
+        private static bool DisallowNullConfigSwitch { get; } = GetBooleanConfig("Microsoft.Configuration.DisallowNull", "DOTNET_MICROSOFT_CONFIGURATION_DISALLOWNULL");
+        
+        private static bool GetBooleanConfig(string switchName, string envVariable, bool defaultValue = false)
+        {
+            if (global::System.AppContext.TryGetSwitch(switchName, out bool value))
+            {
+                return value;
+            }
+        
+            if (global::System.Environment.GetEnvironmentVariable(envVariable) is string str)
+            {
+                if (str == "1" || string.Equals(str, bool.TrueString, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+                if (str == "0" || string.Equals(str, bool.FalseString, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+        
+            return defaultValue;
         }
 
         public static global::System.Globalization.CultureInfo ParseSystemGlobalizationCultureInfo(string value, string? path)
@@ -67,7 +113,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(global::System.Globalization.CultureInfo)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(global::System.Globalization.CultureInfo)}'.", exception);
             }
         }
         #endregion Core binding extensions.

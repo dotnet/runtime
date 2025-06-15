@@ -114,6 +114,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string HasValue = nameof(HasValue);
                 public const string IConfiguration = nameof(IConfiguration);
                 public const string IConfigurationSection = nameof(IConfigurationSection);
+                public const string ConfigurationSection = nameof(ConfigurationSection);
                 public const string Int32 = "int";
                 public const string InterceptsLocation = nameof(InterceptsLocation);
                 public const string InvalidOperationException = nameof(InvalidOperationException);
@@ -133,6 +134,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string Type = nameof(Type);
                 public const string Uri = nameof(Uri);
                 public const string ValidateConfigurationKeys = nameof(ValidateConfigurationKeys);
+                public const string TryGetConfigurationValue = nameof(TryGetConfigurationValue);
                 public const string Value = nameof(Value);
             }
 

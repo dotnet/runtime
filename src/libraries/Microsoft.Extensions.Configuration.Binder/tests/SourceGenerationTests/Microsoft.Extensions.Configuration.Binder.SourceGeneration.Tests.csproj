@@ -10,6 +10,7 @@
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
     <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -25,6 +26,7 @@
   <ItemGroup>
     <Compile Include="$(CommonPath)..\tests\SourceGenerators\RoslynTestUtils.cs" Link="SourceGenerators\RoslynTestUtils.cs" />
     <Compile Include="$(CommonPath)..\tests\SourceGenerators\GeneratorTestHelpers.cs" Link="SourceGenerators\GeneratorTestHelpers.cs" />
+    <Compile Include="$(CommonPath)System\AppContextSwitchHelper.cs" Link="Common\src\System\AppContextSwitchHelper.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs" Link="Common\ConfigurationProviderExtensions.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs" Link="Common\TestStreamHelpers.cs" />

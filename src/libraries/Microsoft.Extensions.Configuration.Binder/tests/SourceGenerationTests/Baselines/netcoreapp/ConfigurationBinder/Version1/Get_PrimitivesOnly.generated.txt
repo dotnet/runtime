@@ -68,9 +68,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     throw new InvalidOperationException();
                 }
-                if (section.Value is string value && !string.IsNullOrEmpty(value))
+                if (TryGetConfigurationValue(configuration, key: null, out string? value))
                 {
-                    return ParseInt(value, section.Path);
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        return ParseInt(value, section.Path);
+                    }
                 }
             }
             else if (type == typeof(string))
@@ -79,7 +82,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     throw new InvalidOperationException();
                 }
-                return section.Value;
+                if (TryGetConfigurationValue(configuration, key: null, out string? value))
+                {
+                    return value;
+                }
             }
             else if (type == typeof(float))
             {
@@ -87,9 +93,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     throw new InvalidOperationException();
                 }
-                if (section.Value is string value && !string.IsNullOrEmpty(value))
+                if (TryGetConfigurationValue(configuration, key: null, out string? value))
                 {
-                    return ParseFloat(value, section.Path);
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        return ParseFloat(value, section.Path);
+                    }
                 }
             }
             else if (type == typeof(double))
@@ -98,13 +107,64 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     throw new InvalidOperationException();
                 }
-                if (section.Value is string value && !string.IsNullOrEmpty(value))
+                if (TryGetConfigurationValue(configuration, key: null, out string? value))
                 {
-                    return ParseDouble(value, section.Path);
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        return ParseDouble(value, section.Path);
+                    }
                 }
             }
 
             throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
+        }
+
+        /// <summary>Tries to get the configuration value for the specified key.</summary>
+        public static bool TryGetConfigurationValue(IConfiguration configuration, string key, out string? value)
+        {
+            if (configuration is ConfigurationSection section)
+            {
+                var result = section.TryGetValue(key, out value);
+                if (!DisallowNullConfigSwitch)
+                {
+                    return result;
+                }
+            }
+            else if (key != null)
+            {
+                value = configuration[key];
+            }
+            else
+            {
+                value = configuration is IConfigurationSection sec ? sec.Value : null;
+            }
+        
+            return value != null;
+        }
+        
+        /// <summary>Config switch to have the compatibility mode having the binder treat null configuration values as missing.</summary>
+        private static bool DisallowNullConfigSwitch { get; } = GetBooleanConfig("Microsoft.Configuration.DisallowNull", "DOTNET_MICROSOFT_CONFIGURATION_DISALLOWNULL");
+        
+        private static bool GetBooleanConfig(string switchName, string envVariable, bool defaultValue = false)
+        {
+            if (global::System.AppContext.TryGetSwitch(switchName, out bool value))
+            {
+                return value;
+            }
+        
+            if (global::System.Environment.GetEnvironmentVariable(envVariable) is string str)
+            {
+                if (str == "1" || string.Equals(str, bool.TrueString, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+                if (str == "0" || string.Equals(str, bool.FalseString, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+        
+            return defaultValue;
         }
 
         public static bool HasValueOrChildren(IConfiguration configuration)
@@ -151,7 +211,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
 
@@ -163,7 +223,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(float)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(float)}'.", exception);
             }
         }
 
@@ -175,7 +235,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(double)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(double)}'.", exception);
             }
         }
         #endregion Core binding extensions.
