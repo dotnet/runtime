@@ -6792,69 +6792,12 @@ T_CONTEXT *Thread::GetFilterContext(void)
 
 void Thread::ClearContext()
 {
-    CONTRACTL {
-        NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-    }
-    CONTRACTL_END;
+    LIMITED_METHOD_CONTRACT;
+
 #ifdef FEATURE_COMINTEROP
     m_fDisableComObjectEagerCleanup = false;
 #endif //FEATURE_COMINTEROP
 }
-
-BOOL Thread::HaveExtraWorkForFinalizer()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return RequireSyncBlockCleanup()
-        || Thread::CleanupNeededForFinalizedThread()
-        || (m_DetachCount > 0)
-        || SystemDomain::System()->RequireAppDomainCleanup()
-        || YieldProcessorNormalization::IsMeasurementScheduled()
-        || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads();
-}
-
-void Thread::DoExtraWorkForFinalizer()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(GetThread() == this);
-    _ASSERTE(this == FinalizerThread::GetFinalizerThread());
-
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    if (RequiresCoInitialize())
-    {
-        SetApartment(AS_InMTA);
-    }
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-
-    if (RequireSyncBlockCleanup())
-    {
-        SyncBlockCache::GetSyncBlockCache()->CleanupSyncBlocks();
-    }
-    if (SystemDomain::System()->RequireAppDomainCleanup())
-    {
-        SystemDomain::System()->ProcessDelayedUnloadLoaderAllocators();
-    }
-
-    if(m_DetachCount > 0 || Thread::CleanupNeededForFinalizedThread())
-    {
-        Thread::CleanupDetachedThreads();
-    }
-
-    if (YieldProcessorNormalization::IsMeasurementScheduled())
-    {
-        GCX_PREEMP();
-        YieldProcessorNormalization::PerformMeasurement();
-    }
-
-    ThreadStore::s_pThreadStore->TriggerGCForDeadThreadsIfNecessary();
-}
-
 
 // HELPERS FOR THE BASE OF A MANAGED THREAD, INCLUDING AD TRANSITION SUPPORT
 
