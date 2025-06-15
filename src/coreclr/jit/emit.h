@@ -853,11 +853,14 @@ protected:
         // We repurpose 4 bits for the default flag value bits for ccmp instructions.
 #define _idEvexDFV (_idCustom4 << 3) | (_idCustom3 << 2) | (_idCustom2 << 1) | _idCustom1
 
-        // In certian cases, we do not allow instructions to be promoted to APX-EVEX.
+        unsigned _idCustom7 : 1;
+        // In certain cases, we do not allow instructions to be promoted to APX-EVEX.
         // e.g. instructions like add/and/or/inc/dec can be used with LOCK prefix, but cannot be prefixed by LOCK and
         // EVEX together.
-        unsigned _idNoApxEvexXPromotion : 1;
-#endif //  TARGET_XARCH
+#define _idNoApxEvexXPromotion _idCustom7
+        // We repurpose _idCustom7 for the APX-EVEX.ppx context for Push/Pop/Push2/Pop2.
+#define _idApxPpxContext _idCustom7 /* bits used for the APX-EVEX.ppx context for Push/Pop/Push2/Pop2 */
+#endif                              //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
         unsigned _idLclVar     : 1; // access a local on stack
@@ -1801,9 +1804,20 @@ protected:
             _idEvexNfContext = 1;
         }
 
+        bool idIsApxPpxContextSet() const
+        {
+            return (_idApxPpxContext != 0) && (HasApxPpx(_idIns));
+        }
+
+        void idSetApxPpxContext()
+        {
+            assert(!idIsApxPpxContextSet());
+            _idApxPpxContext = 1;
+        }
+
         bool idIsNoApxEvexPromotion() const
         {
-            return _idNoApxEvexXPromotion != 0;
+            return (_idNoApxEvexXPromotion != 0) && !(HasApxPpx(_idIns));
         }
 
         void idSetNoApxEvexPromotion()
@@ -2380,6 +2394,7 @@ protected:
     int emitGetInsCDinfo(instrDesc* id);
 
     static const IS_INFO emitGetSchedInfo(insFormat f);
+    static bool          HasApxPpx(instruction ins);
 #endif // TARGET_XARCH
 
     cnsval_ssize_t emitGetInsSC(const instrDesc* id) const;
