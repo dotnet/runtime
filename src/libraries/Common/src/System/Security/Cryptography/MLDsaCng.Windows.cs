@@ -40,7 +40,16 @@ namespace System.Security.Cryptography
         [SupportedOSPlatform("windows")]
         private static partial MLDsaAlgorithm AlgorithmFromHandle(CngKey key, out CngKey duplicateKey)
         {
+#if !NETFRAMEWORK
+            // Non-Windows call in Microsoft.Bcl.Cryptography can get here if MLDsaCng was type-forwarded
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                throw new PlatformNotSupportedException();
+            }
+#endif
+
             ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNotSupported();
 
             if (key.AlgorithmGroup != CngAlgorithmGroup.MLDsa)
             {
