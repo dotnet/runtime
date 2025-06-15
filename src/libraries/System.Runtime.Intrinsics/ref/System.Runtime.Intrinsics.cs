@@ -6184,6 +6184,26 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> ShiftLeftAndInsert(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte shift) { throw null; }
         public static System.Numerics.Vector<uint> ShiftLeftAndInsert(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte shift) { throw null; }
         public static System.Numerics.Vector<ulong> ShiftLeftAndInsert(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftLeftLogicalSaturate(System.Numerics.Vector<byte> value, System.Numerics.Vector<sbyte> count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLeftLogicalSaturate(System.Numerics.Vector<ushort> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLeftLogicalSaturate(System.Numerics.Vector<uint> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLeftLogicalSaturate(System.Numerics.Vector<ulong> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftLeftLogicalSaturateUnsigned(System.Numerics.Vector<sbyte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLeftLogicalSaturateUnsigned(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLeftLogicalSaturateUnsigned(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLeftLogicalSaturateUnsigned(System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftLeftLogicalWideningEven(System.Numerics.Vector<sbyte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftLeftLogicalWideningEven(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftLeftLogicalWideningEven(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLeftLogicalWideningEven(System.Numerics.Vector<byte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLeftLogicalWideningEven(System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLeftLogicalWideningEven(System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<sbyte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<byte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<byte> Xor(System.Numerics.Vector<byte> value1, System.Numerics.Vector<byte> value2, System.Numerics.Vector<byte> value3) { throw null; }
         public static System.Numerics.Vector<short> Xor(System.Numerics.Vector<short> value1, System.Numerics.Vector<short> value2, System.Numerics.Vector<short> value3) { throw null; }
         public static System.Numerics.Vector<int> Xor(System.Numerics.Vector<int> value1, System.Numerics.Vector<int> value2, System.Numerics.Vector<int> value3) { throw null; }
