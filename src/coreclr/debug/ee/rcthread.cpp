@@ -568,8 +568,9 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
         EX_CATCH
         {
             string = "*Could not retrieve stack*";
+            RethrowTerminalExceptions();
         }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_END_CATCH
 
         CONSISTENCY_CHECK_MSGF(false,
             ("Unhandled exception on the helper thread.\nEvent=%s(0x%p)\nCode=0x%0x, Ip=0x%p, .cxr=%p, .exr=%p.\n pid=0x%x (%d), tid=0x%x (%d).\n-----\nStack of exception:\n%s\n----\n",

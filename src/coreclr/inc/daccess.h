@@ -708,15 +708,15 @@ bool DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* buffer);
 
 HRESULT DacWriteHostInstance(PVOID host, bool throwEx);
 
-// This is meant to mimic the RethrowTerminalExceptions/
-// SwallowAllExceptions/RethrowTransientExceptions macros to allow minidump
+// This is meant to mimic the RethrowTerminalExceptions()/
+// RethrowTransientExceptions() macros to allow minidump
 // gathering cancelation for details see
 // code:ClrDataAccess.EnumMemoryRegionsWrapper
 
 extern void DacLogMessage(LPCSTR format, ...);
 
-// This is usable in EX_TRY exactly how RethrowTerminalExceptions et cetera
-#define RethrowCancelExceptions                                         \
+// This is usable in EX_TRY exactly how RethrowTerminalExceptions() et cetera
+#define RethrowCancelExceptions()                                       \
     if (GET_EXCEPTION()->GetHR() == COR_E_OPERATIONCANCELED)            \
     {                                                                   \
         EX_RETHROW;                                                     \

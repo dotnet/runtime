@@ -127,7 +127,7 @@ void CHECK::Trigger(LPCSTR reason)
     {
         messageString = "<exception occurred while building failure description>";
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
 #if _DEBUG
     DbgAssertDialog((char*)m_file, m_line, (char *)messageString);
@@ -182,7 +182,7 @@ void CHECK::Setup(LPCSTR message, LPCSTR condition, LPCSTR file, INT line)
         {
             // If anything goes wrong, we don't push extra context
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 #endif
 
@@ -242,7 +242,7 @@ LPCSTR CHECK::FormatMessage(LPCSTR messageFormat, ...)
             // If anything goes wrong, just use the format string.
             result = messageFormat;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     return result;

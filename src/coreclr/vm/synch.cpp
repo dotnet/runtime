@@ -56,7 +56,7 @@ BOOL CLREventBase::CreateAutoEventNoThrow (BOOL bInitialState  // If TRUE, initi
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return IsValid();
 }
@@ -105,7 +105,7 @@ BOOL CLREventBase::CreateManualEventNoThrow (BOOL bInitialState  // If TRUE, ini
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return IsValid();
 }
@@ -251,7 +251,7 @@ BOOL CLREventBase::CreateOSAutoEventNoThrow (BOOL bInitialState  // If TRUE, ini
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return IsValid();
 }
@@ -299,7 +299,7 @@ BOOL CLREventBase::CreateOSManualEventNoThrow (BOOL bInitialState  // If TRUE, i
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return IsValid();
 }

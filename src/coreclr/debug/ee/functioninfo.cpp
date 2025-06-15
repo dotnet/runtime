@@ -950,7 +950,7 @@ void DebuggerJitInfo::LazyInitBounds()
         // Just catch the exception. The DJI maps may or may-not be initialized,
         // but they should still be in a consistent state, so we should be ok.
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 /******************************************************************************

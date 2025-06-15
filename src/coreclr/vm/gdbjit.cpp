@@ -2512,7 +2512,7 @@ void NotifyGdb::MethodPrepared(MethodDesc* methodDescPtr)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
