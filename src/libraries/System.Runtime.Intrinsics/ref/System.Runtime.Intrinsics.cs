@@ -7117,6 +7117,26 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector256<ushort> Compress(System.Runtime.Intrinsics.Vector256<ushort> merge, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<uint> Compress(System.Runtime.Intrinsics.Vector256<uint> merge, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ulong> Compress(System.Runtime.Intrinsics.Vector256<ulong> merge, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+        public static unsafe void CompressStore(byte* address, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> source) { throw null; }
+        public static unsafe void CompressStore(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> source) { throw null; }
+        public static unsafe void CompressStore(short* address, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> source) { throw null; }
+        public static unsafe void CompressStore(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> source) { throw null; }
+        public static unsafe void CompressStore(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> source) { throw null; }
+        public static unsafe void CompressStore(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> source) { throw null; }
+        public static unsafe void CompressStore(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> source) { throw null; }
+        public static unsafe void CompressStore(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> source) { throw null; }
+        public static unsafe void CompressStore(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> source) { throw null; }
+        public static unsafe void CompressStore(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> source) { throw null; }
+        public static unsafe void CompressStore(byte* address, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> source) { throw null; }
+        public static unsafe void CompressStore(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> source) { throw null; }
+        public static unsafe void CompressStore(short* address, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> source) { throw null; }
+        public static unsafe void CompressStore(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> source) { throw null; }
+        public static unsafe void CompressStore(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> source) { throw null; }
+        public static unsafe void CompressStore(sbyte* address, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> source) { throw null; }
+        public static unsafe void CompressStore(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> source) { throw null; }
+        public static unsafe void CompressStore(ushort* address, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> source) { throw null; }
+        public static unsafe void CompressStore(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> source) { throw null; }
+        public static unsafe void CompressStore(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> source) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> ConvertScalarToVector128Double(System.Runtime.Intrinsics.Vector128<double> upper, uint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> ConvertScalarToVector128Single(System.Runtime.Intrinsics.Vector128<float> upper, uint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> ConvertScalarToVector128Single(System.Runtime.Intrinsics.Vector128<float> upper, uint value, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatRoundingMode.ToZero)] System.Runtime.Intrinsics.X86.FloatRoundingMode mode) { throw null; }
@@ -7268,6 +7288,26 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector256<ushort> Expand(System.Runtime.Intrinsics.Vector256<ushort> merge, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<uint> Expand(System.Runtime.Intrinsics.Vector256<uint> merge, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ulong> Expand(System.Runtime.Intrinsics.Vector256<ulong> merge, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<byte> ExpandLoad(byte* address, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<double> ExpandLoad(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<short> ExpandLoad(short* address, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<int> ExpandLoad(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<long> ExpandLoad(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<sbyte> ExpandLoad(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<float> ExpandLoad(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<ushort> ExpandLoad(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<uint> ExpandLoad(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<ulong> ExpandLoad(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<byte> ExpandLoad(byte* address, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<double> ExpandLoad(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<short> ExpandLoad(short* address, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<int> ExpandLoad(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<long> ExpandLoad(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<sbyte> ExpandLoad(sbyte* address, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<float> ExpandLoad(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<ushort> ExpandLoad(ushort* address, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<uint> ExpandLoad(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<ulong> ExpandLoad(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> merge) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> Fixup(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right, System.Runtime.Intrinsics.Vector128<int> table, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> Fixup(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right, System.Runtime.Intrinsics.Vector128<long> table, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> Fixup(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right, System.Runtime.Intrinsics.Vector256<int> table, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
@@ -7306,6 +7346,70 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector256<uint> LeadingZeroCount(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<long> LeadingZeroCount(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ulong> LeadingZeroCount(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<byte> MaskLoad(byte* address, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<double> MaskLoad(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<short> MaskLoad(short* address, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<int> MaskLoad(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<long> MaskLoad(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<sbyte> MaskLoad(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<ushort> MaskLoad(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<float> MaskLoad(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<uint> MaskLoad(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<ulong> MaskLoad(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<byte> MaskLoad(byte* address, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<double> MaskLoad(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<short> MaskLoad(short* address, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<int> MaskLoad(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<long> MaskLoad(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<sbyte> MaskLoad(sbyte* address, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<ushort> MaskLoad(ushort* address, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<float> MaskLoad(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<uint> MaskLoad(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<ulong> MaskLoad(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<double> MaskLoadAligned(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<int> MaskLoadAligned(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<long> MaskLoadAligned(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<float> MaskLoadAligned(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<uint> MaskLoadAligned(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<ulong> MaskLoadAligned(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<double> MaskLoadAligned(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<int> MaskLoadAligned(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<long> MaskLoadAligned(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<float> MaskLoadAligned(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<uint> MaskLoadAligned(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<ulong> MaskLoadAligned(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> merge) { throw null; }
+        public static unsafe void MaskStore(byte* address, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> source) { throw null; }
+        public static new unsafe void MaskStore(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> source) { throw null; }
+        public static unsafe void MaskStore(short* address, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> source) { throw null; }
+        public static new unsafe void MaskStore(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> source) { throw null; }
+        public static new unsafe void MaskStore(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> source) { throw null; }
+        public static unsafe void MaskStore(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> source) { throw null; }
+        public static new unsafe void MaskStore(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> source) { throw null; }
+        public static unsafe void MaskStore(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> source) { throw null; }
+        public static new unsafe void MaskStore(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> source) { throw null; }
+        public static new unsafe void MaskStore(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> source) { throw null; }
+        public static unsafe void MaskStore(byte* address, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> source) { throw null; }
+        public static new unsafe void MaskStore(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> source) { throw null; }
+        public static unsafe void MaskStore(short* address, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> source) { throw null; }
+        public static new unsafe void MaskStore(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> source) { throw null; }
+        public static new unsafe void MaskStore(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> source) { throw null; }
+        public static unsafe void MaskStore(sbyte* address, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> source) { throw null; }
+        public static new unsafe void MaskStore(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> source) { throw null; }
+        public static unsafe void MaskStore(ushort* address, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> source) { throw null; }
+        public static new unsafe void MaskStore(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> source) { throw null; }
+        public static new unsafe void MaskStore(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> source) { throw null; }
+        public static unsafe void MaskStoreAligned(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> source) { throw null; }
+        public static unsafe void MaskStoreAligned(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> source) { throw null; }
+        public static unsafe void MaskStoreAligned(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> source) { throw null; }
+        public static unsafe void MaskStoreAligned(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> source) { throw null; }
+        public static unsafe void MaskStoreAligned(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> source) { throw null; }
+        public static unsafe void MaskStoreAligned(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> source) { throw null; }
+        public static unsafe void MaskStoreAligned(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> source) { throw null; }
+        public static unsafe void MaskStoreAligned(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> source) { throw null; }
+        public static unsafe void MaskStoreAligned(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> source) { throw null; }
+        public static unsafe void MaskStoreAligned(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> source) { throw null; }
+        public static unsafe void MaskStoreAligned(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> source) { throw null; }
+        public static unsafe void MaskStoreAligned(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> source) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<long> Max(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ulong> Max(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<long> Max(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
@@ -7543,6 +7647,10 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector512<short> Compress(System.Runtime.Intrinsics.Vector512<short> merge, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<sbyte> Compress(System.Runtime.Intrinsics.Vector512<sbyte> merge, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<ushort> Compress(System.Runtime.Intrinsics.Vector512<ushort> merge, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> value) { throw null; }
+            public static unsafe void CompressStore(byte* address, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> source) { throw null; }
+            public static unsafe void CompressStore(short* address, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> source) { throw null; }
+            public static unsafe void CompressStore(sbyte* address, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> source) { throw null; }
+            public static unsafe void CompressStore(ushort* address, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> source) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<float> ConvertToVector256Single(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<float> ConvertToVector256Single(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<float> ConvertToVector256Single(System.Runtime.Intrinsics.Vector512<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatRoundingMode.ToZero)] System.Runtime.Intrinsics.X86.FloatRoundingMode mode) { throw null; }
@@ -7571,6 +7679,10 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector512<short> Expand(System.Runtime.Intrinsics.Vector512<short> merge, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<sbyte> Expand(System.Runtime.Intrinsics.Vector512<sbyte> merge, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<ushort> Expand(System.Runtime.Intrinsics.Vector512<ushort> merge, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> value) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector512<byte> ExpandLoad(byte* address, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector512<short> ExpandLoad(short* address, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector512<sbyte> ExpandLoad(sbyte* address, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector512<ushort> ExpandLoad(ushort* address, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> merge) { throw null; }
             public static new System.Runtime.Intrinsics.Vector128<long> ExtractVector128(System.Runtime.Intrinsics.Vector512<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
             public static new System.Runtime.Intrinsics.Vector128<ulong> ExtractVector128(System.Runtime.Intrinsics.Vector512<ulong> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
             public static new System.Runtime.Intrinsics.Vector128<double> ExtractVector128(System.Runtime.Intrinsics.Vector512<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
@@ -7730,6 +7842,14 @@ namespace System.Runtime.Intrinsics.X86
         public new unsafe static System.Runtime.Intrinsics.Vector512<short> LoadVector512(short* address) { throw null; }
         public new unsafe static System.Runtime.Intrinsics.Vector512<sbyte> LoadVector512(sbyte* address) { throw null; }
         public new unsafe static System.Runtime.Intrinsics.Vector512<ushort> LoadVector512(ushort* address) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<byte> MaskLoad(byte* address, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<short> MaskLoad(short* address, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<sbyte> MaskLoad(sbyte* address, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<ushort> MaskLoad(ushort* address, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> merge) { throw null; }
+        public static unsafe void MaskStore(byte* address, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> source) { throw null; }
+        public static unsafe void MaskStore(short* address, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> source) { throw null; }
+        public static unsafe void MaskStore(sbyte* address, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> source) { throw null; }
+        public static unsafe void MaskStore(ushort* address, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> source) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> Max(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> Max(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<sbyte> Max(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
@@ -7878,6 +7998,22 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByteWithSaturation(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByteWithSaturation(System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<byte> MaskLoad(byte* address, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<short> MaskLoad(short* address, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<sbyte> MaskLoad(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<ushort> MaskLoad(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<byte> MaskLoad(byte* address, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<short> MaskLoad(short* address, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<sbyte> MaskLoad(sbyte* address, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<ushort> MaskLoad(ushort* address, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> merge) { throw null; }
+            public static unsafe void MaskStore(byte* address, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> source) { throw null; }
+            public static unsafe void MaskStore(short* address, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> source) { throw null; }
+            public static unsafe void MaskStore(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> source) { throw null; }
+            public static unsafe void MaskStore(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> source) { throw null; }
+            public static unsafe void MaskStore(byte* address, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> source) { throw null; }
+            public static unsafe void MaskStore(short* address, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> source) { throw null; }
+            public static unsafe void MaskStore(sbyte* address, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> source) { throw null; }
+            public static unsafe void MaskStore(ushort* address, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> source) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<short> PermuteVar8x16(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> control) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ushort> PermuteVar8x16(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> control) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<short> PermuteVar8x16x2(System.Runtime.Intrinsics.Vector128<short> lower, System.Runtime.Intrinsics.Vector128<short> indices, System.Runtime.Intrinsics.Vector128<short> upper) { throw null; }
@@ -8199,6 +8335,12 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<float> Compress(System.Runtime.Intrinsics.Vector512<float> merge, System.Runtime.Intrinsics.Vector512<float> mask, System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<uint> Compress(System.Runtime.Intrinsics.Vector512<uint> merge, System.Runtime.Intrinsics.Vector512<uint> mask, System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> Compress(System.Runtime.Intrinsics.Vector512<ulong> merge, System.Runtime.Intrinsics.Vector512<ulong> mask, System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+        public static unsafe void CompressStore(double* address, System.Runtime.Intrinsics.Vector512<double> mask, System.Runtime.Intrinsics.Vector512<double> source) { throw null; }
+        public static unsafe void CompressStore(int* address, System.Runtime.Intrinsics.Vector512<int> mask, System.Runtime.Intrinsics.Vector512<int> source) { throw null; }
+        public static unsafe void CompressStore(long* address, System.Runtime.Intrinsics.Vector512<long> mask, System.Runtime.Intrinsics.Vector512<long> source) { throw null; }
+        public static unsafe void CompressStore(float* address, System.Runtime.Intrinsics.Vector512<float> mask, System.Runtime.Intrinsics.Vector512<float> source) { throw null; }
+        public static unsafe void CompressStore(uint* address, System.Runtime.Intrinsics.Vector512<uint> mask, System.Runtime.Intrinsics.Vector512<uint> source) { throw null; }
+        public static unsafe void CompressStore(ulong* address, System.Runtime.Intrinsics.Vector512<ulong> mask, System.Runtime.Intrinsics.Vector512<ulong> source) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> ConvertScalarToVector128Double(System.Runtime.Intrinsics.Vector128<double> upper, uint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> ConvertScalarToVector128Single(System.Runtime.Intrinsics.Vector128<float> upper, uint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> ConvertScalarToVector128Single(System.Runtime.Intrinsics.Vector128<float> upper, int value, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatRoundingMode.ToZero)] System.Runtime.Intrinsics.X86.FloatRoundingMode mode) { throw null; }
@@ -8298,6 +8440,12 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<float> Expand(System.Runtime.Intrinsics.Vector512<float> merge, System.Runtime.Intrinsics.Vector512<float> mask, System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<uint> Expand(System.Runtime.Intrinsics.Vector512<uint> merge, System.Runtime.Intrinsics.Vector512<uint> mask, System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> Expand(System.Runtime.Intrinsics.Vector512<ulong> merge, System.Runtime.Intrinsics.Vector512<ulong> mask, System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<double> ExpandLoad(double* address, System.Runtime.Intrinsics.Vector512<double> mask, System.Runtime.Intrinsics.Vector512<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<int> ExpandLoad(int* address, System.Runtime.Intrinsics.Vector512<int> mask, System.Runtime.Intrinsics.Vector512<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<long> ExpandLoad(long* address, System.Runtime.Intrinsics.Vector512<long> mask, System.Runtime.Intrinsics.Vector512<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<float> ExpandLoad(float* address, System.Runtime.Intrinsics.Vector512<float> mask, System.Runtime.Intrinsics.Vector512<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<uint> ExpandLoad(uint* address, System.Runtime.Intrinsics.Vector512<uint> mask, System.Runtime.Intrinsics.Vector512<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<ulong> ExpandLoad(ulong* address, System.Runtime.Intrinsics.Vector512<ulong> mask, System.Runtime.Intrinsics.Vector512<ulong> merge) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> ExtractVector128(System.Runtime.Intrinsics.Vector512<byte> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> ExtractVector128(System.Runtime.Intrinsics.Vector512<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> ExtractVector128(System.Runtime.Intrinsics.Vector512<short> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
@@ -8414,6 +8562,30 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe System.Runtime.Intrinsics.Vector512<ushort> LoadVector512(ushort* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector512<uint> LoadVector512(uint* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector512<ulong> LoadVector512(ulong* address) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<double> MaskLoad(double* address, System.Runtime.Intrinsics.Vector512<double> mask, System.Runtime.Intrinsics.Vector512<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<int> MaskLoad(int* address, System.Runtime.Intrinsics.Vector512<int> mask, System.Runtime.Intrinsics.Vector512<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<long> MaskLoad(long* address, System.Runtime.Intrinsics.Vector512<long> mask, System.Runtime.Intrinsics.Vector512<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<float> MaskLoad(float* address, System.Runtime.Intrinsics.Vector512<float> mask, System.Runtime.Intrinsics.Vector512<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<uint> MaskLoad(uint* address, System.Runtime.Intrinsics.Vector512<uint> mask, System.Runtime.Intrinsics.Vector512<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<ulong> MaskLoad(ulong* address, System.Runtime.Intrinsics.Vector512<ulong> mask, System.Runtime.Intrinsics.Vector512<ulong> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<double> MaskLoadAligned(double* address, System.Runtime.Intrinsics.Vector512<double> mask, System.Runtime.Intrinsics.Vector512<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<int> MaskLoadAligned(int* address, System.Runtime.Intrinsics.Vector512<int> mask, System.Runtime.Intrinsics.Vector512<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<long> MaskLoadAligned(long* address, System.Runtime.Intrinsics.Vector512<long> mask, System.Runtime.Intrinsics.Vector512<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<float> MaskLoadAligned(float* address, System.Runtime.Intrinsics.Vector512<float> mask, System.Runtime.Intrinsics.Vector512<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<uint> MaskLoadAligned(uint* address, System.Runtime.Intrinsics.Vector512<uint> mask, System.Runtime.Intrinsics.Vector512<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<ulong> MaskLoadAligned(ulong* address, System.Runtime.Intrinsics.Vector512<ulong> mask, System.Runtime.Intrinsics.Vector512<ulong> merge) { throw null; }
+        public static unsafe void MaskStore(double* address, System.Runtime.Intrinsics.Vector512<double> mask, System.Runtime.Intrinsics.Vector512<double> source) { throw null; }
+        public static unsafe void MaskStore(int* address, System.Runtime.Intrinsics.Vector512<int> mask, System.Runtime.Intrinsics.Vector512<int> source) { throw null; }
+        public static unsafe void MaskStore(long* address, System.Runtime.Intrinsics.Vector512<long> mask, System.Runtime.Intrinsics.Vector512<long> source) { throw null; }
+        public static unsafe void MaskStore(float* address, System.Runtime.Intrinsics.Vector512<float> mask, System.Runtime.Intrinsics.Vector512<float> source) { throw null; }
+        public static unsafe void MaskStore(uint* address, System.Runtime.Intrinsics.Vector512<uint> mask, System.Runtime.Intrinsics.Vector512<uint> source) { throw null; }
+        public static unsafe void MaskStore(ulong* address, System.Runtime.Intrinsics.Vector512<ulong> mask, System.Runtime.Intrinsics.Vector512<ulong> source) { throw null; }
+        public static unsafe void MaskStoreAligned(double* address, System.Runtime.Intrinsics.Vector512<double> mask, System.Runtime.Intrinsics.Vector512<double> source) { throw null; }
+        public static unsafe void MaskStoreAligned(int* address, System.Runtime.Intrinsics.Vector512<int> mask, System.Runtime.Intrinsics.Vector512<int> source) { throw null; }
+        public static unsafe void MaskStoreAligned(long* address, System.Runtime.Intrinsics.Vector512<long> mask, System.Runtime.Intrinsics.Vector512<long> source) { throw null; }
+        public static unsafe void MaskStoreAligned(float* address, System.Runtime.Intrinsics.Vector512<float> mask, System.Runtime.Intrinsics.Vector512<float> source) { throw null; }
+        public static unsafe void MaskStoreAligned(uint* address, System.Runtime.Intrinsics.Vector512<uint> mask, System.Runtime.Intrinsics.Vector512<uint> source) { throw null; }
+        public static unsafe void MaskStoreAligned(ulong* address, System.Runtime.Intrinsics.Vector512<ulong> mask, System.Runtime.Intrinsics.Vector512<ulong> source) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Max(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> Max(System.Runtime.Intrinsics.Vector512<int> left, System.Runtime.Intrinsics.Vector512<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> Max(System.Runtime.Intrinsics.Vector512<long> left, System.Runtime.Intrinsics.Vector512<long> right) { throw null; }
@@ -8766,6 +8938,18 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector256<float> Compress(System.Runtime.Intrinsics.Vector256<float> merge, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<uint> Compress(System.Runtime.Intrinsics.Vector256<uint> merge, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<ulong> Compress(System.Runtime.Intrinsics.Vector256<ulong> merge, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+            public static unsafe void CompressStore(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> source) { throw null; }
+            public static unsafe void CompressStore(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> source) { throw null; }
+            public static unsafe void CompressStore(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> source) { throw null; }
+            public static unsafe void CompressStore(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> source) { throw null; }
+            public static unsafe void CompressStore(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> source) { throw null; }
+            public static unsafe void CompressStore(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> source) { throw null; }
+            public static unsafe void CompressStore(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> source) { throw null; }
+            public static unsafe void CompressStore(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> source) { throw null; }
+            public static unsafe void CompressStore(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> source) { throw null; }
+            public static unsafe void CompressStore(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> source) { throw null; }
+            public static unsafe void CompressStore(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> source) { throw null; }
+            public static unsafe void CompressStore(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> source) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
@@ -8850,6 +9034,18 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector256<float> Expand(System.Runtime.Intrinsics.Vector256<float> merge, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<uint> Expand(System.Runtime.Intrinsics.Vector256<uint> merge, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<ulong> Expand(System.Runtime.Intrinsics.Vector256<ulong> merge, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<double> ExpandLoad(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<int> ExpandLoad(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<long> ExpandLoad(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<float> ExpandLoad(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<uint> ExpandLoad(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<ulong> ExpandLoad(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<double> ExpandLoad(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<int> ExpandLoad(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<long> ExpandLoad(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<float> ExpandLoad(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<uint> ExpandLoad(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<ulong> ExpandLoad(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> merge) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> Fixup(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right, System.Runtime.Intrinsics.Vector128<long> table, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<float> Fixup(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right, System.Runtime.Intrinsics.Vector128<int> table, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<double> Fixup(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right, System.Runtime.Intrinsics.Vector256<long> table, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
@@ -8862,6 +9058,54 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector128<float> GetMantissa(System.Runtime.Intrinsics.Vector128<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(0x0F))] byte control) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<double> GetMantissa(System.Runtime.Intrinsics.Vector256<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(0x0F))] byte control) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<float> GetMantissa(System.Runtime.Intrinsics.Vector256<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(0x0F))] byte control) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<double> MaskLoad(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<int> MaskLoad(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<long> MaskLoad(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<float> MaskLoad(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<uint> MaskLoad(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<ulong> MaskLoad(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<double> MaskLoad(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<int> MaskLoad(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<long> MaskLoad(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<float> MaskLoad(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<uint> MaskLoad(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<ulong> MaskLoad(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<double> MaskLoadAligned(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<int> MaskLoadAligned(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<long> MaskLoadAligned(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<float> MaskLoadAligned(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<uint> MaskLoadAligned(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<ulong> MaskLoadAligned(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<double> MaskLoadAligned(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<int> MaskLoadAligned(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<long> MaskLoadAligned(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<float> MaskLoadAligned(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<uint> MaskLoadAligned(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<ulong> MaskLoadAligned(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> merge) { throw null; }
+            public static unsafe void MaskStore(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> source) { throw null; }
+            public static unsafe void MaskStore(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> source) { throw null; }
+            public static unsafe void MaskStore(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> source) { throw null; }
+            public static unsafe void MaskStore(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> source) { throw null; }
+            public static unsafe void MaskStore(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> source) { throw null; }
+            public static unsafe void MaskStore(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> source) { throw null; }
+            public static unsafe void MaskStore(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> source) { throw null; }
+            public static unsafe void MaskStore(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> source) { throw null; }
+            public static unsafe void MaskStore(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> source) { throw null; }
+            public static unsafe void MaskStore(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> source) { throw null; }
+            public static unsafe void MaskStore(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> source) { throw null; }
+            public static unsafe void MaskStore(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> source) { throw null; }
+            public static unsafe void MaskStoreAligned(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> source) { throw null; }
+            public static unsafe void MaskStoreAligned(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> source) { throw null; }
+            public static unsafe void MaskStoreAligned(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> source) { throw null; }
+            public static unsafe void MaskStoreAligned(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> source) { throw null; }
+            public static unsafe void MaskStoreAligned(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> source) { throw null; }
+            public static unsafe void MaskStoreAligned(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> source) { throw null; }
+            public static unsafe void MaskStoreAligned(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> source) { throw null; }
+            public static unsafe void MaskStoreAligned(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> source) { throw null; }
+            public static unsafe void MaskStoreAligned(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> source) { throw null; }
+            public static unsafe void MaskStoreAligned(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> source) { throw null; }
+            public static unsafe void MaskStoreAligned(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> source) { throw null; }
+            public static unsafe void MaskStoreAligned(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> source) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<long> Max(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ulong> Max(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<long> Max(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
@@ -9029,10 +9273,18 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<short> Compress(System.Runtime.Intrinsics.Vector512<short> merge, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<sbyte> Compress(System.Runtime.Intrinsics.Vector512<sbyte> merge, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ushort> Compress(System.Runtime.Intrinsics.Vector512<ushort> merge, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> value) { throw null; }
+        public static unsafe void CompressStore(byte* address, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> source) { throw null; }
+        public static unsafe void CompressStore(short* address, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> source) { throw null; }
+        public static unsafe void CompressStore(sbyte* address, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> source) { throw null; }
+        public static unsafe void CompressStore(ushort* address, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> source) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> Expand(System.Runtime.Intrinsics.Vector512<byte> merge, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> Expand(System.Runtime.Intrinsics.Vector512<short> merge, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<sbyte> Expand(System.Runtime.Intrinsics.Vector512<sbyte> merge, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ushort> Expand(System.Runtime.Intrinsics.Vector512<ushort> merge, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> value) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<byte> ExpandLoad(byte* address, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<short> ExpandLoad(short* address, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<sbyte> ExpandLoad(sbyte* address, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<ushort> ExpandLoad(ushort* address, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> merge) { throw null; }
         public new abstract partial class VL : System.Runtime.Intrinsics.X86.Avx512Vbmi.VL
         {
             internal VL() { }
@@ -9045,6 +9297,14 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector256<short> Compress(System.Runtime.Intrinsics.Vector256<short> merge, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<sbyte> Compress(System.Runtime.Intrinsics.Vector256<sbyte> merge, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<ushort> Compress(System.Runtime.Intrinsics.Vector256<ushort> merge, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
+            public static unsafe void CompressStore(byte* address, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> source) { throw null; }
+            public static unsafe void CompressStore(short* address, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> source) { throw null; }
+            public static unsafe void CompressStore(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> source) { throw null; }
+            public static unsafe void CompressStore(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> source) { throw null; }
+            public static unsafe void CompressStore(byte* address, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> source) { throw null; }
+            public static unsafe void CompressStore(short* address, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> source) { throw null; }
+            public static unsafe void CompressStore(sbyte* address, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> source) { throw null; }
+            public static unsafe void CompressStore(ushort* address, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> source) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> Expand(System.Runtime.Intrinsics.Vector128<byte> merge, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<short> Expand(System.Runtime.Intrinsics.Vector128<short> merge, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<sbyte> Expand(System.Runtime.Intrinsics.Vector128<sbyte> merge, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
@@ -9053,6 +9313,14 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector256<short> Expand(System.Runtime.Intrinsics.Vector256<short> merge, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<sbyte> Expand(System.Runtime.Intrinsics.Vector256<sbyte> merge, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<ushort> Expand(System.Runtime.Intrinsics.Vector256<ushort> merge, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<byte> ExpandLoad(byte* address, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<short> ExpandLoad(short* address, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<sbyte> ExpandLoad(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<ushort> ExpandLoad(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<byte> ExpandLoad(byte* address, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<short> ExpandLoad(short* address, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<sbyte> ExpandLoad(sbyte* address, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<ushort> ExpandLoad(ushort* address, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> merge) { throw null; }
         }
         public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx512Vbmi.X64
         {

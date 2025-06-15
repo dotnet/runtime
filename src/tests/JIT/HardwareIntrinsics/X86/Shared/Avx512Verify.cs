@@ -135,6 +135,18 @@ namespace JIT.HardwareIntrinsics.X86
             return 1.0 + (trailingSignificand / (1L << 52));
         }
 
+        public static T MaskLoad<T>(T[] value, T[] mask, T[] merge, int i)
+            where T : INumber<T>
+        {
+            return (mask[i] == T.Zero) ? merge[i] : value[i];
+        }
+
+        public static T MaskStore<T>(T[] merge, T[] mask, T[] value, int i)
+            where T : INumber<T>
+        {
+            return (mask[i] == T.Zero) ? merge[i] : value[i];
+        }
+
         public static TFloat Reduce<TFloat>(TFloat x, int m)
             where TFloat : IFloatingPointIeee754<TFloat>
         {
