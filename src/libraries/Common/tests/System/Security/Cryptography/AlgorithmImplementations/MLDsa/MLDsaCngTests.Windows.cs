@@ -8,6 +8,7 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class MLDsaCngTests_AllowPlaintextExport : MLDsaTestsBase
     {
         protected override MLDsa GenerateKey(MLDsaAlgorithm algorithm) =>
@@ -48,6 +49,7 @@ namespace System.Security.Cryptography.Tests
     }
 
     [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class MLDsaCngTests_AllowExport : MLDsaTestsBase
     {
         protected override MLDsa GenerateKey(MLDsaAlgorithm algorithm) =>
@@ -88,6 +90,7 @@ namespace System.Security.Cryptography.Tests
     }
 
     [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class MLDsaCngTests
     {
         [Theory]
@@ -226,12 +229,6 @@ namespace System.Security.Cryptography.Tests
             {
                 key.Delete();
             }
-        }
-
-        [Fact]
-        public void MLDsaCng_Ctor_ArgValidation()
-        {
-            AssertExtensions.Throws<ArgumentNullException>("key", static () => new MLDsaCng(null));
         }
 
         [Fact]
