@@ -6,6 +6,20 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    /// <summary>
+    ///   Provides a Cryptography Next Generation (CNG) implementation of the Module-Lattice-Based Digital Signature Algorithm (ML-DSA).
+    /// </summary>
+    /// <remarks>
+    ///   <para>
+    ///     This algorithm is specified by FIPS-204.
+    ///   </para>
+    ///   <para>
+    ///     Developers are encouraged to program against the <see cref="MLDsa" /> base class,
+    ///     rather than any specific derived class.
+    ///     The derived classes are intended for interop with the underlying system
+    ///     cryptographic libraries.
+    ///   </para>
+    /// </remarks>
     [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed partial class MLDsaCng : MLDsa
     {
