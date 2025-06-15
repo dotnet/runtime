@@ -342,6 +342,7 @@ namespace pal
 
     bool get_default_breadcrumb_store(string_t* recv);
     bool is_path_rooted(const string_t& path);
+    bool is_path_fully_qualified(const string_t& path);
 
     // Returns a platform-specific, user-private directory
     // that can be used for extracting out components of a single-file app.

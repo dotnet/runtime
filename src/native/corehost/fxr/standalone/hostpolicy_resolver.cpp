@@ -181,7 +181,7 @@ int hostpolicy_resolver::load(
         }
 
         // We should always be loading hostpolicy from an absolute path
-        if (!pal::is_path_rooted(host_path))
+        if (!pal::is_path_fully_qualified(host_path))
             return StatusCode::CoreHostLibMissingFailure;
 
         // Load library
