@@ -2792,6 +2792,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 assert(node->IsCnsFltOrDbl());
                 unsigned imm = node->AsDblCon()->DconValue() == 0.5 ? 0 : 1;
                 GetEmitter()->emitInsSve_R_R_I(ins, emitSize, targetReg, op1Reg, opt);
+                break;
             }
             default:
             {
