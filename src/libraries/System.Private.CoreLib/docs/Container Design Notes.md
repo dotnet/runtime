@@ -35,7 +35,7 @@ Documentation states that any key used in a Dictionary must not change in any wa
 
 ### Thread-safety Violations Must Not Cause Memory Safety Errors or Hangs
 
-Dictionary is designed to fail safely when it is manipulated from multiple threads at once without synchronization, and we have multiple tests that verify this. "Improving" Dictionary to be able to perform operations successfully across multiple threads without synchronization will as a result produce test failures and could result in observable behavior changes.
+Dictionary is designed to fail in a memory-safe way when it is manipulated from multiple threads at once without synchronization, and we have multiple tests that verify this. "Improving" Dictionary to be able to perform operations successfully across multiple threads without synchronization will as a result produce test failures and could result in observable behavior changes.
 
 It is okay for a Dictionary to become irreversibly corrupted when manipulated from multiple threads, but it should not lead to buffer overruns or other types of memory safety errors, and operations should never hang.
 
