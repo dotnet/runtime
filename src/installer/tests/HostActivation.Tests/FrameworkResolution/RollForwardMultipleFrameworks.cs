@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
-using System;
 using Xunit;
-
 using static Microsoft.DotNet.CoreSetup.Test.Constants;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
@@ -787,7 +787,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         private CommandResult RunTest(
             Func<RuntimeConfig, RuntimeConfig> runtimeConfig,
             Action<DotNetCliExtensions.DotNetCliCustomizer> customizeDotNet = null,
-            bool rollForwardToPreRelease = false)
+            bool rollForwardToPreRelease = false,
+            [CallerMemberName] string caller = "")
         {
             return RunTest(
                 SharedState.DotNetWithMultipleFrameworks,
@@ -795,7 +796,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig)
                     .WithDotnetCustomizer(customizeDotNet)
-                    .WithEnvironment(Constants.RollForwardToPreRelease.EnvironmentVariable, rollForwardToPreRelease ? "1" : "0"));
+                    .WithEnvironment(Constants.RollForwardToPreRelease.EnvironmentVariable, rollForwardToPreRelease ? "1" : "0"),
+                caller: caller);
         }
     }
 }
