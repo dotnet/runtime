@@ -1306,6 +1306,7 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_Avx10v2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v2))
     {
         CPUCompileFlags.Set(InstructionSet_AVX10v2);
+        CPUCompileFlags.Set(InstructionSet_AVXVNNIINT_V512);
     }
 
 #if defined(TARGET_AMD64)
@@ -1353,6 +1354,11 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_Sha) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSHA))
     {
         CPUCompileFlags.Set(InstructionSet_SHA);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_AvxVnniInt) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNIINT))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVXVNNIINT);
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_WaitPkg) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableWAITPKG))

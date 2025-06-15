@@ -871,20 +871,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
-                        case NI_AVXVNNI_MultiplyWideningAndAdd:
-                        case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+                        default:
                         {
+                            assert(intrinsicId >= FIRST_NI_AVXVNNI && intrinsicId <= LAST_NI_AVXVNNIINT_V512);
                             assert(targetReg != REG_NA);
                             assert(op1Reg != REG_NA);
                             assert(op2Reg != REG_NA);
 
                             genHWIntrinsic_R_R_R_RM(ins, simdSize, targetReg, op1Reg, op2Reg, op3, instOptions);
-                            break;
-                        }
-
-                        default:
-                        {
-                            unreached();
                             break;
                         };
                     }
