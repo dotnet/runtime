@@ -6,7 +6,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup;
 using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.NET.HostModel.Bundle;
 using Xunit;
 
 namespace AppHost.Bundle.Tests
@@ -78,6 +80,37 @@ namespace AppHost.Bundle.Tests
                     : TestContext.MicrosoftNETCoreAppVersion;
                 Assert.Equal(expectedVersion, System.Diagnostics.FileVersionInfo.GetVersionInfo(singleFile).FileVersion);
             }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        private void OverwritingExistingBundleClearsMacOsSignatureCache()
+        {
+            // Bundle to a single-file and ensure it is signed
+            string singleFile = sharedTestState.SelfContainedApp.Bundle();
+            Assert.True(Codesign.Run("-v", singleFile).ExitCode == 0);
+            var firstls = Command.Create("/bin/ls", "-li", singleFile)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute();
+            firstls.Should().Pass();
+            var firstInode = firstls.StdOut.Split(' ')[0];
+
+            // Rebundle to the same location.
+            // Bundler should create a new inode for the bundle which should clear the MacOS signature cache.
+            string oldFile = singleFile;
+            string dir = Path.GetDirectoryName(singleFile);
+            singleFile = sharedTestState.SelfContainedApp.ReBundle(dir, BundleOptions.BundleAllContent, out var _, new Version(5, 0));
+            Assert.True(singleFile == oldFile, "Rebundled app should have a different path than the original single-file app.");
+            var secondls = Command.Create("/bin/ls", "-li", singleFile)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute();
+            secondls.Should().Pass();
+            var secondInode = secondls.StdOut.Split(' ')[0];
+            Assert.False(firstInode == secondInode, "not a different inode after rebundle");
+            // Ensure the MacOS signature cache is cleared
+            Assert.True(Codesign.Run("-v", singleFile).ExitCode == 0);
         }
 
         [ConditionalTheory(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
