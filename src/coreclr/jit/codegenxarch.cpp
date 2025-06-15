@@ -822,38 +822,75 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     // to get the high bits of the multiply, we are constrained to using the
     // 1-op form:  RDX:RAX = RAX * rm
     // The 3-op form (Rx=Ry*Rz) does not support it.
-
+    // When BMI2 is available, we can use the MULX instruction to get the high bits
     genConsumeOperands(treeNode->AsOp());
 
     GenTree* regOp = op1;
     GenTree* rmOp  = op2;
 
-    // Set rmOp to the memory operand (if any)
-    if (op1->isUsedFromMemory() || (op2->isUsedFromReg() && (op2->GetRegNum() == REG_RAX)))
+    if (op1->isUsedFromMemory())
     {
         regOp = op2;
         rmOp  = op1;
     }
     assert(regOp->isUsedFromReg());
 
-    // Setup targetReg when neither of the source operands was a matching register
-    inst_Mov(targetType, REG_RAX, regOp->GetRegNum(), /* canSkip */ true);
+    if (treeNode->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+    {
+        if (rmOp->isUsedFromReg() && (rmOp->GetRegNum() == REG_RDX))
+        {
+            std::swap(regOp, rmOp);
+        }
 
-    instruction ins;
-    if ((treeNode->gtFlags & GTF_UNSIGNED) == 0)
-    {
-        ins = INS_imulEAX;
-    }
-    else
-    {
-        ins = INS_mulEAX;
-    }
-    emit->emitInsBinary(ins, size, treeNode, rmOp);
+        // Setup targetReg when neither of the source operands was a matching register
+        inst_Mov(targetType, REG_RDX, regOp->GetRegNum(), /* canSkip */ true);
 
-    // Move the result to the desired register, if necessary
-    if (treeNode->OperIs(GT_MULHI))
+        if (treeNode->OperIs(GT_MULHI))
+        {
+            // emit MULX instruction, use targetReg twice to only store high result
+            inst_RV_RV_TT(INS_mulx, size, targetReg, targetReg, rmOp, /* isRMW */ false, INS_OPTS_NONE);
+        }
+        else
+        {
+#if TARGET_64BIT
+            assert(false);
+#else
+            assert(treeNode->OperIs(GT_MUL_LONG));
+
+            // emit MULX instruction
+            regNumber hiReg = treeNode->AsMultiRegOp()->GetRegByIndex(1);
+            inst_RV_RV_TT(INS_mulx, size, hiReg, targetReg, rmOp, /* isRMW */ false, INS_OPTS_NONE);
+#endif
+        }
+    }
+    else // Generate MUL or IMUL instruction
     {
-        inst_Mov(targetType, targetReg, REG_RDX, /* canSkip */ true);
+        // If op2 is already present in RAX use that as implicit operand
+        if (rmOp->isUsedFromReg() && (rmOp->GetRegNum() == REG_RAX))
+        {
+            std::swap(regOp, rmOp);
+        }
+
+        // Setup targetReg when neither of the source operands was a matching register
+        inst_Mov(targetType, REG_RAX, regOp->GetRegNum(), /* canSkip */ true);
+
+        instruction ins;
+        if (!treeNode->IsUnsigned())
+        {
+            ins = INS_imulEAX;
+        }
+        else
+        {
+            ins = INS_mulEAX;
+        }
+        emit->emitInsBinary(ins, size, treeNode, rmOp);
+
+        // Move the result to the desired register, if necessary
+        if (treeNode->OperIs(GT_MULHI))
+        {
+            assert(targetReg == REG_RDX);
+            inst_Mov(targetType, targetReg, REG_RDX, /* canSkip */ true);
+        }
     }
 
     genProduceReg(treeNode);
