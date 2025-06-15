@@ -81,12 +81,26 @@ namespace System.Security.Cryptography
             Interop.Crypto.MLDsaExportPublicKey(_key, destination);
 
         /// <inheritdoc />
-        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination) =>
+        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination)
+        {
+            if (!_hasSecretKey)
+            {
+                throw new CryptographicException(SR.Cryptography_MLDsaNoSecretKey);
+            }
+
             Interop.Crypto.MLDsaExportSecretKey(_key, destination);
+        }
 
         /// <inheritdoc />
-        protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination) =>
+        protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination)
+        {
+            if (!_hasSeed)
+            {
+                throw new CryptographicException(SR.Cryptography_PqcNoSeed);
+            }
+
             Interop.Crypto.MLDsaExportSeed(_key, destination);
+        }
 
         /// <inheritdoc />
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)

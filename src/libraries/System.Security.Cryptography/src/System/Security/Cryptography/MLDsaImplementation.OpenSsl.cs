@@ -73,7 +73,7 @@ namespace System.Security.Cryptography
         {
             if (!_hasSeed)
             {
-                throw new CryptographicException(SR.Cryptography_MLDsaNoSeed);
+                throw new CryptographicException(SR.Cryptography_PqcNoSeed);
             }
 
             Interop.Crypto.MLDsaExportSeed(_key, destination);

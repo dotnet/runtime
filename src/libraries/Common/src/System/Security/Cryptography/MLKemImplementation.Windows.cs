@@ -82,6 +82,9 @@ namespace System.Security.Cryptography
             Debug.Assert(IsSupported);
             Debug.Assert(ciphertext.Length == Algorithm.CiphertextSizeInBytes);
             Debug.Assert(sharedSecret.Length == Algorithm.SharedSecretSizeInBytes);
+
+            ThrowIfNoDecapsulationKey(_hasDecapsulationKey);
+
             uint written = Interop.BCrypt.BCryptDecapsulate(_key, ciphertext, sharedSecret, 0);
             Debug.Assert(written == (uint)sharedSecret.Length);
         }
@@ -105,12 +108,16 @@ namespace System.Security.Cryptography
         protected override void ExportPrivateSeedCore(Span<byte> destination)
         {
             Debug.Assert(destination.Length == Algorithm.PrivateSeedSizeInBytes);
+
+            ThrowIfNoSeed(_hasSeed);
             ExportKey(KeyBlobMagicNumber.BCRYPT_MLKEM_PRIVATE_SEED_MAGIC, destination);
         }
 
         protected override void ExportDecapsulationKeyCore(Span<byte> destination)
         {
             Debug.Assert(destination.Length == Algorithm.DecapsulationKeySizeInBytes);
+
+            ThrowIfNoDecapsulationKey(_hasDecapsulationKey);
             ExportKey(KeyBlobMagicNumber.BCRYPT_MLKEM_PRIVATE_MAGIC, destination);
         }
 

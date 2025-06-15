@@ -76,6 +76,7 @@ namespace System.Security.Cryptography
 
         protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
         {
+            ThrowIfNoDecapsulationKey(_hasDecapsulationKey);
             Interop.Crypto.EvpKemDecapsulate(_key, ciphertext, sharedSecret);
         }
 
@@ -86,11 +87,13 @@ namespace System.Security.Cryptography
 
         protected override void ExportPrivateSeedCore(Span<byte> destination)
         {
+            ThrowIfNoSeed(_hasSeed);
             Interop.Crypto.EvpKemExportPrivateSeed(_key, destination);
         }
 
         protected override void ExportDecapsulationKeyCore(Span<byte> destination)
         {
+            ThrowIfNoDecapsulationKey(_hasDecapsulationKey);
             Interop.Crypto.EvpKemExportDecapsulationKey(_key, destination);
         }
 
