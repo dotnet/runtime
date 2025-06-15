@@ -13,5 +13,9 @@ namespace Mono.Linker.Steps
 		public abstract void RegisterMarkTypeAction (Action<TypeDefinition> action);
 
 		public abstract void RegisterMarkMethodAction (Action<MethodDefinition> action);
+
+		public virtual void RegisterMarkInstantiatedAction (Action<TypeDefinition> action)
+		{
+		}
 	}
 }

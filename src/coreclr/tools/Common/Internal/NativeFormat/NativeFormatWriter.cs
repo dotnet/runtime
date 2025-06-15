@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
-using System.Text;
 using System.Numerics;
+using System.Text;
+using System.Xml.Linq;
 
 // Managed mirror of NativeFormatWriter.h/.cpp
 namespace Internal.NativeFormat
@@ -387,6 +388,13 @@ namespace Internal.NativeFormat
                     Debug.Assert(_tentativelyWritten.Count == 0);
                     Debug.Assert(_compressionDepth == 0);
 #endif
+                }
+
+                if (_offsetAdjustment > 0)
+                {
+                    _paddingSize += _offsetAdjustment;
+                    WritePad(_offsetAdjustment);
+
                 }
 
                 if (_offsetAdjustment == 0)
@@ -2040,16 +2048,6 @@ namespace Internal.NativeFormat
                     _entryIndexSize = newEntryIndexSize;
                 }
             }
-        }
-
-        public override bool Equals(object obj)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override int GetHashCode()
-        {
-            throw new NotImplementedException();
         }
     }
 }
