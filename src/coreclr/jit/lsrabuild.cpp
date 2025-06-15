@@ -1480,6 +1480,12 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree*                tree,
         }
     }
 
+    bool forceRegOptional = false;
+#ifdef TARGET_XARCH
+    forceRegOptional = true;
+#elif TARGET_ARM64
+    forceRegOptional = Compiler::UseStrictSveForType(tree->TypeGet());
+#endif
     if (enregisterLocalVars && !VarSetOps::IsEmpty(compiler, largeVectorVars))
     {
         // We assume that the kill set includes at least some callee-trash registers, but
@@ -1521,9 +1527,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree*                tree,
                 varInterval->isPartiallySpilled = true;
                 pos->skipSaveRestore            = blockAlwaysReturn;
                 pos->liveVarUpperSave           = VarSetOps::IsMember(compiler, liveLargeVectors, varIndex);
-#ifdef TARGET_XARCH
-                pos->regOptional = true;
-#endif
+                pos->regOptional                = forceRegOptional;
             }
         }
     }

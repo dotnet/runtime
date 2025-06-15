@@ -958,7 +958,8 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_Sha1, LAST_NI_Sha1 },                            // Sha1
     { FIRST_NI_Sha256, LAST_NI_Sha256 },                        // Sha256
     { NI_Illegal, NI_Illegal },                                 //      Atomics
-    { FIRST_NI_Vector64, LAST_NI_Vector64 },                    // Vector64
+    { FIRST_NI_Vector, LAST_NI_Vector },
+    { FIRST_NI_Vector64, LAST_NI_Vector64 },
     { FIRST_NI_Vector128, LAST_NI_Vector128 },                  // Vector128
     { NI_Illegal, NI_Illegal },                                 //      Dczva
     { NI_Illegal, NI_Illegal },                                 //      Rcpc
@@ -1328,6 +1329,13 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
             return NI_Illegal;
         }
     }
+    else if (isa == InstructionSet_Vector)
+    {
+        if (!isHWIntrinsicEnabled)
+        {
+            return NI_Illegal;
+        }
+    }
 #endif
 
 #if defined(TARGET_XARCH)
@@ -1376,6 +1384,13 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
     {
         return simdSize;
     }
+#if defined(TARGET_ARM64)
+    else if ((FIRST_NI_Vector <= id) && (id <= LAST_NI_Vector))
+    {
+        assert(Compiler::UseSveForVectorT());
+        return Compiler::GetVectorTLength();
+    }
+#endif
 
     CORINFO_CLASS_HANDLE typeHnd = nullptr;
 
@@ -1623,7 +1638,7 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitTyp
     assert((isa == InstructionSet_Vector512) || (isa == InstructionSet_Vector256) || (isa == InstructionSet_Vector128));
 #endif // TARGET_XARCH
 #ifdef TARGET_ARM64
-    assert((isa == InstructionSet_Vector64) || (isa == InstructionSet_Vector128));
+    assert((isa == InstructionSet_Vector64) || (isa == InstructionSet_Vector128) || (isa == InstructionSet_Vector));
 #endif // TARGET_ARM64
 #endif // DEBUG
     return false;
@@ -2147,7 +2162,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
 
 #if defined(TARGET_ARM64)
-            if ((simdSize != 8) && (simdSize != 16))
+            if ((simdSize != 8) && (simdSize != 16) && (!SizeMatchesVectorTLength(simdSize)))
 #elif defined(TARGET_XARCH)
             if ((simdSize != 16) && (simdSize != 32) && (simdSize != 64))
 #endif // TARGET_*

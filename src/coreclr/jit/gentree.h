@@ -6576,28 +6576,38 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     static bool Equals(GenTreeHWIntrinsic* op1, GenTreeHWIntrinsic* op2);
 
-    static NamedIntrinsic GetHWIntrinsicIdForUnOp(
-        Compiler* comp, genTreeOps oper, GenTree* op1, var_types simdBaseType, unsigned simdSize, bool isScalar);
+    // static NamedIntrinsic GetScalableHWIntrinsicId(unsigned simdSize, NamedIntrinsic id);
+    static NamedIntrinsic GetScalableHWIntrinsicId(var_types simdType, var_types simdBaseType, NamedIntrinsic id);
 
-    static NamedIntrinsic GetHWIntrinsicIdForBinOp(Compiler*  comp,
-                                                   genTreeOps oper,
-                                                   GenTree*   op1,
-                                                   GenTree*   op2,
-                                                   var_types  simdBaseType,
-                                                   unsigned   simdSize,
-                                                   bool       isScalar);
+    static NamedIntrinsic GetHWIntrinsicIdForUnOp(Compiler*     comp,
+                                                  genTreeOps    oper,
+                                                  GenTree*      op1,
+                                                  var_types     simdBaseType,
+                                                  unsigned      simdSize,
+                                                  bool isScalar ARM64_ARG(bool isScalable));
 
-    static NamedIntrinsic GetHWIntrinsicIdForCmpOp(Compiler*  comp,
-                                                   genTreeOps oper,
-                                                   var_types  type,
-                                                   GenTree*   op1,
-                                                   GenTree*   op2,
-                                                   var_types  simdBaseType,
-                                                   unsigned   simdSize,
-                                                   bool       isScalar);
+    static NamedIntrinsic GetHWIntrinsicIdForBinOp(Compiler*     comp,
+                                                   genTreeOps    oper,
+                                                   GenTree*      op1,
+                                                   GenTree*      op2,
+                                                   var_types     simdBaseType,
+                                                   unsigned      simdSize,
+                                                   bool isScalar ARM64_ARG(bool isScalable));
 
-    static var_types GetLookupTypeForCmpOp(
-        Compiler* comp, genTreeOps oper, var_types type, var_types simdBaseType, unsigned simdSize);
+    static NamedIntrinsic GetHWIntrinsicIdForCmpOp(Compiler*     comp,
+                                                   genTreeOps    oper,
+                                                   var_types     type,
+                                                   GenTree*      op1,
+                                                   GenTree*      op2,
+                                                   var_types     simdBaseType,
+                                                   unsigned      simdSize,
+                                                   bool isScalar ARM64_ARG(bool isScalable));
+
+    static var_types GetLookupTypeForCmpOp(Compiler*         comp,
+                                           genTreeOps        oper,
+                                           var_types         type,
+                                           var_types         simdBaseType,
+                                           unsigned simdSize ARM64_ARG(bool isScalable));
 
     static genTreeOps GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
 
@@ -6625,12 +6635,10 @@ struct GenTreeVecCon : public GenTree
         simd8_t  gtSimd8Val;
         simd12_t gtSimd12Val;
         simd16_t gtSimd16Val;
-
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         simd32_t gtSimd32Val;
         simd64_t gtSimd64Val;
-#endif // TARGET_XARCH
-
+#endif // TARGET_XARCH || TARGET_ARM64
         simd_t gtSimdVal;
     };
 
@@ -6661,6 +6669,7 @@ struct GenTreeVecCon : public GenTree
             case NI_Vector256_CreateScalarUnsafe:
             case NI_Vector512_CreateScalarUnsafe:
 #elif defined(TARGET_ARM64)
+            case NI_Vector_Create:
             case NI_Vector64_Create:
             case NI_Vector64_CreateScalar:
             case NI_Vector64_CreateScalarUnsafe:
@@ -6881,7 +6890,7 @@ struct GenTreeVecCon : public GenTree
                 break;
             }
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             case TYP_SIMD32:
             {
                 simd32_t result = {};
@@ -6897,7 +6906,7 @@ struct GenTreeVecCon : public GenTree
                 gtSimd64Val = result;
                 break;
             }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 
             default:
             {
@@ -6937,7 +6946,7 @@ struct GenTreeVecCon : public GenTree
                 break;
             }
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             case TYP_SIMD32:
             {
                 simd32_t result = {};
@@ -6953,7 +6962,7 @@ struct GenTreeVecCon : public GenTree
                 gtSimd64Val = result;
                 break;
             }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 
             default:
             {
@@ -6990,7 +6999,7 @@ struct GenTreeVecCon : public GenTree
                 break;
             }
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             case TYP_SIMD32:
             {
                 simd32_t result = {};
@@ -7006,7 +7015,7 @@ struct GenTreeVecCon : public GenTree
                 gtSimd64Val = result;
                 break;
             }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 
             default:
             {
@@ -7034,7 +7043,7 @@ struct GenTreeVecCon : public GenTree
                 return gtSimd16Val.IsAllBitsSet();
             }
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             case TYP_SIMD32:
             {
                 return gtSimd32Val.IsAllBitsSet();
@@ -7045,7 +7054,7 @@ struct GenTreeVecCon : public GenTree
                 return gtSimd64Val.IsAllBitsSet();
             }
 
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 
             default:
             {
@@ -7082,7 +7091,7 @@ struct GenTreeVecCon : public GenTree
                 return left->gtSimd16Val == right->gtSimd16Val;
             }
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             case TYP_SIMD32:
             {
                 return left->gtSimd32Val == right->gtSimd32Val;
@@ -7093,7 +7102,7 @@ struct GenTreeVecCon : public GenTree
                 return left->gtSimd64Val == right->gtSimd64Val;
             }
 
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 
             default:
             {
@@ -7125,7 +7134,7 @@ struct GenTreeVecCon : public GenTree
                 return gtSimd16Val.IsZero();
             }
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             case TYP_SIMD32:
             {
                 return gtSimd32Val.IsZero();
@@ -7136,7 +7145,7 @@ struct GenTreeVecCon : public GenTree
                 return gtSimd64Val.IsZero();
             }
 
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 
             default:
             {
@@ -7164,7 +7173,7 @@ struct GenTreeVecCon : public GenTree
                 return EvaluateGetElementFloating<simd16_t>(simdBaseType, gtSimd16Val, index);
             }
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             case TYP_SIMD32:
             {
                 return EvaluateGetElementFloating<simd32_t>(simdBaseType, gtSimd32Val, index);
@@ -7174,7 +7183,7 @@ struct GenTreeVecCon : public GenTree
             {
                 return EvaluateGetElementFloating<simd64_t>(simdBaseType, gtSimd64Val, index);
             }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 
             default:
             {
@@ -7202,7 +7211,7 @@ struct GenTreeVecCon : public GenTree
                 return EvaluateGetElementIntegral<simd16_t>(simdBaseType, gtSimd16Val, index);
             }
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             case TYP_SIMD32:
             {
                 return EvaluateGetElementIntegral<simd32_t>(simdBaseType, gtSimd32Val, index);
@@ -7212,7 +7221,7 @@ struct GenTreeVecCon : public GenTree
             {
                 return EvaluateGetElementIntegral<simd64_t>(simdBaseType, gtSimd64Val, index);
             }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 
             default:
             {
@@ -7288,7 +7297,7 @@ struct GenTreeVecCon : public GenTree
         // buffer will cause determinism issues with the compiler.
         memset(&gtSimdVal, 0, sizeof(gtSimdVal));
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         assert(sizeof(simd_t) == sizeof(simd64_t));
 #else
         assert(sizeof(simd_t) == sizeof(simd16_t));
@@ -9501,6 +9510,7 @@ inline bool GenTree::IsVectorCreate() const
             case NI_Vector256_Create:
             case NI_Vector512_Create:
 #elif defined(TARGET_ARMARCH)
+            case NI_Vector_Create:
             case NI_Vector64_Create:
 #endif
                 return true;
@@ -9594,7 +9604,8 @@ inline bool GenTree::IsMaskZero() const
             assert(op1->OperIsHWIntrinsic());
             id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
         }
-        return ((id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64));
+        return ((id == NI_Sve_CreateFalseMaskAll) ||
+                (id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64));
     }
 
 #endif

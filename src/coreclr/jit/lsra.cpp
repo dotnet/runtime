@@ -1657,10 +1657,10 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
         case TYP_SIMD8:
         case TYP_SIMD12:
         case TYP_SIMD16:
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         case TYP_SIMD32:
         case TYP_SIMD64:
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 #ifdef FEATURE_MASKED_HW_INTRINSICS
         case TYP_MASK:
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -6036,6 +6036,14 @@ void LinearScan::allocateRegisters()
                     allocate                           = false;
                     lclVarInterval->isPartiallySpilled = true;
                 }
+#elif defined(TARGET_ARM64)
+                else if (Compiler::UseStrictSveForType(lclVarInterval->registerType))
+                {
+                    // TODO-VL: Need to do this for allocateRegistersMinimal too?
+                    allocate                           = false;
+                    lclVarInterval->isPartiallySpilled = true;
+                    setIntervalAsSpilled(currentInterval); // Just mark it spill at this point.
+                }
 #endif // TARGET_XARCH
                 else
                 {
@@ -6048,6 +6056,13 @@ void LinearScan::allocateRegisters()
                 if (lclVarInterval->isPartiallySpilled)
                 {
                     lclVarInterval->isPartiallySpilled = false;
+#if defined(TARGET_ARM64)
+                    if (Compiler::UseStrictSveForType(lclVarInterval->registerType))
+                    {
+                        // TODO-VL: Need to do this for allocateRegistersMinimal too?
+                        allocate = false;
+                    }
+#endif // TARGET_ARM64
                 }
                 else
                 {
@@ -7524,8 +7539,9 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     // while on x86 we can spill directly to memory.
     regNumber spillReg = refPosition->assignedReg();
 #ifdef TARGET_ARM64
-    bool spillToMem = refPosition->spillAfter;
-    assert(spillReg != REG_NA);
+    bool isVariableVL = Compiler::UseStrictSveForType(varDsc->TypeGet());
+    bool spillToMem   = refPosition->spillAfter || isVariableVL;
+    assert((spillReg != REG_NA) || isVariableVL);
 #else
     bool spillToMem = (spillReg == REG_NA);
     assert(!refPosition->spillAfter);
@@ -7626,7 +7642,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
         simdUpperRestore->gtFlags |= GTF_NOREG_AT_USE;
 #else
         simdUpperRestore->gtFlags |= GTF_SPILLED;
-        assert(refPosition->assignedReg() != REG_NA);
+        assert((refPosition->assignedReg() != REG_NA) || (Compiler::UseStrictSveForType(restoreLcl->TypeGet())));
         restoreReg = refPosition->assignedReg();
 #endif
     }
@@ -10760,7 +10776,14 @@ void LinearScan::lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDes
     {
         if (mode == LinearScan::LSRA_DUMP_POST && tree->gtFlags & GTF_SPILLED)
         {
+
+#ifdef TARGET_ARM64
+            // TODO-VL: Evaluate this
+            assert(tree->gtHasReg(compiler) ||
+                   (tree->OperIs(GT_INTRINSIC) && (tree->AsIntrinsic()->gtIntrinsicName == NI_SIMD_UpperRestore)));
+#else
             assert(tree->gtHasReg(compiler));
+#endif
         }
         lsraGetOperandString(tree, mode, operandString, operandStringLength);
         printf("%-15s =", operandString);

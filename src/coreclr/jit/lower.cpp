@@ -2695,7 +2695,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
                     loadWidth = 16;
                     loadType  = TYP_SIMD16;
                 }
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
                 else if ((loadWidth == 32) || (MaxUnrollSize == 64))
                 {
                     loadWidth = 32;
@@ -2706,7 +2706,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
                     loadWidth = 64;
                     loadType  = TYP_SIMD64;
                 }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 #endif // FEATURE_SIMD
                 else
                 {
@@ -2725,10 +2725,10 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
                         {
                             assert(type == TYP_INT);
                             return comp->gtNewSimdCmpOpAllNode(oper, TYP_INT, op1, op2, CORINFO_TYPE_NATIVEUINT,
-                                                               genTypeSize(op1));
+                                                               genTypeSize(op1) ARM64_ARG(false));
                         }
                         return comp->gtNewSimdBinOpNode(oper, op1->TypeGet(), op1, op2, CORINFO_TYPE_NATIVEUINT,
-                                                        genTypeSize(op1));
+                                                        genTypeSize(op1) ARM64_ARG(false));
                     }
 #endif
                     return comp->gtNewOperNode(oper, type, op1, op2);
@@ -10310,10 +10310,9 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
             case TYP_SIMD16:
                 tryReusingPrevValue = true;
                 break;
-
-#endif // TARGET_ARM64
-#endif // FEATURE_HW_INTRINSICS
-#endif // TARGET_64BIT
+#endif                      // TARGET_AMD64
+#endif                      // FEATURE_HW_INTRINSICS
+#endif                      // TARGET_64BIT
 
             // TYP_FLOAT and TYP_DOUBLE aren't needed here - they're expected to
             // be converted to TYP_INT/TYP_LONG for constant value.

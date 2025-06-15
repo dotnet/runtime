@@ -2619,6 +2619,21 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
+        private static uint _getTargetVectorLength(IntPtr thisHandle, IntPtr* ppException)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getTargetVectorLength();
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
         private static uint _getJitFlags(IntPtr thisHandle, IntPtr* ppException, CORJIT_FLAGS* flags, uint sizeInBytes)
         {
             var _this = GetThis(thisHandle);
@@ -2651,7 +2666,7 @@ namespace Internal.JitInterface
 
         private static IntPtr GetUnmanagedCallbacks()
         {
-            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 179);
+            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 180);
 
             callbacks[0] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte>)&_isIntrinsic;
             callbacks[1] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte>)&_notifyMethodInfoUsage;
@@ -2830,8 +2845,9 @@ namespace Internal.JitInterface
             callbacks[174] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void*, void*, ushort, int, void>)&_recordRelocation;
             callbacks[175] = (delegate* unmanaged<IntPtr, IntPtr*, void*, ushort>)&_getRelocTypeHint;
             callbacks[176] = (delegate* unmanaged<IntPtr, IntPtr*, uint>)&_getExpectedTargetArchitecture;
-            callbacks[177] = (delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint>)&_getJitFlags;
-            callbacks[178] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*>)&_getSpecialCopyHelper;
+            callbacks[177] = (delegate* unmanaged<IntPtr, IntPtr*, uint>)&_getTargetVectorLength;
+            callbacks[178] = (delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint>)&_getJitFlags;
+            callbacks[179] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*>)&_getSpecialCopyHelper;
 
             return (IntPtr)callbacks;
         }
