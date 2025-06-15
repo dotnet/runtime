@@ -29,8 +29,6 @@ namespace System.IO.Enumeration
 
         // Used for creating full paths
         private char[]? _pathBuffer;
-        // Used to get the raw entry data
-        private byte[]? _entryBuffer;
 
         private void Init()
         {
@@ -45,8 +43,6 @@ namespace System.IO.Enumeration
             try
             {
                 _pathBuffer = ArrayPool<char>.Shared.Rent(StandardBufferSize);
-                int size = Interop.Sys.GetReadDirRBufferSize();
-                _entryBuffer = size > 0 ? ArrayPool<byte>.Shared.Rent(size) : null;
             }
             catch
             {
@@ -103,13 +99,11 @@ namespace System.IO.Enumeration
                 // If HAVE_READDIR_R is defined for the platform FindNextEntry depends on _entryBuffer being fixed since
                 // _entry will point to a string in the middle of the array. If the array is not fixed GC can move it after
                 // the native call and _entry will point to a bogus file name.
-                fixed (byte* entryBufferPtr = _entryBuffer)
+                do
                 {
-                    do
-                    {
-                        FindNextEntry(entryBufferPtr, _entryBuffer == null ? 0 : _entryBuffer.Length);
-                        if (_lastEntryFound)
-                            return false;
+                    FindNextEntry();
+                    if (_lastEntryFound)
+                        return false;
 
                         FileAttributes attributes = FileSystemEntry.Initialize(
                             ref entry, _entry, _currentPath, _rootDirectory, _originalRootDirectory, new Span<char>(_pathBuffer));
@@ -152,13 +146,12 @@ namespace System.IO.Enumeration
                             }
                         }
 
-                        if (ShouldIncludeEntry(ref entry))
-                        {
-                            _current = TransformEntry(ref entry);
-                            return true;
-                        }
-                    } while (true);
-                }
+                    if (ShouldIncludeEntry(ref entry))
+                    {
+                        _current = TransformEntry(ref entry);
+                        return true;
+                    }
+                } while (true);
             }
 
             bool ShouldSkip(FileAttributes attributeToSkip) => (_options.AttributesToSkip & attributeToSkip) != 0;
@@ -166,18 +159,10 @@ namespace System.IO.Enumeration
 
         private unsafe void FindNextEntry()
         {
-            fixed (byte* entryBufferPtr = _entryBuffer)
-            {
-                FindNextEntry(entryBufferPtr, _entryBuffer == null ? 0 : _entryBuffer.Length);
-            }
-        }
-
-        private unsafe void FindNextEntry(byte* entryBufferPtr, int bufferLength)
-        {
             int result;
             fixed (Interop.Sys.DirectoryEntry* e = &_entry)
             {
-                result = Interop.Sys.ReadDirR(_directoryHandle, entryBufferPtr, bufferLength, e);
+                result = Interop.Sys.ReadDir(_directoryHandle, e);
             }
 
             switch (result)
@@ -244,12 +229,6 @@ namespace System.IO.Enumeration
                     {
                         _pathBuffer = null;
                         ArrayPool<char>.Shared.Return(pathBuffer);
-                    }
-
-                    if (_entryBuffer is byte[] entryBuffer)
-                    {
-                        _entryBuffer = null;
-                        ArrayPool<byte>.Shared.Return(entryBuffer);
                     }
                 }
             }
