@@ -717,9 +717,9 @@ public:
         return m_heuristicBasedLikelihood;
     }
 
-    void setHeuristicBased()
+    void setHeuristicBased(bool isHeuristicBased)
     {
-        m_heuristicBasedLikelihood = true;
+        m_heuristicBasedLikelihood = isHeuristicBased;
     }
 };
 
