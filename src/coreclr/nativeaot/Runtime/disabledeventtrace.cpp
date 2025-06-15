@@ -9,6 +9,7 @@
 #include "common.h"
 
 #include "eventtrace.h"
+#include "eventtracebase.h"
 
 void EventTracing_Initialize() { }
 
@@ -18,6 +19,7 @@ bool IsRuntimeProviderEnabled(uint8_t level, uint64_t keyword)
 }
 
 void ETW::GCLog::FireGcStart(ETW_GC_INFO * pGcInfo) { }
+void ETW::LoaderLog::ModuleLoad(HANDLE pModule) { }
 
 #ifdef FEATURE_ETW
 BOOL ETW::GCLog::ShouldTrackMovementForEtw() { return FALSE; }
