@@ -490,7 +490,7 @@ BOOL ObjIsInstanceOf(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastExcept
     return ObjIsInstanceOfCore(pObject, toTypeHnd, throwCastException);
 }
 
-extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(CORINFO_CLASS_HANDLE type, BOOL throwCastException, QCall::ObjectHandleOnStack objOnStack)
+extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(EnregisteredTypeHandle type, BOOL throwCastException, QCall::ObjectHandleOnStack objOnStack)
 {
     QCALL_CONTRACT;
     BOOL result = FALSE;
@@ -499,8 +499,7 @@ extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(CORINFO_CLASS_HANDLE type, 
 
     GCX_COOP();
 
-    TypeHandle clsHnd(type);
-    result = ObjIsInstanceOfCore(OBJECTREFToObject(objOnStack.Get()), clsHnd, throwCastException);
+    result = ObjIsInstanceOfCore(OBJECTREFToObject(objOnStack.Get()), TypeHandle::FromPtr(type), throwCastException);
 
     END_QCALL;
 
@@ -509,45 +508,24 @@ extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(CORINFO_CLASS_HANDLE type, 
 
 //========================================================================
 //
-//      STRING HELPERS
-//
-//========================================================================
-
-/*********************************************************************/
-STRINGREF* ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(TypeFromToken(metaTok) == mdtString);
-    Module* module = GetModule(scopeHnd);
-    return module->ResolveStringRef(metaTok, ppPinnedString);
-}
-
-
-//========================================================================
-//
 //      VALUETYPE/BYREF HELPERS
 //
 //========================================================================
 /*************************************************************/
-HCIMPL2(BOOL, JIT_IsInstanceOfException, CORINFO_CLASS_HANDLE type, Object* obj)
+HCIMPL2(BOOL, JIT_IsInstanceOfException, EnregisteredTypeHandle type, Object* obj)
 {
     FCALL_CONTRACT;
-    TypeHandle clsHnd(type);
-    return ExceptionIsOfRightType(clsHnd, obj->GetTypeHandle());
+    return ExceptionIsOfRightType(TypeHandle::FromPtr(type), obj->GetTypeHandle());
 }
 HCIMPLEND
 
-extern "C" void QCALLTYPE ThrowInvalidCastException(CORINFO_CLASS_HANDLE pSourceType, CORINFO_CLASS_HANDLE pTargetType)
+extern "C" void QCALLTYPE ThrowInvalidCastException(EnregisteredTypeHandle pSourceType, EnregisteredTypeHandle pTargetType)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    TypeHandle targetType(pTargetType);
-    TypeHandle sourceType(pSourceType);
-
-    COMPlusThrowInvalidCastException(sourceType, targetType);
+    COMPlusThrowInvalidCastException(TypeHandle::FromPtr(pSourceType), TypeHandle::FromPtr(pTargetType));
 
     END_QCALL;
 }
@@ -558,11 +536,11 @@ extern "C" void QCALLTYPE ThrowInvalidCastException(CORINFO_CLASS_HANDLE pSource
 //
 //========================================================================
 
-CORINFO_GENERIC_HANDLE GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
+DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
 {
     STANDARD_VM_CONTRACT;
 
-    CORINFO_GENERIC_HANDLE result = NULL;
+    DictionaryEntry result = NULL;
 
     _ASSERTE(pMT != NULL || pMD != NULL);
     _ASSERTE(pMT == NULL || pMD == NULL);
@@ -610,7 +588,7 @@ CORINFO_GENERIC_HANDLE GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * p
     }
 
     DictionaryEntry * pSlot;
-    result = (CORINFO_GENERIC_HANDLE)Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, FALSE, &pSlot, dictionaryIndexAndSlot, pModule);
+    result = Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, FALSE, &pSlot, dictionaryIndexAndSlot, pModule);
 
     if (pMT != NULL && pDeclaringMT != pMT)
     {
@@ -629,11 +607,11 @@ CORINFO_GENERIC_HANDLE GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * p
     return result;
 }
 
-extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
+extern "C" void* QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
 {
     QCALL_CONTRACT;
 
-    CORINFO_GENERIC_HANDLE result = NULL;
+    void* result = NULL;
 
     BEGIN_QCALL;
 
@@ -702,14 +680,14 @@ void FlushVirtualFunctionPointerCaches()
 // static method signature (i.e. might be for a superclass of classHnd)
 
 // slow helper to call from the fast one
-extern "C" void* QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj,
-                                                       CORINFO_CLASS_HANDLE classHnd,
-                                                       CORINFO_METHOD_HANDLE methodHnd)
+extern "C" PCODE QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj,
+                                                       EnregisteredTypeHandle classHnd,
+                                                       MethodDesc* pStaticMD)
 {
     QCALL_CONTRACT;
 
     // The address of the method that's returned.
-    CORINFO_MethodPtr   addr = NULL;
+    PCODE addr = (PCODE)NULL;
 
     BEGIN_QCALL;
 
@@ -736,8 +714,7 @@ extern "C" void* QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnSt
 
     // This is the static method descriptor describing the call.
     // It is not the destination of the call, which we must compute.
-    MethodDesc* pStaticMD = (MethodDesc*) methodHnd;
-    TypeHandle staticTH(classHnd);
+    TypeHandle staticTH = TypeHandle::FromPtr(classHnd);
 
     if (staticTH.IsNull())
     {
@@ -759,14 +736,14 @@ extern "C" void* QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnSt
     // as we have no good scheme for reporting an actionable error here.
     if (!pStaticMD->IsVtableMethod())
     {
-        addr = (CORINFO_MethodPtr) pStaticMD->GetMultiCallableAddrOfCode();
+        addr = pStaticMD->GetMultiCallableAddrOfCode();
         _ASSERTE(addr);
     }
     else
     {
         // This is the new way of resolving a virtual call, including generic virtual methods.
         // The code is now also used by reflection, remoting etc.
-        addr = (CORINFO_MethodPtr) pStaticMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, staticTH);
+        addr = pStaticMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, staticTH);
         _ASSERTE(addr);
     }
 
@@ -786,18 +763,16 @@ HCIMPLEND
 
 // Helper for synchronized static methods in shared generics code
 #include <optsmallperfcritical.h>
-HCIMPL1(CORINFO_CLASS_HANDLE, JIT_GetClassFromMethodParam, CORINFO_METHOD_HANDLE methHnd_)
+HCIMPL1(EnregisteredTypeHandle, JIT_GetClassFromMethodParam, MethodDesc* pMD)
     CONTRACTL {
         FCALL_CHECK;
-        PRECONDITION(methHnd_ != NULL);
+        PRECONDITION(pMD != NULL);
     } CONTRACTL_END;
-
-    MethodDesc *  pMD = (MethodDesc*)  methHnd_;
 
     MethodTable * pMT = pMD->GetMethodTable();
     _ASSERTE(!pMT->IsSharedByGenericInstantiations());
 
-    return((CORINFO_CLASS_HANDLE)pMT);
+    return pMT;
 HCIMPLEND
 #include <optdefault.h>
 
@@ -2161,7 +2136,7 @@ HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64
 }
 HCIMPLEND
 
-HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram32* methodProfile)
+HCIMPL3(void, JIT_VTableProfile32, Object* obj, MethodDesc* pBaseMD, ICorJitInfo::HandleHistogram32* methodProfile)
 {
     FCALL_CONTRACT;
 
@@ -2173,8 +2148,6 @@ HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod
     {
         return;
     }
-
-    MethodDesc* pBaseMD = GetMethod(baseMethod);
 
     // Method better be virtual
     _ASSERTE(pBaseMD->IsVirtual());
@@ -2209,7 +2182,7 @@ HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod
 }
 HCIMPLEND
 
-HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram64* methodProfile)
+HCIMPL3(void, JIT_VTableProfile64, Object* obj, MethodDesc* pBaseMD, ICorJitInfo::HandleHistogram64* methodProfile)
 {
     FCALL_CONTRACT;
 
@@ -2221,8 +2194,6 @@ HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod
     {
         return;
     }
-
-    MethodDesc* pBaseMD = GetMethod(baseMethod);
 
     // Method better be virtual
     _ASSERTE(pBaseMD->IsVirtual());
@@ -2412,11 +2383,10 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, vo
 // We may not have a managed thread set up in JIT_ReversePInvokeEnter, and the GC mode may be incorrect.
 // On x86, SEH handlers are set up and torn down explicitly, so we avoid using dynamic contracts.
 // This method uses the correct calling convention and argument layout manually, without relying on standard macros or contracts.
-HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, CORINFO_METHOD_HANDLE handle, void* secretArg)
+HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, MethodDesc* pMD, void* secretArg)
 {
-    _ASSERTE(frame != NULL && handle != NULL);
+    _ASSERTE(frame != NULL && pMD != NULL);
 
-    MethodDesc* pMD = GetMethod(handle);
     if (pMD->IsILStub() && secretArg != NULL)
     {
         pMD = ((UMEntryThunkData*)secretArg)->m_pMD;
@@ -2445,14 +2415,14 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
         {
             // If we're in an IL stub, we want to trace the address of the target method,
             // not the next instruction in the stub.
-            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk : (UMEntryThunk*)NULL);
+            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), pMD->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk : (UMEntryThunk*)NULL);
         }
     }
     else
     {
         // If we're in an IL stub, we want to trace the address of the target method,
         // not the next instruction in the stub.
-        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk  : (UMEntryThunk*)NULL);
+        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), pMD->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk  : (UMEntryThunk*)NULL);
     }
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
