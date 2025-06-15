@@ -1976,11 +1976,12 @@ namespace System.Security.Cryptography
         public string Name { get { throw null; } }
         public int PrivateSeedSizeInBytes { get { throw null; } }
         public int SharedSecretSizeInBytes { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
-        public bool Equals(System.Security.Cryptography.MLKemAlgorithm? other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.MLKemAlgorithm? other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Security.Cryptography.MLKemAlgorithm? left, System.Security.Cryptography.MLKemAlgorithm? right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.MLKemAlgorithm? left, System.Security.Cryptography.MLKemAlgorithm? right) { throw null; }
+        public override string ToString() { throw null; }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class MLKemOpenSsl : System.Security.Cryptography.MLKem
