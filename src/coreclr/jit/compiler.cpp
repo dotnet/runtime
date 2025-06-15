@@ -2545,38 +2545,40 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #if defined(TARGET_ARM64)
 
-/*
-* #ifdef DEBUG
-* if (matched)
-* {
-*   compVectorTLength    = getTargetLength();
-*   compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256) && ((compVectorTLength & (compVectorTLength - 1)) == 0);
-*   compUseSveForVectorT |= JitConfig.UseSveForVectorT();
-* }
-* else
-* {
-*   compVectorTLength    = 16;
-*   compUseSveForVectorT = JitConfig.UseSveForVectorT();
-* }
-* #else
-* if (matched)
-* {
-*   compVectorTLength    = getTargetLength();
-*   compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256) && ((compVectorTLength & (compVectorTLength - 1)) == 0);
-* }
-* else
-* {
-*   compVectorTLength    = 0;
-*   compUseSveForVectorT = false;
-* }
-* #endif
-* 
-*/
+    /*
+     * #ifdef DEBUG
+     * if (matched)
+     * {
+     *   compVectorTLength    = getTargetLength();
+     *   compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256) && ((compVectorTLength &
+     * (compVectorTLength - 1)) == 0); compUseSveForVectorT |= JitConfig.UseSveForVectorT();
+     * }
+     * else
+     * {
+     *   compVectorTLength    = 16;
+     *   compUseSveForVectorT = JitConfig.UseSveForVectorT();
+     * }
+     * #else
+     * if (matched)
+     * {
+     *   compVectorTLength    = getTargetLength();
+     *   compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256) && ((compVectorTLength &
+     * (compVectorTLength - 1)) == 0);
+     * }
+     * else
+     * {
+     *   compVectorTLength    = 0;
+     *   compUseSveForVectorT = false;
+     * }
+     * #endif
+     *
+     */
 
     if (info.compMatchedVM)
     {
-        compVectorTLength = info.compCompHnd->getTargetVectorLength();
-        compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256) && ((compVectorTLength & (compVectorTLength - 1)) == 0);
+        compVectorTLength    = info.compCompHnd->getTargetVectorLength();
+        compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256) &&
+                               ((compVectorTLength & (compVectorTLength - 1)) == 0);
 #ifdef DEBUG
         compUseSveForVectorT |= (bool)JitConfig.UseSveForVectorT();
 #endif // DEBUG
@@ -2588,26 +2590,26 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         compUseSveForVectorT = JitConfig.UseSveForVectorT();
         // In test mode, if UseSveForVectorT=1, then mimic that
         // we are generating for VL > 16B
-        compVectorTLength = 16; //32;
+        compVectorTLength = 16; // 32;
 #else
         compVectorTLength = 0;
 #endif // DEBUG
     }
 
-//#ifdef DEBUG
-//    compUseSveForVectorT = JitConfig.UseSveForVectorT();
-//    if (compUseSveForVectorT)
-//    {
-//        // In test mode, if UseSveForVectorT=1, then mimic that
-//        // we are generating for VL > 16B
-//        compVectorTLength = 16; //32;
-//    }
-//    else
-//#endif // DEBUG
-//    {
-//        compVectorTLength    = info.compCompHnd->getTargetVectorLength();
-//        compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256);
-//    }
+// #ifdef DEBUG
+//     compUseSveForVectorT = JitConfig.UseSveForVectorT();
+//     if (compUseSveForVectorT)
+//     {
+//         // In test mode, if UseSveForVectorT=1, then mimic that
+//         // we are generating for VL > 16B
+//         compVectorTLength = 16; //32;
+//     }
+//     else
+// #endif // DEBUG
+//     {
+//         compVectorTLength    = info.compCompHnd->getTargetVectorLength();
+//         compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256);
+//     }
 #endif // TARGET_ARM64
 
     bool enableInliningMethodsWithEH = JitConfig.JitInlineMethodsWithEH() > 0;

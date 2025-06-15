@@ -11017,7 +11017,9 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
         var_types   simdBaseType    = tree->GetSimdBaseType();
         unsigned    simdSize        = tree->GetSimdSize();
 #if defined(TARGET_ARM64)
-        bool isScalable = (((FIRST_NI_Vector <= tree->GetHWIntrinsicId()) && (tree->GetHWIntrinsicId() <= LAST_NI_Vector)) || ((FIRST_NI_Sve <= tree->GetHWIntrinsicId()) && (tree->GetHWIntrinsicId() <= LAST_NI_Sve)));
+        bool isScalable =
+            (((FIRST_NI_Vector <= tree->GetHWIntrinsicId()) && (tree->GetHWIntrinsicId() <= LAST_NI_Vector)) ||
+             ((FIRST_NI_Sve <= tree->GetHWIntrinsicId()) && (tree->GetHWIntrinsicId() <= LAST_NI_Sve)));
 #endif
 
         if (tree->isCommutativeHWIntrinsic())
@@ -11049,7 +11051,8 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
                     // Move constant vectors from op1 to op2 for comparison operations
                     genTreeOps newOper = GenTree::SwapRelop(oper);
                     var_types  lookupType =
-                        GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, newOper, retType, simdBaseType, simdSize ARM64_ARG(isScalable));
+                        GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, newOper, retType, simdBaseType,
+                                                                  simdSize ARM64_ARG(isScalable));
                     NamedIntrinsic newId =
                         GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, retType, op2, op1, simdBaseType,
                                                                      simdSize, false ARM64_ARG(isScalable));

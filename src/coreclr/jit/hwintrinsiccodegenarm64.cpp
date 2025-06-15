@@ -818,10 +818,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 if (targetReg != embMaskOp1Reg)
                                 {
                                     GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, maskReg,
-                                        embMaskOp1Reg, opt);
+                                                                embMaskOp1Reg, opt);
                                 }
                                 assert(intrinEmbMask.op2->IsCnsFltOrDbl());
-                                double imm = intrinEmbMask.op2->AsDblCon()->DconValue(); 
+                                double imm = intrinEmbMask.op2->AsDblCon()->DconValue();
                                 assert((imm == 0.5) || (imm == 2.0));
                                 GetEmitter()->emitIns_R_R_F(insEmbMask, emitSize, targetReg, op1Reg, imm, opt);
                                 break;

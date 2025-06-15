@@ -2301,12 +2301,12 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                             emit->emitIns_R_I(INS_movi, attr, targetReg, val.i32[0], is8 ? INS_OPTS_2S : INS_OPTS_4S);
                         }
                         else if (ElementsAreSame(val.i16, is8 ? 4 : 8) &&
-                            emitter::emitIns_valid_imm_for_movi(val.i16[0], EA_2BYTE))
+                                 emitter::emitIns_valid_imm_for_movi(val.i16[0], EA_2BYTE))
                         {
                             emit->emitIns_R_I(INS_movi, attr, targetReg, val.i16[0], is8 ? INS_OPTS_4H : INS_OPTS_8H);
                         }
                         else if (ElementsAreSame(val.i8, is8 ? 8 : 16) &&
-                            emitter::emitIns_valid_imm_for_movi(val.i8[0], EA_1BYTE))
+                                 emitter::emitIns_valid_imm_for_movi(val.i8[0], EA_1BYTE))
                         {
                             emit->emitIns_R_I(INS_movi, attr, targetReg, val.i8[0], is8 ? INS_OPTS_8B : INS_OPTS_16B);
                         }
@@ -3043,8 +3043,8 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
             }
         }
     }
-    emitAttr attr = emitActualTypeSize(targetType);
-    bool isScalable = (attr == EA_SCALABLE) || (Compiler::UseSveForType(targetType));
+    emitAttr attr       = emitActualTypeSize(targetType);
+    bool     isScalable = (attr == EA_SCALABLE) || (Compiler::UseSveForType(targetType));
 
     if (isScalable)
     {

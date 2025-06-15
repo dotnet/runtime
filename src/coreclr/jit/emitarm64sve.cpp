@@ -2696,7 +2696,7 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
                     // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
                     codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
                     reg2 = rsvdReg;
-                    imm = 0;
+                    imm  = 0;
                 }
             }
             if (isVectorRegister(reg1))
@@ -2735,7 +2735,7 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
                     // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
                     codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
                     reg2 = rsvdReg;
-                    imm = 0;
+                    imm  = 0;
                 }
             }
             if (isVectorRegister(reg1))

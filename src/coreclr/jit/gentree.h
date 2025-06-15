@@ -6576,33 +6576,38 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     static bool Equals(GenTreeHWIntrinsic* op1, GenTreeHWIntrinsic* op2);
 
-    //static NamedIntrinsic GetScalableHWIntrinsicId(unsigned simdSize, NamedIntrinsic id);
+    // static NamedIntrinsic GetScalableHWIntrinsicId(unsigned simdSize, NamedIntrinsic id);
     static NamedIntrinsic GetScalableHWIntrinsicId(var_types simdType, var_types simdBaseType, NamedIntrinsic id);
 
-    static NamedIntrinsic GetHWIntrinsicIdForUnOp(
-        Compiler* comp, genTreeOps oper, GenTree* op1, var_types simdBaseType, unsigned simdSize, bool isScalar ARM64_ARG(bool isScalable));
+    static NamedIntrinsic GetHWIntrinsicIdForUnOp(Compiler*     comp,
+                                                  genTreeOps    oper,
+                                                  GenTree*      op1,
+                                                  var_types     simdBaseType,
+                                                  unsigned      simdSize,
+                                                  bool isScalar ARM64_ARG(bool isScalable));
 
-    static NamedIntrinsic GetHWIntrinsicIdForBinOp(Compiler*  comp,
-                                                   genTreeOps oper,
-                                                   GenTree*   op1,
-                                                   GenTree*   op2,
-                                                   var_types  simdBaseType,
-                                                   unsigned   simdSize,
-                                                   bool       isScalar
-                                                   ARM64_ARG(bool isScalable));
+    static NamedIntrinsic GetHWIntrinsicIdForBinOp(Compiler*     comp,
+                                                   genTreeOps    oper,
+                                                   GenTree*      op1,
+                                                   GenTree*      op2,
+                                                   var_types     simdBaseType,
+                                                   unsigned      simdSize,
+                                                   bool isScalar ARM64_ARG(bool isScalable));
 
-    static NamedIntrinsic GetHWIntrinsicIdForCmpOp(Compiler*  comp,
-                                                   genTreeOps oper,
-                                                   var_types  type,
-                                                   GenTree*   op1,
-                                                   GenTree*   op2,
-                                                   var_types  simdBaseType,
-                                                   unsigned   simdSize,
-                                                   bool       isScalar
-                                                   ARM64_ARG(bool isScalable));
+    static NamedIntrinsic GetHWIntrinsicIdForCmpOp(Compiler*     comp,
+                                                   genTreeOps    oper,
+                                                   var_types     type,
+                                                   GenTree*      op1,
+                                                   GenTree*      op2,
+                                                   var_types     simdBaseType,
+                                                   unsigned      simdSize,
+                                                   bool isScalar ARM64_ARG(bool isScalable));
 
-    static var_types GetLookupTypeForCmpOp(
-        Compiler* comp, genTreeOps oper, var_types type, var_types simdBaseType, unsigned simdSize ARM64_ARG(bool isScalable));
+    static var_types GetLookupTypeForCmpOp(Compiler*         comp,
+                                           genTreeOps        oper,
+                                           var_types         type,
+                                           var_types         simdBaseType,
+                                           unsigned simdSize ARM64_ARG(bool isScalable));
 
     static genTreeOps GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
 

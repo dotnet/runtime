@@ -350,7 +350,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     var_types tempType = RegSet::tmpNormalizeType(treeType);
     regMaskTP mask;
     bool      floatSpill = false;
-    bool      maskSpill = false;
+    bool      maskSpill  = false;
 
     if (isFloatRegType(treeType))
     {
@@ -361,7 +361,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     if (varTypeUsesMaskReg(treeType))
     {
         maskSpill = true;
-        mask = genRegMask(reg);
+        mask      = genRegMask(reg);
     }
 #endif
     else
