@@ -49,6 +49,11 @@ namespace standalone
             return ::GCToEEInterface::RefCountedHandleCallbacks(pObject);
         }
 
+        void TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
+        {
+            return ::GCToEEInterface::TriggerClientBridgeProcessing(args);
+        }
+
         void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
         {
             ::GCToEEInterface::SyncBlockCacheWeakPtrScan(scanProc, lp1, lp2);
@@ -262,6 +267,11 @@ namespace standalone
         uint64_t GetThreadOSThreadId(Thread* thread)
         {
             return ::GCToEEInterface::GetThreadOSThreadId(thread);
+        }
+
+        const char* GetMethodTableDebugName(MethodTable* pMT)
+        {
+            return ::GCToEEInterface::GetMethodTableDebugName(pMT);
         }
     };
 }

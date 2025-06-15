@@ -164,6 +164,10 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     return false;
 }
 
+void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
+{
+}
+
 bool GCToEEInterface::IsPreemptiveGCDisabled()
 {
     Thread* pThread = ::GetThread();
@@ -366,4 +370,9 @@ void GCToEEInterface::LogErrorToHost(const char *message)
 uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
 {
     return 0;
+}
+
+const char* GCToEEInterface::GetMethodTableDebugName(MethodTable* pMT)
+{
+    return "";
 }
