@@ -14,27 +14,34 @@
 #include "ds-getter-setter.h"
 
 /*
+ *  CollectTracing5 introduces additional provider configuration fields.
+ *  For backwards compatibility, these fields are optional and
+ *  these flags indicate which of the optional fields should be
+ *  deserialized from the IPC Stream.
+ */
+typedef enum
+{
+    EP_PROVIDER_OPTFIELD_NONE = 0,
+    EP_PROVIDER_OPTFIELD_EVENT_FILTER = 1,
+    EP_PROVIDER_OPTFIELD_TRACEPOINT_CONFIG = 2
+} EventPipeProviderOptionalFieldFlags;
+
+/*
 * EventPipeCollectTracingCommandPayload
+*
+* https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
 */
 
 // Command = 0x0202
 // Command = 0x0203
 // Command = 0x0204
 // Command = 0x0205
+// Command = 0x0206
 #if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_EVENTPIPE_PROTOCOL_GETTER_SETTER)
 struct _EventPipeCollectTracingCommandPayload {
 #else
 struct _EventPipeCollectTracingCommandPayload_Internal {
 #endif
-	// The protocol buffer is defined as:
-	// X, Y, Z means encode bytes for X followed by bytes for Y followed by bytes for Z
-	// message = uint circularBufferMB, uint format, array<provider_config> providers
-	// uint = 4 little endian bytes
-	// wchar = 2 little endian bytes, UTF16 encoding
-	// array<T> = uint length, length # of Ts
-	// string = (array<char> where the last char must = 0) or (length = 0)
-	// provider_config = ulong keywords, uint logLevel, string provider_name, string filter_data
-
 	uint8_t *incoming_buffer;
 	dn_vector_t *provider_configs;
 	uint32_t circular_buffer_size_in_mb;
@@ -42,6 +49,7 @@ struct _EventPipeCollectTracingCommandPayload_Internal {
 	bool rundown_requested;
 	bool stackwalk_requested;
 	uint64_t rundown_keyword;
+	EventPipeSessionType session_type;
 };
 
 #if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_EVENTPIPE_PROTOCOL_GETTER_SETTER)

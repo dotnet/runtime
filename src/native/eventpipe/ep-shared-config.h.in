@@ -1,7 +1,13 @@
 #ifndef EP_SHARED_CONFIG_H_INCLUDED
 #define EP_SHARED_CONFIG_H_INCLUDED
 
+#cmakedefine01 HAVE_ERRNO_H
+#cmakedefine01 HAVE_LINUX_USER_EVENTS_H
+#cmakedefine01 HAVE_SYS_IOCTL_H
 #cmakedefine01 HAVE_SYS_SOCKET_H
+#cmakedefine01 HAVE_SYS_UIO_H
+/* mono files use ifdef HAVE_UNISTD_H, so for compatibility */
+#cmakedefine HAVE_UNISTD_H 1
 /* This platforms supports setting flags atomically when accepting connections. */
 #cmakedefine01 HAVE_ACCEPT4
 

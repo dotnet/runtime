@@ -552,9 +552,9 @@ ipc_socket_accept (
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	do {
 #if HAVE_ACCEPT4 && defined(SOCK_CLOEXEC)
-    	client_socket = accept4 (s, address, address_len, SOCK_CLOEXEC);
+		client_socket = accept4 (s, address, address_len, SOCK_CLOEXEC);
 #else
-    	client_socket = accept (s, address, address_len);
+		client_socket = accept (s, address, address_len);
 #endif
 	} while (ipc_retry_syscall (client_socket));
 
@@ -1555,6 +1555,60 @@ ds_ipc_stream_read (
 		bytes_read,
 		timeout_ms);
 }
+
+#if HAVE_SYS_SOCKET_H && defined(SOL_SOCKET) && defined(SCM_RIGHTS) && defined(CMSG_SPACE) && defined(CMSG_FIRSTHDR) && defined(CMSG_DATA)
+bool
+ds_ipc_stream_read_fd (
+	DiagnosticsIpcStream *ipc_stream,
+	int *data_fd)
+{
+	EP_ASSERT (ipc_stream != NULL);
+	EP_ASSERT (data_fd != NULL);
+
+	struct msghdr msg = {0};
+
+	msg.msg_name = NULL;
+	msg.msg_namelen = 0;
+
+	struct iovec io_vec[1];
+	char buffer[1];
+	io_vec[0].iov_base = buffer;
+	io_vec[0].iov_len = 1;
+
+	msg.msg_iov = io_vec;
+	msg.msg_iovlen = 1;
+
+	char control[CMSG_SPACE(sizeof(int))];
+	msg.msg_control = control;
+	msg.msg_controllen = sizeof(control);
+
+	ssize_t res;
+	while ((res = recvmsg(ipc_stream->client_socket, &msg, 0)) < 0 && errno == EINTR);
+	if (res < 0)
+	   return false;
+
+	struct cmsghdr *cmptr;
+	if ((cmptr = CMSG_FIRSTHDR(&msg)) == NULL ||
+		 cmptr->cmsg_level != SOL_SOCKET ||
+		 cmptr->cmsg_type != SCM_RIGHTS)
+		return false;
+
+	memcpy(data_fd, CMSG_DATA(cmptr), sizeof(int));
+	if (*data_fd < 0)
+		return false;
+
+	return true;
+}
+#else // HAVE_SYS_SOCKET_H && defined(SOL_SOCKET) && defined(SCM_RIGHTS) && defined(CMSG_SPACE) && defined(CMSG_FIRSTHDR) && defined(CMSG_DATA)
+bool
+ds_ipc_stream_read_fd (
+	DiagnosticsIpcStream *ipc_stream,
+	int *data_fd)
+{
+	// Not supported
+	return false;
+}
+#endif // HAVE_SYS_SOCKET_H && defined(SOL_SOCKET) && defined(SCM_RIGHTS) && defined(CMSG_SPACE) && defined(CMSG_FIRSTHDR) && defined(CMSG_DATA)
 
 bool
 ds_ipc_stream_write (
