@@ -1251,16 +1251,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private TypeDesc _iDynamicInterfaceCastableType;
-        public TypeDesc IDynamicInterfaceCastableType
-        {
-            get
-            {
-                // This should only be called if we already found a type implementing IDynamicInterfaceCastable.
-                return _iDynamicInterfaceCastableType ??= _context.SystemModule.GetType("System.Runtime.InteropServices", "IDynamicInterfaceCastable", throwIfNotFound: true);
-            }
-        }
-
         private MethodDesc _instanceMethodRemovedHelper;
         public MethodDesc InstanceMethodRemovedHelper
         {

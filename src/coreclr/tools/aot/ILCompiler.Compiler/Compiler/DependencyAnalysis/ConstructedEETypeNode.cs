@@ -58,6 +58,12 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
 
+            if (factory.TypeSystemContext.IsIDynamicInterfaceCastableInterface(closestDefType))
+            {
+                Debug.Assert(factory.PreinitializationManager.HasEagerStaticConstructor(_type));
+                dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "IDynamicInterfaceCastable eager .cctor");
+            }
+
             return dependencyList;
         }
 
