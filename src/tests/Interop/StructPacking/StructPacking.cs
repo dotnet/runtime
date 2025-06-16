@@ -103,8 +103,8 @@ struct AutoLayoutMaxPacking<T> : ITestStructure
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 struct ManagedAutoUnmanagedSequentialLayoutMinPacking : ITestStructure
 {
-    public byte _byte;
     public Action _value;
+    public byte _byte;
 
     public int Size => Unsafe.SizeOf<ManagedAutoUnmanagedSequentialLayoutMinPacking>();
     public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
