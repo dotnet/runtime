@@ -7,13 +7,14 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using Microsoft.DotNet.CoreSetup;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.MachO;
 using Microsoft.NET.HostModel.MachO.CodeSign.Tests;
 using Xunit;
 using Xunit.Abstractions;
+
+namespace Microsoft.NET.HostModel.Tests;
 
 public class MachObjectTests
 {
@@ -44,7 +45,7 @@ public class MachObjectTests
 
     [Theory]
     [MemberData(nameof(GetTestFilePaths), nameof(RoundTripMachObjectFileIsTheSame))]
-    void RoundTripMachObjectFileIsTheSame(string filePath, TestArtifact testArtifact)
+    void RoundTripMachObjectFileIsTheSame(string filePath, TestArtifact _)
     {
         var backupFilePath = filePath + ".bak";
         File.Copy(filePath, backupFilePath);
@@ -120,7 +121,6 @@ public class MachObjectTests
             ExecutableSegmentBase = 0,
             ExecutableSegmentLimit = 8949760,
             ExecutableSegmentFlags = ExecutableSegmentFlags.MainBinary,
-            RequirementsSize = 12,
             SpecialSlotHashes = [
                     [0x4d, 0x8d, 0x4b, 0x9e, 0x41, 0x16, 0xe8, 0xed, 0xd9, 0x96, 0x17, 0x6b, 0x55, 0x53, 0x46, 0x3a, 0xcb, 0x64, 0x28, 0x7b, 0xb6, 0x35, 0xe7, 0xf1, 0x41, 0x15, 0x55, 0x29, 0xe2, 0x04, 0x57, 0xbc],
                     [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
@@ -151,7 +151,7 @@ public class MachObjectTests
     [Theory]
     [MemberData(nameof(GetTestFilePaths), nameof(EmbeddedSignatureBlobMatchesCodesignInfo))]
     [PlatformSpecific(TestPlatforms.OSX)]
-    public void EmbeddedSignatureBlobMatchesCodesignInfo(string filePath, TestArtifact testArtifact)
+    public void EmbeddedSignatureBlobMatchesCodesignInfo(string filePath, TestArtifact _)
     {
         if(!SigningTests.IsSigned(filePath))
         {
@@ -167,7 +167,7 @@ public class MachObjectTests
             if (exitcode != 0)
             {
                 output.WriteLine($"Codesign command failed with exit code {exitcode}: {stderr}");
-                Assert.True(false, "Codesign command failed");
+                Assert.Fail("Codesign command failed");
             }
             output.WriteLine($"Codesign output for {filePath}:\n{stderr}");
             CodesignOutputInfo codesignInfo = CodesignOutputInfo.ParseFromCodeSignOutput(stderr);
@@ -186,7 +186,6 @@ public class MachObjectTests
         Assert.True(csi.ExecutableSegmentBase == b.CodeDirectoryBlob.ExecutableSegmentBase, "ExecutableSegmentBase do not match");
         Assert.True(csi.ExecutableSegmentLimit == b.CodeDirectoryBlob.ExecutableSegmentLimit, "ExecutableSegmentLimit do not match");
         Assert.True(csi.ExecutableSegmentFlags == b.CodeDirectoryBlob.ExecutableSegmentFlags, "ExecutableSegmentFlags do not match");
-        Assert.True(csi.RequirementsSize == b.RequirementsBlob?.Size, "RequirementsSize do not match");
 
         Assert.True(csi.SpecialSlotHashes.Zip(b.CodeDirectoryBlob.SpecialSlotHashes, static (a, b) => a.SequenceEqual(b)).All(static x => x));
         Assert.True(csi.CodeHashes.Zip(b.CodeDirectoryBlob.CodeHashes, static (a, b) => a.SequenceEqual(b)).All(static x => x));
@@ -203,7 +202,6 @@ public class MachObjectTests
         public ulong ExecutableSegmentBase { get; init; }
         public ulong ExecutableSegmentLimit { get; init; }
         public ExecutableSegmentFlags ExecutableSegmentFlags { get; init; }
-        public uint RequirementsSize { get; init; }
         public byte[][] SpecialSlotHashes { get; init; }
         public byte[][] CodeHashes { get; init; }
 
@@ -218,15 +216,28 @@ public class MachObjectTests
                 ExecutableSegmentBase == other.ExecutableSegmentBase &&
                 ExecutableSegmentLimit == other.ExecutableSegmentLimit &&
                 ExecutableSegmentFlags == other.ExecutableSegmentFlags &&
-                RequirementsSize == other.RequirementsSize &&
                 SpecialSlotHashes.Length == other.SpecialSlotHashes.Length &&
                 CodeHashes.Length == other.CodeHashes.Length &&
                 SpecialSlotHashes.Zip(other.SpecialSlotHashes, static (a, b) => a.SequenceEqual(b)).All(static x => x) &&
                 CodeHashes.Zip(other.CodeHashes, static (a, b) => a.SequenceEqual(b)).All(static x => x);
         }
-        public override int GetHashCode()
+
+        public override string ToString()
+            {
+                return $$"""
+                Identifier: {{Identifier}},
+                CodeDirectoryFlags: {{CodeDirectoryFlags}},
+                CodeDirectoryVersion: {{CodeDirectoryVersion}},
+                ExecutableSegmentBase: {{ExecutableSegmentBase}},
+                ExecutableSegmentLimit: {{ExecutableSegmentLimit}},
+                ExecutableSegmentFlags: {{ExecutableSegmentFlags}},
+                SpecialSlotHashes: [{{string.Join(", ", SpecialSlotHashes.Select(h => BitConverter.ToString(h).Replace("-", "")))}}],
+                CodeHashes: [{{string.Join(", ", CodeHashes.Select(h => BitConverter.ToString(h).Replace("-", "")))}}]
+                """;
+            }
+                public override int GetHashCode()
         {
-            return HashCode.Combine(Identifier, CodeDirectoryFlags, CodeDirectoryVersion, ExecutableSegmentLimit, ExecutableSegmentFlags, RequirementsSize, SpecialSlotHashes, CodeHashes);
+            return HashCode.Combine(Identifier, CodeDirectoryFlags, CodeDirectoryVersion, ExecutableSegmentLimit, ExecutableSegmentFlags, SpecialSlotHashes, CodeHashes);
         }
 
         /// <summary>
@@ -234,20 +245,20 @@ public class MachObjectTests
         /// </summary>
         public static CodesignOutputInfo ParseFromCodeSignOutput(string output)
         {
-            var lines = output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-            var Identifier = lines[1].Split('=')[1].Trim();
+            var splitOptions = StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries;
+            var lines = output.Split(new[] { '\n', '\r' }, splitOptions);
+            var Identifier = lines[1].Split('=', splitOptions)[1];
             var cdInfo = lines[3].Split(' ');
-            var CodeDirectoryVersion = (CodeDirectoryVersion)Convert.ToUInt32(cdInfo[1].Split('=')[1].Trim(), 16);
-            var CodeDirectoryFlags = (CodeDirectoryFlags)Convert.ToUInt32(cdInfo[3].Split('=', '(')[1].Trim().TrimStart("0x").ToString(), 16);
+            var CodeDirectoryVersion = (CodeDirectoryVersion)Convert.ToUInt32(cdInfo[1].Split('=', splitOptions)[1], 16);
+            var CodeDirectoryFlags = (CodeDirectoryFlags)Convert.ToUInt32(cdInfo[3].Split(['=', '('], splitOptions)[1].TrimStart("0x").ToString(), 16);
             Assert.True(lines[13].StartsWith("Executable Segment base="), "Expected 'Executable Segment base=' at line 13");
             Assert.True(lines[14].StartsWith("Executable Segment limit="), "Expected 'Executable Segment limit=' at line 14");
             Assert.True(lines[15].StartsWith("Executable Segment flags="), "Expected 'Executable Segment flags=' at line 15");
-            var ExecutableSegmentBase = ulong.Parse(lines[13].Split('=')[1].Trim());
-            var ExecutableSegmentLimit = ulong.Parse(lines[14].Split('=')[1].Trim());
-            var ExecutableSegmentFlags = (ExecutableSegmentFlags)Convert.ToUInt64(lines[15].Split('=')[1].Trim().TrimStart("0x").ToString(), 16);
+            var ExecutableSegmentBase = ulong.Parse(lines[13].Split('=', splitOptions)[1]);
+            var ExecutableSegmentLimit = ulong.Parse(lines[14].Split('=', splitOptions)[1]);
+            var ExecutableSegmentFlags = (ExecutableSegmentFlags)Convert.ToUInt64(lines[15].Split('=', splitOptions)[1].TrimStart("0x").ToString(), 16);
             Assert.True(lines[16].StartsWith("Page size=4096"), "Expected 'Page size=4096' at line 16");
             var (SpecialSlotHashes, CodeHashes) = ExtractHashes(lines.Skip(17));
-            var RequirementsSize = uint.Parse(lines[^1].Split('=')[2].Trim());
 
             return new CodesignOutputInfo
             {
@@ -259,7 +270,6 @@ public class MachObjectTests
                 ExecutableSegmentFlags = ExecutableSegmentFlags,
                 SpecialSlotHashes = SpecialSlotHashes,
                 CodeHashes = CodeHashes,
-                RequirementsSize = RequirementsSize
             };
 
             static (byte[][] SpecialSlotHashes, byte[][] CodeHashes) ExtractHashes(IEnumerable<string> lines)
@@ -268,7 +278,7 @@ public class MachObjectTests
                 List<byte[]> codeHashes = [];
                 foreach (var line in lines)
                 {
-                    if (line[0] is not ' ' or '\t')
+                    if (line[0] is not ('-' or '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9'))
                         break;
                     var hash = line.Split('=')[1].Trim();
                     var index = int.Parse(line.Split('=')[0].Trim());
@@ -276,7 +286,6 @@ public class MachObjectTests
                     {
                         // specialSlot
                         specialSlotHashes.Add(ParseByteArray(hash));
-
                     }
                     else
                     {

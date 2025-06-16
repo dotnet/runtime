@@ -82,8 +82,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             // Codesigned file
             File.Copy(filePath, codesignFilePath);
             Assert.True(Codesign.IsAvailable, "Could not find codesign tool");
-            Codesign.Run("--remove-signature", codesignFilePath).ExitCode.Should().Be(0, $"'codesign --remove-signature {codesignFilePath}' failed!");
-            Codesign.Run("-s - -i " + fileName, codesignFilePath).ExitCode.Should().Be(0, $"'codesign -s - {codesignFilePath}' failed!");
+            Codesign.Run("-s - -f --preserve-metadata=entitlements -i" + fileName, codesignFilePath).ExitCode.Should().Be(0, $"'codesign -s - {codesignFilePath}' failed!");
 
             // Managed signed file
             AdHocSignFile(originalFilePath, managedSignedPath, fileName);
@@ -152,7 +151,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         /// <summary>
         /// AdHoc sign a test file. This should look similar to HostWriter.CreateAppHost.
         /// </summary>
-        public static void AdHocSignFile(string originalFilePath, string managedSignedPath, string fileName)
+        internal static void AdHocSignFile(string originalFilePath, string managedSignedPath, string fileName)
         {
             Assert.NotEqual(originalFilePath, managedSignedPath);
             // Open the source host file.
@@ -176,7 +175,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             }
         }
 
-        public static void AdHocSignFileInPlace(string managedSignedPath)
+        internal static void AdHocSignFileInPlace(string managedSignedPath)
         {
             var tmpFile = Path.GetTempFileName();
             var mode = File.GetUnixFileMode(managedSignedPath);

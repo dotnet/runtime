@@ -19,7 +19,7 @@ namespace Microsoft.NET.HostModel
     {
         private readonly FileStream? stream;
         private readonly MemoryMappedFile? _memoryMappedFile;
-        private Stream Stream => (Stream?)stream ?? _memoryMappedFile!.CreateViewStream(0, 0, MemoryMappedFileAccess.ReadWrite);
+        private Stream Stream => stream as Stream ?? _memoryMappedFile!.CreateViewStream(0, 0, MemoryMappedFileAccess.ReadWrite);
         private readonly PEReader _reader;
         private ResourceData? _resourceData;
         private readonly bool leaveOpen;
@@ -71,7 +71,7 @@ namespace Microsoft.NET.HostModel
             catch (Exception)
             {
                 if (!leaveOpen)
-                    this.stream?.Dispose();
+                    this._memoryMappedFile?.Dispose();
                 throw;
             }
         }
@@ -211,12 +211,19 @@ namespace Microsoft.NET.HostModel
             bool needsMoveTrailingSections = !isRsrcIsLastSection && delta > 0;
             long finalImageSize = trailingSectionStart + Math.Max(delta, 0) + trailingSectionLength;
 
-            using (var mmap = _memoryMappedFile ?? MemoryMappedFile.CreateFromFile(stream!, null, finalImageSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
-            using (MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor(0, finalImageSize, MemoryMappedFileAccess.ReadWrite))
+            // Create a memory-mapped file if we weren't provided one when constructed
+            // and make sure we dispose it after use
+            using var mmap = stream is not null ?
+                MemoryMappedFile.CreateFromFile(stream!, null, finalImageSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true)
+                : null;
+
+            // Don't dispose the memory-mapped file if it was provided in the constructor
+            var mmappedFile = mmap ?? _memoryMappedFile!;
+            using (MemoryMappedViewAccessor accessor = mmappedFile.CreateViewAccessor(0, finalImageSize, MemoryMappedFileAccess.ReadWrite))
             {
                 int peSignatureOffset = ReadI32(accessor, PEOffsets.DosStub.PESignatureOffset);
                 int sectionBase = peSignatureOffset + PEOffsets.PEHeaderSize +
-                                  (ushort)_reader.PEHeaders.CoffHeader.SizeOfOptionalHeader;
+                                    (ushort)_reader!.PEHeaders.CoffHeader.SizeOfOptionalHeader;
 
                 if (needsAddSection)
                 {
@@ -279,7 +286,7 @@ namespace Microsoft.NET.HostModel
                             pointer => pointer >= trailingSectionVirtualStart ? pointer + virtualDelta : pointer);
                     }
 
-                    int dataDirectoriesOffset = _reader.PEHeaders.PEHeader.Magic == PEMagic.PE32Plus
+                    int dataDirectoriesOffset = _reader.PEHeaders.PEHeader!.Magic == PEMagic.PE32Plus
                         ? peSignatureOffset + PEOffsets.PEHeader.PE64DataDirectories
                         : peSignatureOffset + PEOffsets.PEHeader.PE32DataDirectories;
 
@@ -294,7 +301,7 @@ namespace Microsoft.NET.HostModel
                         // fix RVA in DataDirectory
                         for (int i = 0; i < _reader.PEHeaders.PEHeader.NumberOfRvaAndSizes; i++)
                             PatchRVA(dataDirectoriesOffset + i * PEOffsets.DataDirectoryEntrySize +
-                                     PEOffsets.DataDirectoryEntry.VirtualAddressOffset);
+                                        PEOffsets.DataDirectoryEntry.VirtualAddressOffset);
                     }
 
                     // update the ResourceTable in DataDirectories
