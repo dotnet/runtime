@@ -1663,9 +1663,9 @@ internal sealed unsafe partial class SOSDacImpl
             DacpUsefulGlobalsData dataLocal;
             int hrLocal = _legacyImpl.GetUsefulGlobals(&dataLocal);
             // SOS can call GetUsefulGlobals before the global pointers are initialized.
-            // In the DAC build, this behavior varies depending on the compiler.
-            // In MSVC builds, the DAC global table is a compile time constant and the DAC will return successfully.
-            // In Clang builds, the DAC global table is constructed at runtime and the DAC will fail.
+            // In the DAC, this behavior depends on the compiler.
+            // MSVC builds: the DAC global table is a compile time constant and the DAC will return successfully.
+            // Clang builds: the DAC global table is constructed at runtime and the DAC will fail.
             // Because of this variation, we cannot match the DAC behavior exactly.
             // As long as the returned data matches, it should be fine.
             if (hr == HResults.S_OK || hrLocal == HResults.S_OK)
