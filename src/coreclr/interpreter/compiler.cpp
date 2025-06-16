@@ -52,6 +52,14 @@ void DECLSPEC_NORETURN Interp_NOMEM()
     throw std::bad_alloc();
 }
 
+void AssertOpCodeNotImplemented(const uint8_t *ip, size_t offset)
+{
+    fprintf(stderr, "IL_%04x %-10s - opcode not supported yet\n",
+                (int32_t)(offset),
+                CEEOpName(CEEDecodeOpcode(&ip)));
+    assert(!"opcode not implemented");
+}
+
 // GCInfoEncoder needs an IAllocator implementation. This is a simple one that forwards to the Compiler.
 class InterpIAllocator : public IAllocator
 {
@@ -4559,8 +4567,11 @@ retry_emit:
                         break;
                     }
                     default:
-                        assert(0);
+                    {
+                        const uint8_t *ip = m_ip - 1;
+                        AssertOpCodeNotImplemented(ip, ip - m_pILCode);
                         break;
+                    }
                 }
                 break;
 
@@ -5059,8 +5070,10 @@ retry_emit:
                 break;
             }
             default:
-                assert(0);
+            {
+                AssertOpCodeNotImplemented(m_ip, m_ip - m_pILCode);
                 break;
+            }
         }
     }
 
@@ -5084,6 +5097,7 @@ retry_emit:
 
     return CORJIT_OK;
 exit_bad_code:
+    assert(!m_hasInvalidCode);
     return CORJIT_BADCODE;
 }
 
