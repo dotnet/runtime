@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Metadata
             ReadStack readStack = default;
             readStack.Initialize(this, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
-            PipeReadBufferState bufferState = new PipeReadBufferState(utf8Json);//, options.DefaultBufferSize);
+            PipeReadBufferState bufferState = new PipeReadBufferState(utf8Json);
 
             try
             {
