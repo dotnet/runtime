@@ -1128,7 +1128,7 @@ INST3(vmpsadbw,         "mpsadbw",          IUM_WR, BAD_CODE,               BAD_
 INST3(vucomxsd,         "ucomxsd",          IUM_RD, BAD_CODE,               BAD_CODE,     SSEFLT(0x2f),                  INS_TT_TUPLE1_SCALAR,                Input_64Bit                      | REX_W1       | Encoding_EVEX    | Writes_OF | Writes_SF | Writes_ZF | Writes_PF | Writes_CF | Resets_AF)                                                       // Perform an unordered compare of double precision floating point values and set flags
 INST3(vucomxss,         "ucomxss",          IUM_RD, BAD_CODE,               BAD_CODE,     SSEDBL(0x2E),                  INS_TT_TUPLE1_SCALAR,                Input_32Bit                      | REX_W0       | Encoding_EVEX    | Writes_OF | Writes_SF | Writes_ZF | Writes_PF | Writes_CF | Resets_AF)                                                       // Perform an unordered compare of single precision floating point values and set flags
 
-#define LAST_AVX512_INSTRUCTION INS_vpdpbuuds
+#define LAST_AVX512_INSTRUCTION INS_vucomxss
 
 //    id                nm                  um      mr            mi            rm            tt          flags
 #define FIRST_APX_INSTRUCTION INS_ccmpo
