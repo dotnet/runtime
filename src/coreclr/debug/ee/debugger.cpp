@@ -2506,7 +2506,7 @@ void Debugger::JITComplete(NativeCodeVersion nativeCodeVersion, TADDR newAddress
     // Can be called on managed thread only
     // This API Implements DebugInterface
 
-    if (CORDebuggerAttached())
+//    if (CORDebuggerAttached())
     {
         // Populate the debugger's cache of DJIs. Normally we can do this lazily,
         // the only reason we do it here is b/c the MethodDesc is not yet officially marked as "jitted",

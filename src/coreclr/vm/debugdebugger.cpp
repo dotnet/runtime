@@ -1271,6 +1271,64 @@ void InsertIntoILToNativeCache(void* ip, bool fAdjustOffset, uint32_t dwILOffset
         VolatileStore(&s_stackWalkILToNativeCacheVersion, versionStart + 2);
     }
 }
+
+#ifdef DEBUG
+void ValidateILOffset(MethodDesc *pFunc, uint8_t* ip)
+{
+    EECodeInfo codeInfo((PCODE)ip);
+    if (!codeInfo.IsValid())
+    {
+        return;
+    }
+    DWORD dwNativeOffset = codeInfo.GetRelOffset();
+
+    DWORD dwILOffsetDebugInterface = 0;
+    DWORD dwILOffsetWalk = 0;
+    
+    bool bResGetILOffsetFromNative = g_pDebugInterface->GetILOffsetFromNative(
+        pFunc,
+        (LPCBYTE)ip,
+        dwNativeOffset,
+        &dwILOffsetDebugInterface);
+        
+    WalkILOffsetsData data(dwNativeOffset);
+    TADDR startAddress = codeInfo.GetStartAddress();
+    DebugInfoRequest request;
+    request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
+    bool bWalkILOffsets = !!codeInfo.GetJitManager()->WalkILOffsets(request, &data, WalkILOffsetsCallback);
+    if (bWalkILOffsets)
+        dwILOffsetWalk = data.dwFinalILOffset;
+
+    if (bWalkILOffsets && bResGetILOffsetFromNative)
+    {
+        _ASSERTE(dwILOffsetWalk == dwILOffsetDebugInterface);
+    }
+    _ASSERTE(bWalkILOffsets == bResGetILOffsetFromNative);
+}
+
+void ValidateILOffsets(MethodDesc *pFunc, uint8_t* ipColdStart, size_t coldLen, uint8_t* ipHotStart, size_t hotLen)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    uint8_t *ip;
+    if (ipColdStart != NULL)
+    {
+        for (ip = ipColdStart; ip <= (ipColdStart + coldLen);ip++)
+        {
+            ValidateILOffset(pFunc, ip);
+        }
+    }
+
+    if (ipHotStart != NULL)
+    {
+        for (ip = ipHotStart; ip <= (ipHotStart + coldLen);ip++)
+        {
+            ValidateILOffset(pFunc, ip);
+        }
+    }
+}
+#endif // DEBUG
+
 #endif // !DACCESS_COMPILE
 
 // Initialization done outside the TSL.
