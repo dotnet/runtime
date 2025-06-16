@@ -67,7 +67,7 @@ namespace System.Runtime.InteropServices
     /// <see cref="IDynamicInterfaceCastable" /> scenarios trimming friendly.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
-    public sealed partial class DynamicInterfaceCastableImplementationAttribute : Attribute
+    public sealed class DynamicInterfaceCastableImplementationAttribute : Attribute
     {
         public DynamicInterfaceCastableImplementationAttribute()
         {
