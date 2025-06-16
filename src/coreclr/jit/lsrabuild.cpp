@@ -970,6 +970,13 @@ regMaskTP LinearScan::getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node)
             killMask = RBM_EDI;
             break;
 
+        case NI_X86Base_BigMul:
+        case NI_X86Base_X64_BigMul:
+            // For MUL instruction we produxe RAX:RDX effectibly killing both, for mulx RDX is implecit register
+            // se comment above for mask
+            killMask = RBM_EDX;
+            break;
+
         default:
             // Leave killMask as RBM_NONE
             break;

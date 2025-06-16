@@ -10543,12 +10543,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 {
                                     MakeSrcRegOptional(node, regOptionalOperand);
                                 }
-                                else if (op2->IsCnsIntOrI())
-                                {
-                                    // Prefer to have constant in op1 so it is placed in implicit register to reduce
-                                    // extra mov if both operands are in registers.
-                                    swapOperands = true;
-                                }
 
                                 if (swapOperands)
                                 {

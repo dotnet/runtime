@@ -2489,14 +2489,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(isRMW);
 
                 if ((baseType == TYP_ULONG || baseType == TYP_UINT) &&
-                    compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+                    compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
                     isRMW = false;
 
-                    // mulx alway have op1 in EDX
-                    srcCount = BuildOperandUses(op1, SRBM_EDX);
                     SingleTypeRegSet apxAwareRegCandidates =
                         ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    // mulx, prefer op1 in EDX
+                    SingleTypeRegSet op1RegCandidates = op2->isContained() ? SRBM_EDX : apxAwareRegCandidates;
+                    srcCount = BuildOperandUses(op1, op1RegCandidates);
                     srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
 
                     // result in any register
@@ -2507,10 +2508,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
                 else // Signed multiply or normal unsigned multiply in one operand form
                 {
-                    // mulEAX always have op1 in EAX
-                    srcCount = BuildOperandUses(op1, SRBM_EAX);
                     SingleTypeRegSet apxAwareRegCandidates =
                         ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
+
+                    // mulEAX always use EAX, if one operand is contained, we use EAX as the target reg
+                    // if not then we do not fix it, we might get the second parameter in EAX
+                    SingleTypeRegSet op1RegCandidates = op2->isContained() ? SRBM_EAX : apxAwareRegCandidates;
+                    srcCount = BuildOperandUses(op1, op1RegCandidates);
                     srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
 
                     // result put in EAX and EDX
