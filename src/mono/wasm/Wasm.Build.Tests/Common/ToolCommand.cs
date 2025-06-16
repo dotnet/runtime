@@ -117,6 +117,9 @@ namespace Wasm.Build.Tests
             CurrentProcess = CreateProcess(executable, args);
             DataReceivedEventHandler errorHandler = (s, e) =>
             {
+                if (e.Data == null || isDisposed)
+                    return;
+
                 lock (_lock)
                 {
                     if (e.Data == null || isDisposed)
