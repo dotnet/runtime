@@ -13,7 +13,7 @@ internal static class CodePointerUtils
 
     internal static TargetCodePointer CodePointerFromAddress(TargetPointer address, Target target)
     {
-        if (address == TargetCodePointer.Null)
+        if (address == TargetPointer.Null)
         {
             return TargetCodePointer.Null;
         }
