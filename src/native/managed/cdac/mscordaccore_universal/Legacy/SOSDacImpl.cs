@@ -438,7 +438,7 @@ internal sealed unsafe partial class SOSDacImpl
             NativeCodeVersionHandle? activeNativeCodeVersion = null;
             if (ip != 0)
             {
-                requestedNativeCodeVersion = nativeCodeContract.GetNativeCodeVersionForIP(new TargetCodePointer(ip));
+                requestedNativeCodeVersion = nativeCodeContract.GetNativeCodeVersionForIP(ip.ToTargetCodePointer(_target));
             }
             else
             {
@@ -457,7 +457,7 @@ internal sealed unsafe partial class SOSDacImpl
             if (nativeCodeAddr != TargetCodePointer.Null)
             {
                 data->bHasNativeCode = 1;
-                data->NativeCodeAddr = nativeCodeAddr.AsTargetPointer.ToClrDataAddress(_target);
+                data->NativeCodeAddr = nativeCodeAddr.ToAddress(_target).ToClrDataAddress(_target);
             }
             else
             {
@@ -803,7 +803,7 @@ internal sealed unsafe partial class SOSDacImpl
             IExecutionManager executionManager = _target.Contracts.ExecutionManager;
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
-            CodeBlockHandle? handle = executionManager.GetCodeBlockHandle(new TargetCodePointer(ip));
+            CodeBlockHandle? handle = executionManager.GetCodeBlockHandle(ip.ToTargetCodePointer(_target));
             if (handle is CodeBlockHandle codeHandle)
             {
                 TargetPointer methodDescAddr = executionManager.GetMethodDesc(codeHandle);
@@ -814,7 +814,7 @@ internal sealed unsafe partial class SOSDacImpl
                     // if validation fails, should return E_INVALIDARG
                     rts.GetMethodDescHandle(methodDescAddr);
 
-                    *ppMD = methodDescAddr.Value;
+                    *ppMD = methodDescAddr.ToClrDataAddress(_target);
                     hr = HResults.S_OK;
                 }
                 catch (System.Exception)
@@ -963,7 +963,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.TypeHandle methodTableHandle = typeSystemContract.GetTypeHandle(mt.ToTargetPointer(_target));
+            Contracts.TypeHandle methodTableHandle = typeSystemContract.GetTypeHandle(mt.ToTargetPointer(_target, overrideCheck: true));
             if (typeSystemContract.IsFreeObjectMethodTable(methodTableHandle))
             {
                 OutputBufferHelpers.CopyStringToBuffer(mtName, count, pNeeded, "Free");
