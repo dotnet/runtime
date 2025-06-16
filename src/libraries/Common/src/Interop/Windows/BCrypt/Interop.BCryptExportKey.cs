@@ -54,6 +54,7 @@ internal static partial class Interop
                 throw CreateCryptographicException(ntStatus);
             }
 
+            // Array must be precisely-sized, so no renting.
             byte[] destination = new byte[numBytesNeeded];
 
             using (PinAndClear.Track(destination))
@@ -93,8 +94,6 @@ internal static partial class Interop
             {
                 using (PinAndClear.Track(rented))
                 {
-                    rented.AsSpan().Clear();
-
                     ntStatus = BCryptExportKey(key, IntPtr.Zero, blobType, rented, numBytesNeeded, out numBytesNeeded, 0);
 
                     if (ntStatus != NTSTATUS.STATUS_SUCCESS)

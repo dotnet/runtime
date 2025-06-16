@@ -23,13 +23,13 @@ namespace System.Security.Cryptography
             CngKey key = Interop.BCrypt.BCryptExportKey(
                 _key,
                 bcryptBlobType,
-#if NET10_0_OR_GREATER
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
                 (ReadOnlySpan<byte> keyMaterial) => CngKey.Import(keyMaterial, cngBlobFormat));
 #else
                 (byte[] keyMaterial) => CngKey.Import(keyMaterial, cngBlobFormat));
 #endif
 
-#if NET10_0_OR_GREATER
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
             key.ExportPolicy = CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport;
 #else
             key.SetExportPolicy(CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);

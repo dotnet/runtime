@@ -40,14 +40,6 @@ namespace System.Security.Cryptography
         [SupportedOSPlatform("windows")]
         private static partial MLDsaAlgorithm AlgorithmFromHandle(CngKey key, out CngKey duplicateKey)
         {
-#if !NETFRAMEWORK
-            // Non-Windows call in Microsoft.Bcl.Cryptography can get here if MLDsaCng was type-forwarded
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                throw new PlatformNotSupportedException();
-            }
-#endif
-
             ArgumentNullException.ThrowIfNull(key);
             ThrowIfNotSupported();
 
@@ -58,7 +50,7 @@ namespace System.Security.Cryptography
 
             MLDsaAlgorithm algorithm = AlgorithmFromHandleImpl(key);
 
-#if NET10_0_OR_GREATER
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
             duplicateKey = CngHelpers.Duplicate(key.HandleNoDuplicate, key.IsEphemeral);
 #else
             duplicateKey = key.Duplicate();
@@ -82,7 +74,7 @@ namespace System.Security.Cryptography
         private static MLDsaAlgorithm AlgorithmFromHandleImpl(CngKey key)
         {
             string? parameterSet =
-#if NET10_0_OR_GREATER
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
                 key.HandleNoDuplicate.GetPropertyAsString(KeyPropertyName.ParameterSetName, CngPropertyOptions.None);
 #else
                 key.GetPropertyAsString(KeyPropertyName.ParameterSetName, CngPropertyOptions.None);
@@ -274,7 +266,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        // TODO why can't we put this attribute on the class directly?
         [SupportedOSPlatform("windows")]
         internal static MLDsaCng ImportPkcs8PrivateKey(byte[] source, out int bytesRead)
         {
@@ -282,7 +273,12 @@ namespace System.Security.Cryptography
 
             try
             {
-                AsnDecoder.ReadEncodedValue(source, AsnEncodingRules.DER, out _, out _, out len);
+                AsnDecoder.ReadEncodedValue(
+                    source,
+                    AsnEncodingRules.BER,
+                    out _,
+                    out _,
+                    out len);
             }
             catch (AsnContentException e)
             {
@@ -292,11 +288,10 @@ namespace System.Security.Cryptography
             bytesRead = len;
             CngKey key;
 
-#if NET10_0_OR_GREATER
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
             ReadOnlySpan<byte> pkcs8Source = source.AsSpan(0, len);
 #else
             using (TrimAndTrack(source, bytesRead, out byte[] pkcs8Source))
-
 #endif
             {
                 try
@@ -319,14 +314,16 @@ namespace System.Security.Cryptography
                 }
             }
 
-#if NET10_0_OR_GREATER
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
             key.ExportPolicy = CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport;
 #else
             CngKeyExtensions.SetExportPolicy(key, CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
 #endif
             return new MLDsaCng(key, transferOwnership: true);
 
-#if !NET10_0_OR_GREATER
+#if !SYSTEM_SECURITY_CRYPTOGRAPHY
+            // Pinning and clearing keyMaterial must be done by the caller.
+            // The returned PinAndClear only applies to arrays that this method creates.
             static PinAndClear? TrimAndTrack(byte[] keyMaterial, int length, out byte[] trimmed)
             {
                 int keyMaterialLength = keyMaterial.Length;
@@ -430,7 +427,7 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                newPkcs8?.AsSpan().Clear();
+                CryptographicOperations.ZeroMemory(newPkcs8);
                 CryptoPool.Return(pkcs8);
             }
         }

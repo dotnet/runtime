@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
+    <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS;SYSTEM_SECURITY_CRYPTOGRAPHY</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <NoWarn>$(NoWarn);CA5350;CA5351;CA5379;CA5384;SYSLIB0026</NoWarn>
     <!-- PasswordDeriveBytes.GetBytes is obsolete but DeriveBytes.GetBytes intentionally isn't. -->
@@ -1830,8 +1830,8 @@
              Link="Common\System\Security\Cryptography\CngHelpers.SignVerify.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.cs"
              Link="Common\System\Security\Cryptography\CngPkcs8.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.shared.cs"
-             Link="Common\System\Security\Cryptography\CngPkcs8.shared.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.Shared.cs"
+             Link="Common\System\Security\Cryptography\CngPkcs8.Shared.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoThrowHelper.Windows.cs"
              Link="Common\System\Security\Cryptography\CryptoThrowHelper.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSACng.cs"
