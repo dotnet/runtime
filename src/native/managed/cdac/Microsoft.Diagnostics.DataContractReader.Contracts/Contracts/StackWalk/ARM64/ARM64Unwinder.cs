@@ -25,8 +25,6 @@ internal class ARM64Unwinder(Target target)
 
         TargetPointer imageBase = _eman.GetUnwindInfoBaseAddress(cbh);
         Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh, controlPC.Value));
-        if (functionEntry.EndAddress is null)
-            return false;
 
         ulong startingPc = context.Pc;
         ulong startingSp = context.Sp;
@@ -1046,7 +1044,7 @@ internal class ARM64Unwinder(Target target)
         }
         if (spOffset < 0)
         {
-            context.Sp -= (uint)spOffset;
+            context.Sp -= (ulong)spOffset;
         }
 
         return true;
@@ -1096,7 +1094,7 @@ internal class ARM64Unwinder(Target target)
         }
         if (spOffset < 0)
         {
-            context.Sp -= (uint)spOffset;
+            context.Sp -= (ulong)spOffset;
         }
 
         return true;
@@ -1150,7 +1148,7 @@ internal class ARM64Unwinder(Target target)
         }
         if (spOffset < 0)
         {
-            context.Sp -= (uint)spOffset;
+            context.Sp -= (ulong)spOffset;
         }
 
         return true;
