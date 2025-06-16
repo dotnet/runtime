@@ -160,11 +160,8 @@ OutputDebugStringA(
           lpOutputString ? lpOutputString : "NULL");
 
     // As we don't support debug events, we are going to output the debug string
-    // to stderr instead of generating OUT_DEBUG_STRING_EVENT. It's safe to tell
-    // EnvironGetenv not to make a copy of the value here since we only want to
-    // check whether it exists, not actually use it.
-    if ((lpOutputString != NULL) &&
-        (NULL != EnvironGetenv(PAL_OUTPUTDEBUGSTRING, /* copyValue */ FALSE)))
+    // to stderr instead of generating OUT_DEBUG_STRING_EVENT.
+    if ((lpOutputString != NULL) && (EnvironCheckenv(PAL_OUTPUTDEBUGSTRING)))
     {
         fprintf(stderr, "%s", lpOutputString);
     }

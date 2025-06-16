@@ -4,6 +4,7 @@
 #cmakedefine01 HAVE_ARC4RANDOM_BUF
 #cmakedefine01 HAVE_AUXV_HWCAP_H
 #cmakedefine01 HAVE_HWPROBE_H
+#cmakedefine01 HAVE_CRT_EXTERNS_H
 #cmakedefine01 HAVE_O_CLOEXEC
 #cmakedefine01 HAVE_SYSCTLBYNAME
 #cmakedefine01 HAVE_CLOCK_MONOTONIC
@@ -12,5 +13,12 @@
 #cmakedefine01 BIGENDIAN
 #cmakedefine01 HAVE_BCRYPT_H
 #cmakedefine01 HAVE_FSYNC
+#cmakedefine01 HAVE__NSGETENVIRON
+#cmakedefine01 HAVE_SPRINTF_S
+#cmakedefine01 HAVE_STRNCASECMP
+#cmakedefine01 HAVE_STRCPY_S
+#cmakedefine01 HAVE_STRNCPY_S
+#cmakedefine01 HAVE_STRCAT_S
+#cmakedefine01 HAVE_GETENV_S
 
 #endif
