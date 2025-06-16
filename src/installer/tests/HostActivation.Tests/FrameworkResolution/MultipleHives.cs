@@ -214,7 +214,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             }
         }
 
-        private CommandResult RunTest(Func<RuntimeConfig, RuntimeConfig> runtimeConfig, bool? multiLevelLookup = true, [CallerMemberName] string caller = "")
+        private CommandResult RunTest(Func<RuntimeConfig, RuntimeConfig> runtimeConfig, bool? multiLevelLookup, [CallerMemberName] string caller = "")
             => RunTest(new TestSettings().WithRuntimeConfigCustomizer(runtimeConfig), multiLevelLookup, caller);
 
         private CommandResult RunTest(TestSettings testSettings, bool? multiLevelLookup, [CallerMemberName] string caller = "")
