@@ -611,7 +611,7 @@ internal class ARM64Unwinder(Target target)
                     // invalid sequence
                     return false;
                 }
-                // TODO(cdacarm64): is this equivalent to the goto?
+
                 break;
             }
 
@@ -1192,44 +1192,6 @@ internal class ARM64Unwinder(Target target)
             default: throw new ArgumentOutOfRangeException(nameof(regIndex));
         }
     }
-
-    // TODO(cdacarm64): this may not be required
-    private static ulong GetRegister(ref ARM64Context context, uint regIndex) =>
-        regIndex switch
-        {
-            0 => context.X0,
-            1 => context.X1,
-            2 => context.X2,
-            3 => context.X3,
-            4 => context.X4,
-            5 => context.X5,
-            6 => context.X6,
-            7 => context.X7,
-            8 => context.X8,
-            9 => context.X9,
-            10 => context.X10,
-            11 => context.X11,
-            12 => context.X12,
-            13 => context.X13,
-            14 => context.X14,
-            15 => context.X15,
-            16 => context.X16,
-            17 => context.X17,
-            18 => context.X18,
-            19 => context.X19,
-            20 => context.X20,
-            21 => context.X21,
-            22 => context.X22,
-            23 => context.X23,
-            24 => context.X24,
-            25 => context.X25,
-            26 => context.X26,
-            27 => context.X27,
-            28 => context.X28,
-            29 => context.Fp,
-            30 => context.Lr,
-            _ => throw new ArgumentOutOfRangeException(nameof(regIndex)),
-        };
 
     private static bool OPCODE_IS_END(byte opcode)
     {
