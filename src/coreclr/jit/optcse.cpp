@@ -298,8 +298,8 @@ bool Compiler::optCSE_canSwap(GenTree* op1, GenTree* op2)
 /* static */
 bool Compiler::optCSEcostCmpEx::operator()(const CSEdsc* dsc1, const CSEdsc* dsc2)
 {
-    GenTree* exp1 = dsc1->csdTree;
-    GenTree* exp2 = dsc2->csdTree;
+    GenTree* exp1 = dsc1->csdTreeList.tslTree;
+    GenTree* exp2 = dsc2->csdTreeList.tslTree;
 
     auto expCost1 = exp1->GetCostEx();
     auto expCost2 = exp2->GetCostEx();
@@ -334,8 +334,8 @@ bool Compiler::optCSEcostCmpEx::operator()(const CSEdsc* dsc1, const CSEdsc* dsc
 /* static */
 bool Compiler::optCSEcostCmpSz::operator()(const CSEdsc* dsc1, const CSEdsc* dsc2)
 {
-    GenTree* exp1 = dsc1->csdTree;
-    GenTree* exp2 = dsc2->csdTree;
+    GenTree* exp1 = dsc1->csdTreeList.tslTree;
+    GenTree* exp2 = dsc2->csdTreeList.tslTree;
 
     auto expCost1 = exp1->GetCostSz();
     auto expCost2 = exp2->GetCostSz();
@@ -434,7 +434,7 @@ void CSEdsc::ComputeNumLocals(Compiler* compiler)
     };
 
     LocalCountingVisitor lcv(compiler);
-    lcv.WalkTree(&csdTree, nullptr);
+    lcv.WalkTree(&csdTreeList.tslTree, nullptr);
 
     numDistinctLocals   = lcv.m_count;
     numLocalOccurrences = lcv.m_occurrences;
@@ -615,99 +615,85 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
     for (hashDsc = optCSEhash[hval]; hashDsc; hashDsc = hashDsc->csdNextInBucket)
     {
-        if (hashDsc->csdHashKey == key)
+        if (hashDsc->csdHashKey != key)
         {
-            // Check for mismatched types on GT_CNS_INT nodes
-            if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeGet() != hashDsc->csdTree->TypeGet()))
+            continue;
+        }
+
+        assert(hashDsc->csdTreeList.tslTree != nullptr);
+
+        // Check for mismatched types on GT_CNS_INT nodes
+        if (tree->OperIs(GT_CNS_INT) && (tree->TypeGet() != hashDsc->csdTreeList.tslTree->TypeGet()))
+        {
+            continue;
+        }
+
+        // Have we started the list of matching nodes?
+
+        if (hashDsc->csdTreeList.tslNext == nullptr)
+        {
+            // This is the second time we see this value. Handle cases
+            // where the first value dominates the second one and we can
+            // already prove that the first one is _not_ going to be a
+            // valid def for the second one, due to the second one having
+            // more exceptions. This happens for example in code like
+            // CASTCLASS(x, y) where the "CASTCLASS" just adds exceptions
+            // on top of "x". In those cases it is always better to let the
+            // second value be the def.
+            // It also happens for GT_COMMA, but that one is special cased
+            // above; this handling is a less special-casey version of the
+            // GT_COMMA handling above. However, it is quite limited since
+            // it only handles the def/use being in the same block.
+            if (compCurBB == hashDsc->csdTreeList.tslBlock)
             {
-                continue;
-            }
-
-            treeStmtLst* newElem;
-
-            // Have we started the list of matching nodes?
-
-            if (hashDsc->csdTreeList == nullptr)
-            {
-                // This is the second time we see this value. Handle cases
-                // where the first value dominates the second one and we can
-                // already prove that the first one is _not_ going to be a
-                // valid def for the second one, due to the second one having
-                // more exceptions. This happens for example in code like
-                // CASTCLASS(x, y) where the "CASTCLASS" just adds exceptions
-                // on top of "x". In those cases it is always better to let the
-                // second value be the def.
-                // It also happens for GT_COMMA, but that one is special cased
-                // above; this handling is a less special-casey version of the
-                // GT_COMMA handling above. However, it is quite limited since
-                // it only handles the def/use being in the same block.
-                if (compCurBB == hashDsc->csdBlock)
+                GenTree* prevTree  = hashDsc->csdTreeList.tslTree;
+                ValueNum prevVnLib = prevTree->GetVN(VNK_Liberal);
+                if (prevVnLib != vnLib)
                 {
-                    GenTree* prevTree  = hashDsc->csdTree;
-                    ValueNum prevVnLib = prevTree->GetVN(VNK_Liberal);
-                    if (prevVnLib != vnLib)
+                    ValueNum prevExceptionSet = vnStore->VNExceptionSet(prevVnLib);
+                    ValueNum curExceptionSet  = vnStore->VNExceptionSet(vnLib);
+                    if ((prevExceptionSet != curExceptionSet) &&
+                        vnStore->VNExcIsSubset(curExceptionSet, prevExceptionSet))
                     {
-                        ValueNum prevExceptionSet = vnStore->VNExceptionSet(prevVnLib);
-                        ValueNum curExceptionSet  = vnStore->VNExceptionSet(vnLib);
-                        if ((prevExceptionSet != curExceptionSet) &&
-                            vnStore->VNExcIsSubset(curExceptionSet, prevExceptionSet))
-                        {
-                            JITDUMP("Skipping CSE candidate for tree [%06u]; tree [%06u] is a better candidate with "
-                                    "more exceptions\n",
-                                    prevTree->gtTreeID, tree->gtTreeID);
-                            prevTree->gtCSEnum = 0;
-                            hashDsc->csdStmt   = stmt;
-                            hashDsc->csdTree   = tree;
-                            tree->gtCSEnum     = (signed char)hashDsc->csdIndex;
-                            return hashDsc->csdIndex;
-                        }
+                        JITDUMP("Skipping CSE candidate for tree [%06u]; tree [%06u] is a better candidate with "
+                                "more exceptions\n",
+                                prevTree->gtTreeID, tree->gtTreeID);
+                        prevTree->gtCSEnum           = 0;
+                        hashDsc->csdTreeList.tslStmt = stmt;
+                        hashDsc->csdTreeList.tslTree = tree;
+                        tree->gtCSEnum               = (signed char)hashDsc->csdIndex;
+                        return hashDsc->csdIndex;
                     }
                 }
-
-                // Create the new element based upon the matching hashDsc element.
-
-                newElem = new (this, CMK_TreeStatementList) treeStmtLst;
-
-                newElem->tslTree  = hashDsc->csdTree;
-                newElem->tslStmt  = hashDsc->csdStmt;
-                newElem->tslBlock = hashDsc->csdBlock;
-                newElem->tslNext  = nullptr;
-
-                /* Start the list with the first CSE candidate recorded */
-
-                hashDsc->csdTreeList = newElem;
-                hashDsc->csdTreeLast = newElem;
-
-                hashDsc->csdIsSharedConst = isSharedConst;
             }
 
-            noway_assert(hashDsc->csdTreeList);
-
-            /* Append this expression to the end of the list */
-
-            newElem = new (this, CMK_TreeStatementList) treeStmtLst;
-
-            newElem->tslTree  = tree;
-            newElem->tslStmt  = stmt;
-            newElem->tslBlock = compCurBB;
-            newElem->tslNext  = nullptr;
-
-            hashDsc->csdTreeLast->tslNext = newElem;
-            hashDsc->csdTreeLast          = newElem;
-
-            optDoCSE = true; // Found a duplicate CSE tree
-
-            /* Have we assigned a CSE index? */
-            if (hashDsc->csdIndex == 0)
-            {
-                newCSE = true;
-                break;
-            }
-
-            assert(FitsIn<signed char>(hashDsc->csdIndex));
-            tree->gtCSEnum = ((signed char)hashDsc->csdIndex);
-            return hashDsc->csdIndex;
+            hashDsc->csdIsSharedConst = isSharedConst;
         }
+
+        // Append this expression to the end of the list
+
+        treeStmtLst* newElem = new (this, CMK_TreeStatementList) treeStmtLst;
+
+        newElem->tslTree  = tree;
+        newElem->tslStmt  = stmt;
+        newElem->tslBlock = compCurBB;
+        newElem->tslNext  = nullptr;
+
+        hashDsc->csdTreeLast->tslNext = newElem;
+        hashDsc->csdTreeLast          = newElem;
+
+        optDoCSE = true; // Found a duplicate CSE tree
+
+        /* Have we assigned a CSE index? */
+        if (hashDsc->csdIndex == 0)
+        {
+            newCSE = true;
+            break;
+        }
+
+        assert(FitsIn<signed char>(hashDsc->csdIndex));
+        tree->gtCSEnum = ((signed char)hashDsc->csdIndex);
+        return hashDsc->csdIndex;
     }
 
     if (!newCSE)
@@ -763,10 +749,12 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc->defExcSetPromise  = vnStore->VNForEmptyExcSet();
             hashDsc->defExcSetCurrent  = vnStore->VNForNull(); // uninit value
 
-            hashDsc->csdTree     = tree;
-            hashDsc->csdStmt     = stmt;
-            hashDsc->csdBlock    = compCurBB;
-            hashDsc->csdTreeList = nullptr;
+            hashDsc->csdTreeList.tslTree  = tree;
+            hashDsc->csdTreeList.tslStmt  = stmt;
+            hashDsc->csdTreeList.tslBlock = compCurBB;
+            hashDsc->csdTreeList.tslNext  = nullptr;
+
+            hashDsc->csdTreeLast = &hashDsc->csdTreeList;
 
             /* Append the entry to the hash bucket */
 
@@ -801,11 +789,11 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         hashDsc->csdIndex = CSEindex;
 
         /* Update the gtCSEnum field in the original tree */
-        noway_assert(hashDsc->csdTreeList->tslTree->gtCSEnum == 0);
+        noway_assert(hashDsc->csdTreeList.tslTree->gtCSEnum == 0);
         assert(FitsIn<signed char>(CSEindex));
 
-        hashDsc->csdTreeList->tslTree->gtCSEnum = ((signed char)CSEindex);
-        noway_assert(((unsigned)hashDsc->csdTreeList->tslTree->gtCSEnum) == CSEindex);
+        hashDsc->csdTreeList.tslTree->gtCSEnum = ((signed char)CSEindex);
+        noway_assert(((unsigned)hashDsc->csdTreeList.tslTree->gtCSEnum) == CSEindex);
 
         tree->gtCSEnum = ((signed char)CSEindex);
 
@@ -975,7 +963,7 @@ void Compiler::optValnumCSE_InitDataFlow()
     {
         CSEdsc*      dsc      = optCSEtab[inx];
         unsigned     CSEindex = dsc->csdIndex;
-        treeStmtLst* lst      = dsc->csdTreeList;
+        treeStmtLst* lst      = &dsc->csdTreeList;
         noway_assert(lst);
 
         while (lst != nullptr)
@@ -1042,7 +1030,7 @@ void Compiler::optValnumCSE_InitDataFlow()
                     unsigned cseAvailCrossCallBit = getCSEAvailCrossCallBit(CSEnum);
                     BitVecOps::AddElemD(cseLivenessTraits, block->bbCseGen, cseAvailCrossCallBit);
                 }
-                if (tree->OperGet() == GT_CALL)
+                if (tree->OperIs(GT_CALL))
                 {
                     // Any cse's that we haven't placed in the block->bbCseGen set
                     // aren't currently alive (using cseAvailCrossCallBit)
@@ -1101,13 +1089,13 @@ void Compiler::optValnumCSE_SetUpAsyncByrefKills()
         CSEdsc* dsc = optCSEtab[inx - 1];
         assert(dsc->csdIndex == inx);
         bool isByRef = false;
-        if (dsc->csdTree->TypeIs(TYP_BYREF))
+        if (dsc->csdTreeList.tslTree->TypeIs(TYP_BYREF))
         {
             isByRef = true;
         }
-        else if (dsc->csdTree->TypeIs(TYP_STRUCT))
+        else if (dsc->csdTreeList.tslTree->TypeIs(TYP_STRUCT))
         {
-            ClassLayout* layout = dsc->csdTree->GetLayout(this);
+            ClassLayout* layout = dsc->csdTreeList.tslTree->GetLayout(this);
             isByRef             = layout->HasGCByRef();
         }
 
@@ -1531,6 +1519,37 @@ void Compiler::optValnumCSE_Availability()
                             // This is the first time visited, so record this defs exception set
                             desc->defExcSetCurrent = theLiberalExcSet;
                         }
+                        else if (desc->defExcSetCurrent != theLiberalExcSet)
+                        {
+                            // We will change the value of desc->defExcSetCurrent to be the intersection of
+                            // these two sets.
+                            // This is the set of exceptions that all CSE defs have (that we have visited so
+                            // far)
+                            //
+                            ValueNum intersectionExcSet =
+                                vnStore->VNExcSetIntersection(desc->defExcSetCurrent, theLiberalExcSet);
+#ifdef DEBUG
+                            if (this->verbose)
+                            {
+                                printf(">>> defExcSetCurrent is ");
+                                vnStore->vnDumpExc(this, desc->defExcSetCurrent);
+                                printf("\n");
+
+                                printf(">>> theLiberalExcSet is ");
+                                vnStore->vnDumpExc(this, theLiberalExcSet);
+                                printf("\n");
+
+                                printf(">>> the intersectionExcSet is ");
+                                vnStore->vnDumpExc(this, intersectionExcSet);
+                                printf("\n");
+                            }
+#endif // DEBUG
+
+                            // Change the defExcSetCurrent to be a subset of its prior value
+                            //
+                            assert(vnStore->VNExcIsSubset(desc->defExcSetCurrent, intersectionExcSet));
+                            desc->defExcSetCurrent = intersectionExcSet;
+                        }
 
                         // Have we seen a CSE use and made a promise of an exception set?
                         //
@@ -1543,51 +1562,6 @@ void Compiler::optValnumCSE_Availability()
                                 // This new def still satisfies any promise made to all the CSE uses that we have
                                 // encountered
                                 //
-
-                                // no update is needed when these are the same VN
-                                if (desc->defExcSetCurrent != theLiberalExcSet)
-                                {
-                                    // We will change the value of desc->defExcSetCurrent to be the intersection of
-                                    // these two sets.
-                                    // This is the set of exceptions that all CSE defs have (that we have visited so
-                                    // far)
-                                    //
-                                    ValueNum intersectionExcSet =
-                                        vnStore->VNExcSetIntersection(desc->defExcSetCurrent, theLiberalExcSet);
-#ifdef DEBUG
-                                    if (this->verbose)
-                                    {
-                                        VNFuncApp excSeq;
-
-                                        vnStore->GetVNFunc(desc->defExcSetCurrent, &excSeq);
-                                        printf(">>> defExcSetCurrent is ");
-                                        vnStore->vnDumpExcSeq(this, &excSeq, true);
-                                        printf("\n");
-
-                                        vnStore->GetVNFunc(theLiberalExcSet, &excSeq);
-                                        printf(">>> theLiberalExcSet is ");
-                                        vnStore->vnDumpExcSeq(this, &excSeq, true);
-                                        printf("\n");
-
-                                        if (intersectionExcSet == vnStore->VNForEmptyExcSet())
-                                        {
-                                            printf(">>> the intersectionExcSet is the EmptyExcSet\n");
-                                        }
-                                        else
-                                        {
-                                            vnStore->GetVNFunc(intersectionExcSet, &excSeq);
-                                            printf(">>> the intersectionExcSet is ");
-                                            vnStore->vnDumpExcSeq(this, &excSeq, true);
-                                            printf("\n");
-                                        }
-                                    }
-#endif // DEBUG
-
-                                    // Change the defExcSetCurrent to be a subset of its prior value
-                                    //
-                                    assert(vnStore->VNExcIsSubset(desc->defExcSetCurrent, intersectionExcSet));
-                                    desc->defExcSetCurrent = intersectionExcSet;
-                                }
                             }
                             else // This CSE def doesn't satisfy one of the exceptions already promised to a CSE use
                             {
@@ -1890,7 +1864,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
                 "GT_IND(GT_ARR_ELEM) = GT_IND(GT_ARR_ELEM) + xyz", whereas doing
                 the second would not allow it */
 
-            if (tree->AsOp()->gtOp1->gtOper == GT_ARR_ELEM)
+            if (tree->AsOp()->gtOp1->OperIs(GT_ARR_ELEM))
             {
                 return false;
             }
@@ -2530,14 +2504,14 @@ void CSE_HeuristicParameterized::GetFeatures(CSEdsc* cse, double* features)
         return;
     }
 
-    const unsigned char costEx       = cse->csdTree->GetCostEx();
+    const unsigned char costEx       = cse->csdTreeList.tslTree->GetCostEx();
     const double        deMinimis    = 1e-3;
     const double        deMinimusAdj = -log(deMinimis);
 
     features[0] = costEx;
     features[1] = deMinimusAdj + log(max(deMinimis, cse->csdUseWtCnt));
     features[2] = deMinimusAdj + log(max(deMinimis, cse->csdDefWtCnt));
-    features[3] = cse->csdTree->GetCostSz();
+    features[3] = cse->csdTreeList.tslTree->GetCostSz();
     features[4] = cse->csdUseCount;
     features[5] = cse->csdDefCount;
 
@@ -2547,9 +2521,9 @@ void CSE_HeuristicParameterized::GetFeatures(CSEdsc* cse, double* features)
     const bool isLiveAcrossCall = cse->csdLiveAcrossCall;
 
     features[6] = booleanScale * isLiveAcrossCall;
-    features[7] = booleanScale * varTypeUsesIntReg(cse->csdTree->TypeGet());
+    features[7] = booleanScale * varTypeUsesIntReg(cse->csdTreeList.tslTree->TypeGet());
 
-    const bool isConstant       = cse->csdTree->OperIsConst();
+    const bool isConstant       = cse->csdTreeList.tslTree->OperIsConst();
     const bool isSharedConstant = cse->csdIsSharedConst;
 
     features[8] = booleanScale * (isConstant & !isSharedConstant);
@@ -2575,7 +2549,7 @@ void CSE_HeuristicParameterized::GetFeatures(CSEdsc* cse, double* features)
     unsigned       maxPostorderNum   = 0;
     BasicBlock*    minPostorderBlock = nullptr;
     BasicBlock*    maxPostorderBlock = nullptr;
-    for (treeStmtLst* treeList = cse->csdTreeList; treeList != nullptr; treeList = treeList->tslNext)
+    for (treeStmtLst* treeList = &cse->csdTreeList; treeList != nullptr; treeList = treeList->tslNext)
     {
         BasicBlock* const treeBlock    = treeList->tslBlock;
         unsigned          postorderNum = treeBlock->bbPostorderNum;
@@ -2604,12 +2578,12 @@ void CSE_HeuristicParameterized::GetFeatures(CSEdsc* cse, double* features)
 
     // More
     //
-    features[17] = booleanScale * ((cse->csdTree->gtFlags & GTF_CALL) != 0);
+    features[17] = booleanScale * ((cse->csdTreeList.tslTree->gtFlags & GTF_CALL) != 0);
     features[18] = deMinimusAdj + log(max(deMinimis, cse->csdUseCount * cse->csdUseWtCnt));
     features[19] = deMinimusAdj + log(max(deMinimis, cse->numLocalOccurrences * cse->csdUseWtCnt));
     features[20] = booleanScale * ((double)(blockSpread) / numBBs);
 
-    const bool isContainable = cse->csdTree->OperIs(GT_ADD, GT_NOT, GT_MUL, GT_LSH);
+    const bool isContainable = cse->csdTreeList.tslTree->OperIs(GT_ADD, GT_NOT, GT_MUL, GT_LSH);
     features[21]             = booleanScale * isContainable;
     features[22]             = booleanScale * (isContainable && isLowCost);
 
@@ -3174,7 +3148,7 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
     unsigned       maxPostorderNum   = 0;
     BasicBlock*    minPostorderBlock = nullptr;
     BasicBlock*    maxPostorderBlock = nullptr;
-    for (treeStmtLst* treeList = cse->csdTreeList; treeList != nullptr; treeList = treeList->tslNext)
+    for (treeStmtLst* treeList = &cse->csdTreeList; treeList != nullptr; treeList = treeList->tslNext)
     {
         BasicBlock* const treeBlock    = treeList->tslBlock;
         unsigned          postorderNum = treeBlock->bbPostorderNum;
@@ -3234,13 +3208,13 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
     features[i++] = type;
     features[i++] = cse->IsViable() ? 1 : 0;
     features[i++] = cse->csdLiveAcrossCall ? 1 : 0;
-    features[i++] = cse->csdTree->OperIsConst() ? 1 : 0;
+    features[i++] = cse->csdTreeList.tslTree->OperIsConst() ? 1 : 0;
     features[i++] = cse->csdIsSharedConst ? 1 : 0;
     features[i++] = isMakeCse ? 1 : 0;
-    features[i++] = ((cse->csdTree->gtFlags & GTF_CALL) != 0) ? 1 : 0;
-    features[i++] = cse->csdTree->OperIs(GT_ADD, GT_NOT, GT_MUL, GT_LSH) ? 1 : 0;
-    features[i++] = cse->csdTree->GetCostEx();
-    features[i++] = cse->csdTree->GetCostSz();
+    features[i++] = ((cse->csdTreeList.tslTree->gtFlags & GTF_CALL) != 0) ? 1 : 0;
+    features[i++] = cse->csdTreeList.tslTree->OperIs(GT_ADD, GT_NOT, GT_MUL, GT_LSH) ? 1 : 0;
+    features[i++] = cse->csdTreeList.tslTree->GetCostEx();
+    features[i++] = cse->csdTreeList.tslTree->GetCostSz();
     features[i++] = cse->csdUseCount;
     features[i++] = cse->csdDefCount;
     features[i++] = (int)cse->csdUseWtCnt;
@@ -4273,7 +4247,7 @@ void CSE_Heuristic::SortCandidates()
         for (unsigned cnt = 0; cnt < m_pCompiler->optCSECandidateCount; cnt++)
         {
             CSEdsc*  dsc  = sortTab[cnt];
-            GenTree* expr = dsc->csdTree;
+            GenTree* expr = dsc->csdTreeList.tslTree;
 
             weight_t def;
             weight_t use;
@@ -4283,13 +4257,13 @@ void CSE_Heuristic::SortCandidates()
             {
                 def  = dsc->csdDefCount; // def count
                 use  = dsc->csdUseCount; // use count (excluding the implicit uses at defs)
-                cost = dsc->csdTree->GetCostSz();
+                cost = dsc->csdTreeList.tslTree->GetCostSz();
             }
             else
             {
                 def  = dsc->csdDefWtCnt; // weighted def count
                 use  = dsc->csdUseWtCnt; // weighted use count (excluding the implicit uses at defs)
-                cost = dsc->csdTree->GetCostEx();
+                cost = dsc->csdTreeList.tslTree->GetCostEx();
             }
 
             if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
@@ -4842,7 +4816,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     ValueNum     bestVN         = ValueNumStore::NoVN;
     bool         bestIsDef      = false;
     ssize_t      bestConstValue = 0;
-    treeStmtLst* lst            = dsc->csdTreeList;
+    treeStmtLst* lst            = &dsc->csdTreeList;
 
     while (lst != nullptr)
     {
@@ -4933,7 +4907,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             }
             else // !isSharedConst
             {
-                lst                = dsc->csdTreeList;
+                lst                = &dsc->csdTreeList;
                 GenTree* firstTree = lst->tslTree;
                 printf("In %s, CSE (oper = %s, type = %s) has differing VNs: ", m_pCompiler->info.compFullName,
                        GenTree::OpName(firstTree->OperGet()), varTypeName(firstTree->TypeGet()));
@@ -4958,7 +4932,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     ArrayStack<UseDefLocation> defUses(m_pCompiler->getAllocator(CMK_CSE));
 
     // First process the defs.
-    for (lst = dsc->csdTreeList; lst != nullptr; lst = lst->tslNext)
+    for (lst = &dsc->csdTreeList; lst != nullptr; lst = lst->tslNext)
     {
         GenTree* const    exp  = lst->tslTree;
         Statement* const  stmt = lst->tslStmt;
@@ -5067,7 +5041,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     }
 
     // Now process the actual uses.
-    for (lst = dsc->csdTreeList; lst != nullptr; lst = lst->tslNext)
+    for (lst = &dsc->csdTreeList; lst != nullptr; lst = lst->tslNext)
     {
         GenTree* const    exp  = lst->tslTree;
         Statement* const  stmt = lst->tslStmt;

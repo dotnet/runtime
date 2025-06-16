@@ -653,39 +653,12 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 {
     ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
 
-    if (ins->ilOffset != -1)
-    {
-        assert(ins->ilOffset >= 0);
-        assert(ins->nativeOffset >= 0);
-        uint32_t ilOffset = ins->ilOffset;
-        uint32_t nativeOffset = ConvertOffset(ins->nativeOffset);
-        if ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset))
-        {
-            //
-            // This code assumes IL offsets in the actual opcode stream with valid IL offsets is monotonically
-            // increasing, so the generated map contains strictly increasing IL offsets.
-            //
-            // Native offsets are obviously strictly increasing by construction here.
-            //
-            assert((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset < ilOffset));
-            assert((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].nativeOffset < nativeOffset));
-
-            //
-            // Since we can have at most one entry per IL offset,
-            // this map cannot possibly use more entries than the size of the IL code
-            //
-            assert(m_ILToNativeMapSize < m_ILCodeSize);
-
-            m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
-            m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
-            m_ILToNativeMapSize++;
-        }
-    }
-
     int32_t opcode = ins->opcode;
     int32_t *startIp = ip;
-
     *ip++ = opcode;
+
+    // Set to true if the instruction was completely reverted.
+    bool isReverted = false;
 
     if (opcode == INTOP_SWITCH)
     {
@@ -701,7 +674,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
             *ip++ = (int32_t)0xdeadbeef;
         }
     }
-    else if (InterpOpIsUncondBranch(opcode) || InterpOpIsCondBranch(opcode))
+    else if (InterpOpIsUncondBranch(opcode) || InterpOpIsCondBranch(opcode) || (opcode == INTOP_LEAVE_CATCH) || (opcode == INTOP_CALL_FINALLY))
     {
         int32_t brBaseOffset = (int32_t)(startIp - m_pMethodCode);
         for (int i = 0; i < g_interpOpSVars[opcode]; i++)
@@ -714,6 +687,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         else if (opcode == INTOP_BR && ins->info.pTargetBB == m_pCBB->pNextBB)
         {
             // Ignore branch to the next basic block. Revert the added INTOP_BR.
+            isReverted = true;
             ip--;
         }
         else
@@ -786,6 +760,33 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
             *ip++ = ins->data[i];
     }
 
+    if ((ins->ilOffset != -1) && !isReverted)
+    {
+        assert(ins->ilOffset >= 0);
+        assert(ins->nativeOffset >= 0);
+        uint32_t ilOffset = ins->ilOffset;
+        uint32_t nativeOffset = ConvertOffset(ins->nativeOffset);
+        if ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset))
+        {
+            // This code assumes that instructions for the same IL offset are emitted in a single run without
+            // any other IL offsets in between and that they don't repeat again after the run ends.
+#ifdef _DEBUG
+            for (int i = 0; i < m_ILToNativeMapSize; i++)
+            {
+                assert(m_pILToNativeMap[i].ilOffset != ilOffset);
+            }
+#endif // _DEBUG
+
+            // Since we can have at most one entry per IL offset,
+            // this map cannot possibly use more entries than the size of the IL code
+            assert(m_ILToNativeMapSize < m_ILCodeSize);
+
+            m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
+            m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
+            m_ILToNativeMapSize++;
+        }
+    }
+
     return ip;
 }
 
@@ -811,6 +812,27 @@ void InterpCompiler::PatchRelocations(TArray<Reloc*> *relocs)
     }
 }
 
+int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Reloc*> *relocs)
+{
+    m_pCBB = bb;
+    m_pCBB->nativeOffset = (int32_t)(ip - m_pMethodCode);
+
+    for (InterpInst *ins = bb->pFirstIns; ins != NULL; ins = ins->pNext)
+    {
+        if (InterpOpIsEmitNop(ins->opcode))
+        {
+            ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
+            continue;
+        }
+
+        ip = EmitCodeIns(ip, ins, relocs);
+    }
+
+    m_pCBB->nativeEndOffset = (int32_t)(ip - m_pMethodCode);
+
+    return ip;
+}
+
 void InterpCompiler::EmitCode()
 {
     TArray<Reloc*> relocs;
@@ -825,22 +847,47 @@ void InterpCompiler::EmitCode()
         eeVars = new ICorDebugInfo::NativeVarInfo[m_numILVars];
     }
 
-    int32_t *ip = m_pMethodCode;
-    for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
+    // For each BB, compute the number of EH clauses that overlap with it.
+    for (unsigned int i = 0; i < m_methodInfo->EHcount; i++)
     {
-        bb->nativeOffset = (int32_t)(ip - m_pMethodCode);
-        m_pCBB = bb;
-        for (InterpInst *ins = bb->pFirstIns; ins != NULL; ins = ins->pNext)
+        CORINFO_EH_CLAUSE clause;
+        m_compHnd->getEHinfo(m_methodInfo->ftn, i, &clause);
+        for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
         {
-            if (InterpOpIsEmitNop(ins->opcode))
+            if (clause.HandlerOffset <= (uint32_t)bb->ilOffset && (clause.HandlerOffset + clause.HandlerLength) > (uint32_t)bb->ilOffset)
             {
-                ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
-                continue;
+                bb->overlappingEHClauseCount++;
             }
 
-            ip = EmitCodeIns(ip, ins, &relocs);
+            if (clause.Flags == CORINFO_EH_CLAUSE_FILTER && clause.FilterOffset <= (uint32_t)bb->ilOffset && clause.HandlerOffset > (uint32_t)bb->ilOffset)
+            {
+                bb->overlappingEHClauseCount++;
+            }
         }
     }
+
+    // Emit all the code in waves. First emit all blocks that are not inside any EH clauses.
+    // Then emit blocks that are inside of a single EH clause, then ones that are inside of
+    // two EH clauses, etc.
+    // The goal is to move all clauses to the end of the method code recursively so that
+    // no handler is inside of a try block.
+    int32_t *ip = m_pMethodCode;
+    bool emittedBlock;
+    int clauseDepth = 0;
+    do
+    {
+        emittedBlock = false;
+        for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
+        {
+            if (bb->overlappingEHClauseCount == clauseDepth)
+            {
+                ip = EmitBBCode(ip, bb, &relocs);
+                emittedBlock = true;
+            }
+        }
+        clauseDepth++;
+    }
+    while (emittedBlock);
 
     m_methodCodeSize = (int32_t)(ip - m_pMethodCode);
 
@@ -1022,6 +1069,97 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
 #endif
 }
 
+void InterpCompiler::GetNativeRangeForClause(uint32_t startILOffset, uint32_t endILOffset, int32_t *nativeStartOffset, int32_t* nativeEndOffset)
+{
+    InterpBasicBlock* pStartBB = m_ppOffsetToBB[startILOffset];
+    assert(pStartBB != NULL);
+
+    InterpBasicBlock* pEndBB = pStartBB;
+    for (InterpBasicBlock* pBB = pStartBB->pNextBB; (pBB != NULL) && ((uint32_t)pBB->ilOffset < endILOffset); pBB = pBB->pNextBB)
+    {
+        if ((pBB->clauseType == pStartBB->clauseType) && (pBB->overlappingEHClauseCount == pStartBB->overlappingEHClauseCount))
+        {
+            pEndBB = pBB;
+        }
+    }
+
+    *nativeStartOffset = pStartBB->nativeOffset;
+    *nativeEndOffset = pEndBB->nativeEndOffset;
+}
+
+void InterpCompiler::BuildEHInfo()
+{
+    uint32_t lastTryILOffset = 0;
+    uint32_t lastTryILLength = 0;
+
+    INTERP_DUMP("EH info:\n");
+
+    if (m_methodInfo->EHcount == 0)
+    {
+        INTERP_DUMP("  None\n");
+        return;
+    }
+
+    m_compHnd->setEHcount(m_methodInfo->EHcount);
+    for (unsigned int i = 0; i < m_methodInfo->EHcount; i++)
+    {
+        CORINFO_EH_CLAUSE clause;
+        CORINFO_EH_CLAUSE nativeClause;
+
+        m_compHnd->getEHinfo(m_methodInfo->ftn, i, &clause);
+
+        int32_t tryStartNativeOffset;
+        int32_t tryEndNativeOffset;
+        GetNativeRangeForClause(clause.TryOffset, clause.TryOffset + clause.TryLength, &tryStartNativeOffset, &tryEndNativeOffset);
+
+        int32_t handlerStartNativeOffset;
+        int32_t handlerEndNativeOffset;
+        GetNativeRangeForClause(clause.HandlerOffset, clause.HandlerOffset + clause.HandlerLength, &handlerStartNativeOffset, &handlerEndNativeOffset);
+
+        nativeClause.TryOffset = ConvertOffset(tryStartNativeOffset);
+        nativeClause.TryLength = ConvertOffset(tryEndNativeOffset);
+
+        nativeClause.HandlerOffset = ConvertOffset(handlerStartNativeOffset);
+        nativeClause.HandlerLength = ConvertOffset(handlerEndNativeOffset);
+        InterpBasicBlock* pFilterStartBB = NULL;
+        if (clause.Flags == CORINFO_EH_CLAUSE_FILTER)
+        {
+            pFilterStartBB = m_ppOffsetToBB[clause.FilterOffset];
+            nativeClause.FilterOffset = ConvertOffset(pFilterStartBB->nativeOffset);
+        }
+        else
+        {
+            nativeClause.ClassToken = clause.ClassToken;
+        }
+
+        nativeClause.Flags = clause.Flags;
+
+        // A try region can have multiple catch / filter handlers. All except of the first one need to be marked by
+        // the COR_ILEXCEPTION_CLAUSE_SAMETRY flag so that runtime can distinguish this case from a case when
+        // the native try region is the same for multiple clauses, but the IL try region is different.
+        if ((lastTryILOffset == clause.TryOffset) && (lastTryILLength == clause.TryLength))
+        {
+            nativeClause.Flags = (CORINFO_EH_CLAUSE_FLAGS)((int)nativeClause.Flags | COR_ILEXCEPTION_CLAUSE_SAMETRY);
+        }
+
+        m_compHnd->setEHinfo(i, &nativeClause);
+
+        INTERP_DUMP("  try [IR_%04x(%x), IR_%04x(%x)) ", tryStartNativeOffset, clause.TryOffset, tryEndNativeOffset, clause.TryOffset + clause.TryLength);
+        if (clause.Flags == CORINFO_EH_CLAUSE_FILTER)
+        {
+            INTERP_DUMP("filter IR_%04x(%x), handler [IR_%04x(%x), IR_%04x(%x))%s\n", pFilterStartBB->nativeOffset, clause.FilterOffset, handlerStartNativeOffset, clause.HandlerOffset, handlerEndNativeOffset, clause.HandlerOffset + clause.HandlerLength, ((int)nativeClause.Flags & COR_ILEXCEPTION_CLAUSE_SAMETRY) ? " (same try)" : "");
+        }
+        else if (nativeClause.Flags == CORINFO_EH_CLAUSE_FINALLY)
+        {
+            INTERP_DUMP("finally handler [IR_%04x(%x), IR_%04x(%x))\n", handlerStartNativeOffset, clause.HandlerOffset, handlerEndNativeOffset, clause.HandlerOffset + clause.HandlerLength);
+        }
+        else
+        {
+            INTERP_DUMP("catch handler [IR_%04x(%x), IR_%04x(%x))%s\n", handlerStartNativeOffset, clause.HandlerOffset, handlerEndNativeOffset, clause.HandlerOffset + clause.HandlerLength, ((int)nativeClause.Flags & COR_ILEXCEPTION_CLAUSE_SAMETRY) ? " (same try)" : "");
+        }
+    }
+}
+
 InterpMethod* InterpCompiler::CreateInterpMethod()
 {
     int numDataItems = m_dataItems.GetSize();
@@ -1057,8 +1195,19 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     m_methodInfo = methodInfo;
 
 #ifdef DEBUG
-    m_methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, nullptr, nullptr, nullptr, 0);
-    if (m_methodName && InterpConfig.InterpDump() && !strcmp(m_methodName, InterpConfig.InterpDump()))
+
+    m_classHnd   = compHnd->getMethodClass(m_methodHnd);
+
+    m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
+                            /* includeAssembly */ false,
+                            /* includeClass */ true,
+                            /* includeClassInstantiation */ true,
+                            /* includeMethodInstantiation */ true,
+                            /* includeSignature */ true,
+                            /* includeReturnType */ false,
+                            /* includeThis */ false);
+
+    if (InterpConfig.InterpDump().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args))
         m_verbose = true;
 #endif
 }
@@ -1066,11 +1215,9 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 InterpMethod* InterpCompiler::CompileMethod()
 {
 #ifdef DEBUG
-    if (m_verbose)
+    if (m_verbose || InterpConfig.InterpList())
     {
-        printf("Interpreter compile method ");
-        PrintMethodName(m_methodHnd);
-        printf("\n");
+        printf("Interpreter compile method %s\n", m_methodName.GetUnderlyingArray());
     }
 #endif
 
@@ -1133,19 +1280,17 @@ void InterpCompiler::PatchInitLocals(CORINFO_METHOD_INFO* methodInfo)
 }
 
 // Adds a conversion instruction for the value pointed to by sp, also updating the stack information
-void InterpCompiler::EmitConv(StackInfo *sp, InterpInst *prevIns, StackType type, InterpOpcode convOp)
+void InterpCompiler::EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp)
 {
-    InterpInst *newInst;
-    if (prevIns)
-        newInst = InsertIns(prevIns, convOp);
-    else
-        newInst = AddIns(convOp);
+    InterpInst *newInst = AddIns(convOp);
 
     newInst->SetSVar(sp->var);
     new (sp) StackInfo(type);
     int32_t var = CreateVarExplicit(g_interpTypeFromStackType[type], NULL, INTERP_STACK_SLOT_SIZE);
     sp->var = var;
     newInst->SetDVar(var);
+
+    // NOTE: We rely on m_pLastNewIns == newInst upon return from this function. Make sure you preserve that if you change anything.
 }
 
 static InterpType GetInterpType(CorInfoType corInfoType)
@@ -1217,83 +1362,181 @@ int32_t InterpCompiler::GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, Inte
     return size;
 }
 
-
 void InterpCompiler::CreateILVars()
 {
     bool hasThis = m_methodInfo->args.hasThis();
-    int32_t offset, size, align;
+    bool hasParamArg = m_methodInfo->args.hasTypeArg();
+    int paramArgIndex = hasParamArg ? hasThis ? 1 : 0 : INT_MAX;
+    int32_t offset;
     int numArgs = hasThis + m_methodInfo->args.numArgs;
     int numILLocals = m_methodInfo->locals.numArgs;
     m_numILVars = numArgs + numILLocals;
 
     // add some starting extra space for new vars
-    m_varsCapacity = m_numILVars + 64;
+    m_varsCapacity = m_numILVars + m_methodInfo->EHcount + 64;
     m_pVars = (InterpVar*)AllocTemporary0(m_varsCapacity * sizeof (InterpVar));
-    m_varsSize = m_numILVars;
+    m_varsSize = m_numILVars + hasParamArg;
 
     offset = 0;
 
     INTERP_DUMP("\nCreate IL Vars:\n");
 
+    // NOTE: There is special handling for the param arg, which is stored after the IL locals in the m_pVars array.
+    // The param arg is not part of the set of arguments defined by the IL method signature, but instead is needed
+    // to support shared generics codegen, and to be able to determine which exact intantiation of a method is in use.
+    // The param arg is stashed into the m_pVars array at an unnatural index relative to its position in the physical stack
+    // so that when parsing the MSIL byte stream it is simple to determine the index of the normal argumentes
+    // and IL locals, by just knowing the number of IL defined arguments. This allows all of the special handling for
+    // the param arg to be localized to this function, and the small set of helper functions that directly use it.
+
     CORINFO_ARG_LIST_HANDLE sigArg = m_methodInfo->args.args;
-    for (int i = 0; i < numArgs; i++) {
-        InterpType interpType;
-        CORINFO_CLASS_HANDLE argClass;
-        if (hasThis && i == 0)
-        {
-            argClass = m_compHnd->getMethodClass(m_methodInfo->ftn);
-            if (m_compHnd->isValueClass(argClass))
-                interpType = InterpTypeByRef;
-            else
-                interpType = InterpTypeO;
-        }
-        else
-        {
-            CorInfoType argCorType;
-            argCorType = strip(m_compHnd->getArgType(&m_methodInfo->args, sigArg, &argClass));
-            interpType = GetInterpType(argCorType);
-            sigArg = m_compHnd->getArgNext(sigArg);
-        }
-        size = GetInterpTypeStackSize(argClass, interpType, &align);
 
-        new (&m_pVars[i]) InterpVar(interpType, argClass, size);
-
-        m_pVars[i].global = true;
-        m_pVars[i].ILGlobal = true;
-        m_pVars[i].size = size;
-        offset = ALIGN_UP_TO(offset, align);
-        m_pVars[i].offset = offset;
-        INTERP_DUMP("alloc arg var %d to offset %d\n", i, offset);
-        offset += size;
+    int argIndexOffset = 0;
+    if (hasThis)
+    {
+        CORINFO_CLASS_HANDLE argClass = m_compHnd->getMethodClass(m_methodInfo->ftn);
+        InterpType interpType = m_compHnd->isValueClass(argClass) ? InterpTypeByRef : InterpTypeO;
+        CreateNextLocalVar(0, argClass, interpType, &offset);
+        argIndexOffset++;
     }
 
+    if (hasParamArg)
+    {
+        m_paramArgIndex = m_varsSize - 1; // The param arg is stored after the IL locals in the m_pVars array
+        CreateNextLocalVar(m_paramArgIndex, NULL, InterpTypeI, &offset);
+    }
+
+    for (int i = argIndexOffset; i < numArgs; i++)
+    {
+        CORINFO_CLASS_HANDLE argClass;
+        CorInfoType argCorType = strip(m_compHnd->getArgType(&m_methodInfo->args, sigArg, &argClass));
+        InterpType interpType = GetInterpType(argCorType);
+        sigArg = m_compHnd->getArgNext(sigArg);
+        CreateNextLocalVar(i, argClass, interpType, &offset);
+    }
     offset = ALIGN_UP_TO(offset, INTERP_STACK_ALIGNMENT);
 
     sigArg = m_methodInfo->locals.args;
     m_ILLocalsOffset = offset;
+    int index = numArgs;
+
     for (int i = 0; i < numILLocals; i++) {
-        int index = numArgs + i;
-        InterpType interpType;
         CORINFO_CLASS_HANDLE argClass;
-
         CorInfoType argCorType = strip(m_compHnd->getArgType(&m_methodInfo->locals, sigArg, &argClass));
-        interpType = GetInterpType(argCorType);
-        size = GetInterpTypeStackSize(argClass, interpType, &align);
-
-        new (&m_pVars[index]) InterpVar(interpType, argClass, size);
-
-        m_pVars[index].global = true;
-        m_pVars[index].ILGlobal = true;
-        offset = ALIGN_UP_TO(offset, align);
-        m_pVars[index].offset = offset;
-        INTERP_DUMP("alloc local var %d to offset %d\n", index, offset);
-        offset += size;
+        InterpType interpType = GetInterpType(argCorType);
+        CreateNextLocalVar(index, argClass, interpType, &offset);
         sigArg = m_compHnd->getArgNext(sigArg);
+        index++;
     }
-    offset = ALIGN_UP_TO(offset, INTERP_STACK_ALIGNMENT);
 
+    if (hasParamArg)
+    {
+        // The param arg is stored after the IL locals in the m_pVars array
+        assert(index == m_paramArgIndex);
+        index++;
+    }
+
+    offset = ALIGN_UP_TO(offset, INTERP_STACK_ALIGNMENT);
     m_ILLocalsSize = offset - m_ILLocalsOffset;
+
+    INTERP_DUMP("\nCreate clause Vars:\n");
+
+    m_clauseVarsIndex = index;
+
+    for (unsigned int i = 0; i < m_methodInfo->EHcount; i++)
+    {
+        CreateNextLocalVar(index, NULL, InterpTypeO, &offset);
+        index++;
+    }
+
     m_totalVarsStackSize = offset;
+}
+
+void InterpCompiler::CreateNextLocalVar(int iArgToSet, CORINFO_CLASS_HANDLE argClass, InterpType interpType, int32_t *pOffset)
+{
+    int32_t align;
+    int32_t size = GetInterpTypeStackSize(argClass, interpType, &align);
+
+    new (&m_pVars[iArgToSet]) InterpVar(interpType, argClass, size);
+
+    m_pVars[iArgToSet].global = true;
+    m_pVars[iArgToSet].ILGlobal = true;
+    m_pVars[iArgToSet].size = size;
+    *pOffset = ALIGN_UP_TO(*pOffset, align);
+    m_pVars[iArgToSet].offset = *pOffset;
+    INTERP_DUMP("alloc arg var %d to offset %d\n", iArgToSet, *pOffset);
+    *pOffset += size;
+}
+
+// Create finally call island basic blocks for all try regions with finally clauses that the leave exits.
+// That means when the leaveOffset is inside the try region and the target is outside of it.
+// These finally call island blocks are used for non-exceptional finally execution.
+// The linked list of finally call island blocks is stored in the pFinallyCallIslandBB field of the finally basic block.
+// The pFinallyCallIslandBB in the actual finally call island block points to the outer try region's finally call island block.
+void InterpCompiler::CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB)
+{
+    bool firstFinallyCallIsland = true;
+    InterpBasicBlock* pInnerFinallyCallIslandBB = NULL;
+    for (unsigned int i = 0; i < methodInfo->EHcount; i++)
+    {
+        CORINFO_EH_CLAUSE clause;
+        m_compHnd->getEHinfo(methodInfo->ftn, i, &clause);
+        if (clause.Flags != CORINFO_EH_CLAUSE_FINALLY)
+        {
+            continue;
+        }
+
+        // Only try regions in which the leave instruction is located are considered.
+        if ((uint32_t)leaveOffset < clause.TryOffset || (uint32_t)leaveOffset > (clause.TryOffset + clause.TryLength))
+        {
+            continue;
+        }
+
+        // If the leave target is inside the try region, we don't need to create a finally call island block.
+        if ((uint32_t)pLeaveTargetBB->ilOffset >= clause.TryOffset && (uint32_t)pLeaveTargetBB->ilOffset <= (clause.TryOffset + clause.TryLength))
+        {
+            continue;
+        }
+
+        InterpBasicBlock* pHandlerBB = GetBB(clause.HandlerOffset);
+        InterpBasicBlock* pFinallyCallIslandBB = NULL;
+
+        InterpBasicBlock** ppLastBBNext = &pHandlerBB->pFinallyCallIslandBB;
+        while (*ppLastBBNext != NULL)
+        {
+            if ((*ppLastBBNext)->pLeaveTargetBB == pLeaveTargetBB)
+            {
+                // We already have finally call island block for the leave target
+                pFinallyCallIslandBB = (*ppLastBBNext);
+                break;
+            }
+            ppLastBBNext = &((*ppLastBBNext)->pNextBB);
+        }
+
+        if (pFinallyCallIslandBB == NULL)
+        {
+            pFinallyCallIslandBB = AllocBB(clause.HandlerOffset + clause.HandlerLength);
+            pFinallyCallIslandBB->pLeaveTargetBB = pLeaveTargetBB;
+            *ppLastBBNext = pFinallyCallIslandBB;
+        }
+
+        if (pInnerFinallyCallIslandBB != NULL)
+        {
+            pInnerFinallyCallIslandBB->pFinallyCallIslandBB = pFinallyCallIslandBB;
+        }
+        pInnerFinallyCallIslandBB = pFinallyCallIslandBB;
+
+        if (firstFinallyCallIsland)
+        {
+            // The leaves table entry points to the first finally call island block
+            firstFinallyCallIsland = false;
+
+            LeavesTableEntry leavesEntry;
+            leavesEntry.ilOffset = leaveOffset;
+            leavesEntry.pFinallyCallIslandBB = pFinallyCallIslandBB;
+            m_leavesTable.Add(leavesEntry);
+        }
+    }
 }
 
 bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
@@ -1306,39 +1549,13 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
     m_ppOffsetToBB = (InterpBasicBlock**)AllocMemPool0(sizeof(InterpBasicBlock*) * (methodInfo->ILCodeSize + 1));
     GetBB(0);
 
-    for (unsigned int i = 0; i < methodInfo->EHcount; i++)
-    {
-        CORINFO_EH_CLAUSE clause;
-        m_compHnd->getEHinfo(methodInfo->ftn, i, &clause);
-
-        if ((codeStart + clause.TryOffset) > codeEnd ||
-                (codeStart + clause.TryOffset + clause.TryLength) > codeEnd)
-        {
-            return false;
-        }
-        GetBB(clause.TryOffset);
-
-        if ((codeStart + clause.HandlerOffset) > codeEnd ||
-                (codeStart + clause.HandlerOffset + clause.HandlerLength) > codeEnd)
-        {
-            return false;
-        }
-        GetBB(clause.HandlerOffset);
-
-        if (clause.Flags == CORINFO_EH_CLAUSE_FILTER)
-        {
-            if ((codeStart + clause.FilterOffset) > codeEnd)
-                return false;
-            GetBB(clause.FilterOffset);
-        }
-    }
-
     while (ip < codeEnd)
     {
         int32_t insOffset = (int32_t)(ip - codeStart);
         OPCODE opcode = CEEDecodeOpcode(&ip);
         OPCODE_FORMAT opArgs = g_CEEOpArgs[opcode];
         int32_t target;
+        InterpBasicBlock *pTargetBB;
 
         switch (opArgs)
         {
@@ -1366,7 +1583,11 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             target = insOffset + 2 + (int8_t)ip [1];
             if (target >= codeSize)
                 return false;
-            GetBB(target);
+            pTargetBB = GetBB(target);
+            if (opcode == CEE_LEAVE_S)
+            {
+                CreateFinallyCallIslandBasicBlocks(methodInfo, insOffset, pTargetBB);
+            }
             ip += 2;
             GetBB((int32_t)(ip - codeStart));
             break;
@@ -1374,7 +1595,11 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             target = insOffset + 5 + getI4LittleEndian(ip + 1);
             if (target >= codeSize)
                 return false;
-            GetBB(target);
+            pTargetBB = GetBB(target);
+            if (opcode == CEE_LEAVE)
+            {
+                CreateFinallyCallIslandBasicBlocks(methodInfo, insOffset, pTargetBB);
+            }
             ip += 5;
             GetBB((int32_t)(ip - codeStart));
             break;
@@ -1411,6 +1636,150 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
     return true;
 }
 
+bool InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo)
+{
+    int32_t codeSize = methodInfo->ILCodeSize;
+    uint8_t *codeStart = methodInfo->ILCode;
+    uint8_t *codeEnd = codeStart + codeSize;
+
+    for (unsigned int i = 0; i < methodInfo->EHcount; i++)
+    {
+        CORINFO_EH_CLAUSE clause;
+        m_compHnd->getEHinfo(methodInfo->ftn, i, &clause);
+
+        if ((codeStart + clause.TryOffset) > codeEnd ||
+                (codeStart + clause.TryOffset + clause.TryLength) > codeEnd)
+        {
+            return false;
+        }
+
+        InterpBasicBlock* pTryBB = GetBB(clause.TryOffset);
+
+        if ((codeStart + clause.HandlerOffset) > codeEnd ||
+                (codeStart + clause.HandlerOffset + clause.HandlerLength) > codeEnd)
+        {
+            return false;
+        }
+
+        // Find and mark all basic blocks that are part of the try region.
+        for (uint32_t j = clause.TryOffset; j < (clause.TryOffset + clause.TryLength); j++)
+        {
+            InterpBasicBlock* pBB = m_ppOffsetToBB[j];
+            if (pBB != NULL && pBB->clauseType == BBClauseNone)
+            {
+                pBB->clauseType = BBClauseTry;
+            }
+        }
+
+        InterpBasicBlock* pHandlerBB = GetBB(clause.HandlerOffset);
+
+        // Find and mark all basic blocks that are part of the handler region.
+        for (uint32_t j = clause.HandlerOffset; j < (clause.HandlerOffset + clause.HandlerLength); j++)
+        {
+            InterpBasicBlock* pBB = m_ppOffsetToBB[j];
+            if (pBB != NULL && pBB->clauseType == BBClauseNone)
+            {
+                if ((clause.Flags == CORINFO_EH_CLAUSE_NONE) || (clause.Flags == CORINFO_EH_CLAUSE_FILTER))
+                {
+                    pBB->clauseType = BBClauseCatch;
+                }
+                else
+                {
+                    assert((clause.Flags == CORINFO_EH_CLAUSE_FINALLY) || (clause.Flags == CORINFO_EH_CLAUSE_FAULT));
+                    pBB->clauseType = BBClauseFinally;
+                }
+            }
+        }
+
+        if (clause.Flags == CORINFO_EH_CLAUSE_FILTER)
+        {
+            if ((codeStart + clause.FilterOffset) > codeEnd)
+                return false;
+
+            // The filter funclet is always stored right before its handler funclet.
+            // So the filter end offset is equal to the start offset of the handler funclet.
+            InterpBasicBlock* pFilterBB = GetBB(clause.FilterOffset);
+            pFilterBB->isFilterOrCatchFuncletEntry = true;
+            pFilterBB->clauseVarIndex = m_clauseVarsIndex + i;
+
+            // Initialize the filter stack state. It initially contains the exception object.
+            pFilterBB->stackHeight = 1;
+            pFilterBB->pStackState = (StackInfo*)AllocMemPool(sizeof (StackInfo));
+            pFilterBB->pStackState[0].type = StackTypeO;
+            pFilterBB->pStackState[0].size = INTERP_STACK_SLOT_SIZE;
+            pFilterBB->pStackState[0].clsHnd = NULL;
+            pFilterBB->pStackState[0].var = pFilterBB->clauseVarIndex;
+
+            // Find and mark all basic blocks that are part of the filter region.
+            for (uint32_t j = clause.FilterOffset; j < clause.HandlerOffset; j++)
+            {
+                InterpBasicBlock* pBB = m_ppOffsetToBB[j];
+                if (pBB != NULL && pBB->clauseType == BBClauseNone)
+                {
+                    pBB->clauseType = BBClauseFilter;
+                }
+            }
+        }
+        else if (clause.Flags == CORINFO_EH_CLAUSE_FINALLY|| clause.Flags == CORINFO_EH_CLAUSE_FAULT)
+        {
+            InterpBasicBlock* pFinallyBB = GetBB(clause.HandlerOffset);
+
+            // Initialize finally handler stack state to empty.
+            pFinallyBB->stackHeight = 0;
+        }
+
+        if (clause.Flags == CORINFO_EH_CLAUSE_NONE || clause.Flags == CORINFO_EH_CLAUSE_FILTER)
+        {
+            InterpBasicBlock* pCatchBB = GetBB(clause.HandlerOffset);
+            pCatchBB->isFilterOrCatchFuncletEntry = true;
+            pCatchBB->clauseVarIndex = m_clauseVarsIndex + i;
+
+            // Initialize the catch / filtered handler stack state. It initially contains the exception object.
+            pCatchBB->stackHeight = 1;
+            pCatchBB->pStackState = (StackInfo*)AllocMemPool(sizeof (StackInfo));
+            pCatchBB->pStackState[0].type = StackTypeO;
+            pCatchBB->pStackState[0].size = INTERP_STACK_SLOT_SIZE;
+            pCatchBB->pStackState[0].var = pCatchBB->clauseVarIndex;
+            pCatchBB->pStackState[0].clsHnd = NULL;
+        }
+    }
+
+    // Now that we have classified all the basic blocks, we can set the clause type for the finally call island blocks.
+    // We set it to the same type as the basic block after the finally handler.
+    for (unsigned int i = 0; i < methodInfo->EHcount; i++)
+    {
+        CORINFO_EH_CLAUSE clause;
+        m_compHnd->getEHinfo(methodInfo->ftn, i, &clause);
+
+        if (clause.Flags != CORINFO_EH_CLAUSE_FINALLY)
+        {
+            continue;
+        }
+
+        InterpBasicBlock* pFinallyBB = GetBB(clause.HandlerOffset);
+
+        InterpBasicBlock* pFinallyCallIslandBB = pFinallyBB->pFinallyCallIslandBB;
+        while (pFinallyCallIslandBB != NULL)
+        {
+            InterpBasicBlock* pAfterFinallyBB = m_ppOffsetToBB[clause.HandlerOffset + clause.HandlerLength];
+            assert(pAfterFinallyBB != NULL);
+            pFinallyCallIslandBB->clauseType = pAfterFinallyBB->clauseType;
+            pFinallyCallIslandBB = pFinallyCallIslandBB->pNextBB;
+        }
+    }
+
+    return true;
+}
+
+void InterpCompiler::EmitBranchToBB(InterpOpcode opcode, InterpBasicBlock *pTargetBB)
+{
+    EmitBBEndVarMoves(pTargetBB);
+    InitBBStackState(pTargetBB);
+
+    AddIns(opcode);
+    m_pLastNewIns->info.pTargetBB = pTargetBB;
+}
+
 // ilOffset represents relative branch offset
 void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
 {
@@ -1425,11 +1794,7 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
     InterpBasicBlock *pTargetBB = m_ppOffsetToBB[target];
     assert(pTargetBB != NULL);
 
-    EmitBBEndVarMoves(pTargetBB);
-    InitBBStackState(pTargetBB);
-
-    AddIns(opcode);
-    m_pLastNewIns->info.pTargetBB = pTargetBB;
+    EmitBranchToBB(opcode, pTargetBB);
 }
 
 void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
@@ -1460,21 +1825,21 @@ void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     // emitting the conditional branch
     if (argType1 == StackTypeI4 && argType2 == StackTypeI8)
     {
-        EmitConv(m_pStackPointer - 1, m_pLastNewIns, StackTypeI8, INTOP_CONV_I8_I4);
+        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
         argType1 = StackTypeI8;
     }
     else if (argType1 == StackTypeI8 && argType2 == StackTypeI4)
     {
-        EmitConv(m_pStackPointer - 2, m_pLastNewIns, StackTypeI8, INTOP_CONV_I8_I4);
+        EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
     }
     else if (argType1 == StackTypeR4 && argType2 == StackTypeR8)
     {
-        EmitConv(m_pStackPointer - 1, m_pLastNewIns, StackTypeR8, INTOP_CONV_R8_R4);
+        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
         argType1 = StackTypeR8;
     }
     else if (argType1 == StackTypeR8 && argType2 == StackTypeR4)
     {
-        EmitConv(m_pStackPointer - 2, m_pLastNewIns, StackTypeR8, INTOP_CONV_R8_R4);
+        EmitConv(m_pStackPointer - 2, StackTypeR8, INTOP_CONV_R8_R4);
     }
     else if (argType1 != argType2)
     {
@@ -1497,12 +1862,22 @@ void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     }
 }
 
-
 void InterpCompiler::EmitLoadVar(int32_t var)
 {
     InterpType interpType = m_pVars[var].interpType;
-    int32_t size = m_pVars[var].size;
     CORINFO_CLASS_HANDLE clsHnd = m_pVars[var].clsHnd;
+
+    if (m_pCBB->clauseType == BBClauseFilter)
+    {
+        assert(m_pVars[var].ILGlobal);
+        AddIns(INTOP_LOAD_FRAMEVAR);
+        PushInterpType(InterpTypeI, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        EmitLdind(interpType, clsHnd, m_pVars[var].offset);
+        return;
+    }
+
+    int32_t size = m_pVars[var].size;
 
     if (interpType == InterpTypeVT)
         PushTypeVT(clsHnd, size);
@@ -1521,15 +1896,24 @@ void InterpCompiler::EmitStoreVar(int32_t var)
     InterpType interpType = m_pVars[var].interpType;
     CHECK_STACK_RET_VOID(1);
 
+    if (m_pCBB->clauseType == BBClauseFilter)
+    {
+        AddIns(INTOP_LOAD_FRAMEVAR);
+        PushInterpType(InterpTypeI, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        EmitStind(interpType, m_pVars[var].clsHnd, m_pVars[var].offset, true /* reverseSVarOrder */);
+        return;
+    }
+
 #ifdef TARGET_64BIT
     // nint and int32 can be used interchangeably. Add implicit conversions.
     if (m_pStackPointer[-1].type == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
-        EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
 #endif
     if (m_pStackPointer[-1].type == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
-        EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
     else if (m_pStackPointer[-1].type == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
-        EmitConv(m_pStackPointer - 1, NULL, StackTypeR4, INTOP_CONV_R4_R8);
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
 
     m_pStackPointer--;
     AddIns(InterpGetMovForType(interpType, false));
@@ -1556,7 +1940,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
             if (type2 == StackTypeI4)
             {
 #ifdef TARGET_64BIT
-                EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+                EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
                 type2 = StackTypeI8;
 #endif
                 typeRes = StackTypeByRef;
@@ -1576,7 +1960,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
             if (type1 == StackTypeI4)
             {
 #ifdef TARGET_64BIT
-                EmitConv(m_pStackPointer - 2, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+                EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
                 type1 = StackTypeI8;
 #endif
                 typeRes = StackTypeByRef;
@@ -1596,7 +1980,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
         if (type2 == StackTypeI4)
         {
 #ifdef TARGET_64BIT
-            EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
             type2 = StackTypeI8;
 #endif
             typeRes = StackTypeByRef;
@@ -1619,23 +2003,23 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 #if TARGET_64BIT
         if (type1 == StackTypeI8 && type2 == StackTypeI4)
         {
-            EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
             type2 = StackTypeI8;
         }
         else if (type1 == StackTypeI4 && type2 == StackTypeI8)
         {
-            EmitConv(m_pStackPointer - 2, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+            EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
             type1 = StackTypeI8;
         }
 #endif
         if (type1 == StackTypeR8 && type2 == StackTypeR4)
         {
-            EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+            EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
             type2 = StackTypeR8;
         }
         else if (type1 == StackTypeR4 && type2 == StackTypeR8)
         {
-            EmitConv(m_pStackPointer - 2, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+            EmitConv(m_pStackPointer - 2, StackTypeR8, INTOP_CONV_R8_R4);
             type1 = StackTypeR8;
         }
         if (type1 != type2)
@@ -1703,9 +2087,9 @@ void InterpCompiler::EmitCompareOp(int32_t opBase)
     else
     {
         if (m_pStackPointer[-1].type == StackTypeR4 && m_pStackPointer[-2].type == StackTypeR8)
-            EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+            EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
         if (m_pStackPointer[-1].type == StackTypeR8 && m_pStackPointer[-2].type == StackTypeR4)
-            EmitConv(m_pStackPointer - 2, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+            EmitConv(m_pStackPointer - 2, StackTypeR8, INTOP_CONV_R8_R4);
         AddIns(opBase + m_pStackPointer[-1].type - StackTypeI4);
     }
     m_pStackPointer -= 2;
@@ -1723,20 +2107,34 @@ int32_t InterpCompiler::GetDataItemIndex(void *data)
     return m_dataItems.Add(data);
 }
 
+void* InterpCompiler::GetDataItemAtIndex(int32_t index)
+{
+    if (index < 0 || index >= m_dataItems.GetSize())
+    {
+        assert(!"Invalid data item index");
+        return NULL;
+    }
+    return m_dataItems.Get(index);
+}
+
 int32_t InterpCompiler::GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle)
 {
-    size_t data = (size_t)mHandle | INTERP_METHOD_HANDLE_TAG;
-    return GetDataItemIndex((void*)data);
+    return GetDataItemIndex((void*)mHandle);
 }
 
 int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
 {
-    void *indirect;
-    void *direct = m_compHnd->getHelperFtn(ftn, &indirect);
-    size_t data = !direct
-        ? (size_t)indirect | INTERP_INDIRECT_HELPER_TAG
-        : (size_t)direct;
-    return GetDataItemIndex((void*)data);
+    // Interpreter-TODO: Find an existing data item index for this helper if possible and reuse it
+    CORINFO_CONST_LOOKUP ftnLookup;
+    m_compHnd->getHelperFtn(ftn, &ftnLookup);
+    void* addr = ftnLookup.addr;
+    if (ftnLookup.accessType == IAT_PVALUE)
+    {
+        addr = (void*)((size_t)addr | INTERP_INDIRECT_HELPER_TAG);
+    }
+    assert(ftnLookup.accessType == IAT_VALUE || ftnLookup.accessType == IAT_PVALUE);
+
+    return GetDataItemIndex(addr);
 }
 
 bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
@@ -1777,6 +2175,7 @@ bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SI
                 return true;
             }
         }
+        // TODO: Add multi-dimensional array getters and setters
     }
 
     return false;
@@ -1809,46 +2208,310 @@ CORINFO_CLASS_HANDLE InterpCompiler::ResolveClassToken(uint32_t token)
     return resolvedToken.hClass;
 }
 
-void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readonly, bool tailcall)
+CORINFO_CLASS_HANDLE InterpCompiler::getClassFromContext(CORINFO_CONTEXT_HANDLE context)
+{
+    if (context == METHOD_BEING_COMPILED_CONTEXT())
+    {
+        return m_compHnd->getMethodClass(m_methodHnd); // This really should be just a field access, but we don't have that field in the InterpCompiler now
+    }
+
+    if (((SIZE_T)context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
+    {
+        return CORINFO_CLASS_HANDLE((SIZE_T)context & ~CORINFO_CONTEXTFLAGS_MASK);
+    }
+    else
+    {
+        return m_compHnd->getMethodClass(CORINFO_METHOD_HANDLE((SIZE_T)context & ~CORINFO_CONTEXTFLAGS_MASK));
+    }
+}
+
+int InterpCompiler::getParamArgIndex()
+{
+    return m_paramArgIndex;
+}
+
+InterpCompiler::InterpEmbedGenericResult InterpCompiler::EmitGenericHandle(CORINFO_RESOLVED_TOKEN* resolvedToken, GenericHandleEmbedOptions options)
+{
+    CORINFO_GENERICHANDLE_RESULT embedInfo;
+    InterpEmbedGenericResult result;
+    m_compHnd->embedGenericHandle(resolvedToken, HasFlag(options, GenericHandleEmbedOptions::EmbedParent), m_methodInfo->ftn, &embedInfo);
+    if (HasFlag(options, GenericHandleEmbedOptions::VarOnly) || embedInfo.lookup.lookupKind.needsRuntimeLookup)
+    {
+        result.var = EmitGenericHandleAsVar(embedInfo);
+    }
+    else
+    {
+        assert(embedInfo.lookup.constLookup.accessType == IAT_VALUE);
+        result.dataItemIndex = GetDataItemIndex(embedInfo.lookup.constLookup.handle);
+    }
+    return result;
+}
+
+void InterpCompiler::EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup)
+{
+    PushStackType(StackTypeI, NULL);
+    int resultVar = m_pStackPointer[-1].var;
+
+    CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind = lookup.lookupKind.runtimeLookupKind;
+    if (runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM)
+    {
+        AddIns(INTOP_GENERICLOOKUP_METHOD);
+    }
+    else if (runtimeLookupKind == CORINFO_LOOKUP_THISOBJ)
+    {
+        AddIns(INTOP_GENERICLOOKUP_THIS);
+    }
+    else
+    {
+        AddIns(INTOP_GENERICLOOKUP_CLASS);
+    }
+    CORINFO_RUNTIME_LOOKUP *pRuntimeLookup = (CORINFO_RUNTIME_LOOKUP*)AllocMethodData(sizeof(CORINFO_RUNTIME_LOOKUP));
+    *pRuntimeLookup = lookup.runtimeLookup;
+    m_pLastNewIns->data[0] = GetDataItemIndex(pRuntimeLookup);
+
+    m_pLastNewIns->SetSVar(getParamArgIndex());
+    m_pLastNewIns->SetDVar(resultVar);
+}
+
+int InterpCompiler::EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo)
+{
+    PushStackType(StackTypeI, NULL);
+    int resultVar = m_pStackPointer[-1].var;
+    m_pStackPointer--;
+
+    if (embedInfo.lookup.lookupKind.needsRuntimeLookup)
+    {
+        CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind = embedInfo.lookup.lookupKind.runtimeLookupKind;
+        if (runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM)
+        {
+            AddIns(INTOP_GENERICLOOKUP_METHOD);
+        }
+        else if (runtimeLookupKind == CORINFO_LOOKUP_THISOBJ)
+        {
+            AddIns(INTOP_GENERICLOOKUP_THIS);
+        }
+        else
+        {
+            AddIns(INTOP_GENERICLOOKUP_CLASS);
+        }
+        CORINFO_RUNTIME_LOOKUP *pRuntimeLookup = (CORINFO_RUNTIME_LOOKUP*)AllocMethodData(sizeof(CORINFO_RUNTIME_LOOKUP));
+        *pRuntimeLookup = embedInfo.lookup.runtimeLookup;
+        m_pLastNewIns->data[0] = GetDataItemIndex(pRuntimeLookup);
+
+        m_pLastNewIns->SetSVar(getParamArgIndex());
+        m_pLastNewIns->SetDVar(resultVar);
+    }
+    else
+    {
+        AddIns(INTOP_LDPTR);
+        m_pLastNewIns->SetDVar(resultVar);
+
+        assert(embedInfo.lookup.constLookup.accessType == IAT_VALUE);
+        m_pLastNewIns->data[0] = GetDataItemIndex(embedInfo.lookup.constLookup.handle);
+    }
+    return resultVar;
+}
+
+void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall, bool newObj, bool isCalli)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
     bool isVirtual = (*m_ip == CEE_CALLVIRT);
 
-    CORINFO_METHOD_HANDLE targetMethod = ResolveMethodToken(token);
+    CORINFO_RESOLVED_TOKEN resolvedCallToken;
+    CORINFO_CALL_INFO callInfo;
+    bool doCallInsteadOfNew = false;
 
-    CORINFO_SIG_INFO targetSignature;
-    m_compHnd->getMethodSig(targetMethod, &targetSignature);
+    int callIFunctionPointerVar = -1;
+    void* calliCookie = NULL;
 
-    uint32_t mflags = m_compHnd->getMethodAttribs(targetMethod);
-
-    if (isVirtual && (!(mflags & CORINFO_FLG_VIRTUAL) || (mflags & CORINFO_FLG_FINAL)))
-        isVirtual = false;
-
-    if (EmitCallIntrinsics(targetMethod, targetSignature))
+    if (isCalli)
     {
-        m_ip += 5;
-        return;
+        // Suppress uninitialized use warning.
+        memset(&resolvedCallToken, 0, sizeof(resolvedCallToken));
+        memset(&callInfo, 0, sizeof(callInfo));
+
+        resolvedCallToken.token        = token;
+        resolvedCallToken.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
+        resolvedCallToken.tokenScope   = m_methodInfo->scope;
+
+        m_compHnd->findSig(m_methodInfo->scope, token, METHOD_BEING_COMPILED_CONTEXT(), &callInfo.sig);
+
+        callIFunctionPointerVar = m_pStackPointer[-1].var;
+        m_pStackPointer--;
+        calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+    }
+    else
+    {
+
+        ResolveToken(token, newObj ? CORINFO_TOKENKIND_NewObj : CORINFO_TOKENKIND_Method, &resolvedCallToken);
+        
+        CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
+        if (isVirtual)
+        flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
+
+        m_compHnd->getCallInfo(&resolvedCallToken, constrainedClass, m_methodInfo->ftn, flags, &callInfo);
+        if (EmitCallIntrinsics(callInfo.hMethod, callInfo.sig))
+        {
+            m_ip += 5;
+            return;
+        }
+    }
+
+    if (newObj && (callInfo.classFlags & CORINFO_FLG_VAROBJSIZE))
+    {
+        // This is a variable size object which means "System.String".
+        // For these, we just call the resolved method directly, but don't actually pass a this pointer to it.
+        doCallInsteadOfNew = true;
     }
 
     // Process sVars
-    int numArgs = targetSignature.numArgs + targetSignature.hasThis();
-    m_pStackPointer -= numArgs;
+    int numArgsFromStack = callInfo.sig.numArgs + (newObj ? 0 : callInfo.sig.hasThis());
+    int newObjThisArgLocation = newObj && !doCallInsteadOfNew ? 0 : INT_MAX;
+    int numArgs = numArgsFromStack + (newObjThisArgLocation == 0);
+    m_pStackPointer -= numArgsFromStack;
+
+    int extraParamArgLocation = INT_MAX;
+    if (callInfo.sig.hasTypeArg())
+    {
+        extraParamArgLocation = callInfo.sig.hasThis() ? 1 : 0;
+        numArgs++;
+    }
 
     int *callArgs = (int*) AllocMemPool((numArgs + 1) * sizeof(int));
-    for (int i = 0; i < numArgs; i++)
-        callArgs[i] = m_pStackPointer [i].var;
+    for (int iActualArg = 0, iLogicalArg = 0; iActualArg < numArgs; iActualArg++)
+    {
+        if (iActualArg == extraParamArgLocation)
+        {
+            // This is the extra type argument, which is not on the logical IL stack
+            // Skip it for now. We will fill it in later.
+        }
+        else if (iActualArg == newObjThisArgLocation)
+        {
+            // This is the newObj arg type argument, which is not on the logical IL stack
+            // Skip it for now. We will fill it in later.
+        }
+        else
+        {
+            callArgs[iActualArg] = m_pStackPointer [iLogicalArg].var;
+            iLogicalArg++;
+        }
+    }
     callArgs[numArgs] = -1;
+
+    InterpEmbedGenericResult newObjType;
+    int32_t newObjThisVar = -1;
+    int32_t newObjDVar = -1;
+    InterpType ctorType = InterpTypeO;
+    int32_t vtsize = 0;
+
+    if (newObjThisArgLocation != INT_MAX)
+    {
+        ctorType = GetInterpType(m_compHnd->asCorInfoType(resolvedCallToken.hClass));
+        if (ctorType == InterpTypeVT)
+        {
+            vtsize = m_compHnd->getClassSize(resolvedCallToken.hClass);
+            PushTypeVT(resolvedCallToken.hClass, vtsize);
+            PushInterpType(InterpTypeByRef, NULL);
+        }
+        else
+        {
+            PushInterpType(ctorType, resolvedCallToken.hClass);
+            PushInterpType(ctorType, resolvedCallToken.hClass);
+
+            newObjType = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::EmbedParent);
+        }
+        newObjDVar = m_pStackPointer[-2].var;
+        newObjThisVar = m_pStackPointer[-1].var;
+        m_pStackPointer--;
+        // Consider this arg as being defined, although newobj defines it
+        AddIns(INTOP_DEF);
+        m_pLastNewIns->SetDVar(newObjThisVar);
+
+        callArgs[newObjThisArgLocation] = newObjThisVar;
+    }
+
+    if (extraParamArgLocation != INT_MAX)
+    {
+        int contextParamVar = -1;
+
+        // Instantiated generic method
+        CORINFO_CONTEXT_HANDLE exactContextHnd = callInfo.contextHandle;
+        if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+        {
+            assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
+
+            CORINFO_METHOD_HANDLE exactMethodHandle =
+            (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
+
+            if (!callInfo.exactContextNeedsRuntimeLookup)
+            {
+                PushStackType(StackTypeI, NULL);
+                m_pStackPointer--;
+                contextParamVar = m_pStackPointer[0].var;
+                AddIns(INTOP_LDPTR);
+                m_pLastNewIns->SetDVar(contextParamVar);
+                m_pLastNewIns->data[0] = GetDataItemIndex((void*)exactMethodHandle);
+            }
+            else
+            {
+                contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly).var;
+            }
+        }
+
+        // otherwise must be an instance method in a generic struct,
+        // a static method in a generic type, or a runtime-generated array method
+        else
+        {
+            assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+            CORINFO_CLASS_HANDLE exactClassHandle = getClassFromContext(exactContextHnd);
+
+            if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && readonly)
+            {
+                PushStackType(StackTypeI, NULL);
+                m_pStackPointer--;
+                contextParamVar = m_pStackPointer[0].var;
+                // We indicate "readonly" to the Address operation by using a null
+                // instParam.
+                AddIns(INTOP_LDPTR);
+                m_pLastNewIns->SetDVar(contextParamVar);
+                m_pLastNewIns->data[0] = GetDataItemIndex(NULL);
+            }
+            else if (!callInfo.exactContextNeedsRuntimeLookup)
+            {
+                PushStackType(StackTypeI, NULL);
+                m_pStackPointer--;
+                contextParamVar = m_pStackPointer[0].var;
+                AddIns(INTOP_LDPTR);
+                m_pLastNewIns->SetDVar(contextParamVar);
+                m_pLastNewIns->data[0] = GetDataItemIndex((void*)exactClassHandle);
+            }
+            else
+            {
+                contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly | GenericHandleEmbedOptions::EmbedParent).var;
+            }
+        }
+        callArgs[extraParamArgLocation] = contextParamVar;
+    }
 
     // Process dVar
     int32_t dVar;
-    if (targetSignature.retType != CORINFO_TYPE_VOID)
+    if (newObjDVar != -1)
     {
-        InterpType interpType = GetInterpType(targetSignature.retType);
+        dVar = newObjDVar;
+    }
+    else if (doCallInsteadOfNew)
+    {
+        PushInterpType(InterpTypeO, NULL);
+        dVar = m_pStackPointer[-1].var;
+    }
+    else if (callInfo.sig.retType != CORINFO_TYPE_VOID)
+    {
+        InterpType interpType = GetInterpType(callInfo.sig.retType);
 
         if (interpType == InterpTypeVT)
         {
-            int32_t size = m_compHnd->getClassSize(targetSignature.retTypeClass);
-            PushTypeVT(targetSignature.retTypeClass, size);
+            int32_t size = m_compHnd->getClassSize(callInfo.sig.retTypeClass);
+            PushTypeVT(callInfo.sig.retTypeClass, size);
         }
         else
         {
@@ -1867,16 +2530,96 @@ void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readon
     }
 
     // Emit call instruction
-    if (isVirtual)
+    switch (callInfo.kind)
     {
-        AddIns(INTOP_CALLVIRT);
-        m_pLastNewIns->data[0] = GetDataItemIndex(targetMethod);
+        case CORINFO_CALL:
+            if (newObj && !doCallInsteadOfNew)
+            {
+                if (ctorType == InterpTypeVT)
+                {
+                    // If this is a newobj for a value type, we need to call the constructor
+                    // and then copy the value type to the stack.
+                    AddIns(INTOP_NEWOBJ_VT);
+                    m_pLastNewIns->data[1] = (int32_t)ALIGN_UP_TO(vtsize, INTERP_STACK_SLOT_SIZE);
+                }
+                else
+                {
+                    if (newObjType.var != -1)
+                    {
+                        // newobj of type known only through a generic dictionary lookup.
+                        AddIns(INTOP_NEWOBJ_VAR);
+                        m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, newObjType.var);
+                    }
+                    else
+                    {
+                        // Normal newobj call
+                        AddIns(INTOP_NEWOBJ);
+                        m_pLastNewIns->data[1] = newObjType.dataItemIndex;
+                    }
+                }
+                m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
+            }
+            else if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && newObj)
+            {
+                AddIns(INTOP_NEWMDARR);
+                m_pLastNewIns->data[0] = GetDataItemIndex(resolvedCallToken.hClass);
+                m_pLastNewIns->data[1] = callInfo.sig.numArgs;
+            }
+            else if (isCalli)
+            {
+                AddIns(INTOP_CALLI);
+                m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
+                m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
+            }
+            else
+            {
+                // Normal call
+                if (callInfo.nullInstanceCheck)
+                {
+                    // If the call is a normal call, we need to check for null instance
+                    // before the call.
+                    // TODO: Add null checking behavior somewhere here!
+                }
+                AddIns(INTOP_CALL);
+                m_pLastNewIns->data[0] = GetMethodDataItemIndex(callInfo.hMethod);
+            }
+            break;
+
+        case CORINFO_CALL_CODE_POINTER:
+            if (callInfo.nullInstanceCheck)
+            {
+                // If the call is a normal call, we need to check for null instance
+                // before the call.
+                // TODO: Add null checking behavior somewhere here!
+            }
+            assert(!"Need to support calling a code pointer");
+            break;
+
+        case CORINFO_VIRTUALCALL_VTABLE:
+            // Traditional virtual call. In theory we could optimize this to using the vtable
+            AddIns(INTOP_CALLVIRT);
+            m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
+            break;
+
+        case CORINFO_VIRTUALCALL_LDVIRTFTN:
+            if (callInfo.exactContextNeedsRuntimeLookup)
+            {
+                // Resolve a virtual call using the helper function to a function pointer, and then call through that
+                assert(!"Need to support ldvirtftn path");
+            }
+            else
+            {
+                AddIns(INTOP_CALLVIRT);
+                m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
+            }
+            break;
+
+        case CORINFO_VIRTUALCALL_STUB:
+            // This case should never happen
+            assert(!"Unexpected call kind");
+        break;
     }
-    else
-    {
-        AddIns(INTOP_CALL);
-        m_pLastNewIns->data[0] = GetMethodDataItemIndex(targetMethod);
-    }
+
     m_pLastNewIns->SetDVar(dVar);
     m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
 
@@ -1941,6 +2684,7 @@ static int32_t GetStelemForType(InterpType interpType)
         case InterpTypeI8: return INTOP_STELEM_I8;
         case InterpTypeR4: return INTOP_STELEM_R4;
         case InterpTypeR8: return INTOP_STELEM_R8;
+        case InterpTypeO: return INTOP_STELEM_REF;
         default:
             assert(0);
     }
@@ -2058,13 +2802,10 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
                     assert(0);
                     break;
             }
-            void *helperFtnSlot;
-            void *helperFtn = m_compHnd->getHelperFtn(pFieldInfo->helper, &helperFtnSlot);
             // Call helper to obtain thread static base address
             AddIns(INTOP_CALL_HELPER_PP);
-            m_pLastNewIns->data[0] = GetDataItemIndex(helperFtn);
-            m_pLastNewIns->data[1] = GetDataItemIndex(helperFtnSlot);
-            m_pLastNewIns->data[2] = GetDataItemIndex(helperArg);
+            m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(pFieldInfo->helper);
+            m_pLastNewIns->data[1] = GetDataItemIndex(helperArg);
             PushInterpType(InterpTypeByRef, NULL);
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 
@@ -2075,6 +2816,17 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
             PushInterpType(InterpTypeByRef, NULL);
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            break;
+        }
+        case CORINFO_FIELD_INTRINSIC_EMPTY_STRING:
+        {
+            void *emptyString;
+            InfoAccessType iat = m_compHnd->emptyStringLiteral(&emptyString);
+            assert(iat == IAT_VALUE);
+            AddIns(INTOP_LDPTR);
+            PushInterpType(InterpTypeO, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            m_pLastNewIns->data[0] = GetDataItemIndex(emptyString);
             break;
         }
         default:
@@ -2114,9 +2866,22 @@ void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_F
 
 void InterpCompiler::EmitLdLocA(int32_t var)
 {
+    if (m_pCBB->clauseType == BBClauseFilter)
+    {
+        AddIns(INTOP_LOAD_FRAMEVAR);
+        PushInterpType(InterpTypeI, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        AddIns(INTOP_ADD_P_IMM);
+        m_pLastNewIns->data[0] = m_pVars[var].offset;
+        m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
+        m_pStackPointer--;
+        PushInterpType(InterpTypeByRef, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        return;
+    }
+
     AddIns(INTOP_LDLOCA);
     m_pLastNewIns->SetSVar(var);
-    m_pVars[var].indirects++;
     PushInterpType(InterpTypeByRef, NULL);
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
@@ -2126,7 +2891,8 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     bool readonly = false;
     bool tailcall = false;
     bool volatile_ = false;
-    CORINFO_CLASS_HANDLE constrainedClass = NULL;
+    CORINFO_RESOLVED_TOKEN* constrainedClass = NULL;
+    CORINFO_RESOLVED_TOKEN constrainedToken;
     uint8_t *codeEnd;
     int numArgs = m_methodInfo->args.hasThis() + m_methodInfo->args.numArgs;
     bool emittedBBlocks, linkBBlocks, needsRetryEmit;
@@ -2141,7 +2907,16 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     m_pEntryBB->stackHeight = 0;
     m_pCBB = m_pEntryBB;
 
+    InterpBasicBlock *pFirstFuncletBB = NULL;
+    InterpBasicBlock *pLastFuncletBB = NULL;
+
     if (!CreateBasicBlocks(methodInfo))
+    {
+        m_hasInvalidCode = true;
+        goto exit_bad_code;
+    }
+
+    if (!InitializeClauseBuildingBlocks(methodInfo))
     {
         m_hasInvalidCode = true;
         goto exit_bad_code;
@@ -2150,7 +2925,7 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     m_currentILOffset = -1;
 
 #if DEBUG
-    if (m_methodName && InterpConfig.InterpHalt() && !strcmp(m_methodName, InterpConfig.InterpHalt()))
+    if (InterpConfig.InterpHalt().contains(m_compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args))
         AddIns(INTOP_BREAKPOINT);
 #endif
 
@@ -2170,6 +2945,7 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
     linkBBlocks = true;
     needsRetryEmit = false;
+
 retry_emit:
     emittedBBlocks = false;
     while (m_ip < codeEnd)
@@ -2215,6 +2991,7 @@ retry_emit:
             {
                 assert (pNewBB->emitState == BBStateNotEmitted);
             }
+
             // We are starting a new basic block. Change cbb and link them together
             if (linkBBlocks)
             {
@@ -2261,9 +3038,23 @@ retry_emit:
                     // We will just skip all instructions instead, since it doesn't seem that problematic.
                 }
             }
-            if (!m_pCBB->pNextBB)
-                m_pCBB->pNextBB = pNewBB;
+
+            InterpBasicBlock *pPrevBB = m_pCBB;
+
+            pPrevBB = GenerateCodeForFinallyCallIslands(pNewBB, pPrevBB);
+
+            if (!pPrevBB->pNextBB)
+            {
+                INTERP_DUMP("Chaining BB%d -> BB%d\n" , pPrevBB->index, pNewBB->index);
+                pPrevBB->pNextBB = pNewBB;
+            }
+
             m_pCBB = pNewBB;
+            if (m_pCBB->isFilterOrCatchFuncletEntry && (m_pCBB->emitState == BBStateEmitting))
+            {
+                AddIns(INTOP_LOAD_EXCEPTION);
+                m_pLastNewIns->SetDVar(m_pCBB->clauseVarIndex);
+            }
         }
 
         int32_t opcodeSize = CEEOpcodeSize(m_ip, codeEnd);
@@ -2426,6 +3217,25 @@ retry_emit:
                 m_ip++;
                 break;
 
+            case CEE_LDOBJ:
+            case CEE_STOBJ:
+            {
+                CHECK_STACK(*m_ip == CEE_LDOBJ ? 1 : 2);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Class, &resolvedToken);
+                InterpType interpType = GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass));
+                if (*m_ip == CEE_LDOBJ)
+                {
+                    EmitLdind(interpType, resolvedToken.hClass, 0);
+                }
+                else
+                {
+                    EmitStind(interpType, resolvedToken.hClass, 0, false);
+                }
+                m_ip += 5;
+                break;
+            }
+
             case CEE_RET:
             {
                 CORINFO_SIG_INFO sig = methodInfo->args;
@@ -2459,16 +3269,16 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U1_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U1_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_R8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U1_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_I4);
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U1_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_I8);
                     break;
                 default:
                     assert(0);
@@ -2480,16 +3290,16 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I1_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I1_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_R8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I1_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_I4);
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I1_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_I8);
                     break;
                 default:
                     assert(0);
@@ -2501,16 +3311,16 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U2_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U2_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_R8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U2_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_I4);
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U2_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_I8);
                     break;
                 default:
                     assert(0);
@@ -2522,16 +3332,16 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I2_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I2_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_R8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I2_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_I4);
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I2_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_I8);
                     break;
                 default:
                     assert(0);
@@ -2544,31 +3354,31 @@ retry_emit:
                 {
                 case StackTypeR8:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_U8_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_U8_R8);
 #else
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_U4_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_U4_R8);
 #endif
                     break;
                 case StackTypeR4:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_U8_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_U8_R4);
 #else
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_U4_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_U4_R4);
 #endif
                     break;
                 case StackTypeI4:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_I8_U4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I8_U4);
 #endif
                     break;
                 case StackTypeI8:
 #ifndef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
 #endif
                     break;
                 case StackTypeByRef:
                 case StackTypeO:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
                     break;
                 default:
                     assert(0);
@@ -2581,30 +3391,30 @@ retry_emit:
                 {
                 case StackTypeR8:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_I8_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I8_R8);
 #else
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_I4_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I4_R8);
 #endif
                     break;
                 case StackTypeR4:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_I8_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I8_R4);
 #else
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_I4_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I4_R4);
 #endif
                     break;
                 case StackTypeI4:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_CONV_I8_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I8_I4);
 #endif
                     break;
                 case StackTypeO:
                 case StackTypeByRef:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
                     break;
                 case StackTypeI8:
 #ifndef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
 #endif
                     break;
                 default:
@@ -2617,18 +3427,18 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U4_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U4_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_U4_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U4_R8);
                     break;
                 case StackTypeI4:
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_8);
                     break;
                 case StackTypeByRef:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_MOV_P);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_P);
                     break;
                 default:
                     assert(0);
@@ -2640,18 +3450,18 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I4_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I4_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_CONV_I4_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I4_R8);
                     break;
                 case StackTypeI4:
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_8);
                     break;
                 case StackTypeByRef:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_MOV_P);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_P);
                     break;
                 default:
                     assert(0);
@@ -2663,22 +3473,22 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_R8);
                     break;
                 case StackTypeI4: {
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
                     break;
                 }
                 case StackTypeI8:
                     break;
                 case StackTypeByRef:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_MOV_8);
 #else
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
 #endif
                     break;
                 default:
@@ -2691,13 +3501,13 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR4, INTOP_CONV_R4_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR4, INTOP_CONV_R4_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_I8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR4, INTOP_CONV_R4_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_I4);
                     break;
                 case StackTypeR4:
                     break;
@@ -2711,13 +3521,13 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_I4);
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_I8);
                     break;
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
                     break;
                 case StackTypeR8:
                     break;
@@ -2731,21 +3541,21 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_U4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
                     break;
                 case StackTypeI8:
                     break;
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_U8_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_U8_R4);
                     break;
                 case StackTypeR8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_U8_R8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_U8_R8);
                     break;
                 case StackTypeByRef:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_MOV_8);
 #else
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_U4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
 #endif
                     break;
                 default:
@@ -2757,15 +3567,254 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
                     break;
                 case StackTypeR8:
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R_UN_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R_UN_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I4);
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_I1:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_R4);
+                    break;
+                case StackTypeR8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_R8);
+                    break;
+                case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_I4);
+                    break;
+                case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_I8);
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_U1:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_R4);
+                    break;
+                case StackTypeR8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_R8);
+                    break;
+                case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_I4);
+                    break;
+                case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_I8);
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_I2:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_R4);
+                    break;
+                case StackTypeR8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_R8);
+                    break;
+                case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_I4);
+                    break;
+                case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_I8);
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_U2:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_R4);
+                    break;
+                case StackTypeR8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_R8);
+                    break;
+                case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_I4);
+                    break;
+                case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_I8);
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_I4:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_R4);
+                    break;
+                case StackTypeR8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_R8);
+                    break;
+                case StackTypeI4:
+                    break;
+                case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_I8);
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_U4:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R4);
+                    break;
+                case StackTypeR8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R8);
+                    break;
+                case StackTypeI4:
+                    break;
+                case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_I8);
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_I8:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_R4);
+                    break;
+                case StackTypeR8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_R8);
+                    break;
+                case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+                    break;
+                case StackTypeI8:
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_U8:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_R4);
+                    break;
+                case StackTypeR8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_R8);
+                    break;
+                case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
+                    break;
+                case StackTypeI8:
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_I:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I8_R4);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_R4);
+#endif
+                    break;
+                case StackTypeR8:
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I8_R8);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_R8);
+#endif
+                    break;
+                case StackTypeI4:
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I8_I4);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_4);
+#endif
+                    break;
+                case StackTypeI8:
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_I8);
+#endif
+                    break;
+                default:
+                    assert(0);
+                }
+                m_ip++;
+                break;
+            case CEE_CONV_OVF_U:
+                CHECK_STACK(1);
+                switch (m_pStackPointer[-1].type)
+                {
+                case StackTypeR4:
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_R4);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_R4);
+#endif
+                    break;
+                case StackTypeR8:
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_R8);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_R8);
+#endif
+                    break;
+                case StackTypeI4:
+#ifdef TARGET_64BIT
+                    // FIXME: Is this the right conv opcode?
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I8_I4);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_4);
+#endif
+                    break;
+                case StackTypeI8:
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_I8);
+#endif
                     break;
                 default:
                     assert(0);
@@ -2923,8 +3972,24 @@ retry_emit:
                 EmitBinaryArithmeticOp(INTOP_ADD_I4);
                 m_ip++;
                 break;
+            case CEE_ADD_OVF:
+                EmitBinaryArithmeticOp(INTOP_ADD_OVF_I4);
+                m_ip++;
+                break;
+            case CEE_ADD_OVF_UN:
+                EmitBinaryArithmeticOp(INTOP_ADD_OVF_UN_I4);
+                m_ip++;
+                break;
             case CEE_SUB:
                 EmitBinaryArithmeticOp(INTOP_SUB_I4);
+                m_ip++;
+                break;
+            case CEE_SUB_OVF:
+                EmitBinaryArithmeticOp(INTOP_SUB_OVF_I4);
+                m_ip++;
+                break;
+            case CEE_SUB_OVF_UN:
+                EmitBinaryArithmeticOp(INTOP_SUB_OVF_UN_I4);
                 m_ip++;
                 break;
             case CEE_MUL:
@@ -2989,74 +4054,23 @@ retry_emit:
                 break;
             case CEE_CALLVIRT:
             case CEE_CALL:
-                EmitCall(constrainedClass, readonly, tailcall);
+                EmitCall(constrainedClass, readonly, tailcall, false /*newObj*/, false /*isCalli*/);
+                constrainedClass = NULL;
+                readonly = false;
+                tailcall = false;
+                break;
+            case CEE_CALLI:
+                EmitCall(NULL /*constrainedClass*/, false /* readonly*/, false /* tailcall*/, false /*newObj*/, true /*isCalli*/);
                 constrainedClass = NULL;
                 readonly = false;
                 tailcall = false;
                 break;
             case CEE_NEWOBJ:
             {
-                CORINFO_METHOD_HANDLE ctorMethod;
-                CORINFO_SIG_INFO ctorSignature;
-                CORINFO_CLASS_HANDLE ctorClass;
-                m_ip++;
-                ctorMethod = ResolveMethodToken(getU4LittleEndian(m_ip));
-                m_ip += 4;
-
-                m_compHnd->getMethodSig(ctorMethod, &ctorSignature);
-                ctorClass = m_compHnd->getMethodClass(ctorMethod);
-                int32_t numArgs = ctorSignature.numArgs;
-
-                // TODO Special case array ctor / string ctor
-                m_pStackPointer -= numArgs;
-
-                // Allocate callArgs for the call, this + numArgs + terminator
-                int32_t *callArgs = (int32_t*) AllocMemPool((numArgs + 2) * sizeof(int32_t));
-                for (int i = 0; i < numArgs; i++)
-                    callArgs[i + 1] = m_pStackPointer[i].var;
-                callArgs[numArgs + 1] = -1;
-
-                // Push the return value and `this` argument to the ctor
-                InterpType retType = GetInterpType(m_compHnd->asCorInfoType(ctorClass));
-                int32_t vtsize = 0;
-                if (retType == InterpTypeVT)
-                {
-                    vtsize = m_compHnd->getClassSize(ctorClass);
-                    PushTypeVT(ctorClass, vtsize);
-                    PushInterpType(InterpTypeByRef, NULL);
-                }
-                else
-                {
-                    PushInterpType(retType, ctorClass);
-                    PushInterpType(retType, ctorClass);
-                }
-                int32_t dVar = m_pStackPointer[-2].var;
-                int32_t thisVar = m_pStackPointer[-1].var;
-                // Consider this arg as being defined, although newobj defines it
-                AddIns(INTOP_DEF);
-                m_pLastNewIns->SetDVar(thisVar);
-                callArgs[0] = thisVar;
-
-                if (retType == InterpTypeVT)
-                {
-                    AddIns(INTOP_NEWOBJ_VT);
-                    m_pLastNewIns->data[1] = (int32_t)ALIGN_UP_TO(vtsize, INTERP_STACK_SLOT_SIZE);
-                }
-                else
-                {
-                    AddIns(INTOP_NEWOBJ);
-                    m_pLastNewIns->data[1] = GetDataItemIndex(ctorClass);
-                }
-                m_pLastNewIns->data[0] = GetMethodDataItemIndex(ctorMethod);
-                m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
-                m_pLastNewIns->SetDVar(dVar);
-
-                m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
-                m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof(InterpCallInfo));
-                m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
-
-                // Pop this, the result of the newobj still remains on the stack
-                m_pStackPointer--;
+                EmitCall(NULL /*constrainedClass*/, false /* readonly*/, false /* tailcall*/, true /*newObj*/, false /*isCalli*/);
+                constrainedClass = NULL;
+                readonly = false;
+                tailcall = false;
                 break;
             }
             case CEE_DUP:
@@ -3430,14 +4444,13 @@ retry_emit:
                     case CEE_CONSTRAINED:
                     {
                         uint32_t token = getU4LittleEndian(m_ip + 1);
-                        CORINFO_RESOLVED_TOKEN resolvedToken;
 
-                        resolvedToken.tokenScope = m_compScopeHnd;
-                        resolvedToken.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
-                        resolvedToken.token = token;
-                        resolvedToken.tokenType = CORINFO_TOKENKIND_Constrained;
-                        m_compHnd->resolveToken(&resolvedToken);
-                        constrainedClass = resolvedToken.hClass;
+                        constrainedToken.tokenScope = m_compScopeHnd;
+                        constrainedToken.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
+                        constrainedToken.token = token;
+                        constrainedToken.tokenType = CORINFO_TOKENKIND_Constrained;
+                        m_compHnd->resolveToken(&constrainedToken);
+                        constrainedClass = &constrainedToken;
                         m_ip += 5;
                         break;
                     }
@@ -3483,7 +4496,7 @@ retry_emit:
                         // Length is natural unsigned int
                         if (m_pStackPointer[-1].type == StackTypeI4)
                         {
-                            EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_MOV_8);
+                            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_MOV_8);
                             m_pStackPointer[-1].type = StackTypeI8;
                         }
 #endif
@@ -3510,15 +4523,123 @@ retry_emit:
                         m_ip += 5;
                         break;
                     }
+                    case CEE_ENDFILTER:
+                        AddIns(INTOP_LEAVE_FILTER);
+                        m_pStackPointer--;
+                        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                        m_ip++;
+                        linkBBlocks = false;
+                        break;
+                    case CEE_RETHROW:
+                        AddIns(INTOP_RETHROW);
+                        m_ip++;
+                        linkBBlocks = false;
+                        break;
+
+                    case CEE_LDFTN:
+                    {
+                        CORINFO_RESOLVED_TOKEN resolvedToken;
+                        uint32_t token = getU4LittleEndian(m_ip + 1);
+                        ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
+
+                        CORINFO_CALL_INFO callInfo;
+                        m_compHnd->getCallInfo(&resolvedToken, constrainedClass, m_methodInfo->ftn, (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS| CORINFO_CALLINFO_LDFTN), &callInfo);
+                        constrainedClass = NULL;
+
+                        if (callInfo.kind == CORINFO_CALL)
+                        {
+                            CORINFO_CONST_LOOKUP embedInfo;
+                            m_compHnd->getFunctionFixedEntryPoint(callInfo.hMethod, true, &embedInfo);
+
+                            switch (embedInfo.accessType)
+                            {
+                            case IAT_VALUE:
+                                AddIns(INTOP_LDPTR);
+                                break;
+                            case IAT_PVALUE:
+                                AddIns(INTOP_LDPTR_DEREF);
+                                break;
+                            default:
+                                assert(!"Unexpected access type for function pointer");
+                            }
+                            PushInterpType(InterpTypeI, NULL);
+                            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                            m_pLastNewIns->data[0] = GetDataItemIndex(embedInfo.handle);
+                        }
+                        else
+                        {
+                            EmitPushCORINFO_LOOKUP(callInfo.codePointerLookup);
+                        }
+
+                        m_ip += 5;
+                        break;
+                    }
                     default:
                         assert(0);
                         break;
                 }
                 break;
+
+            case CEE_ENDFINALLY:
+            {
+                AddIns(INTOP_RET_VOID);
+                m_ip++;
+                linkBBlocks = false;
+                break;
+            }
+            case CEE_LEAVE:
+            case CEE_LEAVE_S:
+            {
+                int32_t ilOffset = (int32_t)(m_ip - m_pILCode);
+                int32_t target = (opcode == CEE_LEAVE) ? ilOffset + 5 + *(int32_t*)(m_ip + 1) : (ilOffset + 2 + (int8_t)m_ip[1]);
+                InterpBasicBlock *pTargetBB = m_ppOffsetToBB[target];
+
+                m_pStackPointer = m_pStackBase;
+
+                // The leave will jump:
+                // * directly to its target if it doesn't jump out of any try regions with finally.
+                // * to a finally call island of the first try region with finally that it jumps out of.
+
+                for (int i = 0; i < m_leavesTable.GetSize(); i++)
+                {
+                    if (m_leavesTable.Get(i).ilOffset == ilOffset)
+                    {
+                        // There is a finally call island for this leave, so we will jump to it
+                        // instead of the target. The chain of these islands will end up on
+                        // the target in the end.
+                        // NOTE: we need to use basic block to branch and not an IL offset extracted
+                        // from the building block, because the finally call islands share the same IL
+                        // offset with another block of original code in front of which it is injected.
+                        // The EmitBranch would to that block instead of the finally call island.
+                        pTargetBB = m_leavesTable.Get(i).pFinallyCallIslandBB;
+                        break;
+                    }
+                }
+
+                // The leave doesn't jump out of any try region with finally, so we can just emit a branch
+                // to the target.
+                if (m_pCBB->clauseType == BBClauseCatch)
+                {
+                    // leave out of catch is different from a leave out of finally. It
+                    // exits the catch handler and returns the address of the finally
+                    // call island as the continuation address to the EH code.
+                    EmitBranchToBB(INTOP_LEAVE_CATCH, pTargetBB);
+                }
+                else
+                {
+                    EmitBranchToBB(INTOP_BR, pTargetBB);
+                }
+
+                m_ip += (opcode == CEE_LEAVE) ? 5 : 2;
+                linkBBlocks = false;
+                break;
+            }
+
             case CEE_THROW:
                 AddIns(INTOP_THROW);
                 m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
                 m_ip += 1;
+                linkBBlocks = false;
                 break;
 
             case CEE_BOX:
@@ -3660,6 +4781,108 @@ retry_emit:
                 m_ip++;
                 break;
             }
+            case CEE_LDELEM_REF:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_REF, InterpTypeO);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM:
+            {
+                CHECK_STACK(2);
+
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
+
+                CORINFO_CLASS_HANDLE elemClsHnd = resolvedToken.hClass;
+                CorInfoType elemCorType = m_compHnd->asCorInfoType(elemClsHnd);
+                InterpType elemInterpType = GetInterpType(elemCorType);
+
+                switch (elemInterpType)
+                {
+                    case InterpTypeI1:
+                        EmitLdelem(INTOP_LDELEM_I1, InterpTypeI4);
+                        break;
+                    case InterpTypeU1:
+                        EmitLdelem(INTOP_LDELEM_U1, InterpTypeI4);
+                        break;
+                    case InterpTypeI2:
+                        EmitLdelem(INTOP_LDELEM_I2, InterpTypeI4);
+                        break;
+                    case InterpTypeU2:
+                        EmitLdelem(INTOP_LDELEM_U2, InterpTypeI4);
+                        break;
+                    case InterpTypeI4:
+                        EmitLdelem(INTOP_LDELEM_I4, InterpTypeI4);
+                        break;
+                    case InterpTypeI8:
+                        EmitLdelem(INTOP_LDELEM_I8, InterpTypeI8);
+                        break;
+                    case InterpTypeR4:
+                        EmitLdelem(INTOP_LDELEM_R4, InterpTypeR4);
+                        break;
+                    case InterpTypeR8:
+                        EmitLdelem(INTOP_LDELEM_R8, InterpTypeR8);
+                        break;
+                    case InterpTypeO:
+                        EmitLdelem(INTOP_LDELEM_REF, InterpTypeO);
+                        break;
+                    case InterpTypeVT:
+                    {
+                        int size = m_compHnd->getClassSize(elemClsHnd);
+                        m_pStackPointer -= 2;
+                        AddIns(INTOP_LDELEM_VT);
+                        m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+                        PushTypeVT(elemClsHnd, size);
+                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                        m_pLastNewIns->data[0] = size;
+                        break;
+                    }
+                    default:
+                        assert(!"Unsupported element type for LDELEM");
+                        m_hasInvalidCode = true;
+                        goto exit_bad_code;
+                }
+
+                m_ip += 5;
+                break;
+            }
+            case CEE_LDELEMA:
+            {
+                // TODO: Support multi-dimensional arrays
+                CHECK_STACK(2);
+
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
+
+                CORINFO_CLASS_HANDLE elemClsHnd = resolvedToken.hClass;
+                CorInfoType elemCorType = m_compHnd->asCorInfoType(elemClsHnd);
+
+                m_pStackPointer -= 2;
+                if (elemCorType == CORINFO_TYPE_CLASS)
+                {
+                    AddIns(INTOP_LDELEMA_REF);
+                    m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+                    PushInterpType(InterpTypeByRef, elemClsHnd);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                    m_pLastNewIns->data[0] = m_compHnd->getClassSize(elemClsHnd);
+                    m_pLastNewIns->data[1] = GetDataItemIndex(elemClsHnd);
+                }
+                else
+                {
+                    AddIns(INTOP_LDELEMA);
+                    m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+                    PushInterpType(InterpTypeByRef, elemClsHnd);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                    m_pLastNewIns->data[0] = m_compHnd->getClassSize(elemClsHnd);
+                }
+
+                m_ip += 5;
+                break;
+            }
             case CEE_STELEM_I:
             {
                 CHECK_STACK(3);
@@ -3709,7 +4932,148 @@ retry_emit:
                 m_ip++;
                 break;
             }
+            case CEE_STELEM_REF:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeO);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM:
+            {
+                CHECK_STACK(3);
 
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
+
+                CORINFO_CLASS_HANDLE elemClsHnd = resolvedToken.hClass;
+                CorInfoType elemCorType = m_compHnd->asCorInfoType(elemClsHnd);
+                InterpType elemInterpType = GetInterpType(elemCorType);
+
+                switch (elemInterpType)
+                {
+                    case InterpTypeI1:
+                        EmitStelem(InterpTypeI1);
+                        break;
+                    case InterpTypeU1:
+                        EmitStelem(InterpTypeU1);
+                        break;
+                    case InterpTypeU2:
+                        EmitStelem(InterpTypeU2);
+                        break;
+                    case InterpTypeI2:
+                        EmitStelem(InterpTypeI2);
+                        break;
+                    case InterpTypeI4:
+                        EmitStelem(InterpTypeI4);
+                        break;
+                    case InterpTypeI8:
+                        EmitStelem(InterpTypeI8);
+                        break;
+                    case InterpTypeR4:
+                        EmitStelem(InterpTypeR4);
+                        break;
+                    case InterpTypeR8:
+                        EmitStelem(InterpTypeR8);
+                        break;
+                    case InterpTypeO:
+                        EmitStelem(InterpTypeO);
+                        break;
+                    case InterpTypeVT:
+                    {
+                        int size = m_compHnd->getClassSize(elemClsHnd);
+                        bool hasRefs = (m_compHnd->getClassAttribs(elemClsHnd) & CORINFO_FLG_CONTAINS_GC_PTR) != 0;
+                        m_pStackPointer -= 3;
+                        if (hasRefs)
+                        {
+                            AddIns(INTOP_STELEM_VT);
+                            m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
+                            m_pLastNewIns->data[0] = size;
+                            m_pLastNewIns->data[1] = GetDataItemIndex(elemClsHnd);
+                        }
+                        else
+                        {
+                            AddIns(INTOP_STELEM_VT_NOREF);
+                            m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
+                            m_pLastNewIns->data[0] = size;
+                        }
+                        break;
+                    }
+                    default:
+                        assert(!"Unsupported element type for STELEM");
+                        m_hasInvalidCode = true;
+                        goto exit_bad_code;
+                }
+
+                m_ip += 5;
+                break;
+            }
+            case CEE_LDTOKEN:
+            {
+
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Ldtoken, &resolvedToken);
+
+                InterpEmbedGenericResult resolvedEmbedResult = EmitGenericHandle(&resolvedToken, GenericHandleEmbedOptions::None);
+
+                if (resolvedEmbedResult.var != -1)
+                {
+                    AddIns(INTOP_LDTOKEN_VAR);
+                    m_pLastNewIns->SetSVar(resolvedEmbedResult.var);
+                }
+                else
+                {
+                    AddIns(INTOP_LDTOKEN);
+                    m_pLastNewIns->data[1] = resolvedEmbedResult.dataItemIndex;
+                }
+
+                CORINFO_CLASS_HANDLE clsHnd = m_compHnd->getTokenTypeAsHandle(&resolvedToken);
+                PushStackType(StackTypeVT, clsHnd);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+                // see jit/importer.cpp CEE_LDTOKEN
+                CorInfoHelpFunc helper;
+                if (resolvedToken.hField)
+                {
+                    helper = CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD;
+                }
+                else if (resolvedToken.hMethod)
+                {
+                    helper = CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD;
+                }
+                else if (resolvedToken.hClass)
+                {
+                    helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
+                }
+                else
+                {
+                    helper = CORINFO_HELP_FAIL_FAST;
+                    assert(!"Token not resolved or resolved to unexpected type");
+                }
+                m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(helper);
+
+                m_ip += 5;
+                break;
+            }
+
+            case CEE_ISINST:
+            {
+                CHECK_STACK(1);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Casting, &resolvedToken);
+
+                CorInfoHelpFunc castingHelper = m_compHnd->getCastingHelper(&resolvedToken, false /* throwing */);
+                AddIns(INTOP_CALL_HELPER_PP_2);
+                m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(castingHelper);
+                m_pLastNewIns->data[1] = GetDataItemIndex(resolvedToken.hClass);
+                m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
+                m_pStackPointer--;
+                PushInterpType(InterpTypeI, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_ip += 5;
+                break;
+            }
             default:
                 assert(0);
                 break;
@@ -3739,6 +5103,43 @@ exit_bad_code:
     return CORJIT_BADCODE;
 }
 
+InterpBasicBlock *InterpCompiler::GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB)
+{
+    InterpBasicBlock *pFinallyCallIslandBB = pNewBB->pFinallyCallIslandBB;
+
+    while (pFinallyCallIslandBB != NULL)
+    {
+        INTERP_DUMP("Injecting finally call island BB%d\n", pFinallyCallIslandBB->index);
+        if (pFinallyCallIslandBB->emitState != BBStateEmitted)
+        {
+            // Set the finally call island BB as current so that the instructions are emitted into it
+            m_pCBB = pFinallyCallIslandBB;
+            InitBBStackState(m_pCBB);
+            EmitBranchToBB(INTOP_CALL_FINALLY, pNewBB); // The pNewBB is the finally BB
+            m_pLastNewIns->ilOffset = -1;
+            // Try to get the next finally call island block (for an outer try's finally)
+            if (pFinallyCallIslandBB->pFinallyCallIslandBB)
+            {
+                // Branch to the next finally call island (at an outer try block)
+                EmitBranchToBB(INTOP_BR, pFinallyCallIslandBB->pFinallyCallIslandBB);
+            }
+            else
+            {
+                // This is the last finally call island, so we need to emit a branch to the leave target
+                EmitBranchToBB(INTOP_BR, pFinallyCallIslandBB->pLeaveTargetBB);
+            }
+            m_pLastNewIns->ilOffset = -1;
+            m_pCBB->emitState = BBStateEmitted;
+            INTERP_DUMP("Chaining BB%d -> BB%d\n", pPrevBB->index, pFinallyCallIslandBB->index);
+        }
+        assert(pPrevBB->pNextBB == NULL || pPrevBB->pNextBB == pFinallyCallIslandBB);
+        pPrevBB->pNextBB = pFinallyCallIslandBB;
+        pPrevBB = pFinallyCallIslandBB;
+        pFinallyCallIslandBB = pFinallyCallIslandBB->pNextBB;
+    }
+
+    return pPrevBB;
+}
 void InterpCompiler::UnlinkUnreachableBBlocks()
 {
     // Unlink unreachable bblocks, prevBB is always an emitted bblock
@@ -3769,13 +5170,22 @@ void InterpCompiler::PrintClassName(CORINFO_CLASS_HANDLE cls)
 
 void InterpCompiler::PrintMethodName(CORINFO_METHOD_HANDLE method)
 {
-    char methodName[100];
-
     CORINFO_CLASS_HANDLE cls = m_compHnd->getMethodClass(method);
-    PrintClassName(cls);
 
-    m_compHnd->printMethodName(method, methodName, 100);
-    printf(".%s", methodName);
+    CORINFO_SIG_INFO sig;
+    m_compHnd->getMethodSig(method, &sig, cls);
+
+    TArray<char> methodName = ::PrintMethodName(m_compHnd, cls, method, &sig,
+                            /* includeAssembly */ false,
+                            /* includeClass */ false,
+                            /* includeClassInstantiation */ true,
+                            /* includeMethodInstantiation */ true,
+                            /* includeSignature */ true,
+                            /* includeReturnType */ false,
+                            /* includeThis */ false);
+
+
+    printf(".%s", methodName.GetUnderlyingArray());
 }
 
 void InterpCompiler::PrintCode()
@@ -3843,6 +5253,21 @@ void InterpCompiler::PrintIns(InterpInst *ins)
         PrintInsData(ins, ins->ilOffset, &ins->data[0], ins->opcode);
 }
 
+static const char* s_jitHelperNames[CORINFO_HELP_COUNT] = {
+#define JITHELPER(code, pfnHelper, binderId)        #code,
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) #code,
+#include "jithelpers.h"
+#include "compiler.h"
+};
+
+const char* CorInfoHelperToName(CorInfoHelpFunc helper)
+{
+    if (helper < 0 || helper >= CORINFO_HELP_COUNT)
+        return "UnknownHelper";
+
+    return s_jitHelperNames[helper];
+}
+
 void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int32_t *pData, int32_t opcode)
 {
     switch (g_interpOpArgType[opcode]) {
@@ -3880,6 +5305,37 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
             else
                 printf(" IR_%04x", insOffset + *pData);
             break;
+        case InterpOpLdPtr:
+            {
+                printf("%p", (void*)GetDataItemAtIndex(pData[0]));
+                break;
+            }
+        case InterpOpGenericLookup:
+            {
+                CORINFO_RUNTIME_LOOKUP *pGenericLookup = (CORINFO_RUNTIME_LOOKUP*)GetDataItemAtIndex(pData[0]);
+                printf("%s,%p[", CorInfoHelperToName(pGenericLookup->helper), pGenericLookup->signature);
+                for (int i = 0; i < pGenericLookup->indirections; i++)
+                {
+                    if (i > 0)
+                        printf(",");
+
+                    if (i == 0 && pGenericLookup->indirectFirstOffset)
+                        printf("*");
+                    if (i == 1 && pGenericLookup->indirectSecondOffset)
+                        printf("*");
+                    printf("%d", (int)pGenericLookup->offsets[i]);
+                }
+                printf("]");
+                if (pGenericLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+                {
+                    printf(" sizeOffset=%d", (int)pGenericLookup->sizeOffset);
+                }
+                if (pGenericLookup->testForNull)
+                {
+                    printf(" testForNull");
+                }
+            }
+            break;
         case InterpOpSwitch:
         {
             int32_t n = *pData;
@@ -3899,7 +5355,7 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
         }
         case InterpOpMethodHandle:
         {
-            CORINFO_METHOD_HANDLE mh = (CORINFO_METHOD_HANDLE)((size_t)m_dataItems.Get(*pData) & ~INTERP_METHOD_HANDLE_TAG);
+            CORINFO_METHOD_HANDLE mh = (CORINFO_METHOD_HANDLE)((size_t)m_dataItems.Get(*pData));
             printf(" ");
             PrintMethodName(mh);
             break;
@@ -3909,6 +5365,15 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
             CORINFO_CLASS_HANDLE ch = (CORINFO_CLASS_HANDLE)((size_t)m_dataItems.Get(*pData));
             printf(" ");
             PrintClassName(ch);
+            break;
+        }
+        case InterpOpHelperFtn:
+        {
+            size_t helperDirectOrIndirect = (size_t)m_dataItems.Get(*pData);
+            if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
+                printf(" (indirect) %p", (void*)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG));
+            else
+                printf(" (direct) %p", (void*)helperDirectOrIndirect);
             break;
         }
         default:

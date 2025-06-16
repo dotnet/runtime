@@ -195,7 +195,7 @@ public:
                         // consumed directly as a mask. While the IR shows TYP_SIMD, it gets
                         // handled in lowering as part of the general embedded-mask support.
 
-                        // We notably don't check that op2->isEmbeddedMaskingCompatibleHWIntrinsic()
+                        // We notably don't check that op2 supported embedded masking directly
                         // because we can still consume the mask directly in such cases. We'll just
                         // emit `vblendmps zmm1 {k1}, zmm2, zmm3` instead  of containing the CndSel
                         // as part of something like `vaddps zmm1 {k1}, zmm2, zmm3`
@@ -383,7 +383,7 @@ public:
         weight->DumpTotalWeight();
 
         // Fix up the type of the lcl and the lclvar.
-        assert(lclOp->gtType != TYP_MASK);
+        assert(!lclOp->TypeIs(TYP_MASK));
         var_types lclOrigType = lclOp->gtType;
         lclOp->gtType         = TYP_MASK;
 
