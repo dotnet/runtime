@@ -2151,7 +2151,7 @@ namespace System.Net.Http.Functional.Tests
             await Assert.ThrowsAsync<NotSupportedException>(() => invoker.SendAsync(request, CancellationToken.None));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [InlineData('\r', HeaderType.Request)]
         [InlineData('\n', HeaderType.Request)]
         [InlineData('\0', HeaderType.Request)]
@@ -2218,7 +2218,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [InlineData('\u00A9', HeaderType.Request)]
         [InlineData('\u00FF', HeaderType.Request)]
         [InlineData('\u0001', HeaderType.Request)]
