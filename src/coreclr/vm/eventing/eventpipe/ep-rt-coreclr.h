@@ -19,6 +19,7 @@
 #include "hostinformation.h"
 #include <minipal/guid.h>
 #include <minipal/strings.h>
+#include <minipal/time.h>
 
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE
@@ -260,7 +261,7 @@ ep_rt_init (void)
 	extern CrstStatic _ep_rt_coreclr_config_lock;
 
 	_ep_rt_coreclr_config_lock_handle.lock = &_ep_rt_coreclr_config_lock;
-	_ep_rt_coreclr_config_lock_handle.lock->InitNoThrow (CrstEventPipe, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN | CRST_HOST_BREAKABLE));
+	_ep_rt_coreclr_config_lock_handle.lock->InitNoThrow (CrstEventPipe, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
 
 	if (CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeProcNumbers) != 0) {
 #ifndef TARGET_UNIX
@@ -990,11 +991,7 @@ ep_rt_perf_counter_query (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	LARGE_INTEGER value;
-	if (QueryPerformanceCounter (&value))
-		return static_cast<int64_t>(value.QuadPart);
-	else
-		return 0;
+	return minipal_hires_ticks();
 }
 
 static
@@ -1004,11 +1001,7 @@ ep_rt_perf_frequency_query (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	LARGE_INTEGER value;
-	if (QueryPerformanceFrequency (&value))
-		return static_cast<int64_t>(value.QuadPart);
-	else
-		return 0;
+	return minipal_hires_tick_frequency();
 }
 
 static

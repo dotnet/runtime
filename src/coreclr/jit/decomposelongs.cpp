@@ -462,7 +462,7 @@ GenTree* DecomposeLongs::DecomposeStoreLclVar(LIR::Use& use)
         return tree->gtNext;
     }
 
-    noway_assert(rhs->OperGet() == GT_LONG);
+    noway_assert(rhs->OperIs(GT_LONG));
 
     const LclVarDsc* varDsc = m_compiler->lvaGetDesc(tree->AsLclVarCommon());
     if (!varDsc->lvPromoted)
@@ -540,7 +540,7 @@ GenTree* DecomposeLongs::DecomposeStoreLclFld(LIR::Use& use)
     GenTreeLclFld* store = use.Def()->AsLclFld();
 
     GenTreeOp* value = store->gtOp1->AsOp();
-    assert(value->OperGet() == GT_LONG);
+    assert(value->OperIs(GT_LONG));
     Range().Remove(value);
 
     // The original store node will be repurposed to store the low half of the GT_LONG.
@@ -596,18 +596,9 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
         CorInfoType    baseIntegralType = cast->IsUnsigned() ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG;
 
         assert(!cast->gtOverflow());
+        assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512));
 
-        if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
-        {
-            intrinsicId = (dstType == TYP_FLOAT) ? NI_AVX512DQ_VL_ConvertToVector128Single
-                                                 : NI_AVX512DQ_VL_ConvertToVector128Double;
-        }
-        else
-        {
-            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
-            intrinsicId =
-                (dstType == TYP_FLOAT) ? NI_AVX10v1_ConvertToVector128Single : NI_AVX10v1_ConvertToVector128Double;
-        }
+        intrinsicId = (dstType == TYP_FLOAT) ? NI_AVX512_ConvertToVector128Single : NI_AVX512_ConvertToVector128Double;
 
         GenTree* createScalar = m_compiler->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, srcOp, baseIntegralType, 16);
         GenTree* convert =
@@ -783,7 +774,7 @@ GenTree* DecomposeLongs::DecomposeCnsLng(LIR::Use& use)
 //
 GenTree* DecomposeLongs::DecomposeFieldList(GenTreeFieldList* fieldList, GenTreeOp* longNode)
 {
-    assert(longNode->OperGet() == GT_LONG);
+    assert(longNode->OperIs(GT_LONG));
 
     GenTreeFieldList::Use* loUse = nullptr;
     for (GenTreeFieldList::Use& use : fieldList->Uses())
@@ -840,7 +831,7 @@ GenTree* DecomposeLongs::DecomposeStoreInd(LIR::Use& use)
 
     GenTree* tree = use.Def();
 
-    assert(tree->AsOp()->gtOp2->OperGet() == GT_LONG);
+    assert(tree->AsOp()->gtOp2->OperIs(GT_LONG));
 
     // Example input (address expression omitted):
     //
@@ -967,7 +958,7 @@ GenTree* DecomposeLongs::DecomposeNot(LIR::Use& use)
 
     GenTree* tree   = use.Def();
     GenTree* gtLong = tree->gtGetOp1();
-    noway_assert(gtLong->OperGet() == GT_LONG);
+    noway_assert(gtLong->OperIs(GT_LONG));
     GenTree* loOp1 = gtLong->gtGetOp1();
     GenTree* hiOp1 = gtLong->gtGetOp2();
 
@@ -999,7 +990,7 @@ GenTree* DecomposeLongs::DecomposeNeg(LIR::Use& use)
 
     GenTree* tree   = use.Def();
     GenTree* gtLong = tree->gtGetOp1();
-    noway_assert(gtLong->OperGet() == GT_LONG);
+    noway_assert(gtLong->OperIs(GT_LONG));
 
     GenTree* loOp1 = gtLong->gtGetOp1();
     GenTree* hiOp1 = gtLong->gtGetOp2();
@@ -1057,7 +1048,7 @@ GenTree* DecomposeLongs::DecomposeArith(LIR::Use& use)
     GenTree* op2 = tree->gtGetOp2();
 
     // Both operands must have already been decomposed into GT_LONG operators.
-    noway_assert((op1->OperGet() == GT_LONG) && (op2->OperGet() == GT_LONG));
+    noway_assert(op1->OperIs(GT_LONG) && op2->OperIs(GT_LONG));
 
     // Capture the lo and hi halves of op1 and op2.
     GenTree* loOp1 = op1->gtGetOp1();
@@ -1737,14 +1728,14 @@ GenTree* DecomposeLongs::DecomposeUMod(LIR::Use& use)
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
-    assert(op1->OperGet() == GT_LONG);
-    assert(op2->OperGet() == GT_LONG);
+    assert(op1->OperIs(GT_LONG));
+    assert(op2->OperIs(GT_LONG));
 
     GenTree* loOp2 = op2->gtGetOp1();
     GenTree* hiOp2 = op2->gtGetOp2();
 
-    assert(loOp2->OperGet() == GT_CNS_INT);
-    assert(hiOp2->OperGet() == GT_CNS_INT);
+    assert(loOp2->OperIs(GT_CNS_INT));
+    assert(hiOp2->OperIs(GT_CNS_INT));
     assert((loOp2->AsIntCon()->gtIconVal >= 2) && (loOp2->AsIntCon()->gtIconVal <= 0x3fffffff));
     assert(hiOp2->AsIntCon()->gtIconVal == 0);
 
@@ -1799,7 +1790,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsic(LIR::Use& use)
             return DecomposeHWIntrinsicToScalar(use, hwintrinsicTree);
         }
 
-        case NI_EVEX_MoveMask:
+        case NI_AVX512_MoveMask:
         {
             return DecomposeHWIntrinsicMoveMask(use, hwintrinsicTree);
         }
@@ -1970,7 +1961,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicToScalar(LIR::Use& use, GenTreeHWIn
     Range().InsertAfter(loResult, simdTmpVar);
 
     GenTree* hiResult;
-    if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         GenTree* one = m_compiler->gtNewIconNode(1);
         hiResult     = m_compiler->gtNewSimdGetElementNode(TYP_INT, simdTmpVar, one, CORINFO_TYPE_INT, simdSize);
@@ -1979,8 +1970,6 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicToScalar(LIR::Use& use, GenTreeHWIn
     }
     else
     {
-        assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_SSE2));
-
         GenTree* thirtyTwo = m_compiler->gtNewIconNode(32);
         GenTree* shift     = m_compiler->gtNewSimdBinOpNode(GT_RSZ, op1->TypeGet(), simdTmpVar, thirtyTwo,
                                                             node->GetSimdBaseJitType(), simdSize);
@@ -1995,7 +1984,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicToScalar(LIR::Use& use, GenTreeHWIn
 }
 
 //------------------------------------------------------------------------
-// DecomposeHWIntrinsicMoveMask: Decompose GT_HWINTRINSIC -- NI_EVEX_MoveMask
+// DecomposeHWIntrinsicMoveMask: Decompose GT_HWINTRINSIC -- NI_AVX512_MoveMask
 //
 // Decompose a MoveMask(x) node on Vector512<*>. For:
 //
@@ -2024,7 +2013,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIn
 {
     assert(node == use.Def());
     assert(varTypeIsLong(node));
-    assert(node->GetHWIntrinsicId() == NI_EVEX_MoveMask);
+    assert(node->GetHWIntrinsicId() == NI_AVX512_MoveMask);
 
     GenTree*    op1             = node->Op(1);
     CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
@@ -2032,7 +2021,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIn
     unsigned    simdSize        = node->GetSimdSize();
 
     assert(varTypeIsArithmetic(simdBaseType));
-    assert(op1->TypeGet() == TYP_MASK);
+    assert(op1->TypeIs(TYP_MASK));
     assert(simdSize == 64);
 
     GenTree* loResult = nullptr;
@@ -2054,7 +2043,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIn
         // Create:
         //      loResult  = GT_HWINTRINSIC{MoveMask}(simdTmpVar)
 
-        loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, NI_EVEX_MoveMask, simdBaseJitType, 32);
+        loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, NI_AVX512_MoveMask, simdBaseJitType, 32);
         Range().InsertBefore(node, loResult);
 
         simdTmpVar = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTmpVar->TypeGet());
@@ -2067,11 +2056,11 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIn
         GenTree* shiftIcon = m_compiler->gtNewIconNode(32, TYP_INT);
         Range().InsertBefore(node, shiftIcon);
 
-        simdTmpVar = m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, simdTmpVar, shiftIcon, NI_EVEX_ShiftRightMask,
+        simdTmpVar = m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, simdTmpVar, shiftIcon, NI_AVX512_ShiftRightMask,
                                                           simdBaseJitType, 64);
         Range().InsertBefore(node, simdTmpVar);
 
-        hiResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, NI_EVEX_MoveMask, simdBaseJitType, 32);
+        hiResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, NI_AVX512_MoveMask, simdBaseJitType, 32);
         Range().InsertBefore(node, hiResult);
     }
     else
@@ -2079,7 +2068,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIn
         // Create:
         //      loResult  = GT_HWINTRINSIC{MoveMask}(op1)
 
-        loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, op1, NI_EVEX_MoveMask, simdBaseJitType, simdSize);
+        loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, op1, NI_AVX512_MoveMask, simdBaseJitType, simdSize);
         Range().InsertBefore(node, loResult);
 
         // Create:
@@ -2208,7 +2197,7 @@ GenTree* DecomposeLongs::StoreNodeToVar(LIR::Use& use)
     GenTree* tree = use.Def();
     GenTree* user = use.User();
 
-    if (user->OperGet() == GT_STORE_LCL_VAR)
+    if (user->OperIs(GT_STORE_LCL_VAR))
     {
         // If parent is already a STORE_LCL_VAR, just mark it lvIsMultiRegRet.
         m_compiler->lvaGetDesc(user->AsLclVar())->SetIsMultiRegDest();
@@ -2241,7 +2230,7 @@ GenTree* DecomposeLongs::StoreNodeToVar(LIR::Use& use)
 //
 GenTree* DecomposeLongs::RepresentOpAsLocalVar(GenTree* op, GenTree* user, GenTree** edge)
 {
-    if (op->OperGet() == GT_LCL_VAR)
+    if (op->OperIs(GT_LCL_VAR))
     {
         return op;
     }
@@ -2399,7 +2388,7 @@ void DecomposeLongs::TryPromoteLongVar(unsigned lclNum)
 {
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-    assert(varDsc->TypeGet() == TYP_LONG);
+    assert(varDsc->TypeIs(TYP_LONG));
 
     if (varDsc->lvDoNotEnregister)
     {

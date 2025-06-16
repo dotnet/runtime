@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // common.h - precompiled headers include for the CLR Execution Engine
 //
-
-//
-
 
 #ifndef _common_h_
 #define _common_h_
@@ -209,18 +207,6 @@ EXTERN_C AppDomain* STDCALL GetAppDomain();
 
 extern BOOL isMemoryReadable(const TADDR start, unsigned len);
 
-#ifndef memcpyUnsafe_f
-#define memcpyUnsafe_f
-
-// use this when you want to memcpy something that contains GC refs
-FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
-{
-    WRAPPER_NO_CONTRACT;
-    return memcpy(dest, src, len);
-}
-
-#endif // !memcpyUnsafe_f
-
 FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len)
 {
     WRAPPER_NO_CONTRACT;
@@ -289,7 +275,6 @@ namespace Loader
 #include "synch.h"
 #include "regdisp.h"
 #include "stackframe.h"
-#include "gms.h"
 #include "fcall.h"
 #include "syncblk.h"
 #include "gcdesc.h"

@@ -304,14 +304,16 @@ namespace Internal.ReadyToRunConstants
         UMod                        = 0xCF,
 
         // Floating point conversions
-        Dbl2Int                     = 0xD0,
+        Dbl2Int                     = 0xD0, // Unused since READYTORUN_MAJOR_VERSION 15.0
         Dbl2IntOvf                  = 0xD1,
         Dbl2Lng                     = 0xD2,
         Dbl2LngOvf                  = 0xD3,
-        Dbl2UInt                    = 0xD4,
+        Dbl2UInt                    = 0xD4, // Unused since READYTORUN_MAJOR_VERSION 15.0
         Dbl2UIntOvf                 = 0xD5,
         Dbl2ULng                    = 0xD6,
         Dbl2ULngOvf                 = 0xD7,
+        Lng2Flt                     = 0xD8,
+        ULng2Flt                    = 0xD9,
 
         // Floating point ops
         DblRem                      = 0xE0,

@@ -894,13 +894,11 @@ namespace ETW
             }
         }
 
-        static VOID DomainUnload();
         static VOID CollectibleLoaderAllocatorUnload(AssemblyLoaderAllocator *pLoaderAllocator);
         static VOID ModuleLoad(Module *pModule, LONG liReportedSharedModule);
 #else
     public:
         static VOID DomainLoad(_In_opt_ LPWSTR wszFriendlyName=NULL) {};
-        static VOID DomainUnload() {};
         static VOID CollectibleLoaderAllocatorUnload(AssemblyLoaderAllocator *pLoaderAllocator) {};
         static VOID ModuleLoad(Module *pModule, LONG liReportedSharedModule) {};
 #endif // FEATURE_EVENT_TRACE
@@ -960,9 +958,7 @@ namespace ETW
         static VOID SendMethodDetailsEvent(MethodDesc *pMethodDesc);
         static VOID SendNonDuplicateMethodDetailsEvent(MethodDesc* pMethodDesc, MethodDescSet* set);
         static VOID StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName);
-        static VOID StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG ulNoOfHelpers);
         static VOID MethodRestored(MethodDesc * pMethodDesc);
-        static VOID MethodTableRestored(MethodTable * pMethodTable);
         static VOID DynamicMethodDestroyed(MethodDesc *pMethodDesc);
         static VOID LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t numTypeHandles, MethodDesc** pMethods, uint32_t numMethods);
 #else // FEATURE_EVENT_TRACE
@@ -972,154 +968,10 @@ namespace ETW
         static VOID MethodJitting(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER* methodDecoder, SString *namespaceOrClassName, SString *methodName, SString *methodSignature);
         static VOID MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig);
         static VOID StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName) {};
-        static VOID StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG ulNoOfHelpers) {};
         static VOID MethodRestored(MethodDesc * pMethodDesc) {};
-        static VOID MethodTableRestored(MethodTable * pMethodTable) {};
         static VOID DynamicMethodDestroyed(MethodDesc *pMethodDesc) {};
         static VOID LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t numTypeHandles, MethodDesc** pMethods, uint32_t numMethods) {};
 #endif // FEATURE_EVENT_TRACE
-    };
-
-    // Class to wrap all Security logic for ETW
-    class SecurityLog
-    {
-#ifdef FEATURE_EVENT_TRACE
-    public:
-        static VOID StrongNameVerificationStart(DWORD dwInFlags, _In_ LPWSTR strFullyQualifiedAssemblyName);
-        static VOID StrongNameVerificationStop(DWORD dwInFlags,ULONG result, _In_ LPWSTR strFullyQualifiedAssemblyName);
-
-        static void FireFieldTransparencyComputationStart(LPCWSTR wszFieldName,
-                                                          LPCWSTR wszModuleName,
-                                                          DWORD dwAppDomain);
-        static void FireFieldTransparencyComputationEnd(LPCWSTR wszFieldName,
-                                                        LPCWSTR wszModuleName,
-                                                        DWORD dwAppDomain,
-                                                        BOOL fIsCritical,
-                                                        BOOL fIsTreatAsSafe);
-
-        static void FireMethodTransparencyComputationStart(LPCWSTR wszMethodName,
-                                                           LPCWSTR wszModuleName,
-                                                           DWORD dwAppDomain);
-        static void FireMethodTransparencyComputationEnd(LPCWSTR wszMethodName,
-                                                         LPCWSTR wszModuleName,
-                                                         DWORD dwAppDomain,
-                                                         BOOL fIsCritical,
-                                                         BOOL fIsTreatAsSafe);
-
-        static void FireModuleTransparencyComputationStart(LPCWSTR wszModuleName, DWORD dwAppDomain);
-        static void FireModuleTransparencyComputationEnd(LPCWSTR wszModuleName,
-                                                         DWORD dwAppDomain,
-                                                         BOOL fIsAllCritical,
-                                                         BOOL fIsAllTransparent,
-                                                         BOOL fIsTreatAsSafe,
-                                                         BOOL fIsOpportunisticallyCritical,
-                                                         DWORD dwSecurityRuleSet);
-
-        static void FireTokenTransparencyComputationStart(DWORD dwToken,
-                                                          LPCWSTR wszModuleName,
-                                                          DWORD dwAppDomain);
-        static void FireTokenTransparencyComputationEnd(DWORD dwToken,
-                                                        LPCWSTR wszModuleName,
-                                                        DWORD dwAppDomain,
-                                                        BOOL fIsCritical,
-                                                        BOOL fIsTreatAsSafe);
-
-        static void FireTypeTransparencyComputationStart(LPCWSTR wszTypeName,
-                                                         LPCWSTR wszModuleName,
-                                                         DWORD dwAppDomain);
-        static void FireTypeTransparencyComputationEnd(LPCWSTR wszTypeName,
-                                                       LPCWSTR wszModuleName,
-                                                       DWORD dwAppDomain,
-                                                       BOOL fIsAllCritical,
-                                                       BOOL fIsAllTransparent,
-                                                       BOOL fIsCritical,
-                                                       BOOL fIsTreatAsSafe);
-#else
-    public:
-        static VOID StrongNameVerificationStart(DWORD dwInFlags, _In_z_ LPWSTR strFullyQualifiedAssemblyName) {};
-        static VOID StrongNameVerificationStop(DWORD dwInFlags,ULONG result, _In_z_ LPWSTR strFullyQualifiedAssemblyName) {};
-
-        static void FireFieldTransparencyComputationStart(LPCWSTR wszFieldName,
-                                                          LPCWSTR wszModuleName,
-                                                          DWORD dwAppDomain) {};
-        static void FireFieldTransparencyComputationEnd(LPCWSTR wszFieldName,
-                                                        LPCWSTR wszModuleName,
-                                                        DWORD dwAppDomain,
-                                                        BOOL fIsCritical,
-                                                        BOOL fIsTreatAsSafe) {};
-
-        static void FireMethodTransparencyComputationStart(LPCWSTR wszMethodName,
-                                                           LPCWSTR wszModuleName,
-                                                           DWORD dwAppDomain) {};
-        static void FireMethodTransparencyComputationEnd(LPCWSTR wszMethodName,
-                                                         LPCWSTR wszModuleName,
-                                                         DWORD dwAppDomain,
-                                                         BOOL fIsCritical,
-                                                         BOOL fIsTreatAsSafe) {};
-
-        static void FireModuleTransparencyComputationStart(LPCWSTR wszModuleName, DWORD dwAppDomain) {};
-        static void FireModuleTransparencyComputationEnd(LPCWSTR wszModuleName,
-                                                         DWORD dwAppDomain,
-                                                         BOOL fIsAllCritical,
-                                                         BOOL fIsAllTransparent,
-                                                         BOOL fIsTreatAsSafe,
-                                                         BOOL fIsOpportunisticallyCritical,
-                                                         DWORD dwSecurityRuleSet) {};
-
-        static void FireTokenTransparencyComputationStart(DWORD dwToken,
-                                                          LPCWSTR wszModuleName,
-                                                          DWORD dwAppDomain) {};
-        static void FireTokenTransparencyComputationEnd(DWORD dwToken,
-                                                        LPCWSTR wszModuleName,
-                                                        DWORD dwAppDomain,
-                                                        BOOL fIsCritical,
-                                                        BOOL fIsTreatAsSafe) {};
-
-        static void FireTypeTransparencyComputationStart(LPCWSTR wszTypeName,
-                                                         LPCWSTR wszModuleName,
-                                                         DWORD dwAppDomain) {};
-        static void FireTypeTransparencyComputationEnd(LPCWSTR wszTypeName,
-                                                       LPCWSTR wszModuleName,
-                                                       DWORD dwAppDomain,
-                                                       BOOL fIsAllCritical,
-                                                       BOOL fIsAllTransparent,
-                                                       BOOL fIsCritical,
-                                                       BOOL fIsTreatAsSafe) {};
-#endif // FEATURE_EVENT_TRACE
-    };
-
-    // Class to wrap all Binder logic for ETW
-    class BinderLog
-    {
-    public:
-        typedef union _BinderStructs {
-            typedef  enum _NGENBINDREJECT_REASON {
-                NGEN_BIND_START_BIND = 0,
-                NGEN_BIND_NO_INDEX = 1,
-                NGEN_BIND_SYSTEM_ASSEMBLY_NOT_AVAILABLE = 2,
-                NGEN_BIND_NO_NATIVE_IMAGE = 3,
-                NGEN_BIND_REJECT_CONFIG_MASK = 4,
-                NGEN_BIND_FAIL = 5,
-                NGEN_BIND_INDEX_CORRUPTION = 6,
-                NGEN_BIND_REJECT_TIMESTAMP = 7,
-                NGEN_BIND_REJECT_NATIVEIMAGE_NOT_FOUND = 8,
-                NGEN_BIND_REJECT_IL_SIG = 9,
-                NGEN_BIND_REJECT_LOADER_EVAL_FAIL = 10,
-                NGEN_BIND_MISSING_FOUND = 11,
-                NGEN_BIND_REJECT_HOSTASM = 12,
-                NGEN_BIND_REJECT_IL_NOT_FOUND = 13,
-                NGEN_BIND_REJECT_APPBASE_NOT_FILE = 14,
-                NGEN_BIND_BIND_DEPEND_REJECT_REF_DEF_MISMATCH = 15,
-                NGEN_BIND_BIND_DEPEND_REJECT_NGEN_SIG = 16,
-                NGEN_BIND_APPLY_EXTERNAL_RELOCS_FAILED = 17,
-                NGEN_BIND_SYSTEM_ASSEMBLY_NATIVEIMAGE_NOT_AVAILABLE = 18,
-                NGEN_BIND_ASSEMBLY_HAS_DIFFERENT_GRANT = 19,
-                NGEN_BIND_ASSEMBLY_NOT_DOMAIN_NEUTRAL = 20,
-                NGEN_BIND_NATIVEIMAGE_VERSION_MISMATCH = 21,
-                NGEN_BIND_LOADFROM_NOT_ALLOWED = 22,
-                NGEN_BIND_DEPENDENCY_HAS_DIFFERENT_IDENTITY = 23
-            } NGENBINDREJECT_REASON;
-        } BinderStructs;
     };
 
     // Class to wrap all Exception logic for ETW
@@ -1329,10 +1181,6 @@ namespace ETW
 
 #define ETW_IS_TRACE_ON(level) ( FALSE ) // for fusion which is eventually going to get removed
 #define ETW_IS_FLAG_ON(flag) ( FALSE ) // for fusion which is eventually going to get removed
-
-// Commonly used constats for ETW Assembly Loader and Assembly Binder events.
-#define ETWLoadContextNotAvailable (LOADCTX_TYPE_HOSTED + 1)
-#define ETWAppDomainIdNotAvailable 0 // Valid AppDomain IDs start from 1
 
 #define ETWFieldUnused 0 // Indicates that a particular field in the ETW event payload template is currently unused.
 

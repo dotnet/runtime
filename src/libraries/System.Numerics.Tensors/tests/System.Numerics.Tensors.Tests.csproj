@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="TensorDimensionSpanTests.cs" />
     <Compile Include="TensorTests.cs" />
     <Compile Include="TensorSpanTests.cs" />
     <Compile Include="ReadOnlyTensorSpanTests.cs" />
