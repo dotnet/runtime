@@ -11,14 +11,8 @@ namespace System.Text.Json.Serialization.Tests
     /// <summary>
     /// Base class for abstracting System.IO.Pipelines JsonSerializer method families.
     /// </summary>
-    public abstract partial class PipeJsonSerializerWrapper : JsonSerializerWrapper
+    public abstract partial class PipeJsonSerializerWrapper : StreamingJsonSerializerWrapper
     {
-        /// <summary>
-        /// True if the serializer is streaming data synchronously.
-        /// </summary>
-        public abstract bool IsAsyncSerializer { get; }
-        public virtual bool ForceSmallBufferInOptions { get; } = false;
-
         public abstract Task SerializeWrapper(PipeWriter stream, object value, Type inputType, JsonSerializerOptions? options = null);
         public abstract Task SerializeWrapper<T>(PipeWriter stream, T value, JsonSerializerOptions? options = null);
         public abstract Task SerializeWrapper(PipeWriter stream, object value, Type inputType, JsonSerializerContext context);
