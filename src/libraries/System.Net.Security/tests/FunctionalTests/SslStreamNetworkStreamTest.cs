@@ -1116,6 +1116,112 @@ namespace System.Net.Security.Tests
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverTask);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task DisableUnusedRsaPadding_Connects(bool clientDisable, bool serverDisable)
+        {
+            (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
+
+            using SslStream clientSslStream = new SslStream(client);
+            using SslStream serverSslStream = new SslStream(server);
+
+            using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+            using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+            // the test certificates use PSS padding, so we disable PKCS1 padding
+            Task t1 = clientSslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions()
+            {
+                ClientCertificates = new X509CertificateCollection(new X509Certificate2[] { clientCertificate }),
+                RemoteCertificateValidationCallback = delegate { return true; },
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                AllowRsaPkcs1Padding = !clientDisable
+            }, CancellationToken.None);
+            Task t2 = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions()
+            {
+                ServerCertificate = serverCertificate,
+                RemoteCertificateValidationCallback = delegate { return true; },
+                ClientCertificateRequired = true,
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                AllowRsaPkcs1Padding = !serverDisable
+            }, CancellationToken.None);
+
+            await t1.WaitAsync(TestConfiguration.PassingTestTimeout);
+            await t2.WaitAsync(TestConfiguration.PassingTestTimeout);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task DisableUsedRsaPadding_Throws(bool clientDisable, bool serverDisable)
+        {
+            (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
+
+            using SslStream clientSslStream = new SslStream(client);
+            using SslStream serverSslStream = new SslStream(server);
+
+            using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+            using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+            // the test certificates use PSS padding
+            Task t1 = clientSslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions()
+            {
+                ClientCertificates = new X509CertificateCollection(new X509Certificate2[] { clientCertificate }),
+                RemoteCertificateValidationCallback = delegate { return true; },
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                AllowRsaPssPadding = !clientDisable,
+            }, CancellationToken.None);
+            Task t2 = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions()
+            {
+                ServerCertificate = serverCertificate,
+                RemoteCertificateValidationCallback = delegate { return true; },
+                ClientCertificateRequired = true,
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                AllowRsaPssPadding = !serverDisable,
+            }, CancellationToken.None);
+
+            await Assert.ThrowsAsync<AuthenticationException>(() => t1.WaitAsync(TestConfiguration.PassingTestTimeout));
+            await Assert.ThrowsAsync<AuthenticationException>(() => t2.WaitAsync(TestConfiguration.PassingTestTimeout));
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [PlatformSpecific(~(TestPlatforms.Windows | TestPlatforms.Linux))]
+        public void DisallowPkcsOrPss_UnsupportedPlatforms_Throws(bool disablePkcs1Padding, bool disablePssPadding)
+        {
+            using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using SslStream client = new SslStream(stream1);
+            using SslStream server = new SslStream(stream2);
+
+            Assert.Throws<PlatformNotSupportedException>(() =>
+            {
+                server.AuthenticateAsServer(new SslServerAuthenticationOptions()
+                {
+                    ServerCertificate = serverCertificate,
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
+                    AllowRsaPkcs1Padding = !disablePkcs1Padding,
+                    AllowRsaPssPadding = !disablePssPadding
+                });
+            });
+
+            Assert.Throws<PlatformNotSupportedException>(() =>
+            {
+                client.AuthenticateAsClient(new SslClientAuthenticationOptions()
+                {
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
+                    AllowRsaPkcs1Padding = !disablePkcs1Padding,
+                    AllowRsaPssPadding = !disablePssPadding
+                });
+            });
+        }
+
         private static bool ValidateServerCertificate(
             object sender,
             X509Certificate retrievedServerPublicCertificate,

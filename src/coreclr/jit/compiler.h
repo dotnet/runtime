@@ -6164,8 +6164,6 @@ public:
 
     void fgCompactBlock(BasicBlock* block);
 
-    bool fgRenumberBlocks();
-
     bool fgExpandRarelyRunBlocks();
 
     bool fgEhAllowsMoveBlock(BasicBlock* bBefore, BasicBlock* bAfter);
@@ -7091,9 +7089,11 @@ public:
     bool fgHasLoops = false;
 
 protected:
-    unsigned optCallCount = 0;         // number of calls made in the method
-    unsigned optIndirectCallCount = 0; // number of virtual, interface and indirect calls made in the method
-    unsigned optNativeCallCount = 0;   // number of Pinvoke/Native calls made in the method
+    unsigned optCallCount = 0;                 // number of calls made in the method
+    unsigned optIndirectCallCount = 0;         // number of virtual, interface and indirect calls made in the method
+    unsigned optNativeCallCount = 0;           // number of Pinvoke/Native calls made in the method
+    unsigned optFastTailCallCount = 0;         // number of fast tail calls made in the method
+    unsigned optIndirectFastTailCallCount = 0; // number of indirect (see above) fast tail calls made in the method
 
 #ifdef DEBUG
     void optCheckPreds();
@@ -8321,6 +8321,8 @@ public:
                        CORINFO_CLASS_HANDLE  clsHnd,
                        CORINFO_METHOD_HANDLE methodHnd,
                        CORINFO_SIG_INFO*     sig,
+                       bool                  includeAssembly,
+                       bool                  includeClass,
                        bool                  includeClassInstantiation,
                        bool                  includeMethodInstantiation,
                        bool                  includeSignature,
@@ -10896,8 +10898,7 @@ public:
 
     //------------ Some utility functions --------------
 
-    void* compGetHelperFtn(CorInfoHelpFunc ftnNum, /* IN  */
-                           void**          ppIndirection);  /* OUT */
+    CORINFO_CONST_LOOKUP compGetHelperFtn(CorInfoHelpFunc ftnNum);
 
     // Several JIT/EE interface functions return a CorInfoType, and also return a
     // class handle as an out parameter if the type is a value class.  Returns the

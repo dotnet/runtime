@@ -5134,15 +5134,23 @@ bool CodeGen::IsSaveFpLrWithAllCalleeSavedRegisters() const
 
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
 {
-    void* pAddr = nullptr;
-
     EmitCallParams params;
-    params.callType   = EC_FUNC_TOKEN;
-    params.addr       = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
-    regMaskTP killSet = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
-    if (params.addr == nullptr)
+    CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
+    regMaskTP            killSet        = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+
+    params.callType = EC_FUNC_TOKEN;
+
+    if (helperFunction.accessType == IAT_VALUE)
     {
+        params.addr = (void*)helperFunction.addr;
+    }
+    else
+    {
+        params.addr = nullptr;
+        assert(helperFunction.accessType == IAT_PVALUE);
+        void* pAddr = helperFunction.addr;
+
         // This is call to a runtime helper.
         // adrp x, [reloc:rel page addr]
         // add x, x, [reloc:page offset]

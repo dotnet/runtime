@@ -12,6 +12,9 @@
     <!-- Reference elements are missing from the nuspec: https://github.com/NuGet/Home/issues/8684. -->
     <NoWarn>$(NoWarn);NU5131;NU5128</NoWarn>
 
+    <!-- Include the symbols in the non-symbols package so that they get redistributed into windowsdesktop's shared framework. -->
+    <IncludeSymbolsInPackage>true</IncludeSymbolsInPackage>
+
     <!-- Generate the transport props file -->
     <BeforePack>$(BeforePack);GenerateTransportPropsFile</BeforePack>
     <TransportPropsFileInputPath>$(MSBuildThisFileDirectory)build\$(MSBuildProjectName).props</TransportPropsFileInputPath>

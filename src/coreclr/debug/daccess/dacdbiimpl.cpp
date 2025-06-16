@@ -5646,7 +5646,12 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
                 {
                     UpdateContextFromRegDisp(&tmpRd, &tmpContext);
                     CopyMemory(pContextBuffer, &tmpContext, sizeof(*pContextBuffer));
-                    pContextBuffer->ContextFlags = DT_CONTEXT_CONTROL;
+                    pContextBuffer->ContextFlags = DT_CONTEXT_CONTROL 
+#if defined(TARGET_AMD64) || defined(TARGET_ARM)
+                                                | DT_CONTEXT_INTEGER  // DT_CONTEXT_INTEGER is needed to include the frame register on ARM32 and AMD64 architectures
+                                                                      // DT_CONTEXT_CONTROL already includes the frame register for X86 and ARM64 architectures
+#endif
+                    ;
                     return;
                 }
                 frame = frame->Next();

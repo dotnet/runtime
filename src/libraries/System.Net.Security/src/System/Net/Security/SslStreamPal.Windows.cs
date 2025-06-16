@@ -445,18 +445,63 @@ namespace System.Net.Security
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
 
-            Interop.SspiCli.TLS_PARAMETERS tlsParameters;
+            Interop.SspiCli.TLS_PARAMETERS tlsParameters = default;
+            credential.cTlsParameters = 1;
+            credential.pTlsParameters = &tlsParameters;
+
             if (protocolFlags != 0)
             {
-                // If we were asked to do specific protocol we need to fill TLS_PARAMETERS.
-                tlsParameters = default;
                 tlsParameters.grbitDisabledProtocols = (uint)protocolFlags ^ uint.MaxValue;
-
-                credential.cTlsParameters = 1;
-                credential.pTlsParameters = &tlsParameters;
             }
 
-            return AcquireCredentialsHandle(direction, &credential);
+            Span<Interop.SspiCli.CRYPTO_SETTINGS> cryptoSettings = stackalloc Interop.SspiCli.CRYPTO_SETTINGS[2];
+
+            // init to null ptrs to prevent freeing uninitialized memory in finally block
+            Span<IntPtr> algIdPtrs = stackalloc IntPtr[2] { IntPtr.Zero, IntPtr.Zero };
+            int cryptoSettingsCount = 0;
+
+            try
+            {
+                if (!authOptions.AllowRsaPkcs1Padding)
+                {
+                    algIdPtrs[cryptoSettingsCount] = Marshal.StringToHGlobalUni("SCH_RSA_PKCS_PAD");
+
+                    cryptoSettings[cryptoSettingsCount] = new()
+                    {
+                        eAlgorithmUsage = Interop.SspiCli.CRYPTO_SETTINGS.TlsAlgorithmUsage.TlsParametersCngAlgUsageCertSig
+                    };
+
+                    Interop.NtDll.RtlInitUnicodeString(out cryptoSettings[cryptoSettingsCount].strCngAlgId, algIdPtrs[cryptoSettingsCount]);
+                    cryptoSettingsCount++;
+                }
+
+                if (!authOptions.AllowRsaPssPadding)
+                {
+                    algIdPtrs[cryptoSettingsCount] = Marshal.StringToHGlobalUni("SCH_RSA_PSS_PAD");
+
+                    cryptoSettings[cryptoSettingsCount] = new()
+                    {
+                        eAlgorithmUsage = Interop.SspiCli.CRYPTO_SETTINGS.TlsAlgorithmUsage.TlsParametersCngAlgUsageCertSig
+                    };
+                    Interop.NtDll.RtlInitUnicodeString(out cryptoSettings[cryptoSettingsCount].strCngAlgId, algIdPtrs[cryptoSettingsCount]);
+                    cryptoSettingsCount++;
+                }
+
+                tlsParameters.pDisabledCrypto = (Interop.SspiCli.CRYPTO_SETTINGS*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(cryptoSettings));
+                tlsParameters.cDisabledCrypto = cryptoSettingsCount;
+
+                return AcquireCredentialsHandle(direction, &credential);
+            }
+            finally
+            {
+                foreach (IntPtr algIdPtr in algIdPtrs.Slice(0, cryptoSettingsCount))
+                {
+                    if (algIdPtr != IntPtr.Zero)
+                    {
+                        Marshal.FreeHGlobal(algIdPtr);
+                    }
+                }
+            }
         }
 
         public static unsafe ProtocolToken EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize)

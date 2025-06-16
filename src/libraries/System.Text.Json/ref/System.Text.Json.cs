@@ -391,6 +391,7 @@ namespace System.Text.Json
     {
         General = 0,
         Web = 1,
+        Strict = 2,
     }
     public sealed partial class JsonSerializerOptions
     {
@@ -424,6 +425,7 @@ namespace System.Text.Json
         public System.Text.Json.Serialization.ReferenceHandler? ReferenceHandler { get { throw null; } set { } }
         public bool RespectNullableAnnotations { get { throw null; } set { } }
         public bool RespectRequiredConstructorParameters { get { throw null; } set { } }
+        public static System.Text.Json.JsonSerializerOptions Strict { [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications."), System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")] get { throw null; } }
         public System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver? TypeInfoResolver { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver> TypeInfoResolverChain { get { throw null; } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
