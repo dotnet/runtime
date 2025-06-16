@@ -2787,8 +2787,9 @@ StackFrame ExInfo::FindParentStackFrameHelper(CrawlFrame* pCF,
         PCODE callerIP = dac_cast<PCODE>(GetIP(pRegDisplay->pCallerContext));
         BOOL fIsCallerInVM = FALSE;
 
-        // Check if the caller IP is in mscorwks.  If it is not, then it is an out-of-line finally.
-        // Normally, the caller of a finally is ExInfo::CallHandler().
+        // Check if the caller IP is in runtime native code.  If it is not, then it is an out-of-line finally.
+        // Normally, the caller of a finally is CallEHFunclet, or InterpreterFrame::DummyCallerIP
+        // for the interpreter.
 #ifdef TARGET_UNIX
         fIsCallerInVM = !ExecutionManager::IsManagedCode(callerIP);
 #else
