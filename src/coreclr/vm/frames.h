@@ -2397,11 +2397,12 @@ typedef DPTR(class InterpreterFrame) PTR_InterpreterFrame;
 
 class InterpreterFrame : public FramedMethodFrame
 {
+    static void DummyFuncletCaller() {}
 public:
 
     // This is a special value representing a caller of the first interpreter frame
     // in a block of interpreter frames belonging to a single InterpreterFrame.
-    static constexpr TADDR DummyCallerIP = 0;
+    static TADDR DummyCallerIP;
 
 #ifndef DACCESS_COMPILE
     InterpreterFrame(TransitionBlock* pTransitionBlock, InterpMethodContextFrame* pContextFrame)
