@@ -2873,9 +2873,6 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
     }
     else
     {
-        // This is not an EXTEND group.
-        assert((emitCurIG->igFlags & IGF_EXTEND) == 0);
-
 #if defined(DEBUG) || defined(LATE_DISASM)
         emitCurIG->igWeight    = getCurrentBlockWeight();
         emitCurIG->igPerfScore = 0.0;
