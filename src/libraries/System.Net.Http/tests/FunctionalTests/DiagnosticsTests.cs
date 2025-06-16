@@ -784,6 +784,14 @@ namespace System.Net.Http.Functional.Tests
                     ActivityAssert.HasTag(conn, "error.type", "name_resolution_error");
                     ActivityAssert.HasTag(wait, "error.type", "name_resolution_error");
 
+                    ActivityEvent evt = req.Events.Single(e => e.Name == "exception");
+                    Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
+                    Assert.Contains("exception.type", tags.Keys);
+                    Assert.Contains("exception.message", tags.Keys);
+                    Assert.Contains("exception.stacktrace", tags.Keys);
+                    Assert.Equal(typeof(HttpRequestException).FullName, tags["exception.type"]);
+                    Assert.InRange(evt.Timestamp - req.StartTimeUtc, new TimeSpan(1), req.Duration);
+
                     // Whether System.Net.Quic uses System.Net.Dns is an implementation detail.
                     if (version != HttpVersion30)
                     {
@@ -803,6 +811,14 @@ namespace System.Net.Http.Functional.Tests
                     ActivityAssert.HasTag(conn, "error.type", "connection_error");
                     ActivityAssert.HasTag(wait, "error.type", "connection_error");
 
+                    ActivityEvent evt = req.Events.Single(e => e.Name == "exception");
+                    Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
+                    Assert.Contains("exception.type", tags.Keys);
+                    Assert.Contains("exception.message", tags.Keys);
+                    Assert.Contains("exception.stacktrace", tags.Keys);
+                    Assert.Equal(typeof(HttpRequestException).FullName, tags["exception.type"]);
+                    Assert.InRange(evt.Timestamp - req.StartTimeUtc, new TimeSpan(1), req.Duration);
+
                     if (version != HttpVersion30)
                     {
                         Activity sock = socketRecorder.VerifyActivityRecordedOnce();
@@ -811,6 +827,63 @@ namespace System.Net.Http.Functional.Tests
                         ActivityAssert.HasTag(sock, "error.type", (string t) => t is "connection_refused" or "timed_out");
                     }
                 }
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task SendAsync_OperationCanceledException_RecordsActivitiesWithCorrectErrorInfo()
+        {
+            await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
+            static async Task RunTest(string useVersion, string testAsync)
+            {
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                Activity? activity = null;
+
+                using ActivityListener listener = new ActivityListener()
+                {
+                    ShouldListenTo = s => s.Name is "System.Net.Http",
+                    Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+                    ActivityStopped = a =>
+                    {
+                        activity = a;
+                        Assert.Equal(ActivityStatusCode.Error, a.Status);
+                        ActivityAssert.HasTag(a, "error.type", typeof(TaskCanceledException).FullName);
+                        ActivityEvent evt = a.Events.Single(e => e.Name == "exception");
+                        Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
+                        Assert.Contains("exception.type", tags.Keys);
+                        Assert.Contains("exception.message", tags.Keys);
+                        Assert.Contains("exception.stacktrace", tags.Keys);
+                        Assert.Equal(typeof(TaskCanceledException).FullName, tags["exception.type"]);
+
+                        activityStopTcs.SetResult();
+                    }
+                };
+                ActivitySource.AddActivityListener(listener);
+
+                var cts = new CancellationTokenSource();
+
+                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                    async uri =>
+                    {
+                        Version version = Version.Parse(useVersion);
+                        if (version != HttpVersion30)
+                        {
+                            uri = new Uri($"{uri.Scheme}://localhost:{uri.Port}");
+                        }
+
+                        await Assert.ThrowsAsync<TaskCanceledException>(() => GetAsync(useVersion, testAsync, uri, cts.Token));
+                    },
+                    async server =>
+                    {
+                        await server.AcceptConnectionAsync(async connection =>
+                        {
+                            cts.Cancel();
+
+                            await activityStopTcs.Task;
+                        });
+                    });
+
+                Assert.NotNull(activity);
             }
         }
 

@@ -13,7 +13,7 @@ class TypeManager;
 struct TypeManagerHandle;
 
 //-------------------------------------------------------------------------------------------------
-// The subset of TypeFlags that Redhawk knows about at runtime
+// The subset of TypeFlags that NativeAOT knows about at runtime
 // This should match the TypeFlags enum in the managed type system.
 enum EETypeElementType : uint8_t
 {
@@ -196,6 +196,12 @@ public:
         { return GetElementType() == ElementType_Interface; }
 
     MethodTable * GetRelatedParameterType();
+
+    MethodTable* GetNonArrayBaseType()
+    {
+        ASSERT(!IsArray());
+        return PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_pBaseType));
+    }
 
     bool IsValueType()
         { return GetElementType() < ElementType_Class; }

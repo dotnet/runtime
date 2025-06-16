@@ -5,13 +5,13 @@
 **
 ** Source: Sleep.c
 **
-** Purpose: Test to establish whether the Sleep function stops the thread from 
+** Purpose: Test to establish whether the Sleep function stops the thread from
 ** executing for the specified times.
 **
 ** Dependencies: GetSystemTime
-**               Fail   
+**               Fail
 **               Trace
-** 
+**
 
 **
 **=========================================================*/
@@ -49,7 +49,7 @@ PALTEST(threading_Sleep_test1_paltest_sleep_test1, "threading/Sleep/test1/paltes
         Sleep(SleepTimes[i]);
         NewTimeStamp = minipal_hires_ticks();
 
-        TimeDelta = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);;
+        TimeDelta = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);
 
         /* For longer intervals use a 10 percent tolerance */
         if ((SleepTimes[i] * 0.1) > AcceptableTimeError)

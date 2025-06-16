@@ -3,7 +3,7 @@
 
 #include "CommonTypes.h"
 #include "CommonMacros.h"
-#include "PalRedhawk.h"
+#include "Pal.h"
 
 #ifdef FEATURE_PERFTRACING
 

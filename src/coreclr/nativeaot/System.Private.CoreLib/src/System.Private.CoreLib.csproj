@@ -540,9 +540,6 @@
     <Compile Include="$(RuntimeBasePath)System\Runtime\TypeCast.cs">
       <Link>Runtime.Base\src\System\Runtime\TypeCast.cs</Link>
     </Compile>
-    <Compile Include="$(RuntimeBasePath)RhBaseName.cs">
-      <Link>Runtime.Base\src\RhBaseName.cs</Link>
-    </Compile>
     <Compile Include="$(AotCommonPath)\Internal\Runtime\TransitionBlock.cs">
       <Link>Common\TransitionBlock.cs</Link>
     </Compile>

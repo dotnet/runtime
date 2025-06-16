@@ -15,7 +15,7 @@
 #include <windows.h>
 
 #include <utilcode.h>
-
+#include <minipal/mutex.h>
 
 #ifdef _DEBUG
 #define LOGGING
@@ -798,7 +798,7 @@ protected:
     }
 
 
-    CRITICAL_SECTION m_lock;
+    minipal_mutex m_lock;
 
 #ifdef _DEBUG
 public:
@@ -839,9 +839,8 @@ public:
 typedef RSLock::RSLockHolder RSLockHolder;
 typedef RSLock::RSInverseLockHolder RSInverseLockHolder;
 
-// In the RS, we should be using RSLocks instead of raw critical sections.
-#define CRITICAL_SECTION USE_RSLOCK_INSTEAD_OF_CRITICAL_SECTION
-
+// In the RS, we should be using RSLocks instead of raw minipal_mutex.
+#define minipal_mutex USE_RSLOCK_INSTEAD_OF_MINIPAL_MUTEX
 
 /* ------------------------------------------------------------------------- *
  * Helper macros. Use the ATT_* macros below instead of these.
@@ -11200,7 +11199,7 @@ inline CordbEval * UnwrapCookieCordbEval(CordbProcess *pProc, UINT cookie)
 
 
 // We defined this at the top of the file - undef it now so that we don't pollute other files.
-#undef CRITICAL_SECTION
+#undef minipal_mutex
 
 
 #ifdef RSCONTRACTS
