@@ -980,6 +980,50 @@ MAIN_LOOP:
                     LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) + ip[3];
                     ip += 4;
                     break;
+                case INTOP_ADD_OVF_I4:
+                {
+                    int32_t i1 = LOCAL_VAR(ip[2], int32_t);
+                    int32_t i2 = LOCAL_VAR(ip[3], int32_t);
+                    int32_t i3;
+                    if (!ClrSafeInt<int32_t>::addition(i1, i2, i3))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], int32_t) = i3;
+                    ip += 4;
+                    break;
+                }
+                case INTOP_ADD_OVF_I8:
+                {
+                    int64_t i1 = LOCAL_VAR(ip[2], int64_t);
+                    int64_t i2 = LOCAL_VAR(ip[3], int64_t);
+                    int64_t i3;
+                    if (!ClrSafeInt<int64_t>::addition(i1, i2, i3))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], int64_t) = i3;
+                    ip += 4;
+                    break;
+                }
+                case INTOP_ADD_OVF_UN_I4:
+                {
+                    uint32_t i1 = LOCAL_VAR(ip[2], uint32_t);
+                    uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
+                    uint32_t i3;
+                    if (!ClrSafeInt<uint32_t>::addition(i1, i2, i3))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], uint32_t) = i3;
+                    ip += 4;
+                    break;
+                }
+                case INTOP_ADD_OVF_UN_I8:
+                {
+                    uint64_t i1 = LOCAL_VAR(ip[2], uint64_t);
+                    uint64_t i2 = LOCAL_VAR(ip[3], uint64_t);
+                    uint64_t i3;
+                    if (!ClrSafeInt<uint64_t>::addition(i1, i2, i3))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], uint64_t) = i3;
+                    ip += 4;
+                    break;
+                }
                 case INTOP_SUB_I4:
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) - LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
@@ -996,6 +1040,51 @@ MAIN_LOOP:
                     LOCAL_VAR(ip[1], double) = LOCAL_VAR(ip[2], double) - LOCAL_VAR(ip[3], double);
                     ip += 4;
                     break;
+
+                case INTOP_SUB_OVF_I4:
+                {
+                    int32_t i1 = LOCAL_VAR(ip[2], int32_t);
+                    int32_t i2 = LOCAL_VAR(ip[3], int32_t);
+                    int32_t i3;
+                    if (!ClrSafeInt<int32_t>::subtraction(i1, i2, i3))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], int32_t) = i3;
+                    ip += 4;
+                    break;
+                }
+                case INTOP_SUB_OVF_I8:
+                {
+                    int64_t i1 = LOCAL_VAR(ip[2], int64_t);
+                    int64_t i2 = LOCAL_VAR(ip[3], int64_t);
+                    int64_t i3;
+                    if (!ClrSafeInt<int64_t>::subtraction(i1, i2, i3))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], int64_t) = i3;
+                    ip += 4;
+                    break;
+                }
+                case INTOP_SUB_OVF_UN_I4:
+                {
+                    uint32_t i1 = LOCAL_VAR(ip[2], uint32_t);
+                    uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
+                    uint32_t i3;
+                    if (!ClrSafeInt<uint32_t>::subtraction(i1, i2, i3))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], uint32_t) = i3;
+                    ip += 4;
+                    break;
+                }
+                case INTOP_SUB_OVF_UN_I8:
+                {
+                    uint64_t i1 = LOCAL_VAR(ip[2], uint64_t);
+                    uint64_t i2 = LOCAL_VAR(ip[3], uint64_t);
+                    uint64_t i3;
+                    if (!ClrSafeInt<uint64_t>::subtraction(i1, i2, i3))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], uint64_t) = i3;
+                    ip += 4;
+                    break;
+                }
 
                 case INTOP_MUL_I4:
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) * LOCAL_VAR(ip[3], int32_t);

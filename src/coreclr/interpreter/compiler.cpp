@@ -3972,8 +3972,24 @@ retry_emit:
                 EmitBinaryArithmeticOp(INTOP_ADD_I4);
                 m_ip++;
                 break;
+            case CEE_ADD_OVF:
+                EmitBinaryArithmeticOp(INTOP_ADD_OVF_I4);
+                m_ip++;
+                break;
+            case CEE_ADD_OVF_UN:
+                EmitBinaryArithmeticOp(INTOP_ADD_OVF_UN_I4);
+                m_ip++;
+                break;
             case CEE_SUB:
                 EmitBinaryArithmeticOp(INTOP_SUB_I4);
+                m_ip++;
+                break;
+            case CEE_SUB_OVF:
+                EmitBinaryArithmeticOp(INTOP_SUB_OVF_I4);
+                m_ip++;
+                break;
+            case CEE_SUB_OVF_UN:
+                EmitBinaryArithmeticOp(INTOP_SUB_OVF_UN_I4);
                 m_ip++;
                 break;
             case CEE_MUL:
