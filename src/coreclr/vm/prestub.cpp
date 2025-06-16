@@ -1082,9 +1082,6 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
 #ifdef FEATURE_TIERED_COMPILATION
     m_jitSwitchedToOptimized(false),
 #endif
-#ifdef FEATURE_INTERPRETER
-    m_isInterpreterCode(false),
-#endif
     m_nextInSameThread(nullptr)
 {}
 

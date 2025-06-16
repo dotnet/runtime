@@ -6586,12 +6586,6 @@ void CEEInfo::setMethodAttribs (
                 _ASSERTE(!ftn->IsJitOptimizationDisabled());
                 config->SetJitSwitchedToMinOpt();
             }
-#ifdef FEATURE_INTERPRETER
-            else if (attribs & CORINFO_FLG_INTERPRETER)
-            {
-                config->SetIsInterpreterCode();
-            }
-#endif // FEATURE_INTERPRETER
 #ifdef FEATURE_TIERED_COMPILATION
             else if (attribs & CORINFO_FLG_SWITCHED_TO_OPTIMIZED)
             {

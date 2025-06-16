@@ -47,11 +47,6 @@ thread_local ICorJitInfo* t_InterpJitInfoTls = nullptr;
 static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
 
 /*****************************************************************************/
-void DECLSPEC_NORETURN Interp_NOMEM()
-{
-    throw std::bad_alloc();
-}
-
 void DECLSPEC_NORETURN Interp_CompilationFail(const char *msg)
 {
     // This is a fatal error, so we don't return.
@@ -81,7 +76,7 @@ public:
         // Ensure that elems * elemSize does not overflow.
         if (elems > (SIZE_MAX / elemSize))
         {
-            Interp_NOMEM();
+            NOMEM();
         }
 
         return m_pCompiler->AllocMethodData(elems * elemSize);
@@ -545,40 +540,16 @@ void InterpCompiler::EnsureStack(int additional)
     }
 }
 
-#define CHECK_STACK(n)                      \
-    do                                      \
-    {                                       \
-        if (!CheckStackHelper (n))          \
-            goto exit_bad_code;             \
-    } while (0)
+#define CHECK_STACK(n)         CheckStackHelper(n)
+#define INVALID_CODE_RET_VOID  BADCODE("Invalid code detected")
 
-#define CHECK_STACK_RET_VOID(n)             \
-    do {                                    \
-        if (!CheckStackHelper(n))           \
-            return;                         \
-    } while (0)
-
-#define CHECK_STACK_RET(n, ret)             \
-    do {                                    \
-        if (!CheckStackHelper(n))           \
-            return ret;                     \
-    } while (0)
-
-#define INVALID_CODE_RET_VOID               \
-    do {                                    \
-        m_hasInvalidCode = true;            \
-        return;                             \
-    } while (0)
-
-bool InterpCompiler::CheckStackHelper(int n)
+void InterpCompiler::CheckStackHelper(int n)
 {
     int32_t currentSize = (int32_t)(m_pStackPointer - m_pStackBase);
     if (currentSize < n)
     {
-        m_hasInvalidCode = true;
-        return false;
+        BADCODE("Stack underflow");
     }
-    return true;
 }
 
 void InterpCompiler::PushTypeExplicit(StackType stackType, CORINFO_CLASS_HANDLE clsHnd, int size)
@@ -1014,7 +985,7 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
 {
 #ifdef FEATURE_INTERPRETER
     InterpIAllocator* pAllocator = new (this) InterpIAllocator(this);
-    InterpreterGcInfoEncoder* gcInfoEncoder = new (this) InterpreterGcInfoEncoder(m_compHnd, m_methodInfo, pAllocator, Interp_NOMEM);
+    InterpreterGcInfoEncoder* gcInfoEncoder = new (this) InterpreterGcInfoEncoder(m_compHnd, m_methodInfo, pAllocator, NOMEM);
     InterpGcSlotAllocator slotAllocator (this, gcInfoEncoder);
 
     gcInfoEncoder->SetCodeLength(ConvertOffset(m_methodCodeSize));
@@ -1545,7 +1516,7 @@ void InterpCompiler::CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* met
     }
 }
 
-bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
+void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
 {
     int32_t codeSize = methodInfo->ILCodeSize;
     uint8_t *codeStart = methodInfo->ILCode;
@@ -1588,7 +1559,7 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
         case ShortInlineBrTarget:
             target = insOffset + 2 + (int8_t)ip [1];
             if (target >= codeSize)
-                return false;
+                BADCODE("ShortInlineBrTarget out of bounds");
             pTargetBB = GetBB(target);
             if (opcode == CEE_LEAVE_S)
             {
@@ -1600,7 +1571,7 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
         case InlineBrTarget:
             target = insOffset + 5 + getI4LittleEndian(ip + 1);
             if (target >= codeSize)
-                return false;
+                BADCODE("Branch target out of bounds");
             pTargetBB = GetBB(target);
             if (opcode == CEE_LEAVE)
             {
@@ -1615,13 +1586,13 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             insOffset += 5 + 4 * n;
             target = insOffset;
             if (target >= codeSize)
-                return false;
+                BADCODE("Switch instruction is too big");
             GetBB(target);
             for (uint32_t i = 0; i < n; i++)
             {
                 target = insOffset + getI4LittleEndian(ip);
                 if (target >= codeSize)
-                    return false;
+                    BADCODE("Switch target out of bounds");
                 GetBB(target);
                 ip += 4;
             }
@@ -1638,11 +1609,9 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
         if (opcode == CEE_THROW || opcode == CEE_ENDFINALLY || opcode == CEE_RETHROW)
             GetBB((int32_t)(ip - codeStart));
     }
-
-    return true;
 }
 
-bool InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo)
+void InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo)
 {
     int32_t codeSize = methodInfo->ILCodeSize;
     uint8_t *codeStart = methodInfo->ILCode;
@@ -1656,7 +1625,7 @@ bool InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
         if ((codeStart + clause.TryOffset) > codeEnd ||
                 (codeStart + clause.TryOffset + clause.TryLength) > codeEnd)
         {
-            return false;
+            BADCODE("Invalid try region in EH clause");
         }
 
         InterpBasicBlock* pTryBB = GetBB(clause.TryOffset);
@@ -1664,7 +1633,7 @@ bool InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
         if ((codeStart + clause.HandlerOffset) > codeEnd ||
                 (codeStart + clause.HandlerOffset + clause.HandlerLength) > codeEnd)
         {
-            return false;
+            BADCODE("Invalid handler region in EH clause");
         }
 
         // Find and mark all basic blocks that are part of the try region.
@@ -1700,7 +1669,7 @@ bool InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
         if (clause.Flags == CORINFO_EH_CLAUSE_FILTER)
         {
             if ((codeStart + clause.FilterOffset) > codeEnd)
-                return false;
+                BADCODE("Invalid filter region in EH clause");
 
             // The filter funclet is always stored right before its handler funclet.
             // So the filter end offset is equal to the start offset of the handler funclet.
@@ -1773,8 +1742,6 @@ bool InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
             pFinallyCallIslandBB = pFinallyCallIslandBB->pNextBB;
         }
     }
-
-    return true;
 }
 
 void InterpCompiler::EmitBranchToBB(InterpOpcode opcode, InterpBasicBlock *pTargetBB)
@@ -1805,7 +1772,7 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
 
 void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
 {
-    CHECK_STACK_RET_VOID(1);
+    CHECK_STACK(1);
     StackType argType = (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeByRef) ? StackTypeI : m_pStackPointer[-1].type;
     // offset the opcode to obtain the type specific I4/I8/R4/R8 variant.
     InterpOpcode opcodeArgType = (InterpOpcode)(opcode + argType - StackTypeI4);
@@ -1823,7 +1790,7 @@ void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int
 
 void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
 {
-    CHECK_STACK_RET_VOID(2);
+    CHECK_STACK(2);
     StackType argType1 = (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeByRef) ? StackTypeI : m_pStackPointer[-1].type;
     StackType argType2 = (m_pStackPointer[-2].type == StackTypeO || m_pStackPointer[-2].type == StackTypeByRef) ? StackTypeI : m_pStackPointer[-2].type;
 
@@ -1849,8 +1816,7 @@ void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     }
     else if (argType1 != argType2)
     {
-        m_hasInvalidCode = true;
-        return;
+        BADCODE("Branch compare args must be of the same type");
     }
 
     // offset the opcode to obtain the type specific I4/I8/R4/R8 variant.
@@ -1900,7 +1866,7 @@ void InterpCompiler::EmitLoadVar(int32_t var)
 void InterpCompiler::EmitStoreVar(int32_t var)
 {
     InterpType interpType = m_pVars[var].interpType;
-    CHECK_STACK_RET_VOID(1);
+    CHECK_STACK(1);
 
     if (m_pCBB->clauseType == BBClauseFilter)
     {
@@ -1931,7 +1897,7 @@ void InterpCompiler::EmitStoreVar(int32_t var)
 
 void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 {
-    CHECK_STACK_RET_VOID(2);
+    CHECK_STACK(2);
     StackType type1 = m_pStackPointer[-2].type;
     StackType type2 = m_pStackPointer[-1].type;
 
@@ -2048,7 +2014,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 
 void InterpCompiler::EmitUnaryArithmeticOp(int32_t opBase)
 {
-    CHECK_STACK_RET_VOID(1);
+    CHECK_STACK(1);
     StackType stackType = m_pStackPointer[-1].type;
     int32_t finalOpcode = opBase + (stackType - StackTypeI4);
 
@@ -2066,7 +2032,7 @@ void InterpCompiler::EmitUnaryArithmeticOp(int32_t opBase)
 
 void InterpCompiler::EmitShiftOp(int32_t opBase)
 {
-    CHECK_STACK_RET_VOID(2);
+    CHECK_STACK(2);
     StackType stackType = m_pStackPointer[-2].type;
     StackType shiftAmountType = m_pStackPointer[-1].type;
     int32_t typeOffset = stackType - StackTypeI4;
@@ -2085,7 +2051,7 @@ void InterpCompiler::EmitShiftOp(int32_t opBase)
 
 void InterpCompiler::EmitCompareOp(int32_t opBase)
 {
-    CHECK_STACK_RET_VOID(2);
+    CHECK_STACK(2);
     if (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeByRef)
     {
         AddIns(opBase + StackTypeI - StackTypeI4);
@@ -2324,7 +2290,7 @@ void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pRes
 
     if ((pCallInfo->methodFlags & CORINFO_FLG_EnC) && !isInterface)
     {
-        Interp_CompilationFail("Virtual call to a function added via EnC is not supported");
+        NO_WAY("Virtual call to a function added via EnC is not supported");
     }
 
     // Get the exact descriptor for the static callsite
@@ -2348,7 +2314,7 @@ void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pRes
     callArgs[0] = thisVar;
     callArgs[1] = typeVar;
     callArgs[2] = methodVar;
-    callArgs[3] = -1;
+    callArgs[3] = CALL_ARGS_TERMINATOR;
 
     AddIns(INTOP_CALL);
     m_pLastNewIns->data[0] = GetMethodDataItemIndex(getVirtualFunctionPtrHelper);
@@ -2443,7 +2409,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
             iLogicalArg++;
         }
     }
-    callArgs[numArgs] = -1;
+    callArgs[numArgs] = CALL_ARGS_TERMINATOR;
 
     InterpEmbedGenericResult newObjType;
     int32_t newObjThisVar = -1;
@@ -2662,6 +2628,9 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
             if (callInfo.sig.sigInst.methInstCount != 0)
             {
                 assert(extraParamArgLocation == INT_MAX);
+                // We should not have a type argument for the ldvirtftn path since we don't know
+                // the exact method to call until the ldvirtftn is resolved, and that only
+                // produces a function pointer.
                 EmitPushLdvirtftn(callArgs[0], &resolvedCallToken, &callInfo);
                 m_pStackPointer--;
                 int synthesizedLdvirtftnPtrVar = m_pStackPointer[0].var;
@@ -2951,7 +2920,7 @@ void InterpCompiler::EmitLdLocA(int32_t var)
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
 
-int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
+void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 {
     bool readonly = false;
     bool tailcall = false;
@@ -2976,17 +2945,8 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     InterpBasicBlock *pFirstFuncletBB = NULL;
     InterpBasicBlock *pLastFuncletBB = NULL;
 
-    if (!CreateBasicBlocks(methodInfo))
-    {
-        m_hasInvalidCode = true;
-        goto exit_bad_code;
-    }
-
-    if (!InitializeClauseBuildingBlocks(methodInfo))
-    {
-        m_hasInvalidCode = true;
-        goto exit_bad_code;
-    }
+    CreateBasicBlocks(methodInfo);
+    InitializeClauseBuildingBlocks(methodInfo);
 
     m_currentILOffset = -1;
 
@@ -3016,10 +2976,6 @@ retry_emit:
     emittedBBlocks = false;
     while (m_ip < codeEnd)
     {
-        // Check here for every opcode to avoid code bloat
-        if (m_hasInvalidCode)
-            goto exit_bad_code;
-
         int32_t insOffset = (int32_t)(m_ip - m_pILCode);
         m_currentILOffset = insOffset;
 
@@ -4125,6 +4081,7 @@ retry_emit:
             }
             case CEE_DUP:
             {
+                CHECK_STACK(1);
                 int32_t svar = m_pStackPointer[-1].var;
                 InterpType interpType = m_pVars[svar].interpType;
                 if (interpType == InterpTypeVT)
@@ -4554,8 +4511,7 @@ retry_emit:
                         m_pStackPointer--;
                         if (m_pStackPointer != m_pStackBase)
                         {
-                            m_hasInvalidCode = true;
-                            goto exit_bad_code;
+                            BADCODE("CEE_LOCALLOC not at stack base + 1");
                         }
 
                         m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
@@ -4588,6 +4544,7 @@ retry_emit:
 
                     case CEE_LDVIRTFTN:
                     {
+                        CHECK_STACK(1);
                         CORINFO_RESOLVED_TOKEN resolvedToken;
                         uint32_t token = getU4LittleEndian(m_ip + 1);
                         ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
@@ -4598,7 +4555,7 @@ retry_emit:
                         // This check really only applies to intrinsic Array.Address methods
                         if (callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE)
                         {
-                            Interp_CompilationFail("Currently do not support LDFTN of Parameterized functions");
+                            NO_WAY("Currently do not support LDFTN of Parameterized functions");
                         }
 
                         m_pStackPointer--;
@@ -4615,18 +4572,20 @@ retry_emit:
                     }
                     case CEE_LDFTN:
                     {
-                        CORINFO_RESOLVED_TOKEN resolvedToken;
-                        uint32_t token = getU4LittleEndian(m_ip + 1);
-                        ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
-
-                        memset(&callInfo, 0, sizeof(callInfo));
-                        m_compHnd->getCallInfo(&resolvedToken, constrainedClass, m_methodInfo->ftn, (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS| CORINFO_CALLINFO_LDFTN), &callInfo);
+                        {
+                            CORINFO_RESOLVED_TOKEN resolvedToken;
+                            uint32_t token = getU4LittleEndian(m_ip + 1);
+                            ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
+                            
+                            memset(&callInfo, 0, sizeof(callInfo));
+                            m_compHnd->getCallInfo(&resolvedToken, constrainedClass, m_methodInfo->ftn, (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS| CORINFO_CALLINFO_LDFTN), &callInfo);
+                        }
                         constrainedClass = NULL;
 
                         // This check really only applies to intrinsic Array.Address methods
                         if (callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE)
                         {
-                            Interp_CompilationFail("Currently do not support LDFTN of Parameterized functions");
+                            NO_WAY("Currently do not support LDFTN of Parameterized functions");
                         }
 
 DO_LDFTN:
@@ -4925,9 +4884,7 @@ DO_LDFTN:
                         break;
                     }
                     default:
-                        assert(!"Unsupported element type for LDELEM");
-                        m_hasInvalidCode = true;
-                        goto exit_bad_code;
+                        BADCODE("Unsupported element type for LDELEM");
                 }
 
                 m_ip += 5;
@@ -5085,9 +5042,7 @@ DO_LDFTN:
                         break;
                     }
                     default:
-                        assert(!"Unsupported element type for STELEM");
-                        m_hasInvalidCode = true;
-                        goto exit_bad_code;
+                        BADCODE("Unsupported element type for STELEM");
                 }
 
                 m_ip += 5;
@@ -5181,10 +5136,6 @@ DO_LDFTN:
     }
 
     UnlinkUnreachableBBlocks();
-
-    return CORJIT_OK;
-exit_bad_code:
-    return CORJIT_BADCODE;
 }
 
 InterpBasicBlock *InterpCompiler::GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB)
