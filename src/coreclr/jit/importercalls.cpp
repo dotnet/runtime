@@ -10839,7 +10839,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             assert((size == 16) || (size == 32) || (size == 64));
                             bool useSizeAgnosticVector = false;
 #ifdef TARGET_ARM64
-                            useSizeAgnosticVector = UseSveForVectorT();
+                            useSizeAgnosticVector = compExactlyDependsOn(InstructionSet_Sve) && UseSveForVectorT();
 #endif
 
                             const char* lookupClassName = className;
