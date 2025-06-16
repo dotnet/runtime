@@ -4919,12 +4919,12 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
     }
 
 #ifdef _DEBUG
-    DWORD unbreakableLockCount = 0;
+    DWORD LockCount = 0;
     // Do not care about lock check for unhandled exception.
-    while (pThread->HasUnbreakableLock())
+    while (pThread->HasLock())
     {
-        pThread->DecUnbreakableLockCount();
-        unbreakableLockCount ++;
+        pThread->DecLockCount();
+        LockCount ++;
     }
     BOOL fOwnsSpinLock = pThread->HasThreadStateNC(Thread::TSNC_OwnsSpinLock);
     if (fOwnsSpinLock)
@@ -5015,10 +5015,10 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 
 #ifdef _DEBUG
     // Do not care about lock check for unhandled exception.
-    while (unbreakableLockCount)
+    while (LockCount)
     {
-        pThread->IncUnbreakableLockCount();
-        unbreakableLockCount --;
+        pThread->IncLockCount();
+        LockCount --;
     }
     if (fOwnsSpinLock)
     {
@@ -5087,12 +5087,12 @@ void NotifyAppDomainsOfUnhandledException(
     }
 
 #ifdef _DEBUG
-    DWORD unbreakableLockCount = 0;
+    DWORD LockCount = 0;
     // Do not care about lock check for unhandled exception.
-    while (pThread->HasUnbreakableLock())
+    while (pThread->HasLock())
     {
-        pThread->DecUnbreakableLockCount();
-        unbreakableLockCount ++;
+        pThread->DecLockCount();
+        LockCount ++;
     }
     BOOL fOwnsSpinLock = pThread->HasThreadStateNC(Thread::TSNC_OwnsSpinLock);
     if (fOwnsSpinLock)
@@ -5152,10 +5152,10 @@ void NotifyAppDomainsOfUnhandledException(
 
 #ifdef _DEBUG
     // Do not care about lock check for unhandled exception.
-    while (unbreakableLockCount)
+    while (LockCount)
     {
-        pThread->IncUnbreakableLockCount();
-        unbreakableLockCount --;
+        pThread->IncLockCount();
+        LockCount --;
     }
     if (fOwnsSpinLock)
     {
@@ -11207,11 +11207,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
 VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
                                                           TypeHandle thCastTo)
 {
-     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
      Module *pModuleTypeFrom = thCastFrom.GetModule();
      Module *pModuleTypeTo = thCastTo.GetModule();
@@ -11267,11 +11263,7 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
 
 VOID RealCOMPlusThrowInvalidCastException(TypeHandle thCastFrom, TypeHandle thCastTo)
 {
-     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     // Use an InlineSString with a size of MAX_CLASSNAME_LENGTH + 1 to prevent
     // TypeHandle::GetName from having to allocate a new block of memory. This
@@ -11309,6 +11301,7 @@ VOID RealCOMPlusThrowInvalidCastException(OBJECTREF *pObj, TypeHandle thCastTo)
         ComObject::ThrowInvalidCastException(pObj, thCastTo.GetMethodTable());
     }
 #endif
+    GCX_PREEMP();
     COMPlusThrowInvalidCastException(thCastFrom, thCastTo);
 }
 

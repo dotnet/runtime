@@ -297,14 +297,8 @@ struct TakenLockInfo
 
 enum DbgStateLockType
 {
-    // EE locks (used to sync EE structures).  These do not include
-    // CRST_HOST_BREAKABLE Crsts, and are thus not held while managed
-    // code runs
+    // EE locks (used to sync EE structures).
     kDbgStateLockType_EE,
-
-    // CRST_HOST_BREAKABLE Crsts.  These can be held while arbitrary
-    // managed code runs.
-    kDbgStateLockType_HostBreakableCrst,
 
     // User locks (e.g., Monitor.Enter, ReaderWriterLock class)
     kDbgStateLockType_User,
@@ -1963,10 +1957,6 @@ inline ClrDebugState *GetClrDebugState(BOOL fAlloc)
     LOCK_TAKEN_MULTIPLE(kDbgStateLockType_EE, 1, pvLock)
 #define EE_LOCK_RELEASED(pvLock)                \
     LOCK_RELEASED_MULTIPLE(kDbgStateLockType_EE, 1, pvLock)
-#define HOST_BREAKABLE_CRST_TAKEN(pvLock)       \
-    LOCK_TAKEN_MULTIPLE(kDbgStateLockType_HostBreakableCrst, 1, pvLock)
-#define HOST_BREAKABLE_CRST_RELEASED(pvLock)    \
-    LOCK_RELEASED_MULTIPLE(kDbgStateLockType_HostBreakableCrst, 1, pvLock)
 #define USER_LOCK_TAKEN(pvLock)                 \
     LOCK_TAKEN_MULTIPLE(kDbgStateLockType_User, 1, pvLock)
 #define USER_LOCK_RELEASED(pvLock)              \
@@ -1978,8 +1968,6 @@ inline ClrDebugState *GetClrDebugState(BOOL fAlloc)
 #define LOCK_RELEASED_MULTIPLE(dbgStateLockType, cExits, pvLock)
 #define EE_LOCK_TAKEN(pvLock)
 #define EE_LOCK_RELEASED(pvLock)
-#define HOST_BREAKABLE_CRST_TAKEN(pvLock)
-#define HOST_BREAKABLE_CRST_RELEASED(pvLock)
 #define USER_LOCK_TAKEN(pvLock)
 #define USER_LOCK_RELEASED(pvLock)
 

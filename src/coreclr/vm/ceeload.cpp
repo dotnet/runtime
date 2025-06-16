@@ -66,6 +66,8 @@
 #include "typekey.h"
 #include "peimagelayout.inl"
 
+#include "interpexec.h"
+
 #ifdef TARGET_64BIT
 #define COR_VTABLE_PTRSIZED     COR_VTABLE_64BIT
 #define COR_VTABLE_NOT_PTRSIZED COR_VTABLE_32BIT
