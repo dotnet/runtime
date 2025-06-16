@@ -433,6 +433,104 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> BitwiseSelectRightInverted(Vector<ulong> select, Vector<ulong> left, Vector<ulong> right) => BitwiseSelectRightInverted(select, left, right);
 
+        /// Interleaving Xor
+
+        /// <summary>
+        /// svint8_t sveorbt[_s8](svint8_t odd, svint8_t op1, svint8_t op2)
+        ///   EORBT Zd.B, Zn.B, Zm.B
+        /// </summary>
+        public static Vector<byte> InterleavingXorEvenOdd(Vector<byte> odd, Vector<byte> left, Vector<byte> right) => InterleavingXorEvenOdd(odd, left, right);
+
+        /// <summary>
+        /// svint16_t sveorbt[_s16](svint16_t odd, svint16_t op1, svint16_t op2)
+        ///   EORBT Zd.H, Zn.H, Zm.H
+        /// </summary>
+        public static Vector<short> InterleavingXorEvenOdd(Vector<short> odd, Vector<short> left, Vector<short> right) => InterleavingXorEvenOdd(odd, left, right);
+
+        /// <summary>
+        /// svint32_t sveorbt[_s32](svint32_t odd, svint32_t op1, svint32_t op2)
+        ///   EORBT Zd.S, Zn.S, Zm.S
+        /// </summary>
+        public static Vector<int> InterleavingXorEvenOdd(Vector<int> odd, Vector<int> left, Vector<int> right) => InterleavingXorEvenOdd(odd, left, right);
+
+        /// <summary>
+        /// svint64_t sveorbt[_s64](svint64_t odd, svint64_t op1, svint64_t op2)
+        ///   EORBT Zd.D, Zn.D, Zm.D
+        /// </summary>
+        public static Vector<long> InterleavingXorEvenOdd(Vector<long> odd, Vector<long> left, Vector<long> right) => InterleavingXorEvenOdd(odd, left, right);
+
+        /// <summary>
+        /// svint8_t sveorbt[_s8](svint8_t odd, svint8_t op1, svint8_t op2)
+        ///   EORBT Zd.B, Zn.B, Zm.B
+        /// </summary>
+        public static Vector<sbyte> InterleavingXorEvenOdd(Vector<sbyte> odd, Vector<sbyte> left, Vector<sbyte> right) => InterleavingXorEvenOdd(odd, left, right);
+
+        /// <summary>
+        /// svint16_t sveorbt[_s16](svint16_t odd, svint16_t op1, svint16_t op2)
+        ///   EORBT Zd.H, Zn.H, Zm.H
+        /// </summary>
+        public static Vector<ushort> InterleavingXorEvenOdd(Vector<ushort> odd, Vector<ushort> left, Vector<ushort> right) => InterleavingXorEvenOdd(odd, left, right);
+
+        /// <summary>
+        /// svint32_t sveorbt[_s32](svint32_t odd, svint32_t op1, svint32_t op2)
+        ///   EORBT Zd.S, Zn.S, Zm.S
+        /// </summary>
+        public static Vector<uint> InterleavingXorEvenOdd(Vector<uint> odd, Vector<uint> left, Vector<uint> right) => InterleavingXorEvenOdd(odd, left, right);
+
+        /// <summary>
+        /// svint64_t sveorbt[_s64](svint64_t odd, svint64_t op1, svint64_t op2)
+        ///   EORBT Zd.D, Zn.D, Zm.D
+        /// </summary>
+        public static Vector<ulong> InterleavingXorEvenOdd(Vector<ulong> odd, Vector<ulong> left, Vector<ulong> right) => InterleavingXorEvenOdd(odd, left, right);
+
+        /// <summary>
+        /// svint8_t sveortb[_s8](svint8_t even, svint8_t op1, svint8_t op2)
+        ///   EORTB Zd.B, Zn.B, Zm.B
+        /// </summary>
+        public static Vector<byte> InterleavingXorOddEven(Vector<byte> even, Vector<byte> left, Vector<byte> right) => InterleavingXorOddEven(even, left, right);
+
+        /// <summary>
+        /// svint16_t sveortb[_s16](svint16_t even, svint16_t op1, svint16_t op2)
+        ///   EORTB Zd.H, Zn.H, Zm.H
+        /// </summary>
+        public static Vector<short> InterleavingXorOddEven(Vector<short> even, Vector<short> left, Vector<short> right) => InterleavingXorOddEven(even, left, right);
+
+        /// <summary>
+        /// svint32_t sveortb[_s32](svint32_t even, svint32_t op1, svint32_t op2)
+        ///   EORTB Zd.S, Zn.S, Zm.S
+        /// </summary>
+        public static Vector<int> InterleavingXorOddEven(Vector<int> even, Vector<int> left, Vector<int> right) => InterleavingXorOddEven(even, left, right);
+
+        /// <summary>
+        /// svint64_t sveortb[_s64](svint64_t even, svint64_t op1, svint64_t op2)
+        ///   EORTB Zd.D, Zn.D, Zm.D
+        /// </summary>
+        public static Vector<long> InterleavingXorOddEven(Vector<long> even, Vector<long> left, Vector<long> right) => InterleavingXorOddEven(even, left, right);
+
+        /// <summary>
+        /// svint8_t sveortb[_s8](svint8_t even, svint8_t op1, svint8_t op2)
+        ///   EORTB Zd.B, Zn.B, Zm.B
+        /// </summary>
+        public static Vector<sbyte> InterleavingXorOddEven(Vector<sbyte> even, Vector<sbyte> left, Vector<sbyte> right) => InterleavingXorOddEven(even, left, right);
+
+        /// <summary>
+        /// svint16_t sveortb[_s16](svint16_t even, svint16_t op1, svint16_t op2)
+        ///   EORTB Zd.H, Zn.H, Zm.H
+        /// </summary>
+        public static Vector<ushort> InterleavingXorOddEven(Vector<ushort> even, Vector<ushort> left, Vector<ushort> right) => InterleavingXorOddEven(even, left, right);
+
+        /// <summary>
+        /// svint32_t sveortb[_s32](svint32_t even, svint32_t op1, svint32_t op2)
+        ///   EORTB Zd.S, Zn.S, Zm.S
+        /// </summary>
+        public static Vector<uint> InterleavingXorOddEven(Vector<uint> even, Vector<uint> left, Vector<uint> right) => InterleavingXorOddEven(even, left, right);
+
+        /// <summary>
+        /// svint64_t sveortb[_s64](svint64_t even, svint64_t op1, svint64_t op2)
+        ///   EORTB Zd.D, Zn.D, Zm.D
+        /// </summary>
+        public static Vector<ulong> InterleavingXorOddEven(Vector<ulong> even, Vector<ulong> left, Vector<ulong> right) => InterleavingXorOddEven(even, left, right);
+
 
         // Rounding shift left
 
