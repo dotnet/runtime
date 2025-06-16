@@ -40,33 +40,24 @@ namespace ILCompiler
             return null;
         }
 
-        public static RuntimeExportInfo GetRuntimeExportInfo(this EcmaMethod This)
+        public static string GetRuntimeExportName(this EcmaMethod This)
         {
             var decoded = This.GetDecodedCustomAttribute("System.Runtime", "RuntimeExportAttribute");
             if (decoded == null)
-                return default;
+                return null;
 
             var decodedValue = decoded.Value;
 
-            RuntimeExportInfo exportInfo = default;
-
             if (decodedValue.FixedArguments.Length != 0)
-            {
-                exportInfo.Name = (string)decodedValue.FixedArguments[0].Value;
-            }
+                return (string)decodedValue.FixedArguments[0].Value;
+
             foreach (var argument in decodedValue.NamedArguments)
             {
                 if (argument.Name == "EntryPoint")
-                {
-                    exportInfo.Name = (string)argument.Value;
-                }
-                else if (argument.Name == "ConditionalConstructedDependency")
-                {
-                    exportInfo.ConditionalConstructedDependency = (TypeDesc)argument.Value;
-                }
+                    return (string)argument.Value;
             }
 
-            return exportInfo;
+            return null;
         }
 
         public static string GetUnmanagedCallersOnlyExportName(this EcmaMethod This)
@@ -144,11 +135,5 @@ namespace ILCompiler
                 (owningType is not MetadataType mdType || !mdType.IsModuleType) && /* Compiler parks some instance methods on the <Module> type */
                 !method.IsSharedByGenericInstantiations; /* Current impl limitation; can be lifted */
         }
-    }
-
-    public struct RuntimeExportInfo
-    {
-        public string Name;
-        public TypeDesc ConditionalConstructedDependency;
     }
 }

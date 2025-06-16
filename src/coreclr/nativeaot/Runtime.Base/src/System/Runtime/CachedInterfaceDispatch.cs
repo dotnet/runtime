@@ -122,6 +122,8 @@ namespace System.Runtime
             return result;
         }
 
+        internal static unsafe delegate*<object, MethodTable*, ushort, IntPtr> s_IDynamicCastableGetInterfaceImplementation;
+
         private static unsafe IntPtr RhResolveDispatchWorker(object pObject, void* cell, ref DispatchCellInfo cellInfo)
         {
             // Type of object we're dispatching on.
@@ -138,9 +140,8 @@ namespace System.Runtime
                 {
                     // Dispatch not resolved through normal dispatch map, try using the IDynamicInterfaceCastable
                     // This will either give us the appropriate result, or throw.
-                    var pfnGetInterfaceImplementation = (delegate*<object, MethodTable*, ushort, IntPtr>)
-                        pInstanceType->GetClasslibFunction(ClassLibFunctionId.IDynamicCastableGetInterfaceImplementation);
-                    pTargetCode = pfnGetInterfaceImplementation(pObject, cellInfo.InterfaceType, cellInfo.InterfaceSlot);
+                    Diagnostics.Debug.Assert(s_IDynamicCastableGetInterfaceImplementation != null);
+                    pTargetCode = s_IDynamicCastableGetInterfaceImplementation(pObject, cellInfo.InterfaceType, cellInfo.InterfaceSlot);
                     Diagnostics.Debug.Assert(pTargetCode != IntPtr.Zero);
                 }
                 return pTargetCode;

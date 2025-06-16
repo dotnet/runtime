@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -10,8 +12,17 @@ namespace System.Runtime.InteropServices
     /// Implementation of this interface on a value type will be ignored. Only non-value types are allowed
     /// to participate in a type cast failure through this interface.
     /// </remarks>
+#if NATIVEAOT
+    [EagerStaticClassConstruction]
+#endif
     public interface IDynamicInterfaceCastable
     {
+#if NATIVEAOT
+        static IDynamicInterfaceCastable()
+        {
+            Internal.Runtime.IDynamicCastableSupport.Register();
+        }
+#endif
         /// <summary>
         /// Called when an implementing class instance is cast to an interface type that
         /// is not contained in the class's metadata.
@@ -56,7 +67,7 @@ namespace System.Runtime.InteropServices
     /// <see cref="IDynamicInterfaceCastable" /> scenarios trimming friendly.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
-    public sealed class DynamicInterfaceCastableImplementationAttribute : Attribute
+    public sealed partial class DynamicInterfaceCastableImplementationAttribute : Attribute
     {
         public DynamicInterfaceCastableImplementationAttribute()
         {

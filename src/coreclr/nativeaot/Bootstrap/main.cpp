@@ -125,57 +125,12 @@ MANAGED_RUNTIME_EXPORT(AppendExceptionStackFrame)
 MANAGED_RUNTIME_EXPORT(GetSystemArrayEEType)
 MANAGED_RUNTIME_EXPORT(OnFirstChanceException)
 MANAGED_RUNTIME_EXPORT(OnUnhandledException)
-MANAGED_RUNTIME_EXPORT(IDynamicCastableIsInterfaceImplemented)
-MANAGED_RUNTIME_EXPORT(IDynamicCastableGetInterfaceImplementation)
 #ifdef FEATURE_OBJCMARSHAL
 MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalTryGetTaggedMemory)
 MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetIsTrackedReferenceCallback)
 MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback)
 MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetUnhandledExceptionPropagationHandler)
 #endif
-
-// Define "default" implementations for IDynamicInterfaceCastable methods.
-// The runtime will only export these if IDynamicInterfaceCastable is used in the application.
-
-#if defined(HOST_WINDOWS)
-#if defined(HOST_X86)
-
-#pragma comment(linker, "/alternatename:_IDynamicCastableIsInterfaceImplemented=_IDynamicCastableIsInterfaceImplementedFallback")
-extern "C" void __cdecl IDynamicCastableIsInterfaceImplementedFallback()
-{
-    abort();
-}
-
-#pragma comment(linker, "/alternatename:_IDynamicCastableGetInterfaceImplementation=_IDynamicCastableGetInterfaceImplementationFallback")
-extern "C" void __cdecl IDynamicCastableGetInterfaceImplementationFallback()
-{
-    abort();
-}
-#else
-#pragma comment(linker, "/alternatename:IDynamicCastableIsInterfaceImplemented=IDynamicCastableIsInterfaceImplementedFallback")
-extern "C" void __cdecl IDynamicCastableIsInterfaceImplementedFallback()
-{
-    abort();
-}
-
-#pragma comment(linker, "/alternatename:IDynamicCastableGetInterfaceImplementation=IDynamicCastableGetInterfaceImplementationFallback")
-extern "C" void __cdecl IDynamicCastableGetInterfaceImplementationFallback()
-{
-    abort();
-}
-#endif // HOST_X86
-
-#else
-extern "C" __attribute__((weak)) void IDynamicCastableIsInterfaceImplemented()
-{
-    abort();
-}
-
-extern "C" __attribute__((weak)) void IDynamicCastableGetInterfaceImplementation()
-{
-    abort();
-}
-#endif // HOST_WINDOWS
 
 typedef void (CDECL *pfn)();
 
@@ -188,8 +143,8 @@ static const pfn c_classlibFunctions[] = {
     &MANAGED_RUNTIME_EXPORT_NAME(GetSystemArrayEEType),
     &MANAGED_RUNTIME_EXPORT_NAME(OnFirstChanceException),
     &MANAGED_RUNTIME_EXPORT_NAME(OnUnhandledException),
-    &MANAGED_RUNTIME_EXPORT_NAME(IDynamicCastableIsInterfaceImplemented),
-    &MANAGED_RUNTIME_EXPORT_NAME(IDynamicCastableGetInterfaceImplementation),
+    nullptr, // IDynamicCastableIsInterfaceImplemented,
+    nullptr, // IDynamicCastableGetInterfaceImplementation,
 #ifdef FEATURE_OBJCMARSHAL
     &MANAGED_RUNTIME_EXPORT_NAME(ObjectiveCMarshalTryGetTaggedMemory),
     &MANAGED_RUNTIME_EXPORT_NAME(ObjectiveCMarshalGetIsTrackedReferenceCallback),

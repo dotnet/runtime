@@ -467,11 +467,12 @@ namespace System.Runtime
             return ThrowInvalidCastException(pTargetType);
         }
 
+        internal static unsafe delegate*<object, MethodTable*, bool, bool> s_IDynamicCastableIsInterfaceImplemented;
+
         private static unsafe bool IsInstanceOfInterfaceViaIDynamicInterfaceCastable(MethodTable* pTargetType, object obj, bool throwing)
         {
-            var pfnIsInterfaceImplemented = (delegate*<object, MethodTable*, bool, bool>)
-                pTargetType->GetClasslibFunction(ClassLibFunctionId.IDynamicCastableIsInterfaceImplemented);
-            return pfnIsInterfaceImplemented(obj, pTargetType, throwing);
+            Diagnostics.Debug.Assert(s_IDynamicCastableIsInterfaceImplemented != null);
+            return s_IDynamicCastableIsInterfaceImplemented(obj, pTargetType, throwing);
         }
 
         internal static unsafe bool IsDerived(MethodTable* pDerivedType, MethodTable* pBaseType)

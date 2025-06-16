@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -15,16 +16,30 @@ namespace Internal.Runtime
 {
     internal static unsafe class IDynamicCastableSupport
     {
-        [RuntimeExport("IDynamicCastableIsInterfaceImplemented", ConditionalConstructedDependency = typeof(IDynamicInterfaceCastable))]
-        internal static bool IDynamicCastableIsInterfaceImplemented(IDynamicInterfaceCastable instance, MethodTable* interfaceType, bool throwIfNotImplemented)
+        internal static unsafe void Register()
+        {
+            System.Runtime.TypeCast.s_IDynamicCastableIsInterfaceImplemented = &IDynamicCastableIsInterfaceImplemented;
+            System.Runtime.CachedInterfaceDispatch.s_IDynamicCastableGetInterfaceImplementation = &IDynamicCastableGetInterfaceImplementation;
+        }
+
+        internal static bool IDynamicCastableIsInterfaceImplemented(object instance, MethodTable* interfaceType, bool throwIfNotImplemented)
+        {
+            return IDynamicCastableIsInterfaceImplemented(Unsafe.As<IDynamicInterfaceCastable>(instance), interfaceType, throwIfNotImplemented);
+        }
+
+        private static bool IDynamicCastableIsInterfaceImplemented(IDynamicInterfaceCastable instance, MethodTable* interfaceType, bool throwIfNotImplemented)
         {
             return instance.IsInterfaceImplemented(new RuntimeTypeHandle(interfaceType), throwIfNotImplemented);
         }
 
         private static readonly object s_thunkPoolHeap = RuntimeAugments.CreateThunksHeap(RuntimeImports.GetInteropCommonStubAddress());
 
-        [RuntimeExport("IDynamicCastableGetInterfaceImplementation", ConditionalConstructedDependency = typeof(IDynamicInterfaceCastable))]
-        internal static IntPtr IDynamicCastableGetInterfaceImplementation(IDynamicInterfaceCastable instance, MethodTable* interfaceType, ushort slot)
+        internal static IntPtr IDynamicCastableGetInterfaceImplementation(object instance, MethodTable* interfaceType, ushort slot)
+        {
+            return IDynamicCastableGetInterfaceImplementation(Unsafe.As<IDynamicInterfaceCastable>(instance), interfaceType, slot);
+        }
+
+        private static IntPtr IDynamicCastableGetInterfaceImplementation(IDynamicInterfaceCastable instance, MethodTable* interfaceType, ushort slot)
         {
             RuntimeTypeHandle handle = instance.GetInterfaceImplementation(new RuntimeTypeHandle(interfaceType));
             MethodTable* implType = handle.ToMethodTable();

@@ -8,8 +8,6 @@ namespace System.Runtime
     {
         public string EntryPoint;
 
-        public Type? ConditionalConstructedDependency;
-
         public RuntimeExportAttribute(string entry)
         {
             EntryPoint = entry;
