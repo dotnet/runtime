@@ -308,7 +308,7 @@ namespace Internal.TypeSystem
         {
         }
 
-        protected ComputedInstanceFieldLayout ComputeExplicitFieldLayout(MetadataType type, int numInstanceFields)
+        protected ComputedInstanceFieldLayout ComputeExplicitFieldLayout(MetadataType type, int numInstanceFields, in ClassLayoutMetadata layoutMetadata)
         {
             // Instance slice size is the total size of instance not including the base type.
             // It is calculated as the field whose offset and size add to the greatest value.
@@ -316,7 +316,6 @@ namespace Internal.TypeSystem
             LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false, requiresAlignedBase: false) - offsetBias;
             LayoutInt instanceSize = cumulativeInstanceFieldPos + offsetBias;
 
-            ClassLayoutMetadata layoutMetadata = type.GetClassLayout();
             int packingSize = ComputePackingSize(type, layoutMetadata);
             LayoutInt largestAlignmentRequired = LayoutInt.One;
 
@@ -420,7 +419,7 @@ namespace Internal.TypeSystem
             return LayoutInt.AlignUp(cumulativeInstanceFieldPos, alignment, target);
         }
 
-        protected ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields)
+        protected ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields, in ClassLayoutMetadata layoutMetadata)
         {
             var offsets = new FieldAndOffset[numInstanceFields];
 
@@ -429,8 +428,6 @@ namespace Internal.TypeSystem
             // has offset 0 (on 32-bit platforms, this location is guaranteed to be 8-aligned).
             LayoutInt offsetBias = !type.IsValueType ? new LayoutInt(type.Context.Target.PointerSize) : LayoutInt.Zero;
             LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false, requiresAlignedBase: false) - offsetBias;
-
-            var layoutMetadata = type.GetClassLayout();
 
             LayoutInt largestAlignmentRequirement = LayoutInt.One;
             int fieldOrdinal = 0;
@@ -544,13 +541,19 @@ namespace Internal.TypeSystem
 
             if (hasAutoLayoutField)
             {
-                // CStruct does not support auto layout fields, Int128 or VectorT fields.
+                // CStruct does not support auto layout fields
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
             }
 
             if (cumulativeInstanceFieldPos == LayoutInt.Zero)
             {
                 // CStruct cannot have zero size.
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+            }
+
+            if (type.IsInlineArray)
+            {
+                // CStruct types cannot be inline arrays
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
             }
 
@@ -622,7 +625,7 @@ namespace Internal.TypeSystem
         {
         }
 
-        protected ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields)
+        protected ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields, in ClassLayoutMetadata layoutMetadata)
         {
             TypeSystemContext context = type.Context;
 
@@ -925,7 +928,7 @@ namespace Internal.TypeSystem
 
             if (type.IsInlineArray)
             {
-                AdjustForInlineArray(type, numInstanceFields, type.GetClassLayout(), ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
+                AdjustForInlineArray(type, numInstanceFields, layoutMetadata, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
             }
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout

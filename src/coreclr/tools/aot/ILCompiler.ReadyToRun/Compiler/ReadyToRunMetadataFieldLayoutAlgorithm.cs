@@ -606,7 +606,8 @@ namespace ILCompiler
 
         protected override ComputedInstanceFieldLayout ComputeInstanceFieldLayout(MetadataType type, int numInstanceFields)
         {
-            MetadataLayoutKind layoutKind = type.GetClassLayout().Kind;
+            ClassLayoutMetadata layoutMetadata = type.GetClassLayout();
+            MetadataLayoutKind layoutKind = layoutMetadata.Kind;
             if (layoutKind == MetadataLayoutKind.CStruct)
             {
                 return ComputeCStructFieldLayout(type, numInstanceFields);
@@ -620,7 +621,7 @@ namespace ILCompiler
                     ThrowHelper.ThrowTypeLoadException(type);
                 }
 
-                return ComputeExplicitFieldLayout(type, numInstanceFields);
+                return ComputeExplicitFieldLayout(type, numInstanceFields, layoutMetadata);
             }
             else if (layoutKind == MetadataLayoutKind.Sequential && !type.ContainsGCPointers)
             {
@@ -631,11 +632,11 @@ namespace ILCompiler
                     ThrowHelper.ThrowTypeLoadException(type);
                 }
 
-                return ComputeSequentialFieldLayout(type, numInstanceFields);
+                return ComputeSequentialFieldLayout(type, numInstanceFields, layoutMetadata);
             }
             else
             {
-                return ComputeAutoFieldLayout(type, numInstanceFields);
+                return ComputeAutoFieldLayout(type, numInstanceFields, layoutMetadata);
             }
         }
 

@@ -14204,7 +14204,7 @@ namespace System.Runtime.InteropServices
         public void SetHandleAsInvalid() { }
     }
 
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct, Inherited=false)]
     public sealed class ExtendedLayoutAttribute : System.Attribute
     {
         public ExtendedLayoutAttribute(System.Runtime.InteropServices.ExtendedLayoutKind layoutKind) { }
@@ -14217,7 +14217,7 @@ namespace System.Runtime.InteropServices
     {
         public ExternalException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         protected ExternalException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ExternalException(string? message) { }
         public ExternalException(string? message, System.Exception? inner) { }
