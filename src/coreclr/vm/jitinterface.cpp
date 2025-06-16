@@ -10585,6 +10585,8 @@ bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
 
     bool success = true;
 
+    DebuggerU2MCatchHandlerFrame catchFrame(true /* catchesAllExceptions */);
+
 #if !defined(TARGET_UNIX)
 
     RunWithErrorTrapFilterParam trapParam;
