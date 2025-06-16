@@ -38,8 +38,10 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
 
     m_pAssembly->SetDomainAssembly(this);
 
+#ifndef FEATURE_PEIMAGE_FLAT_LAYOUT
     // Creating the Assembly should have ensured the PEAssembly is loaded
     _ASSERT(GetPEAssembly()->IsLoaded());
+#endif
 }
 
 DomainAssembly::~DomainAssembly()

@@ -329,7 +329,7 @@ inline BOOL PEAssembly::IsReadyToRun()
     }
     CONTRACTL_END;
 
-    if (HasPEImage())
+    if (HasPEImage() && HasLoadedPEImage())
     {
         return GetLoadedLayout()->HasReadyToRunHeader();
     }

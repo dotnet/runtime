@@ -636,11 +636,13 @@ PTR_PEImageLayout PEImage::GetOrCreateLayoutInternal(DWORD imageLayoutMask)
 
         _ASSERTE(bIsLoadedLayoutSuitable || bIsFlatLayoutSuitable);
 
+#ifndef FEATURE_PEIMAGE_FLAT_LAYOUT
         if (bIsLoadedLayoutPreferred)
         {
             _ASSERTE(bIsLoadedLayoutSuitable);
             pRetVal = PEImage::CreateLoadedLayout(!bIsFlatLayoutSuitable);
         }
+#endif
 
         if (pRetVal == NULL)
         {
