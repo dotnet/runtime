@@ -283,7 +283,7 @@ public:
     //return TRUE if GC actually happens, otherwise FALSE
     bool StressHeap(gc_alloc_context * acontext);
 
-#ifndef FEATURE_NATIVEAOT // Redhawk forces relocation a different way
+#ifndef FEATURE_NATIVEAOT // NativeAOT forces relocation a different way
 #ifdef STRESS_HEAP
 protected:
 

@@ -2,7 +2,7 @@
   <!-- This project is publishes a self-contained copy of crossgen2. -->
   <PropertyGroup>
     <_IsPublishing>true</_IsPublishing>
-    <!-- Use portable/base RIDs to ensure restore works for AOT tools, avoiding opaque distro-specific OutputRID in source-build scenarios -->
+    <!-- Use portable/base RIDs to ensure restore works for AOT tools, avoiding opaque distro-specific TargetRid in source-build scenarios -->
     <RuntimeIdentifier>$(PortableOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <PublishDir>$(RuntimeBinDir)crossgen2-published/</PublishDir>
     <SelfContained>true</SelfContained>

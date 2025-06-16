@@ -279,12 +279,18 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
     RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
 
     // EEType for GC statics are not fully populated and they do not have a valid TypeManager. We will identify them by checking for `ElementType_Unknown`.
-    // We will not be able to get the osModuleHandle for these
     ULONGLONG osModuleHandle = 0;
     if (pEEType->GetElementType() != ElementType_Unknown)
     {
         osModuleHandle = (ULONGLONG) pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
     }
+    else
+    {
+        MethodTable * pBaseEEType = pEEType->GetNonArrayBaseType();
+        _ASSERTE(pBaseEEType->GetNonArrayBaseType() == NULL);
+        osModuleHandle = (ULONGLONG) pBaseEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
+    }
+
     pVal->fixedSizedData.ModuleID = osModuleHandle;
 
     if (pEEType->IsParameterizedType())
@@ -312,7 +318,8 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
         // So no other type flags are applicable to set
     }
 
-    ULONGLONG rvaType = osModuleHandle == 0 ? 0 : (ULONGLONG(pEEType) - osModuleHandle);
+    MethodTable* pTypeForRva = pEEType->IsDynamicType() ? pEEType->GetDynamicTemplateType() : pEEType;
+    ULONGLONG rvaType = ULONGLONG(pTypeForRva) - osModuleHandle;
     pVal->fixedSizedData.TypeNameID = (DWORD) rvaType;
 
     // Now that we know the full size of this type's data, see if it fits in our
@@ -354,7 +361,7 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
 //
 // Arguments:
 //      * thAsAddr - MethodTable to log
-//      * typeLogBehavior - Ignored in Redhawk builds
+//      * typeLogBehavior - Ignored in NativeAOT builds
 //
 
 void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr)
@@ -384,7 +391,7 @@ void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr)
     }
     else if (cTypeParams > 1)
     {
-        
+
         ASSERT_UNCONDITIONALLY("unexpected value of cTypeParams greater than 1");
     }
 }

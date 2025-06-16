@@ -48,6 +48,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Playwright" Version="1.47.0" />
     <PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.10" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
 
     <None Include="$(BrowserProjectRoot)\test-main.js" CopyToOutputDirectory="PreserveNewest" />
@@ -95,6 +96,7 @@
       <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">-trait category=no-fingerprinting</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">-trait category=bundler-friendly</_XUnitTraitArg>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
@@ -116,6 +118,9 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WASM_FINGERPRINT_ASSETS=$(WasmFingerprintAssets)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WASM_FINGERPRINT_ASSETS=$(WasmFingerprintAssets)" />
 
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WASM_BUNDLER_FRIENDLY_BOOT_CONFIG=$(WasmBundlerFriendlyBootConfig)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WASM_BUNDLER_FRIENDLY_BOOT_CONFIG=$(WasmBundlerFriendlyBootConfig)" />
+
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
 
@@ -134,8 +139,8 @@
 
     <PropertyGroup>
       <!-- Wasm.Build.Tests are not a shipping project, PackageVersion will have a version suffix even for release branch, where actual runtime pack version doesn't have version suffix. Copy & paste to Wasi.Build.Tests -->
-      <_RuntimePackCurrentVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</_RuntimePackCurrentVersion>
-      <_RuntimePackCurrentVersion Condition="'$(StabilizePackageVersion)' != 'true'">$(PackageVersion)</_RuntimePackCurrentVersion>
+      <_RuntimePackCurrentVersion Condition="'$(DotNetFinalVersionKind)' != ''">$(ProductVersion)</_RuntimePackCurrentVersion>
+      <_RuntimePackCurrentVersion Condition="'$(DotNetFinalVersionKind)' == ''">$(PackageVersion)</_RuntimePackCurrentVersion>
     </PropertyGroup>
     <ItemGroup>
       <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER10" />

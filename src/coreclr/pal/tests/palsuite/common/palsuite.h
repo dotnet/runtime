@@ -118,7 +118,6 @@ BOOL Cleanup(HANDLE *hArray, DWORD dwIndex);
 #define NUM_TOKENS 3
 
 extern HANDLE hToken[NUM_TOKENS];
-extern CRITICAL_SECTION CriticalSection;
 
 /*
  * Take two wide strings representing file and directory names
