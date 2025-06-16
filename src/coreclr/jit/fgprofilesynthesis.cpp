@@ -9,6 +9,92 @@
 
 #include "fgprofilesynthesis.h"
 
+/* static */ PhaseStatus ProfileSynthesis::AdjustThrowEdgeLikelihoods(Compiler* compiler)
+{
+    const FlowGraphDfsTree* dfsTree = compiler->m_dfsTree;
+    assert(dfsTree != nullptr);
+    BitVecTraits traits = dfsTree->PostOrderTraits();
+    BitVec       willThrow(BitVecOps::MakeEmpty(&traits));
+
+    auto tweakLikelihoods = [&](BasicBlock* block) {
+        assert(block->KindIs(BBJ_COND));
+        FlowEdge *throwEdge, *normalEdge;
+
+        if (BitVecOps::IsMember(&traits, willThrow, block->GetTrueTarget()->bbPostorderNum))
+        {
+            throwEdge  = block->GetTrueEdge();
+            normalEdge = block->GetFalseEdge();
+        }
+        else
+        {
+            throwEdge  = block->GetFalseEdge();
+            normalEdge = block->GetTrueEdge();
+        }
+
+        throwEdge->setLikelihood(throwLikelihood);
+        normalEdge->setLikelihood(1.0 - throwLikelihood);
+    };
+
+    bool modified = false;
+
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        BasicBlock* const block = dfsTree->GetPostOrder(i);
+        if (block->KindIs(BBJ_THROW))
+        {
+            JITDUMP(FMT_BB " will throw.\n", block->bbNum);
+            BitVecOps::AddElemD(&traits, willThrow, i);
+        }
+        else if ((block->GetUniqueSucc() != nullptr) &&
+                 BitVecOps::IsMember(&traits, willThrow, block->GetUniqueSucc()->bbPostorderNum))
+        {
+            JITDUMP(FMT_BB " flows into a throw block.\n", block->bbNum);
+            BitVecOps::AddElemD(&traits, willThrow, i);
+        }
+        else
+        {
+            bool anyPathThrows = false;
+            bool allPathsThrow = true;
+
+            for (BasicBlock* const succBlock : block->Succs(compiler))
+            {
+                if (BitVecOps::IsMember(&traits, willThrow, succBlock->bbPostorderNum))
+                {
+                    anyPathThrows = true;
+                }
+                else
+                {
+                    allPathsThrow = false;
+                }
+            }
+
+            if (anyPathThrows)
+            {
+                JITDUMP(FMT_BB " flows into a throw block.\n", block->bbNum);
+                if (allPathsThrow)
+                {
+                    BitVecOps::AddElemD(&traits, willThrow, i);
+                }
+                else if (block->KindIs(BBJ_COND) && block->GetTrueEdge()->isHeuristicBased())
+                {
+                    assert(block->GetFalseEdge()->isHeuristicBased());
+                    tweakLikelihoods(block);
+                    modified = true;
+                }
+            }
+        }
+    }
+
+    if (modified && compiler->fgIsUsingProfileWeights())
+    {
+        JITDUMP("Modified edge likelihoods. Data %s inconsistent.\n",
+                compiler->fgPgoConsistent ? "is now" : "was already");
+        compiler->fgPgoConsistent = false;
+    }
+
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
 // TODO
 //
 // * vet against some real data
