@@ -476,7 +476,7 @@ void AsyncTransformation::Transform(
     unsigned stateNum = (unsigned)m_resumptionBBs.size();
     JITDUMP("  Assigned state %u\n", stateNum);
 
-    BasicBlock* suspendBB = CreateSuspension(block, stateNum, life, layout);
+    BasicBlock* suspendBB = CreateSuspension(block, call, stateNum, life, layout);
 
     CreateCheckAndSuspendAfterCall(block, callDefInfo, life, suspendBB, remainder);
 
@@ -828,6 +828,7 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
 //
 // Parameters:
 //   block    - The block containing the async call
+//   call     - The async call
 //   stateNum - State number assigned to this suspension point
 //   life     - Liveness information about live locals
 //   layout   - Layout information for the continuation object
@@ -836,6 +837,7 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
 //   The new basic block that was created.
 //
 BasicBlock* AsyncTransformation::CreateSuspension(BasicBlock*               block,
+                                                  GenTreeCall*              call,
                                                   unsigned                  stateNum,
                                                   AsyncLiveness&            life,
                                                   const ContinuationLayout& layout)
@@ -894,6 +896,8 @@ BasicBlock* AsyncTransformation::CreateSuspension(BasicBlock*               bloc
         continuationFlags |= CORINFO_CONTINUATION_NEEDS_EXCEPTION;
     if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
         continuationFlags |= CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA;
+    if ((call->gtCallMoreFlags & GTF_CALL_M_ASYNC_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
+        continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT;
 
     newContinuation      = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
     unsigned flagsOffset = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo.continuationFlagsFldHnd);

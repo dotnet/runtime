@@ -85,6 +85,7 @@ class AsyncTransformation
     CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness& life);
 
     BasicBlock*  CreateSuspension(BasicBlock*               block,
+                                  GenTreeCall*              call,
                                   unsigned                  stateNum,
                                   AsyncLiveness&            life,
                                   const ContinuationLayout& layout);

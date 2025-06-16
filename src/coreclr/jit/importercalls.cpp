@@ -709,6 +709,16 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     if (sig->isAsyncCall())
     {
         call->AsCall()->SetIsAsync();
+        JITDUMP("Call is async");
+        if ((prefixFlags & PREFIX_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
+        {
+            call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_ASYNC_CONTINUE_ON_CAPTURED_CONTEXT;
+            JITDUMP(" and continues on captured context\n");
+        }
+        else
+        {
+            JITDUMP(" and does not continue on captured context\n");
+        }
     }
 
     // Now create the argument list.

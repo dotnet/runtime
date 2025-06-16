@@ -4435,6 +4435,7 @@ private:
 #ifdef DEBUG
         PREFIX_TAILCALL_STRESS = 0x00000040, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
 #endif
+        PREFIX_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000080, // call should continue on captured synchronization context
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);

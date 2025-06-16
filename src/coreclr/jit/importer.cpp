@@ -9113,6 +9113,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (compIsAsync() && JitConfig.JitOptimizeAwait())
                     {
                         isAwait = impMatchAwaitPattern(codeAddr, codeEndp, &configVal);
+                        // All awaits continue on captured context unless explicitly
+                        // configured not to
+                        if (isAwait && (configVal != 0))
+                        {
+                            prefixFlags |= PREFIX_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT;
+                        }
                     }
 
                     if (isAwait)
@@ -9123,7 +9129,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // There is a runtime async variant that is implicitly awaitable, just call that.
                             // if configured, skip {ldc call ConfigureAwait}
                             if (configVal >= 0)
+                            {
                                 codeAddr += 2 + sizeof(mdToken);
+                            }
 
                             // Skip the call to `Await`
                             codeAddr += 1 + sizeof(mdToken);
@@ -9132,7 +9140,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             // This can happen in rare cases when the Task-returning method is not a runtime Async
                             // function. For example "T M1<T>(T arg) => arg" when called with a Task argument. Treat
-                            // that as a regualr call that is Awaited
+                            // that as a regular call that is Awaited
                             _impResolveToken(CORINFO_TOKENKIND_Method);
                         }
                     }
