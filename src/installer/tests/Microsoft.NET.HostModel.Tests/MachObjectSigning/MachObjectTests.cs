@@ -149,8 +149,8 @@ public class MachObjectTests
 
     // test all the binaries compared to codesinginfo from codesign output
     [Theory]
-    [MemberData(nameof(GetTestFilePaths), nameof(EmbeddedSignatureBlobMatchesCodesignInfo
-))]
+    [MemberData(nameof(GetTestFilePaths), nameof(EmbeddedSignatureBlobMatchesCodesignInfo))]
+    [PlatformSpecific(TestPlatforms.OSX)]
     public void EmbeddedSignatureBlobMatchesCodesignInfo(string filePath, TestArtifact testArtifact)
     {
         if(!SigningTests.IsSigned(filePath))
