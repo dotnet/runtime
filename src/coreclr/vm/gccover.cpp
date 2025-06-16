@@ -20,7 +20,6 @@
 #pragma warning(disable:4663)
 
 #include "eeconfig.h"
-#include "gms.h"
 #include "utsem.h"
 #include "gccover.h"
 #include "virtualcallstub.h"
@@ -401,15 +400,18 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
         }
     }
 
-    if (stubKind == STUB_CODE_BLOCK_PRECODE)
-    {
-        // The address looks like a value stub, try to get the method descriptor.
-        return MethodDesc::GetMethodDescFromStubAddr(target, TRUE);
-    }
-
     if (stubKind == STUB_CODE_BLOCK_STUBPRECODE)
     {
-        return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(target))->GetMethodDesc();
+        Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(target);
+        switch (pPrecode->GetType())
+        {
+            case PRECODE_STUB:
+            case PRECODE_NDIRECT_IMPORT:
+            case PRECODE_THISPTR_RETBUF:
+                return dac_cast<PTR_MethodDesc>(pPrecode->AsStubPrecode()->GetMethodDesc());
+            default:
+                return nullptr;
+        }
     }
 
     if (stubKind == STUB_CODE_BLOCK_FIXUPPRECODE)
@@ -435,44 +437,16 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
 
 void ReplaceInstrAfterCall(PBYTE instrToReplace, MethodDesc* callMD)
 {
-    ReturnKind returnKind = callMD->GetReturnKind(true);
+    ReturnKind returnKind = callMD->GetReturnKind();
     if (!IsValidReturnKind(returnKind))
     {
         // SKip GC coverage after the call.
         return;
     }
-    _ASSERTE(IsValidReturnKind(returnKind));
 
-    bool ispointerKind = IsPointerReturnKind(returnKind);
-    if (ispointerKind)
+    if (IsPointerReturnKind(returnKind))
     {
-        bool protectRegister[2] = { false, false };
-
-        bool moreRegisters = false;
-
-        ReturnKind fieldKind1 = ExtractRegReturnKind(returnKind, 0, moreRegisters);
-        if (IsPointerFieldReturnKind(fieldKind1))
-        {
-            protectRegister[0] = true;
-        }
-        if (moreRegisters)
-        {
-            ReturnKind fieldKind2 = ExtractRegReturnKind(returnKind, 1, moreRegisters);
-            if (IsPointerFieldReturnKind(fieldKind2))
-            {
-                protectRegister[1] = true;
-            }
-        }
-        _ASSERTE(!moreRegisters);
-
-        if (protectRegister[0] && !protectRegister[1])
-        {
-            *instrToReplace = INTERRUPT_INSTR_PROTECT_FIRST_RET;
-        }
-        else
-        {
-            _ASSERTE(!"Not expected multi reg return with pointers.");
-        }
+        *instrToReplace = INTERRUPT_INSTR_PROTECT_FIRST_RET;
     }
     else
     {
@@ -749,19 +723,15 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         pThread->Thread::InitRegDisplay(&regDisp, &copyRegs, true);
         pThread->UnhijackThread();
 
-        CodeManState codeManState;
-        codeManState.dwIsSet = 0;
-
         // unwind out of the prolog or epilog
-        gcCover->codeMan->UnwindStackFrame(&regDisp,
-                &codeInfo, UpdateAllRegs, &codeManState);
+        gcCover->codeMan->UnwindStackFrame(&regDisp, &codeInfo, UpdateAllRegs);
 
         // Note we always doing the unwind, since that at does some checking (that we
         // unwind to a valid return address), but we only do the precise checking when
         // we are certain we have a good caller state
         if (gcCover->doingEpilogChecks) {
             // Confirm that we recovered our register state properly
-            _ASSERTE(regDisp.PCTAddr == TADDR(gcCover->callerRegs.Esp));
+            _ASSERTE(GetRegdisplayPCTAddr(&regDisp) == TADDR(gcCover->callerRegs.Esp));
 
             // If a GC happened in this function, then the registers will not match
             // precisely.  However there is still checks we can do.  Also we can update
@@ -1332,7 +1302,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
         RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
         return TRUE;
     }
-    
+
     // The thread is in preemptive mode. Normally, it should not be able to trigger GC.
     // Besides the GC may be already happening and scanning our stack.
     if (!pThread->PreemptiveGCDisabled())

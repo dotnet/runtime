@@ -8,7 +8,7 @@
 
 LEAF_ENTRY StubPrecodeCode
     pcaddi  $r21, 0x1004  //4, for Type encoding.
-    ld.d  $t2,$r21, (StubPrecodeData__MethodDesc - 4*4)
+    ld.d  $t2,$r21, (StubPrecodeData__SecretParam - 4*4)
     ld.d  $r21,$r21,  (StubPrecodeData__Target - 4*4)
     jirl  $r0,$r21,0
 LEAF_END_MARKED StubPrecodeCode

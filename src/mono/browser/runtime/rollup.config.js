@@ -20,7 +20,6 @@ const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace
 const wasmObjDir = process.env.WasmObjDir ? process.env.WasmObjDir.replace(/"/g, "") : "obj";
 const wasmEnableThreads = process.env.WasmEnableThreads === "true" ? true : false;
 const wasmEnableSIMD = process.env.WASM_ENABLE_SIMD === "1" ? true : false;
-const wasmEnablePerfTracing = process.env.FEATURE_PERFTRACING === "1" ? true : false;
 const wasmEnableExceptionHandling = process.env.WASM_ENABLE_EH === "1" ? true : false;
 const wasmEnableJsInteropByValue = process.env.ENABLE_JS_INTEROP_BY_VALUE == "1" ? true : false;
 // because of stack walk at src/mono/browser/debugger/BrowserDebugProxy/MonoProxy.cs
@@ -95,6 +94,11 @@ const checkNoRuntime =
     pattern: /_runtimeModuleLoaded/gm,
     failure: "module should not contain runtimeModuleLoaded member. This is probably duplicated code in the output caused by a dependency on the runtime module."
 };
+const checkNoDiagnostics =
+{
+    pattern: /_diagnosticModuleLoaded/gm,
+    failure: "module should not contain _diagnosticModuleLoaded member. This is probably duplicated code in the output caused by a dependency on the runtime module."
+};
 
 
 let gitHash;
@@ -109,7 +113,6 @@ const envConstants = {
     configuration,
     wasmEnableThreads,
     wasmEnableSIMD,
-    wasmEnablePerfTracing,
     wasmEnableExceptionHandling,
     gitHash,
     wasmEnableJsInteropByValue,
@@ -168,13 +171,14 @@ const loaderConfig = {
             format: "es",
             file: nativeBinDir + "/dotnet.js",
             banner,
+            intro: "/*! bundlerFriendlyImports */",
             plugins,
             sourcemap: true,
             sourcemapPathTransform,
         }
     ],
     external: externalDependencies,
-    plugins: [nodeResolve(), regexReplace(inlineAssert), regexCheck([checkAssert, checkNoRuntime]), ...outputCodePlugins],
+    plugins: [nodeResolve(), regexReplace(inlineAssert), regexCheck([checkAssert, checkNoRuntime, checkNoDiagnostics]), ...outputCodePlugins],
     onwarn: onwarn
 };
 const runtimeConfig = {
@@ -191,7 +195,24 @@ const runtimeConfig = {
         }
     ],
     external: externalDependencies,
-    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader]), ...outputCodePlugins],
+    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader, checkNoDiagnostics]), ...outputCodePlugins],
+    onwarn: onwarn
+};
+const diagConfig = {
+    treeshake: !isDebug,
+    input: "diagnostics/index.ts",
+    output: [
+        {
+            format: "es",
+            file: nativeBinDir + "/dotnet.diagnostics.js",
+            banner,
+            plugins,
+            sourcemap: true,
+            sourcemapPathTransform,
+        }
+    ],
+    external: externalDependencies,
+    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader, checkNoRuntime]), ...outputCodePlugins],
     onwarn: onwarn
 };
 const wasmImportsConfig = {
@@ -241,6 +262,7 @@ if (isDebug) {
 const allConfigs = [
     loaderConfig,
     runtimeConfig,
+    diagConfig,
     wasmImportsConfig,
     typesConfig,
 ]

@@ -411,13 +411,6 @@ EXTERN_C void STDMETHODCALLTYPE ProfileTailcallNaked(UINT_PTR clientData);
 // Notes:
 //     This function (or one of its callees) will log an error to the event log
 //     if there is a failure
-//
-// Assumptions:
-//    InitializeProfiling is called during startup, AFTER the host has initialized its
-//    settings and the config variables have been read, but BEFORE the finalizer thread
-//    has entered its first wait state.  ASSERTs are placed in
-//    code:ProfilingAPIAttachDetach::Initialize (which is called by this function, and
-//    which depends on these assumptions) to verify.
 
 // static
 HRESULT ProfilingAPIUtility::InitializeProfiling()
@@ -707,8 +700,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
         return hr;
     }
 
-    char clsidUtf8[GUID_STR_BUFFER_LEN];
-    GuidToLPSTR(clsid, clsidUtf8);
+    char clsidUtf8[MINIPAL_GUID_BUFFER_LEN];
+    minipal_guid_as_string(clsid, clsidUtf8, MINIPAL_GUID_BUFFER_LEN);
     hr = LoadProfiler(
         kStartupLoad,
         &clsid,
@@ -741,8 +734,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiler loading from GUID/Path stored from the IPC channel."));
         CLSID *pClsid = &(item->guid);
 
-        char clsidUtf8[GUID_STR_BUFFER_LEN];
-        GuidToLPSTR(*pClsid, clsidUtf8);
+        char clsidUtf8[MINIPAL_GUID_BUFFER_LEN];
+        minipal_guid_as_string(*pClsid, clsidUtf8, MINIPAL_GUID_BUFFER_LEN);
         HRESULT hr = LoadProfiler(
             kStartupLoad,
             pClsid,
@@ -824,8 +817,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
             continue;
         }
 
-        char clsidUtf8[GUID_STR_BUFFER_LEN];
-        GuidToLPSTR(clsid, clsidUtf8);
+        char clsidUtf8[MINIPAL_GUID_BUFFER_LEN];
+        minipal_guid_as_string(clsid, clsidUtf8, MINIPAL_GUID_BUFFER_LEN);
         hr = LoadProfiler(
             kStartupLoad,
             &clsid,

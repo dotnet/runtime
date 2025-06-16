@@ -5,6 +5,20 @@
 #define _COMPILER_H_
 
 #include "intops.h"
+#include "datastructs.h"
+#include "enum_class_flags.h"
+
+TArray<char> PrintMethodName(COMP_HANDLE comp,
+                             CORINFO_CLASS_HANDLE  clsHnd,
+                             CORINFO_METHOD_HANDLE methHnd,
+                             CORINFO_SIG_INFO*     sig,
+                             bool                  includeAssembly,
+                             bool                  includeClass,
+                             bool                  includeClassInstantiation,
+                             bool                  includeMethodInstantiation,
+                             bool                  includeSignature,
+                             bool                  includeReturnType,
+                             bool                  includeThisSpecifier);
 
 // Types that can exist on the IL execution stack. They are used only during
 // IL import compilation stage.
@@ -15,8 +29,13 @@ enum StackType {
     StackTypeR8,
     StackTypeO,
     StackTypeVT,
-    StackTypeMP,
-    StackTypeF
+    StackTypeByRef,
+    StackTypeF,
+#ifdef TARGET_64BIT
+    StackTypeI = StackTypeI8
+#else
+    StackTypeI = StackTypeI4
+#endif
 };
 
 // Types relevant for interpreter vars and opcodes. They are used in the final
@@ -32,7 +51,8 @@ enum InterpType {
     InterpTypeR8,
     InterpTypeO,
     InterpTypeVT,
-    InterpTypeVOID,
+    InterpTypeByRef,
+    InterpTypeVoid,
 #ifdef TARGET_64BIT
     InterpTypeI = InterpTypeI8
 #else
@@ -40,16 +60,40 @@ enum InterpType {
 #endif
 };
 
+#ifdef DEBUG
+#define INTERP_DUMP(...)            \
+    {                               \
+        if (m_verbose)              \
+            printf(__VA_ARGS__);    \
+    }
+#else
+#define INTERP_DUMP(...)
+#endif
+
+struct InterpInst;
+struct InterpBasicBlock;
+
 struct InterpCallInfo
 {
     // For call instructions, this represents an array of all call arg vars
     // in the order they are pushed to the stack. This makes it easy to find
     // all source vars for these types of opcodes. This is terminated with -1.
-    int *pCallArgs;
-    int callOffset;
+    int32_t *pCallArgs;
+    int32_t callOffset;
+    union {
+        // Array of call dependencies that need to be resolved before
+        TSList<InterpInst*> *callDeps;
+        // Stack end offset of call arguments
+        int32_t callEndOffset;
+    };
 };
 
-struct InterpBasicBlock;
+enum InterpInstFlags
+{
+    INTERP_INST_FLAG_CALL               = 0x01,
+    // Flag used internally by the var offset allocator
+    INTERP_INST_FLAG_ACTIVE_CALL        = 0x02
+};
 
 struct InterpInst
 {
@@ -58,11 +102,12 @@ struct InterpInst
     {
         InterpBasicBlock *pTargetBB; // target basic block for branch instructions
         InterpBasicBlock **ppTargetBBTable; // basic block table for switch instruction
-        InterpCallInfo *pCallInfo; // additional information for call instructions 
+        InterpCallInfo *pCallInfo; // additional information for call instructions
     } info;
 
     int32_t opcode;
     int32_t ilOffset;
+    int32_t nativeOffset;
     uint32_t flags;
     int32_t dVar;
     int32_t sVars[3]; // Currently all instructions have at most 3 sregs
@@ -94,32 +139,127 @@ struct InterpInst
 };
 
 #define CALL_ARGS_SVAR  -2
+#define CALL_ARGS_TERMINATOR -1
 
+struct StackInfo;
+
+enum InterpBBState
+{
+    BBStateNotEmitted,
+    BBStateEmitting,
+    BBStateEmitted
+};
+
+enum InterpBBClauseType
+{
+    BBClauseNone,
+    BBClauseTry,
+    BBClauseCatch,
+    BBClauseFinally,
+    BBClauseFilter,
+};
 
 struct InterpBasicBlock
 {
     int32_t index;
     int32_t ilOffset, nativeOffset;
+    int32_t nativeEndOffset;
     int32_t stackHeight;
+    StackInfo *pStackState;
 
     InterpInst *pFirstIns, *pLastIns;
     InterpBasicBlock *pNextBB;
 
+    // * If this basic block is a finally, this points to a finally call island that is located where the finally
+    //   was before all funclets were moved to the end of the method.
+    // * If this basic block is a call island, this points to the next finally call island basic block.
+    // * Otherwise, this is NULL.
+    InterpBasicBlock *pFinallyCallIslandBB;
+    // Target of a leave instruction that is located in this basic block. NULL if there is none.
+    InterpBasicBlock *pLeaveTargetBB;
+
     int inCount, outCount;
     InterpBasicBlock **ppInBBs;
     InterpBasicBlock **ppOutBBs;
+
+    InterpBBState emitState;
+
+    // Type of the innermost try block, catch, filter, or finally that contains this basic block.
+    uint8_t clauseType;
+
+    // True indicates that this basic block is the first block of a filter, catch or filtered handler funclet.
+    bool isFilterOrCatchFuncletEntry;
+
+    // If this basic block is a catch or filter funclet entry, this is the index of the variable
+    // that holds the exception object.
+    int clauseVarIndex;
+
+    // Number of catch, filter or finally clauses that overlap with this basic block.
+    int32_t overlappingEHClauseCount;
+
+    InterpBasicBlock(int32_t index) : InterpBasicBlock(index, 0) { }
+
+    InterpBasicBlock(int32_t index, int32_t ilOffset)
+    {
+        this->index = index;
+        this->ilOffset = ilOffset;
+        nativeOffset = -1;
+        nativeEndOffset = -1;
+        stackHeight = -1;
+
+        pFirstIns = pLastIns = NULL;
+        pNextBB = NULL;
+        pFinallyCallIslandBB = NULL;
+        pLeaveTargetBB = NULL;
+
+        inCount = 0;
+        outCount = 0;
+
+        emitState = BBStateNotEmitted;
+
+        clauseType = BBClauseNone;
+        isFilterOrCatchFuncletEntry = false;
+        clauseVarIndex = -1;
+        overlappingEHClauseCount = 0;
+    }
 };
 
 struct InterpVar
 {
     CORINFO_CLASS_HANDLE clsHnd;
-    InterpType mt;
-    int indirects;
+    InterpType interpType;
     int offset;
     int size;
     // live_start and live_end are used by the offset allocator
-    int liveStart;
-    int liveEnd;
+    InterpInst* liveStart;
+    InterpInst* liveEnd;
+    // index of first basic block where this var is used
+    int bbIndex;
+    // If var is callArgs, this is the call instruction using it.
+    // Only used by the var offset allocator
+    InterpInst *call;
+
+    unsigned int callArgs : 1; // Var used as argument to a call
+    unsigned int noCallArgs : 1; // Var can't be used as argument to a call, needs to be copied to temp
+    unsigned int global : 1; // Dedicated stack offset throughout method execution
+    unsigned int ILGlobal : 1; // Args and IL locals
+    unsigned int alive : 1; // Used internally by the var offset allocator
+
+    InterpVar(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size)
+    {
+        this->interpType = interpType;
+        this->clsHnd = clsHnd;
+        this->size = size;
+        offset = -1;
+        liveStart = NULL;
+        bbIndex = -1;
+
+        callArgs = false;
+        noCallArgs = false;
+        global = false;
+        ILGlobal = false;
+        alive = false;
+    }
 };
 
 struct StackInfo
@@ -133,28 +273,142 @@ struct StackInfo
     // The var associated with the value of this stack entry. Every time we push on
     // the stack a new var is created.
     int var;
+
+    StackInfo(StackType type)
+    {
+        this->type = type;
+        clsHnd = NULL;
+        size = 0;
+        var = -1;
+    }
 };
 
-typedef class ICorJitInfo* COMP_HANDLE;
+enum RelocType
+{
+    RelocLongBranch,
+    RelocSwitch
+};
+
+struct Reloc
+{
+    RelocType type;
+    // For branch relocation, how many sVar slots to skip
+    int skip;
+    // Base offset that the relative offset to be embedded in IR applies to
+    int32_t offset;
+    InterpBasicBlock *pTargetBB;
+
+    Reloc(RelocType type, int32_t offset, InterpBasicBlock *pTargetBB, int skip)
+    {
+        this->type = type;
+        this->offset = offset;
+        this->pTargetBB = pTargetBB;
+        this->skip = skip;
+    }
+};
+
+
+class InterpIAllocator;
+
+// Entry of the table where for each leave instruction we store the first finally call island
+// to be executed when the leave instruction is executed.
+struct LeavesTableEntry
+{
+    // offset of the CEE_LEAVE instruction
+    int32_t ilOffset;
+    // The BB of the call island BB that will be the first to call when the leave
+    // instruction is executed.
+    InterpBasicBlock *pFinallyCallIslandBB;
+};
 
 class InterpCompiler
 {
+    friend class InterpIAllocator;
+    friend class InterpGcSlotAllocator;
+
 private:
     CORINFO_METHOD_HANDLE m_methodHnd;
+    CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
     CORINFO_METHOD_INFO* m_methodInfo;
+#ifdef DEBUG
+    CORINFO_CLASS_HANDLE m_classHnd;
+    TArray<char> m_methodName;
+    bool m_verbose = false;
+#endif
+
+    static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
+
+    uint8_t* m_ip;
+    uint8_t* m_pILCode;
+    int32_t m_ILCodeSize;
+    int32_t m_currentILOffset;
+    InterpInst* m_pInitLocalsIns;
+
+    // Table of mappings of leave instructions to the first finally call island the leave
+    // needs to execute.
+    TArray<LeavesTableEntry> m_leavesTable;
+
+    // This represents a mapping from indexes to pointer sized data. During compilation, an
+    // instruction can request an index for some data (like a MethodDesc pointer), that it
+    // will then embed in the instruction stream. The data item table will be referenced
+    // from the interpreter code header during execution.
+    // FIXME during compilation this should be a hashtable for fast lookup of duplicates
+    TArray<void*> m_dataItems;
+    int32_t GetDataItemIndex(void* data);
+    void* GetDataItemAtIndex(int32_t index);
+    int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
+    int32_t GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn);
 
     int GenerateCode(CORINFO_METHOD_INFO* methodInfo);
+    InterpBasicBlock* GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
+    void PatchInitLocals(CORINFO_METHOD_INFO* methodInfo);
+
+    void                    ResolveToken(uint32_t token, CorInfoTokenKind tokenKind, CORINFO_RESOLVED_TOKEN *pResolvedToken);
+    CORINFO_METHOD_HANDLE   ResolveMethodToken(uint32_t token);
+    CORINFO_CLASS_HANDLE    ResolveClassToken(uint32_t token);
+    CORINFO_CLASS_HANDLE    getClassFromContext(CORINFO_CONTEXT_HANDLE context);
+    int                     getParamArgIndex(); // Get the index into the m_pVars array of the Parameter argument. This is either the this pointer, a methoddesc or a class handle
+
+    struct InterpEmbedGenericResult
+    {
+        // If var is != -1, then the var holds the result of the lookup
+        int var = -1;
+        // If var == -1, then the data item holds the result of the lookup
+        int dataItemIndex = -1;
+    };
+
+    enum class GenericHandleEmbedOptions
+    {
+        support_use_as_flags = -1, // Magic value which in combination with enum_class_flags.h allows the use of bitwise operations and the HasFlag helper method
+
+        None = 0,
+        VarOnly = 1,
+        EmbedParent = 2,
+    };
+    InterpEmbedGenericResult EmitGenericHandle(CORINFO_RESOLVED_TOKEN* resolvedToken, GenericHandleEmbedOptions options);
+
+    // Do a generic handle lookup and acquire the result as either a var or a data item.
+    int EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo);
+
+    // Emit a generic dictionary lookup and push the result onto the interpreter stack
+    void EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup);
 
     void* AllocMethodData(size_t numBytes);
+public:
+    // FIXME Mempool allocation currently leaks. We need to add an allocator and then
+    // free all memory when method is finished compilling.
     void* AllocMemPool(size_t numBytes);
+    void* AllocMemPool0(size_t numBytes);
+private:
     void* AllocTemporary(size_t numBytes);
+    void* AllocTemporary0(size_t numBytes);
     void* ReallocTemporary(void* ptr, size_t numBytes);
     void  FreeTemporary(void* ptr);
 
     // Instructions
     InterpBasicBlock *m_pCBB, *m_pEntryBB;
-    InterpInst* m_pLastIns;
+    InterpInst* m_pLastNewIns;
 
     int32_t     GetInsLength(InterpInst *pIns);
     bool        InsIsNop(InterpInst *pIns);
@@ -175,23 +429,47 @@ private:
     int m_BBCount = 0;
     InterpBasicBlock**  m_ppOffsetToBB;
 
-    InterpBasicBlock*   AllocBB();
+    ICorDebugInfo::OffsetMapping* m_pILToNativeMap = NULL;
+    int32_t m_ILToNativeMapSize = 0;
+
+    InterpBasicBlock*   AllocBB(int32_t ilOffset);
     InterpBasicBlock*   GetBB(int32_t ilOffset);
     void                LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to);
     void                UnlinkBBs(InterpBasicBlock *from, InterpBasicBlock *to);
+
+    void    EmitBranch(InterpOpcode opcode, int ilOffset);
+    void    EmitOneArgBranch(InterpOpcode opcode, int ilOffset, int insSize);
+    void    EmitTwoArgBranch(InterpOpcode opcode, int ilOffset, int insSize);
+    void    EmitBranchToBB(InterpOpcode opcode, InterpBasicBlock *pTargetBB);
+
+    void    EmitBBEndVarMoves(InterpBasicBlock *pTargetBB);
+    void    InitBBStackState(InterpBasicBlock *pBB);
+    void    UnlinkUnreachableBBlocks();
 
     // Vars
     InterpVar *m_pVars = NULL;
     int32_t m_varsSize = 0;
     int32_t m_varsCapacity = 0;
+    int32_t m_numILVars = 0;
+    int32_t m_paramArgIndex = 0; // Index of the type parameter argument in the m_pVars array.
+    // For each catch or filter clause, we create a variable that holds the exception object.
+    // This is the index of the first such variable.
+    int32_t m_clauseVarsIndex = 0;
 
-    int32_t CreateVarExplicit(InterpType mt, CORINFO_CLASS_HANDLE clsHnd, int size);
+    int32_t CreateVarExplicit(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size);
 
-    int32_t m_totalVarsStackSize = 0;
+    int32_t m_totalVarsStackSize, m_globalVarsWithRefsStackTop;
     int32_t m_paramAreaOffset = 0;
+    int32_t m_ILLocalsOffset, m_ILLocalsSize;
     void    AllocVarOffsetCB(int *pVar, void *pData);
     int32_t AllocVarOffset(int var, int32_t *pPos);
+    int32_t GetLiveStartOffset(int var);
+    int32_t GetLiveEndOffset(int var);
 
+    int32_t GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, InterpType interpType, int32_t *pAlign);
+    void    CreateILVars();
+
+    void CreateNextLocalVar(int iArgToSet, CORINFO_CLASS_HANDLE argClass, InterpType interpType, int32_t *pOffset);
 
     // Stack
     StackInfo *m_pStackPointer, *m_pStackBase;
@@ -201,25 +479,93 @@ private:
     bool CheckStackHelper(int n);
     void EnsureStack(int additional);
     void PushTypeExplicit(StackType stackType, CORINFO_CLASS_HANDLE clsHnd, int size);
-    void PushType(StackType stackType, CORINFO_CLASS_HANDLE clsHnd);
+    void PushStackType(StackType stackType, CORINFO_CLASS_HANDLE clsHnd);
+    void PushInterpType(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd);
     void PushTypeVT(CORINFO_CLASS_HANDLE clsHnd, int size);
+
+    // Code emit
+    void    EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp);
+    void    EmitLoadVar(int var);
+    void    EmitStoreVar(int var);
+    void    EmitBinaryArithmeticOp(int32_t opBase);
+    void    EmitUnaryArithmeticOp(int32_t opBase);
+    void    EmitShiftOp(int32_t opBase);
+    void    EmitCompareOp(int32_t opBase);
+    void    EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall, bool newObj, bool isCalli);
+    bool    EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
+    void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
+    void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
+    void    EmitLdelem(int32_t opcode, InterpType type);
+    void    EmitStelem(InterpType type);
+    void    EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken);
+    void    EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad);
+    void    EmitLdLocA(int32_t var);
+
+    // Var Offset allocator
+    TArray<InterpInst*> *m_pActiveCalls;
+    TArray<int32_t> *m_pActiveVars;
+    TSList<InterpInst*> *m_pDeferredCalls;
+
+    int32_t AllocGlobalVarOffset(int var);
+    void    SetVarLiveRange(int32_t var, InterpInst* ins);
+    void    SetVarLiveRangeCB(int32_t *pVar, void *pData);
+    void    InitializeGlobalVar(int32_t var, int bbIndex);
+    void    InitializeGlobalVarCB(int32_t *pVar, void *pData);
+    void    InitializeGlobalVars();
+    void    EndActiveCall(InterpInst *call);
+    void    CompactActiveVars(int32_t *current_offset);
 
     // Passes
     int32_t* m_pMethodCode;
-    int32_t m_MethodCodeSize; // in int32_t
+    int32_t m_methodCodeSize; // code size measured in int32_t slots, instead of bytes
 
     void AllocOffsets();
     int32_t ComputeCodeSize();
+    uint32_t ConvertOffset(int32_t offset);
     void EmitCode();
-    int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns);
+    int32_t* EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Reloc*> *relocs);
+    int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*> *relocs);
+    void PatchRelocations(TArray<Reloc*> *relocs);
     InterpMethod* CreateInterpMethod();
+    bool CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);
+    bool InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo);
+    void CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB);
+    void GetNativeRangeForClause(uint32_t startILOffset, uint32_t endILOffset, int32_t *nativeStartOffset, int32_t* nativeEndOffset);
+
+    // Debug
+    void PrintClassName(CORINFO_CLASS_HANDLE cls);
+    void PrintMethodName(CORINFO_METHOD_HANDLE method);
+    void PrintCode();
+    void PrintBBCode(InterpBasicBlock *pBB);
+    void PrintIns(InterpInst *ins);
+    void PrintInsData(InterpInst *ins, int32_t offset, const int32_t *pData, int32_t opcode);
+    void PrintCompiledCode();
+    void PrintCompiledIns(const int32_t *ip, const int32_t *start);
 public:
 
     InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo);
 
     InterpMethod* CompileMethod();
+    void BuildGCInfo(InterpMethod *pInterpMethod);
+    void BuildEHInfo();
 
     int32_t* GetCode(int32_t *pCodeSize);
 };
+
+/*****************************************************************************
+ *  operator new
+ *
+ *  Uses the compiler's AllocMemPool0, which will eventually free automatically at the end of compilation (doesn't yet).
+ */
+
+ inline void* operator new(size_t sz, InterpCompiler* compiler)
+ {
+    return compiler->AllocMemPool0(sz);
+}
+
+ inline void* operator new[](size_t sz, InterpCompiler* compiler)
+ {
+     return compiler->AllocMemPool0(sz);
+ }
 
 #endif //_COMPILER_H_

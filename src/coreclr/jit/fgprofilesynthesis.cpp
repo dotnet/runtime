@@ -30,21 +30,6 @@
 //
 void ProfileSynthesis::Run(ProfileSynthesisOption option)
 {
-    if (m_dfsTree == nullptr)
-    {
-        m_dfsTree             = m_comp->fgComputeDfs();
-        m_loops               = FlowGraphNaturalLoops::Find(m_dfsTree);
-        m_improperLoopHeaders = m_loops->ImproperLoopHeaders();
-    }
-    else
-    {
-        assert(m_loops != nullptr);
-    }
-
-    // Profile synthesis can be run before or after morph, so tolerate (non-)canonical method entries
-    //
-    m_entryBlock = (m_comp->opts.IsOSR() && (m_comp->fgEntryBB != nullptr)) ? m_comp->fgEntryBB : m_comp->fgFirstBB;
-
     // Retain or compute edge likelihood information
     //
     switch (option)
@@ -163,12 +148,26 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoSynthesized = true;
     m_comp->fgPgoConsistent  = !m_approximate;
 
+    // A simple check whether the current method has more than one edge.
+    m_comp->fgPgoSingleEdge = true;
+    for (BasicBlock* const block : m_comp->Blocks())
+    {
+        if (block->NumSucc() > 1)
+        {
+            m_comp->fgPgoSingleEdge = false;
+            break;
+        }
+    }
+
     m_comp->Metrics.ProfileSynthesizedBlendedOrRepaired++;
 
     if (m_approximate)
     {
         JITDUMP("Profile is inconsistent. Bypassing post-phase consistency checks.\n");
-        m_comp->Metrics.ProfileInconsistentInitially++;
+        if (!m_comp->fgImportDone)
+        {
+            m_comp->Metrics.ProfileInconsistentInitially++;
+        }
     }
 
     // Derive the method's call count from the entry block's weight
@@ -208,7 +207,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         // Leave a note so we can bypass the post-phase check, and
         // instead assert at the end of fgImport, if we make it that far.
         //
-        if (!isConsistent)
+        if (!isConsistent && !m_comp->fgImportDone)
         {
             m_comp->fgPgoDeferredInconsistency = true;
             JITDUMP("Will defer asserting until after importation\n");
@@ -745,13 +744,6 @@ void ProfileSynthesis::RandomizeLikelihoods()
 //
 void ProfileSynthesis::ComputeCyclicProbabilities()
 {
-    m_cyclicProbabilities = nullptr;
-    if (m_loops->NumLoops() == 0)
-    {
-        return;
-    }
-
-    m_cyclicProbabilities = new (m_comp, CMK_Pgo) weight_t[m_loops->NumLoops()];
     // Walk loops in post order to visit inner loops before outer loops.
     for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
     {
@@ -828,10 +820,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 
                 for (FlowEdge* const edge : nestedLoop->EntryEdges())
                 {
-                    if (BasicBlock::sameHndRegion(block, edge->getSourceBlock()))
-                    {
-                        newWeight += edge->getLikelyWeight();
-                    }
+                    newWeight += edge->getLikelyWeight();
                 }
 
                 newWeight *= m_cyclicProbabilities[nestedLoop->GetIndex()];
@@ -847,10 +836,10 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
                 {
                     BasicBlock* const sourceBlock = edge->getSourceBlock();
 
-                    // Ignore flow across EH, or from preds not in the loop.
-                    // Latter can happen if there are unreachable blocks that flow into the loop.
+                    // Ignore flow from preds not in the loop.
+                    // This can happen if there are unreachable blocks that flow into the loop.
                     //
-                    if (BasicBlock::sameHndRegion(block, sourceBlock) && loop->ContainsBlock(sourceBlock))
+                    if (loop->ContainsBlock(sourceBlock))
                     {
                         newWeight += edge->getLikelyWeight();
                     }
@@ -1208,13 +1197,14 @@ void ProfileSynthesis::GaussSeidelSolver()
     weight_t                      relResidual          = 0;
     weight_t                      oldRelResidual       = 0;
     weight_t                      eigenvalue           = 0;
-    weight_t const                stopRelResidual      = 0.002;
+    weight_t const                stopRelResidual      = 0.001;
     BasicBlock*                   residualBlock        = nullptr;
     BasicBlock*                   relResidualBlock     = nullptr;
     const FlowGraphDfsTree* const dfs                  = m_loops->GetDfsTree();
     unsigned const                blockCount           = dfs->GetPostOrderCount();
     bool                          checkEntryExitWeight = true;
-    bool                          showDetails          = false;
+    bool const                    showDetails          = false;
+    bool const                    callFinalliesCreated = m_comp->fgImportDone;
 
     JITDUMP("Synthesis solver: flow graph has %u improper loop headers\n", m_improperLoopHeaders);
 
@@ -1290,9 +1280,10 @@ void ProfileSynthesis::GaussSeidelSolver()
                     {
                         newWeight = block->bbWeight;
 
-                        // Finallies also add in the weight of their try.
+                        // If we haven't added flow edges into/out of finallies yet,
+                        // add in the weight of their corresponding try regions.
                         //
-                        if (ehDsc->HasFinallyHandler())
+                        if (!callFinalliesCreated && ehDsc->HasFinallyHandler())
                         {
                             newWeight += countVector[ehDsc->ebdTryBeg->bbNum];
                         }
@@ -1318,11 +1309,7 @@ void ProfileSynthesis::GaussSeidelSolver()
                     for (FlowEdge* const edge : loop->EntryEdges())
                     {
                         BasicBlock* const predBlock = edge->getSourceBlock();
-
-                        if (BasicBlock::sameHndRegion(block, predBlock))
-                        {
-                            newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
-                        }
+                        newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
                     }
 
                     // Scale by cyclic probability
@@ -1354,10 +1341,7 @@ void ProfileSynthesis::GaussSeidelSolver()
                             continue;
                         }
 
-                        if (BasicBlock::sameHndRegion(block, predBlock))
-                        {
-                            newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
-                        }
+                        newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
                     }
 
                     if (selfEdge != nullptr)
@@ -1411,12 +1395,14 @@ void ProfileSynthesis::GaussSeidelSolver()
             countVector[block->bbNum] = newWeight;
 
             // Remember max absolute and relative change
-            // (note rel residual will be infinite at times, that's ok)
+            // (note rel residual will be as large as 1e9 at times, that's ok)
             //
             // Note we are using a "point" bound here ("infinity norm") rather than say
             // computing the L2-norm of the entire residual vector.
             //
-            weight_t const blockRelResidual = change / oldWeight;
+            // Avoid dividing by zero if oldWeight is very small.
+            //
+            weight_t const blockRelResidual = change / max(oldWeight, 1e-12);
 
             if ((relResidualBlock == nullptr) || (blockRelResidual > relResidual))
             {
@@ -1437,12 +1423,14 @@ void ProfileSynthesis::GaussSeidelSolver()
             }
         }
 
-        // If there were no improper headers, we will have converged in one pass.
+        // If there were no improper headers, we will have converged in one pass
         // (profile may still be inconsistent, if there were capped cyclic probabilities).
-        //
+        // If synthesis is running after the importer (in other words, we aren't building the initial profile),
+        // it has only one shot at establishing consistency until the profile is flagged as inconsistent,
+        // so check for entry/exit weight balance here to indicate if the profile converged.
         if (m_improperLoopHeaders == 0)
         {
-            converged = true;
+            converged = !m_comp->fgImportDone || m_comp->fgProfileWeightsConsistent(entryWeight, exitWeight);
             break;
         }
 

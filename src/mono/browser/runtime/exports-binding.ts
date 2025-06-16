@@ -11,9 +11,8 @@ import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry 
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue } from "./jiterpreter-jit-call";
 import { mono_wasm_resolve_or_reject_promise } from "./marshal-to-js";
 import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
-import { mono_wasm_asm_loaded } from "./startup";
+import { mono_wasm_asm_loaded, mono_wasm_process_current_pid } from "./startup";
 import { mono_log_warn, mono_wasm_console_clear, mono_wasm_trace_logger } from "./logging";
-import { mono_wasm_profiler_record, mono_wasm_profiler_now, ds_rt_websocket_close, ds_rt_websocket_create, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_send } from "./profiler";
 import { mono_wasm_browser_entropy } from "./crypto";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 
@@ -24,7 +23,10 @@ import {
 } from "./pthreads";
 import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
 import { mono_wasm_schedule_synchronization_context } from "./pthreads/shared";
-import { mono_wasm_js_globalization_imports } from "./globalization";
+import { mono_wasm_get_locale_info } from "./globalization-locale";
+
+import { mono_wasm_profiler_record, mono_wasm_profiler_now } from "./profiler";
+import { ds_rt_websocket_create, ds_rt_websocket_send, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_close } from "./diagnostics";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
@@ -70,6 +72,7 @@ export const mono_wasm_imports = [
     mono_interp_flush_jitcall_queue,
     mono_wasm_free_method_data,
 
+    // browser.c, ep-rt-mono-runtime-provider.c
     mono_wasm_profiler_now,
     mono_wasm_profiler_record,
 
@@ -80,6 +83,9 @@ export const mono_wasm_imports = [
     // src/native/minipal/random.c
     mono_wasm_browser_entropy,
 
+    // mono-proclib.c
+    mono_wasm_process_current_pid,
+
     // corebindings.c
     mono_wasm_console_clear,
     mono_wasm_release_cs_owned_object,
@@ -88,6 +94,7 @@ export const mono_wasm_imports = [
     mono_wasm_invoke_jsimport_ST,
     mono_wasm_resolve_or_reject_promise,
     mono_wasm_cancel_promise,
+    mono_wasm_get_locale_info,
 
     //event pipe
     ds_rt_websocket_create,
@@ -97,13 +104,11 @@ export const mono_wasm_imports = [
     ds_rt_websocket_close,
 ];
 
-
+// !!! Keep in sync with exports-linker.ts
 const wasmImports: Function[] = [
     ...mono_wasm_imports,
     // threading exports, if threading is enabled
     ...mono_wasm_threads_imports,
-    // globalization exports
-    ...mono_wasm_js_globalization_imports,
 ];
 
 export function replace_linker_placeholders (imports: WebAssembly.Imports) {

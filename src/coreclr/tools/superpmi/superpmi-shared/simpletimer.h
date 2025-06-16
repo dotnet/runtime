@@ -4,6 +4,8 @@
 #ifndef _SimpleTimer
 #define _SimpleTimer
 
+#include <stdint.h>
+
 class SimpleTimer
 {
 public:
@@ -16,8 +18,8 @@ public:
     double GetSeconds();
 
 private:
-    LARGE_INTEGER proc_freq;
-    LARGE_INTEGER start;
-    LARGE_INTEGER stop;
+    int64_t proc_freq;
+    int64_t start;
+    int64_t stop;
 };
 #endif

@@ -220,7 +220,7 @@ def getPalDataTypeMapping(runtimeFlavor):
 def includeProvider(providerName, runtimeFlavor):
     if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot) and providerName == "Microsoft-DotNETRuntimeMonoProfiler":
         return False
-    elif runtimeFlavor.nativeaot and (providerName == "Microsoft-Windows-DotNETRuntimeRundown" or providerName == "Microsoft-Windows-DotNETRuntimeStress"):
+    elif runtimeFlavor.nativeaot and providerName == "Microsoft-Windows-DotNETRuntimeStress":
         return False
     else:
         return True
@@ -604,14 +604,14 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, is
                 fnbody.append("status &= FireEtXplat" + eventName + "(" + ''.join(line) + ");\n")
 
             if runtimeFlavor.nativeaot:
-                if providerName == "Microsoft-Windows-DotNETRuntime" or providerName == "Microsoft-Windows-DotNETRuntimePrivate":
+                if providerName == "Microsoft-Windows-DotNETRuntime" or providerName == "Microsoft-Windows-DotNETRuntimePrivate" or providerName == "Microsoft-Windows-DotNETRuntimeRundown":
                     fnbody.append("#ifndef TARGET_UNIX\n")
                     fnbody.append(lindent)
                     fnbody.append("status &= ")
                 else:
                     fnbody.append("return ")
                 fnbody.append("FireEtXplat" + eventName + "(" + ''.join(line) + ");\n")
-                if providerName == "Microsoft-Windows-DotNETRuntime" or providerName == "Microsoft-Windows-DotNETRuntimePrivate":
+                if providerName == "Microsoft-Windows-DotNETRuntime" or providerName == "Microsoft-Windows-DotNETRuntimePrivate" or providerName == "Microsoft-Windows-DotNETRuntimeRundown":
                     fnbody.append("#endif\n")
 
             fnbody.append(lindent)
@@ -875,6 +875,7 @@ def getKeywordsMaskCombined(keywords, keywordsToMask):
 def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, is_host_windows, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, clrallevents, inclusion_list, generatedFileType, user_events):
     with open_for_update(clrallevents) as Clrallevents:
         Clrallevents.write(stdprolog)
+        Clrallevents.write('#include <minipal/guid.h>\n\n')
         if generatedFileType=="header-impl":
             if runtimeFlavor.mono:
                 Clrallevents.write(getCoreCLRMonoNativeAotTypeAdaptionDefines() + "\n")
@@ -888,7 +889,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, is_host_wi
             Clrallevents.write('#define CLR_ETW_ALL_MAIN_H\n\n')
         elif generatedFileType == "source-impl":
             Clrallevents.write('#include <common.h>\n')
-            Clrallevents.write('#include <PalRedhawk.h>\n')
+            Clrallevents.write('#include <Pal.h>\n')
             Clrallevents.write('#include "clretwallmain.h"\n')
             Clrallevents.write('#include "clreventpipewriteevents.h"\n')
             if user_events and runtimeFlavor.coreclr:
@@ -900,7 +901,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, is_host_wi
         elif generatedFileType == "source-impl-noop":
             Clrallevents.write('#include <CommonTypes.h>\n')
             Clrallevents.write('#include <CommonMacros.h>\n\n')
-            Clrallevents.write('#include <PalRedhawk.h>\n\n')
+            Clrallevents.write('#include <Pal.h>\n\n')
             Clrallevents.write('#ifndef ERROR_SUCCESS\n')
             Clrallevents.write('#define ERROR_SUCCESS 0L\n')
             Clrallevents.write('#endif\n\n')
@@ -912,7 +913,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, is_host_wi
                 Clrallevents.write(dotnet_trace_context_typedef_windows + "\n")
             else:
                 Clrallevents.write("\n")
-        
+
         if not is_host_windows and runtimeFlavor.coreclr:
             Clrallevents.write(user_events_trace_context_typedef)
 

@@ -847,7 +847,7 @@ void SimpleComCallWrapper::InitNew(OBJECTREF oref, ComCallWrapperCache *pWrapper
     CONTRACTL_END;
 
     MethodTable* pMT = pTemplate->GetClassType().GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
 
 
     m_pMT = pMT;
@@ -3647,8 +3647,8 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackCCW());
 #if defined(_DEBUG)
-        CHAR rIID[GUID_STR_BUFFER_LEN];
-        GuidToLPSTR(m_IID, rIID);
+        CHAR rIID[MINIPAL_GUID_BUFFER_LEN];
+        minipal_guid_as_string(m_IID, rIID, MINIPAL_GUID_BUFFER_LEN);
         LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%hs, IID:%s, vTbl:%#08x\n",
              pItfClass->GetDebugClassName(), rIID, pUnkVtable));
 #else
@@ -3862,7 +3862,7 @@ void ComCallWrapperTemplate::Init()
 {
     WRAPPER_NO_CONTRACT;
 
-    g_CreateWrapperTemplateCrst.Init(CrstWrapperTemplate, (CrstFlags)(CRST_REENTRANCY | CRST_HOST_BREAKABLE));
+    g_CreateWrapperTemplateCrst.Init(CrstWrapperTemplate, (CrstFlags)(CRST_REENTRANCY));
 }
 
 ComCallWrapperTemplate::ComCallWrapperTemplate()
@@ -4698,8 +4698,8 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
                 GenerateClassItfGuid(thClass, &IClassXIID);
 
 #if defined(_DEBUG)
-            CHAR rIID[GUID_STR_BUFFER_LEN];
-            GuidToLPSTR(IClassXIID, rIID);
+            CHAR rIID[MINIPAL_GUID_BUFFER_LEN];
+            minipal_guid_as_string(IClassXIID, rIID, MINIPAL_GUID_BUFFER_LEN);
             SString ssName;
             thClass.GetName(ssName);
             LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%s, IID:%s, vTbl:%#08x\n",

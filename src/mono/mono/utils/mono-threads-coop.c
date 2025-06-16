@@ -807,3 +807,24 @@ mono_threads_set_runtime_startup_finished (void)
 {
 	mono_threads_is_runtime_startup_finished_hidden_do_not_modify = 1;
 }
+
+// If exception gets raised by mono_raise_exception, it will switch to GC unsafe but
+// there is no way to rebalance the GC state in case we unwind out of a MONO_ENTER_GC_SAFE/MONO_EXIT_GC_SAFE
+// block. This function makes sure thread gets back into GC unsafe mode and that cookie stack gets rebalanced
+// under checked builds. Mainly used by interpreters icall and p/invoke wrappers.
+void
+mono_threads_abort_gc_safe_region_internal (gpointer cookie)
+{
+#ifdef ENABLE_CHECKED_BUILD_GC
+	MONO_DEFINE_LAST_ERROR_RESTORE_POINT;
+	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC))
+		coop_tls_pop (cookie);
+	MONO_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
+#endif
+
+	if (!mono_thread_is_gc_unsafe_mode())
+	{
+		MONO_STACKDATA (stackdata);
+		mono_threads_enter_gc_unsafe_region_unbalanced_with_info (mono_thread_info_current (), &stackdata);
+	}
+}

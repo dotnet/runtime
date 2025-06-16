@@ -10,38 +10,12 @@
 #include "stdafx.h"
 #include "winbase.h"
 
-#include "metadataexports.h"
-
 #include "winbase.h"
 #include "corpriv.h"
 #include "corsym.h"
 
 #include "pedecoder.h"
 #include "stgpool.h"
-
-//---------------------------------------------------------------------------------------
-// Update an existing metadata importer with a buffer
-//
-// Arguments:
-//     pUnk - IUnknoown of importer to update.
-//     pData - local buffer containing new metadata
-//     cbData - size of buffer in bytes.
-//     dwReOpenFlags - metadata flags to pass for reopening.
-//
-// Returns:
-//     S_OK on success. Else failure.
-//
-// Notes:
-//    This will call code:MDReOpenMetaDataWithMemoryEx from the metadata engine.
-STDAPI ReOpenMetaDataWithMemoryEx(
-    void        *pUnk,
-    LPCVOID     pData,
-    ULONG       cbData,
-    DWORD       dwReOpenFlags)
-{
-    HRESULT hr = MDReOpenMetaDataWithMemoryEx(pUnk,pData, cbData, dwReOpenFlags);
-    return hr;
-}
 
 //---------------------------------------------------------------------------------------
 // Initialize a new CordbModule around a Module in the target.
@@ -1063,7 +1037,7 @@ void CordbModule::UpdatePublicMetaDataFromRemote(TargetBuffer bufferRemoteMetaDa
     // Now tell our current IMetaDataImport object to re-initialize by swapping in the new memory block.
     // This allows us to keep manipulating metadata objects on other threads without crashing.
     // This will also invalidate an existing associated Internal MetaData.
-    hr = ReOpenMetaDataWithMemoryEx(m_pIMImport, pLocalMetaDataPtr, dwMetaDataSize, ofTakeOwnership );
+    hr = MDReOpenMetaDataWithMemory(m_pIMImport, pLocalMetaDataPtr, dwMetaDataSize, ofTakeOwnership );
     IfFailThrow(hr);
 
     // Success.  MetaData now owns the metadata memory
@@ -2443,7 +2417,7 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
         {
 #ifndef TARGET_UNIX
             // PDB format - use diasymreader.dll with COM activation
-            InlineSString<_MAX_PATH> ssBuf;
+            InlineSString<MAX_PATH> ssBuf;
             IfFailThrow(GetClrModuleDirectory(ssBuf));
             IfFailThrow(FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS,
                                                ssBuf.GetUnicode(),

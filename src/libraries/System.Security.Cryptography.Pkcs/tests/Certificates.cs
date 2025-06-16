@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
+using System.Security.Cryptography.SLHDsa.Tests;
 using Test.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs.Tests
@@ -32,6 +34,13 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public static readonly CertLoader RsaOaep2048_Sha1Parameters = new CertLoaderFromRawData(RawData.RsaOaep2048_Sha1ParametersCert, RawData.RsaOaep2048_Sha1ParametersPfx, "1111");
         public static readonly CertLoader RsaOaep2048_Sha256Parameters = new CertLoaderFromRawData(RawData.RsaOaep2048_Sha256ParametersCert, RawData.RsaOaep2048_Sha256ParametersPfx, "1111");
         public static readonly CertLoader RsaOaep2048_NoParameters = new CertLoaderFromRawData(RawData.RsaOaep2048_NoParametersCert, RawData.RsaOaep2048_NoParametersPfx, "1111");
+        public static readonly CertLoader SlhDsaSha2_128s_Ietf = new CertLoaderFromRawData(SlhDsaTestData.IetfSlhDsaSha2_128sCertificate, SlhDsaTestData.IetfSlhDsaSha2_128sCertificatePfx, "PLACEHOLDER");
+        public static readonly CertLoader[] SlhDsaGeneratedCerts = LoadSlhDsaCerts();
+
+        private static CertLoader[] LoadSlhDsaCerts() =>
+            SlhDsaTestData.GeneratedKeyInfosRaw
+                .Select(info => new CertLoaderFromRawData(info.Certificate, info.SelfSignedCertificatePfx, info.EncryptionPassword))
+                .ToArray();
 
         // Note: the raw data is its own (nested) class to avoid problems with static field initialization ordering.
         private static class RawData

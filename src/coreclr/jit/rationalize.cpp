@@ -131,7 +131,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
                 unreached();
 #endif // FEATURE_HW_INTRINSICS
             }
-            arg = NewCallArg::Struct(operand, sigTyp, clsHnd);
+            arg = NewCallArg::Struct(operand, sigTyp, comp->typGetObjLayout(clsHnd));
         }
         else
         {
@@ -341,11 +341,19 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
     switch (intrinsicId)
     {
         case NI_Vector128_Shuffle:
+        case NI_Vector128_ShuffleNative:
+        case NI_Vector128_ShuffleNativeFallback:
 #if defined(TARGET_XARCH)
         case NI_Vector256_Shuffle:
+        case NI_Vector256_ShuffleNative:
+        case NI_Vector256_ShuffleNativeFallback:
         case NI_Vector512_Shuffle:
+        case NI_Vector512_ShuffleNative:
+        case NI_Vector512_ShuffleNativeFallback:
 #elif defined(TARGET_ARM64)
         case NI_Vector64_Shuffle:
+        case NI_Vector64_ShuffleNative:
+        case NI_Vector64_ShuffleNativeFallback:
 #endif
         {
             assert(operandCount == 2);
@@ -354,65 +362,26 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 #else
             assert((simdSize == 8) || (simdSize == 16));
 #endif
+            assert(((*use)->gtFlags & GTF_REVERSE_OPS) == 0); // gtNewSimdShuffleNode with reverse ops is not supported
 
             GenTree* op1 = operands[0];
             GenTree* op2 = operands[1];
 
-            if (op2->IsCnsVec() && comp->IsValidForShuffle(op2->AsVecCon(), simdSize, simdBaseType))
-            {
-                result = comp->gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize);
-            }
-            break;
-        }
-
-        case NI_Vector128_WithElement:
+            bool isShuffleNative = intrinsicId != NI_Vector128_Shuffle;
 #if defined(TARGET_XARCH)
-        case NI_Vector256_WithElement:
-        case NI_Vector512_WithElement:
+            isShuffleNative =
+                isShuffleNative && (intrinsicId != NI_Vector256_Shuffle) && (intrinsicId != NI_Vector512_Shuffle);
 #elif defined(TARGET_ARM64)
-        case NI_Vector64_WithElement:
+            isShuffleNative = isShuffleNative && (intrinsicId != NI_Vector64_Shuffle);
 #endif
-        {
-            assert(operandCount == 3);
 
-            GenTree* op1 = operands[0];
-            GenTree* op2 = operands[1];
-            GenTree* op3 = operands[2];
-
-            if (op2->OperIsConst())
+            // Check if the required intrinsics to emit are available.
+            if (!comp->IsValidForShuffle(op2, simdSize, simdBaseType, nullptr, isShuffleNative))
             {
-                ssize_t imm8  = op2->AsIntCon()->IconValue();
-                ssize_t count = simdSize / genTypeSize(simdBaseType);
-
-                if ((imm8 >= count) || (imm8 < 0))
-                {
-                    // Using software fallback if index is out of range (throw exception)
-                    break;
-                }
-
-#if defined(TARGET_XARCH)
-                if (varTypeIsIntegral(simdBaseType))
-                {
-                    if (varTypeIsLong(simdBaseType))
-                    {
-                        if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE41_X64))
-                        {
-                            break;
-                        }
-                    }
-                    else if (!varTypeIsShort(simdBaseType))
-                    {
-                        if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                        {
-                            break;
-                        }
-                    }
-                }
-#endif // TARGET_XARCH
-
-                result = comp->gtNewSimdWithElementNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
                 break;
             }
+
+            result = comp->gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
             break;
         }
 
@@ -718,6 +687,13 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
             break;
 
+        case GT_GCPOLL:
+        {
+            // GCPOLL is essentially a no-op, we used it as a hint for fgCreateGCPoll
+            node->gtBashToNOP();
+            return Compiler::WALK_CONTINUE;
+        }
+
         case GT_COMMA:
         {
             GenTree*           op1         = node->gtGetOp1();
@@ -790,6 +766,13 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
             break;
 
+        case GT_BSWAP16:
+            if (node->gtGetOp1()->OperIs(GT_CAST))
+            {
+                comp->fgSimpleLowerBswap16(BlockRange(), node);
+            }
+            break;
+
         default:
             // Check that we don't have nodes not allowed in HIR here.
             assert((node->DebugOperKind() & DBK_NOTHIR) == 0);
@@ -833,7 +816,7 @@ Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PreOrderVisit(GenTree**
 {
     GenTree* const node = *use;
 
-    if (node->OperGet() == GT_INTRINSIC)
+    if (node->OperIs(GT_INTRINSIC))
     {
         if (m_rationalizer.comp->IsIntrinsicImplementedByUserCall(node->AsIntrinsic()->gtIntrinsicName))
         {

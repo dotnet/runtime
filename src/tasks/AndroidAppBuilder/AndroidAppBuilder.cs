@@ -10,7 +10,7 @@ using Microsoft.Build.Utilities;
 public class AndroidAppBuilderTask : Task
 {
     [Required]
-    public string MonoRuntimeHeaders { get; set; } = ""!;
+    public string[] RuntimeHeaders { get; set; } = [];
 
     /// <summary>
     /// Target directory with *dll and other content to be AOT'd and/or bundled
@@ -141,7 +141,7 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.NativeDependencies = NativeDependencies;
         apkBuilder.ExtraLinkerArguments = ExtraLinkerArguments;
         apkBuilder.RuntimeFlavor = RuntimeFlavor;
-        (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(RuntimeIdentifier, MainLibraryFileName, MonoRuntimeHeaders);
+        (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(RuntimeIdentifier, MainLibraryFileName, RuntimeHeaders);
 
         return true;
     }

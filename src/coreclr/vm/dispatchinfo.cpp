@@ -448,7 +448,13 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
             ARG_SLOT GetMethodHandleArg = ObjToArgSlot(MemberInfoObj);
             MethodDesc* pMeth = (MethodDesc*) getMethodHandle.Call_RetLPVOID(&GetMethodHandleArg);
             if (pMeth)
+            {
+                // TODO: (async) revisit and examine if this needs to be supported somehow
+                if (pMeth->IsAsyncMethod())
+                    ThrowHR(COR_E_NOTSUPPORTED);
+
                 pMemberProps = pMemberMap->GetMethodProps(pMeth->GetMemberDef(), pMeth->GetModule());
+            }
         }
         else if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__RT_FIELD_INFO))
         {
@@ -828,6 +834,10 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
 
     GCX_PREEMP();
 
+    // TODO: (async) revisit and examine if this needs to be supported somehow
+    if (pMD->IsAsyncMethod())
+        ThrowHR(COR_E_NOTSUPPORTED);
+
     MetaSig         msig(pMD);
     LPCSTR          szName;
     USHORT          usSequence;
@@ -1028,7 +1038,7 @@ void DispatchMemberInfo::SetUpDispParamAttributes(int iParam, MarshalInfo* Info)
 DispatchInfo::DispatchInfo(MethodTable *pMT)
 : m_pMT(pMT)
 , m_pFirstMemberInfo(NULL)
-, m_lock(CrstInterop, (CrstFlags)(CRST_HOST_BREAKABLE | CRST_REENTRANCY))
+, m_lock(CrstInterop, (CrstFlags)(CRST_REENTRANCY))
 , m_CurrentDispID(0x10000)
 , m_bAllowMembersNotInComMTMemberMap(FALSE)
 , m_bInvokeUsingInvokeMember(FALSE)
@@ -1216,10 +1226,6 @@ public:
     }
 };
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                                       InvokeObjects*        pObjs,
                                       int                   NumParams,
@@ -1545,7 +1551,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
 
     if (!m_bInvokeUsingInvokeMember)
     {
-        PREFIX_ASSUME(pDispMemberInfo != NULL);
+        _ASSERTE(pDispMemberInfo != NULL);
 
         if (pDispMemberInfo->IsCultureAware())
         {
@@ -1830,9 +1836,6 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
     if (pVarRes)
         MarshalReturnValueManagedToNative(pDispMemberInfo, &pObjs->RetVal, pVarRes);
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 void DispatchInfo::InvokeMemberDebuggerWrapper(
                                       DispatchMemberInfo*   pDispMemberInfo,
@@ -2578,6 +2581,12 @@ bool DispatchInfo::IsPropertyAccessorVisible(bool fIsSetter, OBJECTREF* pMemberI
 
         // Check to see if the new method is a property accessor.
         mdToken tkMember = mdTokenNil;
+        // TODO: (async) revisit and examine if this needs to be supported somehow
+        if (pMDForProperty->IsAsyncVariantMethod())
+        {
+            return false;
+        }
+
         if (pMDForProperty->GetMDImport()->GetPropertyInfoForMethodDef(pMDForProperty->GetMemberDef(), &tkMember, NULL, NULL) == S_OK)
         {
             if (IsMemberVisibleFromCom(pMDForProperty->GetMethodTable(), tkMember, pMDForProperty->GetMemberDef()))

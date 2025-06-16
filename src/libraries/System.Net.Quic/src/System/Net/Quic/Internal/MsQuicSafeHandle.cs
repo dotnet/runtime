@@ -125,7 +125,7 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
         }
     }
 
-    protected override unsafe bool ReleaseHandle()
+    protected override bool ReleaseHandle()
     {
         base.ReleaseHandle();
         if (_context.IsAllocated)

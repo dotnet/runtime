@@ -11,20 +11,6 @@
 
 #include "stdafx.h"
 
-// XXX Microsoft - Why aren't these extra MD APIs in a header?
-STDAPI GetMDPublicInterfaceFromInternal(
-   void        *pIUnkPublic,           // [IN] Given scope.
-   REFIID      riid,                   // [in] The interface desired.
-   void        **ppIUnkInternal);      // [out] Return interface on success.
-
-STDAPI  GetMetaDataPublicInterfaceFromInternal(
-    void        *pv,                    // [IN] Given interface.
-    REFIID      riid,                   // [IN] desired interface.
-    void        **ppv)                  // [OUT] returned interface
-{
-    return GetMDPublicInterfaceFromInternal(pv, riid, ppv);
-}
-
 //----------------------------------------------------------------------------
 //
 // ClrDataTask.
@@ -3636,7 +3622,7 @@ ClrDataMethodDefinition::NewFromModule(ClrDataAccess* dac,
         return E_OUTOFMEMORY;
     }
 
-    PREFIX_ASSUME(methDef || pubMethDef);
+    _ASSERTE(methDef || pubMethDef);
 
     if (methDef)
     {
@@ -4448,7 +4434,7 @@ ClrDataMethodInstance::NewFromModule(ClrDataAccess* dac,
         return E_OUTOFMEMORY;
     }
 
-    PREFIX_ASSUME(methInst || pubMethInst);
+    _ASSERTE(methInst || pubMethInst);
 
     if (methInst)
     {
@@ -4956,7 +4942,7 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
         return E_OUTOFMEMORY;
     }
 
-    PREFIX_ASSUME(exception || pubException);
+    _ASSERTE(exception || pubException);
 
     if (exception)
     {

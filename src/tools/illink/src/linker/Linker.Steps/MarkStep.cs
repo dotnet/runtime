@@ -415,8 +415,8 @@ namespace Mono.Linker.Steps
 
 			while (!QueueIsEmpty ()) {
 				ProcessQueue ();
-				ProcessInterfaceMethods ();
 				ProcessMarkedTypesWithInterfaces ();
+				ProcessInterfaceMethods ();
 				ProcessDynamicCastableImplementationInterfaces ();
 				ProcessPendingBodies ();
 				DoAdditionalProcessing ();
@@ -1711,11 +1711,6 @@ namespace Mono.Linker.Steps
 					_ => new DependencyInfo (DependencyKind.CctorForField, field)
 				};
 				MarkStaticConstructor (parent, cctorReason, fieldOrigin);
-			}
-
-			if (Annotations.HasSubstitutedInit (field)) {
-				Annotations.SetPreservedStaticCtor (parent);
-				Annotations.SetSubstitutedInit (parent);
 			}
 		}
 

@@ -1259,8 +1259,7 @@ public:
     //       vmMethodDesc    MethodDesc of the function
     //       startAddr       starting address of the function--this serves to
     //                       differentiate various EnC versions of the function
-    //       fCodePitched    indicates whether code for the function has been pitched
-    //       fJitComplete    indicates whether the function has been jitted
+    //       fCodeAvailable
     //    output:
     //       pNativeVarData  space for the native code offset information for locals
     //       pSequencePoints space for the IL/native sequence points
@@ -1275,7 +1274,7 @@ public:
     virtual
     void GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc  vmMethodDesc,
                                                CORDB_ADDRESS     startAddress,
-                                               BOOL              fCodeAvailabe,
+                                               BOOL              fCodeAvailable,
                                                OUT NativeVarData *   pNativeVarData,
                                                OUT SequencePoints *  pSequencePoints) = 0;
 
@@ -1477,7 +1476,7 @@ public:
     //
     // Note:
     //    Because of the complexity involved in checking for the parent frame, we should always
-    //    ask the ExceptionTracker to do it.
+    //    ask the ExInfo to do it.
     //
 
     virtual

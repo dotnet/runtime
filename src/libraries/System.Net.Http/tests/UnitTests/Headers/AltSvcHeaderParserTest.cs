@@ -9,14 +9,18 @@ namespace System.Net.Http.Tests
 {
     public class AltSvcHeaderParserTest
     {
-        [Fact]
-        public void TryParse_InvalidValueString_ReturnsFalse()
+        [Theory]
+        [InlineData("a=")]
+        [InlineData("%aa=\":123\"")] // Only uppercase hex is allowed
+        [InlineData("%0A=\":123\"")] // Encoded new line
+        public void TryParse_InvalidValueString_ReturnsFalse(string value)
         {
             HttpHeaderParser parser = AltSvcHeaderParser.Parser;
-            string invalidInput = "a=";
             int startIndex = 0;
 
-            Assert.False(parser.TryParseValue(invalidInput, null, ref startIndex, out var _));
+            Assert.False(parser.TryParseValue(value, null, ref startIndex, out object? parsedValue));
+            Assert.Equal(0, startIndex);
+            Assert.Null(parsedValue);
         }
 
         [Theory]
@@ -98,12 +102,32 @@ namespace System.Net.Http.Tests
                 }
             };
 
+            yield return new object[]
+            {
+                "=\":443\"; ma=2592000, h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\"", new[]
+                {
+                    new AltSvcHeaderValue("", host: null, port: 443, TimeSpan.FromTicks(TimeSpan.TicksPerSecond * 2592000), persist: false),
+                    new AltSvcHeaderValue("h3", host: null, port: 443, TimeSpan.FromTicks(TimeSpan.TicksPerSecond * 2592000), persist: false),
+                    new AltSvcHeaderValue("h3-29", host: null, port: 443, TimeSpan.FromTicks(TimeSpan.TicksPerSecond * 2592000), persist: false),
+                    new AltSvcHeaderValue("quic", host: null, port: 443, TimeSpan.FromTicks(TimeSpan.TicksPerSecond * 2592000), persist: false),
+                }
+            };
+
             // "clear".
             yield return new object[]
             {
                 "clear", new []
                 {
                     AltSvcHeaderValue.Clear
+                }
+            };
+
+            // Encoded protocol name
+            yield return new object[]
+            {
+                "AB%43%44%EF=\":123\"", new[]
+                {
+                    new AltSvcHeaderValue("ABCD\u00EF", host: null, 123, TimeSpan.FromTicks(AltSvcHeaderParser.DefaultMaxAgeTicks), persist: false)
                 }
             };
         }

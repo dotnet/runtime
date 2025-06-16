@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { CharPtr, VoidPtr } from "./types/emscripten";
-
 import { ENVIRONMENT_IS_WEB, mono_assert, runtimeHelpers } from "./globals";
-import { MonoMethod, AOTProfilerOptions, BrowserProfilerOptions, LogProfilerOptions } from "./types/internal";
+import { MonoMethod, AOTProfilerOptions, LogProfilerOptions } from "./types/internal";
 import { profiler_c_functions as cwraps } from "./cwraps";
 import { utf8ToString } from "./strings";
 import { free } from "./memory";
@@ -29,24 +27,24 @@ export function mono_wasm_init_aot_profiler (options: AOTProfilerOptions): void 
     cwraps.mono_wasm_profiler_init_aot(arg);
 }
 
-export function mono_wasm_init_browser_profiler (options: BrowserProfilerOptions): void {
-    mono_assert(runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "Browser profiler is not enabled, please use <WasmProfilers>browser;</WasmProfilers> in your project file.");
-    if (options == null)
-        options = {};
-    let arg = "browser:";
-    if (typeof options.callSpec === "string") {
-        arg += `callspec=${options.callSpec},`;
-    }
-    if (typeof options.sampleIntervalMs === "number") {
-        arg += `interval=${options.sampleIntervalMs},`;
-    }
-    cwraps.mono_wasm_profiler_init_browser(arg);
+export function mono_wasm_init_devtools_profiler (): void {
+    mono_assert(runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler, "DevTools profiler is not enabled, please use <WasmProfilers>browser:callspec=N:Sample</WasmProfilers> in your project file.");
+    enablePerfMeasure = globalThis.performance && typeof globalThis.performance.measure === "function";
+    const desc = `${runtimeHelpers.config.environmentVariables!["DOTNET_WasmPerformanceInstrumentation"] || "callspec=all"}`;
+    cwraps.mono_wasm_profiler_init_browser_devtools(desc);
 }
 
 export function mono_wasm_init_log_profiler (options: LogProfilerOptions): void {
     mono_assert(runtimeHelpers.emscriptenBuildOptions.enableLogProfiler, "Log profiler is not enabled, please use <WasmProfilers>log;</WasmProfilers> in your project file.");
     mono_assert(options.takeHeapshot, "Log profiler is not enabled, the takeHeapshot method must be defined in LogProfilerOptions.takeHeapshot");
-    cwraps.mono_wasm_profiler_init_log( (options.configuration || "log:alloc,output=output.mlpd") + `,take-heapshot-method=${options.takeHeapshot}`);
+    if (!options.configuration) {
+        options.configuration = "log:alloc,output=output.mlpd";
+    }
+    if (options.takeHeapshot) {
+        cwraps.mono_wasm_profiler_init_log(`${options.configuration},take-heapshot-method=${options.takeHeapshot}`);
+    } else {
+        cwraps.mono_wasm_profiler_init_log(options.configuration);
+    }
 }
 
 export const enum MeasuredBlock {
@@ -73,16 +71,17 @@ export const enum MeasuredBlock {
 export type TimeStamp = {
     __brand: "TimeStamp"
 }
+let enablePerfMeasure = false;
 
 export function startMeasure (): TimeStamp {
-    if (runtimeHelpers.enablePerfMeasure) {
+    if (enablePerfMeasure) {
         return globalThis.performance.now() as any;
     }
     return undefined as any;
 }
 
 export function endMeasure (start: TimeStamp, block: string, id?: string) {
-    if (runtimeHelpers.enablePerfMeasure && start) {
+    if (enablePerfMeasure && start) {
         // API is slightly different between web and Nodejs
         const options = ENVIRONMENT_IS_WEB
             ? { start: start as any }
@@ -113,25 +112,4 @@ export function mono_wasm_profiler_record (method: MonoMethod, start: number): v
         free(chars as any);
     }
     globalThis.performance.measure(methodName, options);
-}
-
-/* eslint-disable @typescript-eslint/no-unused-vars */
-export function ds_rt_websocket_create (urlPtr :CharPtr):number {
-    throw new Error("TODO");
-}
-
-export function ds_rt_websocket_send (client_socket :number, buffer:VoidPtr, bytes_to_write:number):number {
-    throw new Error("TODO");
-}
-
-export function ds_rt_websocket_poll (client_socket :number):number {
-    throw new Error("TODO");
-}
-
-export function ds_rt_websocket_recv (client_socket :number, buffer:VoidPtr, bytes_to_read:number):number {
-    throw new Error("TODO");
-}
-
-export function ds_rt_websocket_close (client_socket :number):number {
-    throw new Error("TODO");
 }
