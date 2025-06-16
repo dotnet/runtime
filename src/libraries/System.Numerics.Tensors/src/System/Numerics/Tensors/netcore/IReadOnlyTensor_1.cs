@@ -62,6 +62,11 @@ namespace System.Numerics.Tensors
         /// <remarks>This method copies all of the source tensor to <paramref name="destination" /> even if they overlap.</remarks>
         void FlattenTo(scoped Span<T> destination);
 
+        /// <summary>Returns a span that can be used to access the flattened elements for a given dimension.</summary>
+        /// <param name="dimension">The dimension for which the span should be created.</param>
+        /// <returns>A span that can be used to access the flattened elements for a given dimension.</returns>
+        ReadOnlyTensorDimensionSpan<T> GetDimensionSpan(int dimension);
+
         /// <summary>Returns a reference to an object of type <typeparamref name="T" /> that can be used for pinning.</summary>
         /// <returns>A reference to the element of the tensor at index 0, or <c>null</c> if the tensor is empty.</returns>
         /// <remarks>This method is intended to support .NET compilers and is not intended to be called by user code.</remarks>
