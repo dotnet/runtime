@@ -3258,14 +3258,15 @@ int LinearScan::BuildMul(GenTree* tree)
 
     if (useMulx)
     {
-        // If one of the operands is a memory address, specify RDX for the other operand
+        assert(!op1->isContained() || !op2->isContained());
+        // If one of the operands is contained, specify RDX for the other operand
         SingleTypeRegSet srcCandidates1 = RBM_NONE;
         SingleTypeRegSet srcCandidates2 = RBM_NONE;
-        if (op1->isUsedFromMemory())
+        if (op1->isContained())
         {
             srcCandidates2 = SRBM_RDX;
         }
-        else if (op2->isUsedFromMemory())
+        else if (op2->isContained())
         {
             srcCandidates1 = SRBM_RDX;
         }
@@ -3282,7 +3283,7 @@ int LinearScan::BuildMul(GenTree* tree)
     }
     else
     {
-        assert(!op1->isUsedFromMemory() || !op2->isUsedFromMemory());
+        assert(!(op1->isContained() && !op1->IsCnsIntOrI()) || !(op2->isContained() && !op2->IsCnsIntOrI()));
         srcCount = BuildRMWUses(tree, op1, op2, RBM_NONE, RBM_NONE);
 
         // We do use the widening multiply to implement

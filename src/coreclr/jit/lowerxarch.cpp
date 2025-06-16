@@ -7879,8 +7879,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     else if (node->OperIs(GT_MUL_LONG))
     {
         hasImpliedFirstOperand = true;
-        // GT_MUL_LONG produce LONG but work on INT
-        assert(nodeType == TYP_LONG);
+        // GT_MUL_LONG hsa node type LONG but work on INT
         nodeType = TYP_INT;
     }
 #endif
