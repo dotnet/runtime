@@ -4,8 +4,9 @@
         <FeaturePerfTracing>true</FeaturePerfTracing>
         <FeatureEHFunclets>true</FeatureEHFunclets>
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
+    </PropertyGroup>
 
-        <!-- !TODO-JAVA! Limit to Android build -->
+    <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' OR '$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked'">
         <FeatureJavaMarshal>true</FeatureJavaMarshal>
     </PropertyGroup>
 

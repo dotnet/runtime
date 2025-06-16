@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef FEATURE_JAVAMARSHAL
+
 #include "common.h"
 
 #include "gcenv.h"
@@ -457,14 +459,6 @@ static void reset_objects_header ()
     }
 }
 
-#ifdef DUMP_GRAPH
-static const char* safe_name_bridge (Object* obj)
-{
-    MethodTable* pMT = obj->GetGCSafeMethodTable();
-    return GCToEEInterface::GetMethodTableDebugName(pMT);
-}
-#endif
-
 struct HashEntry
 {
     ColorData* color;
@@ -671,7 +665,7 @@ static bool push_object (Object* obj, void* unused)
     ScanData* data;
 
 #if DUMP_GRAPH
-    printf ("\t= pushing %p %s -> ", obj, safe_name_bridge(obj));
+    printf ("\t= pushing %p mt(%p) -> ", obj, obj->GetGCSafeMethodTable());
 #endif
 
     data = find_data(obj);
@@ -712,7 +706,7 @@ static void push_all (ScanData* data)
     Object* obj = data->obj;
 
 #if DUMP_GRAPH
-    printf ("+scanning %s (%p) index %d color %p\n", safe_name_bridge(data->obj), data->obj, data->index, data->color);
+    printf ("+scanning %p mt(%p) index %d color %p\n", obj, obj->GetGCSafeMethodTable(), data->index, data->color);
 #endif
 
     g_theGCHeap->DiagWalkObject(obj, push_object, NULL);
@@ -729,7 +723,7 @@ static bool compute_low_index (Object* obj, void* context)
     if (!other)
         return true;
 #if DUMP_GRAPH
-    printf("\tcompute low %p ->%p (%s) %p (%d / %d, color %p)\n", data->obj, obj, safe_name_bridge(obj), other, other ? other->index : -2, other->low_index, other->color);
+    printf("\tcompute low %p ->%p mt(%p) %p (%d / %d, color %p)\n", data->obj, obj, obj->GetGCSafeMethodTable(), other, other ? other->index : -2, other->low_index, other->color);
 #endif
 
     assert(other->state != INITIAL);
@@ -828,7 +822,7 @@ static void create_scc (ScanData* data)
         color_data = new_color(false);
     }
 #if DUMP_GRAPH
-    printf("|SCC %p rooted in %s (%p) has bridge %d\n", color_data, safe_name_bridge(data->obj), data->obj, found_bridge);
+    printf("|SCC %p rooted in %p mt(%p) has bridge %d\n", color_data, data->obj, data->obj->GetGCSafeMethodTable(), data->obj, found_bridge);
     printf("\tloop stack: ");
     for (i = 0; i < dyn_ptr_array_size(&loop_stack); i++)
     {
@@ -843,7 +837,7 @@ static void create_scc (ScanData* data)
         ScanData* other = (ScanData*)dyn_ptr_array_pop(&loop_stack);
 
 #if DUMP_GRAPH
-        printf("\tmember %s (%p) index %d low-index %d color %p state %d\n", safe_name_bridge (other->obj), other->obj, other->index, other->low_index, other->color, other->state);
+        printf("\tmember %p mt(%p) index %d low-index %d color %p state %d\n", other->obj, other->obj->GetGCSafeMethodTable(), other->index, other->low_index, other->color, other->state);
 #endif
 
         other->color = color_data;
@@ -957,14 +951,14 @@ static void dfs ()
             data->state = FINISHED_ON_STACK;
 
 #if DUMP_GRAPH
-            printf("-finishing %s (%p) index %d low-index %d color %p\n", safe_name_bridge(data->obj), data->obj, data->index, data->low_index, data->color);
+            printf("-finishing %p mt(%p) index %d low-index %d color %p\n", data->obj, data->obj->GetGCSafeMethodTable(), data->index, data->low_index, data->color);
 #endif
 
             // Compute low index
             compute_low(data);
 
 #if DUMP_GRAPH
-            printf("-finished %s (%p) index %d low-index %d color %p\n", safe_name_bridge(data->obj), data->obj, data->index, data->low_index, data->color);
+            printf("-finished %p mt(%p) index %d low-index %d color %p\n", data->obj, data->obj->GetGCSafeMethodTable(), data->index, data->low_index, data->color);
 #endif
             //SCC root
             if (data->index == data->low_index)
@@ -1158,7 +1152,7 @@ static bool tarjan_scc_algorithm ()
     for (i = 0; i < bridgeCount; i++)
     {
         ScanData* sd = find_data((Object*)dyn_ptr_array_get(&registered_bridges, i));
-        printf("\t%s (%p) index %d color %p\n", safe_name_bridge(sd->obj), sd->obj, sd->index, sd->color);
+        printf("\t%p mt(%p) index %d color %p\n", sd->obj, sd->obj->GetGCSafeMethodTable(), sd->index, sd->color);
     }
 
     dump_color_table(" after tarjan", false);
@@ -1295,3 +1289,5 @@ MarkCrossReferencesArgs* ProcessBridgeObjects()
 
     return args;
 }
+
+#endif // FEATURE_JAVAMARSHAL

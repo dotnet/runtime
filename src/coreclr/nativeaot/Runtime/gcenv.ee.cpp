@@ -809,9 +809,4 @@ void GCToEEInterface::FreeStringConfigValue(const char* value)
     delete[] value;
 }
 
-const char* GCToEEInterface::GetMethodTableDebugName(MethodTable* pMT)
-{
-    return "";
-}
-
 #endif // !DACCESS_COMPILE

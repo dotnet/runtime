@@ -15,8 +15,7 @@ using CrossreferenceHandleCallback = void(STDMETHODCALLTYPE *)(MarkCrossReferenc
 
 namespace
 {
-    BOOL g_Initialized;
-    CrossreferenceHandleCallback g_MarkCrossReferences;
+    CrossreferenceHandleCallback g_MarkCrossReferences = NULL;
 
     Volatile<bool> g_GCBridgeActive = false;
     CLREvent* g_bridgeFinished = nullptr;
@@ -118,7 +117,7 @@ void Interop::FinishCrossReferenceProcessing(
     _ASSERTE(g_GCBridgeActive);
 
     // Mark the GCBridge as inactive.
-    // This much be synchronized with the GC so switch to cooperative mode.
+    // This must be synchronized with the GC so switch to cooperative mode.
     {
         GCX_COOP();
 
@@ -128,7 +127,7 @@ void Interop::FinishCrossReferenceProcessing(
         for (size_t i = 0; i < length; i++)
             pHandleManager->DestroyHandleOfUnknownType(((OBJECTHANDLE*)unreachableObjectHandles)[i]);
 
-        g_GCBridgeActive = FALSE;
+        g_GCBridgeActive = false;
         g_bridgeFinished->Set();
     }
 
@@ -150,9 +149,8 @@ extern "C" BOOL QCALLTYPE JavaMarshal_Initialize(
     // while they are being set.
     {
         GCX_COOP();
-        if (InterlockedCompareExchange((LONG*)&g_Initialized, TRUE, FALSE) == FALSE)
+        if (InterlockedCompareExchangeT((void**)&g_MarkCrossReferences, markCrossReferences, NULL) == NULL)
         {
-            g_MarkCrossReferences = (CrossreferenceHandleCallback)markCrossReferences;
             success = TRUE;
             g_bridgeFinished = new CLREvent();
             g_bridgeFinished->CreateManualEvent(false);

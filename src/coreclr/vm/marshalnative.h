@@ -58,7 +58,9 @@ extern "C" int32_t QCALLTYPE MarshalNative_GetHRForException(QCall::ObjectHandle
 
 extern "C" OBJECTHANDLE QCALLTYPE GCHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack obj, int type);
 extern "C" void QCALLTYPE GCHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle);
+#ifdef FEATURE_JAVAMARSHAL
 extern "C" void QCALLTYPE GCHandle_InternalGetBridgeWait(OBJECTHANDLE handle, QCall::ObjectHandleOnStack result);
+#endif
 
 #ifdef _DEBUG
 using IsInCooperativeGCMode_fn = BOOL(STDMETHODCALLTYPE*)(void);

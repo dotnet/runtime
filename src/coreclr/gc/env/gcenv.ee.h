@@ -100,8 +100,6 @@ public:
     static void LogErrorToHost(const char *message);
 
     static uint64_t GetThreadOSThreadId(Thread* thread);
-
-    static const char* GetMethodTableDebugName(MethodTable* pMT);
 };
 
 #endif // __GCENV_EE_H__

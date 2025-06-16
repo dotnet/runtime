@@ -268,10 +268,5 @@ namespace standalone
         {
             return ::GCToEEInterface::GetThreadOSThreadId(thread);
         }
-
-        const char* GetMethodTableDebugName(MethodTable* pMT)
-        {
-            return ::GCToEEInterface::GetMethodTableDebugName(pMT);
-        }
     };
 }

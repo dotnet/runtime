@@ -468,9 +468,6 @@ public:
 
     virtual
     uint64_t GetThreadOSThreadId(Thread* thread) PURE_VIRTUAL;
-
-    virtual
-    const char* GetMethodTableDebugName(MethodTable* pMT) PURE_VIRTUAL
 };
 
 #endif // _GCINTERFACE_EE_H_

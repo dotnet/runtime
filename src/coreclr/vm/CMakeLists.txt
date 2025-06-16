@@ -559,11 +559,9 @@ if(FEATURE_OBJCMARSHAL)
     )
 endif(FEATURE_OBJCMARSHAL)
 
-if(FEATURE_JAVAMARSHAL)
-    list(APPEND VM_SOURCES_WKS
-        interoplibinterface_java.cpp
-    )
-endif(FEATURE_JAVAMARSHAL)
+list(APPEND VM_SOURCES_WKS
+    interoplibinterface_java.cpp
+)
 
 if(CLR_CMAKE_TARGET_WIN32)
 
