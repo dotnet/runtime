@@ -1306,7 +1306,7 @@ public:
 
     bool isBBWeightCold(Compiler* comp) const
     {
-        return getBBWeight(comp) < BB_COLD_WEIGHT;
+        return bbWeight < (getCalledCount(comp) * BB_COLD_WEIGHT);
     }
 
     // Returns "true" if the block is empty. Empty here means there are no statement

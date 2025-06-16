@@ -120,7 +120,7 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
 
 typedef void* (*HELPER_FTN_PP)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
-typedef Object* (*HELPER_FTN_NEWARR)(CORINFO_CLASS_HANDLE, intptr_t);
+typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t);
 typedef void* (*HELPER_FTN_PP_2)(void*, void*);
 
 InterpThreadContext::InterpThreadContext()
@@ -135,9 +135,9 @@ InterpThreadContext::~InterpThreadContext()
     free(pStackStart);
 }
 
-CORINFO_GENERIC_HANDLE GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule);
+DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule);
 
-CORINFO_GENERIC_HANDLE GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
+void* GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
 {
     CONTRACTL
     {
@@ -1718,7 +1718,7 @@ CALL_INTERP_METHOD:
                     if (length < 0)
                         COMPlusThrow(kArgumentOutOfRangeException);
 
-                    CORINFO_CLASS_HANDLE arrayClsHnd = (CORINFO_CLASS_HANDLE)pMethod->pDataItems[ip[3]];
+                    MethodTable* arrayClsHnd = (MethodTable*)pMethod->pDataItems[ip[3]];
                     HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod->pDataItems[ip[4]]);
 
                     Object* arr = helper(arrayClsHnd, (intptr_t)length);
@@ -1991,7 +1991,7 @@ do {                                                                           \
                 }
 #define DO_GENERIC_LOOKUP(mdParam, mtParam) \
                     CORINFO_RUNTIME_LOOKUP *pLookup = (CORINFO_RUNTIME_LOOKUP*)pMethod->pDataItems[ip[3]];  \
-                    CORINFO_GENERIC_HANDLE  result = 0;                                                     \
+                    void* result = 0;                                                                       \
                                                                                                             \
                     assert(!pLookup->indirectFirstOffset);                                                  \
                     assert(!pLookup->indirectSecondOffset);                                                 \
@@ -2019,9 +2019,9 @@ do {                                                                           \
                             result = GenericHandleCommon(mdParam, mtParam, pLookup->signature);             \
                             break;                                                                          \
                         }                                                                                   \
-                        result = (CORINFO_GENERIC_HANDLE)lookup;                                            \
+                        result = lookup;                                                                    \
                     } while (0);                                                                            \
-                    LOCAL_VAR(dreg, CORINFO_GENERIC_HANDLE) = result;                                       \
+                    LOCAL_VAR(dreg, void*) = result;                                                        \
                     ip += 4;
 
                 case INTOP_GENERICLOOKUP_THIS:

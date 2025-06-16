@@ -2343,7 +2343,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
     else
     {
 
-        ResolveToken(token, newObj ? CORINFO_TOKENKIND_Method : CORINFO_TOKENKIND_NewObj, &resolvedCallToken);
+        ResolveToken(token, newObj ? CORINFO_TOKENKIND_NewObj : CORINFO_TOKENKIND_Method, &resolvedCallToken);
         
         CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
         if (isVirtual)
@@ -2357,7 +2357,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
         }
     }
 
-    if (callInfo.classFlags & CORINFO_FLG_VAROBJSIZE)
+    if (newObj && (callInfo.classFlags & CORINFO_FLG_VAROBJSIZE))
     {
         // This is a variable size object which means "System.String".
         // For these, we just call the resolved method directly, but don't actually pass a this pointer to it.

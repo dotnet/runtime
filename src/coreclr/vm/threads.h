@@ -3472,29 +3472,29 @@ public:
 
 #ifdef _DEBUG
 private:
-    DWORD m_dwUnbreakableLockCount;
+    DWORD m_dwLockCount;
 public:
-    void IncUnbreakableLockCount()
+    void IncLockCount()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE (m_dwUnbreakableLockCount != (DWORD)-1);
-        m_dwUnbreakableLockCount ++;
+        _ASSERTE (m_dwLockCount != (DWORD)-1);
+        m_dwLockCount ++;
     }
-    void DecUnbreakableLockCount()
+    void DecLockCount()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE (m_dwUnbreakableLockCount > 0);
-        m_dwUnbreakableLockCount --;
+        _ASSERTE (m_dwLockCount > 0);
+        m_dwLockCount --;
     }
-    BOOL HasUnbreakableLock() const
+    BOOL HasLock() const
     {
         LIMITED_METHOD_CONTRACT;
-        return m_dwUnbreakableLockCount != 0;
+        return m_dwLockCount != 0;
     }
-    DWORD GetUnbreakableLockCount() const
+    DWORD GetLockCount() const
     {
         LIMITED_METHOD_CONTRACT;
-        return m_dwUnbreakableLockCount;
+        return m_dwLockCount;
     }
 #endif // _DEBUG
 
