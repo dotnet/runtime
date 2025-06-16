@@ -26,7 +26,6 @@
 // @dbgtodo shim: process has some private hooks into the shim.
 #include "shimpriv.h"
 
-#include "metadataexports.h"
 #include "readonlydatatargetfacade.h"
 #include "metahost.h"
 
@@ -1740,7 +1739,7 @@ HRESULT CordbProcess::Init()
         hr = m_pDACDataTarget->QueryInterface(IID_ICorDebugMetaDataLocator, reinterpret_cast<void **>(&m_pMetaDataLocator));
 
         // Get the metadata dispenser.
-        hr = InternalCreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void **)&m_pMetaDispenser);
+        hr = CreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void **)&m_pMetaDispenser);
 
         // We statically link in the dispenser. We expect it to succeed, except for OOM, which
         // debugger doesn't yet handle.

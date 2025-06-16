@@ -120,6 +120,13 @@ namespace Mono.Linker
 				return AreEqual (((SentinelType) a).ElementType, ((SentinelType) b).ElementType, resolver, comparisonMode);
 			}
 
+			if (aMetadataType == MetadataType.FunctionPointer || bMetadataType == MetadataType.FunctionPointer) {
+				if (aMetadataType != bMetadataType)
+					return false;
+
+				return AreEqual ((FunctionPointerType) a, (FunctionPointerType) b, resolver, comparisonMode);
+			}
+
 			if (!a.Name.Equals (b.Name) || !a.Namespace.Equals (b.Namespace))
 				return false;
 
@@ -183,6 +190,40 @@ namespace Mono.Linker
 			return true;
 		}
 
+		static bool AreEqual (FunctionPointerType a, FunctionPointerType b, ITryResolveMetadata resolver, TypeComparisonMode comparisonMode = TypeComparisonMode.Exact)
+		{
+			if (ReferenceEquals (a, b))
+				return true;
+
+			if (a.CallingConvention != b.CallingConvention)
+				return false;
+
+			if (a.HasThis != b.HasThis)
+				return false;
+
+			if (a.ExplicitThis != b.ExplicitThis)
+				return false;
+
+			if (a.HasParameters != b.HasParameters)
+				return false;
+
+			if (a.ContainsGenericParameter != b.ContainsGenericParameter)
+				return false;
+
+			if (a.Parameters.Count != b.Parameters.Count)
+				return false;
+
+			for (int i = 0; i < a.Parameters.Count; i++) {
+				if (!AreEqual (a.Parameters[i].ParameterType, b.Parameters[i].ParameterType, resolver, comparisonMode))
+					return false;
+			}
+
+			if (!AreEqual (a.ReturnType, b.ReturnType, resolver, comparisonMode))
+				return false;
+
+			return true;
+		}
+
 		public static int GetHashCodeFor (TypeReference obj)
 		{
 			// a very good prime number
@@ -195,6 +236,7 @@ namespace Mono.Linker
 			const int optionalModifierMultiplier = 47;
 			const int pinnedMultiplier = 53;
 			const int sentinelMultiplier = 59;
+			const int functionPointerMultiplier = 61;
 
 			var metadataType = obj.MetadataType;
 
@@ -261,7 +303,11 @@ namespace Mono.Linker
 			}
 
 			if (metadataType == MetadataType.FunctionPointer) {
-				throw new NotImplementedException ("We currently don't handle function pointer types.");
+				var functionPointerType = (FunctionPointerType) obj;
+				var hashCode = GetHashCodeFor (functionPointerType.ReturnType) * hashCodeMultiplier + functionPointerMultiplier;
+				for (var i = 0; i < functionPointerType.Parameters.Count; i++)
+					hashCode = hashCode * hashCodeMultiplier + GetHashCodeFor (functionPointerType.Parameters[i].ParameterType);
+				return hashCode;
 			}
 
 			return obj.Namespace.GetHashCode () * hashCodeMultiplier + obj.FullName.GetHashCode ();

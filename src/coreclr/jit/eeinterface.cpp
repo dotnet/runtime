@@ -81,16 +81,30 @@ void StringPrinter::Append(char chr)
 }
 
 //------------------------------------------------------------------------
-// eePrintJitType:
+// eePrintCorInfoType:
 //   Print a JIT type.
 //
 // Arguments:
 //    printer - the printer
-//    jitType - the JIT type
+//    corInfoType - the CorInfoType type
 //
-void Compiler::eePrintJitType(StringPrinter* printer, var_types jitType)
+void Compiler::eePrintCorInfoType(StringPrinter* printer, CorInfoType corInfoType)
 {
-    printer->Append(varTypeName(jitType));
+    static const char* preciseVarTypeMap[CORINFO_TYPE_COUNT] = {// see the definition of enum CorInfoType in file
+                                                                // inc/corinfo.h
+                                                                "<UNDEF>", "void",       "bool",   "char",  "sbyte",
+                                                                "byte",    "short",      "ushort", "int",   "uint",
+                                                                "long",    "ulong",      "nint",   "nuint", "float",
+                                                                "double",  "string",     "ptr",    "byref", "struct",
+                                                                "class",   "typedbyref", "var"};
+
+    const char* corInfoTypeName = "CORINFO_TYPE_INVALID";
+    if (corInfoType >= 0 && corInfoType < CORINFO_TYPE_COUNT)
+    {
+        corInfoTypeName = preciseVarTypeMap[corInfoType];
+    }
+
+    printer->Append(corInfoTypeName);
 }
 
 //------------------------------------------------------------------------
@@ -144,7 +158,7 @@ void Compiler::eePrintType(StringPrinter* printer, CORINFO_CLASS_HANDLE clsHnd, 
         }
         else
         {
-            eePrintJitType(printer, JitType2PreciseVarType(childType));
+            eePrintCorInfoType(printer, childType);
         }
 
         printer->Append('[');
@@ -205,7 +219,7 @@ void Compiler::eePrintTypeOrJitAlias(StringPrinter* printer, CORINFO_CLASS_HANDL
     }
     else
     {
-        eePrintJitType(printer, JitType2PreciseVarType(typ));
+        eePrintCorInfoType(printer, typ);
     }
 }
 
@@ -214,6 +228,18 @@ static const char* s_jitHelperNames[CORINFO_HELP_COUNT] = {
 #define DYNAMICJITHELPER(code, pfnHelper, binderId) #code,
 #include "jithelpers.h"
 };
+
+void AppendCorInfoTypeWithModModifiers(StringPrinter* printer, CorInfoTypeWithMod corInfoTypeWithMod)
+{
+    if ((corInfoTypeWithMod & CORINFO_TYPE_MOD_PINNED) == CORINFO_TYPE_MOD_PINNED)
+    {
+        printer->Append("PINNED__");
+    }
+    if ((corInfoTypeWithMod & CORINFO_TYPE_MOD_COPY_WITH_HELPER) == CORINFO_TYPE_MOD_COPY_WITH_HELPER)
+    {
+        printer->Append("COPY_WITH_HELPER__");
+    }
+}
 
 //------------------------------------------------------------------------
 // eePrintMethod:
@@ -285,7 +311,10 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
                 printer->Append(',');
 
             CORINFO_CLASS_HANDLE vcClsHnd;
-            var_types type = JitType2PreciseVarType(strip(info.compCompHnd->getArgType(sig, argLst, &vcClsHnd)));
+            CorInfoTypeWithMod   argTypeWithMod = info.compCompHnd->getArgType(sig, argLst, &vcClsHnd);
+            AppendCorInfoTypeWithModModifiers(printer, argTypeWithMod);
+
+            var_types type = JitType2PreciseVarType(strip(argTypeWithMod));
             switch (type)
             {
                 case TYP_REF:
@@ -302,7 +331,7 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
 
                     FALLTHROUGH;
                 default:
-                    eePrintJitType(printer, type);
+                    eePrintCorInfoType(printer, strip(argTypeWithMod));
                     break;
             }
 
@@ -331,7 +360,7 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
                     }
                         FALLTHROUGH;
                     default:
-                        eePrintJitType(printer, retType);
+                        eePrintCorInfoType(printer, sig->retType);
                         break;
                 }
             }

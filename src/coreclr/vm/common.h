@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // common.h - precompiled headers include for the CLR Execution Engine
 //
-
-//
-
 
 #ifndef _common_h_
 #define _common_h_
@@ -289,7 +287,6 @@ namespace Loader
 #include "synch.h"
 #include "regdisp.h"
 #include "stackframe.h"
-#include "gms.h"
 #include "fcall.h"
 #include "syncblk.h"
 #include "gcdesc.h"

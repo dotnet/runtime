@@ -17,7 +17,6 @@
 #include "peimagelayout.inl"
 #include "datatargetadapter.h"
 #include "readonlydatatargetfacade.h"
-#include "metadataexports.h"
 #include "excep.h"
 #include "debugger.h"
 #include "dwreport.h"

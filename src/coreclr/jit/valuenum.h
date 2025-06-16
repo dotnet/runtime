@@ -1478,6 +1478,9 @@ public:
     // Prints a representation of the exception set on standard out.
     void vnDumpValWithExc(Compiler* comp, VNFuncApp* valWithExc);
 
+    // Requires vn to be VNF_ExcSetCons or VNForEmptyExcSet().
+    void vnDumpExc(Compiler* comp, ValueNum vn);
+
     // Requires "excSeq" to be a ExcSetCons sequence.
     // Prints a representation of the set of exceptions on standard out.
     void vnDumpExcSeq(Compiler* comp, VNFuncApp* excSeq, bool isHead);

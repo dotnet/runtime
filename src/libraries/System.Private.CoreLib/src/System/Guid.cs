@@ -1078,7 +1078,7 @@ namespace System
         {
             if (Vector128.IsHardwareAccelerated)
             {
-                return Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in left))) == Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in right)));
+                return Unsafe.BitCast<Guid, Vector128<byte>>(left) == Unsafe.BitCast<Guid, Vector128<byte>>(right);
             }
 
             ref int rA = ref Unsafe.AsRef(in left._a);
@@ -1514,7 +1514,7 @@ namespace System
                 (byte)'8', (byte)'9', (byte)'a', (byte)'b',
                 (byte)'c', (byte)'d', (byte)'e', (byte)'f');
 
-            Vector128<byte> srcVec = Unsafe.As<Guid, Vector128<byte>>(ref value);
+            Vector128<byte> srcVec = Unsafe.BitCast<Guid, Vector128<byte>>(value);
             (Vector128<byte> hexLow, Vector128<byte> hexHigh) =
                 HexConverter.AsciiToHexVector128(srcVec, hexMap);
 

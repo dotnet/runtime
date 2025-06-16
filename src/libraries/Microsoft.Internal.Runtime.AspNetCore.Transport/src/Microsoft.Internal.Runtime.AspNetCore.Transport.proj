@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IsShipping>false</IsShipping>
@@ -11,6 +12,8 @@
     <PackageDescription>Internal transport package to provide aspnetcore with the assemblies from dotnet/runtime that make up the Microsoft.AspNetCore.App shared framework.</PackageDescription>
     <!-- Reference elements are missing from the nuspec: https://github.com/NuGet/Home/issues/8684. -->
     <NoWarn>$(NoWarn);NU5131</NoWarn>
+    <!-- Include the symbols in the non-symbols package so that they get redistributed into aspnetcore's shared framework. -->
+    <IncludeSymbolsInPackage>true</IncludeSymbolsInPackage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,4 +34,5 @@
                       ReferenceOutputAssembly="false"
                       PackAsAnalyzer="true" />
   </ItemGroup>
+
 </Project>

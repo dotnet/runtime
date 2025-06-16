@@ -180,7 +180,7 @@ DWORD PALAPI SleeperProc_SleepEx_test2(LPVOID lpParameter)
     }
 
 
-    ThreadSleepDelta = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);;
+    ThreadSleepDelta = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);
 
     return 0;
 }

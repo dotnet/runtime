@@ -474,12 +474,12 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 }
 
 //------------------------------------------------------------------------
-// LowerPutArgStkOrSplit: Lower a GT_PUTARG_STK/GT_PUTARG_SPLIT.
+// LowerPutArgStk: Lower a GT_PUTARG_STK.
 //
 // Arguments:
 //    putArgNode - The node to lower
 //
-void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
+void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgNode)
 {
     GenTree* src = putArgNode->Data();
 

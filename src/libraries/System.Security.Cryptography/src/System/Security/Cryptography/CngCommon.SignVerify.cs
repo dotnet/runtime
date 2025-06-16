@@ -46,6 +46,28 @@ namespace System.Security.Cryptography
             return signature;
         }
 
+        public static unsafe void SignHash(
+            this SafeNCryptKeyHandle keyHandle,
+            ReadOnlySpan<byte> hash,
+            Span<byte> destination,
+            AsymmetricPaddingMode paddingMode,
+            void* pPaddingInfo)
+        {
+            ErrorCode errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, destination, out int numBytesNeeded, paddingMode);
+
+            if (errorCode == ErrorCode.STATUS_UNSUCCESSFUL)
+            {
+                errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, destination, out numBytesNeeded, paddingMode);
+            }
+
+            if (errorCode != ErrorCode.ERROR_SUCCESS)
+            {
+                throw errorCode.ToCryptographicException();
+            }
+
+            Debug.Assert(numBytesNeeded == destination.Length);
+        }
+
         public static unsafe bool TrySignHash(this SafeNCryptKeyHandle keyHandle, ReadOnlySpan<byte> hash, Span<byte> signature, AsymmetricPaddingMode paddingMode, void* pPaddingInfo, out int bytesWritten)
         {
             for (int i = 0; i <= StatusUnsuccessfulRetryCount; i++)

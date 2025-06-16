@@ -829,11 +829,6 @@ struct _UNWIND_INFO * DacGetUnwindInfo(TADDR taUnwindInfo);
 BOOL DacUnwindStackFrame(T_CONTEXT * pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers);
 #endif // FEATURE_EH_FUNCLETS
 
-#if defined(TARGET_UNIX)
-// call back through data target to unwind out-of-process
-HRESULT DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers);
-#endif // TARGET_UNIX
-
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 class SString;
 void DacMdCacheAddEEName(TADDR taEE, const SString& ssEEName);

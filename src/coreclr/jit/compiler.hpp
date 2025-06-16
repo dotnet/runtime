@@ -291,7 +291,7 @@ inline bool Compiler::jitIsBetweenInclusive(unsigned value, unsigned start, unsi
 
 #define HISTOGRAM_MAX_SIZE_COUNT 64
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
 class Dumpable
 {
@@ -388,7 +388,7 @@ public:
     static void DumpAll();
 };
 
-#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
+#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE
 
 /******************************************************************************************
  * Return the EH descriptor for the given region index.
@@ -1489,7 +1489,13 @@ inline GenTreeIntCon* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags f
 
 inline GenTree* Compiler::gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd)
 {
-    return gtNewIconEmbHndNode((void*)scpHnd, nullptr, GTF_ICON_SCOPE_HDL, scpHnd);
+    void *embedScpHnd, *pEmbedScpHnd;
+
+    embedScpHnd = (void*)info.compCompHnd->embedModuleHandle(scpHnd, &pEmbedScpHnd);
+
+    assert((!embedScpHnd) != (!pEmbedScpHnd));
+
+    return gtNewIconEmbHndNode(embedScpHnd, pEmbedScpHnd, GTF_ICON_SCOPE_HDL, scpHnd);
 }
 
 //-----------------------------------------------------------------------------
@@ -1529,7 +1535,13 @@ inline GenTree* Compiler::gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHnd)
 
 inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 {
-    return gtNewIconEmbHndNode((void*)fldHnd, nullptr, GTF_ICON_FIELD_HDL, fldHnd);
+    void *embedFldHnd, *pEmbedFldHnd;
+
+    embedFldHnd = (void*)info.compCompHnd->embedFieldHandle(fldHnd, &pEmbedFldHnd);
+
+    assert((!embedFldHnd) != (!pEmbedFldHnd));
+
+    return gtNewIconEmbHndNode(embedFldHnd, pEmbedFldHnd, GTF_ICON_FIELD_HDL, fldHnd);
 }
 
 /*****************************************************************************/
@@ -4576,9 +4588,6 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-#if FEATURE_ARG_SPLIT
-        case GT_PUTARG_SPLIT:
-#endif // FEATURE_ARG_SPLIT
         case GT_RETURNTRAP:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:

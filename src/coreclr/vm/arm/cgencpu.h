@@ -576,25 +576,6 @@ public:
         ThumbEmitJumpRegister(thumbRegLr);
     }
 
-    void ThumbEmitNop()
-    {
-        // nop
-        Emit16(0xbf00);
-    }
-
-    void ThumbEmitBreakpoint()
-    {
-        // Permanently undefined instruction #0xfe (see ARMv7-A A6.2.6). The debugger seems to accept this as
-        // a reasonable breakpoint substitute (it's what DebugBreak uses). Bkpt #0, on the other hand, always
-        // seems to flow directly to the kernel debugger (even if we ignore it there it doesn't seem to be
-        // picked up by the user mode debugger).
-#ifdef __linux__
-        Emit16(0xde01);
-#else
-        Emit16(0xdefe);
-#endif
-    }
-
     void ThumbEmitMovConstant(ThumbReg dest, int constant)
     {
         _ASSERT(dest != thumbRegPc);
@@ -682,14 +663,6 @@ public:
         Emit16((WORD)(0x0b00 | (source << 12) | offset));
     }
 
-    void ThumbEmitLoadOffsetScaledReg(ThumbReg dest, ThumbReg base, ThumbReg offset, int shift)
-    {
-        _ASSERTE(shift >=0 && shift <=3);
-
-        Emit16((WORD)(0xf850 | base));
-        Emit16((WORD)((dest << 12) | (shift << 4) | offset));
-    }
-
     void ThumbEmitCallRegister(ThumbReg target)
     {
         // blx regTarget
@@ -771,14 +744,12 @@ public:
 
     void ThumbEmitAddReg(ThumbReg dest, ThumbReg source)
     {
-
         _ASSERTE(dest != source);
         Emit16((WORD)(0x4400 | ((dest & 0x8)<<4) | (source<<3) | (dest & 0x7)));
     }
 
     void ThumbEmitAdd(ThumbReg dest, ThumbReg source, unsigned int value)
     {
-
         if(value<4096)
         {
             // addw dest, source, #value
@@ -797,18 +768,6 @@ public:
             ThumbEmitMovConstant(dest, value);
             ThumbEmitAddReg(dest, source);
         }
-    }
-
-    void ThumbEmitSub(ThumbReg dest, ThumbReg source, unsigned int value)
-    {
-        _ASSERTE(value < 4096);
-
-        // subw dest, source, #value
-        unsigned int i = (value & 0x800) >> 11;
-        unsigned int imm3 = (value & 0x700) >> 8;
-        unsigned int imm8 = value & 0xff;
-        Emit16((WORD)(0xf2a0 | (i << 10) | source));
-        Emit16((WORD)((imm3 << 12) | (dest << 8) | imm8));
     }
 
     void ThumbEmitIncrement(ThumbReg dest, unsigned int value)
@@ -866,18 +825,6 @@ public:
         }
     }
 
-    void ThumbEmitLoadStoreMultiple(ThumbReg base, bool load, WORD registers)
-    {
-        _ASSERTE(CountBits(registers) > 1);
-        _ASSERTE((registers & 0xFF00) == 0); // This only supports the small encoding
-        _ASSERTE(base < 8); // This only supports the small encoding
-        _ASSERTE((base.Mask() & registers) == 0); // This only supports the small encoding
-
-        // (LDM|STM) base, {registers}
-        WORD flag = load ? 0x0800 : 0;
-        Emit16(0xc000 | flag | ((base & 7) << 8) | (registers & 0xFF));
-    }
-
     void ThumbEmitPop(WORD registers)
     {
         _ASSERTE(registers != 0);
@@ -906,24 +853,6 @@ public:
             Emit16(0xe8bd);
             Emit16(registers);
         }
-    }
-
-    void ThumbEmitLoadVFPSingleRegIndirect(ThumbVFPSingleReg dest, ThumbReg source, int offset)
-    {
-        _ASSERTE((offset >= -1020) && (offset <= 1020));
-        _ASSERTE(offset%4==0);
-
-        Emit16((WORD) (0xed10 | ((offset > 0 ? 0x1: 0x0) << 7) | ((dest & 0x1) << 6) | source));
-        Emit16((WORD) (0x0a00 | ((dest & 0x1e) << 11) | (abs(offset)>>2)));
-    }
-
-    void ThumbEmitLoadVFPDoubleRegIndirect(ThumbVFPDoubleReg dest, ThumbReg source, int offset)
-    {
-        _ASSERTE((offset >= -1020) && (offset <= 1020));
-        _ASSERTE(offset%4==0);
-
-        Emit16((WORD) (0xed10 | ((offset > 0 ? 0x1: 0x0) << 7) | ((dest & 0x10) << 6) | source));
-        Emit16((WORD) (0x0b00 | ((dest & 0xf) << 12) | (abs(offset)>>2)));
     }
 
     // Scratches r12.

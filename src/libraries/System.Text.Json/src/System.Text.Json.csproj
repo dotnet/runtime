@@ -51,6 +51,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Runtime\InteropServices\JsonMarshal.cs" />
     <Compile Include="System\Text\Json\AppContextSwitchHelper.cs" />
     <Compile Include="System\Text\Json\BitStack.cs" />
+    <Compile Include="System\Text\Json\Document\JsonDocument.PropertyNameSet.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.DbRow.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.MetadataDb.cs" />
@@ -342,6 +343,8 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\ReflectionExtensions.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
     <Compile Include="System\ThrowHelper.cs" />
+
+    <Compile Include="$(CoreLibSharedDir)System\Marvin.cs" Link="Common\System\Marvin.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -418,6 +421,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.Intrinsics" />
     <Reference Include="System.Runtime.Loader" />
+    <Reference Include="System.Security.Cryptography" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Text.Encodings.Web" />
     <Reference Include="System.Text.RegularExpressions" />

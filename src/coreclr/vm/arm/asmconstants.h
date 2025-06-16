@@ -41,47 +41,40 @@ ASMCONSTANTS_C_ASSERT(ThisPtrRetBufPrecodeData__Target == offsetof(ThisPtrRetBuf
 
 #define REDIRECTSTUB_SP_OFFSET_CONTEXT 0
 
+#define OFFSETOF__MethodTable__m_dwFlags 0x00
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags));
 
-// Offset of the array containing the address of captured registers in MachState
-#define MachState__captureR4_R11 0x0
-ASMCONSTANTS_C_ASSERT(MachState__captureR4_R11 == offsetof(MachState, captureR4_R11))
+#define OFFSETOF__MethodTable__m_usComponentSize 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_usComponentSize == offsetof(MethodTable, m_dwFlags));
 
-// Offset of the array containing the address of preserved registers in MachState
-#define MachState___R4_R11 0x20
-ASMCONSTANTS_C_ASSERT(MachState___R4_R11 == offsetof(MachState, _R4_R11))
+#define OFFSETOF__MethodTable__m_uBaseSize 0x04
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_uBaseSize == offsetof(MethodTable, m_BaseSize));
 
-#define MachState__isValid 0x48
-ASMCONSTANTS_C_ASSERT(MachState__isValid == offsetof(MachState, _isValid))
+#define OFFSETOF__Object__m_pEEType 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Object__m_pEEType == offsetof(Object, m_pMethTab));
 
-#define LazyMachState_captureR4_R11 MachState__captureR4_R11
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureR4_R11 == offsetof(LazyMachState, captureR4_R11))
+#define OFFSETOF__Array__m_Length 0x4
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Array__m_Length == offsetof(ArrayBase, m_NumComponents));
 
-#define LazyMachState_captureSp     (MachState__isValid+4)
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureSp == offsetof(LazyMachState, captureSp))
+#define MAX_STRING_LENGTH 0x3FFFFFDF
+ASMCONSTANTS_C_ASSERT(MAX_STRING_LENGTH == CORINFO_String_MaxLength);
 
-#define LazyMachState_captureIp     (LazyMachState_captureSp+4)
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureIp == offsetof(LazyMachState, captureIp))
+#define STRING_COMPONENT_SIZE 2
 
-#define MethodTable__m_BaseSize         0x04
-ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSize));
+#define STRING_BASE_SIZE 0xE
+ASMCONSTANTS_C_ASSERT(STRING_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD) + sizeof(WCHAR));
 
-#define MethodTable__m_dwFlags         0x0
-ASMCONSTANTS_C_ASSERT(MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags));
+#define SZARRAY_BASE_SIZE 0xC
+ASMCONSTANTS_C_ASSERT(SZARRAY_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD));
+
+#define ASM_MIN_OBJECT_SIZE 0xC
+ASMCONSTANTS_C_ASSERT(ASM_MIN_OBJECT_SIZE == MIN_OBJECT_SIZE);
 
 #define MethodTable__enum_flag_ContainsGCPointers 0x01000000
 ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsGCPointers == MethodTable::enum_flag_ContainsGCPointers);
 
-#define MethodTable__m_ElementType        DBG_FRE(0x24, 0x20)
-ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_ElementTypeHnd));
-
 #define SIZEOF__MethodTable             DBG_FRE(0x2c, 0x28)
 ASMCONSTANTS_C_ASSERT(SIZEOF__MethodTable == sizeof(MethodTable));
-
-#define ArrayBase__m_NumComponents     0x4
-ASMCONSTANTS_C_ASSERT(ArrayBase__m_NumComponents == offsetof(ArrayBase, m_NumComponents));
-
-#define PtrArray__m_Array              0x8
-ASMCONSTANTS_C_ASSERT(PtrArray__m_Array == offsetof(PtrArray, m_Array));
 
 #define TypeHandle_CanCast 0x1 // TypeHandle::CanCast
 
@@ -103,26 +96,6 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__FloatArgumentRegisters == sizeof(FloatArgumentRegi
 #define ASM_ENREGISTERED_RETURNTYPE_MAXSIZE 0x20
 ASMCONSTANTS_C_ASSERT(ASM_ENREGISTERED_RETURNTYPE_MAXSIZE == ENREGISTERED_RETURNTYPE_MAXSIZE)
 
-#ifdef FEATURE_COMINTEROP
-
-#define Stub__m_pCode DBG_FRE(0x10, 0x0c)
-ASMCONSTANTS_C_ASSERT(Stub__m_pCode == sizeof(Stub))
-
-#define SIZEOF__ComMethodFrame 0x24
-ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame == sizeof(ComMethodFrame))
-
-#define UnmanagedToManagedFrame__m_pvDatum 0x08
-ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedToManagedFrame, m_pvDatum))
-
-// In ComCallPreStub and GenericCLRToCOMCallStub, we setup R12 to contain address of ComCallMethodDesc after doing the following:
-//
-// mov r12, pc
-//
-// This constant defines where ComCallMethodDesc is post execution of the above instruction.
-#define ComCallMethodDesc_Offset_FromR12 0x8
-
-#endif // FEATURE_COMINTEROP
-
 #define               Thread__m_fPreemptiveGCDisabled   0x04
 ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled));
 #define Thread_m_fPreemptiveGCDisabled Thread__m_fPreemptiveGCDisabled
@@ -130,6 +103,16 @@ ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPre
 #define               Thread__m_pFrame                  0x08
 ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
 #define Thread_m_pFrame Thread__m_pFrame
+
+#define               OFFSETOF__RuntimeThreadLocals__ee_alloc_context 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__RuntimeThreadLocals__ee_alloc_context == offsetof(RuntimeThreadLocals, alloc_context));
+
+#define               OFFSETOF__ee_alloc_context__alloc_ptr 0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__alloc_ptr == offsetof(ee_alloc_context, m_GCAllocContext) +
+                                                               offsetof(gc_alloc_context, alloc_ptr));
+
+#define               OFFSETOF__ee_alloc_context__combined_limit 0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__combined_limit == offsetof(ee_alloc_context, m_CombinedLimit));
 
 #define ASM__VTABLE_SLOTS_PER_CHUNK 8
 ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK == VTABLE_SLOTS_PER_CHUNK)

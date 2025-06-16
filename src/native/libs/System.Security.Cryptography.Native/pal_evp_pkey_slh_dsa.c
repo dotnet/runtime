@@ -195,6 +195,135 @@ done:
 #endif
 }
 
+int32_t CryptoNative_SlhDsaSignPreEncoded(EVP_PKEY *pkey,
+                                          void* extraHandle,
+                                          uint8_t* msg, int32_t msgLen,
+                                          uint8_t* destination, int32_t destinationLen)
+{
+
+    assert(pkey);
+    assert(msgLen >= 0);
+    assert(destination);
+    assert(destinationLen >= 7856 /* SLH-DSA-SHA2-128s/SLH-DSA-SHAKE-128s signature size */);
+
+#if defined(NEED_OPENSSL_3_0) && HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
+    if (!API_EXISTS(EVP_PKEY_sign_message_init) ||
+        !API_EXISTS(EVP_PKEY_verify_message_init))
+    {
+        return -1;
+    }
+
+    ERR_clear_error();
+
+    EVP_PKEY_CTX* ctx = NULL;
+
+    int ret = -1;
+
+    ctx = EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
+    if (!ctx)
+    {
+        goto done;
+    }
+
+    int messageEncoding = 0;
+    OSSL_PARAM contextParams[] =
+    {
+        OSSL_PARAM_construct_int(OSSL_SIGNATURE_PARAM_MESSAGE_ENCODING, &messageEncoding),
+        OSSL_PARAM_construct_end(),
+    };
+
+    if (EVP_PKEY_sign_message_init(ctx, NULL, contextParams) <= 0)
+    {
+        goto done;
+    }
+
+    size_t dstLen = Int32ToSizeT(destinationLen);
+    if (EVP_PKEY_sign(ctx, destination, &dstLen, msg, Int32ToSizeT(msgLen)) == 1)
+    {
+        if (dstLen != Int32ToSizeT(destinationLen))
+        {
+            assert(false); // length mismatch
+            goto done;
+        }
+
+        ret = 1;
+    }
+    else
+    {
+        ret = 0;
+    }
+
+done:
+    if (ctx != NULL) EVP_PKEY_CTX_free(ctx);
+    return ret;
+#else
+    (void)pkey;
+    (void)extraHandle;
+    (void)msg;
+    (void)msgLen;
+    (void)destination;
+    (void)destinationLen;
+    return -1;
+#endif
+}
+
+int32_t CryptoNative_SlhDsaVerifyPreEncoded(EVP_PKEY *pkey,
+                                            void* extraHandle,
+                                            uint8_t* msg, int32_t msgLen,
+                                            uint8_t* sig, int32_t sigLen)
+{
+    assert(pkey);
+    assert(msgLen >= 0);
+    assert(sig);
+    assert(sigLen >= 7856 /* SLH-DSA-SHA2-128s/SLH-DSA-SHAKE-128s signature size */);
+
+#if defined(NEED_OPENSSL_3_0) && HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
+    if (!API_EXISTS(EVP_PKEY_sign_message_init) ||
+        !API_EXISTS(EVP_PKEY_verify_message_init))
+    {
+        return -1;
+    }
+
+    ERR_clear_error();
+
+    EVP_PKEY_CTX* ctx = NULL;
+
+    int ret = -1;
+
+    ctx = EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
+    if (!ctx)
+    {
+        goto done;
+    }
+
+    int messageEncoding = 0;
+    OSSL_PARAM contextParams[] =
+    {
+        OSSL_PARAM_construct_int(OSSL_SIGNATURE_PARAM_MESSAGE_ENCODING, &messageEncoding),
+        OSSL_PARAM_construct_end(),
+    };
+
+    if (EVP_PKEY_verify_message_init(ctx, NULL, contextParams) <= 0)
+    {
+        goto done;
+    }
+
+    ret = EVP_PKEY_verify(ctx, sig, Int32ToSizeT(sigLen), msg, Int32ToSizeT(msgLen)) == 1;
+
+done:
+    if (ctx != NULL) EVP_PKEY_CTX_free(ctx);
+    return ret;
+#else
+    (void)pkey;
+    (void)extraHandle;
+    (void)msg;
+    (void)msgLen;
+    (void)sig;
+    (void)sigLen;
+    return -1;
+#endif
+}
+
 int32_t CryptoNative_SlhDsaExportSecretKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
 {
     return EvpPKeyGetKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_PRIV_KEY, destination, destinationLength);

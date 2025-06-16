@@ -58,6 +58,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task NestedTypeForwarder ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task SecurityAttributeScope ()
 		{
 			return RunTest (allowMissingWarnings: true);

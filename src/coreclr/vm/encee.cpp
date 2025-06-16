@@ -194,7 +194,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     IfFailRet(pMDImport->QueryInterface(IID_IMDInternalImportENC, (void **)&pIMDInternalImportENC));
 
     // get an emitter interface
-    IfFailRet(GetMetaDataPublicInterfaceFromInternal(pMDImport, IID_IMetaDataEmit, (void **)&pEmitter));
+    IfFailRet(GetMDPublicInterfaceFromInternal(pMDImport, IID_IMetaDataEmit, (void **)&pEmitter));
 
     // Copy the delta IL into our RVA-able IL memory
     BYTE* pLocalILMemory = (BYTE*)(void*)GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(cbDeltaIL));

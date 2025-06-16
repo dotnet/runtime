@@ -783,19 +783,22 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector128<float> PermuteVar4x32x2(Vector128<float> lower, Vector128<int> indices, Vector128<float> upper) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            ///   <para>__m256i _mm256_permute4x64_epi64 (__m256i a, __m256i b)</para>
+            ///   <para>__m256i _mm256_permutexvar_epi64 (__m256i idx, __m256i a)</para>
             ///   <para>  VPERMQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector256<long> PermuteVar4x64(Vector256<long> value, Vector256<long> control) { throw new PlatformNotSupportedException(); }
             /// <summary>
-            ///   <para>__m256i _mm256_permute4x64_pd (__m256d a, __m256i b)</para>
+            ///   <para>__m256i _mm256_permutexvar_epi64 (__m256i idx, __m256i a)</para>
             ///   <para>  VPERMQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector256<ulong> PermuteVar4x64(Vector256<ulong> value, Vector256<ulong> control) { throw new PlatformNotSupportedException(); }
             /// <summary>
-            ///   <para>__m256d _mm256_permute4x64_pd (__m256d a, __m256i b)</para>
+            ///   <para>__m256d _mm256_permutexvar_pd (__m256i idx, __m256d a)</para>
             ///   <para>  VPERMPD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector256<double> PermuteVar4x64(Vector256<double> value, Vector256<long> control) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
@@ -3171,19 +3174,22 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<float> PermuteVar4x32(Vector512<float> left, Vector512<int> control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>__m512i _mm512_permutevar8x64_epi64 (__m512i a, __m512i b)</para>
+        ///   <para>__m512i _mm512_permutexvar_epi64 (__m512i idx, __m512i a)</para>
         ///   <para>  VPERMQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<long> PermuteVar8x64(Vector512<long> value, Vector512<long> control) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        ///   <para>__m512i _mm512_permutevar8x64_epi64 (__m512i a, __m512i b)</para>
+        ///   <para>__m512i _mm512_permutexvar_epi64 (__m512i idx, __m512i a)</para>
         ///   <para>  VPERMQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<ulong> PermuteVar8x64(Vector512<ulong> value, Vector512<ulong> control) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        ///   <para>__m512d _mm512_permutevar8x64_pd (__m512d a, __m512i b)</para>
+        ///   <para>__m512d _mm512_permutexvar_pd (__m512i idx, __m512d a)</para>
         ///   <para>  VPERMPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<double> PermuteVar8x64(Vector512<double> value, Vector512<long> control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -3206,19 +3212,22 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<double> PermuteVar8x64x2(Vector512<double> lower, Vector512<long> indices, Vector512<double> upper) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>__m512i _mm512_permutevar16x32_epi32 (__m512i a, __m512i b)</para>
+        ///   <para>__m512i _mm512_permutexvar_epi32 (__m512i idx, __m512i a)</para>
         ///   <para>  VPERMD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<int> PermuteVar16x32(Vector512<int> left, Vector512<int> control) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        ///   <para>__m512i _mm512_permutevar16x32_epi32 (__m512i a, __m512i b)</para>
+        ///   <para>__m512i _mm512_permutexvar_epi32 (__m512i idx, __m512i a)</para>
         ///   <para>  VPERMD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<uint> PermuteVar16x32(Vector512<uint> left, Vector512<uint> control) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        ///   <para>__m512 _mm512_permutevar16x32_ps (__m512 a, __m512i b)</para>
+        ///   <para>__m512 _mm512_permutexvar_ps (__m512i idx, __m512 a)</para>
         ///   <para>  VPERMPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<float> PermuteVar16x32(Vector512<float> left, Vector512<int> control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>

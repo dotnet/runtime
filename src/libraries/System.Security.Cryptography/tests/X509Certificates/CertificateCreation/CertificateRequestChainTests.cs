@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
@@ -9,7 +10,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class CertificateRequestChainTests
     {
-        public static bool PlatformSupportsPss { get; } = DetectPssSupport();
+        // Android supports PSS at the algorithms layer, but does not support it
+        // being used in cert chains.
+        public static bool PlatformSupportsPss { get; } = !PlatformDetection.IsAndroid && PlatformSupport.IsRsaPssSupported;
 
         [Fact]
         public static void CreateChain_ECC()
@@ -548,37 +551,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     rootCertWithKey?.Dispose();
                 }
             }
-        }
-
-        private static bool DetectPssSupport()
-        {
-            if (PlatformDetection.IsAndroid)
-            {
-                // Android supports PSS at the algorithms layer, but does not support it
-                // being used in cert chains.
-                return false;
-            }
-
-            if (PlatformDetection.IsBrowser)
-            {
-                // Browser doesn't support PSS or RSA at all.
-                return false;
-            }
-
-            using (X509Certificate2 cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
-            using (RSA rsa = cert.GetRSAPrivateKey())
-            {
-                try
-                {
-                    rsa.SignData(Array.Empty<byte>(), HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
-                }
-                catch (CryptographicException)
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
     }
 }

@@ -8,9 +8,9 @@
     <DnneAddGeneratedBinaryToProject>true</DnneAddGeneratedBinaryToProject>
     <DnneGenRollForward>Major</DnneGenRollForward>
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
-    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
     <!-- Set the apphost RID so we download the apphost pack if needed. -->
-    <AppHostRuntimeIdentifier>$(OutputRID)</AppHostRuntimeIdentifier>
+    <AppHostRuntimeIdentifier>$(TargetRid)</AppHostRuntimeIdentifier>
     <UseLocalAppHostPack>true</UseLocalAppHostPack>
     <!-- Don't use the local apphost pack on Windows as matching linker configurations is difficult. -->
     <UseLocalAppHostPack Condition="'$(TargetOS)' == 'windows'">false</UseLocalAppHostPack>

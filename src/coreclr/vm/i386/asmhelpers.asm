@@ -15,6 +15,7 @@
         .model  flat
 
 include asmconstants.inc
+include asmmacros.inc
 
         assume fs: nothing
         option  casemap:none
@@ -26,9 +27,6 @@ EXTERN g_pThrowDivideByZeroException:DWORD
 EXTERN g_pThrowOverflowException:DWORD
 
 EXTERN __imp__RtlUnwind@16:DWORD
-ifdef _DEBUG
-EXTERN _HelperMethodFrameConfirmState@20:PROC
-endif
 ifdef FEATURE_HIJACK
 EXTERN _OnHijackWorker@4:PROC
 endif ;FEATURE_HIJACK
@@ -97,15 +95,6 @@ EXTERN @IL_Rethrow_x86@4:PROC
 UNREFERENCED macro arg
     local unref
     unref equ size arg
-endm
-
-FASTCALL_FUNC macro FuncName,cbArgs
-FuncNameReal EQU @&FuncName&@&cbArgs
-FuncNameReal proc public
-endm
-
-FASTCALL_ENDFUNC macro
-FuncNameReal endp
 endm
 
 ifndef FEATURE_EH_FUNCLETS
@@ -510,9 +499,9 @@ donestack:
 
 CallDescrWorkerInternalReturnAddress:
 ifdef _DEBUG
-        nop     ; This is a tag that we use in an assert.  Fcalls expect to
-                ; be called from Jitted code or from certain blessed call sites like
-                ; this one.  (See HelperMethodFrame::EnsureInit)
+    nop     ; Debug-only tag used in asserts.
+            ; FCalls expect to be called from Jitted code or specific approved call sites,
+            ; like this one.
 endif
 
         ; Save FP return value if necessary
@@ -548,66 +537,6 @@ _CallDescrWorkerInternalReturnAddressOffset:
         dd      CallDescrWorkerInternalReturnAddress - CallDescrWorkerInternal
 
 CallDescrWorkerInternal endp
-
-ifdef _DEBUG
-; int __fastcall HelperMethodFrameRestoreState(HelperMethodFrame*, struct MachState *)
-FASTCALL_FUNC HelperMethodFrameRestoreState,8
-    mov         eax, edx        ; eax = MachState*
-else
-; int __fastcall HelperMethodFrameRestoreState(struct MachState *)
-FASTCALL_FUNC HelperMethodFrameRestoreState,4
-    mov         eax, ecx        ; eax = MachState*
-endif
-    ; restore the registers from the m_MachState structure.  Note that
-    ; we only do this for register that where not saved on the stack
-    ; at the time the machine state snapshot was taken.
-
-    cmp         [eax+MachState__pRetAddr], 0
-
-ifdef _DEBUG
-    jnz         noConfirm
-    push        ebp
-    push        ebx
-    push        edi
-    push        esi
-    push        ecx     ; HelperFrame*
-    call        _HelperMethodFrameConfirmState@20
-    ; on return, eax = MachState*
-    cmp         [eax+MachState__pRetAddr], 0
-noConfirm:
-endif
-
-    jz          doRet
-
-    lea         edx, [eax+MachState__esi]       ; Did we have to spill ESI
-    cmp         [eax+MachState__pEsi], edx
-    jnz         SkipESI
-    mov         esi, [edx]                      ; Then restore it
-SkipESI:
-
-    lea         edx, [eax+MachState__edi]       ; Did we have to spill EDI
-    cmp         [eax+MachState__pEdi], edx
-    jnz         SkipEDI
-    mov         edi, [edx]                      ; Then restore it
-SkipEDI:
-
-    lea         edx, [eax+MachState__ebx]       ; Did we have to spill EBX
-    cmp         [eax+MachState__pEbx], edx
-    jnz         SkipEBX
-    mov         ebx, [edx]                      ; Then restore it
-SkipEBX:
-
-    lea         edx, [eax+MachState__ebp]       ; Did we have to spill EBP
-    cmp         [eax+MachState__pEbp], edx
-    jnz         SkipEBP
-    mov         ebp, [edx]                      ; Then restore it
-SkipEBP:
-
-doRet:
-    xor         eax, eax
-    retn
-FASTCALL_ENDFUNC HelperMethodFrameRestoreState
-
 
 ifdef FEATURE_HIJACK
 
@@ -1793,7 +1722,7 @@ ifdef CHAIN_LOOKUP
 ;==========================================================================
 _ResolveWorkerChainLookupAsmStub@0 proc public
     ; this is the part of the stack that is present as we enter this function:
-    
+
     ChainLookup__token equ                  00h
     ChainLookup__indirect_addr equ          04h
     ChainLookup__caller_ret_addr equ        08h

@@ -299,7 +299,7 @@ function getTraceImports () {
     if (nullCheckValidation)
         traceImports.push(importDef("notnull", assert_not_null));
 
-    if (runtimeHelpers.emscriptenBuildOptions.enablePerfTracing || runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler) {
+    if (runtimeHelpers.emscriptenBuildOptions.enableEventPipe || runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler) {
         traceImports.push(importDef("prof_enter", getRawCwrap("mono_jiterp_prof_enter")));
         traceImports.push(importDef("prof_samplepoint", getRawCwrap("mono_jiterp_prof_samplepoint")));
         traceImports.push(importDef("prof_leave", getRawCwrap("mono_jiterp_prof_leave")));

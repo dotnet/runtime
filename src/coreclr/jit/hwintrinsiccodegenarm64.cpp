@@ -2577,6 +2577,35 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_ExtractAfterLastActiveElementScalar:
+            case NI_Sve_ExtractLastActiveElementScalar:
+            {
+                opt = emitter::optGetSveInsOpt(emitTypeSize(node->GetSimdBaseType()));
+
+                if (emitter::isGeneralRegisterOrZR(targetReg))
+                {
+                    assert(varTypeIsIntegralOrI(intrin.baseType));
+
+                    emitSize = emitTypeSize(node);
+                    GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
+                                                   INS_SCALABLE_OPTS_NONE);
+                    break;
+                }
+
+                // FP scalars are processed by the INS_SCALABLE_OPTS_WITH_SIMD_SCALAR variant of the instructions
+                FALLTHROUGH;
+            }
+            case NI_Sve_ExtractAfterLastActiveElement:
+            case NI_Sve_ExtractLastActiveElement:
+            {
+                assert(emitter::isFloatReg(targetReg));
+                assert(varTypeIsFloating(node->gtType) || varTypeIsSIMD(node->gtType));
+
+                GetEmitter()->emitInsSve_R_R_R(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg, opt,
+                                               INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
+                break;
+            }
+
             case NI_Sve_TrigonometricMultiplyAddCoefficient:
             {
                 assert(isRMW);

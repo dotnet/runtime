@@ -106,7 +106,50 @@ namespace System.Security.Cryptography.Cose
                 throw new InvalidOperationException(SR.ContentWasDetached);
             }
 
-            return VerifyCore(key, Message.Content.Value.Span, null, associatedData, CoseHelpers.GetKeyType(key));
+            CoseAlgorithm coseAlgorithm = GetCoseAlgorithmFromProtectedHeaders();
+            CoseKey coseKey = CoseKey.FromUntrustedAlgorithmAndKey(coseAlgorithm, key);
+
+            return VerifyCore(coseKey, Message.Content.Value.Span, null, associatedData);
+        }
+
+        /// <summary>
+        /// Verifies that the signature is valid for the message's content using the specified key.
+        /// </summary>
+        /// <param name="key">The private key used to sign the content.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
+        /// <exception cref="InvalidOperationException">The content is detached from the associated message, use an overload that accepts a detached content.</exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was incorrectly formatted.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was not one of the values supported by this implementation.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header doesn't match with the algorithms supported by the specified <paramref name="key"/>.
+        ///   </para>
+        /// </exception>
+        /// <seealso cref="VerifyDetached(CoseKey, ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
+        /// <seealso cref="CoseMessage.Content"/>
+        public bool VerifyEmbedded(CoseKey key, ReadOnlySpan<byte> associatedData = default)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+
+            if (Message.IsDetached)
+            {
+                throw new InvalidOperationException(SR.ContentWasDetached);
+            }
+
+            return VerifyCore(key, Message.Content.Value.Span, null, associatedData);
         }
 
         /// <summary>
@@ -146,7 +189,10 @@ namespace System.Security.Cryptography.Cose
                 throw new InvalidOperationException(SR.ContentWasDetached);
             }
 
-            return VerifyCore(key, Message.Content.Value.Span, null, associatedData, CoseHelpers.GetKeyType(key));
+            CoseAlgorithm coseAlgorithm = GetCoseAlgorithmFromProtectedHeaders();
+            CoseKey coseKey = CoseKey.FromUntrustedAlgorithmAndKey(coseAlgorithm, key);
+
+            return VerifyCore(coseKey, Message.Content.Value.Span, null, associatedData);
         }
 
         /// <summary>
@@ -189,7 +235,10 @@ namespace System.Security.Cryptography.Cose
                 throw new InvalidOperationException(SR.ContentWasEmbedded);
             }
 
-            return VerifyCore(key, detachedContent, null, associatedData, CoseHelpers.GetKeyType(key));
+            CoseAlgorithm coseAlgorithm = GetCoseAlgorithmFromProtectedHeaders();
+            CoseKey coseKey = CoseKey.FromUntrustedAlgorithmAndKey(coseAlgorithm, key);
+
+            return VerifyCore(coseKey, detachedContent, null, associatedData);
         }
 
         /// <summary>
@@ -230,7 +279,51 @@ namespace System.Security.Cryptography.Cose
                 throw new InvalidOperationException(SR.ContentWasEmbedded);
             }
 
-            return VerifyCore(key, detachedContent, null, associatedData, CoseHelpers.GetKeyType(key));
+            CoseAlgorithm coseAlgorithm = GetCoseAlgorithmFromProtectedHeaders();
+            CoseKey coseKey = CoseKey.FromUntrustedAlgorithmAndKey(coseAlgorithm, key);
+
+            return VerifyCore(coseKey, detachedContent, null, associatedData);
+        }
+
+        /// <summary>
+        /// Verifies that the signature is valid for the message's content using the specified key.
+        /// </summary>
+        /// <param name="key">The private key used to sign the content.</param>
+        /// <param name="detachedContent">The content that was previously signed.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on the associated message, use an overload that uses embedded content.</exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was incorrectly formatted.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was not one of the values supported by this implementation.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header doesn't match with the algorithms supported by the specified <paramref name="key"/>.
+        ///   </para>
+        /// </exception>
+        /// <seealso cref="VerifyEmbedded(CoseKey, ReadOnlySpan{byte})"/>
+        /// <seealso cref="CoseMessage.Content"/>
+        public bool VerifyDetached(CoseKey key, ReadOnlySpan<byte> detachedContent, ReadOnlySpan<byte> associatedData = default)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+
+            if (!Message.IsDetached)
+            {
+                throw new InvalidOperationException(SR.ContentWasEmbedded);
+            }
+
+            return VerifyCore(key, detachedContent, null, associatedData);
         }
 
         /// <summary>
@@ -291,7 +384,69 @@ namespace System.Security.Cryptography.Cose
                 throw new InvalidOperationException(SR.ContentWasEmbedded);
             }
 
-            return VerifyCore(key, default, detachedContent, associatedData, CoseHelpers.GetKeyType(key));
+            CoseAlgorithm coseAlgorithm = GetCoseAlgorithmFromProtectedHeaders();
+            CoseKey coseKey = CoseKey.FromUntrustedAlgorithmAndKey(coseAlgorithm, key);
+
+            return VerifyCore(coseKey, default, detachedContent, associatedData);
+        }
+
+        /// <summary>
+        /// Verifies that the signature is valid for the message's content using the specified key.
+        /// </summary>
+        /// <param name="key">The private key used to sign the content.</param>
+        /// <param name="detachedContent">The content that was previously signed.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="key"/> is of an unsupported type.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="detachedContent"/> does not support reading or seeking.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on the associated message, use an overload that uses embedded content.</exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was incorrectly formatted.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was not one of the values supported by this implementation.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header doesn't match with the algorithms supported by the specified <paramref name="key"/>.
+        ///   </para>
+        /// </exception>
+        /// <seealso cref="CoseMessage.Content"/>
+        public bool VerifyDetached(CoseKey key, Stream detachedContent, ReadOnlySpan<byte> associatedData = default)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(detachedContent);
+
+            if (!detachedContent.CanRead)
+            {
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
+            }
+
+            if (!detachedContent.CanSeek)
+            {
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotSeekable, nameof(detachedContent));
+            }
+
+            if (!Message.IsDetached)
+            {
+                throw new InvalidOperationException(SR.ContentWasEmbedded);
+            }
+
+            return VerifyCore(key, default, detachedContent, associatedData);
         }
 
         /// <summary>
@@ -352,22 +507,76 @@ namespace System.Security.Cryptography.Cose
                 throw new InvalidOperationException(SR.ContentWasEmbedded);
             }
 
-            return VerifyAsyncCore(key, detachedContent, associatedData, CoseHelpers.GetKeyType(key), cancellationToken);
+            CoseAlgorithm coseAlgorithm = GetCoseAlgorithmFromProtectedHeaders();
+            CoseKey coseKey = CoseKey.FromUntrustedAlgorithmAndKey(coseAlgorithm, key);
+
+            return VerifyAsyncCore(coseKey, detachedContent, associatedData, cancellationToken);
         }
 
-        private async Task<bool> VerifyAsyncCore(AsymmetricAlgorithm key, Stream content, ReadOnlyMemory<byte> associatedData, KeyType keyType, CancellationToken cancellationToken)
+        /// <summary>
+        /// Asynchronously verifies that the signature is valid for the message's content using the specified key.
+        /// </summary>
+        /// <param name="key">The private key used to sign the content.</param>
+        /// <param name="detachedContent">The content that was previously signed.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task whose <see cref="Task{TResult}"/> property is <see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="key"/> is of an unsupported type.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="detachedContent"/> does not support reading or seeking.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on the associated message, use an overload that uses embedded content.</exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was incorrectly formatted.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was not one of the values supported by this implementation.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header doesn't match with the algorithms supported by the specified <paramref name="key"/>.
+        ///   </para>
+        /// </exception>
+        /// <seealso cref="VerifyDetached(CoseKey, Stream, ReadOnlySpan{byte})"/>
+        /// <seealso cref="CoseMessage.Content"/>
+        public Task<bool> VerifyDetachedAsync(CoseKey key, Stream detachedContent, ReadOnlyMemory<byte> associatedData = default, CancellationToken cancellationToken = default)
         {
-            ReadOnlyMemory<byte> encodedAlg = CoseHelpers.GetCoseAlgorithmFromProtectedHeaders(ProtectedHeaders);
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(detachedContent);
 
-            int? nullableAlg = CoseHelpers.DecodeCoseAlgorithmHeader(encodedAlg);
-            if (nullableAlg == null)
+            if (!detachedContent.CanRead)
             {
-                throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
             }
 
-            HashAlgorithmName hashAlgorithm = CoseHelpers.GetHashAlgorithmFromCoseAlgorithmAndKeyType(nullableAlg.Value, keyType, out RSASignaturePadding? padding);
+            if (!detachedContent.CanSeek)
+            {
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotSeekable, nameof(detachedContent));
+            }
 
-            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
+            if (!Message.IsDetached)
+            {
+                throw new InvalidOperationException(SR.ContentWasEmbedded);
+            }
+
+            return VerifyAsyncCore(key, detachedContent, associatedData, cancellationToken);
+        }
+
+        private async Task<bool> VerifyAsyncCore(CoseKey key, Stream content, ReadOnlyMemory<byte> associatedData, CancellationToken cancellationToken)
+        {
+            using (ToBeSignedBuilder toBeSignedBuilder = key.CreateToBeSignedBuilder())
             {
                 int bufferLength = CoseMessage.ComputeToBeSignedEncodedSize(
                     SigStructureContext.Signature,
@@ -379,8 +588,15 @@ namespace System.Security.Cryptography.Cose
 
                 try
                 {
-                    await CoseMessage.AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature, Message.RawProtectedHeaders, _encodedSignProtectedHeaders, associatedData, content, cancellationToken).ConfigureAwait(false);
-                    return VerifyHash(key, hasher, hashAlgorithm, keyType, padding);
+                    await CoseMessage.AppendToBeSignedAsync(buffer, toBeSignedBuilder, SigStructureContext.Signature, Message.RawProtectedHeaders, _encodedSignProtectedHeaders, associatedData, content, cancellationToken).ConfigureAwait(false);
+
+                    bool retVal = false;
+                    toBeSignedBuilder.WithDataAndResetAfterOperation(buffer, (buff, toBeSigned) =>
+                    {
+                        retVal = key.Verify(toBeSigned, _signature);
+                    });
+
+                    return retVal;
                 }
                 finally
                 {
@@ -389,17 +605,9 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        private bool VerifyCore(AsymmetricAlgorithm key, ReadOnlySpan<byte> contentBytes, Stream? contentStream, ReadOnlySpan<byte> associatedData, KeyType keyType)
+        private bool VerifyCore(CoseKey key, ReadOnlySpan<byte> contentBytes, Stream? contentStream, ReadOnlySpan<byte> associatedData)
         {
-            ReadOnlyMemory<byte> encodedAlg = CoseHelpers.GetCoseAlgorithmFromProtectedHeaders(ProtectedHeaders);
-            int? nullableAlg = CoseHelpers.DecodeCoseAlgorithmHeader(encodedAlg);
-            if (nullableAlg == null)
-            {
-                throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
-            }
-
-            HashAlgorithmName hashAlgorithm = CoseHelpers.GetHashAlgorithmFromCoseAlgorithmAndKeyType(nullableAlg.Value, keyType, out RSASignaturePadding? padding);
-            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
+            using (ToBeSignedBuilder toBeSignedBuilder = key.CreateToBeSignedBuilder())
             {
                 int bufferLength = CoseMessage.ComputeToBeSignedEncodedSize(
                     SigStructureContext.Signature,
@@ -411,8 +619,15 @@ namespace System.Security.Cryptography.Cose
 
                 try
                 {
-                    CoseMessage.AppendToBeSigned(buffer, hasher, SigStructureContext.Signature, Message.RawProtectedHeaders.Span, _encodedSignProtectedHeaders, associatedData, contentBytes, contentStream);
-                    return VerifyHash(key, hasher, hashAlgorithm, keyType, padding);
+                    CoseMessage.AppendToBeSigned(buffer, toBeSignedBuilder, SigStructureContext.Signature, Message.RawProtectedHeaders.Span, _encodedSignProtectedHeaders, associatedData, contentBytes, contentStream);
+
+                    bool retVal = false;
+                    toBeSignedBuilder.WithDataAndResetAfterOperation(buffer, (buff, toBeSigned) =>
+                    {
+                        retVal = key.Verify(toBeSigned, _signature);
+                    });
+
+                    return retVal;
                 }
                 finally
                 {
@@ -421,27 +636,17 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        private bool VerifyHash(AsymmetricAlgorithm key, IncrementalHash hasher, HashAlgorithmName hashAlgorithm, KeyType keyType, RSASignaturePadding? padding)
+        private CoseAlgorithm GetCoseAlgorithmFromProtectedHeaders()
         {
-#if NET
-            Debug.Assert(hasher.HashLengthInBytes <= 512 / 8); // largest hash we can get (SHA512).
-            Span<byte> hash = stackalloc byte[hasher.HashLengthInBytes];
-            hasher.GetHashAndReset(hash);
-#else
-            byte[] hash = hasher.GetHashAndReset();
-#endif
-            if (keyType == KeyType.ECDsa)
+            ReadOnlyMemory<byte> encodedAlg = CoseHelpers.GetCoseAlgorithmFromProtectedHeaders(ProtectedHeaders);
+
+            CoseAlgorithm? nullableAlg = CoseHelpers.DecodeCoseAlgorithmHeader(encodedAlg);
+            if (nullableAlg == null)
             {
-                var ecdsa = (ECDsa)key;
-                return ecdsa.VerifyHash(hash, _signature);
+                throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
             }
-            else
-            {
-                Debug.Assert(keyType == KeyType.RSA);
-                Debug.Assert(padding != null);
-                var rsa = (RSA)key;
-                return rsa.VerifyHash(hash, _signature, hashAlgorithm, padding);
-            }
+
+            return nullableAlg.Value;
         }
     }
 }

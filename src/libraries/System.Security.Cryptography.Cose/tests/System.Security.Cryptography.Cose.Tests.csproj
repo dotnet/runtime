@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
@@ -9,7 +9,18 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs">
+      <Link>CommonTest\System\Security\Cryptography\PlatformSupport.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs">
+      <Link>CommonTest\System\Security\Cryptography\CngKeyWrapper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Experimentals.cs">
+      <Link>Common\Experimentals.cs</Link>
+    </Compile>
+
     <Compile Include="CoseHeaderValueTests.cs" />
+    <Compile Include="CoseKeyTests.ArgumentValidation.cs" />
     <Compile Include="CoseMessageTests.Verify.cs" />
     <Compile Include="CoseHeaderLabelTests.cs" />
     <Compile Include="CoseHeaderMapTests.cs" />
@@ -30,6 +41,15 @@
     <Compile Include="CoseSign1MessageTests.Verify.cs" />
     <Compile Include="CoseSignerTests.cs" />
     <Compile Include="CoseTestHelpers.cs" />
+    <Compile Include="CoseTestKey.cs" />
+    <Compile Include="CoseTestKeyManager.cs" />
+    <Compile Include="CoseTestMultiSign.cs" />
+    <Compile Include="CoseTestSign1.cs" />
+    <Compile Include="CoseKeyTests.SignVerify.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs" />
   </ItemGroup>
   
   <ItemGroup>

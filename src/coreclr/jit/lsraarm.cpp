@@ -655,11 +655,6 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDefs(tree, dstCount);
             break;
 
-        case GT_PUTARG_SPLIT:
-            srcCount = BuildPutArgSplit(tree->AsPutArgSplit());
-            dstCount = tree->AsPutArgSplit()->gtNumRegs;
-            break;
-
         case GT_PUTARG_STK:
             srcCount = BuildPutArgStk(tree->AsPutArgStk());
             break;

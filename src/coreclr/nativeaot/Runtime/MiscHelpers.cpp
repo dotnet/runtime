@@ -9,8 +9,8 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "holder.h"
@@ -76,7 +76,7 @@ EXTERN_C void QCALLTYPE RhFlushProcessWriteBuffers()
     PalFlushProcessWriteBuffers();
 }
 
-// Get the list of currently loaded Redhawk modules (as OS HMODULE handles). The caller provides a reference
+// Get the list of currently loaded NativeAOT modules (as OS HMODULE handles). The caller provides a reference
 // to an array of pointer-sized elements and we return the total number of modules currently loaded (whether
 // that is less than, equal to or greater than the number of elements in the array). If there are more modules
 // loaded than the array will hold then the array is filled to capacity and the caller can tell further

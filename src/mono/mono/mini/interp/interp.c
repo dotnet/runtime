@@ -9039,6 +9039,10 @@ mono_ee_interp_init (const char *opts)
 	set_context (NULL);
 
 	interp_parse_options (opts);
+
+	const char *env_opts = g_getenv ("MONO_INTERPRETER_OPTIONS");
+	if (env_opts)
+		interp_parse_options (env_opts);
 	/* Don't do any optimizations if running under debugger */
 	if (mini_get_debug_options ()->mdb_optimizations)
 		mono_interp_opt = 0;

@@ -194,11 +194,9 @@ namespace
 
                 _ASSERTE((*src) != NULL || Nullable::IsNullableType(ty));
 #ifdef TARGET_UNIX
-                // Unboxing on non-Windows ABIs must be special cased
-                COMPlusThrowHR(COR_E_NOTSUPPORTED);
-#else
-                ty.GetMethodTable()->UnBoxIntoUnchecked(pvDest, (*src));
+#error Non-Windows ABIs must be special cased
 #endif
+                ty.GetMethodTable()->UnBoxIntoUnchecked(pvDest, (*src));
 
                 // return the object so it can be stored in the frame and
                 // propagated to the root set

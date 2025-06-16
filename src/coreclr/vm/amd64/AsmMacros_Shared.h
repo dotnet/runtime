@@ -3,6 +3,6 @@
 
 // This file is used to allow sharing of assembly code between NativeAOT and CoreCLR, which have different conventions about how to ensure that constants offsets are accessible
 
-#include "unixasmmacros.inc"
 #include "asmconstants.h"
+#include "unixasmmacros.inc"
 

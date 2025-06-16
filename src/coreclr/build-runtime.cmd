@@ -74,7 +74,7 @@ set __PgoOptDataPath=
 set __CMakeArgs=
 set __Ninja=1
 set __RequestedBuildComponents=
-set __OutputRid=
+set __TargetRid=
 set __SubDir=
 
 :Arg_Loop
@@ -140,7 +140,8 @@ if [!__PassThroughArgs!]==[] (
 if /i "%1" == "-hostos"              (set __HostOS=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-hostarch"            (set __HostArch=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-os"                  (set __TargetOS=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "-outputrid"           (set __OutputRid=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-targetrid"           (set __TargetRid=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-outputrid"           (set __TargetRid=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-subdir"              (set __SubDir=%2&shift&shift&goto Arg_Loop)
 
 if /i "%1" == "-cmakeargs"           (set __CMakeArgs=%2 %__CMakeArgs%&set __remainingArgs="!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
@@ -367,7 +368,7 @@ REM ============================================================================
 
 :: When the host runs on an unknown rid, it falls back to the output rid
 :: Strip the architecture
-for /f "delims=-" %%i in ("%__OutputRid%") do set __HostFallbackOS=%%i
+for /f "delims=-" %%i in ("%__TargetRid%") do set __HostFallbackOS=%%i
 :: The "win" host build is Windows 10 compatible
 if "%__HostFallbackOS%" == "win"       (set __HostFallbackOS=win10)
 :: Default to "win10" fallback

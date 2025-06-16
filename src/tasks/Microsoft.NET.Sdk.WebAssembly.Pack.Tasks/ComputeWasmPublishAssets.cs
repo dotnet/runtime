@@ -54,7 +54,7 @@ public class ComputeWasmPublishAssets : Task
 
     public bool EnableThreads { get; set; }
 
-    public bool WasmPerfTracing { get; set; }
+    public bool EnableDiagnostics { get; set; }
 
     public bool EmitSourceMap { get; set; }
 
@@ -663,7 +663,7 @@ public class ComputeWasmPublishAssets : Task
         foreach (var candidate in resolvedFilesToPublish)
         {
 #pragma warning disable CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method. Dictionary.TryAdd() not available in .Net framework.
-            if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, LoadFullICUData, CopySymbols, customIcuCandidateFilename, EnableThreads, WasmPerfTracing, EmitSourceMap, out var reason))
+            if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, LoadFullICUData, CopySymbols, customIcuCandidateFilename, EnableThreads, EnableDiagnostics, EmitSourceMap, out var reason))
             {
                 Log.LogMessage(MessageImportance.Low, "Skipping asset '{0}' because '{1}'", candidate.ItemSpec, reason);
                 if (!resolvedFilesToPublishToRemove.ContainsKey(candidate.ItemSpec))

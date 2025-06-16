@@ -33,7 +33,17 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             AssertExtensions.Throws<ArgumentNullException>("data", () => slhDsa.SignData(null));
             AssertExtensions.Throws<ArgumentNullException>("data", () => slhDsa.VerifyData(null, null));
+
+            AssertExtensions.Throws<ArgumentNullException>("hash", () => slhDsa.SignPreHash(null, "", Array.Empty<byte>()));
+            AssertExtensions.Throws<ArgumentNullException>("hash", () => slhDsa.VerifyPreHash(null, Array.Empty<byte>(), "", Array.Empty<byte>()));
+
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithmOid", () => slhDsa.SignPreHash(ReadOnlySpan<byte>.Empty, [], null));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithmOid", () => slhDsa.VerifyPreHash(ReadOnlySpan<byte>.Empty, [], null));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithmOid", () => slhDsa.SignPreHash(Array.Empty<byte>(), null, Array.Empty<byte>()));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithmOid", () => slhDsa.VerifyPreHash(Array.Empty<byte>(), Array.Empty<byte>(), null, Array.Empty<byte>()));
+
             AssertExtensions.Throws<ArgumentNullException>("signature", () => slhDsa.VerifyData(Array.Empty<byte>(), null));
+            AssertExtensions.Throws<ArgumentNullException>("signature", () => slhDsa.VerifyPreHash(Array.Empty<byte>(), null, "", Array.Empty<byte>()));
 
             AssertExtensions.Throws<ArgumentNullException>("password", () => slhDsa.ExportEncryptedPkcs8PrivateKey((string)null, pbeParameters));
             AssertExtensions.Throws<ArgumentNullException>("password", () => slhDsa.ExportEncryptedPkcs8PrivateKeyPem((string)null, pbeParameters));
@@ -78,12 +88,19 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             AssertExtensions.Throws<ArgumentException>("destination", () => slhDsa.ExportSlhDsaSecretKey(new byte[secretKeySize + 1]));
             AssertExtensions.Throws<ArgumentException>("destination", () => slhDsa.SignData(ReadOnlySpan<byte>.Empty, new byte[signatureSize - 1], ReadOnlySpan<byte>.Empty));
             AssertExtensions.Throws<ArgumentException>("destination", () => slhDsa.SignData(ReadOnlySpan<byte>.Empty, new byte[signatureSize + 1], ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<ArgumentException>("destination", () => slhDsa.SignPreHash(ReadOnlySpan<byte>.Empty, new byte[signatureSize - 1], "", ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<ArgumentException>("destination", () => slhDsa.SignPreHash(ReadOnlySpan<byte>.Empty, new byte[signatureSize + 1], "", ReadOnlySpan<byte>.Empty));
 
             // Context length must be less than 256
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => slhDsa.SignData(ReadOnlySpan<byte>.Empty, new byte[signatureSize], new byte[256]));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => slhDsa.SignData(Array.Empty<byte>(), new byte[signatureSize], new byte[256]));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => slhDsa.SignData(Array.Empty<byte>(), new byte[256]));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => slhDsa.VerifyData(ReadOnlySpan<byte>.Empty, new byte[signatureSize], new byte[256]));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => slhDsa.VerifyData(Array.Empty<byte>(), new byte[signatureSize], new byte[256]));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => slhDsa.SignPreHash(ReadOnlySpan<byte>.Empty, new byte[signatureSize], "", new byte[256]));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => slhDsa.SignPreHash(Array.Empty<byte>(), "", new byte[256]));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => slhDsa.VerifyPreHash(ReadOnlySpan<byte>.Empty, new byte[signatureSize], "", new byte[256]));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => slhDsa.VerifyPreHash(Array.Empty<byte>(), new byte[signatureSize], "", new byte[256]));
         }
 
         [Theory]
@@ -115,6 +132,118 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 AssertExtensions.Throws<CryptographicException>(() =>
                     export(slhDsa, "PLACEHOLDER", new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 42)));
             }, SlhDsaTestHelpers.EncryptionPasswordType.Byte);
+        }
+
+        [Theory]
+        [InlineData(true, SlhDsaTestHelpers.Md5Oid, 128 / 8)]
+        [InlineData(true, SlhDsaTestHelpers.Sha1Oid, 160 / 8)]
+        [InlineData(true, SlhDsaTestHelpers.Sha256Oid, 256 / 8)]
+        [InlineData(true, SlhDsaTestHelpers.Sha384Oid, 384 / 8)]
+        [InlineData(true, SlhDsaTestHelpers.Sha512Oid, 512 / 8)]
+        [InlineData(true, SlhDsaTestHelpers.Sha3_256Oid, 256 / 8)]
+        [InlineData(true, SlhDsaTestHelpers.Sha3_384Oid, 384 / 8)]
+        [InlineData(true, SlhDsaTestHelpers.Sha3_512Oid, 512 / 8)]
+        [InlineData(true, SlhDsaTestHelpers.Shake128Oid, 256 / 8)]
+        [InlineData(true, SlhDsaTestHelpers.Shake256Oid, 512 / 8)]
+        [InlineData(false, SlhDsaTestHelpers.Md5Oid, 128 / 8)]
+        [InlineData(false, SlhDsaTestHelpers.Sha1Oid, 160 / 8)]
+        [InlineData(false, SlhDsaTestHelpers.Sha256Oid, 256 / 8)]
+        [InlineData(false, SlhDsaTestHelpers.Sha384Oid, 384 / 8)]
+        [InlineData(false, SlhDsaTestHelpers.Sha512Oid, 512 / 8)]
+        [InlineData(false, SlhDsaTestHelpers.Sha3_256Oid, 256 / 8)]
+        [InlineData(false, SlhDsaTestHelpers.Sha3_384Oid, 384 / 8)]
+        [InlineData(false, SlhDsaTestHelpers.Sha3_512Oid, 512 / 8)]
+        [InlineData(false, SlhDsaTestHelpers.Shake128Oid, 256 / 8)]
+        [InlineData(false, SlhDsaTestHelpers.Shake256Oid, 512 / 8)]
+        public static void ArgumentValidation_Hash_WrongSize(bool shouldDispose, string oid, int hashLength)
+        {
+            using SlhDsa slhDsa = SlhDsaMockImplementation.Create(SlhDsaAlgorithm.SlhDsaSha2_128f);
+
+            if (shouldDispose)
+            {
+                // Test that argument validation exceptions take precedence over ObjectDisposedException
+                slhDsa.Dispose();
+            }
+
+            byte[] signature = new byte[SlhDsaAlgorithm.SlhDsaSha2_128f.SignatureSizeInBytes];
+
+            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashLength - 1], oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashLength + 1], oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashLength - 1], signature, oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashLength + 1], signature, oid));
+
+            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashLength - 1], signature, oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashLength + 1], signature, oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashLength - 1], signature.AsSpan(), oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashLength + 1], signature.AsSpan(), oid));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void ArgumentValidation_HashAlgorithm_BadOid(bool shouldDispose)
+        {
+            using SlhDsa slhDsa = SlhDsaMockImplementation.Create(SlhDsaAlgorithm.SlhDsaSha2_128f);
+
+            if (shouldDispose)
+            {
+                // Test that argument validation exceptions take precedence over ObjectDisposedException
+                slhDsa.Dispose();
+            }
+
+            byte[] signature = new byte[SlhDsaAlgorithm.SlhDsaSha2_128f.SignatureSizeInBytes];
+
+            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash([], "a"));
+            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash([], signature, "a"));
+            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(Array.Empty<byte>(), signature, "a"));
+            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash([], signature.AsSpan(), "a"));
+
+            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash([1], "a"));
+            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash([1], signature, "a"));
+            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[] { 1 }, signature, "a"));
+            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash([1], signature.AsSpan(), "a"));
+        }
+
+        [Fact]
+        public static void ArgumentValidation_HashAlgorithm_UnknownOidCallsCore()
+        {
+            using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(SlhDsaAlgorithm.SlhDsaSha2_128f);
+
+            byte[] signature = new byte[SlhDsaAlgorithm.SlhDsaSha2_128f.SignatureSizeInBytes];
+            string hashAlgorithmOid = "1.0";
+
+            slhDsa.SignPreHashCoreHook = (_, _, _, _) => { };
+            slhDsa.AddSignatureBufferIsSameAssertion(signature.AsMemory());
+            slhDsa.AddHashAlgorithmIsSameAssertion(hashAlgorithmOid.AsMemory());
+
+            _ = slhDsa.SignPreHash([], hashAlgorithmOid);
+            Assert.Equal(1, slhDsa.SignPreHashCoreCallCount);
+
+            slhDsa.SignPreHash([], signature, hashAlgorithmOid);
+            Assert.Equal(2, slhDsa.SignPreHashCoreCallCount);
+
+            _ = slhDsa.SignPreHash([1], hashAlgorithmOid);
+            Assert.Equal(3, slhDsa.SignPreHashCoreCallCount);
+
+            slhDsa.SignPreHash([1], signature, hashAlgorithmOid);
+            Assert.Equal(4, slhDsa.SignPreHashCoreCallCount);
+
+            slhDsa.SignPreHashCoreHook = (_, _, _, _) => Assert.Fail();
+            slhDsa.VerifyPreHashCoreHook = (_, _, _, _) => true;
+            slhDsa.AddSignatureBufferIsSameAssertion(signature.AsMemory());
+            slhDsa.AddHashAlgorithmIsSameAssertion(hashAlgorithmOid.AsMemory());
+
+            _ = slhDsa.VerifyPreHash(Array.Empty<byte>(), signature, hashAlgorithmOid);
+            Assert.Equal(1, slhDsa.VerifyPreHashCoreCallCount);
+
+            _ = slhDsa.VerifyPreHash([], signature.AsSpan(), hashAlgorithmOid);
+            Assert.Equal(2, slhDsa.VerifyPreHashCoreCallCount);
+
+            _ = slhDsa.VerifyPreHash(new byte[] { 1 }, signature, hashAlgorithmOid);
+            Assert.Equal(3, slhDsa.VerifyPreHashCoreCallCount);
+
+            _ = slhDsa.VerifyPreHash([1], signature.AsSpan(), hashAlgorithmOid);
+            Assert.Equal(4, slhDsa.VerifyPreHashCoreCallCount);
         }
 
         public static IEnumerable<object[]> ApiWithDestinationSpanTestData =>
@@ -281,6 +410,151 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             returnValue = false;
             AssertExtensions.FalseExpression(slhDsa.VerifyData(testData, testSignature, testContext));
             Assert.Equal(2, slhDsa.VerifyDataCoreCallCount);
+        }
+
+        [Theory]
+        [InlineData(SlhDsaTestHelpers.Md5Oid, 128 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha1Oid, 160 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha256Oid, 256 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha384Oid, 384 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha512Oid, 512 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha3_256Oid, 256 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha3_384Oid, 384 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha3_512Oid, 512 / 8)]
+        [InlineData(SlhDsaTestHelpers.Shake128Oid, 256 / 8)]
+        [InlineData(SlhDsaTestHelpers.Shake256Oid, 512 / 8)]
+        [InlineData("1.0", 0)]
+        [InlineData("1.0", 1)]
+        [InlineData("1.0", 2)]
+        public static void SignPreHash_CallsCore(string hashAlgorithmOid, int hashLength)
+        {
+            SlhDsaAlgorithm algorithm = SlhDsaAlgorithm.SlhDsaSha2_128f;
+
+            byte[] testData = new byte[hashLength];
+            byte[] testContext = [3];
+
+            using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
+            slhDsa.SignPreHashCoreHook = (_, _, _, _) => { };
+
+            slhDsa.AddDataBufferIsSameAssertion(testData);
+            slhDsa.AddContextBufferIsSameAssertion(testContext);
+            slhDsa.AddHashAlgorithmIsSameAssertion(hashAlgorithmOid.AsMemory());
+            slhDsa.AddFillDestination(1);
+
+            int signatureSize = algorithm.SignatureSizeInBytes;
+
+            // Array overload
+            byte[] exported = slhDsa.SignPreHash(testData, hashAlgorithmOid, testContext);
+            Assert.Equal(1, slhDsa.SignPreHashCoreCallCount);
+            Assert.Equal(signatureSize, exported.Length);
+            AssertExpectedFill(exported, fillElement: 1);
+
+            // Span overload
+            byte[] signature = CreatePaddedFilledArray(signatureSize, 42);
+
+            // Extra bytes in destination buffer should not be touched
+            Memory<byte> destination = signature.AsMemory(PaddingSize, signatureSize);
+            slhDsa.AddDestinationBufferIsSameAssertion(destination);
+
+            slhDsa.SignPreHash(testData, destination.Span, hashAlgorithmOid, testContext);
+            Assert.Equal(2, slhDsa.SignPreHashCoreCallCount);
+            AssertExpectedFill(signature, fillElement: 1, paddingElement: 42, PaddingSize, signatureSize);
+        }
+
+        [Theory]
+        [InlineData(SlhDsaTestHelpers.Md5Oid, 128 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha1Oid, 160 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha256Oid, 256 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha384Oid, 384 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha512Oid, 512 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha3_256Oid, 256 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha3_384Oid, 384 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha3_512Oid, 512 / 8)]
+        [InlineData(SlhDsaTestHelpers.Shake128Oid, 256 / 8)]
+        [InlineData(SlhDsaTestHelpers.Shake256Oid, 512 / 8)]
+        [InlineData("1.0", 0)]
+        [InlineData("1.0", 1)]
+        [InlineData("1.0", 2)]
+        public static void VerifyPreHash_CallsCore(string hashAlgorithmOid, int hashLength)
+        {
+            using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(SlhDsaAlgorithm.SlhDsaSha2_128f);
+
+            int signatureSize = SlhDsaAlgorithm.SlhDsaSha2_128f.SignatureSizeInBytes;
+            byte[] testSignature = CreatePaddedFilledArray(signatureSize, 42);
+            byte[] testData = new byte[hashLength];
+            byte[] testContext = [3];
+            bool returnValue = false;
+
+            slhDsa.VerifyPreHashCoreHook = (_, _, _, _) => returnValue;
+            slhDsa.AddDataBufferIsSameAssertion(testData);
+            slhDsa.AddContextBufferIsSameAssertion(testContext);
+            slhDsa.AddSignatureBufferIsSameAssertion(testSignature.AsMemory(PaddingSize, signatureSize));
+            slhDsa.AddHashAlgorithmIsSameAssertion(hashAlgorithmOid.AsMemory());
+
+            // Since `returnValue` is true, this shows the Core method doesn't get called for the wrong sized signature.
+            returnValue = true;
+            AssertExtensions.FalseExpression(slhDsa.VerifyPreHash(testData, testSignature.AsSpan(PaddingSize, signatureSize - 1), hashAlgorithmOid, testContext));
+            Assert.Equal(0, slhDsa.VerifyPreHashCoreCallCount);
+
+            AssertExtensions.FalseExpression(slhDsa.VerifyPreHash(testData, testSignature.AsSpan(PaddingSize, signatureSize + 1), hashAlgorithmOid, testContext));
+            Assert.Equal(0, slhDsa.VerifyPreHashCoreCallCount);
+
+            // But does for the right one.
+            AssertExtensions.TrueExpression(slhDsa.VerifyPreHash(testData, testSignature.AsSpan(PaddingSize, signatureSize), hashAlgorithmOid, testContext));
+            Assert.Equal(1, slhDsa.VerifyPreHashCoreCallCount);
+
+            // And just to prove that the Core method controls the answer...
+            returnValue = false;
+            AssertExtensions.FalseExpression(slhDsa.VerifyPreHash(testData, testSignature.AsSpan(PaddingSize, signatureSize), hashAlgorithmOid, testContext));
+            Assert.Equal(2, slhDsa.VerifyPreHashCoreCallCount);
+        }
+
+        [Theory]
+        [InlineData(SlhDsaTestHelpers.Md5Oid, 128 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha1Oid, 160 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha256Oid, 256 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha384Oid, 384 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha512Oid, 512 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha3_256Oid, 256 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha3_384Oid, 384 / 8)]
+        [InlineData(SlhDsaTestHelpers.Sha3_512Oid, 512 / 8)]
+        [InlineData(SlhDsaTestHelpers.Shake128Oid, 256 / 8)]
+        [InlineData(SlhDsaTestHelpers.Shake256Oid, 512 / 8)]
+        [InlineData("1.0", 0)]
+        [InlineData("1.0", 1)]
+        [InlineData("1.0", 2)]
+        public static void VerifyPreHash_ByteArray_CallsCore(string hashAlgorithmOid, int hashLength)
+        {
+            using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(SlhDsaAlgorithm.SlhDsaSha2_128f);
+
+            int signatureSize = SlhDsaAlgorithm.SlhDsaSha2_128f.SignatureSizeInBytes;
+            byte[] testSignature = CreateFilledArray(signatureSize, 42);
+            byte[] testData = new byte[hashLength];
+            byte[] testContext = [3];
+            bool returnValue = false;
+
+            slhDsa.VerifyPreHashCoreHook = (_, _, _, _) => returnValue;
+            slhDsa.AddDataBufferIsSameAssertion(testData);
+            slhDsa.AddContextBufferIsSameAssertion(testContext);
+            slhDsa.AddSignatureBufferIsSameAssertion(testSignature);
+            slhDsa.AddHashAlgorithmIsSameAssertion(hashAlgorithmOid.AsMemory());
+
+            // Since `returnValue` is true, this shows the Core method doesn't get called for the wrong sized signature.
+            returnValue = true;
+            AssertExtensions.FalseExpression(slhDsa.VerifyPreHash(testData, new byte[signatureSize - 1], hashAlgorithmOid, testContext));
+            Assert.Equal(0, slhDsa.VerifyPreHashCoreCallCount);
+
+            AssertExtensions.FalseExpression(slhDsa.VerifyPreHash(testData, new byte[signatureSize - 1], hashAlgorithmOid, testContext));
+            Assert.Equal(0, slhDsa.VerifyPreHashCoreCallCount);
+
+            // But does for the right one.
+            AssertExtensions.TrueExpression(slhDsa.VerifyPreHash(testData, testSignature, hashAlgorithmOid, testContext));
+            Assert.Equal(1, slhDsa.VerifyPreHashCoreCallCount);
+
+            // And just to prove that the Core method controls the answer...
+            returnValue = false;
+            AssertExtensions.FalseExpression(slhDsa.VerifyPreHash(testData, testSignature, hashAlgorithmOid, testContext));
+            Assert.Equal(2, slhDsa.VerifyPreHashCoreCallCount);
         }
 
         [Theory]

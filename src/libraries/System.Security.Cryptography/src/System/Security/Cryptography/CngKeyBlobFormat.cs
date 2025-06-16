@@ -134,6 +134,18 @@ namespace System.Security.Cryptography
             }
         }
 
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static CngKeyBlobFormat PQDsaPublicBlob =>
+            field ??= new CngKeyBlobFormat("PQDSAPUBLICBLOB"); // BCRYPT_PQDSA_PUBLIC_BLOB
+
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static CngKeyBlobFormat PQDsaPrivateBlob =>
+            field ??= new CngKeyBlobFormat("PQDSAPRIVATEBLOB"); // BCRYPT_PQDSA_PRIVATE_BLOB
+
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static CngKeyBlobFormat PQDsaPrivateSeedBlob =>
+            field ??= new CngKeyBlobFormat("PQDSAPRIVATESEEDBLOB"); // BCRYPT_PQDSA_PRIVATE_SEED_BLOB
+
         public static CngKeyBlobFormat OpaqueTransportBlob
         {
             get
@@ -149,7 +161,6 @@ namespace System.Security.Cryptography
                 return s_pkcs8Private ??= new CngKeyBlobFormat("PKCS8_PRIVATEKEY"); // NCRYPT_PKCS8_PRIVATE_KEY_BLOB
             }
         }
-
 
         private static CngKeyBlobFormat? s_eccPrivate;
         private static CngKeyBlobFormat? s_eccPublic;

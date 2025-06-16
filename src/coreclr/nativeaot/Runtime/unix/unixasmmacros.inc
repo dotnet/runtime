@@ -3,8 +3,8 @@
 
 #define INVALIDGCVALUE 0xCCCCCCCD
 
-// This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
-#define STATUS_REDHAWK_THREAD_ABORT     0x43
+// This must match HwExceptionCode.STATUS_NATIVEAOT_THREAD_ABORT
+#define STATUS_NATIVEAOT_THREAD_ABORT     0x43
 
 // Enforce subsections via symbols to workaround bugs in Xcode 15 linker.
 #if defined(__APPLE__)
@@ -33,6 +33,17 @@
 .macro SETALIAS New, Old
         .equiv \New, \Old
 .endm
+
+// Rename offsets of nested structures
+#define OFFSETOF__ee_alloc_context__alloc_ptr (OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr)
+#define OFFSETOF__ee_alloc_context            OFFSETOF__Thread__m_eeAllocContext
+
+// GC type flags
+#define GC_ALLOC_FINALIZE           1
+#define GC_ALLOC_ALIGN8_BIAS        4
+#define GC_ALLOC_ALIGN8             8
+
+#define G_FREE_OBJECT_METHOD_TABLE  g_pFreeObjectEEType
 
 #if defined(HOST_AMD64)
 #include "unixasmmacrosamd64.inc"

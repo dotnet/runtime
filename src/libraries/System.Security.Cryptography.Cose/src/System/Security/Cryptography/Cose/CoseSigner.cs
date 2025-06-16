@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography.Cose
 {
@@ -10,8 +11,7 @@ namespace System.Security.Cryptography.Cose
     /// </summary>
     public sealed class CoseSigner
     {
-        internal readonly KeyType _keyType;
-        internal readonly int? _algHeaderValueToSlip;
+        internal readonly CoseAlgorithm? _algHeaderValueToSlip;
         internal CoseHeaderMap? _protectedHeaders;
         internal CoseHeaderMap? _unprotectedHeaders;
 
@@ -19,19 +19,25 @@ namespace System.Security.Cryptography.Cose
         /// Gets the private key to use during signing.
         /// </summary>
         /// <value>The private key to use during signing.</value>
-        public AsymmetricAlgorithm Key { get; }
+        public AsymmetricAlgorithm? Key { get; }
+
+        /// <summary>
+        /// Gets the private key to use during signing.
+        /// </summary>
+        /// <value>The private key to use during signing.</value>
+        internal CoseKey CoseKey { get; }
 
         /// <summary>
         /// Gets the hash algorithm to use to create the hash value for signing.
         /// </summary>
         /// <value>The hash algorithm to use to create the hash value for signing.</value>
-        public HashAlgorithmName HashAlgorithm { get; }
+        public HashAlgorithmName HashAlgorithm => CoseKey.HashAlgorithm ?? default;
 
         /// <summary>
         /// Gets the padding mode to use when signing.
         /// </summary>
         /// <value>The padding mode to use when signing.</value>
-        public RSASignaturePadding? RSASignaturePadding { get; }
+        public RSASignaturePadding? RSASignaturePadding => CoseKey.RSASignaturePadding;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CoseSigner"/> class.
@@ -69,12 +75,16 @@ namespace System.Security.Cryptography.Cose
             if (key is RSA)
                 throw new ArgumentException(SR.CoseSignerRSAKeyNeedsPadding, nameof(key));
 
+            if (key is not ECDsa)
+                throw new ArgumentException(SR.Format(SR.Sign1UnsupportedKey, key.GetType().Name), nameof(key));
+
+#pragma warning disable CS0618 // Type or member is obsolete
             Key = key;
-            HashAlgorithm = hashAlgorithm;
+#pragma warning restore CS0618 // Type or member is obsolete
+            CoseKey = CoseKey.FromKey((ECDsa)key, hashAlgorithm);
 
             _protectedHeaders = protectedHeaders;
             _unprotectedHeaders = unprotectedHeaders;
-            _keyType = CoseHelpers.GetKeyType(key);
             _algHeaderValueToSlip = ValidateOrSlipAlgorithmHeader();
         }
 
@@ -105,13 +115,35 @@ namespace System.Security.Cryptography.Cose
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(signaturePadding);
 
+#pragma warning disable CS0618 // Type or member is obsolete
             Key = key;
-            HashAlgorithm = hashAlgorithm;
-            RSASignaturePadding = signaturePadding;
+#pragma warning restore CS0618 // Type or member is obsolete
+            CoseKey = CoseKey.FromKey(key, signaturePadding, hashAlgorithm);
 
             _protectedHeaders = protectedHeaders;
             _unprotectedHeaders = unprotectedHeaders;
-            _keyType = CoseHelpers.GetKeyType(key);
+            _algHeaderValueToSlip = ValidateOrSlipAlgorithmHeader();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CoseSigner"/> class.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="protectedHeaders"></param>
+        /// <param name="unprotectedHeaders"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public CoseSigner(CoseKey key, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null)
+        {
+            if (key is null)
+                throw new ArgumentNullException(nameof(key));
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            Key = null;
+#pragma warning restore CS0618 // Type or member is obsolete
+            CoseKey = key;
+
+            _protectedHeaders = protectedHeaders;
+            _unprotectedHeaders = unprotectedHeaders;
             _algHeaderValueToSlip = ValidateOrSlipAlgorithmHeader();
         }
 
@@ -129,9 +161,9 @@ namespace System.Security.Cryptography.Cose
 
         // If we Validate: The caller specified a COSE Algorithm, we will make sure it matches the specified key and hash algorithm.
         // If we Slip: The caller did not specify a COSE Algorithm, we will write the header for them rather than throw.
-        internal int? ValidateOrSlipAlgorithmHeader()
+        internal CoseAlgorithm? ValidateOrSlipAlgorithmHeader()
         {
-            int algHeaderValue = GetCoseAlgorithmHeader();
+            CoseAlgorithm algHeaderValue = CoseKey.Algorithm;
 
             if (_protectedHeaders != null && _protectedHeaders.TryGetValue(CoseHeaderLabel.Algorithm, out CoseHeaderValue value))
             {
@@ -147,64 +179,31 @@ namespace System.Security.Cryptography.Cose
             return algHeaderValue;
         }
 
-        private void ValidateAlgorithmHeader(ReadOnlyMemory<byte> encodedAlg, int expectedAlg)
+        private void ValidateAlgorithmHeader(ReadOnlyMemory<byte> encodedAlg, CoseAlgorithm expectedAlg)
         {
-            int? alg = CoseHelpers.DecodeCoseAlgorithmHeader(encodedAlg);
+            CoseAlgorithm? alg = CoseHelpers.DecodeCoseAlgorithmHeader(encodedAlg);
             Debug.Assert(alg.HasValue, "Algorithm (alg) is a known header and should have been validated in Set[Encoded]Value()");
 
             if (expectedAlg != alg.Value)
             {
                 string exMsg;
-                if (_keyType == KeyType.RSA)
+                switch (CoseKey.KeyType)
                 {
-                    exMsg = SR.Format(SR.Sign1SignCoseAlgorithmDoesNotMatchSpecifiedKeyHashAlgorithmAndPadding, alg.Value, _keyType, HashAlgorithm.Name, RSASignaturePadding);
-                }
-                else
-                {
-                    exMsg = SR.Format(SR.Sign1SignCoseAlgorithmDoesNotMatchSpecifiedKeyAndHashAlgorithm, alg.Value, _keyType, HashAlgorithm.Name);
+                    case KeyType.RSA:
+                        exMsg = SR.Format(SR.Sign1SignCoseAlgorithmDoesNotMatchSpecifiedKeyHashAlgorithmAndPadding, alg.Value, CoseKey.KeyType, HashAlgorithm.Name, RSASignaturePadding);
+                        break;
+#pragma warning disable SYSLIB5006
+                    case KeyType.MLDsa:
+                        exMsg = SR.Format(SR.Sign1UnknownCoseAlgorithm, alg.Value);
+                        break;
+#pragma warning restore SYSLIB5006
+                    default:
+                        exMsg = SR.Format(SR.Sign1SignCoseAlgorithmDoesNotMatchSpecifiedKeyAndHashAlgorithm, alg.Value, CoseKey.KeyType, HashAlgorithm.Name);
+                        break;
                 }
 
                 throw new ArgumentException(exMsg, "protectedHeaders");
             }
-        }
-
-        private int GetCoseAlgorithmHeader()
-        {
-            string? hashAlgorithmName = HashAlgorithm.Name;
-            if (_keyType == KeyType.ECDsa)
-            {
-                return hashAlgorithmName switch
-                {
-                    nameof(HashAlgorithmName.SHA256) => KnownCoseAlgorithms.ES256,
-                    nameof(HashAlgorithmName.SHA384) => KnownCoseAlgorithms.ES384,
-                    nameof(HashAlgorithmName.SHA512) => KnownCoseAlgorithms.ES512,
-                    _ => throw new ArgumentException(SR.Format(SR.Sign1SignUnsupportedHashAlgorithm, hashAlgorithmName), "hashAlgorithm")
-                };
-            }
-
-            Debug.Assert(_keyType == KeyType.RSA);
-            Debug.Assert(RSASignaturePadding != null);
-
-            if (RSASignaturePadding == RSASignaturePadding.Pss)
-            {
-                return hashAlgorithmName switch
-                {
-                    nameof(HashAlgorithmName.SHA256) => KnownCoseAlgorithms.PS256,
-                    nameof(HashAlgorithmName.SHA384) => KnownCoseAlgorithms.PS384,
-                    nameof(HashAlgorithmName.SHA512) => KnownCoseAlgorithms.PS512,
-                    _ => throw new ArgumentException(SR.Format(SR.Sign1SignUnsupportedHashAlgorithm, hashAlgorithmName), "hashAlgorithm")
-                };
-            }
-
-            Debug.Assert(RSASignaturePadding == RSASignaturePadding.Pkcs1);
-
-            return hashAlgorithmName switch
-            {
-                nameof(HashAlgorithmName.SHA256) => KnownCoseAlgorithms.RS256,
-                nameof(HashAlgorithmName.SHA384) => KnownCoseAlgorithms.RS384,
-                nameof(HashAlgorithmName.SHA512) => KnownCoseAlgorithms.RS512,
-                _ => throw new ArgumentException(SR.Format(SR.Sign1SignUnsupportedHashAlgorithm, hashAlgorithmName), "hashAlgorithm")
-            };
         }
     }
 }

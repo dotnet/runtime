@@ -71,36 +71,39 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                int bufSize;
-                checked
+                using (key)
                 {
-                    // fieldSize = ceil(KeySizeBits / 8);
-                    int fieldSize = (key.KeySize + 7) / 8;
-                    bufSize = 2 * fieldSize;
-                }
-
-#if NET || NETSTANDARD2_1
-                byte[] rented = CryptoPool.Rent(bufSize);
-                Span<byte> ieee = new Span<byte>(rented, 0, bufSize);
-
-                try
-                {
-#else
-                byte[] ieee = new byte[bufSize];
-#endif
-                    if (!DsaDerToIeee(signature, ieee))
+                    int bufSize;
+                    checked
                     {
-                        return false;
+                        // fieldSize = ceil(KeySizeBits / 8);
+                        int fieldSize = (key.KeySize + 7) / 8;
+                        bufSize = 2 * fieldSize;
                     }
 
-                    return key.VerifyHash(valueHash, ieee);
 #if NET || NETSTANDARD2_1
-                }
-                finally
-                {
-                    CryptoPool.Return(rented, bufSize);
-                }
+                    byte[] rented = CryptoPool.Rent(bufSize);
+                    Span<byte> ieee = new Span<byte>(rented, 0, bufSize);
+
+                    try
+                    {
+#else
+                    byte[] ieee = new byte[bufSize];
 #endif
+                        if (!DsaDerToIeee(signature, ieee))
+                        {
+                            return false;
+                        }
+
+                        return key.VerifyHash(valueHash, ieee);
+#if NET || NETSTANDARD2_1
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(rented, bufSize);
+                    }
+#endif
+                }
             }
 
             protected override bool Sign(
@@ -111,92 +114,96 @@ namespace System.Security.Cryptography.Pkcs
 #endif
                 string? hashAlgorithmOid,
                 X509Certificate2 certificate,
-                object? certKey,
+                object? privateKey,
                 bool silent,
                 [NotNullWhen(true)] out string? signatureAlgorithm,
                 [NotNullWhen(true)] out byte[]? signatureValue,
                 out byte[]? signatureParameters)
             {
                 signatureParameters = null;
-                // If there's no private key, fall back to the public key for a "no private key" exception.
-                ECDsa? key = certKey as ECDsa ??
-                    PkcsPal.Instance.GetPrivateKeyForSigning<ECDsa>(certificate, silent) ??
-                    certificate.GetECDsaPublicKey();
-
-                if (key == null)
+                using (GetSigningKey(privateKey, certificate, silent, ECDsaCertificateExtensions.GetECDsaPublicKey, out ECDsa? key))
                 {
-                    signatureAlgorithm = null;
-                    signatureValue = null;
-                    return false;
-                }
-
-                string? oidValue =
-                    hashAlgorithmOid switch
+                    if (key == null)
                     {
-                        Oids.Sha1 => Oids.ECDsaWithSha1,
-                        Oids.Sha256 => Oids.ECDsaWithSha256,
-                        Oids.Sha384 => Oids.ECDsaWithSha384,
-                        Oids.Sha512 => Oids.ECDsaWithSha512,
-#if NET8_0_OR_GREATER
-                        Oids.Sha3_256 => Oids.ECDsaWithSha3_256,
-                        Oids.Sha3_384 => Oids.ECDsaWithSha3_384,
-                        Oids.Sha3_512 => Oids.ECDsaWithSha3_512,
-#endif
-                        _ => null,
-                    };
-
-                if (oidValue == null)
-                {
-                    signatureAlgorithm = null;
-                    signatureValue = null;
-                    return false;
-                }
-
-                signatureAlgorithm = oidValue;
-
-#if NET || NETSTANDARD2_1
-                int bufSize;
-                checked
-                {
-                    // fieldSize = ceil(KeySizeBits / 8);
-                    int fieldSize = (key.KeySize + 7) / 8;
-                    bufSize = 2 * fieldSize;
-                }
-
-                byte[] rented = CryptoPool.Rent(bufSize);
-                int bytesWritten = 0;
-
-                try
-                {
-                    if (key.TrySignHash(dataHash, rented, out bytesWritten))
-                    {
-                        var signedHash = new ReadOnlySpan<byte>(rented, 0, bytesWritten);
-
-                        if (key != null && !certificate.GetECDsaPublicKey()!.VerifyHash(dataHash, signedHash))
-                        {
-                            // key did not match certificate
-                            signatureValue = null;
-                            return false;
-                        }
-
-                        signatureValue = DsaIeeeToDer(signedHash);
-                        return true;
+                        signatureAlgorithm = null;
+                        signatureValue = null;
+                        return false;
                     }
-                }
-                finally
-                {
-                    CryptoPool.Return(rented, bytesWritten);
-                }
+
+                    string? oidValue =
+                        hashAlgorithmOid switch
+                        {
+                            Oids.Sha1 => Oids.ECDsaWithSha1,
+                            Oids.Sha256 => Oids.ECDsaWithSha256,
+                            Oids.Sha384 => Oids.ECDsaWithSha384,
+                            Oids.Sha512 => Oids.ECDsaWithSha512,
+#if NET8_0_OR_GREATER
+                            Oids.Sha3_256 => Oids.ECDsaWithSha3_256,
+                            Oids.Sha3_384 => Oids.ECDsaWithSha3_384,
+                            Oids.Sha3_512 => Oids.ECDsaWithSha3_512,
+#endif
+                            _ => null,
+                        };
+
+                    if (oidValue == null)
+                    {
+                        signatureAlgorithm = null;
+                        signatureValue = null;
+                        return false;
+                    }
+
+                    signatureAlgorithm = oidValue;
+
+#if NET || NETSTANDARD2_1
+                    int bufSize;
+                    checked
+                    {
+                        // fieldSize = ceil(KeySizeBits / 8);
+                        int fieldSize = (key.KeySize + 7) / 8;
+                        bufSize = 2 * fieldSize;
+                    }
+
+                    byte[] rented = CryptoPool.Rent(bufSize);
+                    int bytesWritten = 0;
+
+                    try
+                    {
+                        if (key.TrySignHash(dataHash, rented, out bytesWritten))
+                        {
+                            var signedHash = new ReadOnlySpan<byte>(rented, 0, bytesWritten);
+
+                            if (key != null)
+                            {
+                                using (ECDsa certKey = certificate.GetECDsaPublicKey()!)
+                                {
+                                    if (!certKey.VerifyHash(dataHash, signedHash))
+                                    {
+                                        // key did not match certificate
+                                        signatureValue = null;
+                                        return false;
+                                    }
+                                }
+                            }
+
+                            signatureValue = DsaIeeeToDer(signedHash);
+                            return true;
+                        }
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(rented, bytesWritten);
+                    }
 #endif
 
-                signatureValue = DsaIeeeToDer(key.SignHash(
+                    signatureValue = DsaIeeeToDer(key.SignHash(
 #if NET || NETSTANDARD2_1
-                    dataHash.ToArray()
+                        dataHash.ToArray()
 #else
-                    dataHash
+                        dataHash
 #endif
-                    ));
-                return true;
+                        ));
+                    return true;
+                }
             }
         }
     }

@@ -21,8 +21,8 @@
   <Target Name="GetTestConsoleApps">
     <ItemGroup>
       <TestConsoleAppSourceFiles>
-        <ProjectDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestProjectsDir)', '$(MSBuildProjectName)', '%(Filename)', '$(OutputRID)'))</ProjectDir>
-        <TestRuntimeIdentifier>$(OutputRID)</TestRuntimeIdentifier>
+        <ProjectDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestProjectsDir)', '$(MSBuildProjectName)', '%(Filename)', '$(TargetRid)'))</ProjectDir>
+        <TestRuntimeIdentifier>$(TargetRid)</TestRuntimeIdentifier>
         <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
         <TargetFramework Condition="'%(TestConsoleAppSourceFiles.TargetOS)' != ''">$(NetCoreAppCurrent)-%(TestConsoleAppSourceFiles.TargetOS)</TargetFramework>
       </TestConsoleAppSourceFiles>
@@ -36,8 +36,8 @@
       </TestConsoleAppSourceFiles>
     </ItemGroup>
 
-    <ItemGroup Condition="!$(SkipOnTestRuntimes.Contains('$(OutputRID)'))">
-      <_SkippedAppSourceFiles Include="@(TestConsoleAppSourceFiles)" Condition="$([System.String]::Copy('%(TestConsoleAppSourceFiles.SkipOnTestRuntimes)').Contains('$(OutputRID)'))" />
+    <ItemGroup Condition="!$(SkipOnTestRuntimes.Contains('$(TargetRid)'))">
+      <_SkippedAppSourceFiles Include="@(TestConsoleAppSourceFiles)" Condition="$([System.String]::Copy('%(TestConsoleAppSourceFiles.SkipOnTestRuntimes)').Contains('$(TargetRid)'))" />
 
       <_SkippedAppSourceFiles Include="@(TestConsoleAppSourceFiles)" Condition="'$(RunNativeAotTestApps)' == 'true' and '%(TestConsoleAppSourceFiles.NativeAotIncompatible)' == 'true'" />
 

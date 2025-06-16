@@ -49,12 +49,8 @@ using std::nothrow;
 
 #define CoreLibName_W W("System.Private.CoreLib")
 #define CoreLibName_IL_W W("System.Private.CoreLib.dll")
-#define CoreLibName_NI_W W("System.Private.CoreLib.ni.dll")
-#define CoreLibName_TLB_W W("System.Private.CoreLib.tlb")
 #define CoreLibName_A "System.Private.CoreLib"
 #define CoreLibName_IL_A "System.Private.CoreLib.dll"
-#define CoreLibName_NI_A "System.Private.CoreLib.ni.dll"
-#define CoreLibName_TLB_A "System.Private.CoreLib.tlb"
 #define CoreLibNameLen 22
 #define CoreLibSatelliteName_A "System.Private.CoreLib.resources"
 #define CoreLibSatelliteNameLen 32
@@ -3198,14 +3194,6 @@ inline HRESULT FakeCoCreateInstance(REFCLSID   rclsid,
 
     return FakeCoCreateInstanceEx(rclsid, NULL, riid, ppv, NULL);
 };
-
-//*****************************************************************************
-// Gets the directory based on the location of the module. This routine
-// is called at COR setup time. Set is called during EEStartup and by the
-// MetaData dispenser.
-//*****************************************************************************
-HRESULT GetInternalSystemDirectory(_Out_writes_to_opt_(*pdwLength,*pdwLength) LPWSTR buffer, __inout DWORD* pdwLength);
-LPCWSTR GetInternalSystemDirectory(_Out_opt_ DWORD * pdwLength = NULL);
 
 //*****************************************************************************
 // This function validates the given Method/Field/Standalone signature. (util.cpp)

@@ -37,7 +37,6 @@
 #include <formattype.h>
 #include "fieldmarshaler.h"
 #include "sigbuilder.h"
-#include "metadataexports.h"
 #include "inlinetracking.h"
 #include "threads.h"
 #include "nativeimage.h"
@@ -66,6 +65,8 @@
 #include "../md/compiler/custattr.h"
 #include "typekey.h"
 #include "peimagelayout.inl"
+
+#include "interpexec.h"
 
 #ifdef TARGET_64BIT
 #define COR_VTABLE_PTRSIZED     COR_VTABLE_64BIT

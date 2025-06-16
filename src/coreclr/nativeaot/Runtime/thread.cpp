@@ -8,8 +8,8 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "regdisplay.h"
@@ -66,6 +66,12 @@ PInvokeTransitionFrame* Thread::GetTransitionFrameForStackTrace()
     ASSERT(Thread::IsCurrentThreadInCooperativeMode());
     ASSERT(m_pDeferredTransitionFrame != NULL);
     return m_pDeferredTransitionFrame;
+}
+
+PInvokeTransitionFrame* Thread::GetTransitionFrameForSampling()
+{
+    CrossThreadUnhijack();
+    return GetTransitionFrame();
 }
 
 void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
@@ -1232,7 +1238,10 @@ void Thread::EnsureRuntimeInitialized()
     if (g_RuntimeInitializationCallback != NULL)
     {
         if (g_RuntimeInitializationCallback() != 0)
+        {
+            PalPrintFatalError("\nFatal error. .NET runtime failed to initialize.\n");
             RhFailFast();
+        }
 
         g_RuntimeInitializationCallback = NULL;
     }

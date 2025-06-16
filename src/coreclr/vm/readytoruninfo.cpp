@@ -794,11 +794,11 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         if (pNativeMetadataSection != NULL)
         {
             pNativeMDImport = NULL;
-            IfFailThrow(GetMetaDataInternalInterface((void *) m_pComposite->GetLayout()->GetDirectoryData(pNativeMetadataSection),
-                                                        pNativeMetadataSection->Size,
-                                                        ofRead,
-                                                        IID_IMDInternalImport,
-                                                        (void **) &pNativeMDImport));
+            IfFailThrow(GetMDInternalInterface((void *) m_pComposite->GetLayout()->GetDirectoryData(pNativeMetadataSection),
+                                               pNativeMetadataSection->Size,
+                                               ofRead,
+                                               IID_IMDInternalImport,
+                                               (void **) &pNativeMDImport));
 
             HENUMInternal assemblyEnum;
             HRESULT hr = pNativeMDImport->EnumAllInit(mdtAssemblyRef, &assemblyEnum);

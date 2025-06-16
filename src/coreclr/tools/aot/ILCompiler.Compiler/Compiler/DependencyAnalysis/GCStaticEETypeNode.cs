@@ -101,7 +101,8 @@ namespace ILCompiler.DependencyAnalysis
             totalSize = Math.Max(totalSize, _target.PointerSize * 3); // minimum GC MethodTable size is 3 pointers
             dataBuilder.EmitInt(totalSize);
 
-            // Related type: System.Object. This allows storing an instance of this type in an array of objects.
+            // Related type: System.Object. This allows storing an instance of this type in an array of objects,
+            // or finding associated module from BulkType event source events.
             dataBuilder.EmitPointerReloc(factory.NecessaryTypeSymbol(factory.TypeSystemContext.GetWellKnownType(WellKnownType.Object)));
 
             return dataBuilder.ToObjectData();

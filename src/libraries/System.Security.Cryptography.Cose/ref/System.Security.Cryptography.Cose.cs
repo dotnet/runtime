@@ -73,6 +73,14 @@ namespace System.Security.Cryptography.Cose
         public static bool operator ==(System.Security.Cryptography.Cose.CoseHeaderValue left, System.Security.Cryptography.Cose.CoseHeaderValue right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.Cose.CoseHeaderValue left, System.Security.Cryptography.Cose.CoseHeaderValue right) { throw null; }
     }
+    public sealed partial class CoseKey
+    {
+        internal CoseKey() { }
+        public static System.Security.Cryptography.Cose.CoseKey FromKey(System.Security.Cryptography.ECDsa key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
+        public static System.Security.Cryptography.Cose.CoseKey FromKey(System.Security.Cryptography.MLDsa key) { throw null; }
+        public static System.Security.Cryptography.Cose.CoseKey FromKey(System.Security.Cryptography.RSA key, System.Security.Cryptography.RSASignaturePadding signaturePadding, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
+    }
     public abstract partial class CoseMessage
     {
         internal CoseMessage() { }
@@ -129,9 +137,13 @@ namespace System.Security.Cryptography.Cose
         public bool VerifyDetached(System.Security.Cryptography.AsymmetricAlgorithm key, byte[] detachedContent, byte[]? associatedData = null) { throw null; }
         public bool VerifyDetached(System.Security.Cryptography.AsymmetricAlgorithm key, System.IO.Stream detachedContent, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { throw null; }
         public bool VerifyDetached(System.Security.Cryptography.AsymmetricAlgorithm key, System.ReadOnlySpan<byte> detachedContent, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public bool VerifyDetached(System.Security.Cryptography.Cose.CoseKey key, System.IO.Stream detachedContent, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public bool VerifyDetached(System.Security.Cryptography.Cose.CoseKey key, System.ReadOnlySpan<byte> detachedContent, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { throw null; }
         public System.Threading.Tasks.Task<bool> VerifyDetachedAsync(System.Security.Cryptography.AsymmetricAlgorithm key, System.IO.Stream detachedContent, System.ReadOnlyMemory<byte> associatedData = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<bool> VerifyDetachedAsync(System.Security.Cryptography.Cose.CoseKey key, System.IO.Stream detachedContent, System.ReadOnlyMemory<byte> associatedData = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public bool VerifyEmbedded(System.Security.Cryptography.AsymmetricAlgorithm key, byte[]? associatedData = null) { throw null; }
         public bool VerifyEmbedded(System.Security.Cryptography.AsymmetricAlgorithm key, System.ReadOnlySpan<byte> associatedData) { throw null; }
+        public bool VerifyEmbedded(System.Security.Cryptography.Cose.CoseKey key, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { throw null; }
     }
     public sealed partial class CoseSignature
     {
@@ -143,16 +155,21 @@ namespace System.Security.Cryptography.Cose
         public bool VerifyDetached(System.Security.Cryptography.AsymmetricAlgorithm key, byte[] detachedContent, byte[]? associatedData = null) { throw null; }
         public bool VerifyDetached(System.Security.Cryptography.AsymmetricAlgorithm key, System.IO.Stream detachedContent, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { throw null; }
         public bool VerifyDetached(System.Security.Cryptography.AsymmetricAlgorithm key, System.ReadOnlySpan<byte> detachedContent, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public bool VerifyDetached(System.Security.Cryptography.Cose.CoseKey key, System.IO.Stream detachedContent, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public bool VerifyDetached(System.Security.Cryptography.Cose.CoseKey key, System.ReadOnlySpan<byte> detachedContent, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { throw null; }
         public System.Threading.Tasks.Task<bool> VerifyDetachedAsync(System.Security.Cryptography.AsymmetricAlgorithm key, System.IO.Stream detachedContent, System.ReadOnlyMemory<byte> associatedData = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<bool> VerifyDetachedAsync(System.Security.Cryptography.Cose.CoseKey key, System.IO.Stream detachedContent, System.ReadOnlyMemory<byte> associatedData = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public bool VerifyEmbedded(System.Security.Cryptography.AsymmetricAlgorithm key, byte[]? associatedData = null) { throw null; }
         public bool VerifyEmbedded(System.Security.Cryptography.AsymmetricAlgorithm key, System.ReadOnlySpan<byte> associatedData) { throw null; }
+        public bool VerifyEmbedded(System.Security.Cryptography.Cose.CoseKey key, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { throw null; }
     }
     public sealed partial class CoseSigner
     {
         public CoseSigner(System.Security.Cryptography.AsymmetricAlgorithm key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null) { }
+        public CoseSigner(System.Security.Cryptography.Cose.CoseKey key, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null) { }
         public CoseSigner(System.Security.Cryptography.RSA key, System.Security.Cryptography.RSASignaturePadding signaturePadding, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null) { }
         public System.Security.Cryptography.HashAlgorithmName HashAlgorithm { get { throw null; } }
-        public System.Security.Cryptography.AsymmetricAlgorithm Key { get { throw null; } }
+        public System.Security.Cryptography.AsymmetricAlgorithm? Key { get { throw null; } }
         public System.Security.Cryptography.Cose.CoseHeaderMap ProtectedHeaders { get { throw null; } }
         public System.Security.Cryptography.RSASignaturePadding? RSASignaturePadding { get { throw null; } }
         public System.Security.Cryptography.Cose.CoseHeaderMap UnprotectedHeaders { get { throw null; } }

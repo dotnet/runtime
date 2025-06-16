@@ -12,6 +12,8 @@
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.X509Certificates.X509CertificateLoader))]
 #endif
 #if NET10_0_OR_GREATER
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.MLDsa))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.MLDsaAlgorithm))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.MLKem))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.MLKemAlgorithm))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.SlhDsa))]

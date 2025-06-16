@@ -40,6 +40,7 @@ C_FUNC(\Name):
 #else
         .type \Name, %function
 #endif
+        .p2align 4
 C_FUNC(\Name):
         .cfi_startproc
 .endm
@@ -221,6 +222,12 @@ C_FUNC(\Name\()_End):
 
 .endm
 
+.macro SKIP_ARGUMENT_REGISTERS
+
+        add rsp, 6 * 8
+
+.endm
+
 .macro SAVE_FLOAT_ARGUMENT_REGISTERS ofs
 
         save_xmm128_postrsp xmm0, \ofs
@@ -343,7 +350,7 @@ C_FUNC(\Name\()_End):
 .macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
         free_stack      __PWTB_StackAlloc
-        POP_ARGUMENT_REGISTERS
+        SKIP_ARGUMENT_REGISTERS
         POP_CALLEE_SAVED_REGISTERS
         ret
 
@@ -365,4 +372,58 @@ C_FUNC(\Name\()_End):
         pop_nonvol_reg rbp
         .cfi_same_value rbp
 
+.endm
+
+.macro INLINE_GET_TLS_VAR Var
+       .att_syntax
+#if defined(__APPLE__)
+        movq    _\Var@TLVP(%rip), %rdi
+        callq   *(%rdi)
+#else
+        .byte 0x66  // data16 prefix - padding to have space for linker relaxations
+        leaq    \Var@TLSGD(%rip), %rdi
+        .byte 0x66  //
+        .byte 0x66  //
+        .byte 0x48  // rex.W prefix, also for padding
+        callq   __tls_get_addr@PLT
+#endif
+       .intel_syntax noprefix
+.endm
+
+
+// Inlined version of GetThreadEEAllocContext. Trashes volatile registers.
+.macro INLINE_GET_ALLOC_CONTEXT_BASE
+#ifdef FEATURE_EMULATED_TLS
+        call    C_FUNC(GetThreadEEAllocContext)
+#else
+        INLINE_GET_TLS_VAR t_runtime_thread_locals
+
+        .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
+                lea     rax, [rax + OFFSETOF__RuntimeThreadLocals__ee_alloc_context]
+        .endif
+#endif
+.endm
+
+// Pushes a TransitionBlock on the stack without saving the argument registers.
+// See the PROLOG_WITH_TRANSITION_BLOCK macro for the stack layout.
+.macro PUSH_COOP_PINVOKE_FRAME target
+        set_cfa_register rsp, 8
+
+        PUSH_CALLEE_SAVED_REGISTERS
+        // 6 * 8 for argument register space in TransitionBlock + alignment of the stack to 16b
+        alloc_stack     56
+        END_PROLOGUE
+
+        lea     \target, [rsp + 8]
+.endm
+
+.macro POP_COOP_PINVOKE_FRAME
+        free_stack      56
+        POP_CALLEE_SAVED_REGISTERS
+.endm
+
+.macro INLINE_GETTHREAD
+        // Inlined version of call C_FUNC(RhpGetThread)
+        INLINE_GET_TLS_VAR t_CurrentThreadInfo
+        mov rax, [rax + OFFSETOF__ThreadLocalInfo__m_pThread]
 .endm

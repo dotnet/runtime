@@ -134,7 +134,7 @@ NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
     .cfi_restore_state
 LOCAL_LABEL(ThrowThreadAbort):
     POP_PROBE_FRAME
-    li  a0, STATUS_REDHAWK_THREAD_ABORT
+    li  a0, STATUS_NATIVEAOT_THREAD_ABORT
     mv  a1, ra      # Set return address as exception PC
     call  C_FUNC(RhpThrowHwEx)
 NESTED_END RhpWaitForGC

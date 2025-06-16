@@ -22,6 +22,9 @@
     IMPORT g_write_watch_table
 #endif
 
+    IMPORT RhpGcAlloc
+    IMPORT RhExceptionHandling_FailedAllocation
+
 ;;-----------------------------------------------------------------------------
 ;; Macro for loading a 64-bit constant by a minimal number of instructions
 ;; Since the asssembles doesn't support 64 bit arithmetics in expressions,

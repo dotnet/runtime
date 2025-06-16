@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
-    <!-- The library is not supported on mobile platforms (PNSE) -->
-    <IgnoreForCI Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">true</IgnoreForCI>
+    <!-- The library is not supported on Android / Apple (PNSE) -->
+    <IgnoreForCI Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'osx'">true</IgnoreForCI>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>

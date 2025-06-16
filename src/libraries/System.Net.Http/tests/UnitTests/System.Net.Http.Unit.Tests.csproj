@@ -267,6 +267,7 @@
     <Compile Include="Headers\ContentDispositionHeaderValueTest.cs" />
     <Compile Include="Headers\ContentRangeHeaderValueTest.cs" />
     <Compile Include="Headers\DateHeaderParserTest.cs" />
+    <Compile Include="Headers\CookieHeaderParserTest.cs" />
     <Compile Include="Headers\EntityTagHeaderParserTest.cs" />
     <Compile Include="Headers\EntityTagHeaderValueTest.cs" />
     <Compile Include="Headers\GenericHeaderParserTest\AuthenticationParserTest.cs" />

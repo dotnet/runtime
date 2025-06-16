@@ -20,7 +20,6 @@
 #include "mlinfo.h"
 #include "posterror.h"
 #include "assemblynative.hpp"
-#include "shimload.h"
 #include "stringliteralmap.h"
 #include "frozenobjectheap.h"
 #include "codeman.h"
@@ -877,25 +876,12 @@ void SystemDomain::Init()
     m_pSystemPEAssembly = NULL;
     m_pSystemAssembly = NULL;
 
-    DWORD size = 0;
-
     // Get the install directory so we can find CoreLib
-    hr = GetInternalSystemDirectory(NULL, &size);
-    if (hr != HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
-        ThrowHR(hr);
-
-    // GetInternalSystemDirectory returns a size, including the null!
-    WCHAR* buffer = m_SystemDirectory.OpenUnicodeBuffer(size - 1);
-    IfFailThrow(GetInternalSystemDirectory(buffer, &size));
-    m_SystemDirectory.CloseBuffer();
+    IfFailThrow(GetClrModuleDirectory(m_SystemDirectory));
     m_SystemDirectory.Normalize();
 
     // At this point m_SystemDirectory should already be canonicalized
     m_BaseLibrary.Append(m_SystemDirectory);
-    if (!m_BaseLibrary.EndsWith(SString{ DIRECTORY_SEPARATOR_CHAR_W }))
-    {
-        m_BaseLibrary.Append(DIRECTORY_SEPARATOR_CHAR_W);
-    }
     m_BaseLibrary.Append(g_pwBaseLibrary);
     m_BaseLibrary.Normalize();
 

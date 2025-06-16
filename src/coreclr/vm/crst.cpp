@@ -253,9 +253,6 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
 
 
 
-    SCAN_IGNORE_THROW;
-    SCAN_IGNORE_FAULT;
-    SCAN_IGNORE_TRIGGER;
     STATIC_CONTRACT_CAN_TAKE_LOCK;
 
     _ASSERTE(IsCrstInitialized());

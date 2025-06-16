@@ -204,7 +204,7 @@ DWORD PALAPI WaiterProc_WFSOExMutexTest(LPVOID lpParameter)
             "Expected return of WAIT_TIMEOUT, got %d.\n", ret);
     }
 
-    ThreadWaitDelta_WFSOExMutexTest = NewTimeStamp - OldTimeStamp;
+    ThreadWaitDelta_WFSOExMutexTest = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);
 
     return 0;
 }

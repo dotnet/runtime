@@ -35,16 +35,10 @@ internal sealed class FrameIterator
         HijackFrame,
 
         /* Other Frame Types not handled by the iterator */
-        HelperMethodFrame,
-        HelperMethodFrame_1OBJ,
-        HelperMethodFrame_2OBJ,
-        HelperMethodFrame_3OBJ,
-        HelperMethodFrame_PROTECTOBJ,
         UnmanagedToManagedFrame,
         ComMethodFrame,
         ComPrestubMethodFrame,
         TailCallFrame,
-        ProtectByRefsFrame,
         ProtectValueClassFrame,
         DebuggerClassInitMarkFrame,
         DebuggerExitFrame,

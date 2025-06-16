@@ -57,11 +57,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <BootstrapRefPackDir>$(ArtifactsDir)bootstrap/microsoft.netcore.app/ref</BootstrapRefPackDir>
-    <BootstrapRuntimePackDir>$(ArtifactsDir)bootstrap/microsoft.netcore.app/lib</BootstrapRuntimePackDir>
-    <BootstrapAotSdkDir>$(ArtifactsDir)bootstrap/aotsdk</BootstrapAotSdkDir>
-    <BootstrapHostDir>$(ArtifactsDir)bootstrap/host</BootstrapHostDir>
-    <BootstrapRidGraphDir>$(ArtifactsDir)bootstrap/ridgraph</BootstrapRidGraphDir>
+    <BootstrapRefPackDir>$(ArtifactsDir)bootstrap/$(TargetRid)/microsoft.netcore.app/ref</BootstrapRefPackDir>
+    <BootstrapRuntimePackDir>$(ArtifactsDir)bootstrap/$(TargetRid)/microsoft.netcore.app/lib</BootstrapRuntimePackDir>
+    <BootstrapAotSdkDir>$(ArtifactsDir)bootstrap/$(TargetRid)/aotsdk</BootstrapAotSdkDir>
+    <BootstrapHostDir>$(ArtifactsDir)bootstrap/$(TargetRid)/host</BootstrapHostDir>
+    <BootstrapRidGraphDir>$(ArtifactsDir)bootstrap/$(TargetRid)/ridgraph</BootstrapRidGraphDir>
   </PropertyGroup>
 
   <PropertyGroup>

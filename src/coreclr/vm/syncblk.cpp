@@ -1815,7 +1815,6 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
     // NOTE: This function cannot have a dynamic contract.  If it does, the contract's
     // destructor will reset the CLR debug state to what it was before entering the
     // function, which will undo the BeginNoTriggerGC() call below.
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
 #ifdef _DEBUG
@@ -1869,7 +1868,6 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
 #else
 DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
 #ifdef _DEBUG
@@ -1906,7 +1904,6 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
 
 DEBUG_NOINLINE void ObjHeader::ReleaseSpinLock()
 {
-    SCAN_SCOPE_END;
     LIMITED_METHOD_CONTRACT;
 
     INCONTRACT(Thread* pThread = GetThreadNULLOk());

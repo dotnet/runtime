@@ -648,7 +648,6 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
         GCPROTECT_BEGIN (throwable);
         EX_TRY
         {
-            SCAN_IGNORE_FAULT;
             if (throwable != NULL  && !CLRException::IsPreallocatedExceptionObject(throwable))
             {
                 _ASSERTE(IsException(throwable->GetMethodTable()));

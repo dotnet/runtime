@@ -2099,6 +2099,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long AbsoluteDifference(long op1, long op2) => op1 < op2 ? (long)(op2 - op1) : (long)(op1 - op2);
 
+        public static long AbsoluteDifferenceAdd(long op1, long op2, long op3) => (long)(op1 + AbsoluteDifference(op2, op3));
+
         public static byte AbsoluteDifference(sbyte op1, sbyte op2) => op1 < op2 ? (byte)(op2 - op1) : (byte)(op1 - op2);
 
         public static sbyte AbsoluteDifferenceAdd(sbyte op1, sbyte op2, sbyte op3) => (sbyte)(op1 + AbsoluteDifference(op2, op3));
@@ -2119,6 +2121,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ulong AbsoluteDifference(ulong op1, ulong op2) => op1 < op2 ? (ulong)(op2 - op1) : (ulong)(op1 - op2);
 
+        public static ulong AbsoluteDifferenceAdd(ulong op1, ulong op2, ulong op3) => (ulong)(op1 + AbsoluteDifference(op2, op3));
+
         public static ushort AbsoluteDifferenceAdd(ushort op1, ushort op2, ushort op3) => (ushort)(op1 + AbsoluteDifference(op2, op3));
 
         public static uint AbsoluteDifference(uint op1, uint op2) => op1 < op2 ? (uint)(op2 - op1) : (uint)(op1 - op2);
@@ -2132,6 +2136,14 @@ namespace JIT.HardwareIntrinsics.Arm
         public static short AbsoluteDifferenceWideningAndAdd(short op1, sbyte op2, sbyte op3) => (short)(op1 + (short)AbsoluteDifferenceWidening(op2, op3));
 
         public static short AbsoluteDifferenceWideningUpperAndAdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static short AbsoluteDifferenceWideningLowerAndAddEven(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+
+        public static short AbsoluteDifferenceWideningLowerAndAddOdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
+
+        public static short AbsoluteDifferenceWideningEven(sbyte[] op1, sbyte[] op2, int i) => (short) AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+
+        public static short AbsoluteDifferenceWideningOdd(sbyte[] op1, sbyte[] op2, int i) => (short) AbsoluteDifferenceWidening(op1[(i*2) + 1], op2[(i*2) + 1]);
 
         public static short AddAcrossWidening(sbyte[] op1) => Reduce(AddWidening, op1);
 
@@ -2265,6 +2277,14 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int AbsoluteDifferenceWideningUpperAndAdd(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
+        public static int AbsoluteDifferenceWideningLowerAndAddEven(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+
+        public static int AbsoluteDifferenceWideningLowerAndAddOdd(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
+
+        public static int AbsoluteDifferenceWideningEven(short[] op1, short[] op2, int i) => (int) AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+
+        public static int AbsoluteDifferenceWideningOdd(short[] op1, short[] op2, int i) => (int) AbsoluteDifferenceWidening(op1[(i*2) + 1], op2[(i*2) + 1]);
+
         public static int AddAcrossWidening(short[] op1) => Reduce(AddWidening, op1);
 
         public static long AddAcrossWideningLong(short[] op1) => Reduce(AddWidening, op1);
@@ -2380,6 +2400,14 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long AbsoluteDifferenceWideningAndAdd(long op1, int op2, int op3) => (long)(op1 + (long)AbsoluteDifferenceWidening(op2, op3));
 
         public static long AbsoluteDifferenceWideningUpperAndAdd(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static long AbsoluteDifferenceWideningLowerAndAddEven(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+
+        public static long AbsoluteDifferenceWideningLowerAndAddOdd(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
+
+        public static long AbsoluteDifferenceWideningEven(int[] op1, int[] op2, int i) => (long) AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+
+        public static long AbsoluteDifferenceWideningOdd(int[] op1, int[] op2, int i) => (long) AbsoluteDifferenceWidening(op1[(i*2) + 1], op2[(i*2) + 1]);
 
         public static long AddAcrossWidening(int[] op1) => Reduce(AddWidening, op1);
 
@@ -2526,6 +2554,14 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort AbsoluteDifferenceWideningUpperAndAdd(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
+        public static ushort AbsoluteDifferenceWideningLowerAndAddEven(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+
+        public static ushort AbsoluteDifferenceWideningLowerAndAddOdd(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
+
+        public static ushort AbsoluteDifferenceWideningEven(byte[] op1, byte[] op2, int i) =>  AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+
+        public static ushort AbsoluteDifferenceWideningOdd(byte[] op1, byte[] op2, int i) => AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
+
         public static ushort AddAcrossWidening(byte[] op1) => Reduce(AddWidening, op1);
 
         public static ulong AddAcrossWideningULong(byte[] op1) => Reduce(AddWidening, op1);
@@ -2642,6 +2678,14 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint AbsoluteDifferenceWideningUpperAndAdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
+        public static uint AbsoluteDifferenceWideningLowerAndAddEven(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+
+        public static uint AbsoluteDifferenceWideningLowerAndAddOdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
+
+        public static uint AbsoluteDifferenceWideningEven(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+
+        public static uint AbsoluteDifferenceWideningOdd(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[(i*2) + 1], op2[(i*2) + 1]);
+
         public static uint AddAcrossWidening(ushort[] op1) => Reduce(AddWidening, op1);
 
         public static ulong AddAcrossWideningULong(ushort[] op1) => Reduce(AddWidening, op1);
@@ -2757,6 +2801,14 @@ namespace JIT.HardwareIntrinsics.Arm
         public static ulong AbsoluteDifferenceWideningAndAdd(ulong op1, uint op2, uint op3) => (ulong)(op1 + (ulong)AbsoluteDifferenceWidening(op2, op3));
 
         public static ulong AbsoluteDifferenceWideningUpperAndAdd(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static ulong AbsoluteDifferenceWideningLowerAndAddEven(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+
+        public static ulong AbsoluteDifferenceWideningLowerAndAddOdd(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
+
+        public static ulong AbsoluteDifferenceWideningEven(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
+
+        public static ulong AbsoluteDifferenceWideningOdd(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[(i*2) + 1], op2[(i*2) + 1]);
 
         public static ulong AddAcrossWidening(uint[] op1) => Reduce(AddWidening, op1);
 
@@ -3862,6 +3914,35 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        private static long GetShift(long shift, long size, bool shiftSat)
+        {
+            if (shiftSat)
+            {
+                // SVE shifts are saturated to element size
+                shift = (int)ShiftSat(shift, size);
+            }
+            else
+            {
+                // NEON shifts are truncated to bottom byte
+                shift = (sbyte)shift;
+            }
+            return shift;
+        }
+
+        public static long ShiftSat(long shift, long size)
+        {
+            if (shift > size + 1)
+            {
+                return size + 1;
+            }
+            else if (shift < -(size + 1))
+            {
+                return -(size + 1);
+            }
+
+            return shift;
+        }
+
         public static int ShiftRightLogicalNarrowingSaturateUpper(int[] op1, long[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (int)ShiftRightLogicalNarrowingSaturate(op2[i - op1.Length], op3);
 
         public static uint ShiftRightLogicalNarrowingSaturateUpper(uint[] op1, ulong[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (uint)ShiftRightLogicalNarrowingSaturate(op2[i - op1.Length], op3);
@@ -3878,9 +3959,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte ShiftArithmeticRoundedSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, saturating: true);
 
-        private static sbyte SignedShift(sbyte op1, sbyte op2, bool rounding = false, bool saturating = false)
+        private static sbyte SignedShift(sbyte op1, sbyte op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 8, shiftSat);
 
             sbyte rndCns = 0;
 
@@ -3916,7 +3997,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = sbyte.MaxValue;
+                        result = op2 < 0 ? sbyte.MinValue : sbyte.MaxValue;
                     }
                 }
             }
@@ -4192,9 +4273,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short ShiftArithmeticRoundedSaturate(short op1, short op2) => SignedShift(op1, op2, rounding: true, saturating: true);
 
-        private static short SignedShift(short op1, short op2, bool rounding = false, bool saturating = false)
+        private static short SignedShift(short op1, short op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 16, shiftSat);
 
             short rndCns = 0;
 
@@ -4230,7 +4311,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = short.MaxValue;
+                        result = op1 < 0 ? short.MinValue : short.MaxValue;
                     }
                 }
             }
@@ -4460,9 +4541,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int ShiftArithmeticRoundedSaturate(int op1, int op2) => SignedShift(op1, op2, rounding: true, saturating: true);
 
-        private static int SignedShift(int op1, int op2, bool rounding = false, bool saturating = false)
+        private static int SignedShift(int op1, int op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 32, shiftSat);
 
             int rndCns = 0;
 
@@ -4498,7 +4579,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = int.MaxValue;
+                        result = op1 < 0 ? int.MinValue : int.MaxValue;
                     }
                 }
             }
@@ -4728,9 +4809,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long ShiftArithmeticRoundedSaturate(long op1, long op2) => SignedShift(op1, op2, rounding: true, saturating: true);
 
-        private static long SignedShift(long op1, long op2, bool rounding = false, bool saturating = false)
+        private static long SignedShift(long op1, long op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 64, shiftSat);
 
             long rndCns = 0;
 
@@ -4766,7 +4847,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = long.MaxValue;
+                        result = op1 < 0 ? long.MinValue : long.MaxValue;
                     }
                 }
             }
@@ -9853,6 +9934,546 @@ namespace JIT.HardwareIntrinsics.Arm
             return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
         }
 
+        private static byte[] Extract(byte[] op1, byte[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            byte[] result = new byte[op1.Length];
+            Array.Fill<byte>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static byte ExtractScalar(byte[] op1, byte[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static byte[] ExtractAfterLastActiveElement(byte[] op1, byte[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static byte ExtractAfterLastActiveElementScalar(byte[] op1, byte[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static byte[] ExtractLastActiveElement(byte[] op1, byte[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static byte ExtractLastActiveElementScalar(byte[] op1, byte[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static short[] Extract(short[] op1, short[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            short[] result = new short[op1.Length];
+            Array.Fill<short>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static short ExtractScalar(short[] op1, short[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static short[] ExtractAfterLastActiveElement(short[] op1, short[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static short ExtractAfterLastActiveElementScalar(short[] op1, short[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static short[] ExtractLastActiveElement(short[] op1, short[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static short ExtractLastActiveElementScalar(short[] op1, short[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static int[] Extract(int[] op1, int[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            int[] result = new int[op1.Length];
+            Array.Fill<int>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static int ExtractScalar(int[] op1, int[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static int[] ExtractAfterLastActiveElement(int[] op1, int[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static int ExtractAfterLastActiveElementScalar(int[] op1, int[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static int[] ExtractLastActiveElement(int[] op1, int[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static int ExtractLastActiveElementScalar(int[] op1, int[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static long[] Extract(long[] op1, long[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            long[] result = new long[op1.Length];
+            Array.Fill<long>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static long ExtractScalar(long[] op1, long[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static long[] ExtractAfterLastActiveElement(long[] op1, long[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static long ExtractAfterLastActiveElementScalar(long[] op1, long[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static long[] ExtractLastActiveElement(long[] op1, long[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static long ExtractLastActiveElementScalar(long[] op1, long[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static sbyte[] Extract(sbyte[] op1, sbyte[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            sbyte[] result = new sbyte[op1.Length];
+            Array.Fill<sbyte>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static sbyte ExtractScalar(sbyte[] op1, sbyte[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static sbyte[] ExtractAfterLastActiveElement(sbyte[] op1, sbyte[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static sbyte ExtractAfterLastActiveElementScalar(sbyte[] op1, sbyte[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static sbyte[] ExtractLastActiveElement(sbyte[] op1, sbyte[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static sbyte ExtractLastActiveElementScalar(sbyte[] op1, sbyte[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static ushort[] Extract(ushort[] op1, ushort[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            ushort[] result = new ushort[op1.Length];
+            Array.Fill<ushort>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static ushort ExtractScalar(ushort[] op1, ushort[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static ushort[] ExtractAfterLastActiveElement(ushort[] op1, ushort[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static ushort ExtractAfterLastActiveElementScalar(ushort[] op1, ushort[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static ushort[] ExtractLastActiveElement(ushort[] op1, ushort[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static ushort ExtractLastActiveElementScalar(ushort[] op1, ushort[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static uint[] Extract(uint[] op1, uint[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            uint[] result = new uint[op1.Length];
+            Array.Fill<uint>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static uint ExtractScalar(uint[] op1, uint[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static uint[] ExtractAfterLastActiveElement(uint[] op1, uint[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static uint ExtractAfterLastActiveElementScalar(uint[] op1, uint[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static uint[] ExtractLastActiveElement(uint[] op1, uint[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static uint ExtractLastActiveElementScalar(uint[] op1, uint[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static ulong[] Extract(ulong[] op1, ulong[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            ulong[] result = new ulong[op1.Length];
+            Array.Fill<ulong>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static ulong ExtractScalar(ulong[] op1, ulong[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static ulong[] ExtractAfterLastActiveElement(ulong[] op1, ulong[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static ulong ExtractAfterLastActiveElementScalar(ulong[] op1, ulong[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static ulong[] ExtractLastActiveElement(ulong[] op1, ulong[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static ulong ExtractLastActiveElementScalar(ulong[] op1, ulong[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static float[] Extract(float[] op1, float[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            float[] result = new float[op1.Length];
+            Array.Fill<float>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static float ExtractScalar(float[] op1, float[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static float[] ExtractAfterLastActiveElement(float[] op1, float[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static float ExtractAfterLastActiveElementScalar(float[] op1, float[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static float[] ExtractLastActiveElement(float[] op1, float[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static float ExtractLastActiveElementScalar(float[] op1, float[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static double[] Extract(double[] op1, double[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            double[] result = new double[op1.Length];
+            Array.Fill<double>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static double ExtractScalar(double[] op1, double[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static double[] ExtractAfterLastActiveElement(double[] op1, double[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static double ExtractAfterLastActiveElementScalar(double[] op1, double[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static double[] ExtractLastActiveElement(double[] op1, double[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static double ExtractLastActiveElementScalar(double[] op1, double[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
         public static T BitwiseClearXor<T>(T op1, T op2, T op3) where T : IBitwiseOperators<T, T, T>
         {
             return op1 ^ (op2 & ~op3);
@@ -9887,5 +10508,29 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             return T.RotateRight(Xor(op1, op2), shift);
         }
+
+        public static sbyte SveShiftArithmeticRounded(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static sbyte SveShiftArithmeticSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static sbyte SveShiftArithmeticRoundedSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static short SveShiftArithmeticRounded(short op1, short op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static short SveShiftArithmeticSaturate(short op1, short op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static short SveShiftArithmeticRoundedSaturate(short op1, short op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static int SveShiftArithmeticRounded(int op1, int op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static int SveShiftArithmeticSaturate(int op1, int op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static int SveShiftArithmeticRoundedSaturate(int op1, int op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static long SveShiftArithmeticRounded(long op1, long op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static long SveShiftArithmeticSaturate(long op1, long op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static long SveShiftArithmeticRoundedSaturate(long op1, long op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
     }
 }

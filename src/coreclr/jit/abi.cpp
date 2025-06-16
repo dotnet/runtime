@@ -156,9 +156,12 @@ var_types ABIPassingSegment::GetRegisterType() const
 
 //-----------------------------------------------------------------------------
 // GetRegisterType:
-//  Return the smallest type larger or equal to Size that most naturally
-//  represents the register this segment is passed in, taking into account the
-//  GC info of the specified layout.
+//   Return the smallest type larger or equal to Size that most naturally
+//   represents the register this segment is passed in, taking into account the
+//   GC info of the specified layout.
+//
+// Parameters:
+//   layout - The layout of the class that this segment is part of
 //
 // Return Value:
 //   A type that matches ABIPassingSegment::Size and the register.

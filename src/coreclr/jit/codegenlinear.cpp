@@ -1826,29 +1826,6 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
     }
 }
 
-#if FEATURE_ARG_SPLIT
-//------------------------------------------------------------------------
-// genConsumeArgRegSplit: Consume register(s) in Call node to set split struct argument.
-//
-// Arguments:
-//    putArgNode - the PUTARG_STK tree.
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode)
-{
-    assert(putArgNode->OperIs(GT_PUTARG_SPLIT));
-    assert(putArgNode->gtHasReg(compiler));
-
-    genUnspillRegIfNeeded(putArgNode);
-
-    gcInfo.gcMarkRegSetNpt(putArgNode->gtGetRegMask());
-
-    genCheckConsumeNode(putArgNode);
-}
-#endif // FEATURE_ARG_SPLIT
-
 //------------------------------------------------------------------------
 // genPutArgStkFieldList: Generate code for a putArgStk whose source is a GT_FIELD_LIST
 //

@@ -49,6 +49,16 @@ ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
 #define Thread_m_pFrame Thread__m_pFrame
 #define Thread_m_fPreemptiveGCDisabled Thread__m_fPreemptiveGCDisabled
 
+#define               OFFSETOF__RuntimeThreadLocals__ee_alloc_context 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__RuntimeThreadLocals__ee_alloc_context == offsetof(RuntimeThreadLocals, alloc_context));
+
+#define               OFFSETOF__ee_alloc_context__alloc_ptr 0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__alloc_ptr == offsetof(ee_alloc_context, m_GCAllocContext) +
+                                                               offsetof(gc_alloc_context, alloc_ptr));
+
+#define               OFFSETOF__ee_alloc_context__combined_limit 0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__combined_limit == offsetof(ee_alloc_context, m_CombinedLimit));
+
 #define METHODDESC_REGISTER            t2
 
 #define SIZEOF__ArgumentRegisters 0x40
@@ -80,27 +90,6 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrD
 #define FpStruct__BothFloat           0b10
 ASMCONSTANTS_C_ASSERT(FpStruct__BothFloat == (int)FpStruct::BothFloat)
 
-
-// Offset of the array containing the address of captured registers in MachState
-#define MachState__captureCalleeSavedRegisters 0x0
-ASMCONSTANTS_C_ASSERT(MachState__captureCalleeSavedRegisters == offsetof(MachState, captureCalleeSavedRegisters))
-
-// Offset of the array containing the address of preserved registers in MachState
-#define MachState__ptrCalleeSavedRegisters 0x50
-ASMCONSTANTS_C_ASSERT(MachState__ptrCalleeSavedRegisters == offsetof(MachState, ptrCalleeSavedRegisters))
-
-#define MachState__isValid 0xb0
-ASMCONSTANTS_C_ASSERT(MachState__isValid == offsetof(MachState, _isValid))
-
-#define LazyMachState_captureCalleeSavedRegisters MachState__captureCalleeSavedRegisters
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureCalleeSavedRegisters == offsetof(LazyMachState, captureCalleeSavedRegisters))
-
-#define LazyMachState_captureSp     (MachState__isValid+8) // padding for alignment
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureSp == offsetof(LazyMachState, captureSp))
-
-#define LazyMachState_captureIp     (LazyMachState_captureSp+8)
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureIp == offsetof(LazyMachState, captureIp))
-
 #define VASigCookie__pNDirectILStub 0x8
 ASMCONSTANTS_C_ASSERT(VASigCookie__pNDirectILStub == offsetof(VASigCookie, pNDirectILStub))
 
@@ -111,22 +100,33 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
 
 //=========================================
-#define MethodTable__m_dwFlags         0x0
-ASMCONSTANTS_C_ASSERT(MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags));
+#define               OFFSETOF__MethodTable__m_dwFlags    0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags));
 
-#define MethodTable__m_BaseSize         0x04
-ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSize));
+#define               OFFSETOF__MethodTable__m_usComponentSize    0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_usComponentSize == offsetof(MethodTable, m_dwFlags));
 
-#define MethodTable__m_ElementType     DBG_FRE(0x38, 0x30)
-ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_ElementTypeHnd));
+#define               OFFSETOF__MethodTable__m_uBaseSize    0x04
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_uBaseSize == offsetof(MethodTable, m_BaseSize));
 
-#define ArrayBase__m_NumComponents     0x8
-ASMCONSTANTS_C_ASSERT(ArrayBase__m_NumComponents == offsetof(ArrayBase, m_NumComponents));
+#define               OFFSETOF__Object__m_pEEType   0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Object__m_pEEType == offsetof(Object, m_pMethTab));
 
-#define PtrArray__m_Array              0x10
-ASMCONSTANTS_C_ASSERT(PtrArray__m_Array == offsetof(PtrArray, m_Array));
+#define               OFFSETOF__Array__m_Length     0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Array__m_Length == offsetof(ArrayBase, m_NumComponents));
 
 #define TypeHandle_CanCast 0x1 // TypeHandle::CanCast
+
+#define               MAX_STRING_LENGTH 0x3FFFFFDF
+ASMCONSTANTS_C_ASSERT(MAX_STRING_LENGTH == CORINFO_String_MaxLength);
+
+#define               STRING_COMPONENT_SIZE 2
+
+#define               STRING_BASE_SIZE 0x16
+ASMCONSTANTS_C_ASSERT(STRING_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD) + sizeof(WCHAR));
+
+#define               SZARRAY_BASE_SIZE 0x18
+ASMCONSTANTS_C_ASSERT(SZARRAY_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD) + sizeof(DWORD));
 
 //=========================================
 

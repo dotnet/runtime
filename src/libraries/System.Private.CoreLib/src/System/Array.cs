@@ -1513,7 +1513,7 @@ namespace System
                 {
                     int result = SpanHelpers.IndexOfValueType(
                         ref Unsafe.Add(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(array)), startIndex),
-                        Unsafe.As<T, byte>(ref value),
+                        Unsafe.BitCast<T, byte>(value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
                 }
@@ -1521,7 +1521,7 @@ namespace System
                 {
                     int result = SpanHelpers.IndexOfValueType(
                         ref Unsafe.Add(ref Unsafe.As<T, short>(ref MemoryMarshal.GetArrayDataReference(array)), startIndex),
-                        Unsafe.As<T, short>(ref value),
+                        Unsafe.BitCast<T, short>(value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
                 }
@@ -1529,7 +1529,7 @@ namespace System
                 {
                     int result = SpanHelpers.IndexOfValueType(
                         ref Unsafe.Add(ref Unsafe.As<T, int>(ref MemoryMarshal.GetArrayDataReference(array)), startIndex),
-                        Unsafe.As<T, int>(ref value),
+                        Unsafe.BitCast<T, int>(value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
                 }
@@ -1537,7 +1537,7 @@ namespace System
                 {
                     int result = SpanHelpers.IndexOfValueType(
                         ref Unsafe.Add(ref Unsafe.As<T, long>(ref MemoryMarshal.GetArrayDataReference(array)), startIndex),
-                        Unsafe.As<T, long>(ref value),
+                        Unsafe.BitCast<T, long>(value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
                 }
@@ -1758,7 +1758,7 @@ namespace System
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.Add(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(array)), endIndex),
-                        Unsafe.As<T, byte>(ref value),
+                        Unsafe.BitCast<T, byte>(value),
                         count);
 
                     return (result >= 0 ? endIndex : 0) + result;
@@ -1768,7 +1768,7 @@ namespace System
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.Add(ref Unsafe.As<T, short>(ref MemoryMarshal.GetArrayDataReference(array)), endIndex),
-                        Unsafe.As<T, short>(ref value),
+                        Unsafe.BitCast<T, short>(value),
                         count);
 
                     return (result >= 0 ? endIndex : 0) + result;
@@ -1778,7 +1778,7 @@ namespace System
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.Add(ref Unsafe.As<T, int>(ref MemoryMarshal.GetArrayDataReference(array)), endIndex),
-                        Unsafe.As<T, int>(ref value),
+                        Unsafe.BitCast<T, int>(value),
                         count);
 
                     return (result >= 0 ? endIndex : 0) + result;
@@ -1788,7 +1788,7 @@ namespace System
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOfValueType(
                         ref Unsafe.Add(ref Unsafe.As<T, long>(ref MemoryMarshal.GetArrayDataReference(array)), endIndex),
-                        Unsafe.As<T, long>(ref value),
+                        Unsafe.BitCast<T, long>(value),
                         count);
 
                     return (result >= 0 ? endIndex : 0) + result;

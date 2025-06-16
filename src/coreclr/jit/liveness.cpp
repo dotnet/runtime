@@ -1624,7 +1624,7 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
         // (as opposed to side effects of their children).
         // This default case should never include calls or stores.
         assert(!node->OperRequiresAsgFlag() && !node->OperIs(GT_CALL));
-        if (!node->gtSetFlags() && !node->OperMayThrow(this))
+        if (!node->gtSetFlags() && !node->NodeOrContainedOperandsMayThrow(this))
         {
             JITDUMP("Removing dead node:\n");
             DISPNODE(node);

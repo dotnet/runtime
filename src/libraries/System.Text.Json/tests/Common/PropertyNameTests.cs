@@ -529,5 +529,54 @@ namespace System.Text.Json.Serialization.Tests
             [JsonIgnore]
             public string Name { get; set; }
         }
+
+        [Fact]
+        public async Task DuplicatesIgnoreCase()
+        {
+            string json = """{ "myint32":1, "MYINT32":2 }""";
+
+            JsonSerializerOptions options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            Assert.Equal(2, (await Serializer.DeserializeWrapper<SimpleTestClass>(json, options)).MyInt32);
+
+            options = JsonTestSerializerOptions.DisallowDuplicatePropertiesIgnoringCase;
+            Exception ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<SimpleTestClass>(json, options));
+            Assert.Contains("Duplicate", ex.Message);
+        }
+
+        [Fact]
+        public async Task DuplicatesByKebabCaseNamingPolicy()
+        {
+            string json = """{ "my-int32":1, "my-int32":2 }""";
+
+            JsonSerializerOptions options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.KebabCaseLower };
+            Assert.Equal(2, (await Serializer.DeserializeWrapper<SimpleTestClass>(json, options)).MyInt32);
+
+            options = new JsonSerializerOptions { AllowDuplicateProperties = false, PropertyNamingPolicy = JsonNamingPolicy.KebabCaseLower };
+            Exception ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<SimpleTestClass>(json, options));
+            Assert.Contains("Duplicate", ex.Message);
+        }
+
+        [Fact]
+        public async Task DuplicatesByKebabCaseNamingPolicyIgnoreCase()
+        {
+            string json = """{ "my-int32":1, "MY-int32":2 }""";
+
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.KebabCaseLower,
+                PropertyNameCaseInsensitive = true,
+            };
+
+            Assert.Equal(2, (await Serializer.DeserializeWrapper<SimpleTestClass>(json, options)).MyInt32);
+
+            options = new JsonSerializerOptions {
+                AllowDuplicateProperties = false,
+                PropertyNamingPolicy = JsonNamingPolicy.KebabCaseLower,
+                PropertyNameCaseInsensitive = true,
+            };
+
+            Exception ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<SimpleTestClass>(json, options));
+            Assert.Contains("Duplicate", ex.Message);
+        }
     }
 }

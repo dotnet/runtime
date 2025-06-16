@@ -5,7 +5,7 @@
 // On desktop CLR, GC ETW event firing borrows heavily from code in the profiling API,
 // as the GC already called hooks in the profapi to notify it of roots & references.
 // This file shims up that profapi code the GC expects, though only for the purpose of
-// firing ETW events (not for getting a full profapi up on redhawk).
+// firing ETW events (not for getting a full profapi up on NativeAOT).
 //
 
 #include "common.h"

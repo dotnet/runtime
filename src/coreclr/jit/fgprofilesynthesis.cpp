@@ -1425,12 +1425,12 @@ void ProfileSynthesis::GaussSeidelSolver()
 
         // If there were no improper headers, we will have converged in one pass
         // (profile may still be inconsistent, if there were capped cyclic probabilities).
-        // After the importer runs, we require that synthesis achieves profile consistency
-        // unless the resultant profile is approximate, so don't skip the below checks.
-        //
-        if ((m_improperLoopHeaders == 0) && !m_comp->fgImportDone)
+        // If synthesis is running after the importer (in other words, we aren't building the initial profile),
+        // it has only one shot at establishing consistency until the profile is flagged as inconsistent,
+        // so check for entry/exit weight balance here to indicate if the profile converged.
+        if (m_improperLoopHeaders == 0)
         {
-            converged = true;
+            converged = !m_comp->fgImportDone || m_comp->fgProfileWeightsConsistent(entryWeight, exitWeight);
             break;
         }
 

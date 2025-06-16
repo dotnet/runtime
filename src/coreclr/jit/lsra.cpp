@@ -145,13 +145,6 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
         copy->gtOtherRegs[0]      = (regNumberSmall)reg;
     }
 #endif // FEATURE_MULTIREG_RET
-#if FEATURE_ARG_SPLIT
-    else if (tree->OperIsPutArgSplit())
-    {
-        GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
-        putArg->SetRegNumByIdx(reg, regIdx);
-    }
-#endif // FEATURE_ARG_SPLIT
 #ifdef FEATURE_HW_INTRINSICS
     else if (tree->OperIs(GT_HWINTRINSIC))
     {

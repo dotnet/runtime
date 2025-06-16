@@ -51,9 +51,15 @@ namespace System.Net.Http.Tests
             CheckInvalidParsedValue("host host", 0);
             CheckInvalidParsedValue("host,", 0);
             CheckInvalidParsedValue("host ,", 0);
+            CheckInvalidParsedValue("host/", 0);
             CheckInvalidParsedValue("/", 0);
             CheckInvalidParsedValue(" , ", 0);
             CheckInvalidParsedValue(" host\r\n ", 0);
+            CheckInvalidParsedValue(" host\r\n ", 1);
+            CheckInvalidParsedValue("host#\r\n", 0);
+            CheckInvalidParsedValue(" host?\r\n", 0);
+            CheckInvalidParsedValue("foo:bar@host", 0);
+            CheckInvalidParsedValue("host\n", 0);
         }
 
         #region Helper methods

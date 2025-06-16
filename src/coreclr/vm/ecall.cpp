@@ -98,9 +98,6 @@ void ECall::PopulateManagedStringConstructors()
 
 static CrstStatic gFCallLock;
 
-// This variable is used to force the compiler not to tailcall a function.
-RAW_KEYWORD(volatile) int FC_NO_TAILCALL;
-
 #endif // !DACCESS_COMPILE
 
 // To provide a quick check, this is the lowest and highest
@@ -530,11 +527,6 @@ void ECall::Init()
     CONTRACTL_END;
 
     gFCallLock.Init(CrstFCall);
-
-    // It is important to do an explicit increment here instead of just in-place initialization
-    // so that the global optimizer cannot figure out the value and remove the side-effect that
-    // we depend on in FC_INNER_RETURN macros and other places
-    FC_NO_TAILCALL++;
 }
 #endif // !DACCESS_COMPILE
 

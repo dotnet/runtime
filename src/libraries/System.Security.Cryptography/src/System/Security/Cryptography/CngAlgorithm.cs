@@ -197,6 +197,10 @@ namespace System.Security.Cryptography
             }
         }
 
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static CngAlgorithm MLDsa =>
+            field ??= new CngAlgorithm("ML-DSA"); // BCRYPT_MLDSA_ALGORITHM
+
         private static CngAlgorithm? s_ecdh;
         private static CngAlgorithm? s_ecdhp256;
         private static CngAlgorithm? s_ecdhp384;

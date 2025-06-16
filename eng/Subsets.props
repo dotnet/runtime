@@ -83,7 +83,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- If we're building in the VMR, then we want to build all of the assets even in a PGO-instrumented build as downstream repos will not be able to pull assets from a matching non-PGO-instrumented build. -->
+    <!-- In .NET product build mode we want to build all of the assets even in a PGO-instrumented build as downstream repos will not be able to pull assets from a matching non-PGO-instrumented build. -->
     <BuildOnlyPgoInstrumentedAssets Condition="'$(PgoInstrument)' == 'true' and '$(DotNetBuild)' != 'true'">true</BuildOnlyPgoInstrumentedAssets>
   </PropertyGroup>
 
@@ -109,7 +109,7 @@
 
   <PropertyGroup>
     <DefaultCoreClrSubsets>clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools+host.native</DefaultCoreClrSubsets>
-    <DefaultCoreClrSubsets Condition="'$(OutputRID)' == 'linux-armel'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets Condition="'$(TargetRid)' == 'linux-armel'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsAndroid)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(RuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
@@ -358,8 +358,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- When building cross components, always build the JITs. We will need them for running crossgen2 and ILC in the build. -->
-    <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true'" Include="ClrAllJitsSubset=true" />
+    <!-- crossgen2/ILC have dependencies on the JITs, so build them if the cross component includes crossgen2/ILC. -->
+    <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true' and ($(_subset.Contains('+clr.tools+')) or $(_subset.Contains('+clr.nativecorelib+')) or $(_subset.Contains('+clr.crossarchtools+')))" Include="ClrAllJitsSubset=true" />
     <!-- When targeting Windows, we need to build a copy of the diagnostic libraries that can run on the host to enable remote debugging of a local build. -->
     <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true' and '$(TargetsWindows)' == 'true'" Include="ClrDebugSubset=true" />
     <!--

@@ -78,15 +78,18 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                return publicKey.VerifyHash(
-                    valueHash,
+                using (publicKey)
+                {
+                    return publicKey.VerifyHash(
+                        valueHash,
 #if NET || NETSTANDARD2_1
-                    signature.Span,
+                        signature.Span,
 #else
-                    signature,
+                        signature,
 #endif
-                    digestAlgorithmName,
-                    padding);
+                        digestAlgorithmName,
+                        padding);
+                }
             }
 
             protected abstract RSASignaturePadding GetSignaturePadding(
@@ -108,60 +111,68 @@ namespace System.Security.Cryptography.Pkcs
                 RSASignaturePadding signaturePadding,
                 [NotNullWhen(true)] out byte[]? signatureValue)
             {
-                RSA certPublicKey = certificate.GetRSAPublicKey()!;
-
-                // If there's no private key, fall back to the public key for a "no private key" exception.
-                RSA? privateKey = key as RSA ??
-                    PkcsPal.Instance.GetPrivateKeyForSigning<RSA>(certificate, silent) ??
-                    certPublicKey;
-
-                if (privateKey is null)
+                using (GetSigningKey(key, certificate, silent, RSACertificateExtensions.GetRSAPublicKey, out RSA? privateKey))
                 {
-                    signatureValue = null;
-                    return false;
-                }
-
-#if NET || NETSTANDARD2_1
-                byte[] signature = new byte[privateKey.KeySize / 8];
-
-                bool signed = privateKey.TrySignHash(
-                    dataHash,
-                    signature,
-                    hashAlgorithmName,
-                    signaturePadding,
-                    out int bytesWritten);
-
-                if (signed && signature.Length == bytesWritten)
-                {
-                    signatureValue = signature;
-
-                    if (key is not null && !certPublicKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, signaturePadding))
+                    if (privateKey is null)
                     {
-                        // key did not match certificate
                         signatureValue = null;
                         return false;
                     }
 
+#if NET || NETSTANDARD2_1
+                    byte[] signature = new byte[privateKey.KeySize / 8];
+
+                    bool signed = privateKey.TrySignHash(
+                        dataHash,
+                        signature,
+                        hashAlgorithmName,
+                        signaturePadding,
+                        out int bytesWritten);
+
+                    if (signed && signature.Length == bytesWritten)
+                    {
+                        signatureValue = signature;
+
+                        if (key is not null)
+                        {
+                            using (RSA certKey = certificate.GetRSAPublicKey()!)
+                            {
+                                if (!certKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, signaturePadding))
+                                {
+                                    // key did not match certificate
+                                    signatureValue = null;
+                                    return false;
+                                }
+                            }
+                        }
+
+                        return true;
+                    }
+#endif
+                    signatureValue = privateKey.SignHash(
+#if NET || NETSTANDARD2_1
+                        dataHash.ToArray(),
+#else
+                        dataHash,
+#endif
+                        hashAlgorithmName,
+                        signaturePadding);
+
+                    if (key is not null)
+                    {
+                        using (RSA certKey = certificate.GetRSAPublicKey()!)
+                        {
+                            if (!certKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, signaturePadding))
+                            {
+                                // key did not match certificate
+                                signatureValue = null;
+                                return false;
+                            }
+                        }
+                    }
+
                     return true;
                 }
-#endif
-                signatureValue = privateKey.SignHash(
-#if NET || NETSTANDARD2_1
-                    dataHash.ToArray(),
-#else
-                    dataHash,
-#endif
-                    hashAlgorithmName,
-                    signaturePadding);
-
-                if (key is not null && !certPublicKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, signaturePadding))
-                {
-                    // key did not match certificate
-                    signatureValue = null;
-                    return false;
-                }
-
-                return true;
             }
         }
 

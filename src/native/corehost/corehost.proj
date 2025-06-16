@@ -10,7 +10,7 @@
     <IncrementalNativeBuild Condition="'$(IncrementalNativeBuild)' == ''">true</IncrementalNativeBuild>
     <BuildCoreHostDependsOn>GenerateRuntimeVersionFile</BuildCoreHostDependsOn>
     <BuildCoreHostDependsOn Condition="'$(EnableSourceControlManagerQueries)' == 'true'">$(BuildCoreHostDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
-    <IntermediateOutputRootPath>$(ArtifactsObjDir)$(OutputRID).$(Configuration)\</IntermediateOutputRootPath>
+    <IntermediateOutputRootPath>$(ArtifactsObjDir)$(TargetRid).$(Configuration)\</IntermediateOutputRootPath>
     <!-- Global location for version files -->
     <NativeVersionFile Condition="$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.h</NativeVersionFile>
     <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows)) or '$(TargetsMobile)' == 'true'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
@@ -80,7 +80,7 @@
       <BuildArgs>$(BuildArgs) -runtimeflavor $(RuntimeFlavor)</BuildArgs>
       <BuildArgs Condition="'$(EnableNativeSanitizers)' != ''">$(BuildArgs) -fsanitize=$(EnableNativeSanitizers)</BuildArgs>
       <BuildArgs Condition="'$(OfficialBuildId)' != ''">$(BuildArgs) /p:OfficialBuildId="$(OfficialBuildId)"</BuildArgs>
-      <BuildArgs>$(BuildArgs) -outputrid $(OutputRID)</BuildArgs>
+      <BuildArgs>$(BuildArgs) -targetrid $(TargetRid)</BuildArgs>
     </PropertyGroup>
 
     <!--
@@ -147,7 +147,7 @@
     <PropertyGroup>
       <BuildScript>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', 'build.cmd'))</BuildScript>
 
-      <BuildArgs>$(Configuration) $(TargetArchitecture) commit $([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A')) outputrid $(OutputRID)</BuildArgs>
+      <BuildArgs>$(Configuration) $(TargetArchitecture) commit $([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A')) targetrid $(TargetRid)</BuildArgs>
       <BuildArgs Condition="'$(ConfigureOnly)' == 'true'">$(BuildArgs) configureonly</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) portable</BuildArgs>
       <BuildArgs Condition="'$(IncrementalNativeBuild)' == 'true'">$(BuildArgs) incremental-native-build</BuildArgs>

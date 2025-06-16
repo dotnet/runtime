@@ -15,7 +15,7 @@ internal static partial class Interop
 
         internal static unsafe ErrorCode NCryptSignHash(SafeNCryptKeyHandle hKey, void* pPaddingInfo, ReadOnlySpan<byte> pbHashValue, Span<byte> pbSignature, out int pcbResult, AsymmetricPaddingMode dwFlags)
         {
-            fixed (byte* pHash = &MemoryMarshal.GetReference(pbHashValue))
+            fixed (byte* pHash = &Helpers.GetNonNullPinnableReference(pbHashValue))
             fixed (byte* pSignature = &Helpers.GetNonNullPinnableReference(pbSignature))
             {
                 return NCryptSignHash(hKey, pPaddingInfo, pHash, pbHashValue.Length, pSignature, pbSignature.Length, out pcbResult, dwFlags);

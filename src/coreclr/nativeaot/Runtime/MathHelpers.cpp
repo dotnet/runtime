@@ -32,29 +32,6 @@ FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
 }
 FCIMPLEND
 
-FCIMPL1_D(int32_t, RhpDbl2Int, double val)
-{
-#if defined(HOST_X86) || defined(HOST_AMD64)
-    const double int32_min = -2147483648.0;
-    const double int32_max_plus_1 = 2147483648.0;
-    return (val != val) ? 0 : (val <= int32_min) ? INT32_MIN : (val >= int32_max_plus_1) ? INT32_MAX : (int32_t)val;
-#else
-    return (int32_t)val;
-#endif
-}
-FCIMPLEND
-
-FCIMPL1_D(uint32_t, RhpDbl2UInt, double val)
-{
-#if defined(HOST_X86) || defined(HOST_AMD64)
-    const double uint_max = 4294967295.0;
-    return (val > 0) ? ((val >= uint_max) ? UINT32_MAX : (uint32_t)val) : 0;
-#else
-    return (uint32_t)val;
-#endif
-}
-FCIMPLEND
-
 #ifndef HOST_64BIT
 FCIMPL2_LL(int64_t, DivInt64Internal, int64_t i, int64_t j)
 {

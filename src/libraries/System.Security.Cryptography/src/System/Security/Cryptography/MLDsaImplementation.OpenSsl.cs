@@ -88,9 +88,6 @@ namespace System.Security.Cryptography
             return new MLDsaImplementation(algorithm, key, hasSeed: false, hasSecretKey: false);
         }
 
-        internal static partial MLDsaImplementation ImportPkcs8PrivateKeyValue(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
-            throw new PlatformNotSupportedException();
-
         internal static partial MLDsaImplementation ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(source.Length == algorithm.SecretKeySizeInBytes, $"Secret key was expected to be {algorithm.SecretKeySizeInBytes} bytes, but was {source.Length} bytes.");

@@ -10,7 +10,7 @@ using Internal.Runtime.TypeLoader;
 namespace Internal.TypeSystem.NoMetadata
 {
     /// <summary>
-    /// Represents a method within the Redhawk runtime
+    /// Represents a method within the NativeAOT runtime
     /// </summary>
     internal sealed partial class RuntimeMethodDesc : NoMetadataMethodDesc
     {

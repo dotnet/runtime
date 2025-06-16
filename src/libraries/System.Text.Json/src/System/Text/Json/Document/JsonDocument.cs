@@ -3,9 +3,9 @@
 
 using System.Buffers;
 using System.Buffers.Text;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Text.Json
@@ -1052,6 +1052,86 @@ namespace System.Text.Json
 
             Debug.Assert(reader.BytesConsumed == utf8JsonSpan.Length);
             database.CompleteAllocations();
+        }
+
+        private static void ValidateNoDuplicateProperties(JsonDocument document)
+        {
+            if (document.RootElement.ValueKind is JsonValueKind.Array or JsonValueKind.Object)
+            {
+                ValidateDuplicatePropertiesCore(document);
+            }
+        }
+
+        private static void ValidateDuplicatePropertiesCore(JsonDocument document)
+        {
+            Debug.Assert(document.RootElement.ValueKind is JsonValueKind.Array or JsonValueKind.Object);
+
+            using PropertyNameSet propertyNameSet = new PropertyNameSet();
+
+            Stack<int> traversalPath = new Stack<int>();
+            int? databaseIndexOflastProcessedChild = null;
+
+            traversalPath.Push(document.RootElement.MetadataDbIndex);
+
+            do
+            {
+                JsonElement curr = new JsonElement(document, traversalPath.Peek());
+
+                switch (curr.ValueKind)
+                {
+                    case JsonValueKind.Object:
+                    {
+                        JsonElement.ObjectEnumerator enumerator = new(curr, databaseIndexOflastProcessedChild ?? -1);
+
+                        while (enumerator.MoveNext())
+                        {
+                            if (enumerator.Current.Value.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
+                            {
+                                traversalPath.Push(enumerator.Current.Value.MetadataDbIndex);
+                                databaseIndexOflastProcessedChild = null;
+                                goto continueOuter;
+                            }
+                        }
+
+                        // No more children, so process the current element.
+                        enumerator.Reset();
+                        propertyNameSet.SetCapacity(curr.GetPropertyCount());
+
+                        foreach (JsonProperty property in enumerator)
+                        {
+                            propertyNameSet.AddPropertyName(property, document);
+                        }
+
+                        propertyNameSet.Reset();
+                        databaseIndexOflastProcessedChild = traversalPath.Pop();
+                        break;
+                    }
+                    case JsonValueKind.Array:
+                    {
+                        JsonElement.ArrayEnumerator enumerator = new(curr, databaseIndexOflastProcessedChild ?? -1);
+
+                        while (enumerator.MoveNext())
+                        {
+                            if (enumerator.Current.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
+                            {
+                                traversalPath.Push(enumerator.Current.MetadataDbIndex);
+                                databaseIndexOflastProcessedChild = null;
+                                goto continueOuter;
+                            }
+                        }
+
+                        databaseIndexOflastProcessedChild = traversalPath.Pop();
+                        break;
+                    }
+                    default:
+                        Debug.Fail($"Expected only complex children but got {curr.ValueKind}");
+                        ThrowHelper.ThrowJsonException();
+                        break;
+                }
+
+            continueOuter:
+                ;
+            } while (traversalPath.Count is not 0);
         }
 
         private void CheckNotDisposed()

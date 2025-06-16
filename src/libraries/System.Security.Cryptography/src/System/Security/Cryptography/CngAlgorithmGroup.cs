@@ -126,6 +126,10 @@ namespace System.Security.Cryptography
             }
         }
 
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static CngAlgorithmGroup MLDsa =>
+            field ??= new CngAlgorithmGroup("MLDSA"); // NCRYPT_MLDSA_ALGORITHM_GROUP
+
         private static CngAlgorithmGroup? s_dh;
         private static CngAlgorithmGroup? s_dsa;
         private static CngAlgorithmGroup? s_ecdh;

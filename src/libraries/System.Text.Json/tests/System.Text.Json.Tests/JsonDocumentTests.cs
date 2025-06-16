@@ -15,12 +15,15 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Threading;
+using TestData = System.Text.Json.Serialization.Tests.TestData;
 
 namespace System.Text.Json.Tests
 {
     public static class JsonDocumentTests
     {
         private static readonly byte[] Utf8Bom = { 0xEF, 0xBB, 0xBF };
+
+        private static readonly JsonDocumentOptions s_noDuplicateParamsOptions = new() { AllowDuplicateProperties = false };
 
         private static readonly Dictionary<TestCaseType, string> s_expectedConcat =
             new Dictionary<TestCaseType, string>();
@@ -596,31 +599,31 @@ namespace System.Text.Json.Tests
                 case JsonValueKind.True:
                 case JsonValueKind.String:
                 case JsonValueKind.Number:
-                    {
-                        buf.Append(element.ToString());
-                        buf.Append(", ");
-                        break;
-                    }
+                {
+                    buf.Append(element.ToString());
+                    buf.Append(", ");
+                    break;
+                }
                 case JsonValueKind.Object:
+                {
+                    foreach (JsonProperty prop in element.EnumerateObject())
                     {
-                        foreach (JsonProperty prop in element.EnumerateObject())
-                        {
-                            buf.Append(prop.Name);
-                            buf.Append(", ");
-                            DepthFirstAppend(buf, prop.Value);
-                        }
-
-                        break;
+                        buf.Append(prop.Name);
+                        buf.Append(", ");
+                        DepthFirstAppend(buf, prop.Value);
                     }
+
+                    break;
+                }
                 case JsonValueKind.Array:
+                {
+                    foreach (JsonElement child in element.EnumerateArray())
                     {
-                        foreach (JsonElement child in element.EnumerateArray())
-                        {
-                            DepthFirstAppend(buf, child);
-                        }
-
-                        break;
+                        DepthFirstAppend(buf, child);
                     }
+
+                    break;
+                }
             }
         }
 
@@ -3460,7 +3463,7 @@ namespace System.Text.Json.Tests
         [InlineData("""{ "foo" : {"nested:" : {"nested": 1, "bla": [1, 2, {"bla": 3}] } }, "test": true, "foo2" : {"nested:" : {"nested": 1, "bla": [1, 2, {"bla": 3}] } }}""", 3)]
         public static void TestGetPropertyCount(string json, int expectedCount)
         {
-            JsonElement element = JsonSerializer.Deserialize<JsonElement>(json);
+            JsonElement element = JsonElement.Parse(json);
             Assert.Equal(expectedCount, element.GetPropertyCount());
         }
 
@@ -3482,7 +3485,7 @@ namespace System.Text.Json.Tests
                         CheckPropertyCountAndArrayLengthAgainstEnumerateMethods(prop.Value);
                     }
                 }
-                else if (elem.ValueKind == JsonValueKind.Array) 
+                else if (elem.ValueKind == JsonValueKind.Array)
                 {
                     Assert.Equal(elem.EnumerateArray().Count(), elem.GetArrayLength());
                     foreach (JsonElement item in elem.EnumerateArray())
@@ -3833,6 +3836,165 @@ namespace System.Text.Json.Tests
             var jsonDocument = JsonSerializer.Deserialize<JsonDocument>("null");
             Assert.NotNull(jsonDocument);
             Assert.Equal(JsonValueKind.Null, jsonDocument.RootElement.ValueKind);
+        }
+
+        [Fact]
+        public static void JsonMarshal_GetRawUtf8Value_DisposedDocument_ThrowsObjectDisposedException()
+        {
+            JsonDocument jDoc = JsonDocument.Parse("{}");
+            JsonElement element = jDoc.RootElement;
+            jDoc.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => JsonMarshal.GetRawUtf8Value(element));
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void ParseJsonDocumentWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            AssertDuplicateProperty(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void ParseJsonDocumentArrayWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $"[{jsonPayload}]";
+            AssertDuplicateProperty(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void ParseJsonDocumentDeeplyNestedWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $$"""{"p0":{"p1":{"p2":{"p3":{"p4":{"p5":{"p6":{"p7":{"p8":{"p9":{{jsonPayload}}} } } } } } } } } }""";
+            AssertDuplicateProperty(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void ParseJsonDocumentClassWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $$"""{"Object":{{jsonPayload}}}""";
+            AssertDuplicateProperty(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(3, 2)]
+        [InlineData(100, 0)]
+        [InlineData(100, 99)]
+        public static void ParseJsonDocumentObjectWithDuplicateProperties(int count, int insertPosition)
+        {
+            string json = CreatePayload(count, insertPosition, "p1");
+            AssertDuplicateProperty(json, isValidJson: false);
+        }
+
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(3, 2)]
+        [InlineData(100, 0)]
+        [InlineData(100, 99)]
+        public static void ParseJsonDocumentEscapeWithDuplicateProperties(int count, int insertPosition)
+        {
+            string json = CreatePayload(count, insertPosition, """p\u0031""");
+            AssertDuplicateProperty(json, isValidJson: false);
+        }
+
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(3, 2)]
+        [InlineData(100, 0)]
+        [InlineData(100, 99)]
+        public static void ParseJsonDocumentObjectWithNoDuplicateProperties(int count, int insertPosition)
+        {
+            string json = CreatePayload(count, insertPosition, "notduplicate");
+            AssertDuplicateProperty(json, isValidJson: true);
+        }
+
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(3, 2)]
+        [InlineData(100, 0)]
+        [InlineData(100, 99)]
+        public static void ParseJsonDocumentEscapeWithNoDuplicateProperties(int count, int insertPosition)
+        {
+            string json = CreatePayload(count, insertPosition, """notduplicate\u0030\u0030""");
+            AssertDuplicateProperty(json, isValidJson: true);
+        }
+
+        private static string CreatePayload(int count, int insertPosition, string insertProperty)
+        {
+            StringBuilder builder = new();
+            builder.Append("{");
+            for (int i = 0; i < count; i++)
+            {
+                if (i > 0)
+                    builder.AppendLine(",");
+
+                if (i == insertPosition)
+                    builder.Append($"""  "{insertProperty}":1""");
+                else
+                    builder.Append($"""  "p{i}":1""");
+            }
+            builder.Append("}");
+            return builder.ToString();
+        }
+
+        private static void AssertDuplicateProperty(string jsonPayload, bool isValidJson)
+        {
+            if (isValidJson)
+            {
+                using (JsonDocument.Parse(jsonPayload, s_noDuplicateParamsOptions)) { } // Assert no throw
+            }
+            else
+            {
+                Assert.Throws<JsonException>(() => JsonDocument.Parse(jsonPayload, s_noDuplicateParamsOptions));
+            }
+
+            using (JsonDocument.Parse(jsonPayload)) { } // Assert no throw
+        }
+
+        [Fact]
+        public static void ParseJsonDuplicatePropertiesErrorMessage()
+        {
+            string json = """{"a":1,"a":1}""";
+            AssertExtensions.ThrowsContains<JsonException>(
+                () => JsonDocument.Parse(json, s_noDuplicateParamsOptions),
+                "a");
+        }
+
+        [Fact]
+        public static void ParseJsonDuplicatePropertiesErrorMessageLong()
+        {
+            string json = """{"12345678901234567":1,"12345678901234567":1}""";
+            AssertExtensions.ThrowsContains<JsonException>(
+                () => JsonDocument.Parse(json, s_noDuplicateParamsOptions),
+                "123456789012345...");
+
+            json = """{"123456789012345":1,"123456789012345":1}""";
+            AssertExtensions.ThrowsContains<JsonException>(
+                () => JsonDocument.Parse(json, s_noDuplicateParamsOptions),
+                "123456789012345");
+
+            json = """{"1234567890123456":1,"1234567890123456":1}""";
+            AssertExtensions.ThrowsContains<JsonException>(
+                () => JsonDocument.Parse(json, s_noDuplicateParamsOptions),
+                "123456789012345...");
+        }
+
+        [Fact]
+        public static void ParseJsonDuplicatePropertiesErrorMessageEscaped()
+        {
+            string json = """{"0":1,"\u0030":1}""";
+            AssertExtensions.ThrowsContains<JsonException>(
+                () => JsonDocument.Parse(json, s_noDuplicateParamsOptions),
+                "'\u0030'");
+
+            json = """{"\u0030":1,"0":1}""";
+            AssertExtensions.ThrowsContains<JsonException>(
+                () => JsonDocument.Parse(json, s_noDuplicateParamsOptions),
+                "'0'");
         }
     }
 

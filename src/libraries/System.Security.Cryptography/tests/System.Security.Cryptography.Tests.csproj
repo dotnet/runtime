@@ -647,6 +647,8 @@
     <Compile Include="DefaultECDiffieHellmanProvider.Windows.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestHelpers.Cng.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestHelpers.Cng.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="DefaultECDsaProvider.Unix.cs" />
@@ -747,6 +749,10 @@
     <Compile Include="X509Certificates\X509StoreTests.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.Blobs.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.Blobs.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_INFO.cs"
@@ -777,6 +783,10 @@
              Link="Common\Interop\Windows\Crypt32\Interop.MsgEncodingType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PqcBlobHelpers.cs"
+             Link="Common\System\Security\Cryptography\PqcBlobHelpers.cs" />
+
+    <Compile Include="MLDsaCngTests.Windows.cs" />
     <Compile Include="MLKemOpenSslTests.NotSupported.cs" />
     <Compile Include="SlhDsaOpenSslConstructionTests.NotSupported.cs" />
     <Compile Include="X509Certificates\InteropTests.Windows.cs" />

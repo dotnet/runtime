@@ -280,14 +280,16 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector128<sbyte> ConvertToVector128SByteWithSaturation(Vector256<short> value) => ConvertToVector128SByteWithSaturation(value);
 
             /// <summary>
-            ///   <para>__m128i _mm_permutevar8x16_epi16 (__m128i a, __m128i b)</para>
+            ///   <para>__m128i _mm_permutexvar_epi16 (__m128i idx, __m128i a)</para>
             ///   <para>  VPERMW xmm1 {k1}{z}, xmm2, xmm3/m128</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector128<short> PermuteVar8x16(Vector128<short> left, Vector128<short> control) => PermuteVar8x16(left, control);
             /// <summary>
-            ///   <para>__m128i _mm_permutevar8x16_epi16 (__m128i a, __m128i b)</para>
+            ///   <para>__m128i _mm_permutexvar_epi16 (__m128i idx, __m128i a)</para>
             ///   <para>  VPERMW xmm1 {k1}{z}, xmm2, xmm3/m128</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector128<ushort> PermuteVar8x16(Vector128<ushort> left, Vector128<ushort> control) => PermuteVar8x16(left, control);
 
             /// <summary>
@@ -304,14 +306,16 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector128<ushort> PermuteVar8x16x2(Vector128<ushort> lower, Vector128<ushort> indices, Vector128<ushort> upper) => PermuteVar8x16x2(lower, indices, upper);
 
             /// <summary>
-            ///   <para>__m256i _mm256_permutevar16x16_epi16 (__m256i a, __m256i b)</para>
+            ///   <para>__m256i _mm256_permutexvar_epi16 (__m256i idx, __m256i a)</para>
             ///   <para>  VPERMW ymm1 {k1}{z}, ymm2, ymm3/m256</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector256<short> PermuteVar16x16(Vector256<short> left, Vector256<short> control) => PermuteVar16x16(left, control);
             /// <summary>
-            ///   <para>__m256i _mm256_permutevar16x16_epi16 (__m256i a, __m256i b)</para>
+            ///   <para>__m256i _mm256_permutexvar_epi16 (__m256i idx, __m256i a)</para>
             ///   <para>  VPERMW ymm1 {k1}{z}, ymm2, ymm3/m256</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector256<ushort> PermuteVar16x16(Vector256<ushort> left, Vector256<ushort> control) => PermuteVar16x16(left, control);
 
             /// <summary>
@@ -823,14 +827,16 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ushort> PackUnsignedSaturate(Vector512<int> left, Vector512<int> right) => PackUnsignedSaturate(left, right);
 
         /// <summary>
-        ///   <para>__m512i _mm512_permutevar32x16_epi16 (__m512i a, __m512i b)</para>
+        ///   <para>__m512i _mm512_permutexvar_epi16 (__m512i idx, __m512i a)</para>
         ///   <para>  VPERMW zmm1 {k1}{z}, zmm2, zmm3/m512</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<short> PermuteVar32x16(Vector512<short> left, Vector512<short> control) => PermuteVar32x16(left, control);
         /// <summary>
-        ///   <para>__m512i _mm512_permutevar32x16_epi16 (__m512i a, __m512i b)</para>
+        ///   <para>__m512i _mm512_permutexvar_epi16 (__m512i idx, __m512i a)</para>
         ///   <para>  VPERMW zmm1 {k1}{z}, zmm2, zmm3/m512</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<ushort> PermuteVar32x16(Vector512<ushort> left, Vector512<ushort> control) => PermuteVar32x16(left, control);
 
         /// <summary>

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Internal.Cryptography;
 
@@ -72,6 +73,42 @@ internal static partial class Interop
                     destination.Length,
                     out bytesWritten,
                     BCryptSignVerifyFlags.BCRYPT_PAD_PSS);
+            }
+        }
+
+        internal static unsafe void BCryptSignHashPqcPure(
+            SafeBCryptKeyHandle key,
+            ReadOnlySpan<byte> data,
+            ReadOnlySpan<byte> context,
+            Span<byte> destination)
+        {
+            NTSTATUS status;
+            int bytesWritten;
+
+            fixed (byte* pData = &MemoryMarshal.GetReference(data))
+            fixed (byte* pDest = &Helpers.GetNonNullPinnableReference(destination))
+            fixed (byte* pContext = &MemoryMarshal.GetReference(context))
+            {
+                BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
+                paddingInfo.pbCtx = (IntPtr)pContext;
+                paddingInfo.cbCtx = context.Length;
+
+                status = BCryptSignHash(
+                    key,
+                    &paddingInfo,
+                    pData,
+                    data.Length,
+                    pDest,
+                    destination.Length,
+                    out bytesWritten,
+                    BCryptSignVerifyFlags.BCRYPT_PAD_PQDSA);
+            }
+
+            Debug.Assert(bytesWritten == destination.Length);
+
+            if (status != Interop.BCrypt.NTSTATUS.STATUS_SUCCESS)
+            {
+                throw Interop.BCrypt.CreateCryptographicException(status);
             }
         }
     }

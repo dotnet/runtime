@@ -14,6 +14,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
     {
         private const uint INVALID_GS_COOKIE_OFFSET = 0;
         private const uint INVALID_SYNC_OFFSET = 0;
+        private const uint INVALID_REV_PINVOKE_OFFSET = 0xFFFFFFFF;
 
         public uint PrologSize { get; set; }
         public uint EpilogSize { get; set; }
@@ -82,7 +83,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
             GsCookieOffset = 0;
             SyncStartOffset = 0;
             SyncEndOffset = 0;
-            RevPInvokeOffset = 0;
+            RevPInvokeOffset = INVALID_REV_PINVOKE_OFFSET;
             NoGCRegionCnt = 0;
 
             HasArgTabOffset = false;
@@ -163,7 +164,8 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         private const uint HAS_UNTRACKED = 0xFFFFFFFF;
         private const uint HAS_GS_COOKIE_OFFSET = 0xFFFFFFFF;
         private const uint HAS_SYNC_OFFSET = 0xFFFFFFFF;
-        private const uint HAS_REV_PINVOKE_FRAME_OFFSET = 0xFFFFFFFF;
+        private const uint INVALID_REV_PINVOKE_OFFSET = 0xFFFFFFFF;
+        private const uint HAS_REV_PINVOKE_FRAME_OFFSET = 0xFFFFFFFE;
         private const uint HAS_NOGCREGIONS = 0xFFFFFFFF;
         private const uint YES = HAS_VARPTR;
 
@@ -278,7 +280,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                                 header.SyncStartOffset ^= HAS_SYNC_OFFSET;
                                 break;
                             case (byte)InfoHdrAdjust.FLIP_REV_PINVOKE_FRAME:
-                                header.RevPInvokeOffset ^= HAS_REV_PINVOKE_FRAME_OFFSET;
+                                header.RevPInvokeOffset ^= (INVALID_REV_PINVOKE_OFFSET ^ HAS_REV_PINVOKE_FRAME_OFFSET);
                                 break;
 
                             case (byte)InfoHdrAdjust.NEXT_OPCODE:

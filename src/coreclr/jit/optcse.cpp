@@ -1531,29 +1531,17 @@ void Compiler::optValnumCSE_Availability()
 #ifdef DEBUG
                             if (this->verbose)
                             {
-                                VNFuncApp excSeq;
-
-                                vnStore->GetVNFunc(desc->defExcSetCurrent, &excSeq);
                                 printf(">>> defExcSetCurrent is ");
-                                vnStore->vnDumpExcSeq(this, &excSeq, true);
+                                vnStore->vnDumpExc(this, desc->defExcSetCurrent);
                                 printf("\n");
 
-                                vnStore->GetVNFunc(theLiberalExcSet, &excSeq);
                                 printf(">>> theLiberalExcSet is ");
-                                vnStore->vnDumpExcSeq(this, &excSeq, true);
+                                vnStore->vnDumpExc(this, theLiberalExcSet);
                                 printf("\n");
 
-                                if (intersectionExcSet == vnStore->VNForEmptyExcSet())
-                                {
-                                    printf(">>> the intersectionExcSet is the EmptyExcSet\n");
-                                }
-                                else
-                                {
-                                    vnStore->GetVNFunc(intersectionExcSet, &excSeq);
-                                    printf(">>> the intersectionExcSet is ");
-                                    vnStore->vnDumpExcSeq(this, &excSeq, true);
-                                    printf("\n");
-                                }
+                                printf(">>> the intersectionExcSet is ");
+                                vnStore->vnDumpExc(this, intersectionExcSet);
+                                printf("\n");
                             }
 #endif // DEBUG
 

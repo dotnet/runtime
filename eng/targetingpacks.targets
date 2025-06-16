@@ -193,8 +193,8 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseLocalNativeAotPack)' == 'true' and '$(UseBootstrapLayout)' == 'true'">
-    <IlcFrameworkPath>$(BootstrapRuntimePackDir)/runtimes/$(OutputRID)/lib/$(NetCoreAppCurrent)/</IlcFrameworkPath>
-    <IlcFrameworkNativePath>$(BootstrapRuntimePackDir)/runtimes/$(OutputRID)/native/</IlcFrameworkNativePath>
+    <IlcFrameworkPath>$(BootstrapRuntimePackDir)/runtimes/$(TargetRid)/lib/$(NetCoreAppCurrent)/</IlcFrameworkPath>
+    <IlcFrameworkNativePath>$(BootstrapRuntimePackDir)/runtimes/$(TargetRid)/native/</IlcFrameworkNativePath>
     <IlcSdkPath>$(BootstrapAotSdkDir)/</IlcSdkPath>
   </PropertyGroup>
 </Project>

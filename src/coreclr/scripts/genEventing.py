@@ -889,7 +889,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, is_host_wi
             Clrallevents.write('#define CLR_ETW_ALL_MAIN_H\n\n')
         elif generatedFileType == "source-impl":
             Clrallevents.write('#include <common.h>\n')
-            Clrallevents.write('#include <PalRedhawk.h>\n')
+            Clrallevents.write('#include <Pal.h>\n')
             Clrallevents.write('#include "clretwallmain.h"\n')
             Clrallevents.write('#include "clreventpipewriteevents.h"\n')
             if user_events and runtimeFlavor.coreclr:
@@ -901,7 +901,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, is_host_wi
         elif generatedFileType == "source-impl-noop":
             Clrallevents.write('#include <CommonTypes.h>\n')
             Clrallevents.write('#include <CommonMacros.h>\n\n')
-            Clrallevents.write('#include <PalRedhawk.h>\n\n')
+            Clrallevents.write('#include <Pal.h>\n\n')
             Clrallevents.write('#ifndef ERROR_SUCCESS\n')
             Clrallevents.write('#define ERROR_SUCCESS 0L\n')
             Clrallevents.write('#endif\n\n')

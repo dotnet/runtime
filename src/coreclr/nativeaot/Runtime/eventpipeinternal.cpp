@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-#include "PalRedhawk.h"
+#include "Pal.h"
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-provider.h>
 #include <eventpipe/ep-config.h>

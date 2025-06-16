@@ -67,7 +67,7 @@ void ETW::GCLog::FireGcStart(ETW_GC_INFO* pGcInfo)
             (pGcInfo->GCStart.Depth == GCHeapUtilities::GetGCHeap()->GetMaxGeneration()) &&
             (pGcInfo->GCStart.Reason == ETW_GC_INFO::GC_INDUCED))
         {
-            // No InterlockedExchange64 on Redhawk (presumably b/c there is no compiler
+            // No InterlockedExchange64 on NativeAOT (presumably b/c there is no compiler
             // intrinsic for this on x86, even though there is one for InterlockedCompareExchange64)
             l64ClientSequenceNumberToLog = PalInterlockedCompareExchange64(&s_l64LastClientSequenceNumber, 0, s_l64LastClientSequenceNumber);
         }

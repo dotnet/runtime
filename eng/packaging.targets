@@ -32,6 +32,8 @@
                                      !$(MSBuildProjectName.StartsWith('runtime.native'))">true</IsRIDSpecificProject>
     <GeneratePackageOnBuild Condition="'$(IsRIDSpecificProject)' == 'true' and '$(GitHubRepositoryName)' != 'runtimelab'">true</GeneratePackageOnBuild>
 
+    <AllowedOutputExtensionsInPackageBuildOutputFolder Condition="'$(IncludeSymbolsInPackage)' == 'true'">$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb;.mdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+
     <!-- During NoBuild pack invocations, skip project reference build. Necessary for the IncludeProjectReferencesWithPackAttributeInPackage target. -->
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
   </PropertyGroup>
@@ -254,7 +256,7 @@
                                    TargetFramework="$(_referringTargetFramework)"
                                    Condition="'$(IncludeSymbols)' == 'true'" />
       <!-- Remove symbol from the non symbol package. -->
-      <TfmSpecificPackageFile Remove="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))" />
+      <TfmSpecificPackageFile Remove="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))" Condition="'$(IncludeSymbolsInPackage)' != 'true'" />
       <!-- If the reference assembly is included, don't put the documentation file next to the lib assembly. -->
       <TfmSpecificPackageFile Remove="@(_projectReferenceCopyLocalPaths->WithMetadataValue('Extension', '.xml')->WithMetadataValue('IncludeReferenceAssemblyInPackage', 'true'))" />
     </ItemGroup>

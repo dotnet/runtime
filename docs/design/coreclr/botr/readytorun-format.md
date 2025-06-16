@@ -862,11 +862,11 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_UMod                      = 0xCF,
 
     // Floating point conversions
-    READYTORUN_HELPER_Dbl2Int                   = 0xD0,
+    READYTORUN_HELPER_Dbl2Int                   = 0xD0, // Unused since READYTORUN_MAJOR_VERSION 15.0
     READYTORUN_HELPER_Dbl2IntOvf                = 0xD1,
     READYTORUN_HELPER_Dbl2Lng                   = 0xD2,
     READYTORUN_HELPER_Dbl2LngOvf                = 0xD3,
-    READYTORUN_HELPER_Dbl2UInt                  = 0xD4,
+    READYTORUN_HELPER_Dbl2UInt                  = 0xD4, // Unused since READYTORUN_MAJOR_VERSION 15.0
     READYTORUN_HELPER_Dbl2UIntOvf               = 0xD5,
     READYTORUN_HELPER_Dbl2ULng                  = 0xD6,
     READYTORUN_HELPER_Dbl2ULngOvf               = 0xD7,

@@ -50,7 +50,7 @@ endm
 ;; registers and return value to their values from before the probe was called (while also updating any
 ;; object refs or byrefs).
 ;;
-POP_PROBE_FRAME macro 
+POP_PROBE_FRAME macro
     movdqa      xmm0, [rsp + 20h]
     add         rsp, 20h + 10h + 8  ; deallocate stack and discard saved m_RIP
     pop         rbp
@@ -124,7 +124,7 @@ NESTED_ENTRY RhpWaitForGC, _TEXT
         ret
 Abort:
         POP_PROBE_FRAME
-        mov         rcx, STATUS_REDHAWK_THREAD_ABORT
+        mov         rcx, STATUS_NATIVEAOT_THREAD_ABORT
         pop         rdx         ;; return address as exception RIP
         jmp         RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
 
@@ -140,7 +140,6 @@ LEAF_END RhpGcPoll, _TEXT
 
 NESTED_ENTRY RhpGcPollRare, _TEXT
         PUSH_COOP_PINVOKE_FRAME rcx
-        END_PROLOGUE
         call        RhpGcPoll2
         POP_COOP_PINVOKE_FRAME
         ret

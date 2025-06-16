@@ -9,7 +9,6 @@
 
 #include "asmparse.h"
 #include "clrversion.h"
-#include "shimload.h"
 
 #include "strsafe.h"
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))

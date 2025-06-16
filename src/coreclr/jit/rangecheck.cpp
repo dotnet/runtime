@@ -1404,9 +1404,16 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop, const Ra
     {
         return AddOverflows(op1Range->UpperLimit(), op2Range->UpperLimit());
     }
-    else if (binop->OperIs(GT_MUL))
+    if (binop->OperIs(GT_MUL))
     {
         return MultiplyOverflows(op1Range->UpperLimit(), op2Range->UpperLimit());
+    }
+    if (binop->OperIs(GT_LSH))
+    {
+        // Convert LSH(X, CNS) to MUL(X, CNS) if possible and check that,
+        // otherwise, report as "may overflow".
+        Range convertedOp2Range = RangeOps::ConvertShiftToMultiply(*op2Range);
+        return MultiplyOverflows(op1Range->UpperLimit(), convertedOp2Range.UpperLimit());
     }
 
     return true;
@@ -1515,13 +1522,12 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
         overflows = DoesVarDefOverflow(block, expr->AsLclVarCommon(), range);
     }
     // Check if add overflows.
-    else if (expr->OperIs(GT_ADD, GT_MUL))
+    else if (expr->OperIs(GT_ADD, GT_MUL, GT_LSH))
     {
         overflows = DoesBinOpOverflow(block, expr->AsOp(), range);
     }
     // These operators don't overflow.
-    // Actually, GT_LSH can overflow so it depends on the analysis done in ComputeRangeForBinOp
-    else if (expr->OperIs(GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_NEG))
+    else if (expr->OperIs(GT_AND, GT_RSH, GT_RSZ, GT_UMOD, GT_NEG))
     {
         overflows = false;
     }

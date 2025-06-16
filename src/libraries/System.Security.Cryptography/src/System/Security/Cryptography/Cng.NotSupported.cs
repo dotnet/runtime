@@ -385,4 +385,30 @@ namespace System.Security.Cryptography
         public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) => null!;
         public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) => null!;
     }
+    public sealed partial class MLDsaCng : MLDsa
+    {
+        private static partial MLDsaAlgorithm AlgorithmFromHandle(CngKey key, out CngKey duplicateKey) =>
+            throw new PlatformNotSupportedException();
+
+        public partial CngKey Key =>
+            throw new PlatformNotSupportedException();
+
+        protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
+            throw new PlatformNotSupportedException();
+
+        protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException();
+    }
 }
