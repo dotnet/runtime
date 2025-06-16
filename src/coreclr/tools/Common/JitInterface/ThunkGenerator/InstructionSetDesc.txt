@@ -141,8 +141,6 @@ instructionset64bit,X86   ,AVXIFMA
 instructionset64bit,X86   ,AVXVNNI
 
 instructionset64bit,X86   ,GFNI
-instructionset64bit,X86   ,AVXVNNIINT
-instructionset64bit,X86   ,AVXVNNIINT_V512
 instructionset64bit,X86   ,SHA
 instructionset64bit,X86   ,WAITPKG
 instructionset64bit,X86   ,X86Serialize

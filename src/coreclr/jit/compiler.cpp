@@ -501,9 +501,9 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVXVNNI:
             return InstructionSet_AVXVNNI_X64;
         case InstructionSet_AVXVNNIINT:
-            return InstructionSet_AVXVNNIINT_X64;
+            return InstructionSet_AVXVNNIINT;
         case InstructionSet_AVXVNNIINT_V512:
-            return InstructionSet_AVXVNNIINT_V512_X64;
+            return InstructionSet_AVXVNNIINT_V512;
         case InstructionSet_GFNI:
             return InstructionSet_GFNI_X64;
         case InstructionSet_SHA:
@@ -618,6 +618,45 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
     }
 }
 
+#else  // TARGET_ARM64
+//------------------------------------------------------------------------
+// Arm64VersionOfIsa: Gets the corresponding 64-bit only InstructionSet for a given InstructionSet
+//
+// Arguments:
+//    isa -- The InstructionSet ID
+//
+// Return Value:
+//    The 64-bit only InstructionSet associated with isa
+static CORINFO_InstructionSet Arm64VersionOfIsa(CORINFO_InstructionSet isa)
+{
+    switch (isa)
+    {
+        case InstructionSet_AdvSimd:
+            return InstructionSet_AdvSimd_Arm64;
+        case InstructionSet_Aes:
+            return InstructionSet_Aes_Arm64;
+        case InstructionSet_ArmBase:
+            return InstructionSet_ArmBase_Arm64;
+        case InstructionSet_Crc32:
+            return InstructionSet_Crc32_Arm64;
+        case InstructionSet_Dp:
+            return InstructionSet_Dp_Arm64;
+        case InstructionSet_Sha1:
+            return InstructionSet_Sha1_Arm64;
+        case InstructionSet_Sha256:
+            return InstructionSet_Sha256_Arm64;
+        case InstructionSet_Rdm:
+            return InstructionSet_Rdm_Arm64;
+        case InstructionSet_Sve:
+            return InstructionSet_Sve_Arm64;
+        case InstructionSet_Sve2:
+            return InstructionSet_Sve2_Arm64;
+        default:
+            return InstructionSet_NONE;
+    }
+}
+#endif // TARGET_XARCH
+
 //------------------------------------------------------------------------
 // lookupInstructionSet: Gets the InstructionSet for a given class name
 //
@@ -629,7 +668,7 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
 CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
 {
     assert(className != nullptr);
-
+#ifdef TARGET_XARCH
     if (className[0] == 'A')
     {
         if (strcmp(className + 1, "es") == 0)
@@ -869,60 +908,7 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
             return InstructionSet_X86Serialize;
         }
     }
-
-    return InstructionSet_ILLEGAL;
-}
-
-#else  // TARGET_ARM64
-//------------------------------------------------------------------------
-// Arm64VersionOfIsa: Gets the corresponding 64-bit only InstructionSet for a given InstructionSet
-//
-// Arguments:
-//    isa -- The InstructionSet ID
-//
-// Return Value:
-//    The 64-bit only InstructionSet associated with isa
-static CORINFO_InstructionSet Arm64VersionOfIsa(CORINFO_InstructionSet isa)
-{
-    switch (isa)
-    {
-        case InstructionSet_AdvSimd:
-            return InstructionSet_AdvSimd_Arm64;
-        case InstructionSet_Aes:
-            return InstructionSet_Aes_Arm64;
-        case InstructionSet_ArmBase:
-            return InstructionSet_ArmBase_Arm64;
-        case InstructionSet_Crc32:
-            return InstructionSet_Crc32_Arm64;
-        case InstructionSet_Dp:
-            return InstructionSet_Dp_Arm64;
-        case InstructionSet_Sha1:
-            return InstructionSet_Sha1_Arm64;
-        case InstructionSet_Sha256:
-            return InstructionSet_Sha256_Arm64;
-        case InstructionSet_Rdm:
-            return InstructionSet_Rdm_Arm64;
-        case InstructionSet_Sve:
-            return InstructionSet_Sve_Arm64;
-        case InstructionSet_Sve2:
-            return InstructionSet_Sve2_Arm64;
-        default:
-            return InstructionSet_NONE;
-    }
-}
-
-//------------------------------------------------------------------------
-// lookupInstructionSet: Gets the InstructionSet for a given class name
-//
-// Arguments:
-//    className -- The name of the class associated with the InstructionSet to lookup
-//
-// Return Value:
-//    The InstructionSet associated with className
-CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
-{
-    assert(className != nullptr);
-
+#else  // TARGET_AMD64
     if (className[0] == 'A')
     {
         if (strcmp(className, "AdvSimd") == 0)
@@ -989,10 +975,9 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
             return InstructionSet_Vector128;
         }
     }
-
+#endif // TARGET_XARCH
     return InstructionSet_ILLEGAL;
 }
-#endif // TARGET_XARCH
 
 //------------------------------------------------------------------------
 // lookupIsa: Gets the InstructionSet for a given class name and enclosing class name

@@ -92,19 +92,13 @@ bool emitter::IsApxOnlyInstruction(instruction ins)
 
 bool emitter::IsAVXVNNIFamilyInstruction(instruction ins)
 {
-    return (ins >= FIRST_AVXVNNI_INSTRUCTION && ins <= LAST_AVXVNNI_INSTRUCTION) ||
-           (ins >= FIRST_AVXVNNIINT8_INSTRUCTION && ins <= LAST_AVXVNNIINT8_INSTRUCTION) ||
+    return (ins >= FIRST_AVXVNNI_INSTRUCTION && ins <= LAST_AVXVNNI_INSTRUCTION) || IsAVXVNNIINTInstruction(ins);
+}
+
+bool emitter::IsAVXVNNIINTInstruction(instruction ins)
+{
+    return (ins >= FIRST_AVXVNNIINT8_INSTRUCTION && ins <= LAST_AVXVNNIINT8_INSTRUCTION) ||
            (ins >= FIRST_AVXVNNIINT16_INSTRUCTION && ins <= LAST_AVXVNNIINT16_INSTRUCTION);
-}
-
-bool emitter::IsAVXVNNIINT8Instruction(instruction ins)
-{
-    return (ins >= FIRST_AVXVNNIINT8_INSTRUCTION) && (ins <= LAST_AVXVNNIINT8_INSTRUCTION);
-}
-
-bool emitter::IsAVXVNNIINT16Instruction(instruction ins)
-{
-    return (ins >= FIRST_AVXVNNIINT16_INSTRUCTION) && (ins <= LAST_AVXVNNIINT16_INSTRUCTION);
 }
 
 bool emitter::Is3OpRmwInstruction(instruction ins)
@@ -18220,8 +18214,7 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
         case INS_TT_FULL:
         {
             instruction ins = id->idIns();
-            assert((inputSize == 4 || inputSize == 8) || IsAVXVNNIINT8Instruction(ins) ||
-                   IsAVXVNNIINT16Instruction(ins));
+            assert((inputSize == 4 || inputSize == 8) || IsAVXVNNIINTInstruction(ins));
             if (HasEmbeddedBroadcast(id))
             {
                 // N = input size in bytes
