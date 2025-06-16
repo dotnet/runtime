@@ -266,19 +266,15 @@ struct StackInfo
 {
     StackType type;
     CORINFO_CLASS_HANDLE clsHnd;
-    // Size that this value will occupy on the interpreter stack. It is a multiple
-    // of INTERP_STACK_SLOT_SIZE
-    int size;
 
     // The var associated with the value of this stack entry. Every time we push on
     // the stack a new var is created.
     int var;
 
-    StackInfo(StackType type, CORINFO_CLASS_HANDLE clsHnd, int size, int var)
+    StackInfo(StackType type, CORINFO_CLASS_HANDLE clsHnd, int var)
     {
         this->type = type;
         this->clsHnd = clsHnd;
-        this->size = size;
         this->var = var;
     }
 };

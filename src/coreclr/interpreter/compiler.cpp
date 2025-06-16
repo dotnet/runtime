@@ -578,11 +578,8 @@ bool InterpCompiler::CheckStackHelper(int n)
 void InterpCompiler::PushTypeExplicit(StackType stackType, CORINFO_CLASS_HANDLE clsHnd, int size)
 {
     EnsureStack(1);
-    m_pStackPointer->type = stackType;
-    m_pStackPointer->clsHnd = clsHnd;
-    m_pStackPointer->size = ALIGN_UP_TO(size, INTERP_STACK_SLOT_SIZE);
-    int var = CreateVarExplicit(g_interpTypeFromStackType[stackType], clsHnd, size);
-    m_pStackPointer->var = var;
+    int32_t var = CreateVarExplicit(g_interpTypeFromStackType[stackType], clsHnd, size);
+    new (m_pStackPointer) StackInfo(stackType, clsHnd, var);
     m_pStackPointer++;
 }
 
@@ -1286,7 +1283,7 @@ void InterpCompiler::EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp
 
     newInst->SetSVar(sp->var);
     int32_t var = CreateVarExplicit(g_interpTypeFromStackType[type], NULL, INTERP_STACK_SLOT_SIZE);
-    new (sp) StackInfo(type, NULL, INTERP_STACK_SLOT_SIZE, var);
+    new (sp) StackInfo(type, NULL, var);
     newInst->SetDVar(var);
 
     // NOTE: We rely on m_pLastNewIns == newInst upon return from this function. Make sure you preserve that if you change anything.
@@ -1704,10 +1701,7 @@ bool InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
             // Initialize the filter stack state. It initially contains the exception object.
             pFilterBB->stackHeight = 1;
             pFilterBB->pStackState = (StackInfo*)AllocMemPool(sizeof (StackInfo));
-            pFilterBB->pStackState[0].type = StackTypeO;
-            pFilterBB->pStackState[0].size = INTERP_STACK_SLOT_SIZE;
-            pFilterBB->pStackState[0].clsHnd = NULL;
-            pFilterBB->pStackState[0].var = pFilterBB->clauseVarIndex;
+            new (pFilterBB->pStackState) StackInfo(StackTypeO, NULL, pFilterBB->clauseVarIndex);
 
             // Find and mark all basic blocks that are part of the filter region.
             for (uint32_t j = clause.FilterOffset; j < clause.HandlerOffset; j++)
@@ -1736,10 +1730,7 @@ bool InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
             // Initialize the catch / filtered handler stack state. It initially contains the exception object.
             pCatchBB->stackHeight = 1;
             pCatchBB->pStackState = (StackInfo*)AllocMemPool(sizeof (StackInfo));
-            pCatchBB->pStackState[0].type = StackTypeO;
-            pCatchBB->pStackState[0].size = INTERP_STACK_SLOT_SIZE;
-            pCatchBB->pStackState[0].var = pCatchBB->clauseVarIndex;
-            pCatchBB->pStackState[0].clsHnd = NULL;
+            new (pCatchBB->pStackState) StackInfo(StackTypeO, NULL, pCatchBB->clauseVarIndex);
         }
     }
 
@@ -2912,7 +2903,7 @@ void InterpCompiler::EmitBox(StackInfo* pStackInfo, CORINFO_CLASS_HANDLE clsHnd,
     m_pLastNewIns->SetSVar(pStackInfo->var);
 
     int32_t var = CreateVarExplicit(InterpTypeO, boxedClsHnd, INTERP_STACK_SLOT_SIZE);
-    new (pStackInfo) StackInfo(StackTypeO, boxedClsHnd, INTERP_STACK_SLOT_SIZE, var);
+    new (pStackInfo) StackInfo(StackTypeO, boxedClsHnd, var);
 
     m_pLastNewIns->SetDVar(pStackInfo->var);
     m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
