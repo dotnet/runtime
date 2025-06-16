@@ -274,12 +274,12 @@ struct StackInfo
     // the stack a new var is created.
     int var;
 
-    StackInfo(StackType type)
+    StackInfo(StackType type, CORINFO_CLASS_HANDLE clsHnd, int size, int var)
     {
         this->type = type;
-        clsHnd = NULL;
-        size = 0;
-        var = -1;
+        this->clsHnd = clsHnd;
+        this->size = size;
+        this->var = var;
     }
 };
 

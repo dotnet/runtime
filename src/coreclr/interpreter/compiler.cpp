@@ -1285,9 +1285,8 @@ void InterpCompiler::EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp
     InterpInst *newInst = AddIns(convOp);
 
     newInst->SetSVar(sp->var);
-    new (sp) StackInfo(type);
     int32_t var = CreateVarExplicit(g_interpTypeFromStackType[type], NULL, INTERP_STACK_SLOT_SIZE);
-    sp->var = var;
+    new (sp) StackInfo(type, NULL, INTERP_STACK_SLOT_SIZE, var);
     newInst->SetDVar(var);
 
     // NOTE: We rely on m_pLastNewIns == newInst upon return from this function. Make sure you preserve that if you change anything.
