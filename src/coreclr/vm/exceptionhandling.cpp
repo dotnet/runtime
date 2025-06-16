@@ -4024,7 +4024,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
 #endif
                 ;
 
-            if (IsComPlusException(pTopExInfo->m_ptrs.ExceptionRecord) && isNotHandledByRuntime)
+            if (IsExceptionFromManagedCode(pTopExInfo->m_ptrs.ExceptionRecord) && isNotHandledByRuntime)
             {
                 EH_LOG((LL_INFO100, "SfiNext (pass %d): no more managed frames on the stack, the exception is unhandled", pTopExInfo->m_passNumber));
                 if (pTopExInfo->m_passNumber == 1)
