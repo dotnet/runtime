@@ -67,7 +67,8 @@ namespace SIMD
         [Fact]
         public static int TestEntryPoint()
         {
-            return Test(Array.Empty<string>());
+            string[] testArgs = new string[] { "-BENCH", "1" };
+            return Test(testArgs);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
