@@ -221,10 +221,22 @@ OPDEF(INTOP_ADD_I8, "add.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_ADD_R4, "add.r4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_ADD_R8, "add.r8", 4, 1, 2, InterpOpNoArgs)
 
+OPDEF(INTOP_ADD_OVF_I4, "add.ovf.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_ADD_OVF_I8, "add.ovf.i8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_ADD_OVF_UN_I4, "add.ovf.un.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_ADD_OVF_UN_I8, "add.ovf.un.i8", 4, 1, 2, InterpOpNoArgs)
+
 OPDEF(INTOP_SUB_I4, "sub.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SUB_I8, "sub.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SUB_R4, "sub.r4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SUB_R8, "sub.r8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_SUB_OVF_I4, "sub.ovf.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_SUB_OVF_I8, "sub.ovf.i8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_SUB_OVF_UN_I4, "sub.ovf.un.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_SUB_OVF_UN_I8, "sub.ovf.un.i8", 4, 1, 2, InterpOpNoArgs)
 
 OPDEF(INTOP_MUL_I4, "mul.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_MUL_I8, "mul.i8", 4, 1, 2, InterpOpNoArgs)
