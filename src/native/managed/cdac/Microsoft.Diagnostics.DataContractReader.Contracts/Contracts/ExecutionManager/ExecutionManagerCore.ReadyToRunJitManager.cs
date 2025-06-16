@@ -158,22 +158,16 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
         private uint AdjustRuntimeFunctionIndexForHotCold(Data.ReadyToRunInfo r2rInfo, uint index)
         {
-            bool featureEHFunclets = Target.ReadGlobal<byte>(Constants.Globals.FeatureEHFunclets) != 0;
-            if (featureEHFunclets)
-            {
-                // Look up index in hot/cold map - if the function is in the cold part, get the index of the hot part.
-                index = _hotCold.GetHotFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index);
-                Debug.Assert(index < r2rInfo.NumRuntimeFunctions);
-            }
+            // Look up index in hot/cold map - if the function is in the cold part, get the index of the hot part.
+            index = _hotCold.GetHotFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index);
+            Debug.Assert(index < r2rInfo.NumRuntimeFunctions);
             return index;
         }
 
         private uint AdjustRuntimeFunctionToMethodStart(Data.ReadyToRunInfo r2rInfo, TargetPointer imageBase, uint index, out TargetPointer methodDesc)
         {
-            bool featureEHFunclets = Target.ReadGlobal<byte>(Constants.Globals.FeatureEHFunclets) != 0;
-
             methodDesc = GetMethodDescForRuntimeFunction(r2rInfo, imageBase, index);
-            while (featureEHFunclets && methodDesc == TargetPointer.Null)
+            while (methodDesc == TargetPointer.Null)
             {
                 // Funclets won't have a direct entry in the map of runtime function entry point to method desc.
                 // The funclet's address (and index) will be greater than that of the corresponding function, so
