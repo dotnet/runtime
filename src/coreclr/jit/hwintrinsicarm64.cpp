@@ -3047,7 +3047,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector_WidenLower:
+        //case NI_Vector_WidenLower:
         case NI_Vector64_WidenLower:
         case NI_Vector128_WidenLower:
         {
@@ -3065,7 +3065,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector_WidenUpper:
+        //case NI_Vector_WidenUpper:
         case NI_Vector64_WidenUpper:
         case NI_Vector128_WidenUpper:
         {
@@ -3745,8 +3745,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             case NI_Vector_op_Subtraction:
             case NI_Vector_Sum:
             case NI_Vector_Truncate:
-            case NI_Vector_WidenLower:
-            case NI_Vector_WidenUpper:
+            //case NI_Vector_WidenLower:
+            //case NI_Vector_WidenUpper:
             {
                 if (retNode->OperIsHWIntrinsic())
                 {
