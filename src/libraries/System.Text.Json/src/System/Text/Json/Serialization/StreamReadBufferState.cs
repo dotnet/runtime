@@ -52,7 +52,7 @@ namespace System.Text.Json.Serialization
             _isFinalBlock = false;
         }
 
-        public bool IsFinalBlock => _isFinalBlock;
+        public readonly bool IsFinalBlock => _isFinalBlock;
 
         public readonly ReadOnlySequence<byte> Bytes => new(_buffer.AsMemory(_offset, _count));
 
