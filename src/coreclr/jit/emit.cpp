@@ -3785,7 +3785,7 @@ const IS_INFO emitter::emitGetSchedInfo(insFormat insFmt)
 
 bool emitter::HasApxPpx(instruction ins)
 {
-    switch(ins)
+    switch (ins)
     {
         case INS_push:
         case INS_pop:

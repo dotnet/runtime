@@ -3599,10 +3599,6 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
         {
             prefixAdjustedSize = emitGetEvexPrefixSize(id);
             assert(prefixAdjustedSize == 4);
-            /*if (IsApxOnlyInstruction(ins))
-            {
-                return prefixAdjustedSize;
-            }*/
         }
         else
         {
