@@ -1991,23 +1991,24 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 }
 
 #ifdef FEATURE_INTERPRETER
-extern "C" void* STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, int8_t* pArgs, size_t size, void* retBuff)
+static InterpThreadContext* GetInterpThreadContext()
 {
-    // Argument registers are in the TransitionBlock
-    // The stack arguments are right after the pTransitionBlock
     Thread *pThread = GetThread();
     InterpThreadContext *threadContext = pThread->GetInterpThreadContext();
     if (threadContext == nullptr || threadContext->pStackStart == nullptr)
     {
         COMPlusThrow(kOutOfMemoryException);
     }
-    int8_t *sp = threadContext->pStackPointer;
 
-    // copy the arguments to the stack
-    if (size > 0 && pArgs != nullptr)
-    {
-        memcpy(sp, pArgs, size);
-    }
+    return threadContext;
+}
+
+extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
+{
+    // Argument registers are in the TransitionBlock
+    // The stack arguments are right after the pTransitionBlock
+    InterpThreadContext *threadContext = GetInterpThreadContext();
+    int8_t *sp = threadContext->pStackPointer;
 
     // This construct ensures that the InterpreterFrame is always stored at a higher address than the
     // InterpMethodContextFrame. This is important for the stack walking code.
@@ -2034,9 +2035,18 @@ extern "C" void* STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTran
     return frames.interpMethodContextFrame.pRetVal;
 }
 
-extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
+extern "C" void* STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, int8_t* pArgs, size_t size, void* retBuff)
 {
-    return ExecuteInterpretedMethodWithArgs(pTransitionBlock, byteCodeAddr, nullptr, 0, retBuff);
+    // copy the arguments to the stack
+    if (size > 0 && pArgs != nullptr)
+    {
+        InterpThreadContext *threadContext = GetInterpThreadContext();
+        int8_t *sp = threadContext->pStackPointer;
+
+        memcpy(sp, pArgs, size);
+    }
+
+    return ExecuteInterpretedMethod(pTransitionBlock, byteCodeAddr, retBuff);
 }
 #endif // FEATURE_INTERPRETER
 
