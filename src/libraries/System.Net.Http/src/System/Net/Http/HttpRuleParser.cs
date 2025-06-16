@@ -200,7 +200,7 @@ namespace System.Net.Http
 
             // Quoted-char has 2 characters. Check whether there are 2 chars left ('\' + char)
             // If so, check whether the character is in the range 0-127 and not a new line. Otherwise, it's an invalid value.
-            if ((startIndex + 2 > input.Length) || (input[startIndex + 1] is > (char)127 or '\r' or '\n'))
+            if ((startIndex + 2 > input.Length) || (input[startIndex + 1] is > (char)127 or '\r' or '\n' or '\0'))
             {
                 return HttpParseResult.InvalidFormat;
             }
@@ -252,7 +252,7 @@ namespace System.Net.Http
 
                 char c = input[current];
 
-                if (c == '\r' || c == '\n')
+                if (c == '\r' || c == '\n' || c == '\0')
                 {
                     return HttpParseResult.InvalidFormat;
                 }
