@@ -1542,8 +1542,8 @@ public:
 
 #endif // !FEATURE_EMULATE_SINGLESTEP
 
-    BOOL IsInPlaceSingleStep() 
-    { 
+    BOOL IsInPlaceSingleStep()
+    {
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 #ifndef FEATURE_EMULATE_SINGLESTEP
         // only in-place single steps over call intructions are supported at this time
@@ -1740,7 +1740,6 @@ protected:
     COR_DEBUG_STEP_RANGE *  m_range; // Ranges for active steppers are always in native offsets.
 
     SIZE_T                  m_rangeCount;
-    SIZE_T                  m_realRangeCount; // @todo - delete b/c only used for CodePitching & Old-Enc
 
     // The original step intention.
     // As the stepper moves through code, it may change its other members.

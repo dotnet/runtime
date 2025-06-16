@@ -62,11 +62,14 @@ enum EETypeField
 {
     ETF_TypeManagerIndirection,
     ETF_WritableData,
+    ETF_DispatchMap,
     ETF_Finalizer,
     ETF_SealedVirtualSlots,
     ETF_DynamicTemplateType,
     ETF_GenericDefinition,
     ETF_GenericComposition,
+    ETF_FunctionPointerParameters,
+    ETF_DynamicTypeFlags,
     ETF_DynamicGcStatics,
     ETF_DynamicNonGcStatics,
     ETF_DynamicThreadStaticOffset,
@@ -128,10 +131,14 @@ private:
         // GC depends on this bit, this bit must be zero
         CollectibleFlag         = 0x00200000,
 
+        HasDispatchMapFlag      = 0x00040000,
+
         IsDynamicTypeFlag       = 0x00080000,
 
         // GC depends on this bit, this type requires finalization
         HasFinalizerFlag        = 0x00100000,
+
+        HasSealedVTableEntriesFlag = 0x00400000,
 
         // GC depends on this bit, this type contain gc pointers
         HasPointersFlag         = 0x01000000,
@@ -165,18 +172,30 @@ private:
         RequiresAlign8Flag = 0x1000
     };
 
+    enum FunctionPointerFlags
+    {
+        IsUnmanaged = 0x80000000,
+        FunctionPointerFlagsMask = IsUnmanaged
+    };
+
 public:
 
     enum Kinds
     {
         CanonicalEEType         = 0x00000000,
-        // unused               = 0x00010000,
+        FunctionPointerEEType   = 0x00010000,
         ParameterizedEEType     = 0x00020000,
         GenericTypeDefEEType    = 0x00030000,
     };
 
     uint32_t GetBaseSize()
         { return m_uBaseSize; }
+
+    uint32_t GetNumFunctionPointerParameters()
+    {
+        ASSERT(IsFunctionPointer());
+        return m_uBaseSize & ~FunctionPointerFlagsMask;
+    }
 
     Kinds GetKind();
 
@@ -191,6 +210,12 @@ public:
 
     bool IsParameterizedType()
         { return (GetKind() == ParameterizedEEType); }
+
+    bool IsGenericTypeDefinition()
+        { return GetKind() == GenericTypeDefEEType; }
+
+    bool IsFunctionPointer()
+        { return GetKind() == FunctionPointerEEType; }
 
     bool IsInterface()
         { return GetElementType() == ElementType_Interface; }
@@ -259,6 +284,8 @@ public:
 
     TypeManagerHandle* GetTypeManagerPtr();
 
+    MethodTable* GetDynamicTemplateType();
+
     // Used only by GC initialization, this initializes the MethodTable used to mark free entries in the GC heap.
     // It should be an array type with a component size of one (so the GC can easily size it as appropriate)
     // and should be marked as not containing any references. The rest of the fields don't matter: the GC does
@@ -272,6 +299,15 @@ public:
 
     EETypeElementType GetElementType()
         { return (EETypeElementType)((m_uFlags & ElementTypeMask) >> ElementTypeShift); }
+
+    bool IsGeneric()
+        { return (m_uFlags & IsGenericFlag) != 0; }
+
+    bool HasDispatchMap()
+        { return (m_uFlags & HasDispatchMapFlag) != 0; }
+
+    bool HasSealedVTableEntries()
+        { return (m_uFlags & HasSealedVTableEntriesFlag) != 0; }
 
     // Determine whether a type was created by dynamic type loader
     bool IsDynamicType()

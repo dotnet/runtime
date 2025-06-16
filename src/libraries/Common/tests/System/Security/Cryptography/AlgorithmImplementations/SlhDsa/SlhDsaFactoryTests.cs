@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] encodedBytes = CreateAsn1EncodedBytes();
             int actualEncodedLength = encodedBytes.Length;
 
-            // Add a trailing byte so the length indicated in the encoding will be larger than the actual data.
+            // Add a trailing byte so the length indicated in the encoding will be smaller than the actual data.
             Array.Resize(ref encodedBytes, actualEncodedLength + 1);
             AssertThrows(encodedBytes);
 
@@ -186,6 +186,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(pkcs8.Encode()))));
 
             pkcs8.PrivateKeyAlgorithm.Parameters = AsnUtils.DerNull;
+
+            SlhDsaTestHelpers.AssertImportPkcs8PrivateKey(
+                import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(pkcs8.Encode()))));
 
             // Sanity check
             pkcs8.PrivateKeyAlgorithm.Parameters = null;
