@@ -485,7 +485,7 @@ public:
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         return fSuccess;
     }
