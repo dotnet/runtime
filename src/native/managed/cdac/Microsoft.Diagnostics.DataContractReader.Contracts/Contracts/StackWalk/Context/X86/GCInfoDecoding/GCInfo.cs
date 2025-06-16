@@ -29,6 +29,7 @@ public enum RegMask
 
 public record GCInfo
 {
+    private const uint MINIMUM_SUPPORTED_GCINFO_VERSION = 4;
     private const uint MAXIMUM_SUPPORTED_GCINFO_VERSION = 4;
 
     private readonly Target _target;
@@ -70,6 +71,10 @@ public record GCInfo
 
     public GCInfo(Target target, TargetPointer gcInfoAddress, uint gcInfoVersion, uint relativeOffset)
     {
+        if (gcInfoVersion < MINIMUM_SUPPORTED_GCINFO_VERSION)
+        {
+            throw new NotSupportedException($"GCInfo version {gcInfoVersion} is not supported. Minimum supported version is {MINIMUM_SUPPORTED_GCINFO_VERSION}.");
+        }
         if (gcInfoVersion > MAXIMUM_SUPPORTED_GCINFO_VERSION)
         {
             throw new NotSupportedException($"GCInfo version {gcInfoVersion} is not supported. Maximum supported version is {MAXIMUM_SUPPORTED_GCINFO_VERSION}.");
