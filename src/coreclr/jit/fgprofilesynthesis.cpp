@@ -9,6 +9,17 @@
 
 #include "fgprofilesynthesis.h"
 
+//------------------------------------------------------------------------
+// AdjustThrowEdgeLikelihoods: Find throw blocks in the flowgraph, and propagate
+// their throwable state through their predecessors in postorder.
+// Then, adjust heuristic-based likelihoods of edges into paths known to throw.
+//
+// Arguments:
+//   compiler - the Compiler object
+//
+// Returns:
+//   Suitable phase status
+//
 /* static */ PhaseStatus ProfileSynthesis::AdjustThrowEdgeLikelihoods(Compiler* compiler)
 {
     const FlowGraphDfsTree* dfsTree = compiler->m_dfsTree;
@@ -16,6 +27,7 @@
     BitVecTraits traits = dfsTree->PostOrderTraits();
     BitVec       willThrow(BitVecOps::MakeEmpty(&traits));
 
+    // Adjusts the likelihoods out of a block that conditionally flows into a path that throws
     auto tweakLikelihoods = [&](BasicBlock* block) {
         assert(block->KindIs(BBJ_COND));
         FlowEdge *throwEdge, *normalEdge;
@@ -37,6 +49,7 @@
 
     bool modified = false;
 
+    // Walk the flowgraph in postorder, propagating throw state backwards
     for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
     {
         BasicBlock* const block = dfsTree->GetPostOrder(i);
@@ -45,6 +58,7 @@
             JITDUMP(FMT_BB " will throw.\n", block->bbNum);
             BitVecOps::AddElemD(&traits, willThrow, i);
         }
+        // Avoid slightly more expensive successor iteration for blocks with one outgoing edge
         else if ((block->GetUniqueSucc() != nullptr) &&
                  BitVecOps::IsMember(&traits, willThrow, block->GetUniqueSucc()->bbPostorderNum))
         {
@@ -70,13 +84,14 @@
 
             if (anyPathThrows)
             {
-                JITDUMP(FMT_BB " flows into a throw block.\n", block->bbNum);
                 if (allPathsThrow)
                 {
+                    JITDUMP(FMT_BB " flows into a throw block.\n", block->bbNum);
                     BitVecOps::AddElemD(&traits, willThrow, i);
                 }
                 else if (block->KindIs(BBJ_COND) && block->GetTrueEdge()->isHeuristicBased())
                 {
+                    JITDUMP(FMT_BB " can flow into a throw block.\n", block->bbNum);
                     assert(block->GetFalseEdge()->isHeuristicBased());
                     tweakLikelihoods(block);
                     modified = true;
