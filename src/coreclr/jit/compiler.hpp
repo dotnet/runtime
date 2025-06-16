@@ -4683,7 +4683,7 @@ void GenTree::VisitOperands(TVisitor visitor)
 
             if (call->gtCallType == CT_INDIRECT)
             {
-                if ((call->gtCallCookie != nullptr) && !call->IsVirtualStub() &&
+                if (!call->IsVirtualStub() && (call->gtCallCookie != nullptr) &&
                     (visitor(call->gtCallCookie) == VisitResult::Abort))
                 {
                     return;
