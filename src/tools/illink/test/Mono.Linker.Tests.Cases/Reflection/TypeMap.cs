@@ -11,8 +11,12 @@ using Mono.Linker.Tests.Cases.Reflection;
 
 [assembly: TypeMap<UsedTypeMap> ("TrimTargetIsTarget", typeof (TargetAndTrimTarget), typeof (TargetAndTrimTarget))]
 [assembly: TypeMap<UsedTypeMap> ("TrimTargetIsUnrelated", typeof (TargetType), typeof (TrimTarget))]
+[assembly: TypeMap<UsedTypeMap> ("TrimTargetIsAllocatedNoTypeCheckClass", typeof (TargetType2), typeof (AllocatedNoTypeCheckClass))]
+[assembly: TypeMap<UsedTypeMap> ("TrimTargetIsAllocatedNoTypeCheckStruct", typeof (TargetType3), typeof (AllocatedNoTypeCheckStruct))]
 [assembly: TypeMap<UsedTypeMap> ("TrimTargetIsUnreferenced", typeof (UnreferencedTargetType), typeof (UnreferencedTrimTarget))]
 [assembly: TypeMapAssociation<UsedTypeMap> (typeof (SourceClass), typeof (ProxyType))]
+[assembly: TypeMapAssociation<UsedTypeMap> (typeof (TypeCheckOnlyClass), typeof (ProxyType2))]
+[assembly: TypeMapAssociation<UsedTypeMap> (typeof (AllocatedNoBoxStructType), typeof (ProxyType3))]
 [assembly: TypeMapAssociation<UsedTypeMap> (typeof (I), typeof (IImpl))]
 [assembly: TypeMapAssociation<UsedTypeMap> (typeof (IInterfaceWithDynamicImpl), typeof (IDynamicImpl))]
 
@@ -22,7 +26,7 @@ using Mono.Linker.Tests.Cases.Reflection;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[Kept]
-	[IgnoreTestCase("Trimmer support is currently not implemented", IgnoredBy = Tool.Trimmer)]
+	[IgnoreTestCase ("Trimmer support is currently not implemented", IgnoredBy = Tool.Trimmer)]
 	class TypeMap
 	{
 		[Kept]
@@ -36,14 +40,23 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				Console.WriteLine ("Type deriving from TrimTarget instantiated.");
 			} else if (t is IInterfaceWithDynamicImpl d) {
 				d.Method ();
+			} else if (t is TypeCheckOnlyClass typeCheckOnlyClass) {
+				Console.WriteLine ("Type deriving from TypeCheckOnlyClass instantiated.");
 			}
 
 			Console.WriteLine ("Hash code of SourceClass instance: " + new SourceClass ().GetHashCode ());
 			Console.WriteLine ("Hash code of UsedClass instance: " + new UsedClass ().GetHashCode ());
+			Console.WriteLine ("Hash code of AllocatedNoTypeCheckClass instance: " + new AllocatedNoTypeCheckClass ().GetHashCode ());
+			Console.WriteLine ("Hash code of AllocatedNoTypeCheckStruct instance: " + new AllocatedNoTypeCheckStruct ().GetHashCode ());
 
 			Console.WriteLine (TypeMapping.GetOrCreateExternalTypeMapping<UsedTypeMap> ());
-			Console.WriteLine (TypeMapping.GetOrCreateProxyTypeMapping<UsedTypeMap> ());
 			Console.WriteLine (GetExternalTypeMap<UnusedTypeMap> ());
+
+			var proxyMap = TypeMapping.GetOrCreateProxyTypeMapping<UsedTypeMap> ();
+
+			AllocatedNoBoxStructType allocatedNoBoxStructType = new AllocatedNoBoxStructType (Random.Shared.Next ());
+			Console.WriteLine ("AllocatedNoBoxStructType value: " + allocatedNoBoxStructType.Value);
+			Console.WriteLine (proxyMap[typeof (AllocatedNoBoxStructType)]);
 		}
 
 		[Kept]
@@ -54,7 +67,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 	}
 
-	[Kept(By = Tool.Trimmer)]
+	[Kept (By = Tool.Trimmer)]
 	class UsedTypeMap;
 
 	[Kept]
@@ -71,7 +84,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	class UnreferencedTrimTarget;
 
 	[Kept]
-	[KeptMember(".ctor()")]
+	[KeptMember (".ctor()")]
 	class SourceClass;
 
 	[Kept]
@@ -96,7 +109,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept (By = Tool.Trimmer)]
 		void Method ();
 	}
-	
+
 	[Kept]
 	[KeptInterface (typeof (IInterfaceWithDynamicImpl))]
 	[KeptAttributeAttribute (typeof (DynamicInterfaceCastableImplementationAttribute), By = Tool.Trimmer)]
@@ -108,6 +121,40 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 		}
 	}
+
+	[Kept]
+	[KeptMember(".ctor()")]
+	class AllocatedNoTypeCheckClass;
+
+	[Kept]
+	struct AllocatedNoTypeCheckStruct;
+
+	[Kept]
+	class TargetType2;
+
+	[Kept]
+	class TargetType3;
+
+	[Kept]
+	class TypeCheckOnlyClass;
+
+	class ProxyType2;
+
+	[Kept]
+	struct AllocatedNoBoxStructType
+	{
+		[Kept]
+		public AllocatedNoBoxStructType (int value)
+		{
+			Value = value;
+		}
+
+		[Kept]
+		public int Value { [Kept] get; }
+	}
+
+	[Kept]
+	class ProxyType3;
 }
 
 // Polyfill for the type map types until we use an LKG runtime that has it.
