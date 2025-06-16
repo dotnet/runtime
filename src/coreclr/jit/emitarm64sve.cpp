@@ -15353,7 +15353,7 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
             const insOpts narrowSizeSpecifier = (insOpts)(id->idInsOpt() - 1);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);      // ddddd
             emitDispSveReg(id->idReg2(), narrowSizeSpecifier, true); // nnnnn
-            emitDispImm(emitGetInsSC(id), false);                   // iii
+            emitDispImm(emitGetInsSC(id), false);                    // iii
             break;
         }
 
