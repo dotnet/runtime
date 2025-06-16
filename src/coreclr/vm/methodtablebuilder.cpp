@@ -7263,12 +7263,6 @@ MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
     }
 #endif
 
-#if defined(FEATURE_JIT_PITCHING)
-    if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchEnabled) != 0) &&
-        (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchMemThreshold) != 0))
-        return TRUE;
-#endif
-
     return GetModule()->IsEditAndContinueEnabled();
 }
 

@@ -99,6 +99,9 @@
   <data name="Argument_EmptyString" xml:space="preserve">
     <value>The value cannot be an empty string.</value>
   </data>
+  <data name="Argument_HashImprecise" xml:space="preserve">
+    <value>Hash must be exactly {0} bytes.</value>
+  </data>
   <data name="Argument_Invalid_SafeHandleInvalidOrClosed" xml:space="preserve">
     <value>The method cannot be called with an invalid or closed SafeHandle.</value>
   </data>
@@ -143,6 +146,9 @@
   </data>
   <data name="Argument_SecretKeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The secret key is not the correct size for the indicated algorithm.</value>
+  </data>
+  <data name="Argument_PrivateSeedWrongSizeForAlgorithm" xml:space="preserve">
+    <value>The private seed is not the correct size for the indicated algorithm.</value>
   </data>
   <data name="Argument_SignatureContextTooLong255" xml:space="preserve">
     <value>The specified signature context exceeds the maximum length of 255 bytes.</value>
@@ -233,6 +239,9 @@
   </data>
   <data name="Cryptography_ArgECDsaRequiresECDsaKey" xml:space="preserve">
     <value>Keys used with the ECDsaCng algorithm must have an algorithm group of ECDsa.</value>
+  </data>
+  <data name="Cryptography_ArgMLDsaRequiresMLDsaKey" xml:space="preserve">
+    <value>Keys used with the MLDsaCng algorithm must have an algorithm group of MLDsa.</value>
   </data>
   <data name="Cryptography_ArgRSARequiresRSAKey" xml:space="preserve">
     <value>Keys used with the RSACng algorithm must have an algorithm group of RSA.</value>
@@ -390,6 +399,9 @@
   <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
     <value>The hash algorithm name cannot be null or empty.</value>
   </data>
+  <data name="Cryptography_HashLengthMismatch" xml:space="preserve">
+    <value>The specified hash is not a valid size for this hash algorithm.</value>
+  </data>
   <data name="Cryptography_HashNotYetFinalized" xml:space="preserve">
     <value>Hash must be finalized before the hash value is retrieved.</value>
   </data>
@@ -483,6 +495,9 @@
   <data name="Cryptography_InvalidOID" xml:space="preserve">
     <value>Object identifier (OID) is unknown.</value>
   </data>
+  <data name="Cryptography_InvalidOidFormat" xml:space="preserve">
+    <value>Invalid OID format.</value>
+  </data>
   <data name="Cryptography_InvalidOperation" xml:space="preserve">
     <value>This operation is not supported for this class.</value>
   </data>
@@ -510,6 +525,9 @@
   <data name="Cryptography_KemInvalidAlgorithmHandle" xml:space="preserve">
     <value>The specified EVP_PKEY handle is not a known ML-KEM algorithm.</value>
   </data>
+  <data name="Cryptography_KemNoDecapsulationKey" xml:space="preserve">
+    <value>The current instance does not contain a decapsulation key.</value>
+  </data>
   <data name="Cryptography_KemPkcs8KeyMismatch" xml:space="preserve">
     <value>The specified PKCS#8 key contains a seed that does not match the expanded key.</value>
   </data>
@@ -533,6 +551,9 @@
   </data>
   <data name="Cryptography_MLDsaInvalidAlgorithmHandle" xml:space="preserve">
     <value>The specified EVP_PKEY handle is not a known ML-DSA algorithm.</value>
+  </data>
+  <data name="Cryptography_MLDsaNoSecretKey" xml:space="preserve">
+    <value>The current instance does not contain a secret key.</value>
   </data>
   <data name="Cryptography_MLDsaPkcs8KeyMismatch" xml:space="preserve">
     <value>The specified PKCS#8 key contains a seed that does not match the expanded key.</value>
@@ -668,6 +689,9 @@
   </data>
   <data name="Cryptography_PlaintextTooLarge" xml:space="preserve">
     <value>The specified plaintext size is too large.</value>
+  </data>
+  <data name="Cryptography_PqcNoSeed" xml:space="preserve">
+    <value>The current instance does not contain a seed.</value>
   </data>
   <data name="Cryptography_PrivateKey_DoesNotMatch" xml:space="preserve">
     <value>The provided key does not match the public key for this certificate.</value>

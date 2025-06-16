@@ -307,6 +307,12 @@
              Link="Common\Interop\Linux\Interop.cgroups.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs"
              Link="Common\Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RealPath.cs"
+             Link="Common\Interop\Unix\Interop.RealPath.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcMountInfo.cs"
+             Link="Common\Interop\Linux\procfs\Interop.ProcMountInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcMountInfo.TryParseMountInfoLine.cs"
+             Link="Common\Interop\Linux\procfs\Interop.ProcMountInfo.TryParseMountInfoLine.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs"
              Link="Common\Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.cs"
