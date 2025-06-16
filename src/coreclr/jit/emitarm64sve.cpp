@@ -15350,9 +15350,9 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
         // <Zd>.<T>, <Zn>.<Tb>, #<const>
         case IF_SVE_FR_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift left long
         {
-            const insOpts largeSizeSpecifier = (insOpts)(id->idInsOpt() + 1);
-            emitDispSveReg(id->idReg1(), largeSizeSpecifier, true); // ddddd
-            emitDispSveReg(id->idReg2(), id->idInsOpt(), true);     // nnnnn
+            const insOpts narrowSizeSpecifier = (insOpts)(id->idInsOpt() - 1);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);      // ddddd
+            emitDispSveReg(id->idReg2(), narrowSizeSpecifier, true); // nnnnn
             emitDispImm(emitGetInsSC(id), false);                   // iii
             break;
         }
