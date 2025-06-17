@@ -50,45 +50,6 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
 #
-# Build the whole product using CoreCLR for Android and run runtime tests with Android emulator
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: coreclr
-    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isAndroidEmulatorOnlyBuild: ${{ parameters.isAndroidEmulatorOnlyBuild }}
-    platforms:
-    - android_x64
-    variables:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
-        - name: _HelixSource
-          value: pr/dotnet/runtime/$(Build.SourceBranch)
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-        - name: _HelixSource
-          value: ci/dotnet/runtime/$(Build.SourceBranch)
-      - name: timeoutPerTestInMinutes
-        value: 60
-      - name: timeoutPerTestCollectionInMinutes
-        value: 180
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_CoreCLR_RuntimeTests
-      runtimeVariant: jit
-      buildArgs: -s clr+libs -c $(_BuildConfig)
-      timeoutInMinutes: 240
-      # extra steps, run tests
-      postBuildSteps:
-        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-          parameters:
-            creator: dotnet-bot
-            testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-      extraVariablesTemplates:
-        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-
-#
 # Build the whole product using Mono for Android and run runtime tests with interpreter
 #
 - template: /eng/pipelines/common/platform-matrix.yml
