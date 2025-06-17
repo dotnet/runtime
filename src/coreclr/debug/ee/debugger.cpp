@@ -2506,7 +2506,10 @@ void Debugger::JITComplete(NativeCodeVersion nativeCodeVersion, TADDR newAddress
     // Can be called on managed thread only
     // This API Implements DebugInterface
 
-//    if (CORDebuggerAttached())
+#ifndef DEBUG // We need to do this in debug builds so that the ValidateILOffsets method can be called
+              // TODO: We may wish to remove this in the future.
+    if (CORDebuggerAttached())
+#endif
     {
         // Populate the debugger's cache of DJIs. Normally we can do this lazily,
         // the only reason we do it here is b/c the MethodDesc is not yet officially marked as "jitted",

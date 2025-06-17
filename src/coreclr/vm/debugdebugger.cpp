@@ -1048,7 +1048,7 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
         return 0;
     }
 
-    if ((int)pOffsetMapping->ilOffset > pWalkData->greatestILOffsetFound)
+    if ((int32_t)pOffsetMapping->ilOffset > pWalkData->greatestILOffsetFound)
     {
         // Calculate the greatest IL offset found so far. We use this as the IL offset for epilogs
         pWalkData->greatestILOffsetFound = (int)pOffsetMapping->ilOffset;
@@ -1143,7 +1143,7 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
             pWalkData->dwCurrentNativeOffset = pOffsetMapping->nativeOffset;
             pWalkData->dwILOffsetFound = pOffsetMapping->ilOffset;
         }
-        else if ((pOffsetMapping->ilOffset < pWalkData->dwILOffsetFound) && (pOffsetMapping->ilOffset != (DWORD)ICorDebugInfo::NO_MAPPING))
+        else if (((int32_t)pOffsetMapping->ilOffset < (int32_t)pWalkData->dwILOffsetFound) && (pOffsetMapping->ilOffset != (DWORD)ICorDebugInfo::NO_MAPPING))
         {
             // We found a new IL offset that is less than the one we are looking for
             pWalkData->dwILOffsetFound = pOffsetMapping->ilOffset;
@@ -1273,6 +1273,19 @@ void InsertIntoILToNativeCache(void* ip, bool fAdjustOffset, uint32_t dwILOffset
 }
 
 #ifdef DEBUG
+size_t WalkILOffsetsCallback_Printer(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
+{
+    printf("IL Offset: %d, Native Offset: %d, %s%s%s%s%s\n",
+          pOffsetMapping->ilOffset,
+          pOffsetMapping->nativeOffset,
+          pOffsetMapping->source & ICorDebugInfo::SEQUENCE_POINT ? "SEQUENCE_POINT " : "",
+          pOffsetMapping->source & ICorDebugInfo::STACK_EMPTY ? "STACK_EMPTY " : "",
+          pOffsetMapping->source & ICorDebugInfo::CALL_SITE ? "CALL_SITE " : "",
+          pOffsetMapping->source & ICorDebugInfo::NATIVE_END_OFFSET_UNKNOWN ? "NATIVE_END_OFFSET_UNKNOWN " : "",
+          pOffsetMapping->source & ICorDebugInfo::CALL_INSTRUCTION ? "CALL_INSTRUCTION " : "");
+    return 0;
+}
+
 void ValidateILOffset(MethodDesc *pFunc, uint8_t* ip)
 {
     EECodeInfo codeInfo((PCODE)ip);
@@ -1301,8 +1314,16 @@ void ValidateILOffset(MethodDesc *pFunc, uint8_t* ip)
 
     if (bWalkILOffsets && bResGetILOffsetFromNative)
     {
+        if (dwILOffsetWalk != dwILOffsetDebugInterface)
+        {
+            printf("Mismatch in IL offsets for %p at IP %p Native Offset %d:\n", pFunc, ip, dwNativeOffset);
+            printf("  Debug Interface IL Offset: %d\n", dwILOffsetDebugInterface);
+            printf("  Walk IL Offsets IL Offset: %d\n", dwILOffsetWalk);
+            codeInfo.GetJitManager()->WalkILOffsets(request, NULL, WalkILOffsetsCallback_Printer);
+        }
         _ASSERTE(dwILOffsetWalk == dwILOffsetDebugInterface);
     }
+
     _ASSERTE(bWalkILOffsets == bResGetILOffsetFromNative);
 }
 
@@ -1321,7 +1342,7 @@ void ValidateILOffsets(MethodDesc *pFunc, uint8_t* ipColdStart, size_t coldLen, 
 
     if (ipHotStart != NULL)
     {
-        for (ip = ipHotStart; ip <= (ipHotStart + coldLen);ip++)
+        for (ip = ipHotStart; ip <= (ipHotStart + hotLen);ip++)
         {
             ValidateILOffset(pFunc, ip);
         }

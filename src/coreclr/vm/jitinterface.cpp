@@ -49,6 +49,7 @@
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
+#include "debugdebugger.h"
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -13103,8 +13104,6 @@ void ThrowExceptionForJit(HRESULT res)
 // ********************************************************************
 //#define PERF_TRACK_METHOD_JITTIMES
 
-void ValidateILOffsets(MethodDesc *pFunc, uint8_t* ipColdStart, size_t coldLen, uint8_t* ipHotStart, size_t hotLen);
-
 static TADDR UnsafeJitFunctionWorker(
     EECodeGenManager *pJitMgr,
     CEECodeGenInfo *pJitInfo,
@@ -13217,8 +13216,9 @@ static TADDR UnsafeJitFunctionWorker(
         if (g_pDebugInterface)
         {
             g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)nativeEntry);
-
+#ifdef DEBUG
             ValidateILOffsets(ftn, NULL, 0, (uint8_t*)nativeEntry, sizeOfCode);
+#endif // DEBUG
         }
 #endif // DEBUGGING_SUPPORTED
     }

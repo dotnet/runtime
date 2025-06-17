@@ -70,6 +70,8 @@ typedef REF <StackFrameHelper> STACKFRAMEHELPERREF;
 typedef StackFrameHelper* STACKFRAMEHELPERREF;
 #endif
 
+// Validate that the IL offsets in the method returned by WalkILOffsets matches that as reported by the debugger.
+void ValidateILOffsets(MethodDesc *pFunc, uint8_t* ipColdStart, size_t coldLen, uint8_t* ipHotStart, size_t hotLen);
 
 class DebugStackTrace
 {
