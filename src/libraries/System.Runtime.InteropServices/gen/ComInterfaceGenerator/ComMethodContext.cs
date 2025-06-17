@@ -183,7 +183,7 @@ namespace Microsoft.Interop
                     return cachedValue;
                 }
 
-                int startingIndex = 3;
+                int startingIndex = IUnknownConstants.VTableSize;
                 List<Builder> methods = new();
                 // If we have a base interface, we should add the inherited methods to our list in vtable order
                 if (iface.Base is not null)
