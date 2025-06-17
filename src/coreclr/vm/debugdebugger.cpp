@@ -1308,9 +1308,23 @@ void ValidateILOffset(MethodDesc *pFunc, uint8_t* ip)
     TADDR startAddress = codeInfo.GetStartAddress();
     DebugInfoRequest request;
     request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
-    bool bWalkILOffsets = !!codeInfo.GetJitManager()->WalkILOffsets(request, &data, WalkILOffsetsCallback);
-    if (bWalkILOffsets)
-        dwILOffsetWalk = data.dwFinalILOffset;
+    bool bWalkILOffsets;
+    
+    if (pFunc->IsDynamicMethod())
+    {
+        bWalkILOffsets = false;
+    }
+    else
+    {
+        bWalkILOffsets = codeInfo.GetJitManager()->WalkILOffsets(request, &data, WalkILOffsetsCallback);
+        if (bWalkILOffsets)
+            dwILOffsetWalk = data.dwFinalILOffset;
+        else
+        {
+            dwILOffsetWalk = 0;
+            bWalkILOffsets = true;
+        }
+    }
 
     if (bWalkILOffsets && bResGetILOffsetFromNative)
     {
@@ -1324,7 +1338,14 @@ void ValidateILOffset(MethodDesc *pFunc, uint8_t* ip)
         _ASSERTE(dwILOffsetWalk == dwILOffsetDebugInterface);
     }
 
-    _ASSERTE(bWalkILOffsets == bResGetILOffsetFromNative);
+    if (bWalkILOffsets != bResGetILOffsetFromNative)
+    {
+        printf("Mismatch in IL offsets validity for %p at IP %p Native Offset %d:\n", pFunc, ip, dwNativeOffset);
+        printf("  Debug Interface IL Offset: %d Valid = %s\n", dwILOffsetDebugInterface, bResGetILOffsetFromNative ? "true" : "false");
+        printf("  Walk IL Offsets IL Offset: %d Valid = %s\n", dwILOffsetWalk, bWalkILOffsets ? "true" : "false");
+        codeInfo.GetJitManager()->WalkILOffsets(request, NULL, WalkILOffsetsCallback_Printer);
+        _ASSERTE(bWalkILOffsets == bResGetILOffsetFromNative);
+    }
 }
 
 void ValidateILOffsets(MethodDesc *pFunc, uint8_t* ipColdStart, size_t coldLen, uint8_t* ipHotStart, size_t hotLen)
@@ -1415,30 +1436,38 @@ void DebugStackTrace::Element::InitPass2()
         {
             // Get IL Offset from the JitManager directly
             EECodeInfo codeInfo(this->ip);
-            if (codeInfo.IsValid())
+
+            // We are allowed to get a result for non-dynamic methods only, other methods will either have good data, or be returned as IL offset 0.
+            if (codeInfo.IsValid() && !codeInfo.GetMethodDesc()->IsDynamicMethod())
             {
                 TADDR startAddress = codeInfo.GetStartAddress();
                 WalkILOffsetsData data(fAdjustOffset ? this->dwOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET : this->dwOffset);
                 DebugInfoRequest request;
                 request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
-                if (codeInfo.GetJitManager()->WalkILOffsets(request, &data, WalkILOffsetsCallback))
+                if (!codeInfo.GetJitManager()->WalkILOffsets(request, &data, WalkILOffsetsCallback))
                 {
-#if defined(DEBUGGING_SUPPORTED) && defined(DEBUG)
-                    _ASSERTE(this->dwILOffset == data.dwFinalILOffset); // This asserts that the IL offset computed here is the same as would be computed by g_pDebugInterface->GetILOffsetFromNative
-#endif // DEBUGGING_SUPPORTED && DEBUG
-                    this->dwILOffset = data.dwFinalILOffset;
-                    bRes = true;
-
-                    MethodDesc* pMD = codeInfo.GetMethodDesc();
-                    if (!pMD->IsLCGMethod() && !pMD->GetLoaderAllocator()->IsCollectible())
-                    {
-                        // Only insert into the cache if the value found will not change throughout the lifetime of the process.
-                        InsertIntoILToNativeCache(
-                            (void*)this->ip,
-                            fAdjustOffset,
-                            this->dwILOffset);
-                    }
+                    data.dwFinalILOffset = 0; // If we didn't find any IL offsets, set the final IL offset to 0
                 }
+
+#if defined(DEBUGGING_SUPPORTED) && defined(DEBUG)
+                _ASSERTE(this->dwILOffset == data.dwFinalILOffset); // This asserts that the IL offset computed here is the same as would be computed by g_pDebugInterface->GetILOffsetFromNative
+#endif // DEBUGGING_SUPPORTED && DEBUG
+                this->dwILOffset = data.dwFinalILOffset;
+                bRes = true;
+
+                MethodDesc* pMD = codeInfo.GetMethodDesc();
+                if (!pMD->IsLCGMethod() && !pMD->GetLoaderAllocator()->IsCollectible())
+                {
+                    // Only insert into the cache if the value found will not change throughout the lifetime of the process.
+                    InsertIntoILToNativeCache(
+                        (void*)this->ip,
+                        fAdjustOffset,
+                        this->dwILOffset);
+                }
+            }
+            else
+            {
+                bRes = false;
             }
         }
     }
