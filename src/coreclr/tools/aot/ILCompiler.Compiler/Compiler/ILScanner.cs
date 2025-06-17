@@ -275,6 +275,24 @@ namespace ILCompiler
             return new ScannedReadOnlyPolicy(MarkedNodes);
         }
 
+        public BodyAndFieldSubstitutions GetBodyAndFieldSubstitutions()
+        {
+            Dictionary<MethodDesc, BodySubstitution> bodySubstitutions = [];
+
+            TypeDesc iDynamicInterfaceCastableType = _factory.TypeSystemContext.SystemModule.GetType("System.Runtime.InteropServices", "IDynamicInterfaceCastable");
+
+            if (!_factory.ConstructedTypeSymbol(iDynamicInterfaceCastableType).Marked)
+            {
+                // We can't easily trim out some of the IDynamicInterfaceCastable infrastructure because do type checks based on
+                // flags on the MethodTable.
+                // Trim out the logic that we can't do easily here.
+                MethodDesc getDynamicInterfaceImplementationMethod = iDynamicInterfaceCastableType.GetMethod("GetDynamicInterfaceImplementation", null);
+                bodySubstitutions.Add(getDynamicInterfaceImplementationMethod, BodySubstitution.ThrowingBody);
+            }
+
+            return new BodyAndFieldSubstitutions(bodySubstitutions, []);
+        }
+
         private sealed class ScannedVTableProvider : VTableSliceProvider
         {
             private readonly Dictionary<TypeDesc, MethodDesc[]> _vtableSlices = new Dictionary<TypeDesc, MethodDesc[]>();
