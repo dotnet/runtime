@@ -52,7 +52,7 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 
 #elif defined(TARGET_WASM)
 
-#define SIZEOF_PRECODE_BASE         12 // 3*pointer size
+#define SIZEOF_PRECODE_BASE         2*sizeof(void*)
 #define OFFSETOF_PRECODE_TYPE       0
 
 #endif // TARGET_AMD64
@@ -130,7 +130,7 @@ struct StubPrecode
     static const SIZE_T CodeSize = 24;
 #elif defined(TARGET_WASM)
     static const int Type = 0;
-    static const SIZE_T CodeSize = 12;
+    static const SIZE_T CodeSize = 3*sizeof(void*);
 #endif // TARGET_AMD64
 
     BYTE m_code[CodeSize];
@@ -412,7 +412,7 @@ struct FixupPrecode
     static const int FixupCodeOffset = 10;
 #elif defined(TARGET_WASM)
     static const int Type = 2;
-    static const SIZE_T CodeSize = 12;
+    static const SIZE_T CodeSize = 2*sizeof(void*);
     static const int FixupCodeOffset = 0;
 #endif // TARGET_AMD64
 
@@ -562,7 +562,7 @@ inline BYTE StubPrecode::GetType()
     LIMITED_METHOD_DAC_CONTRACT;
     TADDR type = GetData()->Type;
 
-#ifdef __wasm__
+#ifdef TARGET_WASM
     return (BYTE)type;
 #endif
 
@@ -827,6 +827,9 @@ static_assert_no_msg(NDirectImportPrecode::Type != ThisPtrRetBufPrecode::Type);
 static_assert_no_msg(sizeof(Precode) <= sizeof(NDirectImportPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
+
+// check that the InterpreterPrecodeData fits into the StubPrecode
+static_assert_no_msg(sizeof(InterpreterPrecodeData) <= sizeof(StubPrecode));
 
 #ifndef DACCESS_COMPILE
 // A summary of the precode layout for diagnostic purposes
