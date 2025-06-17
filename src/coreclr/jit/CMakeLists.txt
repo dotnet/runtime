@@ -144,6 +144,7 @@ set( JIT_SOURCES
   lir.cpp
   liveness.cpp
   loopcloning.cpp
+  lookupintrinsic.cpp
   lower.cpp
   lsra.cpp
   lsrabuild.cpp
