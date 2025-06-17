@@ -78,7 +78,6 @@ namespace ILCompiler.DependencyAnalysis
             DependencyList dependencies = _nonRelocationDependencies != null ? new DependencyList(_nonRelocationDependencies) : null;
 
             TypeDesc owningType = _method.OwningType;
-
             if (factory.PreinitializationManager.HasEagerStaticConstructor(owningType))
             {
                 dependencies ??= new DependencyList();

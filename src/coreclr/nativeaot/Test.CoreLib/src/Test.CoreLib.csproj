@@ -209,6 +209,9 @@
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\Unsafe.cs">
       <Link>System\Runtime\CompilerServices\Unsafe.cs</Link>
     </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Runtime\InteropServices\IDynamicInterfaceCastable.cs">
+      <Link>System\Runtime\InteropServices\IDynamicInterfaceCastable.cs</Link>
+    </Compile>
     <Compile Include="Internal\Runtime\IDynamicInterfaceCastableSupport.cs" />
     <Compile Include="Internal\Runtime\MethodTable.Runtime.cs" />
     <Compile Include="System\Runtime\CompilerServices\CastCache.cs" />

@@ -1468,15 +1468,15 @@ namespace ILCompiler.DependencyAnalysis
         /// Returns alternative symbol name that object writer should produce for given symbols
         /// in addition to the regular one.
         /// </summary>
-        public string GetSymbolAlternateName(ISymbolNode node, out bool hidden)
+        public string GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
         {
             if (!NodeAliases.TryGetValue(node, out var value))
             {
-                hidden = false;
+                isHidden = false;
                 return null;
             }
 
-            hidden = value.Hidden;
+            isHidden = value.Hidden;
             return value.Name;
         }
 

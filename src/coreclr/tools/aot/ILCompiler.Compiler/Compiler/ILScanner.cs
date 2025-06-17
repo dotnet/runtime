@@ -515,16 +515,6 @@ namespace ILCompiler
                                     {
                                         RecordImplementation(baseInterface, type);
                                     }
-
-                                    if (factory.TypeSystemContext.IsIDynamicInterfaceCastableInterface(baseInterface))
-                                    {
-                                        // We've seen a type that implements IDynamicInterfaceCastable.
-                                        // This means that we might not be able to see all interface implementations statically.
-                                        // We can't analyze what the IDynamicInterfaceCastable implementation does,
-                                        // so we have to assume it can implement any interface
-                                        // (that has a DynamicInterfaceCastableImplementation-attributed derived type).
-                                        _canHaveDynamicInterfaceImplementations = true;
-                                    }
                                 }
 
                                 // Record all base types of this class
@@ -628,6 +618,8 @@ namespace ILCompiler
                                         _overriddenMethods.Add(baseVtable[i].GetCanonMethodTarget(CanonicalFormKind.Specific));
                                 }
                             }
+
+                            _canHaveDynamicInterfaceImplementations |= type.IsIDynamicInterfaceCastable;
                         }
                     }
                 }
@@ -792,7 +784,7 @@ namespace ILCompiler
                 return null;
             }
 
-            public override bool CanHaveDynamicInterfaceImplementations() => _canHaveDynamicInterfaceImplementations;
+            public override bool CanHaveDynamicInterfaceImplementations(TypeDesc type) => base.CanHaveDynamicInterfaceImplementations(type) && _canHaveDynamicInterfaceImplementations;
         }
 
         private sealed class ScannedInliningPolicy : IInliningPolicy

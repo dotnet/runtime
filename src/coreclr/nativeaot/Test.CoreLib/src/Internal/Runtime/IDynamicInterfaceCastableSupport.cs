@@ -8,13 +8,6 @@ namespace Internal.Runtime
 {
     internal static unsafe class IDynamicCastableSupport
     {
-        [RuntimeExport("IDynamicCastableIsInterfaceImplemented")]
-        internal static bool IDynamicCastableIsInterfaceImplemented(object instance, MethodTable* interfaceType, bool throwIfNotImplemented)
-        {
-            return false;
-        }
-
-        [RuntimeExport("IDynamicCastableGetInterfaceImplementation")]
         internal static IntPtr IDynamicCastableGetInterfaceImplementation(object instance, MethodTable* interfaceType, ushort slot)
         {
             RuntimeImports.RhpFallbackFailFast();
