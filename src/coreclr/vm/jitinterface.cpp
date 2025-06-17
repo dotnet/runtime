@@ -6572,8 +6572,7 @@ void CEEInfo::setMethodAttribs (
         ftn->SetNotInline(true);
     }
 
-    if (attribs & (CORINFO_FLG_SWITCHED_TO_OPTIMIZED | CORINFO_FLG_SWITCHED_TO_MIN_OPT
-     ))
+    if (attribs & (CORINFO_FLG_SWITCHED_TO_OPTIMIZED | CORINFO_FLG_SWITCHED_TO_MIN_OPT))
     {
         PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
         if (config != nullptr)
