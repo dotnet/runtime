@@ -17,6 +17,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         private StringWriter _stdOutCapture;
         private StringWriter _stdErrCapture;
 
+        private bool _disableDumps = false;
         private bool _running = false;
 
         public Process Process { get; }
@@ -133,6 +134,14 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return false;
         }
 
+        public Command DisableDumps()
+        {
+            _disableDumps = true;
+            RemoveEnvironmentVariable("COMPlus_DbgEnableMiniDump");
+            RemoveEnvironmentVariable("DOTNET_DbgEnableMiniDump");
+            return this;
+        }
+
         public Command Environment(IDictionary<string, string> env)
         {
             if (env == null)
@@ -157,6 +166,22 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         {
             ThrowIfRunning();
             _running = true;
+
+            if (_disableDumps && (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()))
+            {
+                // Replace double quoted arguments with single quotes.
+                // We only want to replace non-escaped quotes - that is, ones not preceded by a backslash
+                // or preceded by an even number of backslashes.
+                string args = System.Text.RegularExpressions.Regex.Replace(
+                    Process.StartInfo.Arguments,
+                    @"((?:^|[^\\])(?:\\\\)*)""",
+                    m => m.Value.Substring(0, m.Value.Length - 1) + "'"
+                );
+
+                // Explicitly set the core file size to 0 before launching the process in the same shell
+                Process.StartInfo.Arguments = $"-c \"ulimit -c 0 && exec {Process.StartInfo.FileName} {args}\"";
+                Process.StartInfo.FileName = "/bin/bash";
+            }
 
             if (Process.StartInfo.RedirectStandardOutput)
             {
