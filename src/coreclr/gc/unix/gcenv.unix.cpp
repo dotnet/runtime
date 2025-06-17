@@ -244,6 +244,7 @@ bool GCToOSInterface::Initialize()
         // Verify that the s_helperPage is really aligned to the g_SystemInfo.dwPageSize
         assert((((size_t)g_helperPage) & (OS_PAGE_SIZE - 1)) == 0);
 
+#ifndef TARGET_BROWSER
         // Locking the page ensures that it stays in memory during the two mprotect
         // calls in the FlushProcessWriteBuffers below. If the page was unmapped between
         // those calls, they would not have the expected effect of generating IPI.
@@ -253,6 +254,9 @@ bool GCToOSInterface::Initialize()
         {
             return false;
         }
+#else
+        int status;
+#endif // !TARGET_BROWSER
 
         status = pthread_mutex_init(&g_flushProcessWriteBuffersMutex, NULL);
         if (status != 0)
@@ -576,7 +580,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
         }
 
         pRetVal = pAlignedRetVal;
-#ifdef MADV_DONTDUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_BROWSER)
         // Do not include reserved uncommitted memory in coredump.
         if (!committing)
         {
@@ -624,9 +628,13 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool newMemory)
 {
+#ifndef TARGET_BROWSER
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
+#else
+    bool success = true;
+#endif // !TARGET_BROWSER
 
-#ifdef MADV_DODUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_BROWSER)
     if (success && !newMemory)
     {
         // Include committed memory in coredump. New memory is included by default.
