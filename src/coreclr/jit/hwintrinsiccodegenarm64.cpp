@@ -2692,7 +2692,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op3Reg, /* canSkip */ true);
                 }
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
-                    break;
+                break;
 
             case NI_Sve2_BitwiseClearXor:
             case NI_Sve2_Xor:
