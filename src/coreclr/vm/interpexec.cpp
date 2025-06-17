@@ -1758,6 +1758,7 @@ CALL_INTERP_METHOD:
                     ip += 2;
                     break;
                 case INTOP_BOX:
+                case INTOP_BOX_PTR:
                 case INTOP_UNBOX:
                 case INTOP_UNBOX_ANY:
                 {
@@ -1767,10 +1768,14 @@ CALL_INTERP_METHOD:
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
                     HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod->pDataItems[ip[4]]);
 
-                    if (opcode == INTOP_BOX) {
+                    if (opcode == INTOP_BOX || opcode == INTOP_BOX_PTR) {
                         // internal static object Box(MethodTable* typeMT, ref byte unboxedData)
-                        void *unboxedData = LOCAL_VAR_ADDR(sreg, void);
-                        LOCAL_VAR(dreg, Object*) = (Object*)helper(pMT, unboxedData);
+                        void *unboxedData;
+                        if (opcode == INTOP_BOX)
+                            unboxedData = LOCAL_VAR_ADDR(sreg, void);
+                        else
+                            unboxedData = LOCAL_VAR(sreg, void*);
+                        LOCAL_VAR(dreg, OBJECTREF) = ObjectToOBJECTREF((Object*)helper(pMT, unboxedData));
                     } else {
                         // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
                         Object *src = LOCAL_VAR(sreg, Object*);

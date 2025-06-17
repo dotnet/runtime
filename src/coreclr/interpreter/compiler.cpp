@@ -581,11 +581,8 @@ bool InterpCompiler::CheckStackHelper(int n)
 void InterpCompiler::PushTypeExplicit(StackType stackType, CORINFO_CLASS_HANDLE clsHnd, int size)
 {
     EnsureStack(1);
-    m_pStackPointer->type = stackType;
-    m_pStackPointer->clsHnd = clsHnd;
-    m_pStackPointer->size = ALIGN_UP_TO(size, INTERP_STACK_SLOT_SIZE);
-    int var = CreateVarExplicit(g_interpTypeFromStackType[stackType], clsHnd, size);
-    m_pStackPointer->var = var;
+    int32_t var = CreateVarExplicit(g_interpTypeFromStackType[stackType], clsHnd, size);
+    new (m_pStackPointer) StackInfo(stackType, clsHnd, var);
     m_pStackPointer++;
 }
 
@@ -1288,9 +1285,8 @@ void InterpCompiler::EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp
     InterpInst *newInst = AddIns(convOp);
 
     newInst->SetSVar(sp->var);
-    new (sp) StackInfo(type);
     int32_t var = CreateVarExplicit(g_interpTypeFromStackType[type], NULL, INTERP_STACK_SLOT_SIZE);
-    sp->var = var;
+    new (sp) StackInfo(type, NULL, var);
     newInst->SetDVar(var);
 
     // NOTE: We rely on m_pLastNewIns == newInst upon return from this function. Make sure you preserve that if you change anything.
@@ -1708,10 +1704,7 @@ bool InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
             // Initialize the filter stack state. It initially contains the exception object.
             pFilterBB->stackHeight = 1;
             pFilterBB->pStackState = (StackInfo*)AllocMemPool(sizeof (StackInfo));
-            pFilterBB->pStackState[0].type = StackTypeO;
-            pFilterBB->pStackState[0].size = INTERP_STACK_SLOT_SIZE;
-            pFilterBB->pStackState[0].clsHnd = NULL;
-            pFilterBB->pStackState[0].var = pFilterBB->clauseVarIndex;
+            new (pFilterBB->pStackState) StackInfo(StackTypeO, NULL, pFilterBB->clauseVarIndex);
 
             // Find and mark all basic blocks that are part of the filter region.
             for (uint32_t j = clause.FilterOffset; j < clause.HandlerOffset; j++)
@@ -1740,10 +1733,7 @@ bool InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
             // Initialize the catch / filtered handler stack state. It initially contains the exception object.
             pCatchBB->stackHeight = 1;
             pCatchBB->pStackState = (StackInfo*)AllocMemPool(sizeof (StackInfo));
-            pCatchBB->pStackState[0].type = StackTypeO;
-            pCatchBB->pStackState[0].size = INTERP_STACK_SLOT_SIZE;
-            pCatchBB->pStackState[0].var = pCatchBB->clauseVarIndex;
-            pCatchBB->pStackState[0].clsHnd = NULL;
+            new (pCatchBB->pStackState) StackInfo(StackTypeO, NULL, pCatchBB->clauseVarIndex);
         }
     }
 
@@ -2315,7 +2305,7 @@ int InterpCompiler::EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &e
     return resultVar;
 }
 
-void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall, bool newObj, bool isCalli)
+void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
     bool isVirtual = (*m_ip == CEE_CALLVIRT);
@@ -2345,18 +2335,37 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
     }
     else
     {
-
         ResolveToken(token, newObj ? CORINFO_TOKENKIND_NewObj : CORINFO_TOKENKIND_Method, &resolvedCallToken);
-        
+
         CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
         if (isVirtual)
         flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
-        m_compHnd->getCallInfo(&resolvedCallToken, constrainedClass, m_methodInfo->ftn, flags, &callInfo);
+        m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
         if (EmitCallIntrinsics(callInfo.hMethod, callInfo.sig))
         {
             m_ip += 5;
             return;
+        }
+
+        if (callInfo.thisTransform != CORINFO_NO_THIS_TRANSFORM)
+        {
+            assert(pConstrainedToken != NULL);
+            StackInfo *pThisStackInfo = m_pStackPointer - callInfo.sig.numArgs - 1;
+            if (callInfo.thisTransform == CORINFO_BOX_THIS)
+            {
+                EmitBox(pThisStackInfo, pConstrainedToken->hClass, true);
+            }
+            else
+            {
+                assert(callInfo.thisTransform == CORINFO_DEREF_THIS);
+                AddIns(INTOP_LDIND_I);
+                m_pLastNewIns->SetSVar(pThisStackInfo->var);
+                m_pLastNewIns->data[0] = 0;
+                int32_t var = CreateVarExplicit(InterpTypeO, pConstrainedToken->hClass, INTERP_STACK_SLOT_SIZE);
+                new (pThisStackInfo) StackInfo(StackTypeO, pConstrainedToken->hClass, var);
+                m_pLastNewIns->SetDVar(pThisStackInfo->var);
+            }
         }
     }
 
@@ -2889,12 +2898,27 @@ void InterpCompiler::EmitLdLocA(int32_t var)
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
 
+void InterpCompiler::EmitBox(StackInfo* pStackInfo, CORINFO_CLASS_HANDLE clsHnd, bool argByRef)
+{
+    CORINFO_CLASS_HANDLE boxedClsHnd = m_compHnd->getTypeForBox(clsHnd);
+    CorInfoHelpFunc helpFunc = m_compHnd->getBoxHelper(clsHnd);
+    AddIns(argByRef ? INTOP_BOX_PTR : INTOP_BOX);
+    m_pLastNewIns->SetSVar(pStackInfo->var);
+
+    int32_t var = CreateVarExplicit(InterpTypeO, boxedClsHnd, INTERP_STACK_SLOT_SIZE);
+    new (pStackInfo) StackInfo(StackTypeO, boxedClsHnd, var);
+
+    m_pLastNewIns->SetDVar(pStackInfo->var);
+    m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
+    m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
+}
+
 int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 {
     bool readonly = false;
     bool tailcall = false;
     bool volatile_ = false;
-    CORINFO_RESOLVED_TOKEN* constrainedClass = NULL;
+    CORINFO_RESOLVED_TOKEN* pConstrainedToken = NULL;
     CORINFO_RESOLVED_TOKEN constrainedToken;
     uint8_t *codeEnd;
     int numArgs = m_methodInfo->args.hasThis() + m_methodInfo->args.numArgs;
@@ -4057,21 +4081,21 @@ retry_emit:
                 break;
             case CEE_CALLVIRT:
             case CEE_CALL:
-                EmitCall(constrainedClass, readonly, tailcall, false /*newObj*/, false /*isCalli*/);
-                constrainedClass = NULL;
+                EmitCall(pConstrainedToken, readonly, tailcall, false /*newObj*/, false /*isCalli*/);
+                pConstrainedToken = NULL;
                 readonly = false;
                 tailcall = false;
                 break;
             case CEE_CALLI:
-                EmitCall(NULL /*constrainedClass*/, false /* readonly*/, false /* tailcall*/, false /*newObj*/, true /*isCalli*/);
-                constrainedClass = NULL;
+                EmitCall(NULL /*pConstrainedToken*/, false /* readonly*/, false /* tailcall*/, false /*newObj*/, true /*isCalli*/);
+                pConstrainedToken = NULL;
                 readonly = false;
                 tailcall = false;
                 break;
             case CEE_NEWOBJ:
             {
-                EmitCall(NULL /*constrainedClass*/, false /* readonly*/, false /* tailcall*/, true /*newObj*/, false /*isCalli*/);
-                constrainedClass = NULL;
+                EmitCall(NULL /*pConstrainedToken*/, false /* readonly*/, false /* tailcall*/, true /*newObj*/, false /*isCalli*/);
+                pConstrainedToken = NULL;
                 readonly = false;
                 tailcall = false;
                 break;
@@ -4448,12 +4472,9 @@ retry_emit:
                     {
                         uint32_t token = getU4LittleEndian(m_ip + 1);
 
-                        constrainedToken.tokenScope = m_compScopeHnd;
-                        constrainedToken.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
-                        constrainedToken.token = token;
-                        constrainedToken.tokenType = CORINFO_TOKENKIND_Constrained;
-                        m_compHnd->resolveToken(&constrainedToken);
-                        constrainedClass = &constrainedToken;
+                        ResolveToken(token, CORINFO_TOKENKIND_Constrained, &constrainedToken);
+
+                        pConstrainedToken = &constrainedToken;
                         m_ip += 5;
                         break;
                     }
@@ -4546,8 +4567,8 @@ retry_emit:
                         ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
 
                         CORINFO_CALL_INFO callInfo;
-                        m_compHnd->getCallInfo(&resolvedToken, constrainedClass, m_methodInfo->ftn, (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS| CORINFO_CALLINFO_LDFTN), &callInfo);
-                        constrainedClass = NULL;
+                        m_compHnd->getCallInfo(&resolvedToken, pConstrainedToken, m_methodInfo->ftn, (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS| CORINFO_CALLINFO_LDFTN), &callInfo);
+                        pConstrainedToken = NULL;
 
                         if (callInfo.kind == CORINFO_CALL)
                         {
@@ -4650,17 +4671,11 @@ retry_emit:
 
             case CEE_BOX:
             {
+                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
                 CHECK_STACK(1);
                 m_pStackPointer -= 1;
-                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
-                CORINFO_CLASS_HANDLE boxedClsHnd = m_compHnd->getTypeForBox(clsHnd);
-                CorInfoHelpFunc helpFunc = m_compHnd->getBoxHelper(clsHnd);
-                AddIns(INTOP_BOX);
-                m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
-                PushStackType(StackTypeO, boxedClsHnd);
-                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-                m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
-                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
+                EmitBox(m_pStackPointer, clsHnd, false);
+                m_pStackPointer++;
                 m_ip += 5;
                 break;
             }
