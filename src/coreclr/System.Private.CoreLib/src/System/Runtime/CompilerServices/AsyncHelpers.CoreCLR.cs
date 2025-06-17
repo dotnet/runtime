@@ -133,7 +133,7 @@ namespace System.Runtime.CompilerServices
         private static RuntimeAsyncAwaitState t_runtimeAsyncAwaitState;
 
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.Async)]
         [RequiresPreviewFeatures]
         private static void SwitchContext(SynchronizationContext context)
         {
@@ -551,15 +551,15 @@ namespace System.Runtime.CompilerServices
 
                 try
                 {
-                    if (resumptionContext != null)
+                    if (criticalNotifier != null)
+                    {
+                        criticalNotifier.UnsafeOnCompleted((Action)continuation);
+                    }
+                    else if (resumptionContext != null)
                     {
                         // Async method is requesting to be switched to a specific SynchronizationContext
                         // (because of finishing running an inlinee).
                         resumptionContext.Post(postCallback, callbackState);
-                    }
-                    else if (criticalNotifier != null)
-                    {
-                        criticalNotifier.UnsafeOnCompleted((Action)continuation);
                     }
                     else
                     {
