@@ -115,7 +115,7 @@ STDMETHODIMP CCeeGen::AllocateMethodBuffer(ULONG cchBuffer, UCHAR **lpBuffer, UL
     _ASSERTE(lpBuffer != NULL);
     _ASSERTE(RVA != NULL);
 
-    if (cchBufferRequest == 0)
+    if (cchBuffer == 0)
         return E_INVALIDARG;
 
     uint32_t const Alignment = sizeof(DWORD); // DWORD align
