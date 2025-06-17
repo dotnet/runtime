@@ -112,17 +112,13 @@ ErrExit:
 
 STDMETHODIMP CCeeGen::AllocateMethodBuffer(ULONG cchBuffer, UCHAR **lpBuffer, ULONG *RVA)
 {
-    HRESULT hr = S_OK;
+    _ASSERTE(lpBuffer != NULL);
+    _ASSERTE(RVA != NULL);
 
-    ULONG methodOffset = 0;
-
-    if (! cchBuffer)
-        IfFailGo(E_INVALIDARG);
-    if (! lpBuffer || ! RVA)
-        IfFailGo(E_POINTER);
+    if (cchBufferRequest == 0)
+        return E_INVALIDARG;
 
     uint32_t const Alignment = sizeof(DWORD); // DWORD align
-
     ULONG cchBufferRequest = cchBuffer;
 
     // Method offsets of 0 are special in ECMA-335 (See I.9.4 and II.22.26).
@@ -132,19 +128,18 @@ STDMETHODIMP CCeeGen::AllocateMethodBuffer(ULONG cchBuffer, UCHAR **lpBuffer, UL
     if (getIlSection().dataLen() == 0)
         cchBufferRequest += Alignment;
 
-    *lpBuffer = (UCHAR*) getIlSection().getBlock(cchBufferRequest, Alignment);
-    IfNullGo(*lpBuffer);
+    *lpBuffer = (UCHAR*)getIlSection().getBlock(cchBufferRequest, Alignment);
+    if (*lpBuffer == NULL)
+        return E_OUTOFMEMORY;
 
     // Compute the method offset after getting the block, not
     // before (since alignment might shift it up
     // for in-memory, just return address and will calc later.
-    methodOffset = getIlSection().dataLen() - cchBuffer;
+    ULONG methodOffset = getIlSection().dataLen() - cchBuffer;
     _ASSERTE(methodOffset != 0);
 
     *RVA = methodOffset;
-
-ErrExit:
-    return hr;
+    return S_OK;
 }
 
 STDMETHODIMP CCeeGen::GetMethodBuffer(ULONG RVA, UCHAR **lpBuffer)
