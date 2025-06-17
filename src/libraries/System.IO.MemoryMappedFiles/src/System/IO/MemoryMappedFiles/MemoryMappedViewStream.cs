@@ -29,6 +29,7 @@ namespace System.IO.MemoryMappedFiles
             throw new NotSupportedException(SR.NotSupported_MMViewStreamsFixedLength);
         }
 
+        public override int Read(Span<byte> buffer) => base.ReadCore(buffer);
 
         protected override void Dispose(bool disposing)
         {
