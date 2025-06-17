@@ -891,7 +891,8 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
 
     pNativeLayoutInfo->m_numFields = numTotalInstanceFields;
 
-    BYTE parentAlignmentRequirement = 0;
+    // If there's no parent, pretend that the parent alignment requirement is 1.
+    BYTE parentAlignmentRequirement = 1;
     if (pParentLayoutInfo != nullptr)
     {
         parentAlignmentRequirement = pParentLayoutInfo->GetLargestAlignmentRequirement();
@@ -917,7 +918,7 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
     }
 
     // Allow the packing size to require less alignment than the parent's alignment requirement.
-    BYTE initialAlignmentRequirement = max<BYTE>(1, min(packingSize, parentAlignmentRequirement));
+    BYTE initialAlignmentRequirement = min(packingSize, parentAlignmentRequirement);
 
     // The alignment of the native layout is the stricter of the initial alignment requirement or the alignment requirements of the fields.
     pNativeLayoutInfo->m_alignmentRequirement = max(initialAlignmentRequirement, fieldAlignmentRequirement);
