@@ -2868,7 +2868,7 @@ LPCWSTR AppDomain::GetFriendlyNameForDebugger()
         {
             // Gobble all exceptions.
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 
         if (!fSuccess)
         {
@@ -3286,8 +3286,9 @@ PEAssembly * AppDomain::BindAssemblySpec(
                 }
             }
         }
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 
     // Now, if it's a cacheable bind we need to re-fetch the result from the cache, as we may have been racing with another
     // thread to store our result.  Note that we may throw from here, if there is a cached exception.
@@ -3390,7 +3391,7 @@ void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 void AppDomain::OnUnhandledException(OBJECTREF* pThrowable)
@@ -3416,7 +3417,7 @@ void AppDomain::OnUnhandledException(OBJECTREF* pThrowable)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)  // Swallow any errors.
+    EX_END_CATCH  // Swallow any errors.
 }
 
 void AppDomain::RaiseExitProcessEvent()

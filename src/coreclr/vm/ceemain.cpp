@@ -1024,8 +1024,9 @@ ErrExit: ;
     EX_CATCH
     {
         hr = GET_EXCEPTION()->GetHR();
+        RethrowTerminalExceptionsWithInitCheck();
     }
-    EX_END_CATCH(RethrowTerminalExceptionsWithInitCheck)
+    EX_END_CATCH
 
     if (!g_fEEStarted) {
         if (g_fEEInit)
@@ -1182,7 +1183,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif
 
     if (!fIsDllUnloading)
@@ -1410,7 +1411,7 @@ part2:
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     ClrFlsClearThreadType(ThreadType_Shutdown);
     if (!IsAtProcessExit())
@@ -2022,7 +2023,7 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
     {
         hr=E_OUTOFMEMORY;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }

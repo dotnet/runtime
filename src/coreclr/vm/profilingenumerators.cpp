@@ -89,7 +89,7 @@ BOOL ProfilerFunctionEnum::Init(BOOL fWithReJITIDs)
     {
         result = FALSE;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return result;
 }

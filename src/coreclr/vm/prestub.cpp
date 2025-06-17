@@ -934,8 +934,9 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
             pEntry->m_hrResultCode = E_FAIL;
             EX_RETHROW;
         }
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions)
+    EX_END_CATCH
 
     if (pOtherCode != (PCODE)NULL)
     {
@@ -1958,7 +1959,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
             StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
             EX_RETHROW;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         {
             HardwareExceptionHolder;
@@ -3297,7 +3298,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         EX_CATCH
         {
         }
-        EX_END_CATCH (SwallowAllExceptions);
+        EX_END_CATCH
     }
     else
     {

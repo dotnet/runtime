@@ -211,7 +211,7 @@ void UnwindInfoTable::Register()
             iRangeStart, iRangeEnd);
         _ASSERTE(!"Failed to publish UnwindInfo (ignorable)");
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 /*****************************************************************************/
@@ -1754,7 +1754,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
         {
             LogJITInitializationError("LoadAndInitializeJIT: LoadAndInitializeJIT: caught an exception trying to initialize %s", utf8JitName);
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
     else
     {
@@ -1779,7 +1779,7 @@ static ICorJitCompiler* InitializeStaticJIT()
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return newJitCompiler;
 }
@@ -2614,7 +2614,7 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
         pHp = NULL;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (pHp == NULL)
     {
@@ -3338,7 +3338,7 @@ void EECodeGenManager::RemoveJitData(RemoveJitDataArg const& arg)
             MethodDesc* pMD = arg.GetMethodDesc();
             LOG((LF_JIT, LL_ERROR, "Failed to delay RemoveJitData for method, %s::%s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 }
 

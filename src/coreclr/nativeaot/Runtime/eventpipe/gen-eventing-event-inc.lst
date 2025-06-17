@@ -21,6 +21,8 @@ Contention
 ContentionLockCreated
 ContentionStart_V2
 ContentionStop_V1
+DCEndComplete_V1
+DCEndInit_V1
 DecreaseMemoryPressure
 DestroyGCHandle
 ExceptionCatchStart
@@ -81,6 +83,7 @@ GenAwareBegin
 GenAwareEnd
 IncreaseMemoryPressure
 LockCreated
+ModuleDCEnd_V2
 ModuleLoad_V2
 PinObjectAtGCTime
 PinPlugAtGCTime

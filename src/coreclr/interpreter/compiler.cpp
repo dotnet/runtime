@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "gcinfoencoder.h"
 
-// HACK: debugreturn.h (included by gcinfoencoder.h) breaks constexpr
-#if defined(debug_instrumented_return) || defined(_DEBUGRETURN_H_)
-#undef return
-#endif // debug_instrumented_return
-
 #include "interpreter.h"
 #include "stackmap.h"
 
@@ -50,6 +45,14 @@ static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "
 void DECLSPEC_NORETURN Interp_NOMEM()
 {
     throw std::bad_alloc();
+}
+
+void AssertOpCodeNotImplemented(const uint8_t *ip, size_t offset)
+{
+    fprintf(stderr, "IL_%04x %-10s - opcode not supported yet\n",
+                (int32_t)(offset),
+                CEEOpName(CEEDecodeOpcode(&ip)));
+    assert(!"opcode not implemented");
 }
 
 // GCInfoEncoder needs an IAllocator implementation. This is a simple one that forwards to the Compiler.
@@ -2343,7 +2346,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
     else
     {
 
-        ResolveToken(token, newObj ? CORINFO_TOKENKIND_Method : CORINFO_TOKENKIND_NewObj, &resolvedCallToken);
+        ResolveToken(token, newObj ? CORINFO_TOKENKIND_NewObj : CORINFO_TOKENKIND_Method, &resolvedCallToken);
         
         CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
         if (isVirtual)
@@ -2357,7 +2360,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
         }
     }
 
-    if (callInfo.classFlags & CORINFO_FLG_VAROBJSIZE)
+    if (newObj && (callInfo.classFlags & CORINFO_FLG_VAROBJSIZE))
     {
         // This is a variable size object which means "System.String".
         // For these, we just call the resolved method directly, but don't actually pass a this pointer to it.
@@ -3972,8 +3975,24 @@ retry_emit:
                 EmitBinaryArithmeticOp(INTOP_ADD_I4);
                 m_ip++;
                 break;
+            case CEE_ADD_OVF:
+                EmitBinaryArithmeticOp(INTOP_ADD_OVF_I4);
+                m_ip++;
+                break;
+            case CEE_ADD_OVF_UN:
+                EmitBinaryArithmeticOp(INTOP_ADD_OVF_UN_I4);
+                m_ip++;
+                break;
             case CEE_SUB:
                 EmitBinaryArithmeticOp(INTOP_SUB_I4);
+                m_ip++;
+                break;
+            case CEE_SUB_OVF:
+                EmitBinaryArithmeticOp(INTOP_SUB_OVF_I4);
+                m_ip++;
+                break;
+            case CEE_SUB_OVF_UN:
+                EmitBinaryArithmeticOp(INTOP_SUB_OVF_UN_I4);
                 m_ip++;
                 break;
             case CEE_MUL:
@@ -4559,8 +4578,11 @@ retry_emit:
                         break;
                     }
                     default:
-                        assert(0);
+                    {
+                        const uint8_t *ip = m_ip - 1;
+                        AssertOpCodeNotImplemented(ip, ip - m_pILCode);
                         break;
+                    }
                 }
                 break;
 
@@ -5059,8 +5081,10 @@ retry_emit:
                 break;
             }
             default:
-                assert(0);
+            {
+                AssertOpCodeNotImplemented(m_ip, m_ip - m_pILCode);
                 break;
+            }
         }
     }
 
@@ -5084,6 +5108,7 @@ retry_emit:
 
     return CORJIT_OK;
 exit_bad_code:
+    assert(!m_hasInvalidCode);
     return CORJIT_BADCODE;
 }
 

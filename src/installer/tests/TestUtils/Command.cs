@@ -153,12 +153,12 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return this;
         }
 
-        public CommandResult Execute()
+        public CommandResult Execute([CallerMemberName] string caller = "")
         {
-            return Execute(false);
+            return Execute(false, caller);
         }
 
-        public Command Start()
+        public Command Start([CallerMemberName] string caller = "")
         {
             ThrowIfRunning();
             _running = true;
@@ -181,7 +181,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
             Process.EnableRaisingEvents = true;
 
-            ReportExecBegin();
+            ReportExec(caller);
 
             // Retry if we hit ETXTBSY due to Linux race
             // https://github.com/dotnet/runtime/issues/58964
@@ -214,12 +214,11 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         /// <summary>
         /// Wait for the command to exit and dispose of the underlying process.
         /// </summary>
-        /// <param name="expectedToFail">Whether or not the command is expected to fail (non-zero exit code)</param>
         /// <param name="timeoutMilliseconds">Time in milliseconds to wait for the command to exit</param>
         /// <returns>Result of the command</returns>
-        public CommandResult WaitForExit(bool expectedToFail, int timeoutMilliseconds = Timeout.Infinite)
+        public CommandResult WaitForExit(int timeoutMilliseconds = Timeout.Infinite, [CallerMemberName] string caller = "")
         {
-            ReportExecWaitOnExit();
+            ReportWaitOnExit(caller);
 
             int exitCode;
             if (!Process.WaitForExit(timeoutMilliseconds))
@@ -231,7 +230,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 exitCode = Process.ExitCode;
             }
 
-            ReportExecEnd(exitCode, expectedToFail);
+            ReportExit(exitCode, caller);
             int pid = Process.Id;
             Process.Dispose();
 
@@ -248,17 +247,17 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         /// </summary>
         /// <param name="expectedToFail">Whether or not the command is expected to fail (non-zero exit code)</param>
         /// <returns>Result of the command</returns>
-        public CommandResult Execute(bool expectedToFail)
+        public CommandResult Execute(bool expectedToFail, [CallerMemberName] string caller = "")
         {
             // Clear out any enabling of dump creation if failure is expected
             if (expectedToFail)
             {
-                EnvironmentVariable("COMPlus_DbgEnableMiniDump", null);
-                EnvironmentVariable("DOTNET_DbgEnableMiniDump", null);
+                RemoveEnvironmentVariable("COMPlus_DbgEnableMiniDump");
+                RemoveEnvironmentVariable("DOTNET_DbgEnableMiniDump");
             }
 
-            Start();
-            return WaitForExit(expectedToFail);
+            Start(caller);
+            return WaitForExit(caller: caller);
         }
 
         public Command WorkingDirectory(string projectDirectory)
@@ -303,18 +302,14 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return this;
         }
 
-        private string FormatProcessInfo(ProcessStartInfo info, bool includeWorkingDirectory)
+        private string FormatProcessInfo(ProcessStartInfo info)
         {
-            string prefix = includeWorkingDirectory ?
-                $"{info.WorkingDirectory}> {info.FileName}" :
-                info.FileName;
-
             if (string.IsNullOrWhiteSpace(info.Arguments))
             {
-                return prefix;
+                return info.FileName;
             }
 
-            return prefix + " " + info.Arguments;
+            return $"{info.FileName} {info.Arguments}";
         }
 
         private static DateTime _initialTime = DateTime.Now;
@@ -325,24 +320,33 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return (DateTime.Now - _initialTime).ToString(TimeSpanFormat);
         }
 
-        private void ReportExecBegin()
+        private void ReportExec(string testName)
         {
-            string message = FormatProcessInfo(Process.StartInfo, includeWorkingDirectory: false);
-            Console.WriteLine($"[EXEC >] [....] [{GetFormattedTime()}] {message}");
+            Console.WriteLine(
+                $"""
+                [EXEC] [{GetFormattedTime()}] [{testName}]
+                       {FormatProcessInfo(Process.StartInfo)}
+                """);
+
         }
 
-        private void ReportExecWaitOnExit()
+        private void ReportWaitOnExit(string testName)
         {
-            string message = $"Waiting for process {Process.Id} to exit...";
-            Console.WriteLine($"[EXEC -] [....] [{GetFormattedTime()}] {message}");
+            Console.WriteLine(
+                $"""
+                [WAIT] [{GetFormattedTime()}] [{testName}]
+                       PID: {Process.Id} - {FormatProcessInfo(Process.StartInfo)}
+                """);
+
         }
 
-        private void ReportExecEnd(int exitCode, bool fExpectedToFail)
+        private void ReportExit(int exitCode, string testName)
         {
-            bool success = fExpectedToFail ? exitCode != 0 : exitCode == 0;
-            var status = success ? " OK " : "FAIL";
-            var message = $"{FormatProcessInfo(Process.StartInfo, includeWorkingDirectory: !success)} exited with {exitCode}. Expected: {(fExpectedToFail ? "non-zero" : "0")}";
-            Console.WriteLine($"[EXEC <] [{status}] [{GetFormattedTime()}] {message}");
+            Console.WriteLine(
+                $"""
+                [EXIT] [{GetFormattedTime()}] [{testName}]
+                       PID: {Process.Id} - Exit code: 0x{exitCode:x} - {FormatProcessInfo(Process.StartInfo)}
+                """);
         }
 
         private void ThrowIfRunning([CallerMemberName] string memberName = null)
