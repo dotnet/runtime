@@ -5061,7 +5061,7 @@ void CEEInfo::getCallInfo(
             }
         }
 #endif
-        else  if (constrainedType.IsValueType())
+        else  if (constrainedType.IsValueType() && !fIsStaticVirtualMethod)
         {
             pResult->thisTransform = CORINFO_BOX_THIS;
         }
