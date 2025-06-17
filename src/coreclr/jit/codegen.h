@@ -561,6 +561,7 @@ protected:
 #if defined(TARGET_XARCH)
     unsigned genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs);
 #ifdef TARGET_AMD64
+    void genPushCalleeSavedRegistersFromMaskAPX(regMaskTP rsPushRegs);
     unsigned genPopCalleeSavedRegistersFromMaskAPX(regMaskTP rsPopRegs);
 #endif // TARGET_AMD64
 #endif // !defined(TARGET_XARCH)

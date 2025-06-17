@@ -3783,6 +3783,17 @@ const IS_INFO emitter::emitGetSchedInfo(insFormat insFmt)
     return IS_NONE;
 }
 
+//------------------------------------------------------------------------
+// HasApxPpx: Check if the instruction has PPX feature support.
+// This helps differentiate between _idApxPpxContext and _idNoApxEvexXPromotion
+// since we use the same bit to indicate both features.
+//
+// Arguments:
+//    ins - instruction for which to check PPX support
+//
+// Return Value:
+//    true if the instruction has PPX support, false otherwise.
+//
 bool emitter::HasApxPpx(instruction ins)
 {
     switch (ins)

@@ -10318,62 +10318,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 #ifdef TARGET_AMD64
     if (compiler->canUseApxEncoding() && compiler->canUseEvexEncoding() && JitConfig.EnableApxPPX())
     {
-        // This is not a funclet or an On-Stack Replacement.
-        assert((compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT) && !compiler->opts.IsOSR());
-        // PUSH2 doesn't work for ESP.
-        assert((rsPushRegs & RBM_SPBASE) == 0);
-        // We need to align the stack to 16 bytes to use push2/pop2.
-        // The ABI requirement is that the stack must be 16B aligned at the point of a function call.
-        // As soon as the CALL is executed, the stack is no longer 16B aligned.
-        // To use PP2, the stack needs to be pre-aligned
-        // If isFramePointerUsed() is true, we have already pushed the frame pointer and stack is aligned.
-        // Else, We need to issue a single push to align the stack.
-        if (!isFramePointerUsed() && (rsPushRegs != RBM_NONE))
-        {
-            if ((rsPushRegs & RBM_FPBASE) != 0)
-            {
-                GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, REG_EBP, INS_OPTS_APX_ppx);
-                compiler->unwindPush(REG_EBP);
-                rsPushRegs &= ~RBM_FPBASE;
-            }
-            else
-            {
-                regNumber alignReg = genFirstRegNumFromMaskAndToggle(rsPushRegs);
-                GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, alignReg, INS_OPTS_APX_ppx);
-                compiler->unwindPush(alignReg);
-            }
-        }
-
-        // Push backwards so we match the order we will pop them in the epilog
-        // and all the other code that expects it to be in this order.
-        // All registers to be saved as pushed to an ArrayStack
-        ArrayStack<regNumber> regStack(compiler->getAllocator(CMK_Codegen));
-        while (rsPushRegs != RBM_NONE)
-        {
-            regNumber reg = genFirstRegNumFromMaskAndToggle(rsPushRegs);
-            regStack.Push(reg);
-        }
-
-        // We need to push the registers in pairs.
-        // In cases where we have an odd number of registers, we need to push the last one
-        // separately at the end to maintain alignment for push2.
-        while (regStack.Height() > 1)
-        {
-            regNumber reg1 = regStack.Pop();
-            regNumber reg2 = regStack.Pop();
-
-            GetEmitter()->emitIns_R_R(INS_push2, EA_PTRSIZE, reg1, reg2,
-                                      (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
-            compiler->unwindPush2(reg1, reg2);
-        }
-
-        if (regStack.Height() == 1)
-        {
-            regNumber reg = regStack.Pop();
-            GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, reg, INS_OPTS_APX_ppx);
-            compiler->unwindPush(reg);
-        }
-        assert(regStack.Height() == 0);
+        genPushCalleeSavedRegistersFromMaskAPX(rsPushRegs);
         return;
     }
 #endif // TARGET_AMD64
@@ -10392,6 +10337,78 @@ void CodeGen::genPushCalleeSavedRegisters()
         }
     }
 }
+
+#if defined(TARGET_AMD64)
+//------------------------------------------------------------------------
+// genPushCalleeSavedRegistersFromMaskAPX: push specified set of callee saves
+//   in the "standard" order using Push2 when possible
+//
+// Arguments:
+//     rsPushRegs        - register mask of registers to push
+//
+// Return Value:
+//     The number of registers popped.
+//
+void CodeGen::genPushCalleeSavedRegistersFromMaskAPX(regMaskTP rsPushRegs)
+{
+    // This is not a funclet or an On-Stack Replacement.
+    assert((compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT) && !compiler->opts.IsOSR());
+    // PUSH2 doesn't work for ESP.
+    assert((rsPushRegs & RBM_SPBASE) == 0);
+    // We need to align the stack to 16 bytes to use push2/pop2.
+    // The ABI requirement is that the stack must be 16B aligned at the point of a function call.
+    // As soon as the CALL is executed, the stack is no longer 16B aligned.
+    // To use PP2, the stack needs to be pre-aligned
+    // If isFramePointerUsed() is true, we have already pushed the frame pointer and stack is aligned.
+    // Else, We need to issue a single push to align the stack.
+    if (!isFramePointerUsed() && (rsPushRegs != RBM_NONE))
+    {
+        if ((rsPushRegs & RBM_FPBASE) != 0)
+        {
+            GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, REG_EBP, INS_OPTS_APX_ppx);
+            compiler->unwindPush(REG_EBP);
+            rsPushRegs &= ~RBM_FPBASE;
+        }
+        else
+        {
+            regNumber alignReg = genFirstRegNumFromMaskAndToggle(rsPushRegs);
+            GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, alignReg, INS_OPTS_APX_ppx);
+            compiler->unwindPush(alignReg);
+        }
+    }
+
+    // Push backwards so we match the order we will pop them in the epilog
+    // and all the other code that expects it to be in this order.
+    // All registers to be saved as pushed to an ArrayStack
+    ArrayStack<regNumber> regStack(compiler->getAllocator(CMK_Codegen));
+    while (rsPushRegs != RBM_NONE)
+    {
+        regNumber reg = genFirstRegNumFromMaskAndToggle(rsPushRegs);
+        regStack.Push(reg);
+    }
+
+    // We need to push the registers in pairs.
+    // In cases where we have an odd number of registers, we need to push the last one
+    // separately at the end to maintain alignment for push2.
+    while (regStack.Height() > 1)
+    {
+        regNumber reg1 = regStack.Pop();
+        regNumber reg2 = regStack.Pop();
+
+        GetEmitter()->emitIns_R_R(INS_push2, EA_PTRSIZE, reg1, reg2,
+                                    (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
+        compiler->unwindPush2(reg1, reg2);
+    }
+
+    if (regStack.Height() == 1)
+    {
+        regNumber reg = regStack.Pop();
+        GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, reg, INS_OPTS_APX_ppx);
+        compiler->unwindPush(reg);
+    }
+    assert(regStack.Height() == 0);
+}
+#endif // TARGET_AMD64
 
 void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {

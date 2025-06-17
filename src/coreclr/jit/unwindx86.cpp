@@ -50,10 +50,6 @@ void Compiler::unwindPush(regNumber reg)
 {
 }
 
-void Compiler::unwindPush2(regNumber reg1, regNumber reg2)
-{
-}
-
 void Compiler::unwindAllocStack(unsigned size)
 {
 }

@@ -584,10 +584,6 @@ void SetApxPpxIfNeeded(instrDesc* id, insOpts instOptions)
         assert(HasApxPpx(id->idIns()));
         id->idSetApxPpxContext();
     }
-    else
-    {
-        assert((instOptions & INS_OPTS_APX_ppx_MASK) == 0);
-    }
 }
 
 //------------------------------------------------------------------------

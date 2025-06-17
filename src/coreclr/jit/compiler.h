@@ -8805,7 +8805,9 @@ public:
     //
 
     void unwindPush(regNumber reg);
+#if defined(TARGET_AMD64)
     void unwindPush2(regNumber reg1, regNumber reg2);
+#endif // TARGET_AMD64
     void unwindAllocStack(unsigned size);
     void unwindSetFrameReg(regNumber reg, unsigned offset);
     void unwindSaveReg(regNumber reg, unsigned offset);
