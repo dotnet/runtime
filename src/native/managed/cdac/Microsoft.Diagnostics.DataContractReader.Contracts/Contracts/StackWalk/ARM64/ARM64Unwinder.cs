@@ -21,10 +21,8 @@ internal class ARM64Unwinder(Target target)
         if (_eman.GetCodeBlockHandle(context.InstructionPointer.Value) is not CodeBlockHandle cbh)
             return false;
 
-        TargetPointer controlPC = context.InstructionPointer;
-
         TargetPointer imageBase = _eman.GetUnwindInfoBaseAddress(cbh);
-        Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh, controlPC.Value));
+        Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh));
 
         ulong startingPc = context.Pc;
         ulong startingSp = context.Sp;
