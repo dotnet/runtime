@@ -1227,7 +1227,7 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
                 if ((call->gtArgs.CountUserArgs() == 1) && call->gtArgs.GetUserArgByIndex(0)->GetNode()->IsCnsIntOrI())
                 {
                     allocType = OAT_NEWARR_R2R;
-                    JITDUMP("Checking if we can stack allocate array [%06u])\n", comp->dspTreeID(call));
+                    JITDUMP("Checking if we can stack allocate array [%06u]\n", comp->dspTreeID(call));
                 }
                 else
                 {
@@ -1474,6 +1474,30 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
     {
         // reason set by the call
         return false;
+    }
+
+    // Under R2R, for array allocations that would require handle embedding, check if the embedding will succeed.
+    // We'd rather have an R2R method with a helper call than fail and end up jitting at Tier0 and allocating anyways.
+    //
+    if (m_isR2R && (data->AsCall()->GetHelperNum() == CORINFO_HELP_READYTORUN_NEWARR_1))
+    {
+        struct Param
+        {
+            Compiler*            comp;
+            CORINFO_CLASS_HANDLE clsHnd;
+        };
+
+        Param      param    = {comp, clsHnd};
+        bool const canEmbed = comp->eeRunWithErrorTrap<Param>(
+            [](Param* p) {
+            p->comp->info.compCompHnd->embedClassHandle(p->clsHnd);
+        },
+            &param);
+        if (!canEmbed)
+        {
+            candidate.m_onHeapReason = "[cannot embed class handle]";
+            return false;
+        }
     }
 
     JITDUMP("Allocating V%02u on the stack\n", candidate.m_lclNum);
