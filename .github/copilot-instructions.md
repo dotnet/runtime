@@ -1,8 +1,13 @@
-Important: **Ensure the code compiles and the tests pass.** Use the "Building & Testing in dotnet/runtime" instructions below.
+**Any code you commit SHOULD compile, and new and existing tests related to the change SHOULD pass.**
 
-Additionally,
+You MUST make your best effort to ensure your changes satisfy those criteria before committing. If for any reason you were unable to build or test the changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
 
-- Follow all code-formatting and naming conventions defined in `./.editorconfig`.
+You MUST refer to the [Building & Testing in dotnet/runtime](#building--testing-in-dotnetruntime) instructions and use the commands and approaches specified there before attempting your own suggestions.
+
+You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
+
+In addition to the rules enforced by `.editorconfig`, you SHOULD:
+
 - Prefer file-scoped namespace declarations and single-line using directives.
 - Ensure that the final return statement of a method is on its own line.
 - Use pattern matching and switch expressions wherever possible.
@@ -16,6 +21,22 @@ Additionally,
 ---
 
 # Building & Testing in dotnet/runtime
+
+- [1. Prerequisites](#1-prerequisites)
+    - [1.1. Determine Affected Components](#11-determine-affected-components)
+    - [1.2. Baseline Setup](#12-baseline-setup)
+- [2. Iterative Build and Test Strategy](#2-iterative-build-and-test-strategy)
+    - [2.1. Success Criteria](#21-success-criteria)
+- [3. CoreCLR (CLR) Workflow](#3-coreclr-clr-workflow)
+- [4. Mono Runtime Workflow](#4-mono-runtime-workflow)
+- [5. Libraries Workflow](#5-libraries-workflow)
+    - [5.1. How To: Identify Affected Libraries](#51-how-to-identify-affected-libraries)
+    - [5.2. How To: Build and Test Specific Library](#52-how-to-build-and-test-specific-library)
+- [6. WebAssembly (WASM) Libraries Workflow](#6-webassembly-wasm-libraries-workflow)
+- [7. Additional Notes](#7-additional-notes)
+    - [7.1. Troubleshooting](#71-troubleshooting)
+    - [7.2. Windows Command Equivalents](#72-windows-command-equivalents)
+    - [7.3. References](#73-references)
 
 ## 1. Prerequisites
 
@@ -42,7 +63,7 @@ A change is considered WASM/WASI-relevant if:
 
 ### 1.2. Baseline Setup
 
-Ensure you have a full successful build of the needed runtime+libraries as a baseline.
+Before applying any changes, ensure you have a full successful build of the needed runtime+libraries as a baseline.
 
 1. Checkout `main` branch
 
@@ -53,7 +74,7 @@ Ensure you have a full successful build of the needed runtime+libraries as a bas
     - **WASM/WASI Libraries:** `./build.sh mono+libs -os browser`
 
 3. Verify the build completed without error.
-    - _If the build failed, report the failure and don't proceed with the changes._
+    - _If the baseline build failed, report the failure and don't proceed with the changes._
 
 4. From the repository root:
     - Configure PATH: `export PATH="$(pwd)/.dotnet:$PATH"`
@@ -106,14 +127,14 @@ When retrying, attempt different fixes and adjust based on the build/test result
 From the repository root:
 
 - Build:
-  `./build.sh -subset clr`
+  `./build.sh clr`
 
 - Run tests:
   `cd src/tests && ./build.sh && ./run.sh`
 
-- More info:
-    - [Building CoreCLR Guide](https://github.com/dotnet/runtime/blob/main/docs/workflow/building/coreclr/README.md)
-    - [Building and Running CoreCLR Tests](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/coreclr/testing.md)
+- More info can be found in the dedicated workflow docs:
+    - [Building CoreCLR Guide](/docs/workflow/building/coreclr/README.md)
+    - [Building and Running CoreCLR Tests](/docs/workflow/testing/coreclr/testing.md)
 
 ---
 
@@ -122,7 +143,7 @@ From the repository root:
 From the repository root:
 
 - Build:
-  `./build.sh -subset mono+libs`
+  `./build.sh mono+libs`
 
 - Run tests:
 
@@ -133,9 +154,9 @@ From the repository root:
   ./run.sh
   ```
 
-- More info:
-    - [Building Mono](https://github.com/dotnet/runtime/blob/main/docs/workflow/building/mono/README.md)
-    - [Running test suites using Mono](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/mono/testing.md)
+- More info can be found in the dedicated workflow docs:
+    - [Building Mono](/docs/workflow/building/mono/README.md)
+    - [Running test suites using Mono](/docs/workflow/testing/mono/testing.md)
 
 ---
 
@@ -143,15 +164,21 @@ From the repository root:
 
 From the repository root:
 
-- Build:
-  `./build.sh -subset libs -rc release`
+- Build all libraries:
+  `./build.sh libs -rc release`
 
-- Run tests:
-  `./build.sh -subset libs.tests -test -rc release`
+- Run all tests for libraries:
+  `./build.sh libs.tests -test -rc release`
 
-- More info:
-    - [Build Libraries](https://github.com/dotnet/runtime/blob/main/docs/workflow/building/libraries/README.md)
-    - [Testing Libraries](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/libraries/testing.md)
+- Build a specific library:
+    - Refer to the section [5.2. How To: Build and Test Specific Library](#52-how-to-build-and-test-specific-library) below.
+
+- Test a specific library:
+    - Refer to the sections [5.1. How To: Identify Affected Libraries](#51-how-to-identify-affected-libraries) and [5.2. How To: Build and Test Specific Library](#52-how-to-build-and-test-specific-library) below.
+
+- More info can be found in the dedicated workflow docs:
+    - [Build Libraries](/docs/workflow/building/libraries/README.md)
+    - [Testing Libraries](/docs/workflow/testing/libraries/testing.md)
 
 ### 5.1. How To: Identify Affected Libraries
 
@@ -202,9 +229,9 @@ From the repository root:
 - Run tests:
   `./build.sh libs.tests -test -os browser`
 
-- More info:
-    - [Build libraries for WebAssembly](https://github.com/dotnet/runtime/blob/main/docs/workflow/building/libraries/webassembly-instructions.md)
-    - [Testing Libraries on WebAssembly](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/libraries/testing-wasm.md)
+- More info can be found in the dedicated workflow docs:
+    - [Build libraries for WebAssembly](/docs/workflow/building/libraries/webassembly-instructions.md)
+    - [Testing Libraries on WebAssembly](/docs/workflow/testing/libraries/testing-wasm.md)
 
 ---
 
@@ -215,7 +242,7 @@ From the repository root:
 - **Shared Framework Missing**
 
     - If the build fails with an error "The shared framework must be built before the local targeting pack can be consumed.", build both the runtime (clr or mono) and the libs.
-      E.g., from the repo root, run `./build.sh clr+libs -rc release` if working on Libraries on CoreCLR. Refer to the section `1.2. Baseline Setup`.
+      E.g., from the repo root, run `./build.sh clr+libs -rc release` if working on Libraries on CoreCLR. To find the applicable command, refer to the section [1.2. Baseline Setup](#12-baseline-setup).
 
 - **Testhost Is Missing**
 
@@ -225,7 +252,7 @@ From the repository root:
       that means some of the prerequisites were not built.
 
     - To resolve, build both the appropriate runtime (clr or mono) and the libs as a single command before running tests.
-      E.g., from the repo root, run `./build.sh clr+libs -rc release` before testing Libraries on CoreCLR. Refer to the section `1.2. Baseline Setup`.
+      E.g., from the repo root, run `./build.sh clr+libs -rc release` before testing Libraries on CoreCLR. To find the applicable command, refer to the section [1.2. Baseline Setup](#12-baseline-setup).
 
 - **Build Timeout**
 
@@ -247,3 +274,17 @@ From the repository root:
 - Use `build.cmd` instead of `build.sh` on Windows.
 - Set PATH: `set PATH=%CD%\.dotnet;%PATH%`
 - All other commands are similar unless otherwise noted.
+
+---
+
+### 7.3. References
+
+- [`.editorconfig`](/.editorconfig)
+- [Building CoreCLR Guide](/docs/workflow/building/coreclr/README.md)
+- [Building and Running CoreCLR Tests](/docs/workflow/testing/coreclr/testing.md)
+- [Building Mono](/docs/workflow/building/mono/README.md)
+- [Running test suites using Mono](/docs/workflow/testing/mono/testing.md)
+- [Build Libraries](/docs/workflow/building/libraries/README.md)
+- [Testing Libraries](/docs/workflow/testing/libraries/testing.md)
+- [Build libraries for WebAssembly](/docs/workflow/building/libraries/webassembly-instructions.md)
+- [Testing Libraries on WebAssembly](/docs/workflow/testing/libraries/testing-wasm.md)

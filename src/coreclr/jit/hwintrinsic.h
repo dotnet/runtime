@@ -547,8 +547,6 @@ struct HWIntrinsicInfo
 #endif
 
     static bool isImmOp(NamedIntrinsic id, const GenTree* op);
-    static bool isFullyImplementedIsa(CORINFO_InstructionSet isa);
-    static bool isScalarIsa(CORINFO_InstructionSet isa);
 
 #ifdef TARGET_XARCH
     static bool                isAVX2GatherIntrinsic(NamedIntrinsic id);
@@ -557,6 +555,26 @@ struct HWIntrinsicInfo
                                                               FloatComparisonMode comparison,
                                                               var_types           simdBaseType,
                                                               unsigned            simdSize);
+
+    //------------------------------------------------------------------------
+    // genIsTableDrivenHWIntrinsic:
+    //
+    // Arguments:
+    //    intrinsicId - The identifier for the hwintrinsic to check
+    //    category  - The category of intrinsicId
+    //
+    // Return Value:
+    //    returns true if this category can be table-driven in CodeGen
+    //
+    static bool genIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicCategory category)
+    {
+        // TODO - make more categories to the table-driven framework
+        // HW_Category_Helper and HW_Flag_SpecialCodeGen usually need manual codegen
+        const bool tableDrivenCategory =
+            (category != HW_Category_Special) && (category != HW_Category_Scalar) && (category != HW_Category_Helper);
+        const bool tableDrivenFlag = !HWIntrinsicInfo::HasSpecialCodegen(intrinsicId);
+        return tableDrivenCategory && tableDrivenFlag;
+    }
 #endif
 
     // Member lookup
@@ -885,19 +903,12 @@ struct HWIntrinsicInfo
 #ifdef TARGET_XARCH
         switch (id)
         {
-            case NI_AVX2_ShiftRightArithmeticVariable:
-            case NI_AVX512F_ShiftRightArithmeticVariable:
-            case NI_AVX512F_VL_ShiftRightArithmeticVariable:
-            case NI_AVX512BW_ShiftRightArithmeticVariable:
-            case NI_AVX512BW_VL_ShiftRightArithmeticVariable:
-            case NI_AVX10v1_ShiftRightArithmeticVariable:
-            case NI_AVX2_ShiftRightLogicalVariable:
-            case NI_AVX512F_ShiftRightLogicalVariable:
-            case NI_AVX512BW_ShiftRightLogicalVariable:
-            case NI_AVX512BW_VL_ShiftRightLogicalVariable:
-            case NI_AVX10v1_ShiftRightLogicalVariable:
             case NI_AVX2_ShiftLeftLogicalVariable:
-            case NI_AVX512BW_VL_ShiftLeftLogicalVariable:
+            case NI_AVX2_ShiftRightArithmeticVariable:
+            case NI_AVX2_ShiftRightLogicalVariable:
+            case NI_AVX512_ShiftLeftLogicalVariable:
+            case NI_AVX512_ShiftRightArithmeticVariable:
+            case NI_AVX512_ShiftRightLogicalVariable:
                 return true;
             default:
                 return false;
@@ -1214,11 +1225,6 @@ struct HWIntrinsicInfo
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_PermuteVar2x) != 0;
-    }
-
-    static bool IsTernaryLogic(NamedIntrinsic id)
-    {
-        return (id == NI_AVX512F_TernaryLogic) || (id == NI_AVX512F_VL_TernaryLogic) || (id == NI_AVX10v1_TernaryLogic);
     }
 #endif // TARGET_XARCH
 

@@ -27,7 +27,6 @@
 #cmakedefine01 HAVE_STAT_FLAGS
 #cmakedefine01 HAVE_LCHFLAGS
 #cmakedefine01 HAVE_GNU_STRERROR_R
-#cmakedefine01 HAVE_READDIR_R
 #cmakedefine01 HAVE_DIRENT_NAME_LEN
 #cmakedefine01 HAVE_MNTINFO
 #cmakedefine01 HAVE_STATFS_FSTYPENAME

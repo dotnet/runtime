@@ -72,7 +72,7 @@ TailCallTls::TailCallTls()
 }
 
 #ifndef _MSC_VER
-thread_local RuntimeThreadLocals t_runtime_thread_locals;
+PLATFORM_THREAD_LOCAL RuntimeThreadLocals t_runtime_thread_locals;
 #endif
 
 Thread* STDCALL GetThreadHelper()
@@ -172,25 +172,21 @@ BOOL MatchThreadHandleToOsId ( HANDLE h, DWORD osId )
 #ifdef _DEBUG_IMPL
 template<> AutoCleanupGCAssert<TRUE>::AutoCleanupGCAssert()
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 }
 
 template<> AutoCleanupGCAssert<FALSE>::AutoCleanupGCAssert()
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_MODE_PREEMPTIVE;
 }
 
 template<> void GCAssert<TRUE>::BeginGCAssert()
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 }
 
 template<> void GCAssert<FALSE>::BeginGCAssert()
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_MODE_PREEMPTIVE;
 }
 #endif
@@ -291,18 +287,15 @@ static StackWalkAction DetectHandleILStubsForDebugger_StackWalkCallback(CrawlFra
     return SWA_CONTINUE;
 }
 
-// This is really just a heuristic to detect if we are executing in an M2U IL stub or
-// one of the marshaling methods it calls.  It doesn't deal with U2M IL stubs.
-// We loop through the frame chain looking for an uninitialized TransitionFrame.
-// If there is one, then we are executing in an M2U IL stub or one of the methods it calls.
-// On the other hand, if there is an initialized TransitionFrame, then we are not.
-// Also, if there is an HMF on the stack, then we stop.  This could be the case where
-// an IL stub calls an FCALL which ends up in a managed method, and the debugger wants to
-// stop in those cases.  Some examples are COMException..ctor and custom marshalers.
+// This is a heuristic to detect if we are executing in an M2U IL stub or one of its marshaling methods.
+// It does not handle U2M IL stubs.
 //
-// X86 IL stubs use InlinedCallFrame and are indistinguishable from ordinary methods with
-// inlined P/Invoke when judging just from the frame chain. We use stack walk to decide
-// this case.
+// We walk the frame chain looking for an uninitialized TransitionFrame.
+// If found, we are in an M2U IL stub or one of its called methods.
+// If a TransitionFrame is initialized, then we are not.
+//
+// On x86, IL stubs use InlinedCallFrame, which looks like regular methods with inlined P/Invoke calls,
+// so we rely on stack walking to detect this scenario.
 bool Thread::DetectHandleILStubsForDebugger()
 {
     CONTRACTL {
@@ -317,13 +310,8 @@ bool Thread::DetectHandleILStubsForDebugger()
     {
         while (pFrame != FRAME_TOP)
         {
-            // Check for HMF's.  See the comment at the beginning of this function.
-            if (pFrame->GetFrameIdentifier() == FrameIdentifier::HelperMethodFrame)
-            {
-                break;
-            }
             // If there is an entry frame (i.e. U2M managed), we should break.
-            else if (pFrame->GetFrameType() == Frame::TYPE_ENTRY)
+            if (pFrame->GetFrameType() == Frame::TYPE_ENTRY)
             {
                 break;
             }
@@ -357,7 +345,7 @@ bool Thread::DetectHandleILStubsForDebugger()
 }
 
 #ifndef _MSC_VER
-thread_local ThreadLocalInfo t_CurrentThreadInfo;
+PLATFORM_THREAD_LOCAL ThreadLocalInfo t_CurrentThreadInfo;
 #endif // _MSC_VER
 
 #ifndef DACCESS_COMPILE
@@ -814,7 +802,7 @@ Thread* SetupThreadNoThrow(HRESULT *pHR)
         hr = GET_EXCEPTION()->GetHR();
     }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (pHR)
     {
@@ -1334,7 +1322,7 @@ Thread::Thread()
     dbg_m_cSuspendedThreads = 0;
     dbg_m_cSuspendedThreadsWithoutOSLock = 0;
     m_Creator.Clear();
-    m_dwUnbreakableLockCount = 0;
+    m_dwLockCount = 0;
 #endif
 
     m_dwForbidSuspendThread = 0;
@@ -1470,10 +1458,6 @@ Thread::Thread()
 #endif
 
     m_dwAVInRuntimeImplOkayCount = 0;
-
-#ifdef _DEBUG
-    m_pHelperMethodFrameCallerList = (HelperMethodFrameCallerList*)-1;
-#endif
 
     m_pExceptionDuringStartup = NULL;
 
@@ -1703,8 +1687,9 @@ BOOL Thread::AllocHandles()
         if (!m_EventWait.IsValid()) {
             m_EventWait.CloseEvent();
         }
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 
     return fOK;
 }
@@ -1783,7 +1768,7 @@ BOOL Thread::HasStarted()
         }
         res = FALSE;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (res == FALSE)
         goto FAILURE;
@@ -3774,7 +3759,7 @@ DWORD EnterMonitorForRestore(SyncBlock *pSB)
             }
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return state;
 }
@@ -4214,7 +4199,7 @@ OBJECTREF Thread::SafeSetLastThrownObject(OBJECTREF throwable)
         ret = CLRException::GetPreallocatedOutOfMemoryException();
         SetLastThrownObject(ret);
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return ret;
 }
@@ -4266,7 +4251,7 @@ OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable DEBUG_ARG(ThreadExceptio
         SetThrowable(ret DEBUG_ARG(stecFlags));
         SetLastThrownObject(ret, isUnhandled);
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
 
     return ret;
@@ -4343,7 +4328,7 @@ void Thread::SafeUpdateLastThrownObject(void)
             // If we can't create a duplicate handle, we set both throwables to the preallocated OOM exception.
             SafeSetThrowables(CLRException::GetPreallocatedOutOfMemoryException());
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 }
 
@@ -4914,7 +4899,6 @@ DEBUG_NOINLINE void ThreadStore::Enter()
     }
     CONTRACTL_END;
 
-    ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
     CHECK_ONE_STORE();
     m_Crst.Enter();
 }
@@ -4927,7 +4911,6 @@ DEBUG_NOINLINE void ThreadStore::Leave()
     }
     CONTRACTL_END;
 
-    ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
     CHECK_ONE_STORE();
     m_Crst.Leave();
 }
@@ -4977,15 +4960,6 @@ void ThreadStore::AddThread(Thread *newThread)
 
     _ASSERTE(!newThread->IsBackground());
     _ASSERTE(!newThread->IsDead());
-}
-
-// this function is just desgined to avoid deadlocks during abnormal process termination, and should not be used for any other purpose
-BOOL ThreadStore::CanAcquireLock()
-{
-    WRAPPER_NO_CONTRACT;
-    {
-        return (s_pThreadStore->m_Crst.m_criticalsection.LockCount == -1 || (size_t)s_pThreadStore->m_Crst.m_criticalsection.OwningThread == (size_t)GetCurrentThreadId());
-    }
 }
 
 // Whenever one of the components of OtherThreadsComplete() has changed in the
@@ -5417,7 +5391,7 @@ BOOL CLREventWaitWithTry(CLREventBase *pEvent, DWORD timeout, BOOL fAlertable, D
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return fLoop;
 }
@@ -5718,7 +5692,7 @@ BOOL StartUniqueStackMapHelper()
     {
         fOK = FALSE;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return fOK;
 }
@@ -5881,7 +5855,7 @@ void UniqueStackHelper(size_t stackTraceHash, size_t *stackTrace)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 /***********************************************************************/
@@ -7007,7 +6981,7 @@ static void ManagedThreadBase_DispatchMiddle(ManagedThreadCallState *pCallState)
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 /*

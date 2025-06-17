@@ -2716,8 +2716,8 @@ static void SetFpStructInRegistersInfoField(FpStructInRegistersInfo& info, int i
     (index == 0 ? info.offset1st : info.offset2nd) = offset;
 }
 
-static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInRegistersInfo& info, int& typeIndex
-    DEBUG_ARG(int nestingLevel))
+static bool HandleInlineArray(int elementTypeIndex, int nElements,
+    FpStructInRegistersInfo& info, int& typeIndex, uint32_t& occupiedBytesMap DEBUG_ARG(int nestingLevel))
 {
     int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
     if (nFlattenedFieldsPerElement == 0)
@@ -2759,45 +2759,65 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInReg
         int sizeShiftMask = (info.flags & FpStruct::SizeShift1stMask) << 2;
         info.flags = FpStruct::Flags(info.flags | floatFlag | sizeShiftMask); // merge with 1st field
         info.offset2nd = info.offset1st + info.Size1st(); // bump up the field offset
+
+        assert(info.Size1st() == info.Size2nd());
+        uint32_t startOffset = info.offset2nd;
+        uint32_t endOffset = startOffset + info.Size2nd();
+
+        uint32_t fieldOccupation = (~0u << startOffset) ^ (~0u << endOffset);
+        if ((occupiedBytesMap & fieldOccupation) != 0)
+        {
+            LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
+                " * duplicated array element [%i..%i) overlaps with other fields (occupied bytes map: 0x%04x), treat as union\n",
+                nestingLevel * 4, "", startOffset, endOffset, occupiedBytesMap));
+            return false;
+        }
+        occupiedBytesMap |= fieldOccupation;
+
         LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * duplicated array element type\n",
             nestingLevel * 4, ""));
     }
     return true;
 }
 
-static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInfo& info, int& typeIndex
+static bool FlattenFields(TypeHandle th, uint32_t structOffset, FpStructInRegistersInfo& info, int& typeIndex
     DEBUG_ARG(int nestingLevel))
 {
     bool isManaged = !th.IsTypeDesc();
     MethodTable* pMT = isManaged ? th.AsMethodTable() : th.AsNativeValueType();
     int nFields = isManaged ? pMT->GetNumIntroducedInstanceFields() : pMT->GetNativeLayoutInfo()->GetNumFields();
 
-    LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s flattening %s (%s, %i fields)\n",
-        nestingLevel * 4, "", pMT->GetDebugClassName(), (isManaged ? "managed" : "native"), nFields));
+    LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s flattening %s (%s, %i fields) at offset %u\n",
+        nestingLevel * 4, "", pMT->GetDebugClassName(), (isManaged ? "managed" : "native"), nFields, structOffset));
 
     // TODO: templatize isManaged and use if constexpr for differences when we migrate to C++17
     // because the logic for both branches is nearly the same.
+
+    uint32_t occupiedBytesMap = 0;
     if (isManaged)
     {
         FieldDesc* fields = pMT->GetApproxFieldDescListRaw();
         int elementTypeIndex = typeIndex;
         for (int i = 0; i < nFields; ++i)
         {
-            if (i > 0 && fields[i-1].GetOffset() + fields[i-1].GetSize() > fields[i].GetOffset())
+            uint32_t startOffset = structOffset + fields[i].GetOffset();
+            uint32_t endOffset = startOffset + fields[i].GetSize();
+
+            uint32_t fieldOccupation = (~0u << startOffset) ^ (~0u << endOffset);
+            if ((occupiedBytesMap & fieldOccupation) != 0)
             {
                 LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
-                    " * fields %s [%i..%i) and %s [%i..%i) overlap, treat as union\n",
-                    nestingLevel * 4, "",
-                    fields[i-1].GetDebugName(), fields[i-1].GetOffset(), fields[i-1].GetOffset() + fields[i-1].GetSize(),
-                    fields[i].GetDebugName(), fields[i].GetOffset(), fields[i].GetOffset() + fields[i].GetSize()));
+                    " * field %s [%i..%i) overlaps with other fields (occupied bytes map: 0x%04x), treat as union\n",
+                    nestingLevel * 4, "", fields[i].GetDebugName(), startOffset, endOffset, occupiedBytesMap));
                 return false;
             }
+            occupiedBytesMap |= fieldOccupation;
 
             CorElementType type = fields[i].GetFieldType();
             if (type == ELEMENT_TYPE_VALUETYPE)
             {
                 MethodTable* nested = fields[i].GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                if (!FlattenFields(TypeHandle(nested), offset + fields[i].GetOffset(), info, typeIndex DEBUG_ARG(nestingLevel + 1)))
+                if (!FlattenFields(TypeHandle(nested), startOffset, info, typeIndex DEBUG_ARG(nestingLevel + 1)))
                     return false;
             }
             else if (fields[i].GetSize() <= TARGET_POINTER_SIZE)
@@ -2810,12 +2830,10 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
                 }
 
                 bool isFloating = CorTypeInfo::IsFloat_NoThrow(type);
-                SetFpStructInRegistersInfoField(info, typeIndex++,
-                    isFloating, CorTypeInfo::Size_NoThrow(type), offset + fields[i].GetOffset());
+                SetFpStructInRegistersInfoField(info, typeIndex++, isFloating, CorTypeInfo::Size_NoThrow(type), startOffset);
 
                 LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * found field %s [%i..%i), type: %s\n",
-                    nestingLevel * 4, "", fields[i].GetDebugName(),
-                    fields[i].GetOffset(), fields[i].GetOffset() + fields[i].GetSize(), CorTypeInfo::GetName(type)));
+                    nestingLevel * 4, "", fields[i].GetDebugName(), startOffset, endOffset, CorTypeInfo::GetName(type)));
             }
             else
             {
@@ -2842,7 +2860,7 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
                 return false;
             }
 
-            if (!HandleInlineArray(elementTypeIndex, nElements, info, typeIndex DEBUG_ARG(nestingLevel + 1)))
+            if (!HandleInlineArray(elementTypeIndex, nElements, info, typeIndex, occupiedBytesMap DEBUG_ARG(nestingLevel + 1)))
                 return false;
         }
     }
@@ -2851,15 +2869,18 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
         const NativeFieldDescriptor* fields = pMT->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
         for (int i = 0; i < nFields; ++i)
         {
-            if (i > 0 && fields[i-1].GetExternalOffset() + fields[i-1].NativeSize() > fields[i].GetExternalOffset())
+            uint32_t startOffset = structOffset + fields[i].GetExternalOffset();
+            uint32_t endOffset = startOffset + fields[i].NativeSize();
+
+            uint32_t fieldOccupation = (~0u << startOffset) ^ (~0u << endOffset);
+            if ((occupiedBytesMap & fieldOccupation) != 0)
             {
                 LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
-                    " * fields %s [%i..%i) and %s [%i..%i) overlap, treat as union\n",
-                    nestingLevel * 4, "",
-                    fields[i-1].GetFieldDesc()->GetDebugName(), fields[i-1].GetExternalOffset(), fields[i-1].GetExternalOffset() + fields[i-1].NativeSize(),
-                    fields[i].GetFieldDesc()->GetDebugName(), fields[i].GetExternalOffset(), fields[i].GetExternalOffset() + fields[i].NativeSize()));
+                    " * field %s [%i..%i) overlaps with other fields (occupied bytes map: 0x%04x), treat as union\n",
+                    nestingLevel * 4, "", fields[i].GetFieldDesc()->GetDebugName(), startOffset, endOffset));
                 return false;
             }
+            occupiedBytesMap |= fieldOccupation;
 
             static const char* categoryNames[] = {"FLOAT", "NESTED", "INTEGER", "ILLEGAL"};
             NativeFieldCategory category = fields[i].GetCategory();
@@ -2868,12 +2889,12 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
                 int elementTypeIndex = typeIndex;
 
                 MethodTable* nested = fields[i].GetNestedNativeMethodTable();
-                if (!FlattenFields(TypeHandle(nested), offset + fields[i].GetExternalOffset(), info, typeIndex DEBUG_ARG(nestingLevel + 1)))
+                if (!FlattenFields(TypeHandle(nested), startOffset, info, typeIndex DEBUG_ARG(nestingLevel + 1)))
                     return false;
 
                 // In native layout fixed arrays are marked as NESTED just like structs
                 int nElements = fields[i].GetNumElements();
-                if (!HandleInlineArray(elementTypeIndex, nElements, info, typeIndex DEBUG_ARG(nestingLevel + 1)))
+                if (!HandleInlineArray(elementTypeIndex, nElements, info, typeIndex, occupiedBytesMap DEBUG_ARG(nestingLevel + 1)))
                     return false;
             }
             else if (fields[i].NativeSize() <= TARGET_POINTER_SIZE)
@@ -2886,13 +2907,10 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
                 }
 
                 bool isFloating = (category == NativeFieldCategory::FLOAT);
-
-                SetFpStructInRegistersInfoField(info, typeIndex++,
-                    isFloating, fields[i].NativeSize(), offset + fields[i].GetExternalOffset());
+                SetFpStructInRegistersInfoField(info, typeIndex++, isFloating, fields[i].NativeSize(), startOffset);
 
                 LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * found field %s [%i..%i), type: %s\n",
-                    nestingLevel * 4, "", fields[i].GetFieldDesc()->GetDebugName(),
-                    fields[i].GetExternalOffset(), fields[i].GetExternalOffset() + fields[i].NativeSize(), categoryNames[(int)category]));
+                    nestingLevel * 4, "", fields[i].GetFieldDesc()->GetDebugName(), startOffset, endOffset, categoryNames[(int)category]));
             }
             else
             {
@@ -2930,6 +2948,21 @@ FpStructInRegistersInfo MethodTable::GetFpStructInRegistersInfo(TypeHandle th)
     }
 
     assert(nFields == 1 || nFields == 2);
+    if (nFields == 2 && info.offset1st > info.offset2nd)
+    {
+        LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo: struct %s (%u bytes): swap fields to match memory order\n",
+            (!th.IsTypeDesc() ? th.AsMethodTable() : th.AsNativeValueType())->GetDebugClassName(), th.GetSize()));
+        info.flags = FpStruct::Flags(
+            ((info.flags & FloatInt) << (PosIntFloat - PosFloatInt)) |
+            ((info.flags & IntFloat) >> (PosIntFloat - PosFloatInt)) |
+            ((info.flags & SizeShift1stMask) << (PosSizeShift2nd - PosSizeShift1st)) |
+            ((info.flags & SizeShift2ndMask) >> (PosSizeShift2nd - PosSizeShift1st))
+        );
+        std::swap(info.offset1st, info.offset2nd);
+    }
+    assert((info.flags & (OnlyOne | BothFloat)) == 0);
+    assert((info.flags & FloatInt) == 0 || info.Size1st() == sizeof(float) || info.Size1st() == sizeof(double));
+    assert((info.flags & IntFloat) == 0 || info.Size2nd() == sizeof(float) || info.Size2nd() == sizeof(double));
 
     if ((info.flags & (FloatInt | IntFloat)) == (FloatInt | IntFloat))
     {
@@ -3524,7 +3557,7 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
         *pThrowable = GET_THROWABLE();
         _ASSERTE(fRet == FALSE);
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return fRet;
 }
@@ -3628,7 +3661,7 @@ void MethodTable::DoRunClassInitThrowing()
                     hNewInitException = pEntry->m_pLoaderAllocator->AllocateHandle(gc.pNewInitException);
                 } EX_CATCH {
                     // If we failed to create the handle we'll just leave the originally alloc'd one in place.
-                } EX_END_CATCH(SwallowAllExceptions);
+                } EX_END_CATCH
 
                 // if two threads are racing to set m_hInitException, clear the handle created by the loser
                 if (hNewInitException != 0 &&
@@ -3733,7 +3766,7 @@ void MethodTable::DoRunClassInitThrowing()
                             // If we failed to create the handle (due to OOM), we'll just store the preallocated OOM
                             // handle here instead.
                             pEntry->m_hInitException = pEntry->m_pLoaderAllocator->AllocateHandle(CLRException::GetPreallocatedOutOfMemoryException());
-                        } EX_END_CATCH(SwallowAllExceptions);
+                        } EX_END_CATCH
 
                         pEntry->m_hrResultCode = E_FAIL;
                         SetClassInitError();

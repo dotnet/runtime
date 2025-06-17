@@ -1247,12 +1247,12 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector128_CreateScalar:
                             case NI_Vector128_CreateScalarUnsafe:
 #if defined(TARGET_XARCH)
-                            case NI_BMI1_TrailingZeroCount:
-                            case NI_BMI1_X64_TrailingZeroCount:
-                            case NI_LZCNT_LeadingZeroCount:
-                            case NI_LZCNT_X64_LeadingZeroCount:
-                            case NI_POPCNT_PopCount:
-                            case NI_POPCNT_X64_PopCount:
+                            case NI_AVX2_LeadingZeroCount:
+                            case NI_AVX2_TrailingZeroCount:
+                            case NI_AVX2_X64_LeadingZeroCount:
+                            case NI_AVX2_X64_TrailingZeroCount:
+                            case NI_SSE42_PopCount:
+                            case NI_SSE42_X64_PopCount:
                             case NI_Vector256_Create:
                             case NI_Vector512_Create:
                             case NI_Vector256_CreateScalar:
@@ -4704,8 +4704,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     newBlock->CopyFlags(curr);
 
     // Remove flags that the new block can't have.
-    newBlock->RemoveFlags(BBF_LOOP_HEAD | BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET |
-                          BBF_LOOP_ALIGN);
+    newBlock->RemoveFlags(BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
 
     // Remove the GC safe bit on the new block. It seems clear that if we split 'curr' at the end,
     // such that all the code is left in 'curr', and 'newBlock' just gets the control flow, then
@@ -4865,7 +4864,7 @@ BasicBlock* Compiler::fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node)
         LIR::Range::ReverseIterator riterEnd;
         for (riter = currBBRange.rbegin(), riterEnd = currBBRange.rend(); riter != riterEnd; ++riter)
         {
-            if ((*riter)->gtOper == GT_IL_OFFSET)
+            if ((*riter)->OperIs(GT_IL_OFFSET))
             {
                 GenTreeILOffset* ilOffset = (*riter)->AsILOffset();
                 DebugInfo        rootDI   = ilOffset->gtStmtDI.GetRoot();
@@ -4922,6 +4921,12 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 
     curr->bbCodeOffs    = BAD_IL_OFFSET;
     curr->bbCodeOffsEnd = BAD_IL_OFFSET;
+
+    // fgSplitBlockAtEnd conservatively removes the BBF_GC_SAFE_POINT flag from the new block.
+    // Since we moved all of the code back into the new block, set the flag again, if applicable.
+    // For the same reason as fgSplitBlockAtEnd, we will conservatively remove the flag from 'curr'.
+    newBlock->CopyFlags(curr, BBF_GC_SAFE_POINT);
+    curr->RemoveFlags(BBF_GC_SAFE_POINT);
 
     return newBlock;
 }
@@ -5284,73 +5289,6 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
     // Set to retless flag to avoid future asserts.
     bCallFinally->SetFlags(BBF_RETLESS_CALL);
     block->SetKind(BBJ_ALWAYS);
-}
-
-//------------------------------------------------------------------------
-// fgRenumberBlocks: update block bbNums to reflect bbNext order
-//
-// Returns:
-//    true if blocks were renumbered or maxBBNum was updated.
-//
-// Notes:
-//   Walk the flow graph, reassign block numbers to keep them in ascending order.
-//   Return 'true' if any renumbering was actually done, OR if we change the
-//   maximum number of assigned basic blocks (this can happen if we do inlining,
-//   create a new, high-numbered block, then that block goes away. We go to
-//   renumber the blocks, none of them actually change number, but we shrink the
-//   maximum assigned block number. This affects the block set epoch).
-//
-bool Compiler::fgRenumberBlocks()
-{
-    assert(fgPredsComputed);
-
-    JITDUMP("\n*************** Before renumbering the basic blocks\n");
-    JITDUMPEXEC(fgDispBasicBlocks());
-    JITDUMPEXEC(fgDispHandlerTab());
-
-    bool     renumbered  = false;
-    bool     newMaxBBNum = false;
-    unsigned num         = 1;
-
-    for (BasicBlock* block : Blocks())
-    {
-        noway_assert(!block->HasFlag(BBF_REMOVED));
-
-        if (block->bbNum != num)
-        {
-            JITDUMP("Renumber " FMT_BB " to " FMT_BB "\n", block->bbNum, num);
-            renumbered   = true;
-            block->bbNum = num;
-        }
-
-        if (block->IsLast())
-        {
-            fgLastBB = block;
-            if (fgBBNumMax != num)
-            {
-                fgBBNumMax  = num;
-                newMaxBBNum = true;
-            }
-        }
-
-        num++;
-    }
-
-    // If we renumbered, then we may need to reorder some pred lists.
-    //
-    if (renumbered)
-    {
-        JITDUMP("\n*************** After renumbering the basic blocks\n");
-        JITDUMPEXEC(fgDispBasicBlocks());
-        JITDUMPEXEC(fgDispHandlerTab());
-    }
-    else
-    {
-        JITDUMP("=============== No blocks renumbered!\n");
-    }
-
-    // Tell our caller if any blocks actually were renumbered.
-    return renumbered || newMaxBBNum;
 }
 
 /*****************************************************************************

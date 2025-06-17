@@ -155,6 +155,32 @@ var_types ABIPassingSegment::GetRegisterType() const
 }
 
 //-----------------------------------------------------------------------------
+// GetRegisterType:
+//   Return the smallest type larger or equal to Size that most naturally
+//   represents the register this segment is passed in, taking into account the
+//   GC info of the specified layout.
+//
+// Parameters:
+//   layout - The layout of the class that this segment is part of
+//
+// Return Value:
+//   A type that matches ABIPassingSegment::Size and the register.
+//
+var_types ABIPassingSegment::GetRegisterType(ClassLayout* layout) const
+{
+    if (genIsValidIntReg(GetRegister()))
+    {
+        assert(Offset < layout->GetSize());
+        if (((Offset % TARGET_POINTER_SIZE) == 0) && (Size == TARGET_POINTER_SIZE))
+        {
+            return layout->GetGCPtrType(Offset / TARGET_POINTER_SIZE);
+        }
+    }
+
+    return GetRegisterType();
+}
+
+//-----------------------------------------------------------------------------
 // InRegister:
 //   Create an ABIPassingSegment representing that a segment is passed in a
 //   register.

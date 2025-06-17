@@ -223,6 +223,7 @@
       Microsoft.Extensions.Options.DataAnnotations;
       Microsoft.Extensions.Primitives;
       System.Diagnostics.EventLog;
+      System.Formats.Cbor;
       System.Security.Cryptography.Xml;
       System.Threading.AccessControl;
       System.Threading.RateLimiting;
