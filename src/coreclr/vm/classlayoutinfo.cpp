@@ -908,13 +908,19 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
     for (LayoutRawFieldInfo* pfwalk = pInfoArray; pfwalk->m_token != mdFieldDefNil; pfwalk++)
     {
         pfwalk->m_placement.m_size = pfwalk->m_nfd.NativeSize();
+        // Allow the packing size to override a looser alignment requirement.
         pfwalk->m_placement.m_alignment = min(packingSize, (BYTE)pfwalk->m_nfd.AlignmentRequirement());
         if (pfwalk->m_placement.m_alignment > fieldAlignmentRequirement)
         {
             fieldAlignmentRequirement = (BYTE)pfwalk->m_placement.m_alignment;
         }
     }
-    pNativeLayoutInfo->m_alignmentRequirement = max(max<BYTE>(1, min(packingSize, parentAlignmentRequirement)), fieldAlignmentRequirement);
+
+    // Allow the packing size to require less alignment than the parent's alignment requirement.
+    BYTE initialAlignmentRequirement = max<BYTE>(1, min(packingSize, parentAlignmentRequirement));
+
+    // The alignment of the native layout is the stricter of the initial alignment requirement or the alignment requirements of the fields.
+    pNativeLayoutInfo->m_alignmentRequirement = max(initialAlignmentRequirement, fieldAlignmentRequirement);
 
     BOOL fExplicitOffsets = pMT->GetClass()->HasExplicitFieldOffsetLayout();
 
