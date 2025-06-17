@@ -6947,7 +6947,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
                         else if (call->IsGuardedDevirtualizationCandidate())
                         {
-                            JITDUMP("No GDV IEnumerable<T> check for [%06u]\n", dspTreeID(call));
+                            // Just check one of the GDV candidates (all should have the same original method handle)
+                            //
+                            InlineCandidateInfo* const info = call->GetGDVCandidateInfo(0);
+                            ni                              = lookupNamedIntrinsic(info->originalMethodHandle);
                         }
 
                         if (ni == NI_System_Collections_Generic_IEnumerable_GetEnumerator)

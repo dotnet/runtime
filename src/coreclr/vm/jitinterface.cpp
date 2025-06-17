@@ -8621,18 +8621,15 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         //
         if (pObjMT->IsArray())
         {
-            // If we're in a shared context we'll devirt to a shared
-            // generic method and won't be able to inline, so just bail.
+            // See if this interface is one of the ones arrays implement.
             //
-            if (pBaseMT->IsSharedByGenericInstantiations())
+            if (!pBaseMT->HasInstantiation())
             {
-                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
                 return false;
             }
 
-            // Ensure we can cast the array to the interface type
-            //
-            if (!TypeHandle(pObjMT).CanCastTo(TypeHandle(pBaseMT)))
+            if (!IsImplicitInterfaceOfSZArray(pBaseMT))
             {
                 info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
                 return false;
@@ -8650,7 +8647,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         {
             MethodTable* interfaceMT = nullptr;
 
-            if (pObjMT->IsSharedByGenericInstantiations() || pBaseMT->IsSharedByGenericInstantiations())
+            if (!pObjMT->IsArray() && (pObjMT->IsSharedByGenericInstantiations() || pBaseMT->IsSharedByGenericInstantiations()))
             {
                 MethodTable* pCanonBaseMT = pBaseMT->GetCanonicalMethodTable();
                 
@@ -8686,6 +8683,10 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 }
 
                 pDevirtMD = pObjMT->GetMethodDescForInterfaceMethod(TypeHandle(interfaceMT), pBaseMD, FALSE /* throwOnConflict */);
+            }
+            else if (pObjMT->IsArray())
+            {
+                pDevirtMD = GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(pBaseMD, pObjMT->GetArrayElementTypeHandle());
             }
             else
             {

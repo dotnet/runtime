@@ -973,7 +973,7 @@ private:
                 //
                 if (inlineInfo->arrayInterface)
                 {
-                    methodHnd = call->gtCallMethHnd;
+                    methodHnd = inlineInfo->originalMethodHandle;
                     context   = inlineInfo->originalContextHandle;
                 }
 

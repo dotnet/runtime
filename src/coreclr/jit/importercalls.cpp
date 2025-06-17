@@ -310,14 +310,17 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     // complex expression. As it is evaluated after the args,
                     // it may cause registered args to be spilled. Simply spill it.
                     //
-                    unsigned const lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
-                    if (compDonotInline())
+                    if (!stubAddr->OperIs(GT_LCL_VAR))
                     {
-                        return TYP_UNDEF;
-                    }
+                        unsigned const lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
+                        if (compDonotInline())
+                        {
+                            return TYP_UNDEF;
+                        }
 
-                    impStoreToTemp(lclNum, stubAddr, CHECK_SPILL_NONE);
-                    stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
+                        impStoreToTemp(lclNum, stubAddr, CHECK_SPILL_NONE);
+                        stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
+                    }
 
                     // Create the actual call node
 
@@ -7212,7 +7215,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
                                                     clsAttrs, likelyHood, dvInfo.wasArrayInterfaceDevirt,
-                                                    dvInfo.isInstantiatingStub, originalContext);
+                                                    dvInfo.isInstantiatingStub, baseMethod, originalContext);
             }
 
             if (call->GetInlineCandidatesCount() == numExactClasses)
@@ -7361,7 +7364,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         //
         addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyContext, likelyMethodAttribs,
                                             likelyClassAttribs, likelihood, arrayInterface, instantiatingStub,
-                                            originalContext);
+                                            baseMethod, originalContext);
     }
 }
 
@@ -7388,6 +7391,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 //    likelihood - odds that this class is the class seen at runtime
 //    arrayInterface - devirtualization of an array interface call
 //    instantiatingStub - devirtualized method in an instantiating stub
+//    originalMethodHandle - method handle of base method (before devirt)
 //    originalContextHandle - context for the original call
 //
 void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
@@ -7399,6 +7403,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
                                                    unsigned               likelihood,
                                                    bool                   arrayInterface,
                                                    bool                   instantiatingStub,
+                                                   CORINFO_METHOD_HANDLE  originalMethodHandle,
                                                    CORINFO_CONTEXT_HANDLE originalContextHandle)
 {
     // This transformation only makes sense for delegate and virtual calls
@@ -7471,6 +7476,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
     pInfo->guardedMethodUnboxedEntryHandle      = nullptr;
     pInfo->guardedMethodInstantiatedEntryHandle = nullptr;
     pInfo->guardedClassHandle                   = classHandle;
+    pInfo->originalMethodHandle                 = originalMethodHandle;
     pInfo->originalContextHandle                = originalContextHandle;
     pInfo->likelihood                           = likelihood;
     pInfo->exactContextHandle                   = contextHandle;
@@ -9371,6 +9377,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             pInfo->guardedMethodHandle                  = nullptr;
             pInfo->guardedMethodUnboxedEntryHandle      = nullptr;
             pInfo->guardedMethodInstantiatedEntryHandle = nullptr;
+            pInfo->originalMethodHandle                 = nullptr;
             pInfo->originalContextHandle                = nullptr;
             pInfo->likelihood                           = 0;
             pInfo->arrayInterface                       = false;
