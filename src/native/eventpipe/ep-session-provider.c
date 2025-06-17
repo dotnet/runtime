@@ -157,7 +157,7 @@ session_provider_tracepoint_register (
 	int user_events_data_fd)
 {
 	EP_ASSERT (tracepoint != NULL);
-	EP_ASSERT (user_events_data_fd != 0);
+	EP_ASSERT (user_events_data_fd != -1);
 	struct user_reg reg = {0};
 
 	reg.size = sizeof(reg);
@@ -182,7 +182,7 @@ session_provider_tracepoint_unregister (
 	int user_events_data_fd)
 {
 	EP_ASSERT (tracepoint != NULL);
-	EP_ASSERT (user_events_data_fd != 0);
+	EP_ASSERT (user_events_data_fd != -1);
 	struct user_unreg unreg = {0};
 
 	unreg.size = sizeof(unreg);
@@ -229,9 +229,9 @@ ep_session_provider_register_tracepoints (
 	int user_events_data_fd)
 {
 	EP_ASSERT (session_provider != NULL);
-	EP_ASSERT (user_events_data_fd > 0);
+	EP_ASSERT (user_events_data_fd != -1);
 
-	if (user_events_data_fd <= 0)
+	if (user_events_data_fd < 0)
 		return false;
 
 	EventPipeSessionProviderTracepointConfiguration *tracepoint_config = session_provider->tracepoint_config;
@@ -267,9 +267,9 @@ ep_session_provider_unregister_tracepoints (
 	int user_events_data_fd)
 {
 	EP_ASSERT (session_provider != NULL);
-	EP_ASSERT (user_events_data_fd > 0);
+	EP_ASSERT (user_events_data_fd != -1);
 
-	if (user_events_data_fd <= 0)
+	if (user_events_data_fd < 0)
 		return;
 
 	if (session_provider->tracepoint_config == NULL)

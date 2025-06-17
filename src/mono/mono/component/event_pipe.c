@@ -151,23 +151,22 @@ event_pipe_enable (
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback)
 {
-	ERROR_DECL (error);
 	EventPipeSessionID session_id = 0;
 
 	EventPipeProviderConfiguration *config_providers = g_new0 (EventPipeProviderConfiguration, providers_len);
 
 	if (config_providers) {
 		for (guint32 i = 0; i < providers_len; ++i) {
-			char *provider_name = providers[i].provider_name ? mono_utf16_to_utf8 (providers[i].provider_name, g_utf16_len (providers[i].provider_name), error) : NULL;
-			char *filter_data = providers[i].filter_data ? mono_utf16_to_utf8 (providers[i].filter_data, g_utf16_len (providers[i].filter_data), error) : NULL;
+			ep_char8_t *provider_name = ep_rt_utf16_to_utf8_string ((const ep_char16_t *)(providers[i].provider_name));
+			ep_char8_t *filter_data = ep_rt_utf16_to_utf8_string ((const ep_char16_t *)(providers[i].filter_data));
 			ep_provider_config_init (
 				&config_providers[i],
 				provider_name,
 				providers [i].keywords,
 				(EventPipeEventLevel)providers [i].logging_level,
 				filter_data);
-			g_free (provider_name);
-			g_free (filter_data);
+			ep_rt_utf8_string_free (provider_name);
+			ep_rt_utf8_string_free (filter_data);
 		}
 	}
 

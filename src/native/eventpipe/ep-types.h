@@ -225,7 +225,7 @@ struct _EventPipeProviderTracepointSet {
 #endif
 
 void
-eventpipe_collect_tracing_command_free_tracepoint_sets (EventPipeProviderTracepointSet *tracepoint_set, uint32_t length);
+eventpipe_collect_tracing_command_free_tracepoint_sets (EventPipeProviderTracepointSet *tracepoint_sets, uint32_t tracepoint_sets_len);
 
 /*
  * EventPipeProviderTracepointConfiguration.

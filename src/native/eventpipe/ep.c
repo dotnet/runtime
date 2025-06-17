@@ -369,16 +369,16 @@ eventpipe_collect_tracing_command_free_event_filter (EventPipeProviderEventFilte
 }
 
 void
-eventpipe_collect_tracing_command_free_tracepoint_sets (EventPipeProviderTracepointSet *tracepoint_set, uint32_t length)
+eventpipe_collect_tracing_command_free_tracepoint_sets (EventPipeProviderTracepointSet *tracepoint_sets, uint32_t tracepoint_sets_len)
 {
-	ep_return_void_if_nok (tracepoint_set != NULL);
+	ep_return_void_if_nok (tracepoint_sets != NULL);
 
-	for (uint32_t i = 0; i < length; ++i) {
-		ep_rt_utf8_string_free (tracepoint_set->tracepoint_name);
-		ep_rt_object_array_free (tracepoint_set->event_ids);
+	for (uint32_t i = 0; i < tracepoint_sets_len; ++i) {
+		ep_rt_utf8_string_free (tracepoint_sets[i].tracepoint_name);
+		ep_rt_object_array_free (tracepoint_sets[i].event_ids);
 	}
 
-	ep_rt_object_array_free (tracepoint_set);
+	ep_rt_object_array_free (tracepoint_sets);
 }
 
 void
@@ -524,7 +524,7 @@ static bool check_options_valid (const EventPipeSessionOptions *options)
 	if (options->session_type == EP_SESSION_TYPE_IPCSTREAM && options->stream == NULL)
 		return false;
 	// More UserEvents specific checks can be added here.
-	if (options->session_type == EP_SESSION_TYPE_USEREVENTS && options->user_events_data_fd == 0)
+	if (options->session_type == EP_SESSION_TYPE_USEREVENTS && options->user_events_data_fd == -1)
 		return false;
 
 	return true;

@@ -80,7 +80,7 @@ bool
 eventpipe_collect_tracing_command_try_parse_event_ids (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	uint32_t length,
+	uint32_t event_ids_len,
 	uint32_t **event_ids);
 
 static
@@ -95,7 +95,7 @@ bool
 eventpipe_collect_tracing_command_try_parse_tracepoint_sets (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	uint32_t length,
+	uint32_t tracepoint_sets_len,
 	EventPipeProviderTracepointSet **tracepoint_sets);
 
 static
@@ -319,7 +319,7 @@ bool
 eventpipe_collect_tracing_command_try_parse_event_ids (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	uint32_t length,
+	uint32_t event_ids_len,
 	uint32_t **event_ids)
 {
 	EP_ASSERT (buffer != NULL);
@@ -329,12 +329,12 @@ eventpipe_collect_tracing_command_try_parse_event_ids (
 	bool result = false;
 	*event_ids = NULL;
 
-	if (length == 0)
+	if (event_ids_len == 0)
 		return true;
 
-	*event_ids = ep_rt_object_array_alloc (uint32_t, length);
+	*event_ids = ep_rt_object_array_alloc (uint32_t, event_ids_len);
 	ep_raise_error_if_nok (*event_ids != NULL);
-	for (uint32_t i = 0; i < length; ++i)
+	for (uint32_t i = 0; i < event_ids_len; ++i)
 		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &(*event_ids)[i]));
 
 	result = true;
@@ -398,7 +398,7 @@ bool
 eventpipe_collect_tracing_command_try_parse_tracepoint_sets (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	uint32_t length,
+	uint32_t tracepoint_sets_len,
 	EventPipeProviderTracepointSet **tracepoint_sets)
 {
 	EP_ASSERT (buffer != NULL);
@@ -408,13 +408,13 @@ eventpipe_collect_tracing_command_try_parse_tracepoint_sets (
 	bool result = false;
 	*tracepoint_sets = NULL;
 
-	if (length == 0)
+	if (tracepoint_sets_len == 0)
 		return false;
 
-	*tracepoint_sets = ep_rt_object_array_alloc (EventPipeProviderTracepointSet, length);
+	*tracepoint_sets = ep_rt_object_array_alloc (EventPipeProviderTracepointSet, tracepoint_sets_len);
 	ep_raise_error_if_nok (*tracepoint_sets != NULL);
 
-	for (uint32_t i = 0; i < length; ++i) {
+	for (uint32_t i = 0; i < tracepoint_sets_len; ++i) {
 		ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &(*tracepoint_sets)[i].tracepoint_name));
 		ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty ((*tracepoint_sets)[i].tracepoint_name));
 
@@ -429,7 +429,7 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	eventpipe_collect_tracing_command_free_tracepoint_sets (*tracepoint_sets, length);
+	eventpipe_collect_tracing_command_free_tracepoint_sets (*tracepoint_sets, tracepoint_sets_len);
 	*tracepoint_sets = NULL;
 	ep_exit_error_handler ();
 }
@@ -901,7 +901,7 @@ eventpipe_protocol_helper_collect_tracing (
 		return false;
 	}
 
-	int user_events_data_fd = 0;
+	int user_events_data_fd = -1;
 	if (payload->session_type == EP_SESSION_TYPE_USEREVENTS) {
 		if (!ds_ipc_stream_read_fd (stream, &user_events_data_fd)) {
 			ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);

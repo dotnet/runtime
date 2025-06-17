@@ -221,7 +221,7 @@ session_user_events_tracepoints_init (
 	EventPipeSessionProviderList *providers = session->providers;
 	EP_ASSERT (providers != NULL);
 
-	ep_raise_error_if_nok (user_events_data_fd > 0);
+	ep_raise_error_if_nok (user_events_data_fd != -1);
 	session->user_events_data_fd = user_events_data_fd;
 
 	DN_LIST_FOREACH_BEGIN (EventPipeSessionProvider *, session_provider, ep_session_provider_list_get_providers (providers)) {
@@ -625,7 +625,7 @@ void
 session_disable_user_events (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
-	ep_return_void_if_nok (session->session_type == EP_SESSION_TYPE_USEREVENTS && session->user_events_data_fd > 0);
+	ep_return_void_if_nok (session->session_type == EP_SESSION_TYPE_USEREVENTS && session->user_events_data_fd != -1);
 
 	ep_requires_lock_held ();
 
@@ -919,7 +919,7 @@ ep_session_write_event (
 			result = true;
 			break;
 		case EP_SESSION_TYPE_USEREVENTS:
-			EP_ASSERT (session->user_events_data_fd != 0);
+			EP_ASSERT (session->user_events_data_fd != -1);
 			result = session_tracepoint_write_event (
 				session,
 				thread,
