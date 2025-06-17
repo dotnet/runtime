@@ -175,7 +175,9 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             }
         }
 
-        internal static void AdHocSignFileInPlace(string managedSignedPath)
+#pragma warning disable xUnit1013 // Public method should be marked as test
+        public static void AdHocSignFileInPlace(string managedSignedPath)
+#pragma warning restore xUnit1013 // Public method should be marked as test
         {
             var tmpFile = Path.GetTempFileName();
             var mode = File.GetUnixFileMode(managedSignedPath);
