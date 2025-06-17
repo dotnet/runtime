@@ -27,8 +27,8 @@ public static class CStructTests
         var c = default(CStructNonBlittablePrimitiveFields);
         Assert.Equal(Unsafe.SizeOf<CStructNonBlittablePrimitiveFields>(), Marshal.SizeOf<CStructNonBlittablePrimitiveFields>());
         Assert.Equal(4, Unsafe.SizeOf<CStructNonBlittablePrimitiveFields>());
-        Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CStructBlittablePrimitiveFields, byte>(ref c), ref Unsafe.As<bool, byte>(ref c.a)));
-        Assert.Equal(2, Unsafe.ByteOffset(ref Unsafe.As<CStructBlittablePrimitiveFields, byte>(ref c), ref Unsafe.As<char, byte>(ref c.b)));
+        Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CStructNonBlittablePrimitiveFields, byte>(ref c), ref Unsafe.As<bool, byte>(ref c.a)));
+        Assert.Equal(2, Unsafe.ByteOffset(ref Unsafe.As<CStructNonBlittablePrimitiveFields, byte>(ref c), ref Unsafe.As<char, byte>(ref c.b)));
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public static class CStructTests
     [Fact]
     public static void EmptyStruct()
     {
-        Assert.Throws<TypeLoadException>(() => typeof(EmptyStruct));
+        Assert.Throws<TypeLoadException>(() => typeof(EmptyCStruct));
     }
 
     [Fact]
