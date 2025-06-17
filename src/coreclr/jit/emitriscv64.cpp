@@ -1087,7 +1087,6 @@ void emitter::emitIns_R_AI(instruction  ins,
     assert(EA_IS_RELOC(attr)); // EA_PTR_DSP_RELOC
     assert(ins == INS_jal);    // for special.
     assert(isGeneralRegister(reg));
-
     // INS_OPTS_RELOC: placeholders.  2-ins:
     //  case:EA_HANDLE_CNS_RELOC
     //   auipc  reg, off-hi-20bits
@@ -1143,16 +1142,9 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 {
     assert(dst->HasFlag(BBF_HAS_LABEL));
 
-    // if for reloc!  4-ins:
+    // 2-ins:
     //   auipc reg, offset-hi20
     //   addi  reg, reg, offset-lo12
-    //
-    // else:  5-ins:
-    //   lui  tmp, dst-lo-20bits
-    //   addi tmp, tmp, dst-lo-12bits
-    //   lui reg, dst-hi-15bits
-    //   slli reg, reg, 20
-    //   add  reg, tmp, reg
 
     instrDesc* id = emitNewInstr(attr);
 
@@ -1161,13 +1153,9 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     id->idAddr()->iiaBBlabel = dst;
 
     if (emitComp->opts.compReloc)
-    {
         id->idSetIsDspReloc();
-        id->idCodeSize(8);
-    }
-    else
-        id->idCodeSize(20);
 
+    id->idCodeSize(2 * sizeof(code_t));
     id->idReg1(reg);
 
     if (EA_IS_GCREF(attr))
@@ -3298,38 +3286,13 @@ BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins
     const regNumber reg1   = id->idReg1();
     const ssize_t   igOffs = targetInsGroup->igOffs;
 
-    if (id->idIsReloc())
-    {
-        *ins = INS_addi;
-        return emitOutputInstr_OptsRlReloc(dst, igOffs, reg1);
-    }
-    *ins = INS_add;
-    return emitOutputInstr_OptsRlNoReloc(dst, igOffs, reg1);
-}
+    *ins = INS_auipc;
 
-BYTE* emitter::emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, regNumber reg1)
-{
     const ssize_t immediate = (emitCodeBlock - dst) + igOffs;
     assert((immediate & 0x03) == 0);
-
+    assert(isValidSimm32(immediate));
     dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, UpperNBitsOfWordSignExtend<20>(immediate));
     dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<12>(immediate));
-    return dst;
-}
-
-BYTE* emitter::emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumber reg1)
-{
-    const ssize_t immediate = reinterpret_cast<ssize_t>(emitCodeBlock) + igOffs;
-    assertCodeLength(static_cast<size_t>(immediate), 48); // RISC-V Linux Kernel SV48
-
-    const regNumber rsvdReg      = codeGen->rsGetRsvdReg();
-    const ssize_t   upperSignExt = UpperWordOfDoubleWordDoubleSignExtend<32, 52>(immediate);
-
-    dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(immediate));
-    dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(immediate));
-    dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, LowerNBitsOfWord<16>(upperSignExt));
-    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 20);
-    dst += emitOutput_RTypeInstr(dst, INS_add, reg1, reg1, rsvdReg);
     return dst;
 }
 
