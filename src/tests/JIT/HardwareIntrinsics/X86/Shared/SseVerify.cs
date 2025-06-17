@@ -55,7 +55,7 @@ namespace JIT.HardwareIntrinsics.X86
             {
                 if (T.LeadingZeroCount(x[i]) == T.Zero)
                 {
-                    result |= (1 << i);
+                    result |= (1L << i);
                 }
             }
 
@@ -70,7 +70,7 @@ namespace JIT.HardwareIntrinsics.X86
             {
                 if (float.IsNegative(x[i]))
                 {
-                    result |= (1 << i);
+                    result |= (1L << i);
                 }
             }
 
@@ -85,7 +85,7 @@ namespace JIT.HardwareIntrinsics.X86
             {
                 if (double.IsNegative(x[i]))
                 {
-                    result |= (1 << i);
+                    result |= (1L << i);
                 }
             }
 
