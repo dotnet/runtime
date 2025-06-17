@@ -20,7 +20,7 @@ struct _EventPipeSessionProviderTracepoint {
 #else
 struct _EventPipeSessionProviderTracepoint_Internal {
 #endif
-	const ep_char8_t *tracepoint_format;
+	ep_char8_t *tracepoint_format;
 	uint32_t write_index;
 	uint32_t enabled;
 };
@@ -32,6 +32,10 @@ struct _EventPipeSessionProviderTracepoint {
 #endif
 
 #define EP_SESSION_PROVIDER_TRACEPOINT_ENABLE_BIT 31
+
+EP_DEFINE_GETTER(EventPipeSessionProviderTracepoint *, session_provider_tracepoint, const ep_char8_t *, tracepoint_format)
+EP_DEFINE_GETTER(EventPipeSessionProviderTracepoint *, session_provider_tracepoint, uint32_t, write_index)
+EP_DEFINE_GETTER(EventPipeSessionProviderTracepoint *, session_provider_tracepoint, uint32_t, enabled)
 
 bool
 ep_session_provider_register_tracepoints (
@@ -45,8 +49,8 @@ ep_session_provider_unregister_tracepoints (
 
 const EventPipeSessionProviderTracepoint *
 ep_session_provider_get_tracepoint_for_event (
-	const EventPipeSessionProvider *session_provider,
-	const EventPipeEvent *ep_event);
+	EventPipeSessionProvider *session_provider,
+	EventPipeEvent *ep_event);
 
 /*
  * EventPipeSessionProviderEventFilter.
@@ -137,7 +141,7 @@ ep_session_provider_free (EventPipeSessionProvider * session_provider);
 
 bool
 ep_session_provider_allows_event (
-	const EventPipeSessionProvider *session_provider,
+	EventPipeSessionProvider *session_provider,
 	const EventPipeEvent *ep_event);
 
 /*

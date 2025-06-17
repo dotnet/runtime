@@ -218,7 +218,7 @@ session_user_events_tracepoints_init (
 
 	bool result = false;
 
-	EventPipeSessionProviderList *providers = ep_session_get_providers (session);;
+	EventPipeSessionProviderList *providers = session->providers;
 	EP_ASSERT (providers != NULL);
 
 	ep_raise_error_if_nok (user_events_data_fd > 0);
@@ -226,7 +226,6 @@ session_user_events_tracepoints_init (
 
 	DN_LIST_FOREACH_BEGIN (EventPipeSessionProvider *, session_provider, ep_session_provider_list_get_providers (providers)) {
 		EP_ASSERT (session_provider != NULL);
-
 		ep_raise_error_if_nok (ep_session_provider_register_tracepoints (session_provider, session->user_events_data_fd));
 	} DN_LIST_FOREACH_END;
 	
@@ -237,7 +236,6 @@ ep_on_exit:
 
 ep_on_error:
 	session_disable_user_events (session);
-	session->user_events_data_fd = 0;
 	ep_exit_error_handler ();
 }
 
@@ -631,18 +629,16 @@ session_disable_user_events (EventPipeSession *session)
 
 	ep_requires_lock_held ();
 
-	EventPipeSessionProviderList *providers = ep_session_get_providers (session);
+	EventPipeSessionProviderList *providers = session->providers;
 	EP_ASSERT (providers != NULL);
 	DN_LIST_FOREACH_BEGIN (EventPipeSessionProvider *, session_provider, ep_session_provider_list_get_providers (providers)) {
 		ep_session_provider_unregister_tracepoints (session_provider, session->user_events_data_fd);
 	} DN_LIST_FOREACH_END;
 
-	if (session->user_events_data_fd != 0) {
 #if HAVE_UNISTD_H
-		close (session->user_events_data_fd);
+	close (session->user_events_data_fd);
 #endif // HAVE_UNISTD_H
-		session->user_events_data_fd = 0;
-	}
+	session->user_events_data_fd = 0;
 }
 
 static
@@ -722,13 +718,13 @@ session_tracepoint_write_event (
 	EP_ASSERT (ep_event != NULL);
 
 	EventPipeProvider *provider = ep_event_get_provider (ep_event);
-	EventPipeSessionProviderList *session_provider_list = ep_session_get_providers (session);
+	EventPipeSessionProviderList *session_provider_list = session->providers;
 	EventPipeSessionProvider *session_provider = ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (session_provider_list), ep_provider_get_provider_name (provider));
 	const EventPipeSessionProviderTracepoint *tracepoint = ep_session_provider_get_tracepoint_for_event (session_provider, ep_event);
 	if (tracepoint == NULL)
 		return false;
 
-	if (tracepoint->enabled == 0)
+	if (ep_session_provider_tracepoint_get_enabled (tracepoint) == 0)
 		return false;
 
 	// Setup iovec array
@@ -738,8 +734,8 @@ session_tracepoint_write_event (
 	struct iovec *io = static_io;
 
 	uint8_t *ep_event_data = ep_event_payload_get_data (ep_event_payload);
-
-	int param_iov = ep_event_data != NULL ? 1 : ep_event_payload->event_data_len;
+	uint32_t ep_event_data_len = ep_event_payload_get_event_data_len (ep_event_payload);
+	int param_iov = ep_event_data != NULL ? 1 : ep_event_data_len;
 	int io_elem_capacity = param_iov + max_non_parameter_iov;
 	if (io_elem_capacity > max_static_io_capacity) {
 		io = (struct iovec *)malloc (sizeof (struct iovec) * io_elem_capacity);
@@ -750,8 +746,9 @@ session_tracepoint_write_event (
 	int io_index = 0;
 
 	// Write Index
-	io[io_index].iov_base = (void *)&tracepoint->write_index;
-	io[io_index].iov_len = sizeof(tracepoint->write_index);
+	uint32_t write_index = ep_session_provider_tracepoint_get_write_index (tracepoint);
+	io[io_index].iov_base = (void *)&write_index;
+	io[io_index].iov_len = sizeof(write_index);
 	io_index++;
 
 	// Version
@@ -779,10 +776,10 @@ session_tracepoint_write_event (
 	io_index++;
 
 	// Extension
-	int extension_len = 0;
+	uint32_t extension_len = 0;
 
 	// Extension Event Metadata
-	int metadata_len = ep_event_get_metadata_len (ep_event);
+	uint32_t metadata_len = ep_event_get_metadata_len (ep_event);
 	uint8_t extension_metadata[1 + sizeof(uint32_t)];
 	extension_metadata[0] = 0x01; // label
 	*(uint32_t*)&extension_metadata[1] = metadata_len;
@@ -808,26 +805,34 @@ session_tracepoint_write_event (
 
 	EP_ASSERT (io_index <= max_non_parameter_iov);
 
-	int ep_event_payload_len = 0;
+	uint32_t ep_event_payload_total_size = 0;
 	// EventPipeEventPayload
 	if (ep_event_data != NULL) {
+		uint32_t ep_event_payload_size = ep_event_payload_get_size (ep_event_payload);
 		io[io_index].iov_base = ep_event_data;
-		io[io_index].iov_len = ep_event_payload_get_size (ep_event_payload);
+		io[io_index].iov_len = ep_event_payload_size;
 		io_index++;
-		ep_event_payload_len += ep_event_payload_get_size (ep_event_payload);
+		ep_event_payload_total_size += ep_event_payload_size;
 	} else {
-		EventData *event_data = ep_event_payload->event_data;
-		for (uint32_t i = 0; i < ep_event_payload->event_data_len; ++i) {
+		const EventData *event_data = ep_event_payload_get_event_data (ep_event_payload);
+		for (uint32_t i = 0; i < ep_event_data_len; ++i) {
+			uint32_t ep_event_data_size = ep_event_data_get_size (&event_data[i]);
 			io[io_index].iov_base = (void *)ep_event_data_get_ptr (&event_data[i]);
-			io[io_index].iov_len = ep_event_data_get_size (&event_data[i]);
+			io[io_index].iov_len = ep_event_data_size;
 			io_index++;
-			ep_event_payload_len += ep_event_data_get_size (&event_data[i]);
+			ep_event_payload_total_size += ep_event_data_size;
 		}
 	}
 
+	if ((extension_len & 0xFFFF0000) != 0)
+		return false;
+
+	if ((ep_event_payload_total_size & 0xFFFF0000) != 0)
+		return false;
+
 	// Calculate the relative locations for extension and payload.
 	extension_rel_loc = extension_len << 16 | (sizeof(payload_rel_loc) & 0xFFFF);
-	payload_rel_loc = ep_event_payload_len << 16 | (extension_len & 0xFFFF);
+	payload_rel_loc = ep_event_payload_total_size << 16 | (extension_len & 0xFFFF);
 
 	ssize_t bytes_written;
 	while ((bytes_written = writev(session->user_events_data_fd, (const struct iovec *)io, io_index) < 0) && errno == EINTR);

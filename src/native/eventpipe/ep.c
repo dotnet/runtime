@@ -363,7 +363,7 @@ eventpipe_collect_tracing_command_free_event_filter (EventPipeProviderEventFilte
 {
 	ep_return_void_if_nok (event_filter != NULL);
 
-	ep_rt_object_array_free ((uint32_t *)event_filter->event_ids);
+	ep_rt_object_array_free (event_filter->event_ids);
 
 	ep_rt_object_free (event_filter);
 }
@@ -374,8 +374,8 @@ eventpipe_collect_tracing_command_free_tracepoint_sets (EventPipeProviderTracepo
 	ep_return_void_if_nok (tracepoint_set != NULL);
 
 	for (uint32_t i = 0; i < length; ++i) {
-		ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_set->tracepoint_name);
-		ep_rt_object_array_free ((uint32_t *)tracepoint_set->event_ids);
+		ep_rt_utf8_string_free (tracepoint_set->tracepoint_name);
+		ep_rt_object_array_free (tracepoint_set->event_ids);
 	}
 
 	ep_rt_object_array_free (tracepoint_set);
@@ -386,9 +386,9 @@ eventpipe_collect_tracing_command_free_tracepoint_config (EventPipeProviderTrace
 {
 	ep_return_void_if_nok (tracepoint_config != NULL);
 
-	ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_config->default_tracepoint_name);
+	ep_rt_utf8_string_free (tracepoint_config->default_tracepoint_name);
 
-	eventpipe_collect_tracing_command_free_tracepoint_sets ((EventPipeProviderTracepointSet *)tracepoint_config->non_default_tracepoints, tracepoint_config->non_default_tracepoints_length);
+	eventpipe_collect_tracing_command_free_tracepoint_sets (tracepoint_config->non_default_tracepoints, tracepoint_config->non_default_tracepoints_length);
 
 	ep_rt_object_free (tracepoint_config);
 }
@@ -408,10 +408,12 @@ ep_provider_config_init (
 	EP_ASSERT (provider_config != NULL);
 	EP_ASSERT (provider_name != NULL);
 
-	provider_config->provider_name = provider_name;
+	provider_config->provider_name = ep_rt_utf8_string_dup (provider_name);
 	provider_config->keywords = keywords;
 	provider_config->logging_level = logging_level;
-	provider_config->filter_data = filter_data;
+	provider_config->filter_data = NULL;
+	if (filter_data != NULL)
+		provider_config->filter_data = ep_rt_utf8_string_dup (filter_data);
 
 	// Currently only supported through IPC Command
 	provider_config->event_filter = NULL;
@@ -428,10 +430,10 @@ ep_provider_config_fini (EventPipeProviderConfiguration *provider_config)
 {
 	ep_return_void_if_nok (provider_config != NULL);
 
-	ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (provider_config));
-	ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (provider_config));
-	eventpipe_collect_tracing_command_free_event_filter ((EventPipeProviderEventFilter *)ep_provider_config_get_event_filter (provider_config));
-	eventpipe_collect_tracing_command_free_tracepoint_config ((EventPipeProviderTracepointConfiguration *)ep_provider_config_get_tracepoint_config (provider_config));
+	ep_rt_utf8_string_free (provider_config->provider_name);
+	ep_rt_utf8_string_free (provider_config->filter_data);
+	eventpipe_collect_tracing_command_free_event_filter (provider_config->event_filter);
+	eventpipe_collect_tracing_command_free_tracepoint_config (provider_config->tracepoint_config);
 }
 
 /*
@@ -1149,8 +1151,8 @@ ep_on_exit:
 	if (providers) {
 		for (int32_t i = 0; i < providers_len; ++i) {
 			ep_provider_config_fini (&providers [i]);
-			ep_rt_utf8_string_free ((ep_char8_t *)providers [i].provider_name);
-			ep_rt_utf8_string_free ((ep_char8_t *)providers [i].filter_data);
+			ep_rt_utf8_string_free (providers [i].provider_name);
+			ep_rt_utf8_string_free (providers [i].filter_data);
 		}
 		ep_rt_object_array_free (providers);
 	}

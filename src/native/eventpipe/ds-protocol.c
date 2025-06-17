@@ -457,7 +457,7 @@ bool
 ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	const ep_char8_t **string_utf8)
+	ep_char8_t **string_utf8)
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
@@ -486,7 +486,7 @@ ep_on_exit:
 
 ep_on_error:
 	ep_rt_byte_array_free (byte_array);
-	ep_rt_utf8_string_free ((ep_char8_t *)*string_utf8);
+	ep_rt_utf8_string_free (*string_utf8);
 	ep_exit_error_handler ();
 }
 

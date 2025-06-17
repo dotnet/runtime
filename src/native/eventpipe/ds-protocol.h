@@ -133,7 +133,7 @@ bool
 ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (
     uint8_t **buffer,
     uint32_t *buffer_len,
-    const ep_char8_t **string_utf8);
+    ep_char8_t **string_utf8);
 
 bool
 ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (

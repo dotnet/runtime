@@ -189,7 +189,7 @@ struct _EventPipeProviderEventFilter_Internal {
 #endif
 	bool enable;
 	uint32_t length;
-	const uint32_t *event_ids;
+	uint32_t *event_ids;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
@@ -213,8 +213,8 @@ struct _EventPipeProviderTracepointSet {
 #else
 struct _EventPipeProviderTracepointSet_Internal {
 #endif
-	const ep_char8_t *tracepoint_name;
-	const uint32_t *event_ids;
+	ep_char8_t *tracepoint_name;
+	uint32_t *event_ids;
 	uint32_t event_ids_length;
 };
 
@@ -239,8 +239,8 @@ struct _EventPipeProviderTracepointConfiguration {
 #else
 struct _EventPipeProviderTracepointConfiguration_Internal {
 #endif
-	const ep_char8_t *default_tracepoint_name;
-	const EventPipeProviderTracepointSet *non_default_tracepoints;
+	ep_char8_t *default_tracepoint_name;
+	EventPipeProviderTracepointSet *non_default_tracepoints;
 	uint32_t non_default_tracepoints_length;
 };
 
@@ -262,12 +262,12 @@ struct _EventPipeProviderConfiguration {
 #else
 struct _EventPipeProviderConfiguration_Internal {
 #endif
-	const ep_char8_t *provider_name;
-	const ep_char8_t *filter_data;
+	ep_char8_t *provider_name;
+	ep_char8_t *filter_data;
 	uint64_t keywords;
 	EventPipeEventLevel logging_level;
-	const EventPipeProviderEventFilter *event_filter;
-	const EventPipeProviderTracepointConfiguration *tracepoint_config;
+	EventPipeProviderEventFilter *event_filter;
+	EventPipeProviderTracepointConfiguration *tracepoint_config;
 };
 
 

@@ -53,6 +53,10 @@ session_provider_tracepoint_unregister (
 
 static
 void
+session_provider_tracepoint_free (EventPipeSessionProviderTracepoint *tracepoint);
+
+static
+void
 DN_CALLBACK_CALLTYPE
 tracepoint_free_func (void *tracepoint);
 
@@ -61,8 +65,8 @@ void
 session_provider_tracepoint_config_free (EventPipeSessionProviderTracepointConfiguration *tracepoint_config);
 
 static
-const ep_char8_t *
-tracepoint_format_alloc (const ep_char8_t *tracepoint_name);
+ep_char8_t *
+tracepoint_format_alloc (ep_char8_t *tracepoint_name);
 
 static
 EventPipeSessionProviderTracepointConfiguration *
@@ -71,7 +75,7 @@ session_provider_tracepoint_config_alloc (const EventPipeProviderTracepointConfi
 static
 bool
 event_filter_enables_event_id (
-	const EventPipeSessionProviderEventFilter *event_filter,
+	EventPipeSessionProviderEventFilter *event_filter,
 	uint32_t event_id);
 
 /*
@@ -290,14 +294,14 @@ ep_session_provider_unregister_tracepoints (
  */
 const EventPipeSessionProviderTracepoint *
 ep_session_provider_get_tracepoint_for_event (
-	const EventPipeSessionProvider *session_provider,
-	const EventPipeEvent *ep_event)
+	EventPipeSessionProvider *session_provider,
+	EventPipeEvent *ep_event)
 {
 	EP_ASSERT (session_provider != NULL);
 	EP_ASSERT (ep_event != NULL);
 
-	const EventPipeSessionProviderTracepoint *tracepoint = NULL;
-	const EventPipeSessionProviderTracepointConfiguration *tracepoint_config = session_provider->tracepoint_config;
+	EventPipeSessionProviderTracepoint *tracepoint = NULL;
+	EventPipeSessionProviderTracepointConfiguration *tracepoint_config = session_provider->tracepoint_config;
 	if (tracepoint_config == NULL)
 		return tracepoint;
 
@@ -307,8 +311,7 @@ ep_session_provider_get_tracepoint_for_event (
 	if (tracepoint_config->event_id_to_tracepoint_map == NULL)
 		return tracepoint;
 
-	uint32_t event_id = ep_event_get_event_id (ep_event);
-	dn_umap_it_t tracepoint_found = dn_umap_uint32_ptr_find (tracepoint_config->event_id_to_tracepoint_map, event_id);
+	dn_umap_it_t tracepoint_found = dn_umap_uint32_ptr_find (tracepoint_config->event_id_to_tracepoint_map, ep_event_get_event_id (ep_event));
 	if (!dn_umap_it_end (tracepoint_found))
 		tracepoint = dn_umap_it_value_t (tracepoint_found, EventPipeSessionProviderTracepoint *);
 
@@ -317,13 +320,20 @@ ep_session_provider_get_tracepoint_for_event (
 
 static
 void
+session_provider_tracepoint_free (EventPipeSessionProviderTracepoint *tracepoint)
+{
+	ep_return_void_if_nok (tracepoint != NULL);
+
+	ep_rt_utf8_string_free (tracepoint->tracepoint_format);
+	ep_rt_object_free (tracepoint);
+}
+
+static
+void
 DN_CALLBACK_CALLTYPE
 tracepoint_free_func (void *tracepoint)
 {
-	EP_ASSERT (tracepoint != NULL);
-	EventPipeSessionProviderTracepoint *tp = *(EventPipeSessionProviderTracepoint **)tracepoint;
-	ep_rt_utf8_string_free ((ep_char8_t *)tp->tracepoint_format);
-	ep_rt_object_free (tp);
+	session_provider_tracepoint_free (*(EventPipeSessionProviderTracepoint **)tracepoint);
 }
 
 static
@@ -342,19 +352,19 @@ session_provider_tracepoint_config_free (EventPipeSessionProviderTracepointConfi
 		tracepoint_config->tracepoints = NULL;
 	}
 
-	ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_config->default_tracepoint.tracepoint_format);
+	ep_rt_utf8_string_free (tracepoint_config->default_tracepoint.tracepoint_format);
 
 	ep_rt_object_free (tracepoint_config);
 }
 
 static
-const ep_char8_t *
-tracepoint_format_alloc (const ep_char8_t *tracepoint_name)
+ep_char8_t *
+tracepoint_format_alloc (ep_char8_t *tracepoint_name)
 {
+	EP_ASSERT (tracepoint_name != NULL);
+
 	const int format_max_size = 512;
 	const ep_char8_t *args = "u8 version; u16 event_id; __rel_loc u8[] extension; __rel_loc u8[] payload";
-
-	ep_return_null_if_nok (tracepoint_name != NULL);
 
 	if ((strlen(tracepoint_name) + strlen(args) + 2) > format_max_size) // +2 for the space and null terminator
 		return NULL;
@@ -372,7 +382,11 @@ session_provider_tracepoint_config_alloc (const EventPipeProviderTracepointConfi
 	EventPipeSessionProviderTracepoint *tracepoint = NULL;
 	ep_raise_error_if_nok (instance != NULL);
 
-	instance->default_tracepoint.tracepoint_format = tracepoint_format_alloc (tracepoint_config->default_tracepoint_name);
+	instance->default_tracepoint.tracepoint_format = NULL;
+	if (tracepoint_config->default_tracepoint_name != NULL) {
+		instance->default_tracepoint.tracepoint_format = tracepoint_format_alloc (tracepoint_config->default_tracepoint_name);
+		ep_raise_error_if_nok (instance->default_tracepoint.tracepoint_format != NULL);
+	}
 
 	instance->tracepoints = NULL;
 	instance->event_id_to_tracepoint_map = NULL;
@@ -413,10 +427,7 @@ ep_on_exit:
 	return instance;
 
 ep_on_error:
-	if (tracepoint != NULL) {
-		ep_rt_utf8_string_free ((ep_char8_t *)tracepoint->tracepoint_format);
-		ep_rt_object_free (tracepoint);
-	}
+	session_provider_tracepoint_free (tracepoint);
 	session_provider_tracepoint_config_free (instance);
 	instance = NULL;
 	ep_exit_error_handler ();
@@ -483,7 +494,7 @@ ep_session_provider_free (EventPipeSessionProvider * session_provider)
 static
 bool
 event_filter_enables_event_id (
-	const EventPipeSessionProviderEventFilter *event_filter,
+	EventPipeSessionProviderEventFilter *event_filter,
 	uint32_t event_id)
 {
 	if (event_filter == NULL)
@@ -500,18 +511,17 @@ event_filter_enables_event_id (
 
 bool
 ep_session_provider_allows_event (
-	const EventPipeSessionProvider *session_provider,
+	EventPipeSessionProvider *session_provider,
 	const EventPipeEvent *ep_event)
 {
 	EP_ASSERT(session_provider != NULL);
 
 	uint64_t keywords = ep_event_get_keywords (ep_event);
-	uint64_t session_keywords = ep_session_provider_get_keywords(session_provider);
-	if ((keywords != 0) && ((session_keywords & keywords) == 0))
+	if ((keywords != 0) && ((session_provider->keywords & keywords) == 0))
 		return false;
 
 	EventPipeEventLevel event_level = ep_event_get_level (ep_event);
-	EventPipeEventLevel session_level = ep_session_provider_get_logging_level(session_provider);
+	EventPipeEventLevel session_level = session_provider->logging_level;
 	if ((event_level != EP_EVENT_LEVEL_LOGALWAYS) &&
 		(session_level != EP_EVENT_LEVEL_LOGALWAYS) &&
 		(session_level < event_level))

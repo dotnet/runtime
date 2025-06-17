@@ -137,31 +137,33 @@ ep_rt_utf16le_to_utf8_string_n (
 ep_char8_t *
 ep_rt_utf8_string_printf_alloc (const ep_char8_t *format, ...)
 {
-    if (!format)
-        return NULL;
+	if (!format)
+		return NULL;
 
-    va_list args;
-    va_start (args, format);
-    int len = vsnprintf (NULL, 0, format, args);
-    va_end (args);
-    if (len < 0)
-        return NULL;
+	va_list args;
+	va_start (args, format);
 
-    size_t size = (size_t)len + 1;
-    ep_char8_t *buffer = ep_rt_utf8_string_alloc (size);
-    if (!buffer)
-        return NULL;
+	va_list args_copy;
+	va_copy (args_copy, args);
+	int len = vsnprintf (NULL, 0, format, args_copy);
+	va_end (args_copy);
+	if (len < 0)
+		return NULL;
 
-    va_start (args, format);
-    int written = vsnprintf (buffer, size, format, args);
-    va_end (args);
+	size_t size = (size_t)len + 1;
+	ep_char8_t *buffer = ep_rt_utf8_string_alloc (size);
+	if (!buffer)
+		return NULL;
 
-    if (written < 0 || (size_t)written >= size) {
-        ep_rt_utf8_string_free (buffer);
-        return NULL;
-    }
+	int written = vsnprintf (buffer, size, format, args);
+	va_end (args);
 
-    return buffer;
+	if (written < 0 || (size_t)written >= size) {
+		ep_rt_utf8_string_free (buffer);
+		return NULL;
+	}
+
+	return buffer;
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */

@@ -80,30 +80,30 @@ bool
 eventpipe_collect_tracing_command_try_parse_event_ids (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	const uint32_t length,
-	const uint32_t **event_ids);
+	uint32_t length,
+	uint32_t **event_ids);
 
 static
 bool
 eventpipe_collect_tracing_command_try_parse_event_filter (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	const EventPipeProviderEventFilter **event_filter);
+	EventPipeProviderEventFilter **event_filter);
 
 static
 bool
 eventpipe_collect_tracing_command_try_parse_tracepoint_sets (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	const uint32_t length,
-	const EventPipeProviderTracepointSet **tracepoint_sets);
+	uint32_t length,
+	EventPipeProviderTracepointSet **tracepoint_sets);
 
 static
 bool
 eventpipe_collect_tracing_command_try_parse_tracepoint_config (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	const EventPipeProviderTracepointConfiguration **tracepoint_config);
+	EventPipeProviderTracepointConfiguration **tracepoint_config);
 
 static
 bool
@@ -319,8 +319,8 @@ bool
 eventpipe_collect_tracing_command_try_parse_event_ids (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	const uint32_t length,
-	const uint32_t **event_ids)
+	uint32_t length,
+	uint32_t **event_ids)
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
@@ -332,13 +332,10 @@ eventpipe_collect_tracing_command_try_parse_event_ids (
 	if (length == 0)
 		return true;
 
-	uint32_t *ids = ep_rt_object_array_alloc (uint32_t, length);
-	ep_raise_error_if_nok (ids != NULL);
+	*event_ids = ep_rt_object_array_alloc (uint32_t, length);
+	ep_raise_error_if_nok (*event_ids != NULL);
 	for (uint32_t i = 0; i < length; ++i)
-		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &ids[i]));
-
-	*event_ids = ids;
-	ids = NULL;
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &(*event_ids)[i]));
 
 	result = true;
 
@@ -346,7 +343,8 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	ep_rt_object_array_free (ids);
+	ep_rt_object_array_free (*event_ids);
+	*event_ids = NULL;
 	ep_exit_error_handler ();
 }
 
@@ -361,26 +359,22 @@ bool
 eventpipe_collect_tracing_command_try_parse_event_filter (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	const EventPipeProviderEventFilter **event_filter)
+	EventPipeProviderEventFilter **event_filter)
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
 	EP_ASSERT (event_filter != NULL);
 
 	bool result = false;
-	*event_filter = NULL;
 
-	EventPipeProviderEventFilter *filter = ep_rt_object_alloc (EventPipeProviderEventFilter);
-	ep_raise_error_if_nok (filter != NULL);
+	*event_filter = ep_rt_object_alloc (EventPipeProviderEventFilter);
+	ep_raise_error_if_nok (*event_filter != NULL);
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_bool (buffer, buffer_len, &filter->enable));
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_bool (buffer, buffer_len, &(*event_filter)->enable));
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &filter->length));
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &(*event_filter)->length));
 
-	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_ids (buffer, buffer_len, filter->length, &filter->event_ids));
-
-	*event_filter = filter;
-	filter = NULL;
+	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_ids (buffer, buffer_len, (*event_filter)->length, &(*event_filter)->event_ids));
 
 	result = true;
 
@@ -388,7 +382,8 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	eventpipe_collect_tracing_command_free_event_filter (filter);
+	eventpipe_collect_tracing_command_free_event_filter (*event_filter);
+	*event_filter = NULL;
 	ep_exit_error_handler ();
 }
 
@@ -403,8 +398,8 @@ bool
 eventpipe_collect_tracing_command_try_parse_tracepoint_sets (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	const uint32_t length,
-	const EventPipeProviderTracepointSet **tracepoint_sets)
+	uint32_t length,
+	EventPipeProviderTracepointSet **tracepoint_sets)
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
@@ -416,20 +411,17 @@ eventpipe_collect_tracing_command_try_parse_tracepoint_sets (
 	if (length == 0)
 		return false;
 
-	EventPipeProviderTracepointSet *sets = ep_rt_object_array_alloc (EventPipeProviderTracepointSet, length);
-	ep_raise_error_if_nok (sets != NULL);
+	*tracepoint_sets = ep_rt_object_array_alloc (EventPipeProviderTracepointSet, length);
+	ep_raise_error_if_nok (*tracepoint_sets != NULL);
 
 	for (uint32_t i = 0; i < length; ++i) {
-		ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &sets[i].tracepoint_name));
-		ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (sets[i].tracepoint_name));
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &(*tracepoint_sets)[i].tracepoint_name));
+		ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty ((*tracepoint_sets)[i].tracepoint_name));
 
-		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &sets[i].event_ids_length));
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &(*tracepoint_sets)[i].event_ids_length));
 
-		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_ids (buffer, buffer_len, sets[i].event_ids_length, &sets[i].event_ids));
+		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_ids (buffer, buffer_len, (*tracepoint_sets)[i].event_ids_length, &(*tracepoint_sets)[i].event_ids));
 	}
-
-	*tracepoint_sets = sets;
-	sets = NULL;
 
 	result = true;
 
@@ -437,7 +429,8 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	eventpipe_collect_tracing_command_free_tracepoint_sets (sets, length);
+	eventpipe_collect_tracing_command_free_tracepoint_sets (*tracepoint_sets, length);
+	*tracepoint_sets = NULL;
 	ep_exit_error_handler ();
 }
 
@@ -453,28 +446,24 @@ bool
 eventpipe_collect_tracing_command_try_parse_tracepoint_config (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	const EventPipeProviderTracepointConfiguration **tracepoint_config)
+	EventPipeProviderTracepointConfiguration **tracepoint_config)
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
 	EP_ASSERT (tracepoint_config != NULL);
 
 	bool result = false;
-	*tracepoint_config = NULL;
 
-	EventPipeProviderTracepointConfiguration *config = ep_rt_object_alloc (EventPipeProviderTracepointConfiguration);
-	ep_raise_error_if_nok (config != NULL);
+	*tracepoint_config = ep_rt_object_alloc (EventPipeProviderTracepointConfiguration);
+	ep_raise_error_if_nok (*tracepoint_config != NULL);
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &config->default_tracepoint_name));
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (buffer, buffer_len, &(*tracepoint_config)->default_tracepoint_name));
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &config->non_default_tracepoints_length));
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &(*tracepoint_config)->non_default_tracepoints_length));
 
-	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_tracepoint_sets (buffer, buffer_len, config->non_default_tracepoints_length, &config->non_default_tracepoints));
+	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_tracepoint_sets (buffer, buffer_len, (*tracepoint_config)->non_default_tracepoints_length, &(*tracepoint_config)->non_default_tracepoints));
 
-	ep_raise_error_if_nok (config->default_tracepoint_name != NULL || config->non_default_tracepoints_length > 0);
-
-	*tracepoint_config = config;
-	config = NULL;
+	ep_raise_error_if_nok ((*tracepoint_config)->default_tracepoint_name != NULL || (*tracepoint_config)->non_default_tracepoints_length > 0);
 
 	result = true;
 
@@ -482,7 +471,8 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	eventpipe_collect_tracing_command_free_tracepoint_config (config);
+	eventpipe_collect_tracing_command_free_tracepoint_config (*tracepoint_config);
+	*tracepoint_config = NULL;
 	ep_exit_error_handler ();
 }
 
