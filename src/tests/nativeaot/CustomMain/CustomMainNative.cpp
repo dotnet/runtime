@@ -6,6 +6,7 @@
 
 #ifndef TARGET_WINDOWS
 #define __stdcall
+#define __cdecl
 #endif
 
 #if defined(_WIN32)

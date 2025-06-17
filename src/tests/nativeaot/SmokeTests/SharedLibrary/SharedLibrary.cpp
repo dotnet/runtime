@@ -11,6 +11,7 @@
 
 #ifndef TARGET_WINDOWS
 #define __stdcall
+#define __cdecl
 #endif
 
 // typedef for shared lib exported methods
