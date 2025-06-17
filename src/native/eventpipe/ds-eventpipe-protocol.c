@@ -525,6 +525,7 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
+	ep_provider_config_fini (provider_config);
 	ep_exit_error_handler ();
 }
 
@@ -555,8 +556,6 @@ eventpipe_collect_tracing_command_try_parse_provider_configs (
 	uint32_t count_configs = 0;
 	dn_vector_custom_alloc_params_t  params = {0, };
 
-	EventPipeProviderConfiguration provider_config;
-
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &count_configs));
 	ep_raise_error_if_nok (count_configs <= max_count_configs);
 	params.capacity = count_configs;
@@ -564,17 +563,15 @@ eventpipe_collect_tracing_command_try_parse_provider_configs (
 	ep_raise_error_if_nok (*result);
 
 	for (uint32_t i = 0; i < count_configs; ++i) {
+		EventPipeProviderConfiguration provider_config;
 		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_provider_config (
 			buffer,
 			buffer_len,
 			optional_field_flags,
 			&provider_config));
 
-		ep_raise_error_if_nok (dn_vector_push_back (*result, provider_config));
-		provider_config.provider_name = NULL;
-		provider_config.filter_data = NULL;
-		provider_config.event_filter = NULL;
-		provider_config.tracepoint_config = NULL;
+		if (!dn_vector_push_back (*result, provider_config))
+			ep_provider_config_fini (&provider_config);
 	}
 
 ep_on_exit:
@@ -582,9 +579,8 @@ ep_on_exit:
 
 ep_on_error:
 	count_configs = 0;
-
-	ep_provider_config_fini (&provider_config);
-
+	dn_vector_custom_free (*result, eventpipe_provider_configs_free_func);
+	*result = NULL;
 	ep_exit_error_handler ();
 }
 

@@ -1082,9 +1082,9 @@ ep_enable_2 (
 		providers = ep_rt_object_array_alloc (EventPipeProviderConfiguration, providers_len);
 		ep_raise_error_if_nok (providers != NULL);
 
-		ep_provider_config_init (&providers [0], ep_rt_utf8_string_dup (ep_config_get_public_provider_name_utf8 ()), 0x4c14fccbd, EP_EVENT_LEVEL_VERBOSE, NULL);
-		ep_provider_config_init (&providers [1], ep_rt_utf8_string_dup (ep_config_get_private_provider_name_utf8 ()), 0x4002000b, EP_EVENT_LEVEL_VERBOSE, NULL);
-		ep_provider_config_init (&providers [2], ep_rt_utf8_string_dup (ep_config_get_sample_profiler_provider_name_utf8 ()), 0x0, EP_EVENT_LEVEL_VERBOSE, NULL);
+		ep_provider_config_init (&providers [0], ep_config_get_public_provider_name_utf8 (), 0x4c14fccbd, EP_EVENT_LEVEL_VERBOSE, NULL);
+		ep_provider_config_init (&providers [1], ep_config_get_private_provider_name_utf8 (), 0x4002000b, EP_EVENT_LEVEL_VERBOSE, NULL);
+		ep_provider_config_init (&providers [2], ep_config_get_sample_profiler_provider_name_utf8 (), 0x0, EP_EVENT_LEVEL_VERBOSE, NULL);
 	} else {
 		// Count number of providers to parse.
 		while (*providers_config_to_parse != '\0') {
@@ -1122,6 +1122,8 @@ ep_enable_2 (
 				args = get_next_config_value_as_utf8_string (&providers_config_to_parse);
 
 			ep_provider_config_init (&providers [current_provider++], provider_name, keyword_mask, level, args);
+			ep_rt_utf8_string_free (provider_name);
+			ep_rt_utf8_string_free (args);
 
 			if (!providers_config_to_parse)
 				break;
@@ -1149,11 +1151,8 @@ ep_enable_2 (
 ep_on_exit:
 
 	if (providers) {
-		for (int32_t i = 0; i < providers_len; ++i) {
+		for (int32_t i = 0; i < providers_len; ++i)
 			ep_provider_config_fini (&providers [i]);
-			ep_rt_utf8_string_free (providers [i].provider_name);
-			ep_rt_utf8_string_free (providers [i].filter_data);
-		}
 		ep_rt_object_array_free (providers);
 	}
 

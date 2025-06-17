@@ -158,12 +158,16 @@ event_pipe_enable (
 
 	if (config_providers) {
 		for (guint32 i = 0; i < providers_len; ++i) {
+			char *provider_name = providers[i].provider_name ? mono_utf16_to_utf8 (providers[i].provider_name, g_utf16_len (providers[i].provider_name), error) : NULL;
+			char *filter_data = providers[i].filter_data ? mono_utf16_to_utf8 (providers[i].filter_data, g_utf16_len (providers[i].filter_data), error) : NULL;
 			ep_provider_config_init (
 				&config_providers[i],
-				providers[i].provider_name ? mono_utf16_to_utf8 (providers[i].provider_name, g_utf16_len (providers[i].provider_name), error) : NULL,
+				provider_name,
 				providers [i].keywords,
 				(EventPipeEventLevel)providers [i].logging_level,
-				providers[i].filter_data ? mono_utf16_to_utf8 (providers[i].filter_data, g_utf16_len (providers[i].filter_data), error) : NULL);
+				filter_data);
+			g_free (provider_name);
+			g_free (filter_data);
 		}
 	}
 
@@ -180,11 +184,8 @@ event_pipe_enable (
 		NULL);
 
 	if (config_providers) {
-		for (guint32 i = 0; i < providers_len; ++i) {
+		for (guint32 i = 0; i < providers_len; ++i)
 			ep_provider_config_fini (&config_providers[i]);
-			g_free ((ep_char8_t *)ep_provider_config_get_provider_name (&config_providers[i]));
-			g_free ((ep_char8_t *)ep_provider_config_get_filter_data (&config_providers[i]));
-		}
 	}
 
 	return session_id;

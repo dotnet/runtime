@@ -147,13 +147,17 @@ ep_rt_utf8_string_printf_alloc (const ep_char8_t *format, ...)
 	va_copy (args_copy, args);
 	int len = vsnprintf (NULL, 0, format, args_copy);
 	va_end (args_copy);
-	if (len < 0)
+	if (len < 0) {
+		va_end (args);
 		return NULL;
+	}
 
 	size_t size = (size_t)len + 1;
 	ep_char8_t *buffer = ep_rt_utf8_string_alloc (size);
-	if (!buffer)
+	if (!buffer) {
+		va_end (args);
 		return NULL;
+	}
 
 	int written = vsnprintf (buffer, size, format, args);
 	va_end (args);

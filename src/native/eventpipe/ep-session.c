@@ -638,7 +638,7 @@ session_disable_user_events (EventPipeSession *session)
 #if HAVE_UNISTD_H
 	close (session->user_events_data_fd);
 #endif // HAVE_UNISTD_H
-	session->user_events_data_fd = 0;
+	session->user_events_data_fd = -1;
 }
 
 static
@@ -669,6 +669,8 @@ construct_extension_activity_ids_buffer (
 	const uint8_t *activity_id,
 	const uint8_t *related_activity_id)
 {
+	EP_ASSERT (extension != NULL);
+	EP_ASSERT (extension_size >= 2 * (1 + EP_ACTIVITY_ID_SIZE));
 	uint16_t offset = 0;
 
 	memset (extension, 0, extension_size);
@@ -824,11 +826,11 @@ session_tracepoint_write_event (
 		}
 	}
 
-	if ((extension_len & 0xFFFF0000) != 0)
+	if (((extension_len & 0xFFFF0000) != 0) || ((ep_event_payload_total_size & 0xFFFF0000) != 0)) {
+		if (io != static_io)
+			free (io);
 		return false;
-
-	if ((ep_event_payload_total_size & 0xFFFF0000) != 0)
-		return false;
+	}
 
 	// Calculate the relative locations for extension and payload.
 	extension_rel_loc = extension_len << 16 | (sizeof(payload_rel_loc) & 0xFFFF);

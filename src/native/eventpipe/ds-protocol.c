@@ -468,9 +468,10 @@ ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (
 	uint8_t *byte_array = NULL;
 	uint32_t byte_array_len = 0;
 
+	*string_utf8 = NULL;
+
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (buffer, buffer_len, &byte_array, &byte_array_len));
 
-	*string_utf8 = NULL;
 	if (byte_array) {
 		*string_utf8 = ep_rt_utf16le_to_utf8_string ((const ep_char16_t *)byte_array);
 		ep_raise_error_if_nok (*string_utf8 != NULL);
@@ -487,6 +488,7 @@ ep_on_exit:
 ep_on_error:
 	ep_rt_byte_array_free (byte_array);
 	ep_rt_utf8_string_free (*string_utf8);
+	*string_utf8 = NULL;
 	ep_exit_error_handler ();
 }
 
