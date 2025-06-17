@@ -584,7 +584,7 @@ namespace Internal.TypeSystem
         private static void AdjustForInlineArray(
             MetadataType type,
             int instanceFieldCount,
-            ClassLayoutMetadata layoutMetadata,
+            in ClassLayoutMetadata layoutMetadata,
             ref SizeAndAlignment instanceByteSizeAndAlignment,
             ref SizeAndAlignment instanceSizeAndAlignment)
         {
@@ -1072,7 +1072,7 @@ namespace Internal.TypeSystem
             return result;
         }
 
-        private static int ComputePackingSize(MetadataType type, ClassLayoutMetadata layoutMetadata)
+        private static int ComputePackingSize(MetadataType type, in ClassLayoutMetadata layoutMetadata)
         {
             if (layoutMetadata.PackingSize == 0)
                 return type.Context.Target.MaximumAlignment;
