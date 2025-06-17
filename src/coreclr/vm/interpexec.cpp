@@ -11,11 +11,6 @@
 // for numeric_limits
 #include <limits>
 
-FCDECL1(float, JIT_ULng2Flt, uint64_t val);
-FCDECL1(double, JIT_ULng2Dbl, uint64_t val);
-FCDECL1(float, JIT_Lng2Flt, int64_t val);
-FCDECL1(double, JIT_Lng2Dbl, int64_t val);
-
 void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
 {
     CONTRACTL
@@ -551,11 +546,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_R4_I4:
-                    LOCAL_VAR(ip[1], float) = HCCALL1(JIT_Lng2Flt, (int64_t)LOCAL_VAR(ip[2], int32_t));
+                    LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
                     break;
                 case INTOP_CONV_R4_I8:
-                    LOCAL_VAR(ip[1], float) = HCCALL1(JIT_Lng2Flt, LOCAL_VAR(ip[2], int64_t));
+                    LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], int64_t);
                     ip += 3;
                     break;
                 case INTOP_CONV_R4_R8:
@@ -563,11 +558,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_R8_I4:
-                    LOCAL_VAR(ip[1], double) = HCCALL1(JIT_Lng2Dbl, (int64_t)LOCAL_VAR(ip[2], int32_t));
+                    LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
                     break;
                 case INTOP_CONV_R8_I8:
-                    LOCAL_VAR(ip[1], double) = HCCALL1(JIT_Lng2Dbl, LOCAL_VAR(ip[2], int64_t));
+                    LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], int64_t);
                     ip += 3;
                     break;
                 case INTOP_CONV_R8_R4:
