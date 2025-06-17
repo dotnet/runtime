@@ -2234,6 +2234,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 return; // SocketsHttpHandler doesn't support Latin-1 characters in headers without setting header encoding.
             }
+            var headerValue = $"HeaderValue{safeChar}WithSafeChar";
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
                 {
                     var handler = CreateHttpClientHandler();
@@ -2244,18 +2245,18 @@ namespace System.Net.Http.Functional.Tests
                         switch (headerType)
                         {
                             case HeaderType.Request:
-                                request.Headers.Add("Custom-Header", $"HeaderValue{safeChar}WithSafeChar");
+                                request.Headers.Add("Custom-Header", headerValue);
                                 break;
                             case HeaderType.Content:
                                 request.Content = new StringContent("test content");
-                                request.Content.Headers.Add("Custom-Content-Header", $"ContentValue{safeChar}WithSafeChar");
+                                request.Content.Headers.Add("Custom-Content-Header", headerValue);
                                 break;
                             case HeaderType.Cookie:
 #if WINHTTPHANDLER_TEST
                                 handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
 #endif
                                 handler.CookieContainer = new CookieContainer();
-                                handler.CookieContainer.Add(uri, new Cookie("CustomCookie", $"Value{safeChar}WithSafeChar"));
+                                handler.CookieContainer.Add(uri, new Cookie("CustomCookie", headerValue));
                                 break;
                         }
 
@@ -2266,7 +2267,19 @@ namespace System.Net.Http.Functional.Tests
                     }
                 }, async server =>
                 {
-                    await server.AcceptConnectionSendResponseAndCloseAsync();
+                    var data = await server.AcceptConnectionSendResponseAndCloseAsync();
+                    switch (headerType)
+                    {
+                        case HeaderType.Request:
+                            Assert.Equal(headerValue, data.GetSingleHeaderValue("Custom-Header"));
+                            break;
+                        case HeaderType.Content:
+                            Assert.Equal(headerValue, data.GetSingleHeaderValue("Custom-Content-Header"));
+                            break;
+                        case HeaderType.Cookie:
+                            Assert.Equal($"CustomCookie={headerValue}", data.GetSingleHeaderValue("cookie"));
+                            break;
+                    }
                 });
         }
 
