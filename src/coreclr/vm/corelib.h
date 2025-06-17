@@ -726,6 +726,9 @@ DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_TASK_RETURNING_THUNK_1, FinalizeTaskR
 DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK, FinalizeValueTaskReturningThunk, SM_Continuation_RetValueTask)
 DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK_1, FinalizeValueTaskReturningThunk, GM_Continuation_RetValueTaskOfT)
 DEFINE_METHOD(ASYNC_HELPERS,      UNSAFE_AWAIT_AWAITER_1,    UnsafeAwaitAwaiter, GM_T_RetVoid)
+DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTEXTS,          CaptureContexts, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS,          RestoreContexts, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      SWITCH_CONTEXT,            SwitchContext, NoSig)
 
 DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
 DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)

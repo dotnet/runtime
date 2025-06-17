@@ -719,6 +719,31 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         {
             JITDUMP(" and does not continue on captured context\n");
         }
+
+        // For awaits we need to save and restore the async contexts if there
+        // is possibility that the remainder of the function will read them.
+        if (((prefixFlags & PREFIX_AWAIT_SAVE_AND_RESTORE_CONTEXTS) != 0) && (tailCallFlags == 0))
+        {
+            call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_ASYNC_SAVE_AND_RESTORE_CONTEXTS;
+            JITDUMP("  and needs to save and restore async contexts\n");
+            compMustSaveAsyncContexts = true;
+
+            unsigned syncContextVar = lvaGrabTemp(false DEBUGARG(printfAlloc("Sync context for [%06u]", dspTreeID(call))));
+            unsigned execContextVar = lvaGrabTemp(false DEBUGARG(printfAlloc("Exec context for [%06u]", dspTreeID(call))));
+            LclVarDsc* syncContextDsc = lvaGetDesc(syncContextVar);
+            LclVarDsc* execContextDsc = lvaGetDesc(execContextVar);
+            syncContextDsc->lvType = TYP_REF;
+            execContextDsc->lvType = TYP_REF;
+            syncContextDsc->lvHasLdAddrOp = true;
+            execContextDsc->lvHasLdAddrOp = true;
+
+            call->AsCall()->restoredSyncContextVar = syncContextVar;
+            call->AsCall()->restoredExecContextVar = execContextVar;
+        }
+        else
+        {
+            JITDUMP("  and does not need to save and restore contexts\n");
+        }
     }
 
     // Now create the argument list.
@@ -1467,30 +1492,25 @@ DONE_CALL:
             }
             else
             {
-                if (isFatPointerCandidate)
+                if (call->IsCall() && (isFatPointerCandidate || ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_ASYNC_SAVE_AND_RESTORE_CONTEXTS) != 0)))
                 {
-                    // fatPointer candidates should be in statements of the form call() or var = call().
+                    // these calls should be in statements of the form call() or var = call().
                     // Such form allows to find statements with fat calls without walking through whole trees
                     // and removes problems with cutting trees.
-                    assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
-                    if (!call->OperIs(GT_LCL_VAR)) // can be already converted by impFixupCallStructReturn.
+                    unsigned   resultLcl = lvaGrabTemp(true DEBUGARG(isFatPointerCandidate ? "calli" : "async"));
+                    LclVarDsc* varDsc    = lvaGetDesc(resultLcl);
+                    // Keep the information about small typedness to avoid
+                    // inserting unnecessary casts around normalization.
+                    if (varTypeIsSmall(call->AsCall()->gtReturnType))
                     {
-                        unsigned   calliSlot = lvaGrabTemp(true DEBUGARG("calli"));
-                        LclVarDsc* varDsc    = lvaGetDesc(calliSlot);
-                        // Keep the information about small typedness to avoid
-                        // inserting unnecessary casts around normalization.
-                        if (call->IsCall() && varTypeIsSmall(call->AsCall()->gtReturnType))
-                        {
-                            assert(call->AsCall()->NormalizesSmallTypesOnReturn());
-                            varDsc->lvType = call->AsCall()->gtReturnType;
-                        }
-
-                        // TODO-Bug: CHECK_SPILL_NONE here looks wrong.
-                        impStoreToTemp(calliSlot, call, CHECK_SPILL_NONE);
-                        // impStoreToTemp can change src arg list and return type for call that returns struct.
-                        var_types type = genActualType(lvaTable[calliSlot].TypeGet());
-                        call           = gtNewLclvNode(calliSlot, type);
+                        assert(call->AsCall()->NormalizesSmallTypesOnReturn());
+                        varDsc->lvType = call->AsCall()->gtReturnType;
                     }
+
+                    impStoreToTemp(resultLcl, call, CHECK_SPILL_ALL);
+                    // impStoreToTemp can change src arg list and return type for call that returns struct.
+                    var_types type = genActualType(lvaGetDesc(resultLcl)->TypeGet());
+                    call           = gtNewLclvNode(resultLcl, type);
                 }
 
                 // For non-candidates we must also spill, since we

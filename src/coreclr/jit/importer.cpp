@@ -9113,11 +9113,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (compIsAsync() && JitConfig.JitOptimizeAwait())
                     {
                         isAwait = impMatchAwaitPattern(codeAddr, codeEndp, &configVal);
-                        // All awaits continue on captured context unless explicitly
-                        // configured not to
-                        if (isAwait && (configVal != 0))
+                        if (isAwait)
                         {
-                            prefixFlags |= PREFIX_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT;
+                            // All awaits continue on captured context unless explicitly
+                            // configured not to
+                            if (configVal != 0)
+                            {
+                                prefixFlags |= PREFIX_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT;
+                            }
+
+                            // Also, all awaits save and restore the contexts around the call, even
+                            // in the sync case.
+                            prefixFlags |= PREFIX_AWAIT_SAVE_AND_RESTORE_CONTEXTS;
                         }
                     }
 

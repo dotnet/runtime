@@ -2392,12 +2392,26 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 //    block      - basic block for the new statements
 //    stmtAfter  - (optional) insertion point for mid-block cases
 //
+void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmtAfter)
+{
+    fgNullOutGcRefLocals(inlineInfo, block, &stmtAfter);
+    fgAsyncSwitchContext(inlineInfo, block, &stmtAfter);
+}
+
+//------------------------------------------------------------------------
+// fgNullOutGcRefLocals: Append IR to null out GC locals after the call.
+//
+// Arguments:
+//    inlineInfo - information about the inline
+//    block      - basic block for the new statements
+//    stmtAfter  - (optional) insertion point for mid-block cases
+//
 // Notes:
 //    If the call we're inlining is in tail position then
 //    we skip nulling the locals, since it can interfere
 //    with tail calls introduced by the local.
-
-void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmtAfter)
+//
+void Compiler::fgNullOutGcRefLocals(InlineInfo* inlineInfo, BasicBlock* block, Statement** stmtAfter)
 {
     // Null out any gc ref locals
     if (!inlineInfo->HasGcRefLocals())
@@ -2467,26 +2481,69 @@ void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* bloc
         GenTree*   nullExpr = gtNewTempStore(tmpNum, gtNewZeroConNode(lclTyp));
         Statement* nullStmt = gtNewStmt(nullExpr, callDI);
 
-        if (stmtAfter == nullptr)
+        if (*stmtAfter == nullptr)
         {
             fgInsertStmtAtBeg(block, nullStmt);
         }
         else
         {
-            fgInsertStmtAfter(block, stmtAfter, nullStmt);
+            fgInsertStmtAfter(block, *stmtAfter, nullStmt);
         }
-        stmtAfter = nullStmt;
+        *stmtAfter = nullStmt;
 
-#ifdef DEBUG
-        if (verbose)
-        {
-            gtDispStmt(nullStmt);
-        }
-#endif // DEBUG
+        DISPSTMT(nullStmt);
     }
 
     // There should not be any GC ref locals left to null out.
     assert(gcRefLclCnt == 0);
+}
+
+//------------------------------------------------------------------------
+// fgAsyncSwitchContext:
+//   Insert IR to switch to the captured synchronization context, if necessary.
+//
+// Arguments:
+//    inlineInfo - information about the inline
+//    block      - basic block for the new statements
+//    stmtAfter  - (optional) insertion point for mid-block cases
+//
+void Compiler::fgAsyncSwitchContext(InlineInfo* inlineInfo, BasicBlock* block, Statement** stmtAfter)
+{
+    if ((inlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_ASYNC_CONTINUE_ON_CAPTURED_CONTEXT) == 0)
+    {
+        return;
+    }
+
+    JITDUMP("Inlining of call [%06u] requires possible switch back to captured context\n", dspTreeID(inlineInfo->iciCall));
+
+    // Continuing on captured context should imply that we are savning and restoring contexts.
+    assert((inlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_ASYNC_SAVE_AND_RESTORE_CONTEXTS) != 0);
+
+    unsigned syncContextLcl = inlineInfo->iciCall->restoredSyncContextVar;
+    GenTreeCall* call = gtNewCallNode(CT_USER_FUNC, eeGetAsyncInfo()->switchContextMethHnd, TYP_VOID);
+    call->SetIsAsync();
+
+    call->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(syncContextLcl)));
+    call->gtArgs.InsertAsyncContinuation(this, gtNewNull());
+
+    CORINFO_CALL_INFO callInfo = {};
+    callInfo.hMethod = call->gtCallMethHnd;
+    callInfo.methodFlags = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
+    impMarkInlineCandidate(call, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
+
+    Statement* switchContextStmt = gtNewStmt(call);
+
+    if (*stmtAfter == nullptr)
+    {
+        fgInsertStmtAtBeg(block, switchContextStmt);
+    }
+    else
+    {
+        fgInsertStmtAfter(block, *stmtAfter, switchContextStmt);
+    }
+    *stmtAfter = switchContextStmt;
+
+    DISPSTMT(switchContextStmt);
 }
 
 //------------------------------------------------------------------------

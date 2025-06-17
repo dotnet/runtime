@@ -1736,6 +1736,12 @@ struct CORINFO_ASYNC_INFO
     // Whether or not the continuation needs to be allocated through the
     // helper that also takes a method handle
     bool continuationsNeedMethodHandle;
+    // Method handle for AsyncHelpers.SwitchContext
+    CORINFO_METHOD_HANDLE switchContextMethHnd;
+    // Method handle for AsyncHelpers.CaptureContexts
+    CORINFO_METHOD_HANDLE captureContextsMethHnd;
+    // Method handle for AsyncHelpers.RestoreContexts
+    CORINFO_METHOD_HANDLE restoreContextsMethHnd;
 };
 
 // Flags passed from JIT to runtime.

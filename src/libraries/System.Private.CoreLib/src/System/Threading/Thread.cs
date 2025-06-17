@@ -391,6 +391,8 @@ namespace System.Threading
         internal static void FastPollGC() => FastPollGC();
 #endif
 
+        internal static Thread? CurrentThreadNoInit => t_currentThread;
+
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();
 
         public string? Name

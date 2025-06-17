@@ -4436,6 +4436,7 @@ private:
         PREFIX_TAILCALL_STRESS = 0x00000040, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
 #endif
         PREFIX_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000080, // call should continue on captured synchronization context
+        PREFIX_AWAIT_SAVE_AND_RESTORE_CONTEXTS = 0x00000100, // we should save and restore async contexts around this call
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
@@ -5537,6 +5538,7 @@ public:
     PhaseStatus placeLoopAlignInstructions();
 #endif
 
+    PhaseStatus SaveAsyncContexts();
     PhaseStatus TransformAsync();
 
     // This field keep the R2R helper call that would be inserted to trigger the constructor
@@ -6877,6 +6879,8 @@ private:
     void fgInsertInlineeArgument(const InlArgInfo& argInfo, BasicBlock* block, Statement** afterStmt, Statement** newStmt, const DebugInfo& callDI);
     Statement* fgInlinePrependStatements(InlineInfo* inlineInfo);
     void fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmt);
+    void fgNullOutGcRefLocals(InlineInfo* inlineInfo, BasicBlock* block, Statement** stmtAfter);
+    void fgAsyncSwitchContext(InlineInfo* inlineInfo, BasicBlock* block, Statement** stmtAfter);
 
 #ifdef DEBUG
     static fgWalkPreFn fgDebugCheckInlineCandidates;
@@ -8385,6 +8389,11 @@ public:
 
     CORINFO_EE_INFO* eeGetEEInfo();
 
+    CORINFO_ASYNC_INFO asyncInfo;
+    bool               asyncInfoInitialized = false;
+
+    CORINFO_ASYNC_INFO* eeGetAsyncInfo();
+
     // Gets the offset of a SDArray's first element
     static unsigned eeGetArrayDataOffset();
 
@@ -9838,6 +9847,8 @@ public:
     bool compSwitchedToMinOpts        = false; // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
     bool compSuppressedZeroInit       = false; // There are vars with lvSuppressedZeroInit set
     bool compMaskConvertUsed          = false; // Does the method have Convert Mask To Vector nodes.
+    bool compUsesThrowHelper          = false; // There is a call to a THROW_HELPER for the compiled method.
+    bool compMustSaveAsyncContexts    = false; // There is an async call that needs capture/restore of async contexts.
 
     // NOTE: These values are only reliable after
     //       the importing is completely finished.
@@ -9863,8 +9874,6 @@ public:
     bool compPostImportationCleanupDone = false;
     bool compLSRADone                   = false;
     bool compRationalIRForm             = false;
-
-    bool compUsesThrowHelper = false; // There is a call to a THROW_HELPER for the compiled method.
 
     bool compGeneratingProlog       = false;
     bool compGeneratingEpilog       = false;

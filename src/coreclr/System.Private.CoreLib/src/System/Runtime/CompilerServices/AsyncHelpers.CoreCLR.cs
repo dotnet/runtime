@@ -86,10 +86,6 @@ namespace System.Runtime.CompilerServices
         public uint State;
         public CorInfoContinuationFlags Flags;
 
-        public ExecutionContext? ExecutionContext;
-        // TODO: For ConfigureAwait(false) we should create a layout that does
-        // not store the synchronization context.
-        public SynchronizationContext? SynchronizationContext;
         // Data and GCData contain the state of the continuation.
         // Note: The JIT is ultimately responsible for laying out these arrays.
         // However, other parts of the system depend on the layout to
@@ -128,6 +124,7 @@ namespace System.Runtime.CompilerServices
         private struct RuntimeAsyncAwaitState
         {
             public Continuation? SentinelContinuation;
+            public SynchronizationContext? ResumptionContext;
             public ICriticalNotifyCompletion? CriticalNotifier;
             public INotifyCompletion? Notifier;
         }
@@ -135,14 +132,37 @@ namespace System.Runtime.CompilerServices
         [ThreadStatic]
         private static RuntimeAsyncAwaitState t_runtimeAsyncAwaitState;
 
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.NoInlining)]
+        [RequiresPreviewFeatures]
+        private static void SwitchContext(SynchronizationContext context)
+        {
+            if (context != null && context.GetType() != typeof(SynchronizationContext) && context != Thread.CurrentThreadNoInit!._synchronizationContext)
+            {
+                SuspendToSwitchContext(context);
+            }
+        }
+
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.NoInlining)]
+        [RequiresPreviewFeatures]
+        private static void SuspendToSwitchContext(SynchronizationContext context)
+        {
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation? sentinelContinuation = state.SentinelContinuation;
+            if (sentinelContinuation == null)
+                state.SentinelContinuation = sentinelContinuation = new Continuation();
+
+            state.ResumptionContext = context;
+            AsyncSuspend(sentinelContinuation);
+        }
+
         private static Continuation AllocContinuation(Continuation prevContinuation, nuint numGCRefs, nuint dataSize)
         {
             Continuation newContinuation = new Continuation
             {
                 Data = new byte[dataSize],
                 GCData = new object[numGCRefs],
-                ExecutionContext = ExecutionContext.Capture(),
-                SynchronizationContext = SynchronizationContext.Current,
             };
             prevContinuation.Next = newContinuation;
             return newContinuation;
@@ -166,8 +186,6 @@ namespace System.Runtime.CompilerServices
             {
                 Data = new byte[dataSize],
                 GCData = gcData,
-                ExecutionContext = ExecutionContext.Capture(),
-                SynchronizationContext = SynchronizationContext.Current,
             };
             prevContinuation.Next = newContinuation;
             return newContinuation;
@@ -191,8 +209,6 @@ namespace System.Runtime.CompilerServices
             {
                 Data = new byte[dataSize],
                 GCData = gcData,
-                ExecutionContext = ExecutionContext.Capture(),
-                SynchronizationContext = SynchronizationContext.Current,
             };
             prevContinuation.Next = newContinuation;
             return newContinuation;
@@ -210,12 +226,15 @@ namespace System.Runtime.CompilerServices
             return RuntimeTypeHandle.InternalAllocNoChecks((MethodTable*)pMT);
         }
 
-        private static Continuation UnlinkHeadContinuation(out ICriticalNotifyCompletion? criticalNotifier, out INotifyCompletion? notifier)
+        private static Continuation UnlinkHeadContinuation(out SynchronizationContext? syncContext, out ICriticalNotifyCompletion? criticalNotifier, out INotifyCompletion? notifier)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            syncContext = state.ResumptionContext;
             criticalNotifier = state.CriticalNotifier;
-            state.CriticalNotifier = null;
             notifier = state.Notifier;
+
+            state.ResumptionContext = null;
+            state.CriticalNotifier = null;
             state.Notifier = null;
 
             Continuation sentinelContinuation = state.SentinelContinuation!;
@@ -234,8 +253,6 @@ namespace System.Runtime.CompilerServices
 
             public unsafe void MoveNext()
             {
-                Debug.Assert(!((Continuation)m_stateObject!).Flags.HasFlag(CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT));
-
                 ExecutionAndSyncBlockStore contexts = default;
                 contexts.PushExceptDefault();
                 while (true)
@@ -247,28 +264,6 @@ namespace System.Runtime.CompilerServices
                         while (true)
                         {
                             // Inner hot loop where continuations are executed.
-                            if (continuation.ExecutionContext != null)
-                            {
-                                // ExecutionContext.RunInternal, except we need
-                                // the result, and we do not have to restore
-                                // contexts after (we will do it once on exit).
-                                ExecutionContext? newExecContext = continuation.ExecutionContext;
-                                if (newExecContext != null && newExecContext.IsDefault)
-                                    newExecContext = null;
-
-                                ExecutionContext? curExecContext = contexts._thread!._executionContext;
-                                if (curExecContext != null && curExecContext.IsDefault)
-                                    curExecContext = null;
-
-                                if (newExecContext != curExecContext)
-                                {
-                                    ExecutionContext.RestoreChangedContextToThread(
-                                        contexts._thread,
-                                        newExecContext,
-                                        curExecContext);
-                                }
-                            }
-
                             Continuation? nextContinuation = continuation.Resume(continuation);
                             if (nextContinuation != null)
                             {
@@ -354,54 +349,13 @@ namespace System.Runtime.CompilerServices
 
             private bool PostToSyncContextIfNecessary(Continuation continuation, ref ExecutionAndSyncBlockStore contexts)
             {
-                SynchronizationContext? continuationSyncCtx = continuation.SynchronizationContext;
-
-                if (continuationSyncCtx == null || continuationSyncCtx.GetType() == typeof(SynchronizationContext) ||
-                    continuationSyncCtx == SynchronizationContext.Current)
-                {
-                    return false;
-                }
-
-                try
-                {
-                    // TODO: Does this need a volatile write?
-                    m_stateObject = continuation;
-                    continuationSyncCtx.Post(s_postCallback, this);
-                }
-                catch (Exception ex)
-                {
-                    contexts.Pop();
-                    ThrowAsync(ex, targetContext: null);
-                }
-
-                return true;
+                return ThunkTask.PostToSyncContextIfNecessaryCore(continuation, ref contexts, ref m_stateObject, s_postCallback, this);
             }
 
             public void HandleSuspended()
             {
-                Continuation headContinuation = UnlinkHeadContinuation(out ICriticalNotifyCompletion? criticalNotifier, out INotifyCompletion? notifier);
-                // Head continuation should be the result of async call to
-                // AwaitAwaiter or UnsafeAwaitAwaiter, and these cannot be
-                // configured.
-                Debug.Assert(!headContinuation.Flags.HasFlag(CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT));
-                m_stateObject = headContinuation;
-
-                try
-                {
-                    if (criticalNotifier != null)
-                    {
-                        criticalNotifier.UnsafeOnCompleted((Action)m_action!);
-                    }
-                    else
-                    {
-                        Debug.Assert(notifier != null);
-                        notifier.OnCompleted((Action)m_action!);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    ThrowAsync(ex, targetContext: null);
-                }
+                Debug.Assert(m_action != null);
+                ThunkTask.HandleSuspendedCore(ref m_stateObject, m_action, s_postCallback, this);
             }
 
             private static readonly SendOrPostCallback s_postCallback = static state =>
@@ -411,6 +365,8 @@ namespace System.Runtime.CompilerServices
             };
         }
 
+ // Change return type to ThunkTask<T?> -- no benefit since this is used for Task returning thunks only
+#pragma warning disable CA1859
         // When a Task-returning thunk gets a continuation result
         // it calls here to make a Task that awaits on the current async state.
         private static Task<T?> FinalizeTaskReturningThunk<T>(Continuation continuation)
@@ -448,8 +404,6 @@ namespace System.Runtime.CompilerServices
 
             public unsafe void MoveNext()
             {
-                Debug.Assert(!((Continuation)m_stateObject!).Flags.HasFlag(CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT));
-
                 ExecutionAndSyncBlockStore contexts = default;
                 contexts.PushExceptDefault();
                 while (true)
@@ -461,28 +415,6 @@ namespace System.Runtime.CompilerServices
                         while (true)
                         {
                             // Inner hot loop where continuations are executed.
-                            if (continuation.ExecutionContext != null)
-                            {
-                                // ExecutionContext.RunInternal, except we need
-                                // the result, and we do not have to restore
-                                // contexts after (we will do it once on exit).
-                                ExecutionContext? newExecContext = continuation.ExecutionContext;
-                                if (newExecContext != null && newExecContext.IsDefault)
-                                    newExecContext = null;
-
-                                ExecutionContext? curExecContext = contexts._thread!._executionContext;
-                                if (curExecContext != null && curExecContext.IsDefault)
-                                    curExecContext = null;
-
-                                if (newExecContext != curExecContext)
-                                {
-                                    ExecutionContext.RestoreChangedContextToThread(
-                                        contexts._thread,
-                                        newExecContext,
-                                        curExecContext);
-                                }
-                            }
-
                             Continuation? nextContinuation = continuation.Resume(continuation);
                             if (nextContinuation != null)
                             {
@@ -550,7 +482,25 @@ namespace System.Runtime.CompilerServices
 
             private bool PostToSyncContextIfNecessary(Continuation continuation, ref ExecutionAndSyncBlockStore contexts)
             {
-                SynchronizationContext? continuationSyncCtx = continuation.SynchronizationContext;
+                return PostToSyncContextIfNecessaryCore(continuation, ref contexts, ref m_stateObject, s_postCallback, this);
+            }
+
+            internal static bool PostToSyncContextIfNecessaryCore(
+                Continuation continuation,
+                ref ExecutionAndSyncBlockStore contexts,
+                ref object? thunkTaskStateObject,
+                SendOrPostCallback callback,
+                object callbackState)
+            {
+                int syncContextIndex = 0;
+                if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA) != 0)
+                    syncContextIndex++;
+                if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
+                    syncContextIndex++;
+
+                object?[]? gcData = continuation.GCData;
+                Debug.Assert(gcData != null && gcData.Length > syncContextIndex && gcData[syncContextIndex] is SynchronizationContext);
+                SynchronizationContext? continuationSyncCtx = (SynchronizationContext?)gcData[syncContextIndex];
 
                 if (continuationSyncCtx == null || continuationSyncCtx.GetType() == typeof(SynchronizationContext) ||
                     continuationSyncCtx == SynchronizationContext.Current)
@@ -560,9 +510,9 @@ namespace System.Runtime.CompilerServices
 
                 try
                 {
-                    // TODO: Does this need a volatile write?
-                    m_stateObject = continuation;
-                    continuationSyncCtx.Post(s_postCallback, this);
+                    // TODO: Does this need a volatile write, or is the data dependency enough?
+                    thunkTaskStateObject = continuation;
+                    continuationSyncCtx.Post(callback, callbackState);
                 }
                 catch (Exception ex)
                 {
@@ -575,23 +525,46 @@ namespace System.Runtime.CompilerServices
 
             public void HandleSuspended()
             {
-                Continuation headContinuation = UnlinkHeadContinuation(out ICriticalNotifyCompletion? criticalNotifier, out INotifyCompletion? notifier);
+                Debug.Assert(m_action != null);
+                HandleSuspendedCore(ref m_stateObject, m_action, s_postCallback, this);
+            }
+
+            internal static void HandleSuspendedCore(
+                ref object? thunkTaskStateObject,
+                object continuation,
+                SendOrPostCallback postCallback,
+                object callbackState)
+            {
+                Continuation headContinuation =
+                    UnlinkHeadContinuation(
+                        out SynchronizationContext? resumptionContext,
+                        out ICriticalNotifyCompletion? criticalNotifier,
+                        out INotifyCompletion? notifier);
+
                 // Head continuation should be the result of async call to
-                // AwaitAwaiter or UnsafeAwaitAwaiter, and these cannot be
-                // configured.
+                // AwaitAwaiter, UnsafeAwaitAwaiter or SwitchContext, and these
+                // cannot be configured.
                 Debug.Assert(!headContinuation.Flags.HasFlag(CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT));
-                m_stateObject = headContinuation;
+
+                // TODO: Does this need a volatile write, or is the data dependency enough?
+                thunkTaskStateObject = headContinuation;
 
                 try
                 {
-                    if (criticalNotifier != null)
+                    if (resumptionContext != null)
                     {
-                        criticalNotifier.UnsafeOnCompleted((Action)m_action!);
+                        // Async method is requesting to be switched to a specific SynchronizationContext
+                        // (because of finishing running an inlinee).
+                        resumptionContext.Post(postCallback, callbackState);
+                    }
+                    else if (criticalNotifier != null)
+                    {
+                        criticalNotifier.UnsafeOnCompleted((Action)continuation);
                     }
                     else
                     {
                         Debug.Assert(notifier != null);
-                        notifier.OnCompleted((Action)m_action!);
+                        notifier.OnCompleted((Action)continuation);
                     }
                 }
                 catch (Exception ex)
@@ -607,7 +580,6 @@ namespace System.Runtime.CompilerServices
             };
         }
 
-#pragma warning disable CA1859
         private static Task FinalizeTaskReturningThunk(Continuation continuation)
         {
             Continuation finalContinuation = new Continuation
@@ -623,6 +595,8 @@ namespace System.Runtime.CompilerServices
 
         private static ValueTask<T?> FinalizeValueTaskReturningThunk<T>(Continuation continuation)
         {
+            // We only come to these methods in the expensive case (already
+            // suspended), so ValueTask optimization here is not relevant.
             return new ValueTask<T?>(FinalizeTaskReturningThunk<T>(continuation));
         }
 
@@ -639,6 +613,30 @@ namespace System.Runtime.CompilerServices
                 continuation = continuation.Next;
                 if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
                     return continuation;
+            }
+        }
+
+        // Calls to these functions are inserted by the JIT around async/await calls.
+        private static void CaptureContexts(out SynchronizationContext? syncCtx, out ExecutionContext? executionCtx)
+        {
+            Thread thread = Thread.CurrentThreadNoInit!;
+            syncCtx = thread._synchronizationContext;
+            executionCtx = thread._executionContext;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void RestoreContexts(SynchronizationContext? previousSyncCtx, ExecutionContext? previousExecutionCtx)
+        {
+            Thread thread = Thread.CurrentThreadNoInit!;
+            if (previousSyncCtx != thread._synchronizationContext)
+            {
+                thread._synchronizationContext = previousSyncCtx;
+            }
+
+            ExecutionContext? currentExecutionCtx = thread._executionContext;
+            if (previousExecutionCtx != currentExecutionCtx)
+            {
+                ExecutionContext.RestoreChangedContextToThread(thread, previousExecutionCtx, currentExecutionCtx);
             }
         }
     }

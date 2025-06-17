@@ -25,6 +25,7 @@ struct ContinuationLayout
     bool                                 ReturnInGCData       = false;
     unsigned                             ReturnValDataOffset  = UINT_MAX;
     unsigned                             ExceptionGCDataIndex = UINT_MAX;
+    unsigned                             SyncContextGCDataIndex = UINT_MAX;
     const jitstd::vector<LiveLocalInfo>& Locals;
 
     explicit ContinuationLayout(const jitstd::vector<LiveLocalInfo>& locals)
@@ -47,7 +48,7 @@ class AsyncTransformation
 
     Compiler*                     m_comp;
     jitstd::vector<LiveLocalInfo> m_liveLocalsScratch;
-    CORINFO_ASYNC_INFO            m_asyncInfo;
+    CORINFO_ASYNC_INFO*           m_asyncInfo;
     jitstd::vector<BasicBlock*>   m_resumptionBBs;
     CORINFO_METHOD_HANDLE         m_resumeStub = NO_METHOD_HANDLE;
     CORINFO_CONST_LOOKUP          m_resumeStubLookup;
