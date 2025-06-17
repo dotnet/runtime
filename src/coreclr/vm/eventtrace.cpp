@@ -410,7 +410,7 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
             PrevSP = CurrentSP;
         }
 #endif //TARGET_X86
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
     pThread->MarkEtwStackWalkCompleted();
 #endif //!DACCESS_COMPILE
 
@@ -545,10 +545,7 @@ VOID ETW::GCLog::SendFinalizeObjectEvent(MethodTable * pMT, Object * pObj)
             DefineFullyQualifiedNameForClassWOnStack();
             FireEtwPrvFinalizeObject(pMT, pObj, GetClrInstanceId(), GetFullyQualifiedNameForClassNestedAwareW(pMT));
         }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_SWALLOW_NONTERMINAL
     }
 }
 
@@ -962,19 +959,14 @@ BOOL ETW::TypeSystemLog::AddOrReplaceTypeLoggingInfo(ETW::LoggedTypesFromModule 
 
     _ASSERTE(pLoggedTypesFromModule != NULL);
 
-    BOOL fSucceeded = FALSE;
     EX_TRY
     {
         pLoggedTypesFromModule->loggedTypesFromModuleHash.AddOrReplace(*pTypeLoggingInfo);
-        fSucceeded = TRUE;
+        return TRUE;
     }
-    EX_CATCH
-    {
-        fSucceeded = FALSE;
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_SWALLOW_NONTERMINAL
 
-    return fSucceeded;
+    return FALSE;
 }
 
 //---------------------------------------------------------------------------------------
@@ -1208,7 +1200,7 @@ void ETW::TypeSystemLog::TypeLoadEnd(UINT32 typeLoad, TypeHandle th, UINT16 load
                 (UINT64)th.AsPtr(),
                 typeName
                 );
-        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+        } EX_CATCH{ } EX_END_CATCH
     }
 }
 
@@ -1430,11 +1422,8 @@ ETW::TypeLoggingInfo ETW::TypeSystemLog::LookupOrCreateTypeLoggingInfo(TypeHandl
             pThreadAllLoggedTypes->allLoggedTypesHash.Add(pLoggedTypesFromModule);
             fSucceeded = TRUE;
         }
-        EX_CATCH
-        {
-            fSucceeded = FALSE;
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_SWALLOW_NONTERMINAL
+
         if (!fSucceeded)
         {
             *pfCreatedNew = FALSE;
@@ -1468,11 +1457,7 @@ ETW::TypeLoggingInfo ETW::TypeSystemLog::LookupOrCreateTypeLoggingInfo(TypeHandl
         pLoggedTypesFromModule->loggedTypesFromModuleHash.Add(typeLoggingInfoNew);
         fSucceeded = TRUE;
     }
-    EX_CATCH
-    {
-        fSucceeded = FALSE;
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_SWALLOW_NONTERMINAL
     if (!fSucceeded)
     {
         *pfCreatedNew = FALSE;
@@ -1573,11 +1558,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
                     s_pAllLoggedTypes->allLoggedTypesHash.Add(pLoggedTypesFromModule);
                     fSucceeded = TRUE;
                 }
-                EX_CATCH
-                {
-                    fSucceeded = FALSE;
-                }
-                EX_END_CATCH(RethrowTerminalExceptions);
+                EX_SWALLOW_NONTERMINAL
             }
             else
             {
@@ -1626,11 +1607,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
             pLoggedTypesFromModule->loggedTypesFromModuleHash.Add(typeLoggingInfoNew);
             fSucceeded = TRUE;
         }
-        EX_CATCH
-        {
-            fSucceeded = FALSE;
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_SWALLOW_NONTERMINAL
         if (!fSucceeded)
         {
             *pfCreatedNew = FALSE;
@@ -1929,7 +1906,7 @@ VOID ETW::EnumerationLog::ModuleRangeRundown()
         {
             ETW::EnumerationLog::EnumerationHelper(NULL, ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoadPrivate);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 
@@ -2048,7 +2025,7 @@ VOID ETW::EnumerationLog::StartRundown()
             // end marker event will go to the rundown provider
             FireEtwDCStartComplete_V1(GetClrInstanceId());
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 //---------------------------------------------------------------------------------------
@@ -2136,7 +2113,7 @@ VOID ETW::EnumerationLog::EnumerateForCaptureState()
                 SendThreadRundownEvent();
             }
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /**************************************************************************************/
@@ -2244,7 +2221,7 @@ VOID ETW::EnumerationLog::EndRundown()
         }
     } EX_CATCH {
         STRESS_LOG1(LF_ALWAYS, LL_ERROR, "Exception during Rundown Enumeration, EIP of last AV = %p", g_LastAccessViolationEIP);
-    } EX_END_CATCH(SwallowAllExceptions);
+    } EX_END_CATCH
 }
 
 // #Registration
@@ -2892,7 +2869,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
                                   exceptionFlags,
                                   GetClrInstanceId());
         GCPROTECT_END();
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 
@@ -2936,7 +2913,7 @@ VOID ETW::ExceptionLog::ExceptionCatchBegin(MethodDesc * pMethodDesc, PVOID pEnt
             methodName.GetUnicode(),
             GetClrInstanceId());
 
-    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH{} EX_END_CATCH
 }
 
 VOID ETW::ExceptionLog::ExceptionCatchEnd()
@@ -2976,7 +2953,7 @@ VOID ETW::ExceptionLog::ExceptionFinallyBegin(MethodDesc * pMethodDesc, PVOID pE
             methodName.GetUnicode(),
             GetClrInstanceId());
 
-    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH{} EX_END_CATCH
 }
 
 VOID ETW::ExceptionLog::ExceptionFinallyEnd()
@@ -3016,7 +2993,7 @@ VOID ETW::ExceptionLog::ExceptionFilterBegin(MethodDesc * pMethodDesc, PVOID pEn
             methodName.GetUnicode(),
             GetClrInstanceId());
 
-    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH{} EX_END_CATCH
 }
 
 VOID ETW::ExceptionLog::ExceptionFilterEnd()
@@ -3053,7 +3030,7 @@ VOID ETW::LoaderLog::DomainLoadReal(_In_opt_ LPWSTR wszFriendlyName)
             DWORD dwEventOptions = ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad;
             ETW::LoaderLog::SendDomainEvent(dwEventOptions, wszFriendlyName);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -3084,7 +3061,7 @@ VOID ETW::LoaderLog::CollectibleLoaderAllocatorUnload(AssemblyLoaderAllocator *p
 
             ETW::EnumerationLog::IterateCollectibleLoaderAllocator(pLoaderAllocator, enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -3170,7 +3147,7 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
                                                 dllPath );
             }
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /* Fires ETW events every time a pdb is dynamically loaded.
@@ -3241,7 +3218,7 @@ VOID ETW::CodeSymbolLog::EmitCodeSymbols(Module* pModule)
                 }
             }
         }
-    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH{} EX_END_CATCH
 #endif//  !defined(HOST_UNIX)
 }
 
@@ -3438,7 +3415,7 @@ VOID ETW::MethodLog::GetR2RGetEntryPoint(MethodDesc *pMethodDesc, PCODE pEntryPo
                     pEntryPoint,
                     GetClrInstanceId());
 
-        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+        } EX_CATCH{ } EX_END_CATCH
     }
 }
 
@@ -3536,7 +3513,7 @@ VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t c
                 data += chunkSizeToEmit;
                 cbData -= chunkSizeToEmit;
             }
-        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+        } EX_CATCH{ } EX_END_CATCH
     }
 }
 
@@ -3586,7 +3563,7 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
             ETW::MethodLog::SendMethodRichDebugInfo(pMethodDesc, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetVersionId(), pConfig->GetCodeVersion().GetILCodeVersionId(), NULL);
         }
 
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /*************************************************/
@@ -3609,7 +3586,7 @@ VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER
             pMethodDesc->GetMethodInfo(*namespaceOrClassName, *methodName, *methodSignature);
             ETW::MethodLog::SendMethodJitStartEvent(pMethodDesc, methodDecoder, namespaceOrClassName, methodName, methodSignature);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /**********************************************************************/
@@ -3633,7 +3610,7 @@ VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pH
             Stub::RecoverStubAndSize((TADDR)ullHelperStartAddress, &dwHelperSize);
             ETW::MethodLog::SendHelperEvent(ullHelperStartAddress, dwHelperSize, pHelperName);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -3652,7 +3629,7 @@ VOID ETW::MethodLog::DynamicMethodDestroyed(MethodDesc *pMethodDesc)
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_JIT_KEYWORD))
             ETW::MethodLog::SendMethodEvent(pMethodDesc, ETW::EnumerationLog::EnumerationStructs::JitMethodUnload, TRUE);
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -3675,7 +3652,7 @@ VOID ETW::MethodLog::MethodRestored(MethodDesc *pMethodDesc)
         {
             ETW::MethodLog::SendMethodEvent(pMethodDesc, ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad, FALSE);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /**********************************************************************************/
@@ -3741,7 +3718,7 @@ VOID ETW::LoaderLog::ModuleLoad(Module *pModule, LONG liReportedSharedModule)
                 ETW::LoaderLog::SendModuleRange(pModule, enumerationOptions);
             }
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -3763,7 +3740,7 @@ VOID ETW::EnumerationLog::ProcessShutdown()
             // Send unload events for all remaining modules
             ETW::EnumerationLog::EnumerationHelper(NULL /* module filter */, enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -4318,11 +4295,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
                 }
                 fSucceeded = TRUE;
             }
-            EX_CATCH
-            {
-                fSucceeded = FALSE;
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_SWALLOW_NONTERMINAL
             if (!fSucceeded)
                 goto done;
 
@@ -4345,7 +4318,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
             rgTypeParameters.CloseRawBuffer();
         }
 done:;
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 VOID ETW::MethodLog::SendNonDuplicateMethodDetailsEvent(MethodDesc* pMethodDesc, MethodDescSet* set)
@@ -5176,7 +5149,7 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAlloc
                 fSendRichDebugInfoEvent,
                 FALSE);
         }
-    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH{} EX_END_CATCH
 #endif // !DACCESS_COMPILE
 }
 
@@ -5254,7 +5227,7 @@ VOID ETW::EnumerationLog::IterateAppDomain(DWORD enumerationOptions)
         {
             ETW::LoaderLog::SendDomainEvent(enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 
@@ -5305,7 +5278,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
         {
             ETW::MethodLog::SendEventsForJitMethods(FALSE /*getCodeVersionIds*/, pLoaderAllocator, enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /********************************************************************************/
@@ -5342,7 +5315,7 @@ VOID ETW::EnumerationLog::IterateAssembly(Assembly *pAssembly, DWORD enumeration
         {
             ETW::LoaderLog::SendAssemblyEvent(pAssembly, enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /********************************************************************************/
@@ -5398,7 +5371,7 @@ VOID ETW::EnumerationLog::IterateModule(Module *pModule, DWORD enumerationOption
         {
             ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 //---------------------------------------------------------------------------------------

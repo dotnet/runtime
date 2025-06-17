@@ -1017,8 +1017,9 @@ ErrExit: ;
     EX_CATCH
     {
         hr = GET_EXCEPTION()->GetHR();
+        RethrowTerminalExceptionsWithInitCheck();
     }
-    EX_END_CATCH(RethrowTerminalExceptionsWithInitCheck)
+    EX_END_CATCH
 
     if (!g_fEEStarted) {
         if (g_fEEInit)
@@ -1175,7 +1176,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif
 
     if (!fIsDllUnloading)
@@ -1403,7 +1404,7 @@ part2:
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     ClrFlsClearThreadType(ThreadType_Shutdown);
     if (!IsAtProcessExit())
@@ -1672,7 +1673,7 @@ static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
 #define FLS_STATE_ARMED 1
 #define FLS_STATE_INVOKED 2
 
-static thread_local byte t_flsState;
+static PLATFORM_THREAD_LOCAL byte t_flsState;
 
 // This is called when each *fiber* is destroyed. When the home fiber of a thread is destroyed,
 // it means that the thread itself is destroyed.
@@ -2015,7 +2016,7 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
     {
         hr=E_OUTOFMEMORY;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }
