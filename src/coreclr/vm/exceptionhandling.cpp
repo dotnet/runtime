@@ -3439,7 +3439,7 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
         dwResult = EXCEPTION_CONTINUE_SEARCH;
         EH_LOG((LL_INFO100, "Filter funclet has thrown an exception\n"));
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     // Profiler, debugger and ETW events
     pExInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &pExInfo->m_CurrentClause, (DWORD_PTR)pFilterIP, spForDebugger);
@@ -3618,7 +3618,7 @@ void FailFastIfCorruptingStateException(ExInfo *pExInfo)
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
         GCPROTECT_END();
 

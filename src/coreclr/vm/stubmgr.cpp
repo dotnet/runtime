@@ -137,7 +137,7 @@ const CHAR * TraceDestination::DbgToString(SString & buffer)
     {
         pValue = "(OOM while printing TD)";
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif
     return pValue;
 }
@@ -180,7 +180,7 @@ void TraceDestination::InitForUnjittedMethod(MethodDesc * pDesc)
             EX_CATCH
             {
                 // In case of an error, we'll just stick w/ the original method desc.
-            } EX_END_CATCH(SwallowAllExceptions)
+            } EX_END_CATCH
 #else
             // @todo - DAC needs this too, but the method is currently not DACized.
             // However, we don't throw here b/c the error may not be fatal.
@@ -488,7 +488,7 @@ BOOL StubManager::CheckIsStub_Worker(PCODE stubStartAddress)
 #ifdef DACCESS_COMPILE
     PAL_ENDTRY
 #else
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif
 
     return param.fIsStub;
@@ -790,7 +790,7 @@ void StubManager::DbgBeginLog(TADDR addrCallInstruction, TADDR addrCallTarget)
         {
             DbgFinishLog();
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
     DbgWriteLog("Beginning Step-in. IP after Call instruction is at 0x%p, call target is at 0x%p\n",
@@ -873,7 +873,7 @@ void StubManager::DbgWriteLog(const CHAR *format, ...)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (fEntered) chk.LeaveAssert();
 #endif
@@ -920,7 +920,7 @@ void StubManager::DbgGetLog(SString * pStringOut)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif
 }
 
