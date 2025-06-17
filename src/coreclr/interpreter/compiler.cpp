@@ -2180,6 +2180,42 @@ int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
     return GetDataItemIndex(addr);
 }
 
+bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
+{
+    bool mustExpand = (method == m_methodHnd);
+    if (!mustExpand && (ni == NI_Illegal))
+        return false;
+
+    switch (ni)
+    {
+        case NI_IsSupported_False:
+        case NI_IsSupported_True:
+            AddIns(INTOP_LDC_I4);
+            m_pLastNewIns->data[0] = ni == NI_IsSupported_True;
+            PushStackType(StackTypeI4, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return true;
+
+        case NI_Throw_PlatformNotSupportedException:
+            // Interpreter-FIXME: If an INTOP_THROW_PNSE is the first opcode in a try block, catch doesn't catch the exception
+            // For now, insert a safepoint as padding.
+            AddIns(INTOP_SAFEPOINT);
+            AddIns(INTOP_THROW_PNSE);
+            return true;
+
+        default:
+        {
+            const char* className = NULL;
+            const char* namespaceName = NULL;
+            const char* methodName = m_compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, NULL, 0);
+            printf("WARNING: Intrinsic not implemented in EmitNamedIntrinsicCall: %d (for %s.%s.%s)\n", ni, namespaceName, className, methodName);
+            if (mustExpand)
+                assert(!"EmitNamedIntrinsicCall not implemented must-expand intrinsic");
+            return false;
+        }
+    }
+}
+
 bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
 {
     const char *className = NULL;
@@ -2584,6 +2620,22 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
+        if (callInfo.methodFlags & CORINFO_FLG_INTRINSIC)
+        {
+// Interpreter-FIXME: Necessary to work around InterpConfig members only being defined in DEBUG configurations.
+#if DEBUG
+            if (InterpConfig.InterpMode() >= 3)
+            {
+                NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+                if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
+                {
+                    m_ip += 5;
+                    return;
+                }
+            }
+#endif
+        }
+
         if (EmitCallIntrinsics(callInfo.hMethod, callInfo.sig))
         {
             m_ip += 5;

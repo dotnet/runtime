@@ -44,7 +44,7 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
         }
     }
 
-    pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode()); // The method to call
+    pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY)); // The method to call
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
@@ -2391,6 +2391,9 @@ do {                                                                           \
                 case INTOP_LEAVE_CATCH:
                     *(const int32_t**)pFrame->pRetVal = ip + ip[1];
                     goto EXIT_FRAME;
+                case INTOP_THROW_PNSE:
+                    COMPlusThrow(kPlatformNotSupportedException);
+                    break;
                 case INTOP_FAILFAST:
                     assert(0);
                     break;
