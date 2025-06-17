@@ -10,7 +10,6 @@ parameters:
 
 jobs:
 
-#
 # Build the whole product using Mono for Android and run runtime tests with Android emulator
 #
 - template: /eng/pipelines/common/platform-matrix.yml

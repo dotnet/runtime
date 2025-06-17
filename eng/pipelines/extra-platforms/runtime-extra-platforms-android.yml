@@ -12,6 +12,7 @@ jobs:
 
 #
 # Build the whole product using Mono for Android and run runtime tests with Android devices
+#
 # Turn off the runtime testing for now, until https://github.com/dotnet/runtime/issues/60128 gets resolved
 # don't run tests on PRs until we can get significantly more devices
 # - template: /eng/pipelines/common/platform-matrix.yml
