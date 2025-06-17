@@ -11,12 +11,6 @@ using System.Runtime.ExceptionServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
-#if TARGET_ANDROID
-using GetHttpMessageHandlerReturnType = object;
-#elif TARGET_IOS || TARGET_MACCATALYST || TARGET_TVOS
-using GetHttpMessageHandlerReturnType = System.Net.Http.HttpMessageHandler;
-#endif
-
 namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
@@ -338,12 +332,10 @@ namespace System.Net.Http
 
         private static HttpMessageHandler CreateNativeHandler()
         {
-            return (HttpMessageHandler)CallNative(null);
+            return CallNative(null);
 
-#pragma warning disable SA1121 // Use built-in type alias. We need to alias here for Android.
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetHttpMessageHandler")]
-            static extern GetHttpMessageHandlerReturnType CallNative([UnsafeAccessorType(GetHttpMessageHandlerType)] object? _);
-#pragma warning restore SA1121
+            static extern HttpMessageHandler CallNative([UnsafeAccessorType(GetHttpMessageHandlerType)] object? _);
         }
     }
 }
