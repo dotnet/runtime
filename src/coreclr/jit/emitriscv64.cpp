@@ -2267,157 +2267,92 @@ AGAIN:
 
         srcEncodingOffs = srcInstrOffs + ssz; // Encoding offset of relative offset for small branch
 
+        const char* direction = nullptr;
         if (jmpIG->igNum < tgtIG->igNum)
         {
             /* Forward jump */
+            direction = "fwd";
 
             /* Adjust the target offset by the current delta. This is a worst-case estimate, as jumps between
                here and the target could be shortened, causing the actual distance to shrink.
              */
-
             dstOffs += adjIG;
 
             /* Compute the distance estimate */
-
             jmpDist = dstOffs - srcEncodingOffs;
 
             /* How much beyond the max. short distance does the jump go? */
-
             extra = jmpDist - psd;
-
-#if DEBUG_EMIT
-            printJmpInfo(jmp, jmpIG, extra, srcInstrOffs, srcEncodingOffs, dstOffs, jmpDist, "fwd");
-#endif // DEBUG_EMIT
-
-            assert(jmpDist >= 0); // Forward jump
-            assert(!(jmpDist & 0x3));
-
-            if (!(isLinkingEnd & 0x2) && (extra > 0) &&
-                (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
-            {
-                // transform forward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
-                instruction ins = jmp->idIns();
-                assert((INS_jal <= ins) && (ins <= INS_bgeu));
-
-                if (ins > INS_jalr || (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr <
-                                                                       // beq/bne/blt/bltu/bge/bgeu
-                {
-                    if (isValidSimm13(jmpDist + maxPlaceholderSize))
-                    {
-                        continue;
-                    }
-                    else if (isValidSimm21(jmpDist + maxPlaceholderSize))
-                    {
-                        // convert to opposite branch and jal
-                        extra = sizeof(code_t);
-                    }
-                    else
-                    {
-                        // convert to opposite branch and auipc+jalr
-                        extra = sizeof(code_t) * 2;
-                    }
-                }
-                else if (ins == INS_jal || ins == INS_j)
-                {
-                    if (isValidSimm21(jmpDist + maxPlaceholderSize))
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        // convert to auipc+jalr
-                        extra = sizeof(code_t);
-                    }
-                }
-                else
-                {
-                    unreached();
-                }
-
-                jmp->idInsOpt(INS_OPTS_JALR);
-                jmp->idCodeSize(jmp->idCodeSize() + extra);
-                jmpIG->igSize += (unsigned short)extra; // the placeholder sizeof(INS_OPTS_JALR) - sizeof(INS_OPTS_J).
-                adjSJ += (UNATIVE_OFFSET)extra;
-                adjIG += (UNATIVE_OFFSET)extra;
-                emitTotalCodeSize += (UNATIVE_OFFSET)extra;
-                jmpIG->igFlags |= IGF_UPD_ISZ;
-                isLinkingEnd |= 0x1;
-            }
-            continue;
         }
         else
         {
             /* Backward jump */
+            direction = "bwd";
 
             /* Compute the distance estimate */
-
             jmpDist = srcEncodingOffs - dstOffs;
 
             /* How much beyond the max. short distance does the jump go? */
-
             extra = jmpDist + nsd;
+        }
 
 #if DEBUG_EMIT
-            printJmpInfo(jmp, jmpIG, extra, srcInstrOffs, srcEncodingOffs, dstOffs, jmpDist, "bwd");
+        printJmpInfo(jmp, jmpIG, extra, srcInstrOffs, srcEncodingOffs, dstOffs, jmpDist, direction);
 #endif // DEBUG_EMIT
 
-            assert(jmpDist >= 0); // Backward jump
-            assert(!(jmpDist & 0x3));
+        assert(jmpDist >= 0);
+        assert(!(jmpDist & 0x3));
 
-            if (!(isLinkingEnd & 0x2) && (extra > 0) &&
-                (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
+        if (!(isLinkingEnd & 0x2) && (extra > 0) &&
+            (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
+        {
+            // transform INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
+            instruction ins = jmp->idIns();
+            assert((INS_jal <= ins) && (ins <= INS_bgeu));
+
+            if (ins > INS_jalr || (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr <
+                                                                   // beq/bne/blt/bltu/bge/bgeu
             {
-                // transform backward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
-                instruction ins = jmp->idIns();
-                assert((INS_jal <= ins) && (ins <= INS_bgeu));
-
-                if (ins > INS_jalr || (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr <
-                                                                       // beq/bne/blt/bltu/bge/bgeu
+                if (isValidSimm13(jmpDist + maxPlaceholderSize))
                 {
-                    if (isValidSimm13(jmpDist + maxPlaceholderSize))
-                    {
-                        continue;
-                    }
-                    else if (isValidSimm21(jmpDist + maxPlaceholderSize))
-                    {
-                        // convert to opposite branch and jal
-                        extra = 4;
-                    }
-                    else
-                    {
-                        // convert to opposite branch and jalr
-                        extra = 4 * 6;
-                    }
+                    continue;
                 }
-                else if (ins == INS_jal || ins == INS_j)
+                else if (isValidSimm21(jmpDist + maxPlaceholderSize))
                 {
-                    if (isValidSimm21(jmpDist + maxPlaceholderSize))
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        // convert to jalr
-                        extra = 4 * 5;
-                    }
+                    // convert to opposite branch and jal
+                    extra = sizeof(code_t);
                 }
                 else
                 {
-                    assert(ins == INS_jalr);
-                    assert((jmpDist + maxPlaceholderSize) < 0x800);
+                    // convert to opposite branch and auipc+jalr
+                    extra = 2 * sizeof(code_t);
+                }
+            }
+            else if (ins == INS_jal || ins == INS_j)
+            {
+                if (isValidSimm21(jmpDist + maxPlaceholderSize))
+                {
                     continue;
                 }
-
-                jmp->idInsOpt(INS_OPTS_JALR);
-                jmp->idCodeSize(jmp->idCodeSize() + extra);
-                jmpIG->igSize += (unsigned short)extra; // the placeholder sizeof(INS_OPTS_JALR) - sizeof(INS_OPTS_J).
-                adjSJ += (UNATIVE_OFFSET)extra;
-                adjIG += (UNATIVE_OFFSET)extra;
-                emitTotalCodeSize += (UNATIVE_OFFSET)extra;
-                jmpIG->igFlags |= IGF_UPD_ISZ;
-                isLinkingEnd |= 0x1;
+                else
+                {
+                    // convert to auipc+jalr
+                    extra = sizeof(code_t);
+                }
             }
-            continue;
+            else
+            {
+                unreached();
+            }
+
+            jmp->idInsOpt(INS_OPTS_JALR);
+            jmp->idCodeSize(jmp->idCodeSize() + extra);
+            jmpIG->igSize += (unsigned short)extra; // the placeholder sizeof(INS_OPTS_JALR) - sizeof(INS_OPTS_J).
+            adjSJ += (UNATIVE_OFFSET)extra;
+            adjIG += (UNATIVE_OFFSET)extra;
+            emitTotalCodeSize += (UNATIVE_OFFSET)extra;
+            jmpIG->igFlags |= IGF_UPD_ISZ;
+            isLinkingEnd |= 0x1;
         }
     } // end for each jump
 
