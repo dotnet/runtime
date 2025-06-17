@@ -47,12 +47,6 @@ thread_local ICorJitInfo* t_InterpJitInfoTls = nullptr;
 static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
 
 /*****************************************************************************/
-void DECLSPEC_NORETURN Interp_CompilationFail(const char *msg)
-{
-    // This is a fatal error, so we don't return.
-    throw std::exception();
-}
-
 // GCInfoEncoder needs an IAllocator implementation. This is a simple one that forwards to the Compiler.
 class InterpIAllocator : public IAllocator
 {

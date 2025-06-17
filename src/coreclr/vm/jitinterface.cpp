@@ -6573,9 +6573,6 @@ void CEEInfo::setMethodAttribs (
     }
 
     if (attribs & (CORINFO_FLG_SWITCHED_TO_OPTIMIZED | CORINFO_FLG_SWITCHED_TO_MIN_OPT
-#ifdef FEATURE_INTERPRETER
-     | CORINFO_FLG_INTERPRETER
-#endif // FEATURE_INTERPRETER
      ))
     {
         PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();

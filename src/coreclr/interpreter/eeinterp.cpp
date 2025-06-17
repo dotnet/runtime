@@ -83,9 +83,6 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
         int32_t IRCodeSize = 0;
         int32_t *pIRCode = compiler.GetCode(&IRCodeSize);
 
-        // FIXME this shouldn't be here
-        compHnd->setMethodAttribs(methodInfo->ftn, CORINFO_FLG_INTERPRETER);
-
         uint32_t sizeOfCode = sizeof(InterpMethod*) + IRCodeSize * sizeof(int32_t);
         uint8_t unwindInfo[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 

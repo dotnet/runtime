@@ -816,12 +816,13 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     // (don't want this for OSR, need to see how it works)
     COR_ILMETHOD_DECODER ilDecoderTemp;
     COR_ILMETHOD_DECODER* pilHeader = GetAndVerifyILHeader(this, pConfig, &ilDecoderTemp);
+    bool isInterpreterCode = false;
 
     if (!ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
         TRACE_LEVEL_VERBOSE,
         CLR_JIT_KEYWORD))
     {
-        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
+        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode, &isInterpreterCode);
     }
     else
     {
@@ -834,13 +835,24 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
             &methodSignature);
 #endif //FEATURE_EVENT_TRACE
 
-        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
+        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode, &isInterpreterCode);
+
 #ifdef FEATURE_EVENT_TRACE
+        PCODE pNativeCodeStartAddress = pCode;
+#ifdef FEATURE_INTERPRETER
+        if (isInterpreterCode)
+        {
+            // If this is interpreter code, we need to get the native code start address from the interpreter Precode
+            InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
+            InterpByteCodeStart* interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+            pNativeCodeStartAddress = PINSTRToPCODE(dac_cast<TADDR>(interpreterCode));
+        }
+#endif // FEATURE_INTERPRETER
         ETW::MethodLog::MethodJitted(this,
             &namespaceOrClassName,
             &methodName,
             &methodSignature,
-            pCode,
+            pNativeCodeStartAddress,
             pConfig);
 #endif //FEATURE_EVENT_TRACE
     }
@@ -898,7 +910,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     return pCode;
 }
 
-PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pEntry, ULONG* pSizeOfCode)
+PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pEntry, ULONG* pSizeOfCode, bool *pIsInterpreterCode)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(pConfig != NULL);
@@ -913,7 +925,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     {
         Thread::CurrentPrepareCodeConfigHolder threadPrepareCodeConfigHolder(GetThread(), pConfig);
 
-        pCode = UnsafeJitFunction(pConfig, pilHeader, &isTier0, &isInterpreterCode, pSizeOfCode);
+        pCode = UnsafeJitFunction(pConfig, pilHeader, &isTier0, pIsInterpreterCode, pSizeOfCode);
     }
     EX_CATCH
     {
@@ -993,7 +1005,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     }
 
 #ifdef FEATURE_INTERPRETER
-    if (isInterpreterCode)
+    if (*pIsInterpreterCode)
     {
         InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
         InterpByteCodeStart* interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
