@@ -1023,31 +1023,14 @@ void emitter::emitIns_R_R_R_R(
  *
  */
 void emitter::emitIns_R_C(
-    instruction ins, emitAttr attr, regNumber reg, regNumber addrReg, CORINFO_FIELD_HANDLE fldHnd, int offs)
+    instruction ins, emitAttr attr, regNumber destReg, regNumber addrReg, CORINFO_FIELD_HANDLE fldHnd)
 {
-    assert(offs >= 0);
-    assert(instrDesc::fitsInSmallCns(offs)); // can optimize.
     instrDesc* id = emitNewInstr(attr);
-
     id->idIns(ins);
-    assert(reg != REG_R0); // for special. reg Must not be R0.
-    id->idReg1(reg);       // destination register that will get the constant value.
-
-    id->idSmallCns(offs); // usually is 0.
+    assert(destReg != REG_R0); // for special. reg Must not be R0.
+    id->idReg1(destReg);
     id->idInsOpt(INS_OPTS_RC);
-
-    if (emitComp->fgIsBlockCold(emitComp->compCurBB))
-    {
-        // Loading constant from cold section might be arbitrarily far,
-        // use emitOutputInstr_OptsRcNoPcRel
-        id->idCodeSize(24);
-    }
-    else
-    {
-        // Loading constant from hot section can use auipc,
-        // use emitOutputInstr_OptsRcPcRel
-        id->idCodeSize(8);
-    }
+    id->idCodeSize(2 * sizeof(code_t)); // auipc + load/addi
 
     if (EA_IS_GCREF(attr))
     {
@@ -1584,7 +1567,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     {
         assert(!emitComp->compGeneratingProlog && !emitComp->compGeneratingEpilog);
         auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
-        emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr), 0);
+        emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr));
     }
     else
     {
@@ -3156,58 +3139,21 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
     assert(id->idAddr()->iiaIsJitDataOffset());
     assert(id->idGCref() == GCT_NONE);
 
-    const int dataOffs = id->idAddr()->iiaGetJitDataOffset();
-    assert(dataOffs >= 0);
-
-    const ssize_t immediate = emitGetInsSC(id);
-    assert((immediate >= 0) && (immediate < 0x4000)); // 0x4000 is arbitrary, currently 'imm' is always 0.
-
-    const unsigned offset = static_cast<unsigned>(dataOffs + immediate);
+    const int offset = id->idAddr()->iiaGetJitDataOffset();
+    assert(offset >= 0);
     assert(offset < emitDataSize());
 
     *ins                 = id->idIns();
     const regNumber reg1 = id->idReg1();
-
-    if (id->idCodeSize() == 8)
-    {
-        return emitOutputInstr_OptsRcPcRel(dst, ins, offset, reg1);
-    }
-    return emitOutputInstr_OptsRcNoPcRel(dst, ins, offset, reg1);
-}
-
-BYTE* emitter::emitOutputInstr_OptsRcPcRel(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
-{
+    assert(reg1 != REG_ZERO);
+    assert(id->idCodeSize() == 2 * sizeof(code_t));
     const ssize_t immediate = (emitConsBlock - dst) + offset;
     assert((immediate > 0) && ((immediate & 0x03) == 0));
+    assert(isValidSimm32(immediate));
 
-    const regNumber rsvdReg = codeGen->rsGetRsvdReg();
-    dst += emitOutput_UTypeInstr(dst, INS_auipc, rsvdReg, UpperNBitsOfWordSignExtend<20>(immediate));
-
-    instruction lastIns = *ins;
-
-    if (*ins == INS_jal)
-    {
-        *ins = lastIns = INS_addi;
-    }
-    dst += emitOutput_ITypeInstr(dst, lastIns, reg1, rsvdReg, LowerNBitsOfWord<12>(immediate));
-    return dst;
-}
-
-BYTE* emitter::emitOutputInstr_OptsRcNoPcRel(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
-{
-    const ssize_t immediate = reinterpret_cast<ssize_t>(emitConsBlock) + offset;
-    assertCodeLength(static_cast<size_t>(immediate), 48); // RISC-V Linux Kernel SV48
-    const regNumber rsvdReg = codeGen->rsGetRsvdReg();
-
-    const instruction lastIns = (*ins == INS_jal) ? (*ins = INS_addi) : *ins;
-    const ssize_t     high    = immediate >> 16;
-
-    dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(high));
-    dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(high));
-    dst += emitOutput_ITypeInstr(dst, INS_slli, rsvdReg, rsvdReg, 5);
-    dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<5>(immediate >> 11));
-    dst += emitOutput_ITypeInstr(dst, INS_slli, rsvdReg, rsvdReg, 11);
-    dst += emitOutput_ITypeInstr(dst, lastIns, reg1, rsvdReg, LowerNBitsOfWord<11>(immediate));
+    const regNumber tempReg = isFloatReg(reg1) ? codeGen->rsGetRsvdReg() : reg1;
+    dst += emitOutput_UTypeInstr(dst, INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
+    dst += emitOutput_ITypeInstr(dst, *ins, reg1, tempReg, LowerNBitsOfWord<12>(immediate));
     return dst;
 }
 

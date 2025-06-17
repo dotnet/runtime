@@ -981,7 +981,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(constValue, size);
 
             // Compute the address of the FP constant and load the data.
-            emit->emitIns_R_C(size == EA_4BYTE ? INS_flw : INS_fld, size, targetReg, REG_NA, hnd, 0);
+            emit->emitIns_R_C(size == EA_4BYTE ? INS_flw : INS_fld, size, targetReg, REG_NA, hnd);
         }
         break;
 
@@ -2209,8 +2209,8 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
-    GetEmitter()->emitIns_R_C(INS_jal, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
-                              compiler->eeFindJitDataOffs(jmpTabBase), 0);
+    GetEmitter()->emitIns_R_C(INS_addi, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+                              compiler->eeFindJitDataOffs(jmpTabBase));
     genProduceReg(treeNode);
 }
 
