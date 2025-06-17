@@ -19,14 +19,16 @@ private:
     CORINFO_METHOD_HANDLE m_compMethod;
     int m_vectorTByteLength;
     lookupHWNamedIntrinsicHandler m_lookupHWNamedIntrinsic;
+    bool m_Zbb;
 
 public:
-    NamedIntrinsicLookup (void* context, COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE compMethod, int vectorTByteLength, lookupHWNamedIntrinsicHandler lookupHWNamedIntrinsic)
+    NamedIntrinsicLookup (void* context, COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE compMethod, int vectorTByteLength, bool zbb, lookupHWNamedIntrinsicHandler lookupHWNamedIntrinsic)
     {
         m_context = context;
         m_compHnd = compHnd;
         m_compMethod = compMethod;
         m_vectorTByteLength = vectorTByteLength;
+        m_Zbb = zbb;
         m_lookupHWNamedIntrinsic = lookupHWNamedIntrinsic;
     }
 

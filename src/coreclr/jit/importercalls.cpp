@@ -10613,6 +10613,9 @@ static NamedIntrinsic lookupHWNamedIntrinsicWrapper(void* compiler,
 //
 NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 {
+    bool zbb = true;
+    RISCV64_ONLY(zbb = compOpportunisticallyDependsOn(InstructionSet_Zbb));
+
     NamedIntrinsicLookup lookup(
         this, info.compCompHnd, info.compMethodHnd,
 #ifdef FEATURE_SIMD
@@ -10620,6 +10623,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 #else
         0,
 #endif
+        zbb,
         lookupHWNamedIntrinsicWrapper);
     return lookup.lookupNamedIntrinsic(method);
 }

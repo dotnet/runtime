@@ -463,7 +463,7 @@ NamedIntrinsic NamedIntrinsicLookup::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE 
                 {
                     if (strcmp(methodName, "ReverseEndianness") == 0)
                     {
-                        RISCV64_ONLY(if (compOpportunisticallyDependsOn(InstructionSet_Zbb)))
+                        if (m_Zbb)
                         {
                             result = NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness;
                         }
