@@ -127,6 +127,7 @@ set( JIT_SOURCES
   ifconversion.cpp
   importer.cpp
   importercalls.cpp
+  lookupintrinsic.cpp
   importervectorization.cpp
   indirectcalltransformer.cpp
   inductionvariableopts.cpp
@@ -144,7 +145,6 @@ set( JIT_SOURCES
   lir.cpp
   liveness.cpp
   loopcloning.cpp
-  lookupintrinsic.cpp
   lower.cpp
   lsra.cpp
   lsrabuild.cpp

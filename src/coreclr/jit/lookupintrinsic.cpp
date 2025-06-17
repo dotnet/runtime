@@ -1,6 +1,14 @@
+#include "corhdr.h"
+#include "corjit.h"
+
 #include "lookupintrinsic.h"
 
-#include "namedintrinsiclist.h"
+#include <assert.h>
+
+// FIXME
+#ifndef JITDUMP
+#define JITDUMP(...)
+#endif
 
 //------------------------------------------------------------------------
 // lookupNamedIntrinsic: map method to jit named intrinsic value
@@ -514,7 +522,7 @@ NamedIntrinsic NamedIntrinsicLookup::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE 
                                 }
                             }
 
-                            uint32_t size = getVectorTByteLength();
+                            uint32_t size = m_vectorTByteLength;
                             assert((size == 16) || (size == 32) || (size == 64));
 
                             const char* lookupClassName = className;
@@ -615,7 +623,7 @@ NamedIntrinsic NamedIntrinsicLookup::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE 
                                 CORINFO_SIG_INFO sig;
                                 m_compHnd->getMethodSig(method, &sig);
 
-                                result = HWIntrinsicInfo::lookupId(this, &sig, lookupClassName, lookupMethodName,
+                                result = m_lookupHWNamedIntrinsic(m_context, &sig, lookupClassName, lookupMethodName,
                                                                    enclosingClassNames[0], enclosingClassNames[1]);
                             }
                         }
@@ -640,7 +648,7 @@ NamedIntrinsic NamedIntrinsicLookup::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE 
                                 assert(strcmp(className, "Vector`1") == 0);
                                 result = NI_Vector_GetCount;
                             }
-                            else if (gtIsRecursiveCall(method, false))
+                            else if (method == m_compMethod)
                             {
                                 // For the framework itself, any recursive intrinsics will either be
                                 // only supported on a single platform or will be guarded by a relevant
@@ -879,7 +887,7 @@ NamedIntrinsic NamedIntrinsicLookup::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE 
                             CORINFO_SIG_INFO sig;
                             m_compHnd->getMethodSig(method, &sig);
 
-                            result = HWIntrinsicInfo::lookupId(this, &sig, className, methodName,
+                            result = m_lookupHWNamedIntrinsic(m_context, &sig, className, methodName,
                                                                enclosingClassNames[0], enclosingClassNames[1]);
                         }
 #endif // FEATURE_HW_INTRINSICS
@@ -917,7 +925,7 @@ NamedIntrinsic NamedIntrinsicLookup::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE 
 
                                 result = NI_Vector_GetCount;
                             }
-                            else if (gtIsRecursiveCall(method, false))
+                            else if (method == m_compMethod)
                             {
                                 // For the framework itself, any recursive intrinsics will either be
                                 // only supported on a single platform or will be guarded by a relevant

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "jitpch.h"
-#include "lookupintrinsic.cpp"
 
 //------------------------------------------------------------------------
 // impImportCall: import a call-inspiring opcode
@@ -10328,25 +10327,6 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 }
 
 //------------------------------------------------------------------------
-// lookupNamedIntrinsic: map method to jit named intrinsic value
-//
-// Arguments:
-//    method -- method handle for method
-//
-// Return Value:
-//    Id for the named intrinsic, or Illegal if none.
-//
-// Notes:
-//    method should have CORINFO_FLG_INTRINSIC set in its attributes,
-//    otherwise it is not a named jit intrinsic.
-//
-NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
-{
-    NamedIntrinsicLookup lookup(info.compCompHnd);
-    return lookup.lookupNamedIntrinsic(method);
-}
-
-//------------------------------------------------------------------------
 // impUnsupportedNamedIntrinsic: Throws an exception for an unsupported named intrinsic
 //
 // Arguments:
@@ -10601,4 +10581,45 @@ GenTree* Compiler::impKeepAliveIntrinsic(GenTree* objToKeepAlive)
     }
 
     return gtNewKeepAliveNode(objToKeepAlive);
+}
+
+static NamedIntrinsic lookupHWNamedIntrinsicWrapper(void* compiler,
+                                             CORINFO_SIG_INFO* sig,
+                                             const char*       className,
+                                             const char*       methodName,
+                                             const char*       innerEnclosingClassName,
+                                             const char*       outerEnclosingClassName)
+{
+#ifdef FEATURE_HW_INTRINSICS
+    return HWIntrinsicInfo::lookupId((Compiler *)compiler, sig, className, methodName,
+                                     innerEnclosingClassName, outerEnclosingClassName);
+#else
+    return NI_Illegal;
+#endif
+}
+
+//------------------------------------------------------------------------
+// lookupNamedIntrinsic: map method to jit named intrinsic value
+//
+// Arguments:
+//    method -- method handle for method
+//
+// Return Value:
+//    Id for the named intrinsic, or Illegal if none.
+//
+// Notes:
+//    method should have CORINFO_FLG_INTRINSIC set in its attributes,
+//    otherwise it is not a named jit intrinsic.
+//
+NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
+{
+    NamedIntrinsicLookup lookup(
+        this, info.compCompHnd, info.compMethodHnd,
+#ifdef FEATURE_SIMD
+        getVectorTByteLength(),
+#else
+        0,
+#endif
+        lookupHWNamedIntrinsicWrapper);
+    return lookup.lookupNamedIntrinsic(method);
 }
