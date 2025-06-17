@@ -2313,7 +2313,7 @@ AGAIN:
                     }
                     else
                     {
-                        // convert to opposite branch and jalr
+                        // convert to opposite branch and auipc+jalr
                         extra = sizeof(code_t) * 2;
                     }
                 }
@@ -2325,7 +2325,7 @@ AGAIN:
                     }
                     else
                     {
-                        // convert to jalr
+                        // convert to auipc+jalr
                         extra = sizeof(code_t);
                     }
                 }
@@ -3304,12 +3304,12 @@ BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insG
     {
         assert(jmp->idCodeSize() == 2 * sizeof(code_t));
         assert(isValidSimm32(immediate));
-        dst += emitOutput_UTypeInstr(dst, INS_auipc, jmp->idReg1(), UpperNBitsOfWordSignExtend<20>(immediate));
-        dst += emitOutput_ITypeInstr(dst, INS_jalr, jmp->idReg1(), jmp->idReg1(), LowerNBitsOfWord<12>(immediate));
+        dst += emitOutput_UTypeInstr(dst, INS_auipc, REG_RA, UpperNBitsOfWordSignExtend<20>(immediate));
+        dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_RA, REG_RA, LowerNBitsOfWord<12>(immediate));
     }
     else
     {
-        assert(*ins > INS_jalr || (*ins < INS_jalr && * ins > INS_j)); // branch
+        assert(*ins > INS_jalr || (*ins<INS_jalr&& * ins> INS_j)); // branch
         regNumber reg1 = jmp->idReg1();
         regNumber reg2 = jmp->idInsIs(INS_beqz, INS_bnez) ? REG_R0 : jmp->idReg2();
 
