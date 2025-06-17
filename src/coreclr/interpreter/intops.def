@@ -21,8 +21,10 @@ OPDEF(INTOP_LDC_I8, "ldc.i8", 4, 1, 0, InterpOpLongInt)
 OPDEF(INTOP_LDC_R4, "ldc.r4", 3, 1, 0, InterpOpFloat)
 OPDEF(INTOP_LDC_R8, "ldc.r8", 4, 1, 0, InterpOpDouble)
 
-OPDEF(INTOP_LDPTR, "ldptr", 3, 1, 0, InterpOpInt)
+OPDEF(INTOP_LDPTR, "ldptr", 3, 1, 0, InterpOpLdPtr)
+OPDEF(INTOP_LDPTR_DEREF, "ldptr.deref", 3, 1, 0, InterpOpLdPtr)
 OPDEF(INTOP_NEWARR, "newarr", 5, 1, 1, InterpOpInt)
+OPDEF(INTOP_NEWMDARR, "newmdarr", 5, 1, 1, InterpOpTwoInts)
 
 OPDEF(INTOP_LDELEM_I1, "ldelem.i1", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_LDELEM_U1, "ldelem.u1", 4, 1, 2, InterpOpNoArgs)
@@ -32,6 +34,8 @@ OPDEF(INTOP_LDELEM_I4, "ldelem.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_LDELEM_I8, "ldelem.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_LDELEM_R4, "ldelem.r4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_LDELEM_R8, "ldelem.r8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_LDELEM_REF, "ldelem.ref", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_LDELEM_VT, "ldelem.vt", 5, 1, 2, InterpOpInt)
 
 OPDEF(INTOP_STELEM_I1, "stelem.i1", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_STELEM_U1, "stelem.u1", 4, 0, 3, InterpOpNoArgs)
@@ -41,8 +45,15 @@ OPDEF(INTOP_STELEM_I4, "stelem.i4", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_STELEM_I8, "stelem.i8", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_STELEM_R4, "stelem.r4", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_STELEM_R8, "stelem.r8", 4, 0, 3, InterpOpNoArgs)
+OPDEF(INTOP_STELEM_REF, "stelem.ref", 4, 0, 3, InterpOpNoArgs)
+OPDEF(INTOP_STELEM_VT, "stelem.vt", 6, 0, 3, InterpOpTwoInts)
+OPDEF(INTOP_STELEM_VT_NOREF, "stelem.vt.noref", 5, 0, 3, InterpOpInt)
+
+OPDEF(INTOP_LDELEMA, "ldelema", 5, 1, 2, InterpOpInt)
+OPDEF(INTOP_LDELEMA_REF, "ldelema.ref", 6, 1, 2, InterpOpTwoInts)
 
 OPDEF(INTOP_LDTOKEN, "ldtoken", 4, 1, 0, InterpOpTwoInts) // [token data item] [conversion helper func]
+OPDEF(INTOP_LDTOKEN_VAR, "ldtoken.var", 4, 1, 1, InterpOpInt) // [var index] [conversion helper func]
 
 OPDEF(INTOP_MOV_I4_I1, "mov.i4.i1", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_MOV_I4_U1, "mov.i4.u1", 3, 1, 1, InterpOpNoArgs)
@@ -161,7 +172,42 @@ OPDEF(INTOP_CONV_R8_R4, "conv.r8.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_U8_R4, "conv.u8.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_U8_R8, "conv.u8.r8", 3, 1, 1, InterpOpNoArgs)
 
+OPDEF(INTOP_CONV_OVF_I1_I4, "conv.ovf.i1.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_I1_I8, "conv.ovf.i1.i8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_I1_R4, "conv.ovf.i1.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_I1_R8, "conv.ovf.i1.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_OVF_U1_I4, "conv.ovf.u1.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_U1_I8, "conv.ovf.u1.i8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_U1_R4, "conv.ovf.u1.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_U1_R8, "conv.ovf.u1.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_OVF_I2_I4, "conv.ovf.i2.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_I2_I8, "conv.ovf.i2.i8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_I2_R4, "conv.ovf.i2.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_I2_R8, "conv.ovf.i2.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_OVF_U2_I4, "conv.ovf.u2.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_U2_I8, "conv.ovf.u2.i8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_U2_R4, "conv.ovf.u2.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_U2_R8, "conv.ovf.u2.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_OVF_I4_I8, "conv.ovf.i4.i8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_I4_R4, "conv.ovf.i4.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_I4_R8, "conv.ovf.i4.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_OVF_U4_I8, "conv.ovf.u4.i8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_U4_R4, "conv.ovf.u4.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_U4_R8, "conv.ovf.u4.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_OVF_I8_R4, "conv.ovf.i8.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_I8_R8, "conv.ovf.i8.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_OVF_U8_R4, "conv.ovf.u8.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_U8_R8, "conv.ovf.u8.r8", 3, 1, 1, InterpOpNoArgs)
+
 OPDEF(INTOP_BOX, "box", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
+OPDEF(INTOP_BOX_PTR, "box.ptr", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
 OPDEF(INTOP_UNBOX, "unbox", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
 OPDEF(INTOP_UNBOX_ANY, "unbox.any", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
 // Unary operations end
@@ -176,10 +222,22 @@ OPDEF(INTOP_ADD_I8, "add.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_ADD_R4, "add.r4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_ADD_R8, "add.r8", 4, 1, 2, InterpOpNoArgs)
 
+OPDEF(INTOP_ADD_OVF_I4, "add.ovf.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_ADD_OVF_I8, "add.ovf.i8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_ADD_OVF_UN_I4, "add.ovf.un.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_ADD_OVF_UN_I8, "add.ovf.un.i8", 4, 1, 2, InterpOpNoArgs)
+
 OPDEF(INTOP_SUB_I4, "sub.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SUB_I8, "sub.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SUB_R4, "sub.r4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SUB_R8, "sub.r8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_SUB_OVF_I4, "sub.ovf.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_SUB_OVF_I8, "sub.ovf.i8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_SUB_OVF_UN_I4, "sub.ovf.un.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_SUB_OVF_UN_I8, "sub.ovf.un.i8", 4, 1, 2, InterpOpNoArgs)
 
 OPDEF(INTOP_MUL_I4, "mul.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_MUL_I8, "mul.i8", 4, 1, 2, InterpOpNoArgs)
@@ -278,12 +336,18 @@ OPDEF(INTOP_LDFLDA, "ldflda", 4, 1, 1, InterpOpInt)
 
 // Calls
 OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_CALLI, "call", 5, 1, 2, InterpOpLdPtr)
 OPDEF(INTOP_CALLVIRT, "callvirt", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_NEWOBJ_VAR, "newobj.var", 5, 1, 2, InterpOpMethodHandle)
 OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodHandle)
 
-OPDEF(INTOP_CALL_HELPER_PP, "call.helper.pp", 4, 1, 0, InterpOpTwoInts)
-OPDEF(INTOP_CALL_HELPER_PP_2, "call.helper.pp.2", 5, 1, 1, InterpOpTwoInts)
+OPDEF(INTOP_CALL_HELPER_PP, "call.helper.pp", 4, 1, 0, InterpOpHelperFtn)
+OPDEF(INTOP_CALL_HELPER_PP_2, "call.helper.pp.2", 5, 1, 1, InterpOpHelperFtn)
+
+OPDEF(INTOP_GENERICLOOKUP_METHOD, "generic.method", 4, 1, 1, InterpOpGenericLookup)
+OPDEF(INTOP_GENERICLOOKUP_CLASS, "generic.class", 4, 1, 1, InterpOpGenericLookup)
+OPDEF(INTOP_GENERICLOOKUP_THIS, "generic.this", 4, 1, 1, InterpOpGenericLookup)
 
 OPDEF(INTOP_CALL_FINALLY, "call.finally", 2, 0, 0, InterpOpBranch)
 

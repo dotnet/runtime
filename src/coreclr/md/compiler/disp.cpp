@@ -102,6 +102,9 @@ Disp::DefineScope(
     // Get the requested interface.
     IfFailGo(pMeta->QueryInterface(riid, (void **)ppIUnk));
 
+    // Add the new RegMeta to the cache.
+    IfFailGo(pMeta->AddToCache());
+
     LOG((LOGMD, "{%08x} Created new emit scope\n", pMeta));
 
 ErrExit:
@@ -202,6 +205,9 @@ Disp::OpenRawScope(
     // Obtain the requested interface.
     IfFailGo(pMeta->QueryInterface(riid, (void **)ppIUnk) );
 
+    // Add the new RegMeta to the cache.
+    IfFailGo(pMeta->AddToCache());
+
 #if defined(_DEBUG)
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_RegMetaDump))
     {
@@ -281,6 +287,9 @@ HRESULT Disp::OpenRawScopeOnMemory(        // Return code.
 
     // Return the requested interface.
     IfFailGo( pMeta->QueryInterface(riid, (void **) ppIUnk) );
+
+    // Add the new RegMeta to the cache.
+    IfFailGo(pMeta->AddToCache());
 
 #if defined(_DEBUG)
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_RegMetaDump))
@@ -408,6 +417,9 @@ Disp::DefinePortablePdbScope(
     // Get the requested interface.
     IfFailGo(pMeta->QueryInterface(riid, (void**)ppIUnk));
 
+    // Add the new RegMeta to the cache.
+    IfFailGo(pMeta->AddToCache());
+
     LOG((LOGMD, "{%08x} Created new emit scope\n", pMeta));
 
 ErrExit:
@@ -486,6 +498,9 @@ HRESULT Disp::OpenRawScopeOnCustomDataSource(        // Return code.
 
     // Return the requested interface.
     IfFailGo(pMeta->QueryInterface(riid, (void **)ppIUnk));
+
+    // Add the new RegMeta to the cache.
+    IfFailGo(pMeta->AddToCache());
 
 #if defined(_DEBUG)
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_RegMetaDump))
@@ -809,7 +824,7 @@ ErrExit:
 //
 // Notes:
 //    This could be merged with the class factory support.
-HRESULT InternalCreateMetaDataDispenser(REFIID riid, void ** pMetaDataDispenserOut)
+HRESULT CreateMetaDataDispenser(REFIID riid, void ** pMetaDataDispenserOut)
 {
     _ASSERTE(pMetaDataDispenserOut != NULL);
     return Disp::CreateObject(riid, pMetaDataDispenserOut);

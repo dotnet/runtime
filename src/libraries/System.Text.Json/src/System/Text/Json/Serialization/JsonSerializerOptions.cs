@@ -39,13 +39,8 @@ namespace System.Text.Json
         {
             [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
             [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-            get
-            {
-                return s_defaultOptions ?? GetOrCreateSingleton(ref s_defaultOptions, JsonSerializerDefaults.General);
-            }
+            get => field ?? GetOrCreateSingleton(ref field, JsonSerializerDefaults.General);
         }
-
-        private static JsonSerializerOptions? s_defaultOptions;
 
         /// <summary>
         /// Gets a read-only, singleton instance of <see cref="JsonSerializerOptions" /> that uses the web configuration.
@@ -59,13 +54,23 @@ namespace System.Text.Json
         {
             [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
             [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-            get
-            {
-                return s_webOptions ?? GetOrCreateSingleton(ref s_webOptions, JsonSerializerDefaults.Web);
-            }
+            get => field ?? GetOrCreateSingleton(ref field, JsonSerializerDefaults.Web);
         }
 
-        private static JsonSerializerOptions? s_webOptions;
+        /// <summary>
+        /// Gets a read-only, singleton instance of <see cref="JsonSerializerOptions" /> that uses the strict configuration.
+        /// </summary>
+        /// <remarks>
+        /// Each <see cref="JsonSerializerOptions" /> instance encapsulates its own serialization metadata caches,
+        /// so using fresh default instances every time one is needed can result in redundant recomputation of converters.
+        /// This property provides a shared instance that can be consumed by any number of components without necessitating any converter recomputation.
+        /// </remarks>
+        public static JsonSerializerOptions Strict
+        {
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+            get => field ?? GetOrCreateSingleton(ref field, JsonSerializerDefaults.Strict);
+        }
 
         // For any new option added, consider adding it to the options copied in the copy constructor below
         // and consider updating the EqualtyComparer used for comparing CachingContexts.
@@ -171,6 +176,13 @@ namespace System.Text.Json
                 _propertyNameCaseInsensitive = true;
                 _jsonPropertyNamingPolicy = JsonNamingPolicy.CamelCase;
                 _numberHandling = JsonNumberHandling.AllowReadingFromString;
+            }
+            else if (defaults == JsonSerializerDefaults.Strict)
+            {
+                _unmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
+                _allowDuplicateProperties = false;
+                _respectNullableAnnotations = true;
+                _respectRequiredConstructorParameters = true;
             }
             else if (defaults != JsonSerializerDefaults.General)
             {

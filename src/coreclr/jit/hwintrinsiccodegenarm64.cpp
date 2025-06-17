@@ -719,8 +719,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         break;
                     }
 
-                    insScalableOpts sopt     = INS_SCALABLE_OPTS_NONE;
-                    bool            hasShift = false;
+                    insScalableOpts sopt        = INS_SCALABLE_OPTS_NONE;
+                    bool            hasImmShift = (intrinEmbMask.category == HW_Category_ShiftLeftByImmediate ||
+                                        intrinEmbMask.category == HW_Category_ShiftRightByImmediate) &&
+                                       HWIntrinsicInfo::HasImmediateOperand(intrinEmbMask.id);
 
                     insOpts embOpt = opt;
                     switch (intrinEmbMask.id)
@@ -738,10 +740,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
-                        case NI_Sve_ShiftRightArithmeticForDivide:
-                            hasShift = true;
-                            break;
-
                         case NI_Sve_CreateBreakPropagateMask:
                             embOpt = INS_OPTS_SCALABLE_B;
                             break;
@@ -758,7 +756,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
 
                     auto emitInsHelper = [&](regNumber reg1, regNumber reg2, regNumber reg3) {
-                        if (hasShift)
+                        if (hasImmShift)
                         {
                             HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op2, op2->AsHWIntrinsic());
                             for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
@@ -774,7 +772,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     };
 
                     auto emitInsMovPrfxHelper = [&](regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4) {
-                        if (hasShift)
+                        if (hasImmShift)
                         {
                             HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op2, op2->AsHWIntrinsic(), 2);
                             for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
@@ -818,7 +816,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // Finally, perform the actual "predicated" operation so that `targetReg` is the first
                                 // operand and `embMaskOp2Reg` is the second operand.
 
-                                if (hasShift)
+                                if (hasImmShift)
                                 {
                                     HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op2, op2->AsHWIntrinsic(), 2);
                                     for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
@@ -2573,6 +2571,35 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 GetEmitter()->emitIns_Mov(INS_sve_mov, EA_SCALABLE, targetReg, op2Reg, /* canSkip */ true, opt);
                 GetEmitter()->emitInsSve_R_R_R(ins, EA_SCALABLE, targetReg, op1Reg, op3Reg, opt,
+                                               INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
+                break;
+            }
+
+            case NI_Sve_ExtractAfterLastActiveElementScalar:
+            case NI_Sve_ExtractLastActiveElementScalar:
+            {
+                opt = emitter::optGetSveInsOpt(emitTypeSize(node->GetSimdBaseType()));
+
+                if (emitter::isGeneralRegisterOrZR(targetReg))
+                {
+                    assert(varTypeIsIntegralOrI(intrin.baseType));
+
+                    emitSize = emitTypeSize(node);
+                    GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
+                                                   INS_SCALABLE_OPTS_NONE);
+                    break;
+                }
+
+                // FP scalars are processed by the INS_SCALABLE_OPTS_WITH_SIMD_SCALAR variant of the instructions
+                FALLTHROUGH;
+            }
+            case NI_Sve_ExtractAfterLastActiveElement:
+            case NI_Sve_ExtractLastActiveElement:
+            {
+                assert(emitter::isFloatReg(targetReg));
+                assert(varTypeIsFloating(node->gtType) || varTypeIsSIMD(node->gtType));
+
+                GetEmitter()->emitInsSve_R_R_R(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg, opt,
                                                INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
                 break;
             }

@@ -409,6 +409,12 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 
 #ifdef DEBUG
     dumpFunction = JitConfig.JitDumpFg().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
+    dumpFunction |= ((unsigned)JitConfig.JitDumpFgHash() == info.compMethodHash());
+
+    if (opts.IsTier0())
+    {
+        dumpFunction &= (JitConfig.JitDumpFgTier0() > 0);
+    }
 
     CompAllocator allocator = getAllocatorDebugOnly();
     filename                = JitConfig.JitDumpFgFile();
@@ -656,6 +662,8 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 //    Here are the config values that control it:
 //      DOTNET_JitDumpFg              A string (ala the DOTNET_JitDump string) indicating what methods to dump
 //                                     flowgraphs for.
+//      DOTNET_JitDumpFgHash          Dump flowgraphs for methods with this hash
+//      DOTNET_JitDumpFgTier0         Dump tier-0 compilations
 //      DOTNET_JitDumpFgDir           A path to a directory into which the flowgraphs will be dumped.
 //      DOTNET_JitDumpFgFile          The filename to use. The default is "default.[xml|dot]".
 //                                     Note that the new graphs will be appended to this file if it already exists.
@@ -2865,9 +2873,9 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 //------------------------------------------------------------------------------
 // fgDebugCheckBBNumIncreasing: Check that the block list bbNum are in increasing order in the bbNext
 // traversal. Given a block B1 and its bbNext successor B2, this means `B1->bbNum < B2->bbNum`, but not
-// that `B1->bbNum + 1 == B2->bbNum` (which is true after renumbering). This can be used as a precondition
-// to a phase that expects this ordering to compare block numbers (say, to look for backwards branches)
-// and doesn't want to call fgRenumberBlocks(), to avoid that potential expense.
+// that `B1->bbNum + 1 == B2->bbNum`.
+// This can be used as a precondition to a phase that expects this ordering to compare block numbers
+// (say, to look for backwards branches).
 //
 void Compiler::fgDebugCheckBBNumIncreasing()
 {

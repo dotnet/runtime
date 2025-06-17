@@ -58,6 +58,10 @@
 #include "pgo.h"
 #endif
 
+#ifdef FEATURE_INTERPRETER
+#include "callstubgenerator.h"
+#endif
+
 #include "tailcallhelp.h"
 #include "patchpointinfo.h"
 
@@ -5279,6 +5283,11 @@ void CEEInfo::getCallInfo(
         pResult->kind = CORINFO_VIRTUALCALL_VTABLE;
         pResult->nullInstanceCheck = TRUE;
     }
+    else if (!fIsStaticVirtualMethod && (flags & CORINFO_CALLINFO_DISALLOW_STUB))
+    {
+        pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;  // Use the ldvirtftn code path if we are not allowed to use a stub
+        pResult->nullInstanceCheck = TRUE;
+    }
     else
     {
         // No need to null check - the dispatch code will deal with null this.
@@ -8629,7 +8638,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 return false;
             }
         }
-        else if (!pObjMT->CanCastToInterface(pBaseMT))
+        else if (!pBaseMT->IsSharedByGenericInstantiations() && !pObjMT->CanCastToInterface(pBaseMT))
         {
             info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
             return false;
@@ -8639,32 +8648,49 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // safely devirtualize.
         if (info->context != nullptr)
         {
-            // If the derived class is a shared class, make sure the
-            // owner class is too.
-            if (pObjMT->IsSharedByGenericInstantiations())
+            MethodTable* interfaceMT = nullptr;
+
+            if (pObjMT->IsSharedByGenericInstantiations() || pBaseMT->IsSharedByGenericInstantiations())
             {
                 MethodTable* pCanonBaseMT = pBaseMT->GetCanonicalMethodTable();
-
+                
                 // Check to see if the derived class implements multiple variants of a matching interface.
                 // If so, we cannot predict exactly which implementation is in use here.
                 MethodTable::InterfaceMapIterator it = pObjMT->IterateInterfaceMap();
                 int canonicallyMatchingInterfacesFound = 0;
+                MethodTable* interfaceMT = nullptr;
                 while (it.Next())
                 {
-                    if (it.GetInterface(pObjMT)->GetCanonicalMethodTable() == pCanonBaseMT)
+                    MethodTable* mt = it.GetInterface(pObjMT);
+                    if (mt->GetCanonicalMethodTable() == pCanonBaseMT)
                     {
+                        interfaceMT = mt;
                         canonicallyMatchingInterfacesFound++;
+
                         if (canonicallyMatchingInterfacesFound > 1)
                         {
-                            // Multiple canonically identical interfaces found when attempting to devirtualize an inexact interface dispatch
+                            // Multiple canonically identical interfaces found.
+                            //
                             info->detail = CORINFO_DEVIRTUALIZATION_MULTIPLE_IMPL;
                             return false;
                         }
                     }
                 }
-            }
+                
+                if (canonicallyMatchingInterfacesFound == 0)
+                {
+                    // The object doesn't implement the interface...
+                    //
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
+                    return false;
+                }
 
-            pDevirtMD = pObjMT->GetMethodDescForInterfaceMethod(TypeHandle(pBaseMT), pBaseMD, FALSE /* throwOnConflict */);
+                pDevirtMD = pObjMT->GetMethodDescForInterfaceMethod(TypeHandle(interfaceMT), pBaseMD, FALSE /* throwOnConflict */);
+            }
+            else
+            {
+                pDevirtMD = pObjMT->GetMethodDescForInterfaceMethod(TypeHandle(pBaseMT), pBaseMD, FALSE /* throwOnConflict */);
+            }
         }
         else if (!pBaseMD->HasClassOrMethodInstantiation())
         {
@@ -10423,7 +10449,48 @@ void CEEInfo::HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers)
     EE_TO_JIT_TRANSITION_LEAF();
 }
 
+CORINFO_MODULE_HANDLE CEEInfo::embedModuleHandle(CORINFO_MODULE_HANDLE handle,
+                                                 void **ppIndirection)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+        PRECONDITION(!IsDynamicScope(handle));
+    }
+    CONTRACTL_END;
+
+    if (ppIndirection != NULL)
+        *ppIndirection = NULL;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return handle;
+}
+
 CORINFO_CLASS_HANDLE CEEInfo::embedClassHandle(CORINFO_CLASS_HANDLE handle,
+                                               void **ppIndirection)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    if (ppIndirection != NULL)
+        *ppIndirection = NULL;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return handle;
+}
+
+CORINFO_FIELD_HANDLE CEEInfo::embedFieldHandle(CORINFO_FIELD_HANDLE handle,
                                                void **ppIndirection)
 {
     CONTRACTL {
@@ -10565,8 +10632,9 @@ bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
     EX_CATCH
     {
         success = false;
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 
 #endif
 
@@ -10787,8 +10855,9 @@ CEECodeGenInfo::CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_IL
     m_jitFlags = GetCompileFlags(config, m_pMethodBeingCompiled, &m_MethodInfo);
 }
 
-void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
-                                   void **            ppIndirection)  /* OUT */
+void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN  */
+                                   CORINFO_CONST_LOOKUP* pNativeEntrypoint, /* OUT */
+                                   CORINFO_METHOD_HANDLE* pMethod)          /* OUT */
 {
     CONTRACTL {
         THROWS;
@@ -10796,12 +10865,12 @@ void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    void* result = NULL;
-
-    if (ppIndirection != NULL)
-        *ppIndirection = NULL;
-
     JIT_TO_EE_TRANSITION();
+
+    if (pMethod != NULL)
+    {
+        *pMethod = NULL;
+    }
 
     _ASSERTE(ftnNum < CORINFO_HELP_COUNT);
 
@@ -10826,11 +10895,13 @@ void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_TAILCALL ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DISPATCH_INDIRECT_CALL)
         {
-            _ASSERTE(ppIndirection != NULL);
-            _ASSERTE(hlpDynamicFuncTable[dynamicFtnNum].pfnHelper != NULL); // Confirm the helper is non-null and doesn't require lazy loading.
-            *ppIndirection = &hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
-            _ASSERTE(IndirectionAllowedForJitHelper(ftnNum));
-            result = NULL;
+            if (pNativeEntrypoint != NULL)
+            {
+                pNativeEntrypoint->accessType = IAT_PVALUE;
+                _ASSERTE(hlpDynamicFuncTable[dynamicFtnNum].pfnHelper != NULL); // Confirm the helper is non-null and doesn't require lazy loading.
+                pNativeEntrypoint->addr = &hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
+                _ASSERTE(IndirectionAllowedForJitHelper(ftnNum));
+            }
             goto exit;
         }
 #endif
@@ -10840,7 +10911,16 @@ void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         LPVOID finalTierAddr = hlpFinalTierAddrTable[dynamicFtnNum];
         if (finalTierAddr != NULL)
         {
-            result = finalTierAddr;
+            if (pNativeEntrypoint != NULL)
+            {
+                pNativeEntrypoint->accessType = IAT_VALUE;
+                pNativeEntrypoint->addr = finalTierAddr;
+            }
+            if (pMethod != nullptr && HasILBasedDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum))
+            {
+                (void)LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum, (MethodDesc**)pMethod);
+                _ASSERT(*pMethod != NULL);
+            }
             goto exit;
         }
 
@@ -10849,6 +10929,11 @@ void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             MethodDesc* helperMD = NULL;
             (void)LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum, &helperMD);
             _ASSERT(helperMD != NULL);
+
+            if (pMethod != NULL)
+            {
+                *pMethod = (CORINFO_METHOD_HANDLE)helperMD;
+            }
 
             // Check if the target MethodDesc is already jitted to its final Tier
             // so we no longer need to use indirections and can emit a direct call instead.
@@ -10876,7 +10961,11 @@ void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
                     {
                         // Cache it for future uses to avoid taking the lock again.
                         hlpFinalTierAddrTable[dynamicFtnNum] = finalTierAddr;
-                        result = finalTierAddr;
+                        if (pNativeEntrypoint != NULL)
+                        {
+                            pNativeEntrypoint->accessType = IAT_VALUE;
+                            pNativeEntrypoint->addr = finalTierAddr;
+                        }
                         goto exit;
                     }
                 }
@@ -10886,8 +10975,11 @@ void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             {
                 Precode* pPrecode = helperMD->GetPrecode();
                 _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
-                *ppIndirection = ((FixupPrecode*)pPrecode)->GetTargetSlot();
-                result = NULL;
+                if (pNativeEntrypoint != NULL)
+                {
+                    pNativeEntrypoint->accessType = IAT_PVALUE;
+                    pNativeEntrypoint->addr = ((FixupPrecode*)pPrecode)->GetTargetSlot();
+                }
                 goto exit;
             }
         }
@@ -10897,11 +10989,14 @@ void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
 
     _ASSERTE(pfnHelper != NULL);
 
-    result = (LPVOID)GetEEFuncEntryPoint(pfnHelper);
+    if (pNativeEntrypoint != NULL)
+    {
+        pNativeEntrypoint->accessType = IAT_VALUE;
+        pNativeEntrypoint->addr = (LPVOID)GetEEFuncEntryPoint(pfnHelper);
+    }
 
 exit: ;
     EE_TO_JIT_TRANSITION();
-    return result;
 }
 
 PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
@@ -11212,7 +11307,33 @@ void CEEJitInfo::SetDebugInfo(PTR_BYTE pDebugInfo)
     ((CodeHeader*)m_CodeHeaderRW)->SetDebugInfo(pDebugInfo);
 }
 
+LPVOID CEEInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
+{
+    _ASSERTE(!"GetCookieForInterpreterCalliSig should not be called in CEEJitInfo");
+    return NULL;
+}
+
 #ifdef FEATURE_INTERPRETER
+
+LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
+{
+    void* result = NULL;
+    JIT_TO_EE_TRANSITION();
+
+    Module* module = GetModule(szMetaSig->scope);
+
+    Instantiation classInst = Instantiation((TypeHandle*) szMetaSig->sigInst.classInst, szMetaSig->sigInst.classInstCount);
+    Instantiation methodInst = Instantiation((TypeHandle*) szMetaSig->sigInst.methInst, szMetaSig->sigInst.methInstCount);
+    SigTypeContext typeContext = SigTypeContext(classInst, methodInst);
+
+    MetaSig sig(szMetaSig->pSig, szMetaSig->cbSig, module, &typeContext);
+    CallStubGenerator callStubGenerator;
+    result = callStubGenerator.GenerateCallStubForSig(sig);
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
 
 void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
 {
@@ -11431,7 +11552,7 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry)
     {
         // Just ignore exceptions here. The debugger's structures will still be in a consistent state.
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     EE_TO_JIT_TRANSITION();
 }
@@ -12001,13 +12122,13 @@ InfoAccessType CEECodeGenInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scop
     }
     else
     {
-        // If ConstructStringLiteral returns a pinned reference we can return it by value (IAT_VALUE)
-        void* ppPinnedString = nullptr;
-        STRINGREF* ptr = ConstructStringLiteral(scopeHnd, metaTok, &ppPinnedString);
+        // If ResolveStringRef returns a pinned reference we can return it by value (IAT_VALUE)
+        void* pPinnedString = nullptr;
+        STRINGREF* ptr = ((Module*)scopeHnd)->ResolveStringRef(metaTok, &pPinnedString);
 
-        if (ppPinnedString != nullptr)
+        if (pPinnedString != nullptr)
         {
-            *ppValue = ppPinnedString;
+            *ppValue = pPinnedString;
             result = IAT_VALUE;
         }
         else
@@ -14181,7 +14302,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     {
                         fail = true;
                     }
-                    EX_END_CATCH(SwallowAllExceptions)
+                    EX_END_CATCH
 
                 }
                 else
@@ -14204,7 +14325,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     {
                         fail = true;
                     }
-                    EX_END_CATCH(SwallowAllExceptions)
+                    EX_END_CATCH
                 }
                 else
                 {
@@ -14927,8 +15048,9 @@ CORINFO_METHOD_HANDLE CEEInfo::getAsyncResumptionStub()
     UNREACHABLE();      // only called on derived class.
 }
 
-void* CEEInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
-                            void **            ppIndirection)  /* OUT */
+void CEEInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN  */
+                           CORINFO_CONST_LOOKUP* pNativeEntrypoint, /* OUT */
+                           CORINFO_METHOD_HANDLE* pMethod)          /* OUT */
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

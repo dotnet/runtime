@@ -536,9 +536,6 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
     }
     CONTRACTL_END;
 
-    SCAN_IGNORE_THROW;          // See contract above.
-    SCAN_IGNORE_TRIGGER;        // See contract above.
-
 #ifndef DACCESS_COMPILE
     _ASSERTE (m_fAsyncMode || OwnLock());
 
@@ -1036,7 +1033,7 @@ void HashMap::Compact()
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     //compact deleted slots, mark them as EMPTY

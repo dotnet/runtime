@@ -133,18 +133,109 @@ public struct TestStruct3d
     public double c;
 }
 
+class DummyClass
+{
+    public int field;
+    public DummyClass(int f)
+    {
+        field = f;
+    }
+}
+
+struct DummyStruct
+{
+    public int field;
+    public DummyStruct(int f)
+    {
+        field = f;
+    }
+}
+
+struct DummyStructRef
+{
+    public DummyClass field;
+    public DummyStructRef(DummyClass f)
+    {
+        field = f;
+    }
+}
+
 public class InterpreterTest
 {
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static void TestCallingConvention0(int a, float b, int c, double d, int e, double f)
     {
         Console.WriteLine("TestCallingConvention0: a = {0}, b = {1}, c = {2}, d = {3}, e = {4}, f = {5}", a, b, c, d, e, f);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention0Rev(int a, float b, int c, double d, int e, double f)
+    {
+        Console.Write("TestCallingConvention0Rev: a = ");
+        Console.Write(a);
+        Console.Write(", b = ");
+        Console.Write(b);
+        Console.Write(", c = ");
+        Console.Write(c);
+        Console.Write(", d = ");
+        Console.Write(d);
+        Console.Write(", e = ");
+        Console.Write(e);
+        Console.Write(", f = ");
+        Console.Write(f);
+        Console.WriteLine();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention0JitToInterpreter(bool init)
+    {
+        if (!init)
+        {
+            TestCallingConvention0Rev(1, 2.0f, 3, 4.0, 5, 6.0);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static void TestCallingConvention1(TestStruct s)
     {
         Console.WriteLine("TestCallingConvention1: a = {0}, b = {1}, c = {2}, d = {3}, e = {4}, f = {5}", s.a, s.b, s.c, s.d, s.e, s.f);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention1Rev(TestStruct s)
+    {
+        Console.Write("TestCallingConvention1Rev: a = ");
+        Console.Write(s.a);
+        Console.Write(", b = ");
+        Console.Write(s.b);
+        Console.Write(", c = ");
+        Console.Write(s.c);
+        Console.Write(", d = ");
+        Console.Write(s.d);
+        Console.Write(", e = ");
+        Console.Write(s.e);
+        Console.Write(", f = ");
+        Console.Write(s.f);
+        Console.WriteLine();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention1JitToInterpreter(bool init)
+    {
+        if (!init)
+        {
+            TestStruct s;
+            s.a = 1;
+            s.b = 2;
+            s.c = 3;
+            s.d = 4;
+            s.e = 5;
+            s.f = 6;
+            TestCallingConvention1Rev(s);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static TestStruct2 TestCallingConvention2()
     {
         TestStruct2 s;
@@ -153,12 +244,50 @@ public class InterpreterTest
         return s;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static TestStruct2 TestCallingConvention2Rev()
+    {
+        TestStruct2 s;
+        s.a = 1;
+        s.b = 2;
+        return s;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention2JitToInterpreter(bool init)
+    {
+        if (!init)
+        {
+            TestStruct2 s = TestCallingConvention2Rev();
+            Console.WriteLine("TestCallingConvention2Rev: s = {0}, {1}", s.a, s.b);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector2 TestCallingConvention3()
     {
         Vector2 v = new Vector2(1, 2);
         return v;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector2 TestCallingConvention3Rev()
+    {
+        Vector2 v = new Vector2(1, 2);
+        return v;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention3JitToInterpreter(bool init)
+    {
+        if (!init)
+        {
+            Vector2 v = TestCallingConvention3Rev();
+            Console.WriteLine("TestCallingConvention3Rev: v = {0}, {1}", v[0], v[1]);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static TestStruct TestCallingConvention4()
     {
         TestStruct s;
@@ -171,6 +300,30 @@ public class InterpreterTest
         return s;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static TestStruct TestCallingConvention4Rev()
+    {
+        TestStruct s;
+        s.a = 1;
+        s.b = 2;
+        s.c = 3;
+        s.d = 4;
+        s.e = 5;
+        s.f = 6;
+        return s;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention4JitToInterpreter(bool init)
+    {
+        if (!init)
+        {
+            TestStruct s = TestCallingConvention4Rev();
+            Console.WriteLine("TestCallingConvention4Rev: s = {0}, {1}, {2}, {3}, {4}, {5}", s.a, s.b, s.c, s.d, s.e, s.f);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static TestStruct4ii TestCallingConvention5()
     {
         TestStruct4ii s;
@@ -181,6 +334,28 @@ public class InterpreterTest
         return s;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static TestStruct4ii TestCallingConvention5Rev()
+    {
+        TestStruct4ii s;
+        s.a = 1;
+        s.b = 2;
+        s.c = 3;
+        s.d = 4;
+        return s;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention5JitToInterpreter(bool init)
+    {
+        if (!init)
+        {
+            TestStruct4ii s = TestCallingConvention5Rev();
+            Console.WriteLine("TestCallingConvention5Rev: s = {0}, {1}, {2}, {3}", s.a, s.b, s.c, s.d);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static TestStruct4if TestCallingConvention6()
     {
         TestStruct4if s;
@@ -191,6 +366,28 @@ public class InterpreterTest
         return s;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static TestStruct4if TestCallingConvention6Rev()
+    {
+        TestStruct4if s;
+        s.a = 1;
+        s.b = 2;
+        s.c = 3.0f;
+        s.d = 4.0f;
+        return s;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention6JitToInterpreter(bool init)
+    {
+        if (!init)
+        {
+            TestStruct4if s = TestCallingConvention6Rev();
+            Console.WriteLine("TestCallingConvention6Rev: s = {0}, {1}, {2}, {3}", s.a, s.b, s.c, s.d);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static TestStruct4fi TestCallingConvention7()
     {
         TestStruct4fi s;
@@ -201,6 +398,28 @@ public class InterpreterTest
         return s;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static TestStruct4fi TestCallingConvention7Rev()
+    {
+        TestStruct4fi s;
+        s.a = 1.0f;
+        s.b = 2.0f;
+        s.c = 3;
+        s.d = 4;
+        return s;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention7JitToInterpreter(bool init)
+    {
+        if (!init)
+        {
+            TestStruct4fi s = TestCallingConvention7Rev();
+            Console.WriteLine("TestCallingConvention7Rev: s = {0}, {1}, {2}, {3}", s.a, s.b, s.c, s.d);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static TestStruct4ff TestCallingConvention8()
     {
         TestStruct4ff s;
@@ -211,16 +430,93 @@ public class InterpreterTest
         return s;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static TestStruct4ff TestCallingConvention8Rev()
+    {
+        TestStruct4ff s;
+        s.a = 1.0f;
+        s.b = 2.0f;
+        s.c = 3.0f;
+        s.d = 4.0f;
+        return s;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention8JitToInterpreter(bool init)
+    {
+        if (!init)
+        {
+            TestStruct4ff s = TestCallingConvention8Rev();
+            Console.WriteLine("TestCallingConvention8Rev: s = {0}, {1}, {2}, {3}", s.a, s.b, s.c, s.d);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static void TestCallingConvention9(TestStruct4fi s)
     {
         Console.WriteLine("TestCallingConvention9: a = {0}, b = {1}, c = {2}, d = {3}", s.a, s.b, s.c, s.d);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention9Rev(TestStruct4fi s)
+    {
+        Console.Write("TestCallingConvention9Rev: a = ");
+        Console.Write(s.a);
+        Console.Write(", b = ");
+        Console.Write(s.b);
+        Console.Write(", c = ");
+        Console.Write(s.c);
+        Console.Write(", d = ");
+        Console.Write(s.d);
+        Console.WriteLine();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention9JitToInterpreter(bool init)
+    {
+        if (!init)
+        {
+            TestStruct4fi s = new TestStruct4fi();
+            s.a = 1.0f;
+            s.b = 2.0f;
+            s.c = 3;
+            s.d = 4;
+            TestCallingConvention9Rev(s);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static void TestCallingConvention10(TestStruct3d s)
     {
         Console.WriteLine("TestCallingConvention10: a = {0}, b = {1}, c = {2}", s.a, s.b, s.c);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention10Rev(TestStruct3d s)
+    {
+        Console.Write("TestCallingConvention10Rev: a = ");
+        Console.Write(s.a);
+        Console.Write(", b = ");
+        Console.Write(s.b);
+        Console.Write(", c = ");
+        Console.Write(s.c);
+        Console.WriteLine();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention10JitToInterpreter(bool init)
+    {
+        if (!init)
+        {
+            TestStruct3d s = new TestStruct3d();
+            s.a = 1.0f;
+            s.b = 2.0f;
+            s.c = 3.0f;
+            TestCallingConvention10Rev(s);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static TestStruct3d TestCallingConvention11()
     {
         TestStruct3d s;
@@ -230,9 +526,71 @@ public class InterpreterTest
         return s;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static TestStruct3d TestCallingConvention11Rev()
+    {
+        TestStruct3d s;
+        s.a = 1.0f;
+        s.b = 2.0f;
+        s.c = 3.0f;
+        return s;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention11JitToInterpreter(bool init)
+    {
+        if (!init)
+        {
+            TestStruct3d s = TestCallingConvention11Rev();
+            Console.WriteLine("TestCallingConvention11Rev: s = {0}, {1}, {2}", s.a, s.b, s.c);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static void TestCallingConvention12(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h, byte i, char j, int k, int l, long m)
     {
         Console.WriteLine("TestCallingConvention12: a = {0}, b = {1}, c = {2}, d = {3}, e = {4}, f = {5}, g = {6}, h = {7}, i = {8}, j = {9}, k = {10}, l = {11}, m = {12}", a, b, c, d, e, f, g, h, i, j, k, l, m);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention12Rev(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h, byte i, char j, int k, int l, long m)
+    {
+        Console.Write("TestCallingConvention12Rev: a = ");
+        Console.Write(a);
+        Console.Write(", b = ");
+        Console.Write(b);
+        Console.Write(", c = ");
+        Console.Write(c);
+        Console.Write(", d = ");
+        Console.Write(d);
+        Console.Write(", e = ");
+        Console.Write(e);
+        Console.Write(", f = ");
+        Console.Write(f);
+        Console.Write(", g = ");
+        Console.Write(g);
+        Console.Write(", h = ");
+        Console.Write(h);
+        Console.Write(", i = ");
+        Console.Write(i);
+        Console.Write(", j = ");
+        Console.Write(j);
+        Console.Write(", k = ");
+        Console.Write(k);
+        Console.Write(", l = ");
+        Console.Write(l);
+        Console.Write(", m = ");
+        Console.Write(m);
+        Console.WriteLine();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestCallingConvention12JitToInterpreter(bool init)
+    {
+        if (!init)
+        {
+            TestCallingConvention12Rev(1, 2, 3, 4, 5, 6, 7, 8, 9, 'a', 10, 11, 12);
+        }
     }
 
     // This method is invoked before we start interpretting anything, so the methods invoked in it will be jitted.
@@ -285,6 +643,20 @@ public class InterpreterTest
         Console.WriteLine(s11.c);
 
         TestCallingConvention12(1, 2, 3, 4, 5, 6, 7, 8, 9, 'a', 10, 11, 12);
+
+        TestCallingConvention0JitToInterpreter(true);
+        TestCallingConvention1JitToInterpreter(true);
+        TestCallingConvention2JitToInterpreter(true);
+        TestCallingConvention3JitToInterpreter(true);
+        TestCallingConvention4JitToInterpreter(true);
+        TestCallingConvention5JitToInterpreter(true);
+        TestCallingConvention6JitToInterpreter(true);
+        TestCallingConvention7JitToInterpreter(true);
+        TestCallingConvention8JitToInterpreter(true);
+        TestCallingConvention9JitToInterpreter(true);
+        TestCallingConvention10JitToInterpreter(true);
+        TestCallingConvention11JitToInterpreter(true);
+        TestCallingConvention12JitToInterpreter(true);
     }
 
     static int Main(string[] args)
@@ -301,6 +673,20 @@ public class InterpreterTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void RunInterpreterTests()
     {
+        TestCallingConvention0JitToInterpreter(false);
+        TestCallingConvention1JitToInterpreter(false);
+        TestCallingConvention2JitToInterpreter(false);
+        TestCallingConvention3JitToInterpreter(false);
+        TestCallingConvention4JitToInterpreter(false);
+        TestCallingConvention5JitToInterpreter(false);
+        TestCallingConvention6JitToInterpreter(false);
+        TestCallingConvention7JitToInterpreter(false);
+        TestCallingConvention8JitToInterpreter(false);
+        TestCallingConvention9JitToInterpreter(false);
+        TestCallingConvention10JitToInterpreter(false);
+        TestCallingConvention11JitToInterpreter(false);
+        TestCallingConvention12JitToInterpreter(false);
+
         TestCallingConvention0(1, 2.0f, 3, 4.0, 5, 6.0);
 
         TestStruct s = new TestStruct();
@@ -383,54 +769,109 @@ public class InterpreterTest
         TestCallingConvention12(1, 2, 3, 4, 5, 6, 7, 8, 9, 'a', 10, 11, 12);
 
         // Console.WriteLine("Run interp tests");
+        Console.WriteLine("Sum");
         if (SumN(50) != 1275)
             Environment.FailFast(null);
+        Console.WriteLine("Mul4");
         if (Mul4(53, 24, 13, 131) != 2166216)
             Environment.FailFast(null);
 
+        Console.WriteLine("TestSwitch");
         TestSwitch();
 
+        Console.WriteLine("PowLoop");
         if (!PowLoop(20, 10, 1661992960))
             Environment.FailFast(null);
 
+        Console.WriteLine("TestJitFields");
         if (!TestJitFields())
             Environment.FailFast(null);
+        Console.WriteLine("TestFields");
         if (!TestFields())
             Environment.FailFast(null);
+        Console.WriteLine("TestStructRefFields");
         if (!TestStructRefFields())
             Environment.FailFast(null);
+        Console.WriteLine("TestSpecialFields");
         if (!TestSpecialFields())
             Environment.FailFast(null);
+        Console.WriteLine("TestFloat");
         if (!TestFloat())
             Environment.FailFast(null);
 
+        // Unchecked to ensure that the divide-by-zero here doesn't throw since we're using it to generate a NaN
+        unchecked
+        {
+            if (!TestConvOvf(1, 2, 3, 4, 1.0 / 0.0, -32, 1234567890))
+                Environment.FailFast(null);
+
+            if (!TestConvBoundaries(
+                32767.999999999996, 32768.00000000001,
+                2147483647.9999998, 2147483648.0000005
+            ))
+                Environment.FailFast(null);
+
+            if (!TestConvBoundaries(
+                -32768.99999999999, -32769.00000000001,
+                -2147483648.9999995, -2147483649.0000005
+            ))
+                Environment.FailFast(null);
+        }
+
+        Console.WriteLine("TestLocalloc");
         if (!TestLocalloc())
             Environment.FailFast(null);
 
+        Console.WriteLine("TestVirtual");
         if (!TestVirtual())
             Environment.FailFast(null);
 
+        Console.WriteLine("TestBoxing");
         if (!TestBoxing())
             Environment.FailFast(null);
 
+        Console.WriteLine("TestArray");
         if (!TestArray())
             Environment.FailFast(null);
 
+        Console.WriteLine("TestXxObj");
         if (!TestXxObj())
             Environment.FailFast(null);
 
+        Console.WriteLine("TestSizeof");
         if (!TestSizeof())
             Environment.FailFast(null);
 
+        Console.WriteLine("TestLdtoken");
         if (!TestLdtoken())
             Environment.FailFast(null);
-        /*
+
+        Console.WriteLine("TestMdArray");
         if (!TestMdArray())
             Environment.FailFast(null);
-        */
+
+        Console.WriteLine("TestExceptionHandling");
         TestExceptionHandling();
 
+        Console.WriteLine("TestStringCtor");
+        if (!TestStringCtor())
+            Environment.FailFast(null);
+
+        Console.WriteLine("TestSharedGenerics");
+        if (!TestSharedGenerics())
+            Environment.FailFast(null);
+
+        Console.WriteLine("TestDelegate");
+        if (!TestDelegate())
+            Environment.FailFast(null);
+
+        Console.WriteLine("TestCalli");
+        if (!TestCalli())
+            Environment.FailFast(null);
+
         System.GC.Collect();
+
+        Console.WriteLine("All tests passed successfully!");
     }
 
     public static void TestExceptionHandling()
@@ -588,7 +1029,9 @@ public class InterpreterTest
                 x *= 10;
                 x += 3;
             }
-        } catch (Exception) {
+        }
+        catch (Exception)
+        {
             x *= 10;
             x += 4;
         }
@@ -707,7 +1150,7 @@ public class InterpreterTest
             long ret = 1;
             for (int i = 0; i < n; i++)
                 ret *= nr;
-            bool dummy=  (int)ret == 100;
+            bool dummy = (int)ret == 100;
 
             x *= 10;
             x += 3;
@@ -766,7 +1209,9 @@ public class InterpreterTest
                 x *= 10;
                 x += 5;
             }
-        } catch (Exception) {
+        }
+        catch (Exception)
+        {
             x *= 10;
             x += 6;
         }
@@ -1024,16 +1469,16 @@ public class InterpreterTest
             case 2:
                 return a * b;
             default:
-               return 42;
+                return 42;
         }
     }
 
     public static void TestSwitch()
     {
-        int n0 = SwitchOp (20, 6, 0); // 26
-        int n1 = SwitchOp (20, 6, 1); // 14
-        int n2 = SwitchOp (20, 6, 2); // 120
-        int n3 = SwitchOp (20, 6, 3); // 42
+        int n0 = SwitchOp(20, 6, 0); // 26
+        int n1 = SwitchOp(20, 6, 1); // 14
+        int n2 = SwitchOp(20, 6, 2); // 120
+        int n3 = SwitchOp(20, 6, 3); // 42
 
         if ((n0 + n1 + n2 + n3) != 202)
             Environment.FailFast(null);
@@ -1045,6 +1490,79 @@ public class InterpreterTest
         for (int i = 0; i < n; i++)
             ret *= nr;
         return (int)ret == expected;
+    }
+
+    public static bool TestConvOvf(float r4, double r8, int i4, long i8, double nan, int negativeInt, long hugeInt)
+    {
+        checked
+        {
+            byte a = (byte)r4,
+                b = (byte)r8,
+                c = (byte)i4,
+                d = (byte)i8;
+
+            if (a != r4)
+                return false;
+            if (b != r8)
+                return false;
+            if (c != i4)
+                return false;
+            if (d != i8)
+                return false;
+
+            try {
+                a = (byte)nan;
+                return false;
+            } catch (OverflowException) {
+            }
+
+            try {
+                b = (byte)hugeInt;
+                return false;
+            } catch (OverflowException) {
+            }
+
+            try {
+                c = (byte)negativeInt;
+                return false;
+            } catch (OverflowException) {
+            }
+        }
+
+        return true;
+    }
+
+    public static bool TestConvBoundaries (double inRangeShort, double outOfRangeShort, double inRangeInt, double outOfRangeInt) {
+        // In unchecked mode, the interpreter saturates on float->int conversions if the value is out of range
+        unchecked {
+            short a = (short)inRangeShort,
+                b = (short)outOfRangeShort;
+            int c = (int)inRangeInt,
+                d = (int)outOfRangeInt;
+
+            if (a != b)
+                return false;
+            if (c != d)
+                return false;
+        }
+
+        checked {
+            short tempA = (short)inRangeShort;
+            try {
+                tempA = (short)outOfRangeShort;
+                return false;
+            } catch (OverflowException) {
+            }
+
+            int tempB = (int)inRangeInt;
+            try {
+                tempB = (int)outOfRangeInt;
+                return false;
+            } catch (OverflowException) {
+            }
+        }
+
+        return true;
     }
 
     public static int jitField1;
@@ -1251,20 +1769,106 @@ public class InterpreterTest
         BaseClass bc = new DerivedClass();
         ITest itest = bc;
 
+        Console.WriteLine("bc.NonVirtualMethod");
         if (bc.NonVirtualMethod() != 0xbaba)
             return false;
+        Console.WriteLine("bc.VirtualMethod");
         if (bc.VirtualMethod() != 0xdede)
             return false;
+        Console.WriteLine("itest.VirtualMethod");
         if (itest.VirtualMethod() != 0xdede)
             return false;
         bc = new BaseClass();
         itest = bc;
+        Console.WriteLine("bc.NonVirtualMethod");
         if (bc.NonVirtualMethod() != 0xbaba)
             return false;
+        Console.WriteLine("bc.VirtualMethod");
         if (bc.VirtualMethod() != 0xbebe)
             return false;
+        Console.WriteLine("itest.VirtualMethod");
         if (itest.VirtualMethod() != 0xbebe)
             return false;
+        return true;
+    }
+
+    public static bool TestStringCtor()
+    {
+        string s = new string('a', 4);
+        if (s.Length != 4)
+            return false;
+        if (s[0] != 'a')
+            return false;
+        if (s != "aaaa")
+            return false;
+        return true;
+    }
+
+    private static Type LoadType<T>()
+    {
+        return typeof(T);
+    }
+
+    class GenericClass<T>
+    {
+        public Type GetTypeOfTInstance()
+        {
+            return typeof(T);
+        }
+        public static Type GetTypeOfTStatic()
+        {
+            return typeof(T);
+        }
+    }
+
+    public static bool TestSharedGenerics()
+    {
+        if (!TestSharedGenerics_CallsTo())
+            return false;
+
+        Console.WriteLine("Test calls to shared generics from generic code (unshared generics)");
+        if (!TestGenerics_CallsFrom<int>())
+            return false;
+        Console.WriteLine("Test calls to shared generics from generic code (shared generics)");
+        if (!TestGenerics_CallsFrom<string>())
+            return false;
+
+        return true;
+    }
+
+    public static bool TestSharedGenerics_CallsTo()
+    {
+        Console.WriteLine("Test calls to shared generics from non-generic code");
+        if (LoadType<string>() != typeof(string))
+            return false;
+        if (LoadType<object>() != typeof(object))
+            return false;
+
+        if (new GenericClass<string>().GetTypeOfTInstance() != typeof(string))
+            return false;
+        if (new GenericClass<object>().GetTypeOfTInstance() != typeof(object))
+            return false;
+
+        if (GenericClass<object>.GetTypeOfTStatic() != typeof(object))
+            return false;
+
+        if (GenericClass<string>.GetTypeOfTStatic() != typeof(string))
+            return false;
+
+        return true;
+    }
+
+    public static bool TestGenerics_CallsFrom<T>()
+    {
+        if (LoadType<T>() != typeof(T))
+            return false;
+
+        if (new GenericClass<T>().GetTypeOfTInstance() != typeof(T))
+            return false;
+
+        if (GenericClass<T>.GetTypeOfTStatic() != typeof(T))
+            return false;
+
         return true;
     }
 
@@ -1278,11 +1882,12 @@ public class InterpreterTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    static object BoxedSubtraction (object lhs, object rhs) {
+    static object BoxedSubtraction(object lhs, object rhs)
+    {
         return (int)lhs - (int)rhs;
     }
 
-  public static bool TestArray()
+    public static bool TestArray()
     {
         // sbyte
         if (!ArraySByte(0, 0)) return false;
@@ -1344,6 +1949,15 @@ public class InterpreterTest
         if (!ArrayDouble(0, 0)) return false;
         if (!ArrayDouble(1, 1)) return false;
         if (!ArrayDouble(32, 32)) return false;
+
+        // ref and value types
+        if (!TestObjectArray()) return false;
+        if (!TestStructArray()) return false;
+        if (!TestStructRefArray()) return false;
+        if (!ArrayJagged(1)) return false;
+        if (!ArrayMD1()) return false;
+        if (!ArrayObj(1)) return false;
+        if (!ArrayStruct(1)) return false;
 
         return true;
     }
@@ -1528,6 +2142,56 @@ public class InterpreterTest
         return true;
     }
 
+    public unsafe static bool TestObjectArray()
+    {
+        DummyClass[] array = new DummyClass[10];
+        array[0] = new DummyClass(42);
+        return array[0].field == 42;
+    }
+
+    public unsafe static bool TestStructArray()
+    {
+        DummyStruct[] array = new DummyStruct[10];
+        array[0] = new DummyStruct(42);
+        return array[0].field == 42;
+    }
+
+    public unsafe static bool TestStructRefArray()
+    {
+        DummyStructRef[] array = new DummyStructRef[10];
+        DummyClass d = new DummyClass(42);
+        array[0] = new DummyStructRef(d);
+        return array[0].field.field == 42;
+    }
+
+    public static bool ArrayJagged(int i)
+    {
+        int[][] a = new int[2][];
+        a[0] = new int[2] { 0, 1 };
+        a[1] = new int[2] { 2, 3 };
+        return a[1][i] == 3;
+    }
+
+    public static bool ArrayMD1()
+    {
+        int[,] a = { { 1, 2 }, { 3, 4 } };
+        return true;
+    }
+
+    public static bool ArrayObj(int i)
+    {
+        DummyClass[] a = {new DummyClass(0), new DummyClass(1), new DummyClass(2), new DummyClass(3), new DummyClass(4),
+                    new DummyClass(5), new DummyClass(6), new DummyClass(7), new DummyClass(8), new DummyClass(9)};
+        return a[i].field == i;
+    }
+
+    public static bool ArrayStruct(int i)
+    {
+        DummyStruct[] a = {new DummyStruct(0), new DummyStruct(1), new DummyStruct(2), new DummyStruct(3), new DummyStruct(4),
+                    new DummyStruct(5), new DummyStruct(6), new DummyStruct(7), new DummyStruct(8), new DummyStruct(9)};
+        return a[i].field == i;
+    }
+
     public static unsafe bool TestXxObj()
     {
         // FIXME: There is no way to generate cpobj opcodes with roslyn at present.
@@ -1583,12 +2247,132 @@ public class InterpreterTest
 
     public static bool TestMdArray()
     {
-        // FIXME: This generates roughly:
-        // newobj int[,].ctor
-        // ldtoken int[,]
-        // call System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray
-        // The newobj currently fails because int[,].ctor isn't a real method, the interp needs to use getCallInfo to determine how to invoke it
-        int[,] a = {{1, 2}, {3, 4}};
-        return a[0, 1] == 2;
+        int[,] a = { { 1, 2 }, { 3, 4 } };
+        if (a[0, 1] != 2)
+            return false;
+
+        object[,] b = new object[1, 1];
+        ref object bElt = ref b[0, 0];
+        bElt = null;
+
+        object[,] c = new string[1, 1];
+
+        try
+        {
+            ref object cElt = ref c[0, 0];
+            return false;
+        }
+        catch (ArrayTypeMismatchException)
+        {
+        }
+
+        ref readonly object cElt2 = ref c[0, 0];
+
+        return true;
+    }
+
+    private static int _fieldA;
+    private static int _fieldB;
+    private static int _fieldResult;
+    private static void MultiplyAandB()
+    {
+        _fieldResult = _fieldA * _fieldB;
+    }
+
+    private static Type _typeFromFill;
+
+    private static void Fill<T>()
+    {
+        _typeFromFill = typeof(T);
+    }
+
+    public static bool TestDelegate()
+    {
+        _fieldA = 3;
+        _fieldB = 1;
+        _fieldResult = 0;
+
+        // This tests delegate creation, ldftn, and invocation via the "Invoke" method
+        Action func = new Action(MultiplyAandB);
+
+        _fieldB = 4;
+        Console.WriteLine("CallingFunc first time");
+        func();
+        Console.WriteLine("Return CallingFunc first time");
+        if (_fieldResult != 12)
+        {
+            Console.WriteLine("Delegate test failed: expected 12, got " + _fieldResult);
+            return false;
+        }
+
+        _fieldB = 3;
+        Console.WriteLine("CallingFunc second time");
+        func();
+        Console.WriteLine("Return CallingFunc second time");
+        if (_fieldResult != 9)
+        {
+            Console.WriteLine("Delegate test failed: expected 9, got " + _fieldResult);
+            return false;
+        }
+        return true;
+    }
+
+    public unsafe static bool TestCalli()
+    {
+        delegate*<void> func = &MultiplyAandB;
+
+        _fieldA = 3;
+        _fieldB = 1;
+        _fieldResult = 0;
+
+        // This tests ldftn, and calli
+
+        _fieldB = 4;
+        Console.WriteLine("CallingFunc first time");
+        func();
+        Console.WriteLine("Return CallingFunc first time");
+        if (_fieldResult != 12)
+        {
+            Console.WriteLine("Calli test failed: expected 12, got " + _fieldResult);
+            return false;
+        }
+
+        _fieldB = 3;
+        Console.WriteLine("CallingFunc second time");
+        func();
+        Console.WriteLine("Return CallingFunc second time");
+        if (_fieldResult != 9)
+        {
+            Console.WriteLine("Calli test failed: expected 9, got " + _fieldResult);
+            return false;
+        }
+
+        GetCalliGeneric<int>()();
+        if (_typeFromFill != typeof(int))
+        {
+            Console.WriteLine("Calli generic test failed: expected int, got " + _typeFromFill);
+            return false;
+        }
+
+
+        GetCalliGeneric<object>()();
+        if (_typeFromFill != typeof(object))
+        {
+            Console.WriteLine("Calli generic test failed: expected object, got " + _typeFromFill);
+            return false;
+        }
+
+        GetCalliGeneric<string>()();
+        if (_typeFromFill != typeof(string))
+        {
+            Console.WriteLine("Calli generic test failed: expected string, got " + _typeFromFill);
+            return false;
+        }
+        return true;
+    }
+
+    private static unsafe delegate*<void> GetCalliGeneric<T>()
+    {
+        return &Fill<T>;
     }
 }

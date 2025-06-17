@@ -426,8 +426,9 @@ class AssemblySpecBindingCache
             EX_CATCH
             {
                 InitException(pEx->GetHR());
+                RethrowTransientExceptions();
             }
-            EX_END_CATCH(RethrowTransientExceptions);
+            EX_END_CATCH
 
         };
 

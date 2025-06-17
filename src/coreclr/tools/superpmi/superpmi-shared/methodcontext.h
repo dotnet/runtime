@@ -336,9 +336,9 @@ public:
                                             CORINFO_METHOD_HANDLE   callerHandle,
                                             CORINFO_LOOKUP*         pLookup);
 
-    void recGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection, void* result);
-    void dmpGetHelperFtn(DWORD key, DLDL value);
-    void* repGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection);
+    void recGetHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP pNativeEntrypoint,CORINFO_METHOD_HANDLE methodHandle);
+    void dmpGetHelperFtn(DWORD key, Agnostic_GetHelperFtn value);
+    void repGetHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint,CORINFO_METHOD_HANDLE *pMethodHandle);
     bool fndGetHelperFtn(void* functionAddress, CorInfoHelpFunc* pResult);
 
     void recGetJustMyCodeHandle(CORINFO_METHOD_HANDLE         method,
@@ -543,6 +543,10 @@ public:
     void recGetCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing, CorInfoHelpFunc result);
     void dmpGetCastingHelper(const Agnostic_GetCastingHelper& key, DWORD value);
     CorInfoHelpFunc repGetCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing);
+
+    void recEmbedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection, CORINFO_MODULE_HANDLE result);
+    void dmpEmbedModuleHandle(DWORDLONG key, DLDL value);
+    CORINFO_MODULE_HANDLE repEmbedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection);
 
     void recEmbedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection, CORINFO_CLASS_HANDLE result);
     void dmpEmbedClassHandle(DWORDLONG key, DLDL value);
@@ -758,6 +762,10 @@ public:
     void dmpGetCookieForPInvokeCalliSig(const GetCookieForPInvokeCalliSigValue& key, DLDL value);
     LPVOID repGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection);
 
+    LPVOID repGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig);
+    void recGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig, LPVOID result);
+    void dmpGetCookieForInterpreterCalliSig(const GetCookieForInterpreterCalliSigValue& key, DLDL value);
+
     void recCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, bool result);
     void dmpCanGetCookieForPInvokeCalliSig(const CanGetCookieForPInvokeCalliSigValue& key, DWORD value);
     bool repCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
@@ -768,6 +776,10 @@ public:
     void recGetProfilingHandle(bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles);
     void dmpGetProfilingHandle(DWORD key, const Agnostic_GetProfilingHandle& value);
     void repGetProfilingHandle(bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles);
+
+    void recEmbedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection, CORINFO_FIELD_HANDLE result);
+    void dmpEmbedFieldHandle(DWORDLONG key, DLDL value);
+    CORINFO_FIELD_HANDLE repEmbedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection);
 
     void recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass, TypeCompareState result);
     void dmpCompareTypesForCast(DLDL key, DWORD value);
@@ -999,10 +1011,10 @@ enum mcPackets
     //Retired3 = 14,
     Packet_ConstructStringLiteral = 15,
     Packet_EmbedClassHandle = 16,
-    //Packet_EmbedFieldHandle = 17,
+    Packet_EmbedFieldHandle = 17,
     Packet_EmbedGenericHandle = 18,
     Packet_EmbedMethodHandle = 19,
-    //Packet_EmbedModuleHandle = 20,
+    Packet_EmbedModuleHandle = 20,
     Packet_EmptyStringLiteral = 21,
     Packet_ErrorList = 22,
     Packet_FindCallSiteSig = 23,
@@ -1044,7 +1056,7 @@ enum mcPackets
     Packet_GetFunctionEntryPoint = 60,
     Packet_GetFunctionFixedEntryPoint = 61,
     Packet_GetGSCookie = 62,
-    Packet_GetHelperFtn = 63,
+    //Packet_GetHelperFtn = 63,
     //Packet_GetInlinedCallFrameVptr = 65,
     Packet_GetArrayIntrinsicID = 66,
     //Packet_GetJitTimeLogFilename = 67,
@@ -1210,6 +1222,8 @@ enum mcPackets
     Packet_NotifyInstructionSetUsage = 229,
     Packet_GetAsyncInfo = 230,
     Packet_GetAsyncResumptionStub = 231,
+    Packet_GetCookieForInterpreterCalliSig = 232,
+    Packet_GetHelperFtn = 233,
 };
 
 void SetDebugDumpVariables();

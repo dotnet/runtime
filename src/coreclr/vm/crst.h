@@ -179,13 +179,11 @@ private:
 #ifndef DACCESS_COMPILE
     DEBUG_NOINLINE static void AcquireLock(CrstBase *c) {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         c->Enter();
     }
 
     DEBUG_NOINLINE static void ReleaseLock(CrstBase *c) {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         c->Leave();
     }
 
@@ -487,7 +485,7 @@ public:
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         return fSuccess;
     }
