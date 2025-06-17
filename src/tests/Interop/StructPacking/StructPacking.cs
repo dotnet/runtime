@@ -30,8 +30,8 @@ struct DefaultLayoutDefaultPacking<T> : ITestStructure
     public T _value;
 
     public int Size => Unsafe.SizeOf<DefaultLayoutDefaultPacking<T>>();
-    public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
-    public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
+    public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -41,8 +41,8 @@ struct SequentialLayoutDefaultPacking<T> : ITestStructure
     public T _value;
 
     public int Size => Unsafe.SizeOf<SequentialLayoutDefaultPacking<T>>();
-    public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
-    public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
+    public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -52,8 +52,8 @@ struct SequentialLayoutMinPacking<T> : ITestStructure
     public T _value;
 
     public int Size => Unsafe.SizeOf<SequentialLayoutMinPacking<T>>();
-    public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
-    public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
+    public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 128)]
@@ -63,8 +63,8 @@ struct SequentialLayoutMaxPacking<T> : ITestStructure
     public T _value;
 
     public int Size => Unsafe.SizeOf<SequentialLayoutMaxPacking<T>>();
-    public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
-    public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
+    public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
 
 [StructLayout(LayoutKind.Auto)]
@@ -74,8 +74,8 @@ struct AutoLayoutDefaultPacking<T> : ITestStructure
     public T _value;
 
     public int Size => Unsafe.SizeOf<AutoLayoutDefaultPacking<T>>();
-    public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
-    public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
+    public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
 
 [StructLayout(LayoutKind.Auto, Pack = 1)]
@@ -85,8 +85,8 @@ struct AutoLayoutMinPacking<T> : ITestStructure
     public T _value;
 
     public int Size => Unsafe.SizeOf<AutoLayoutMinPacking<T>>();
-    public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
-    public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
+    public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
 
 [StructLayout(LayoutKind.Auto, Pack = 128)]
@@ -96,8 +96,8 @@ struct AutoLayoutMaxPacking<T> : ITestStructure
     public T _value;
 
     public int Size => Unsafe.SizeOf<AutoLayoutMaxPacking<T>>();
-    public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
-    public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
+    public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -107,11 +107,11 @@ struct ManagedAutoUnmanagedSequentialLayoutMinPacking : ITestStructure
     public byte _byte;
 
     public int Size => Unsafe.SizeOf<ManagedAutoUnmanagedSequentialLayoutMinPacking>();
-    public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
-    public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
+    public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
 
-public unsafe partial class Program
+public unsafe partial class StructPacking
 {
     const int Pass = 100;
     const int Fail = 0;
