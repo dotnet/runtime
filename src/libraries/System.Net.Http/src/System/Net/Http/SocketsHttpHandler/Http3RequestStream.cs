@@ -48,7 +48,7 @@ namespace System.Net.Http
         private List<(HeaderDescriptor name, string value)>? _trailingHeaders;
 
         /// <summary>Response drain task after receiving trailers.</summary>
-        private ValueTask _responseDrainTask;
+        private Task? _responseDrainTask;
 
         // When reading response content, keep track of the number of bytes left in the current data frame.
         private long _responseDataPayloadRemaining;
@@ -110,7 +110,7 @@ namespace System.Net.Http
             ValueTask? disposeTask = default;
             bool writesClosed = _stream.WritesClosed.IsCompleted;
 
-            if (!_responseDrainTask.IsCompleted)
+            if (_responseDrainTask is not null)
             {
 #pragma warning disable CA2012 // The ValueTask is only consumed once.
                 disposeTask = WaitForDrainCompletionAndDisposeAsync();
@@ -147,7 +147,7 @@ namespace System.Net.Http
             _connection.RemoveStream(_stream);
             _sendBuffer.Dispose();
 
-            if (_responseDrainTask.IsCompleted)
+            if (_responseDrainTask is null || _responseDrainTask.IsCompleted)
             {
                 // If response drain is in progress it might be still using _recvBuffer -- let WaitForDrainCompletionAndDisposeAsync() dispose it.
                 _recvBuffer.Dispose();
@@ -155,6 +155,7 @@ namespace System.Net.Http
 
             async ValueTask WaitForDrainCompletionAndDisposeAsync()
             {
+                Debug.Assert(_responseDrainTask is not null);
                 await _responseDrainTask.ConfigureAwait(false);
                 AbortStream();
                 await _stream.DisposeAsync().ConfigureAwait(false);
@@ -1395,11 +1396,9 @@ namespace System.Net.Http
                 return;
             }
 
-#pragma warning disable CA2012 // The ValueTask is only consumed once.
             _responseDrainTask = DrainResponseAsync();
-#pragma warning restore CA2012
 
-            async ValueTask DrainResponseAsync()
+            async Task DrainResponseAsync()
             {
                 using CancellationTokenSource cts = new CancellationTokenSource(settings._maxResponseDrainTime);
 
