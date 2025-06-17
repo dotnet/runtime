@@ -126,8 +126,6 @@ BYTE* emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instruction* ins);
 BYTE* emitOutputInstr_OptsRcPcRel(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1);
 BYTE* emitOutputInstr_OptsRcNoPcRel(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1);
 BYTE* emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins);
-BYTE* emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, regNumber reg1);
-BYTE* emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumber reg1);
 BYTE* emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins);
 BYTE* emitOutputInstr_OptsJalr8(BYTE* dst, const instrDescJmp* jmp, ssize_t immediate);
 BYTE* emitOutputInstr_OptsJalr24(BYTE* dst, ssize_t immediate);

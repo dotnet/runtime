@@ -2309,12 +2309,12 @@ AGAIN:
                     else if (isValidSimm21(jmpDist + maxPlaceholderSize))
                     {
                         // convert to opposite branch and jal
-                        extra = 4;
+                        extra = sizeof(code_t);
                     }
                     else
                     {
                         // convert to opposite branch and jalr
-                        extra = 4 * 6;
+                        extra = sizeof(code_t) * 2;
                     }
                 }
                 else if (ins == INS_jal || ins == INS_j)
@@ -2326,14 +2326,12 @@ AGAIN:
                     else
                     {
                         // convert to jalr
-                        extra = 4 * 5;
+                        extra = sizeof(code_t);
                     }
                 }
                 else
                 {
-                    assert(ins == INS_jalr);
-                    assert((jmpDist + maxPlaceholderSize) < 0x800);
-                    continue;
+                    unreached();
                 }
 
                 jmp->idInsOpt(INS_OPTS_JALR);
@@ -3302,59 +3300,33 @@ BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insG
     assert((immediate & 0x03) == 0);
 
     *ins = jmp->idIns();
-    switch (jmp->idCodeSize())
+    if (jmp->idInsIs(INS_jal, INS_j))
     {
-        case 8:
-            return emitOutputInstr_OptsJalr8(dst, jmp, immediate);
-        case 24:
-            assert(jmp->idInsIs(INS_jal, INS_j));
-            return emitOutputInstr_OptsJalr24(dst, immediate);
-        case 28:
-            return emitOutputInstr_OptsJalr28(dst, jmp, immediate);
-        default:
-            // case 0 - 4: The original INS_OPTS_JALR: not used by now!!!
-            break;
+        assert(jmp->idCodeSize() == 2 * sizeof(code_t));
+        assert(isValidSimm32(immediate));
+        dst += emitOutput_UTypeInstr(dst, INS_auipc, jmp->idReg1(), UpperNBitsOfWordSignExtend<20>(immediate));
+        dst += emitOutput_ITypeInstr(dst, INS_jalr, jmp->idReg1(), jmp->idReg1(), LowerNBitsOfWord<12>(immediate));
     }
-    unreached();
-    return nullptr;
-}
+    else
+    {
+        assert(*ins > INS_jalr || (*ins < INS_jalr && * ins > INS_j)); // branch
+        regNumber reg1 = jmp->idReg1();
+        regNumber reg2 = jmp->idInsIs(INS_beqz, INS_bnez) ? REG_R0 : jmp->idReg2();
 
-BYTE* emitter::emitOutputInstr_OptsJalr8(BYTE* dst, const instrDescJmp* jmp, ssize_t immediate)
-{
-    const regNumber reg2 = jmp->idInsIs(INS_beqz, INS_bnez) ? REG_R0 : jmp->idReg2();
-
-    dst += emitOutput_BTypeInstr_InvertComparation(dst, jmp->idIns(), jmp->idReg1(), reg2, 0x8);
-    dst += emitOutput_JTypeInstr(dst, INS_jal, REG_ZERO, TrimSignedToImm21(immediate));
+        dst += emitOutput_BTypeInstr_InvertComparation(dst, jmp->idIns(), reg1, reg2, jmp->idCodeSize());
+        if (jmp->idCodeSize() == 2 * sizeof(code_t))
+        {
+            dst += emitOutput_JTypeInstr(dst, INS_jal, REG_ZERO, TrimSignedToImm21(immediate));
+        }
+        else
+        {
+            assert(jmp->idCodeSize() == 3 * sizeof(code_t));
+            assert(isValidSimm32(immediate));
+            dst += emitOutput_UTypeInstr(dst, INS_auipc, REG_RA, UpperNBitsOfWordSignExtend<20>(immediate));
+            dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_ZERO, REG_RA, LowerNBitsOfWord<12>(immediate));
+        }
+    }
     return dst;
-}
-
-BYTE* emitter::emitOutputInstr_OptsJalr24(BYTE* dst, ssize_t immediate)
-{
-    // Make target address with offset, then jump (JALR) with the target address
-    immediate -= 2 * 4;
-    const ssize_t high = UpperWordOfDoubleWordSingleSignExtend<0>(immediate);
-
-    dst += emitOutput_UTypeInstr(dst, INS_lui, REG_RA, UpperNBitsOfWordSignExtend<20>(high));
-    dst += emitOutput_ITypeInstr(dst, INS_addi, REG_RA, REG_RA, LowerNBitsOfWord<12>(high));
-    dst += emitOutput_ITypeInstr(dst, INS_slli, REG_RA, REG_RA, 32);
-
-    const regNumber rsvdReg = codeGen->rsGetRsvdReg();
-    const ssize_t   low     = LowerWordOfDoubleWord(immediate);
-
-    dst += emitOutput_UTypeInstr(dst, INS_auipc, rsvdReg, UpperNBitsOfWordSignExtend<20>(low));
-    dst += emitOutput_RTypeInstr(dst, INS_add, rsvdReg, REG_RA, rsvdReg);
-    dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_RA, rsvdReg, LowerNBitsOfWord<12>(low));
-
-    return dst;
-}
-
-BYTE* emitter::emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, ssize_t immediate)
-{
-    regNumber reg2 = jmp->idInsIs(INS_beqz, INS_bnez) ? REG_R0 : jmp->idReg2();
-
-    dst += emitOutput_BTypeInstr_InvertComparation(dst, jmp->idIns(), jmp->idReg1(), reg2, 0x1c);
-
-    return emitOutputInstr_OptsJalr24(dst, immediate);
 }
 
 BYTE* emitter::emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins)
