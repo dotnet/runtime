@@ -55,11 +55,16 @@ public static class Constants
         public const string PlatformMetadata = nameof(PlatformMetadata);
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
 
+        public const string MethodDescSizeTable = nameof(MethodDescSizeTable);
+
         public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         public const string HashMapValueMask = nameof(HashMapValueMask);
 
         public const string Architecture = nameof(Architecture);
         public const string OperatingSystem = nameof(OperatingSystem);
+
+        public const string FCallHashSize = nameof(FCallHashSize);
+        public const string FCallMethods = nameof(FCallMethods);
     }
     public static class FieldNames
     {
