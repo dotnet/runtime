@@ -2596,6 +2596,18 @@ namespace System.Net.Tests
                 Assert.Throws<System.Runtime.Serialization.SerializationException>(() => formatter.Serialize(fs, hwr));
             }
         }
+
+        [Fact]
+        public void GetRequestStream_ReturnsSameInstanceWithoutLoopback()
+        {
+            var request = WebRequest.CreateHttp("http://localhost:12345");
+            request.Method = "POST";
+
+            var s1 = request.GetRequestStream();
+            var s2 = request.GetRequestStream();
+
+            Assert.Same(s1, s2);
+        }
     }
 
     public class RequestState

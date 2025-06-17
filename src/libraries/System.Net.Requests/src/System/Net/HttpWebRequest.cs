@@ -1110,7 +1110,10 @@ namespace System.Net
                         // return a null stream to avoid blocking.
                         return Stream.Null;
                     }
-                    _requestStream = new RequestStream(await getStreamTask.ConfigureAwait(false), completeTcs);
+
+                    // Ensure that we only create the request stream once.
+                    _requestStream ??= new RequestStream(await getStreamTask.ConfigureAwait(false), completeTcs);
+
                 }
                 catch (Exception ex)
                 {
@@ -1119,7 +1122,8 @@ namespace System.Net
             }
             else
             {
-                _requestStream = new RequestBufferingStream();
+                // Ensure that we only create the request stream once.
+                _requestStream ??= new RequestBufferingStream();
             }
 
             return _requestStream;
