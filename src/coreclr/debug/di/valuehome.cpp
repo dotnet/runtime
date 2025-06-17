@@ -899,7 +899,7 @@ CORDB_ADDRESS HandleValueHome::GetAddress()
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
     return handle;
 }
 
