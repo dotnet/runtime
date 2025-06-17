@@ -6511,7 +6511,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             else
             {
                 // Direct call to a non-virtual user function.
-                addr = call->gtDirectCallAddress;
+                addr = call->GetDirectCallAddress();
             }
 
             assert(addr != nullptr);
