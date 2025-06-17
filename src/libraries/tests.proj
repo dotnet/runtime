@@ -40,6 +40,10 @@
     <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- Samples which are too complex for CI -->
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-node-ts\Wasm.Console.Node.TS.Sample.csproj" />

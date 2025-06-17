@@ -893,6 +893,7 @@ namespace System
             }
             return new TimeSpan(result);
 
+            [MethodImplAttribute(MethodImplOptions.NoInlining)]
             static void ThrowOverflowException_TimeSpanTooLong(TimeSpan t1, TimeSpan t2)
             {
                 System.Environment.FailFast("!!!!");
