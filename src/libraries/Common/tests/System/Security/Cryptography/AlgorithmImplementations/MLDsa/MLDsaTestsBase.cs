@@ -222,61 +222,36 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(testCase.ShouldPass, mldsa.VerifyData(testCase.Message, testCase.Signature, testCase.Context));
         }
 
-        [Fact]
-        public virtual void ImportPublicKey_ExportPublicKey()
+        protected virtual void AssertExportPrivateDataFromPublicKey(Action export) =>
+            Assert.Throws<CryptographicException>(export);
+
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void ImportPublicKey_Export(MLDsaKeyInfo info)
         {
-            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
             using MLDsa mldsa = ImportPublicKey(info.Algorithm, info.PublicKey);
 
             MLDsaTestHelpers.AssertExportMLDsaPublicKey(export =>
                 AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)));
-        }
-
-        [Fact]
-        public virtual void ImportPublicKey_ExportSecretKey()
-        {
-            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
-            using MLDsa mldsa = ImportPublicKey(info.Algorithm, info.PublicKey);
 
             MLDsaTestHelpers.AssertExportMLDsaSecretKey(export =>
-                Assert.Throws<CryptographicException>(() => export(mldsa)));
-        }
-
-        [Fact]
-        public virtual void ImportPublicKey_ExportPrivateSeed()
-        {
-            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
-            using MLDsa mldsa = ImportPublicKey(info.Algorithm, info.PublicKey);
+                AssertExportPrivateDataFromPublicKey(() => export(mldsa)));
 
             MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
-                Assert.Throws<CryptographicException>(() => export(mldsa)));
+                AssertExportPrivateDataFromPublicKey(() => export(mldsa)));
         }
 
-        [Fact]
-        public virtual void ImportSecretKey_ExportPublicKey()
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void ImportPrivateKey_Export(MLDsaKeyInfo info)
         {
-            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
             using MLDsa mldsa = ImportSecretKey(info.Algorithm, info.SecretKey);
 
             MLDsaTestHelpers.AssertExportMLDsaPublicKey(export =>
                 AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)));
-        }
-
-        [Fact]
-        public virtual void ImportSecretKey_ExportSecretKey()
-        {
-            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
-            using MLDsa mldsa = ImportSecretKey(info.Algorithm, info.SecretKey);
 
             MLDsaTestHelpers.AssertExportMLDsaSecretKey(export =>
                 AssertExtensions.SequenceEqual(info.SecretKey, export(mldsa)));
-        }
-
-        [Fact]
-        public virtual void ImportSecretKey_ExportPrivateSeed()
-        {
-            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
-            using MLDsa mldsa = ImportSecretKey(info.Algorithm, info.SecretKey);
 
             MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(
                 export => Assert.Throws<CryptographicException>(() => export(mldsa)),
@@ -284,33 +259,19 @@ namespace System.Security.Cryptography.Tests
                 export => Assert.Null(export(mldsa)));
         }
 
-        [Fact]
-        public virtual void ImportPrivateSeed_ExportPublicKey()
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void ImportPrivateSeed_Export(MLDsaKeyInfo info)
         {
-            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
             using MLDsa mldsa = ImportPrivateSeed(info.Algorithm, info.PrivateSeed);
 
             MLDsaTestHelpers.AssertExportMLDsaPublicKey(export =>
                 AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)));
-        }
-
-        [Fact]
-        public virtual void ImportPrivateSeed_ExportSecretKey()
-        {
-            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
-            using MLDsa mldsa = ImportPrivateSeed(info.Algorithm, info.PrivateSeed);
 
             MLDsaTestHelpers.AssertExportMLDsaSecretKey(
                 export => AssertExtensions.SequenceEqual(info.SecretKey, export(mldsa)),
                 // Seed is preferred in PKCS#8, so secret key won't be available
                 export => Assert.Null(export(mldsa)));
-        }
-
-        [Fact]
-        public virtual void ImportPrivateSeed_ExportPrivateSeed()
-        {
-            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
-            using MLDsa mldsa = ImportPrivateSeed(info.Algorithm, info.PrivateSeed);
 
             MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
                 AssertExtensions.SequenceEqual(info.PrivateSeed, export(mldsa)));

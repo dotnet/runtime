@@ -23,28 +23,11 @@ namespace System.Security.Cryptography.Tests
         protected override MLDsa ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             MLDsaTestHelpers.ImportPublicKey(algorithm, source);
 
-        [Fact]
-        public override void ImportPublicKey_ExportPrivateSeed()
+        protected override void AssertExportPrivateDataFromPublicKey(Action export)
         {
-            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
-            using MLDsa mldsa = ImportPublicKey(info.Algorithm, info.PublicKey);
-
-            MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
-                Assert.Equal(
-                    MLDsaTestHelpers.NTE_NOT_SUPPORTED,
-                    Assert.ThrowsAny<CryptographicException>(() => export(mldsa)).HResult));
-        }
-
-        [Fact]
-        public override void ImportPublicKey_ExportSecretKey()
-        {
-            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
-            using MLDsa mldsa = ImportPublicKey(info.Algorithm, info.PublicKey);
-
-            MLDsaTestHelpers.AssertExportMLDsaSecretKey(export =>
-                Assert.Equal(
-                    MLDsaTestHelpers.NTE_NOT_SUPPORTED,
-                    Assert.ThrowsAny<CryptographicException>(() => export(mldsa)).HResult));
+            Assert.Equal(
+                MLDsaTestHelpers.NTE_NOT_SUPPORTED,
+                Assert.ThrowsAny<CryptographicException>(export).HResult);
         }
     }
 
@@ -64,28 +47,11 @@ namespace System.Security.Cryptography.Tests
         protected override MLDsa ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             MLDsaTestHelpers.ImportPublicKey(algorithm, source);
 
-        [Fact]
-        public override void ImportPublicKey_ExportPrivateSeed()
+        protected override void AssertExportPrivateDataFromPublicKey(Action export)
         {
-            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
-            using MLDsa mldsa = ImportPublicKey(info.Algorithm, info.PublicKey);
-
-            MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
-                Assert.Equal(
-                    MLDsaTestHelpers.NTE_NOT_SUPPORTED,
-                    Assert.ThrowsAny<CryptographicException>(() => export(mldsa)).HResult));
-        }
-
-        [Fact]
-        public override void ImportPublicKey_ExportSecretKey()
-        {
-            MLDsaKeyInfo info = MLDsaTestsData.IetfMLDsa44;
-            using MLDsa mldsa = ImportPublicKey(info.Algorithm, info.PublicKey);
-
-            MLDsaTestHelpers.AssertExportMLDsaSecretKey(export =>
-                Assert.Equal(
-                    MLDsaTestHelpers.NTE_NOT_SUPPORTED,
-                    Assert.ThrowsAny<CryptographicException>(() => export(mldsa)).HResult));
+            Assert.Equal(
+                MLDsaTestHelpers.NTE_NOT_SUPPORTED,
+                Assert.ThrowsAny<CryptographicException>(export).HResult);
         }
     }
 
