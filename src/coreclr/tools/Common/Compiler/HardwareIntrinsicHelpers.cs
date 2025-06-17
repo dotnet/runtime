@@ -102,7 +102,6 @@ namespace ILCompiler
                 if ((flags & Avx10v2) != 0)
                 {
                     builder.AddSupportedInstructionSet("avx10v2");
-                    builder.AddSupportedInstructionSet("avxvnniint");
                     builder.AddSupportedInstructionSet("avxvnniint_v512");
                 }
                 if ((flags & AvxVnniInt) != 0)
@@ -196,9 +195,7 @@ namespace ILCompiler
                     InstructionSet.X64_GFNI_V256 => (Gfni | Avx),
                     InstructionSet.X64_GFNI_V512 => (Gfni | Avx512),
                     InstructionSet.X64_AVXVNNIINT => AvxVnniInt,
-                    InstructionSet.X64_AVXVNNIINT_X64 => AvxVnniInt,
                     InstructionSet.X64_AVXVNNIINT_V512 => Avx10v2,
-                    InstructionSet.X64_AVXVNNIINT_V512_X64 => Avx10v2,
 
                     InstructionSet.X64_SHA => Sha,
                     InstructionSet.X64_SHA_X64 => Sha,

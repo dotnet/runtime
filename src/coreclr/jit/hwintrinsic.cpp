@@ -947,8 +947,6 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      AVXIFMA_X64
     { NI_Illegal, NI_Illegal },                                 //      AVXVNNI_X64
     { NI_Illegal, NI_Illegal },                                 //      GFNI_X64
-    { NI_Illegal, NI_Illegal },                                 //      AVXVNNIINT_X64
-    { NI_Illegal, NI_Illegal },                                 //      AVXVNNIINT_V512_X64
     { NI_Illegal, NI_Illegal },                                 //      SHA_X64
     { NI_Illegal, NI_Illegal },                                 //      WAITPKG_X64
     { NI_Illegal, NI_Illegal },                                 //      X86Serialize_X64
