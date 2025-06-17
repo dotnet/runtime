@@ -2130,6 +2130,11 @@ int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
     return GetDataItemIndex(addr);
 }
 
+void InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni)
+{
+    assert(!"EmitNamedIntrinsicCall");
+}
+
 bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
 {
     const char *className = NULL;
@@ -2342,6 +2347,13 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
+        if (flags & CORINFO_FLG_INTRINSIC)
+        {
+            NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, callInfo.hMethod);
+            assert(ni != NI_Illegal);
+            EmitNamedIntrinsicCall(ni);
+        }
+
         if (EmitCallIntrinsics(callInfo.hMethod, callInfo.sig))
         {
             m_ip += 5;
