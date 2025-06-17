@@ -845,10 +845,11 @@ public class InterpreterTest
         Console.WriteLine("TestLdtoken");
         if (!TestLdtoken())
             Environment.FailFast(null);
-        /*
+
+        Console.WriteLine("TestMdArray");
         if (!TestMdArray())
             Environment.FailFast(null);
-        */
+
         Console.WriteLine("TestExceptionHandling");
         TestExceptionHandling();
 
@@ -858,6 +859,14 @@ public class InterpreterTest
 
         Console.WriteLine("TestSharedGenerics");
         if (!TestSharedGenerics())
+            Environment.FailFast(null);
+
+        Console.WriteLine("TestDelegate");
+        if (!TestDelegate())
+            Environment.FailFast(null);
+
+        Console.WriteLine("TestCalli");
+        if (!TestCalli())
             Environment.FailFast(null);
 
         System.GC.Collect();
@@ -2238,12 +2247,132 @@ public class InterpreterTest
 
     public static bool TestMdArray()
     {
-        // FIXME: This generates roughly:
-        // newobj int[,].ctor
-        // ldtoken int[,]
-        // call System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray
-        // The newobj currently fails because int[,].ctor isn't a real method, the interp needs to use getCallInfo to determine how to invoke it
         int[,] a = { { 1, 2 }, { 3, 4 } };
-        return a[0, 1] == 2;
+        if (a[0, 1] != 2)
+            return false;
+
+        object[,] b = new object[1, 1];
+        ref object bElt = ref b[0, 0];
+        bElt = null;
+
+        object[,] c = new string[1, 1];
+
+        try
+        {
+            ref object cElt = ref c[0, 0];
+            return false;
+        }
+        catch (ArrayTypeMismatchException)
+        {
+        }
+
+        ref readonly object cElt2 = ref c[0, 0];
+
+        return true;
+    }
+
+    private static int _fieldA;
+    private static int _fieldB;
+    private static int _fieldResult;
+    private static void MultiplyAandB()
+    {
+        _fieldResult = _fieldA * _fieldB;
+    }
+
+    private static Type _typeFromFill;
+
+    private static void Fill<T>()
+    {
+        _typeFromFill = typeof(T);
+    }
+
+    public static bool TestDelegate()
+    {
+        _fieldA = 3;
+        _fieldB = 1;
+        _fieldResult = 0;
+
+        // This tests delegate creation, ldftn, and invocation via the "Invoke" method
+        Action func = new Action(MultiplyAandB);
+
+        _fieldB = 4;
+        Console.WriteLine("CallingFunc first time");
+        func();
+        Console.WriteLine("Return CallingFunc first time");
+        if (_fieldResult != 12)
+        {
+            Console.WriteLine("Delegate test failed: expected 12, got " + _fieldResult);
+            return false;
+        }
+
+        _fieldB = 3;
+        Console.WriteLine("CallingFunc second time");
+        func();
+        Console.WriteLine("Return CallingFunc second time");
+        if (_fieldResult != 9)
+        {
+            Console.WriteLine("Delegate test failed: expected 9, got " + _fieldResult);
+            return false;
+        }
+        return true;
+    }
+
+    public unsafe static bool TestCalli()
+    {
+        delegate*<void> func = &MultiplyAandB;
+
+        _fieldA = 3;
+        _fieldB = 1;
+        _fieldResult = 0;
+
+        // This tests ldftn, and calli
+
+        _fieldB = 4;
+        Console.WriteLine("CallingFunc first time");
+        func();
+        Console.WriteLine("Return CallingFunc first time");
+        if (_fieldResult != 12)
+        {
+            Console.WriteLine("Calli test failed: expected 12, got " + _fieldResult);
+            return false;
+        }
+
+        _fieldB = 3;
+        Console.WriteLine("CallingFunc second time");
+        func();
+        Console.WriteLine("Return CallingFunc second time");
+        if (_fieldResult != 9)
+        {
+            Console.WriteLine("Calli test failed: expected 9, got " + _fieldResult);
+            return false;
+        }
+
+        GetCalliGeneric<int>()();
+        if (_typeFromFill != typeof(int))
+        {
+            Console.WriteLine("Calli generic test failed: expected int, got " + _typeFromFill);
+            return false;
+        }
+
+
+        GetCalliGeneric<object>()();
+        if (_typeFromFill != typeof(object))
+        {
+            Console.WriteLine("Calli generic test failed: expected object, got " + _typeFromFill);
+            return false;
+        }
+
+        GetCalliGeneric<string>()();
+        if (_typeFromFill != typeof(string))
+        {
+            Console.WriteLine("Calli generic test failed: expected string, got " + _typeFromFill);
+            return false;
+        }
+        return true;
+    }
+
+    private static unsafe delegate*<void> GetCalliGeneric<T>()
+    {
+        return &Fill<T>;
     }
 }

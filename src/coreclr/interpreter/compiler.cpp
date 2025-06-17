@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "gcinfoencoder.h"
 
-// HACK: debugreturn.h (included by gcinfoencoder.h) breaks constexpr
-#if defined(debug_instrumented_return) || defined(_DEBUGRETURN_H_)
-#undef return
-#endif // debug_instrumented_return
-
 #include "interpreter.h"
 #include "stackmap.h"
 
@@ -50,6 +45,14 @@ static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "
 void DECLSPEC_NORETURN Interp_NOMEM()
 {
     throw std::bad_alloc();
+}
+
+void AssertOpCodeNotImplemented(const uint8_t *ip, size_t offset)
+{
+    fprintf(stderr, "IL_%04x %-10s - opcode not supported yet\n",
+                (int32_t)(offset),
+                CEEOpName(CEEDecodeOpcode(&ip)));
+    assert(!"opcode not implemented");
 }
 
 // GCInfoEncoder needs an IAllocator implementation. This is a simple one that forwards to the Compiler.
@@ -1199,6 +1202,8 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     m_classHnd   = compHnd->getMethodClass(m_methodHnd);
 
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
+                            /* includeAssembly */ false,
+                            /* includeClass */ true,
                             /* includeClassInstantiation */ true,
                             /* includeMethodInstantiation */ true,
                             /* includeSignature */ true,
@@ -1508,7 +1513,7 @@ void InterpCompiler::CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* met
                 pFinallyCallIslandBB = (*ppLastBBNext);
                 break;
             }
-            ppLastBBNext = &((*ppLastBBNext)->pFinallyCallIslandBB);
+            ppLastBBNext = &((*ppLastBBNext)->pNextBB);
         }
 
         if (pFinallyCallIslandBB == NULL)
@@ -2123,13 +2128,16 @@ int32_t InterpCompiler::GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle)
 int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
 {
     // Interpreter-TODO: Find an existing data item index for this helper if possible and reuse it
-    void *indirect;
-    void *direct = m_compHnd->getHelperFtn(ftn, &indirect);
-    size_t data = !direct
-        ? (size_t)indirect | INTERP_INDIRECT_HELPER_TAG
-        : (size_t)direct;
-    assert(data);
-    return GetDataItemIndex((void*)data);
+    CORINFO_CONST_LOOKUP ftnLookup;
+    m_compHnd->getHelperFtn(ftn, &ftnLookup);
+    void* addr = ftnLookup.addr;
+    if (ftnLookup.accessType == IAT_PVALUE)
+    {
+        addr = (void*)((size_t)addr | INTERP_INDIRECT_HELPER_TAG);
+    }
+    assert(ftnLookup.accessType == IAT_VALUE || ftnLookup.accessType == IAT_PVALUE);
+
+    return GetDataItemIndex(addr);
 }
 
 bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
@@ -2242,6 +2250,32 @@ InterpCompiler::InterpEmbedGenericResult InterpCompiler::EmitGenericHandle(CORIN
     return result;
 }
 
+void InterpCompiler::EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup)
+{
+    PushStackType(StackTypeI, NULL);
+    int resultVar = m_pStackPointer[-1].var;
+
+    CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind = lookup.lookupKind.runtimeLookupKind;
+    if (runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM)
+    {
+        AddIns(INTOP_GENERICLOOKUP_METHOD);
+    }
+    else if (runtimeLookupKind == CORINFO_LOOKUP_THISOBJ)
+    {
+        AddIns(INTOP_GENERICLOOKUP_THIS);
+    }
+    else
+    {
+        AddIns(INTOP_GENERICLOOKUP_CLASS);
+    }
+    CORINFO_RUNTIME_LOOKUP *pRuntimeLookup = (CORINFO_RUNTIME_LOOKUP*)AllocMethodData(sizeof(CORINFO_RUNTIME_LOOKUP));
+    *pRuntimeLookup = lookup.runtimeLookup;
+    m_pLastNewIns->data[0] = GetDataItemIndex(pRuntimeLookup);
+
+    m_pLastNewIns->SetSVar(getParamArgIndex());
+    m_pLastNewIns->SetDVar(resultVar);
+}
+
 int InterpCompiler::EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo)
 {
     PushStackType(StackTypeI, NULL);
@@ -2281,30 +2315,52 @@ int InterpCompiler::EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &e
     return resultVar;
 }
 
-void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall, bool newObj)
+void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall, bool newObj, bool isCalli)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
     bool isVirtual = (*m_ip == CEE_CALLVIRT);
 
     CORINFO_RESOLVED_TOKEN resolvedCallToken;
+    CORINFO_CALL_INFO callInfo;
     bool doCallInsteadOfNew = false;
 
-    ResolveToken(token, newObj ? CORINFO_TOKENKIND_Method : CORINFO_TOKENKIND_NewObj, &resolvedCallToken);
+    int callIFunctionPointerVar = -1;
+    void* calliCookie = NULL;
 
-    CORINFO_CALL_INFO callInfo;
-    CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
-    if (isVirtual)
+    if (isCalli)
+    {
+        // Suppress uninitialized use warning.
+        memset(&resolvedCallToken, 0, sizeof(resolvedCallToken));
+        memset(&callInfo, 0, sizeof(callInfo));
+
+        resolvedCallToken.token        = token;
+        resolvedCallToken.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
+        resolvedCallToken.tokenScope   = m_methodInfo->scope;
+
+        m_compHnd->findSig(m_methodInfo->scope, token, METHOD_BEING_COMPILED_CONTEXT(), &callInfo.sig);
+
+        callIFunctionPointerVar = m_pStackPointer[-1].var;
+        m_pStackPointer--;
+        calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+    }
+    else
+    {
+
+        ResolveToken(token, newObj ? CORINFO_TOKENKIND_NewObj : CORINFO_TOKENKIND_Method, &resolvedCallToken);
+        
+        CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
+        if (isVirtual)
         flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
-    m_compHnd->getCallInfo(&resolvedCallToken, constrainedClass, m_methodInfo->ftn, flags, &callInfo);
-
-    if (EmitCallIntrinsics(callInfo.hMethod, callInfo.sig))
-    {
-        m_ip += 5;
-        return;
+        m_compHnd->getCallInfo(&resolvedCallToken, constrainedClass, m_methodInfo->ftn, flags, &callInfo);
+        if (EmitCallIntrinsics(callInfo.hMethod, callInfo.sig))
+        {
+            m_ip += 5;
+            return;
+        }
     }
 
-    if (callInfo.classFlags & CORINFO_FLG_VAROBJSIZE)
+    if (newObj && (callInfo.classFlags & CORINFO_FLG_VAROBJSIZE))
     {
         // This is a variable size object which means "System.String".
         // For these, we just call the resolved method directly, but don't actually pass a this pointer to it.
@@ -2506,17 +2562,17 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool rea
                 }
                 m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
             }
-            else if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && !readonly)
+            else if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && newObj)
             {
-                CORINFO_SIG_INFO ctorSignature;
-                CORINFO_CLASS_HANDLE ctorClass;
-
-                m_compHnd->getMethodSig(resolvedCallToken.hMethod, &ctorSignature);
-                ctorClass = m_compHnd->getMethodClass(resolvedCallToken.hMethod);
-
                 AddIns(INTOP_NEWMDARR);
-                m_pLastNewIns->data[0] = GetDataItemIndex(ctorClass);
-                m_pLastNewIns->data[1] = numArgs;
+                m_pLastNewIns->data[0] = GetDataItemIndex(resolvedCallToken.hClass);
+                m_pLastNewIns->data[1] = callInfo.sig.numArgs;
+            }
+            else if (isCalli)
+            {
+                AddIns(INTOP_CALLI);
+                m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
+                m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
             }
             else
             {
@@ -3919,8 +3975,24 @@ retry_emit:
                 EmitBinaryArithmeticOp(INTOP_ADD_I4);
                 m_ip++;
                 break;
+            case CEE_ADD_OVF:
+                EmitBinaryArithmeticOp(INTOP_ADD_OVF_I4);
+                m_ip++;
+                break;
+            case CEE_ADD_OVF_UN:
+                EmitBinaryArithmeticOp(INTOP_ADD_OVF_UN_I4);
+                m_ip++;
+                break;
             case CEE_SUB:
                 EmitBinaryArithmeticOp(INTOP_SUB_I4);
+                m_ip++;
+                break;
+            case CEE_SUB_OVF:
+                EmitBinaryArithmeticOp(INTOP_SUB_OVF_I4);
+                m_ip++;
+                break;
+            case CEE_SUB_OVF_UN:
+                EmitBinaryArithmeticOp(INTOP_SUB_OVF_UN_I4);
                 m_ip++;
                 break;
             case CEE_MUL:
@@ -3985,14 +4057,20 @@ retry_emit:
                 break;
             case CEE_CALLVIRT:
             case CEE_CALL:
-                EmitCall(constrainedClass, readonly, tailcall, false /*newObj*/);
+                EmitCall(constrainedClass, readonly, tailcall, false /*newObj*/, false /*isCalli*/);
+                constrainedClass = NULL;
+                readonly = false;
+                tailcall = false;
+                break;
+            case CEE_CALLI:
+                EmitCall(NULL /*constrainedClass*/, false /* readonly*/, false /* tailcall*/, false /*newObj*/, true /*isCalli*/);
                 constrainedClass = NULL;
                 readonly = false;
                 tailcall = false;
                 break;
             case CEE_NEWOBJ:
             {
-                EmitCall(NULL /*constrainedClass*/, false /* readonly*/, false /* tailcall*/, true /*newObj*/);
+                EmitCall(NULL /*constrainedClass*/, false /* readonly*/, false /* tailcall*/, true /*newObj*/, false /*isCalli*/);
                 constrainedClass = NULL;
                 readonly = false;
                 tailcall = false;
@@ -4460,9 +4538,51 @@ retry_emit:
                         m_ip++;
                         linkBBlocks = false;
                         break;
-                    default:
-                        assert(0);
+
+                    case CEE_LDFTN:
+                    {
+                        CORINFO_RESOLVED_TOKEN resolvedToken;
+                        uint32_t token = getU4LittleEndian(m_ip + 1);
+                        ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
+
+                        CORINFO_CALL_INFO callInfo;
+                        m_compHnd->getCallInfo(&resolvedToken, constrainedClass, m_methodInfo->ftn, (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS| CORINFO_CALLINFO_LDFTN), &callInfo);
+                        constrainedClass = NULL;
+
+                        if (callInfo.kind == CORINFO_CALL)
+                        {
+                            CORINFO_CONST_LOOKUP embedInfo;
+                            m_compHnd->getFunctionFixedEntryPoint(callInfo.hMethod, true, &embedInfo);
+
+                            switch (embedInfo.accessType)
+                            {
+                            case IAT_VALUE:
+                                AddIns(INTOP_LDPTR);
+                                break;
+                            case IAT_PVALUE:
+                                AddIns(INTOP_LDPTR_DEREF);
+                                break;
+                            default:
+                                assert(!"Unexpected access type for function pointer");
+                            }
+                            PushInterpType(InterpTypeI, NULL);
+                            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                            m_pLastNewIns->data[0] = GetDataItemIndex(embedInfo.handle);
+                        }
+                        else
+                        {
+                            EmitPushCORINFO_LOOKUP(callInfo.codePointerLookup);
+                        }
+
+                        m_ip += 5;
                         break;
+                    }
+                    default:
+                    {
+                        const uint8_t *ip = m_ip - 1;
+                        AssertOpCodeNotImplemented(ip, ip - m_pILCode);
+                        break;
+                    }
                 }
                 break;
 
@@ -4961,8 +5081,10 @@ retry_emit:
                 break;
             }
             default:
-                assert(0);
+            {
+                AssertOpCodeNotImplemented(m_ip, m_ip - m_pILCode);
                 break;
+            }
         }
     }
 
@@ -4986,6 +5108,7 @@ retry_emit:
 
     return CORJIT_OK;
 exit_bad_code:
+    assert(!m_hasInvalidCode);
     return CORJIT_BADCODE;
 }
 
@@ -5062,6 +5185,8 @@ void InterpCompiler::PrintMethodName(CORINFO_METHOD_HANDLE method)
     m_compHnd->getMethodSig(method, &sig, cls);
 
     TArray<char> methodName = ::PrintMethodName(m_compHnd, cls, method, &sig,
+                            /* includeAssembly */ false,
+                            /* includeClass */ false,
                             /* includeClassInstantiation */ true,
                             /* includeMethodInstantiation */ true,
                             /* includeSignature */ true,
