@@ -589,22 +589,21 @@ public:
 #endif
 };
 
-#if defined(TARGET_AMD64)
-// On non X86 platforms, the OS defined UnwindInfo (accessed from RUNTIME_FUNCTION
-// structures) to  support the ability unwind the stack.   Unfortunatey the pre-Win8
+typedef DPTR(class UnwindInfoTable) PTR_UnwindInfoTable;
+// On Windows non-x64 platforms, the OS defined UnwindInfo (accessed from RUNTIME_FUNCTION
+// structures) to support the ability unwind the stack. Unfortunately the pre-Win8
 // APIs defined a callback API for publishing this data dynamically that ETW does
-// not use (and really can't because the walk happens in the kernel).   In Win8
+// not use (and really can't because the walk happens in the kernel). In Win8
 // new APIs were defined that allow incremental publishing via a table.
 //
 // UnwindInfoTable is a class that wraps the OS APIs that we use to publish
-// this table.  Its job is to allocate the table, deallocate it when we are
-// done and allow us to add new entries one at a time (AddToUnwindInfoTable)
+// this table. Its job is to allocate the table, deallocate it when we are
+// done and allow us to add new entries one at a time (AddToUnwindInfoTable).
 //
 // Each _rangesection has a UnwindInfoTable's which hold the
 // RUNTIME_FUNCTION array as well as other bookkeeping (the current and maximum
 // size of the array, and the handle used to publish it to the OS.
 //
-typedef DPTR(class UnwindInfoTable) PTR_UnwindInfoTable;
 class UnwindInfoTable final
 {
 public:
@@ -614,6 +613,9 @@ public:
     static void PublishUnwindInfoForMethod(TADDR baseAddress, T_RUNTIME_FUNCTION* unwindInfo, int unwindInfoCount);
     static void UnpublishUnwindInfoForMethod(TADDR entryPoint);
 
+    static void Initialize();
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 private:
     // These are lower level functions that assume you have found the list of UnwindInfoTable entries
     // These are used by the stublinker and the high-level method functions above
@@ -621,7 +623,6 @@ private:
     static void RemoveFromUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, TADDR baseAddress, TADDR entryPoint);
 
 public:
-    static void Initialize();
     ~UnwindInfoTable();
 
 private:
@@ -637,9 +638,8 @@ private:
     ULONG               cTableCurCount;
     ULONG               cTableMaxCount;
     int                 cDeletedEntries;    // Number of slots we removed.
+#endif // defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 };
-
-#endif // defined(TARGET_AMD64)
 
 //-----------------------------------------------------------------------------
 // The ExecutionManager uses RangeSection as the abstraction of a contiguous

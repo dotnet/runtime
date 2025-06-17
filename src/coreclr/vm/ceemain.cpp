@@ -755,12 +755,7 @@ void EEStartupHelper()
 #endif // !TARGET_UNIX
         InitEventStore();
 
-#ifdef TARGET_AMD64
-        // We only do this on amd64 (NOT ARM, because ARM uses frame based stack crawling),
-        // We want good stack traces so we need to publish unwind information so ETW can
-        // walk the stack.
         UnwindInfoTable::Initialize();
-#endif // TARGET_AMD64
 
         // Fire the runtime information ETW event
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);

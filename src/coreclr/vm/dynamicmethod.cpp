@@ -1006,10 +1006,8 @@ bool LCGMethodResolver::TryDestroyCodeHeapMemory()
 
     if (m_recordCodePointer != NULL)
     {
-#if defined(TARGET_AMD64)
         // Remove the unwind information (if applicable)
         UnwindInfoTable::UnpublishUnwindInfoForMethod((TADDR)m_recordCodePointer);
-#endif // defined(TARGET_AMD64)
 
         HostCodeHeap *pHeap = HostCodeHeap::GetCodeHeap((TADDR)m_recordCodePointer);
         LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%zx)} \n", this, pHeap, *(size_t*)pHeap));

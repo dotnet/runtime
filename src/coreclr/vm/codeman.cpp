@@ -77,7 +77,7 @@ unsigned   ExecutionManager::m_LCG_JumpStubBlockFullCount;
 
 #endif // DACCESS_COMPILE
 
-#if defined(TARGET_AMD64) && !defined(DACCESS_COMPILE) // We don't do this on ARM just amd64
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(DACCESS_COMPILE) // We don't do this on ARM just amd64
 
 // Support for new style unwind information (to allow OS to stack crawl JIT compiled code).
 
@@ -91,10 +91,9 @@ typedef VOID (WINAPI* RtlDeleteGrowableFunctionTableFnPtr) (PVOID DynamicTable);
 static RtlAddGrowableFunctionTableFnPtr pRtlAddGrowableFunctionTable;
 static RtlGrowFunctionTableFnPtr pRtlGrowFunctionTable;
 static RtlDeleteGrowableFunctionTableFnPtr pRtlDeleteGrowableFunctionTable;
-static Volatile<bool> RtlUnwindFtnsInited;
 
-static Volatile<bool> s_publishingActive;   // Publishing to ETW is turned on
-static Crst*  s_pUnwindInfoTableLock;       // lock protects all public UnwindInfoTable functions
+static bool s_publishingActive;         // Publishing to ETW is turned on
+static Crst* s_pUnwindInfoTableLock;    // lock protects all public UnwindInfoTable functions
 
 #if _DEBUG
 // Fake functions on Win7 checked build to excercize the code paths, they are no-ops
@@ -108,7 +107,6 @@ VOID WINAPI FakeRtlDeleteGrowableFunctionTable (PVOID DynamicTable) {}
 /****************************************************************************/
 // initialize the entry points for new win8 unwind info publishing functions.
 // return true if the initialize is successful (the functions exist)
-
 bool InitUnwindFtns()
 {
     CONTRACTL
@@ -119,35 +117,31 @@ bool InitUnwindFtns()
     CONTRACTL_END;
 
 #ifdef TARGET_WINDOWS
-    if (!RtlUnwindFtnsInited)
+    HINSTANCE hNtdll = GetModuleHandle(W("ntdll.dll"));
+    if (hNtdll != NULL)
     {
-        HINSTANCE hNtdll = GetModuleHandle(W("ntdll.dll"));
-        if (hNtdll != NULL)
-        {
-            void* growFunctionTable = GetProcAddress(hNtdll, "RtlGrowFunctionTable");
-            void* deleteGrowableFunctionTable = GetProcAddress(hNtdll, "RtlDeleteGrowableFunctionTable");
-            void* addGrowableFunctionTable = GetProcAddress(hNtdll, "RtlAddGrowableFunctionTable");
+        void* growFunctionTable = GetProcAddress(hNtdll, "RtlGrowFunctionTable");
+        void* deleteGrowableFunctionTable = GetProcAddress(hNtdll, "RtlDeleteGrowableFunctionTable");
+        void* addGrowableFunctionTable = GetProcAddress(hNtdll, "RtlAddGrowableFunctionTable");
 
-            // All or nothing AddGroableFunctionTable is last (marker)
-            if (growFunctionTable != NULL &&
-                deleteGrowableFunctionTable != NULL &&
-                addGrowableFunctionTable != NULL)
-            {
-                pRtlGrowFunctionTable = (RtlGrowFunctionTableFnPtr) growFunctionTable;
-                pRtlDeleteGrowableFunctionTable = (RtlDeleteGrowableFunctionTableFnPtr) deleteGrowableFunctionTable;
-                pRtlAddGrowableFunctionTable = (RtlAddGrowableFunctionTableFnPtr) addGrowableFunctionTable;
-            }
-            // Don't call FreeLibrary(hNtdll) because GetModuleHandle did *NOT* increment the reference count!
-        }
-        else
+        // All or nothing AddGroableFunctionTable is last (marker)
+        if (growFunctionTable != NULL &&
+            deleteGrowableFunctionTable != NULL &&
+            addGrowableFunctionTable != NULL)
         {
-#if _DEBUG
-            pRtlGrowFunctionTable = FakeRtlGrowFunctionTable;
-            pRtlDeleteGrowableFunctionTable = FakeRtlDeleteGrowableFunctionTable;
-            pRtlAddGrowableFunctionTable = FakeRtlAddGrowableFunctionTable;
-#endif
+            pRtlGrowFunctionTable = (RtlGrowFunctionTableFnPtr) growFunctionTable;
+            pRtlDeleteGrowableFunctionTable = (RtlDeleteGrowableFunctionTableFnPtr) deleteGrowableFunctionTable;
+            pRtlAddGrowableFunctionTable = (RtlAddGrowableFunctionTableFnPtr) addGrowableFunctionTable;
         }
-        RtlUnwindFtnsInited = true;
+        // Don't call FreeLibrary(hNtdll) because GetModuleHandle did *NOT* increment the reference count!
+    }
+    else
+    {
+#if _DEBUG
+        pRtlGrowFunctionTable = FakeRtlGrowFunctionTable;
+        pRtlDeleteGrowableFunctionTable = FakeRtlDeleteGrowableFunctionTable;
+        pRtlAddGrowableFunctionTable = FakeRtlAddGrowableFunctionTable;
+#endif
     }
 #endif // TARGET_WINDOWS
 
@@ -434,7 +428,9 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 }
 
 /*****************************************************************************/
-// turn on the publishing of unwind info.
+// We only do this on amd64 (NOT ARM, because ARM uses frame based stack crawling),
+// We want good stack traces so we need to publish unwind information so ETW can
+// walk the stack.
 /* static */ void UnwindInfoTable::Initialize()
 {
     CONTRACTL
@@ -455,7 +451,23 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     s_publishingActive = true;
 }
 
-#endif // defined(TARGET_AMD64) && !defined(DACCESS_COMPILE)
+#else
+/* static */ void UnwindInfoTable::PublishUnwindInfoForMethod(TADDR baseAddress, T_RUNTIME_FUNCTION* unwindInfo, int unwindInfoCount)
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+/* static */ void UnwindInfoTable::UnpublishUnwindInfoForMethod(TADDR entryPoint)
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+/* static */ void UnwindInfoTable::Initialize()
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+#endif // defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(DACCESS_COMPILE)
 
 #if !defined(DACCESS_COMPILE)
 CodeHeapIterator::CodeHeapIterator(EECodeGenManager* manager, HeapList* heapList, LoaderAllocator* pLoaderAllocatorFilter)
@@ -3363,10 +3375,8 @@ void EECodeGenManager::RemoveJitDataWorker(RemoveJitDataArg const& arg)
         if (pResolver->GetRecordCodePointer() == (void*)codeStart)
             pResolver->SetRecordCodePointer(NULL);
 
-#if defined(TARGET_AMD64)
         // Remove the unwind information (if applicable)
         UnwindInfoTable::UnpublishUnwindInfoForMethod(codeStart);
-#endif // defined(TARGET_AMD64)
 
         HostCodeHeap* pHeap = HostCodeHeap::GetCodeHeap(codeStart);
         FreeHostCodeHeapMemoryWorker(pHeap, (void*)codeStart);
