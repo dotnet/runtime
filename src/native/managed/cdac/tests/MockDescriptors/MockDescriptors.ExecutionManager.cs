@@ -290,13 +290,10 @@ internal partial class MockDescriptors
                 .Concat(_rfBuilder.Types)
                 .ToDictionary();
 
-            // Tests are currently always set to use funclets
-            bool useFunclets = true;
             Globals =
             [
                 (nameof(Constants.Globals.ExecutionManagerCodeRangeMapAddress), ExecutionManagerCodeRangeMapAddress),
                 (nameof(Constants.Globals.StubCodeBlockLast), 0x0Fu),
-                (nameof(Constants.Globals.FeatureEHFunclets), useFunclets ? 1u : 0u),
             ];
             Globals = Globals
                 .Concat(MockDescriptors.HashMap.GetGlobals(Builder.TargetTestHelpers))
