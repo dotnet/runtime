@@ -120,13 +120,26 @@ STDMETHODIMP CCeeGen::AllocateMethodBuffer(ULONG cchBuffer, UCHAR **lpBuffer, UL
         IfFailGo(E_INVALIDARG);
     if (! lpBuffer || ! RVA)
         IfFailGo(E_POINTER);
-    *lpBuffer = (UCHAR*) getIlSection().getBlock(cchBuffer, 4); // Dword align
+
+    uint32_t const Alignment = sizeof(DWORD); // DWORD align
+
+    ULONG cchBufferRequest = cchBuffer;
+
+    // Method offsets of 0 are special in ECMA-335 (See I.9.4 and II.22.26).
+    // In order to be consistent with those sections we avoid returning an RVA
+    // of 0. If the IL section is empty we will add a minimal amount of padding
+    // to avoid RVAs of 0.
+    if (getIlSection().dataLen() == 0)
+        cchBufferRequest += Alignment;
+
+    *lpBuffer = (UCHAR*) getIlSection().getBlock(cchBufferRequest, Alignment);
     IfNullGo(*lpBuffer);
 
-        // have to compute the method offset after getting the block, not
-        // before (since alignment might shift it up
-    // for in-memory, just return address and will calc later
+    // Compute the method offset after getting the block, not
+    // before (since alignment might shift it up
+    // for in-memory, just return address and will calc later.
     methodOffset = getIlSection().dataLen() - cchBuffer;
+    _ASSERTE(methodOffset != 0);
 
     *RVA = methodOffset;
 
@@ -137,11 +150,11 @@ ErrExit:
 STDMETHODIMP CCeeGen::GetMethodBuffer(ULONG RVA, UCHAR **lpBuffer)
 {
     HRESULT hr = E_FAIL;
+    _ASSERTE(RVA != 0);
 
     if (! lpBuffer)
         IfFailGo(E_POINTER);
     *lpBuffer = (UCHAR*)getIlSection().computePointer(RVA);
-
 
 ErrExit:
     if (lpBuffer != NULL && *lpBuffer != 0)

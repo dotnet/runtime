@@ -385,13 +385,14 @@ extern "C" void QCALLTYPE TypeBuilder_SetMethodIL(QCall::ModuleHandle pModule,
     UINT32 totalSize = totalSizeSafe.Value();
     ICeeGenInternal* pGen = pRCW->GetCeeGen();
     BYTE* buf = NULL;
-    ULONG methodRVA;
+    ULONG methodRVA = 0;
     pGen->AllocateMethodBuffer(totalSize, &buf, &methodRVA);
     if (buf == NULL)
         COMPlusThrowOM();
 
     _ASSERTE(buf != NULL);
     _ASSERTE((((size_t) buf) & 3) == 0);   // header is dword aligned
+    _ASSERTE(methodRVA != 0); // Method RVAs should never be 0, since that is reserved in ECMA-335.
 
 #ifdef _DEBUG
     BYTE* endbuf = &buf[totalSize];
