@@ -1475,8 +1475,7 @@ DONE_CALL:
                             varDsc->lvType = call->AsCall()->gtReturnType;
                         }
 
-                        // TODO-Bug: CHECK_SPILL_NONE here looks wrong.
-                        impStoreToTemp(calliSlot, call, CHECK_SPILL_NONE);
+                        impStoreToTemp(calliSlot, call, CHECK_SPILL_ALL);
                         // impStoreToTemp can change src arg list and return type for call that returns struct.
                         var_types type = genActualType(lvaTable[calliSlot].TypeGet());
                         call           = gtNewLclvNode(calliSlot, type);

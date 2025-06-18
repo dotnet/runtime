@@ -2843,7 +2843,7 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
         pModule->GetLoaderAllocator()->GetHighFrequencyHeap()->
             AllocMem(S_SIZE_T(sizeof(StaticFieldAddressArgs))));
 
-    pArgs->staticBaseHelper = (FnStaticBaseHelper)CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)helpFunc);
+    pArgs->staticBaseHelper = CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)helpFunc);
 
     switch(helpFunc)
     {
@@ -2879,8 +2879,14 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
     }
     pArgs->offset = pFD->GetOffset();
 
+    BinderMethodID managedHelperId = fUnbox ? 
+        METHOD__STATICSHELPERS__STATICFIELDADDRESSUNBOX_DYNAMIC :
+        METHOD__STATICSHELPERS__STATICFIELDADDRESS_DYNAMIC;
+
+    MethodDesc *pManagedHelper = CoreLibBinder::GetMethod(managedHelperId);
+
     PCODE pHelper = DynamicHelpers::CreateHelper(pModule->GetLoaderAllocator(), (TADDR)pArgs,
-        fUnbox ? GetEEFuncEntryPoint(JIT_StaticFieldAddressUnbox_Dynamic) : GetEEFuncEntryPoint(JIT_StaticFieldAddress_Dynamic));
+        pManagedHelper->GetMultiCallableAddrOfCode());
 
     amTracker.SuppressRelease();
 
