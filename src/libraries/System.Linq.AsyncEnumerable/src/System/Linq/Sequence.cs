@@ -18,8 +18,11 @@ namespace System.Linq
         /// <param name="step">The amount by which the next value in the sequence should be incremented from the previous value.</param>
         /// <returns>An <see cref="IAsyncEnumerable{T}"/> that contains the sequence.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="start"/> is <see langword="null"/>.</exception>
-        /// <exception cref="ArgumentNullException"><paramref name="step"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="endInclusive"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="step"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="start"/> is NaN.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="endInclusive"/> is NaN.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="step"/> is NaN.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="step"/> is greater than zero but <paramref name="endInclusive"/> is less than <paramref name="start"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="step"/> is less than zero but <paramref name="endInclusive"/> is greater than <paramref name="start"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="step"/> is zero and <paramref name="endInclusive"/> does not equal <paramref name="start"/>.</exception>
