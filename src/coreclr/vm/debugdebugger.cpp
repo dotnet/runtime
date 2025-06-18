@@ -1040,18 +1040,18 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
     // Callbacks into this api are sorted by native offset, but not sorted by IL offset.
     // In addition, there are several special IL offsets that are not actual IL offsets.
 
+    if ((int32_t)pOffsetMapping->ilOffset > pWalkData->greatestILOffsetFound)
+    {
+        // Calculate the greatest IL offset found so far. We use this as the IL offset for epilogs
+        pWalkData->greatestILOffsetFound = (int)pOffsetMapping->ilOffset;
+    }
+
     // Also, ignore all the callsite mappings since they are not relevant for the standard Native-IL mapping
 
     if ((pOffsetMapping->source & (DWORD)ICorDebugInfo::CALL_INSTRUCTION) == (DWORD)ICorDebugInfo::CALL_INSTRUCTION)
     {
         // This is a call instruction mapping, so we don't care about it.
         return 0;
-    }
-
-    if ((int32_t)pOffsetMapping->ilOffset > pWalkData->greatestILOffsetFound)
-    {
-        // Calculate the greatest IL offset found so far. We use this as the IL offset for epilogs
-        pWalkData->greatestILOffsetFound = (int)pOffsetMapping->ilOffset;
     }
 
     if (pWalkData->epilogCase)
