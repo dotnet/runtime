@@ -79,12 +79,7 @@ public:
     // Write a single nibble to the stream.
     void WriteNibble(NIBBLE i)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
+        WRAPPER_NO_CONTRACT;
 
         _ASSERTE(i <= 0xF);
 
@@ -111,12 +106,7 @@ public:
 
     void WriteEncodedU32(DWORD dw)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
+        WRAPPER_NO_CONTRACT;
 
         // Fast path for common small inputs
         if (dw <= 63)
@@ -148,12 +138,7 @@ public:
     // Write a signed 32 bit value.
     void WriteEncodedI32(int x)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
+        WRAPPER_NO_CONTRACT;
 
         DWORD dw = (x < 0) ? (((-x) << 1) + 1) : (x << 1);
         WriteEncodedU32(dw);
@@ -322,13 +307,7 @@ public:
 
     FORCEINLINE NIBBLE ReadNibble_NoThrow()
     {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            SUPPORTS_DAC;
-        }
-        CONTRACTL_END;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         if (m_nibblesInCurrentNibbleData == 0)
         {
@@ -355,13 +334,7 @@ public:
     // from NibbleWriter::WriteEncodedU32.
     DWORD ReadEncodedU32_NoThrow()
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            SUPPORTS_DAC;
-        }
-        CONTRACTL_END;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         DWORD dw = 0;
 
@@ -411,13 +384,7 @@ public:
 
     int ReadEncodedI32_NoThrow()
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            SUPPORTS_DAC;
-        }
-        CONTRACTL_END;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         DWORD dw = ReadEncodedU32_NoThrow();
         int x = dw >> 1;
@@ -446,13 +413,7 @@ public:
 
     DWORD ReadUnencodedU32_NoThrow()
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            SUPPORTS_DAC;
-        }
-        CONTRACTL_END;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         DWORD result = 0;
 
