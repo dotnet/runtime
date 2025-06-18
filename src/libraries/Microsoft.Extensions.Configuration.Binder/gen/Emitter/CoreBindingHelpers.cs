@@ -494,47 +494,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         if ({{Identifier.configuration}} is {{Identifier.ConfigurationSection}} {{Identifier.section}})
                         {
-                            var result = {{Identifier.section}}.TryGetValue({{Identifier.key}}, out {{Identifier.value}});
-                            if (!DisallowNullConfigSwitch)
-                            {
-                                return result;
-                            }
-                        }
-                        else if ({{Identifier.key}} != null)
-                        {
-                            {{Identifier.value}} = {{Identifier.configuration}}[{{Identifier.key}}];
-                        }
-                        else
-                        {
-                            {{Identifier.value}} = {{Identifier.configuration}} is {{Identifier.IConfigurationSection}} sec ? sec.Value : null;
+                            return {{Identifier.section}}.TryGetValue({{Identifier.key}}, out {{Identifier.value}});
                         }
 
+                        {{Identifier.value}} = {{Identifier.key}} != null ? {{Identifier.configuration}}[{{Identifier.key}}] : {{Identifier.configuration}} is {{Identifier.IConfigurationSection}} sec ? sec.Value : null;
                         return {{Identifier.value}} != null;
-                    }
-
-                    /// <summary>Config switch to have the compatibility mode having the binder treat null configuration values as missing.</summary>
-                    private static bool DisallowNullConfigSwitch { get; } = GetBooleanConfig("Microsoft.Configuration.DisallowNull", "DOTNET_MICROSOFT_CONFIGURATION_DISALLOWNULL");
-
-                    private static bool GetBooleanConfig(string switchName, string envVariable, bool defaultValue = false)
-                    {
-                        if (global::System.AppContext.TryGetSwitch(switchName, out bool value))
-                        {
-                            return value;
-                        }
-
-                        if (global::System.Environment.GetEnvironmentVariable(envVariable) is string str)
-                        {
-                            if (str == "1" || string.Equals(str, bool.TrueString, StringComparison.OrdinalIgnoreCase))
-                            {
-                                return true;
-                            }
-                            if (str == "0" || string.Equals(str, bool.FalseString, StringComparison.OrdinalIgnoreCase))
-                            {
-                                return false;
-                            }
-                        }
-
-                        return defaultValue;
                     }
                     """);
             }
@@ -1015,7 +979,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             if (complexType is ArraySpec arraySpec && canSet)
                             {
                                 string valueIdentifier = GetIncrementalIdentifier(Identifier.value);
-                                EmitStartBlock($@"if (!DisallowNullConfigSwitch && {memberAccessExpr} is null && {Identifier.TryGetConfigurationValue}({configSection}, {Identifier.key}: null, out string? {valueIdentifier}) && {valueIdentifier} == string.Empty)");
+                                EmitStartBlock($@"if ({memberAccessExpr} is null && {Identifier.TryGetConfigurationValue}({configSection}, {Identifier.key}: null, out string? {valueIdentifier}) && {valueIdentifier} == string.Empty)");
                                 _writer.WriteLine($"{memberAccessExpr} = global::System.{Identifier.Array}.Empty<{arraySpec.ElementTypeRef.FullyQualifiedName}>();");
                                 EmitEndBlock();
                             }
@@ -1223,7 +1187,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     // Special case ByteArray when having empty string configuration value as we need to assign empty byte array at that time.
                     if (typeKind == StringParsableTypeKind.ByteArray)
                     {
-                        EmitStartBlock($"if (!DisallowNullConfigSwitch && {sectionValueExpr} == string.Empty)");
+                        EmitStartBlock($"if ({sectionValueExpr} == string.Empty)");
                         writeOnSuccess?.Invoke(parsedValueExpr);
                         EmitEndBlock();
                         conditionPrefix = "else ";

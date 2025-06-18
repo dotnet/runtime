@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="key">The configuration key. If <c>null</c>, the value of the section itself is returned.</param>
         /// <param name="value">When this method returns, contains the value of the section if it exists; otherwise, <c>null</c>.</param>
         /// <returns><c>true</c> if the value was found; otherwise, <c>false</c>.</returns>
-        public virtual bool TryGetValue(string? key, out string? value)
+        public bool TryGetValue(string? key, out string? value)
         {
             string path = key is null ? Path : Path + ConfigurationPath.KeyDelimiter + key;
             if (_root.TryGetConfiguration(path, out value))

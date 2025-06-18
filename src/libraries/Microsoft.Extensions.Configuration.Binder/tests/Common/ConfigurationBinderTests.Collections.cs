@@ -20,7 +20,7 @@ namespace Microsoft.Extensions
 {
     public sealed partial class ConfigurationBinderCollectionTests : ConfigurationBinderTestsBase
     {
-        public ConfigurationBinderCollectionTests(ITestOutputHelper output) : base(output)
+        public ConfigurationBinderCollectionTests() : base()
         {
         }
 
@@ -66,7 +66,7 @@ namespace Microsoft.Extensions
             var list = new List<string>();
             config.GetSection("StringList").Bind(list);
 
-            Assert.Equal(DisallowNullConfigSwitch ? [] : [ null, null, null, null ], list);
+            Assert.Equal([ null, null, null, null ], list);
         }
 
         [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
@@ -2187,19 +2187,10 @@ namespace Microsoft.Extensions
 
             var options = config.Get<ComplexOptions>()!;
 
-            if (DisallowNullConfigSwitch)
-            {
-                Assert.Equal(2, options.InstantiatedIEnumerable.Count());
-                Assert.Equal("Yo1", options.InstantiatedIEnumerable.ElementAt(0));
-                Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(1));
-            }
-            else
-            {
-                Assert.Equal(3, options.InstantiatedIEnumerable.Count());
-                Assert.Null(options.InstantiatedIEnumerable.ElementAt(0));
-                Assert.Equal("Yo1", options.InstantiatedIEnumerable.ElementAt(1));
-                Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(2));
-            }
+            Assert.Equal(3, options.InstantiatedIEnumerable.Count());
+            Assert.Null(options.InstantiatedIEnumerable.ElementAt(0));
+            Assert.Equal("Yo1", options.InstantiatedIEnumerable.ElementAt(1));
+            Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(2));
         }
 
         [Fact]

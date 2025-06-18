@@ -10,7 +10,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using Microsoft.DotNet.RemoteExecutor;
 #if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
 #endif
@@ -27,22 +26,17 @@ namespace Microsoft.Extensions
 {
     public abstract class ConfigurationBinderTestsBase
     {
-        internal readonly ITestOutputHelper _output;
-
-        public ConfigurationBinderTestsBase(ITestOutputHelper output)
+        public ConfigurationBinderTestsBase()
         {
-            _output = output;
 #if LAUNCH_DEBUGGER
 if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launch(); }
 #endif
         }
-
-        public static bool DisallowNullConfigSwitch { get; } = AppContextSwitchHelper.GetBooleanConfig("Microsoft.Configuration.DisallowNull", "DOTNET_MICROSOFT_CONFIGURATION_DISALLOWNULL");
     }
 
     public partial class ConfigurationBinderTests : ConfigurationBinderTestsBase
     {
-        public ConfigurationBinderTests(ITestOutputHelper output) : base(output)
+        public ConfigurationBinderTests() : base()
         {
         }
 
@@ -2862,7 +2856,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         internal class TestSettings { public Dictionary<DayOfWeek, string[]> Values { get; init; } = []; }
 #endif
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Fact]
         public void BindWithNullValues()
         {
             //
@@ -2889,16 +2883,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             Assert.NotNull(result);
             Assert.Equal("New Value!", result.StringProperty1);
-            if (DisallowNullConfigSwitch)
-            {
-                Assert.Empty(result.StringProperty2);
-                Assert.Equal(456, result.IntProperty2);
-            }
-            else
-            {
-                Assert.Null(result.StringProperty2);
-                Assert.Null(result.IntProperty2);
-            }
+            Assert.Null(result.StringProperty2);
+            Assert.Null(result.IntProperty2);
             Assert.Equal("", result.StringProperty3);
             Assert.Equal(42, result.IntProperty1);
 
@@ -2924,71 +2910,13 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             Assert.Equal("New Value!", inMemoryResult.StringProperty1);
 
-            if (DisallowNullConfigSwitch)
-            {
-                Assert.Equal("Initial Value 2", inMemoryResult.StringProperty2);
-                Assert.Equal(456, inMemoryResult.IntProperty2);
-            }
-            else
-            {
-                Assert.Null(inMemoryResult.StringProperty2);
-                Assert.Null(inMemoryResult.IntProperty2);
-            }
+            Assert.Null(inMemoryResult.StringProperty2);
+            Assert.Null(inMemoryResult.IntProperty2);
             Assert.Equal("", inMemoryResult.StringProperty3);
             Assert.Equal(42, inMemoryResult.IntProperty1);
-
-            //
-            // Test with forcing the config switch on
-            //
-
-            ProcessStartInfo psi = new ProcessStartInfo() { UseShellExecute = false };
-            psi.Environment.Add("DOTNET_MICROSOFT_CONFIGURATION_DISALLOWNULL", "true");
-
-            RemoteExecutor.Invoke((jsonConfiguration) =>
-            {
-                var configuration1 = new ConfigurationBuilder()
-                            .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfiguration)))
-                            .Build().GetSection("NullConfiguration");
-
-                bool b = (bool)typeof(ConfigurationBinder).GetProperty("DisallowNullConfigSwitch", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
-                Assert.True(b, "DisallowNullConfigSwitch should be true when DOTNET_MICROSOFT_CONFIGURATION_DISALLOWNULL is set to true.");
-                NullConfiguration result1 = new NullConfiguration();
-                result1.IntProperty2 = 10; // Initialize to non-null so it should fail after binding.
-                Assert.Equal(10, result1.IntProperty2);
-
-                configuration1.Bind(result1);
-
-                Assert.Equal("New Value!", result1.StringProperty1);
-                Assert.Equal("", result1.StringProperty2); // Compatibility case: empty string is used for null value.
-                Assert.Equal("", result1.StringProperty3);
-
-                Assert.Equal(42, result1.IntProperty1);
-                Assert.Equal(10, result1.IntProperty2); // Compatibility case: empty string is used for null value. No binding done in that case for int? type.
-
-
-                var inMemoryConfiguration1 = new ConfigurationBuilder()
-                    .AddInMemoryCollection(new Dictionary<string, string?>
-                    {
-                        { "NullConfiguration:StringProperty1", "New Value!" },
-                        { "NullConfiguration:StringProperty2", null },
-                        { "NullConfiguration:StringProperty3", "" },
-                        { "NullConfiguration:IntProperty1", "42" },
-                        { "NullConfiguration:IntProperty2", null }
-                    })
-                    .Build().GetSection("NullConfiguration");
-
-                NullConfiguration inMemoryResult1 = inMemoryConfiguration1.Get<NullConfiguration>();
-
-                Assert.NotNull(inMemoryResult1);
-                Assert.Equal("New Value!", inMemoryResult1.StringProperty1);
-                Assert.Equal("Initial Value 2", inMemoryResult1.StringProperty2); // Compatibility case: null value treated as missing and not bound.
-                Assert.Equal("", inMemoryResult1.StringProperty3);
-                Assert.Equal(42, inMemoryResult1.IntProperty1);
-                Assert.Equal(456, inMemoryResult1.IntProperty2); // Compatibility case: null value treated as missing and not bound.
-            }, jsonConfig, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Fact]
         public void BindArraysWithNullAndOtherValues()
         {
             // Arrays like other collection when binding, it will merge the existing values with the new ones we get from the configuration.
@@ -3019,16 +2947,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(["Value1", "Value2"], instance.StringArray1);
             Assert.Null(instance.StringArray2);
 
-            if (DisallowNullConfigSwitch)
-            {
-                Assert.Null(instance.StringArray3);
-                Assert.Null(instance.ByteArray2); // empty string should result in empty array
-            }
-            else
-            {
-                Assert.Empty(instance.StringArray3); // empty string should result in empty array
-                Assert.Empty(instance.ByteArray2); // empty string should result in empty array
-            }
+            Assert.Empty(instance.StringArray3); // empty string should result in empty array
+            Assert.Empty(instance.ByteArray2); // empty string should result in empty array
 
             Assert.Null(instance.ByteArray1);
             Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], instance.ByteArray3);
@@ -3037,16 +2957,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             configuration.Bind(instance);
             Assert.Equal(["Value1", "Value2", "Value1", "Value2"], instance.StringArray1);
             Assert.Null(instance.StringArray2);
-            if (DisallowNullConfigSwitch)
-            {
-                Assert.Null(instance.StringArray3); // empty string should result in empty array
-                Assert.Null(instance.ByteArray2); // empty string should result in empty array
-            }
-            else
-            {
-                Assert.Empty(instance.StringArray3); // empty string should result in empty array
-                Assert.Empty(instance.ByteArray2); // empty string should result in empty array
-            }
+            Assert.Empty(instance.StringArray3); // empty string should result in empty array
+            Assert.Empty(instance.ByteArray2); // empty string should result in empty array
 
             Assert.Null(instance.ByteArray1);
 #if BUILDING_SOURCE_GENERATOR_TESTS
@@ -3078,16 +2990,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             inMemoryConfiguration.Bind(inMemoryInstance);
             Assert.Equal(["Value1", "Value2"], inMemoryInstance.StringArray1);
             Assert.Null(inMemoryInstance.StringArray2);
-            if (DisallowNullConfigSwitch)
-            {
-                Assert.Null(inMemoryInstance.StringArray3); // empty string should result in empty array
-                Assert.Null(inMemoryInstance.ByteArray2); // empty string should result in empty array
-            }
-            else
-            {
-                Assert.Empty(inMemoryInstance.StringArray3); // empty string should result in empty array
-                Assert.Empty(inMemoryInstance.ByteArray2); // empty string should result in empty array
-            }
+            Assert.Empty(inMemoryInstance.StringArray3); // empty string should result in empty array
+            Assert.Empty(inMemoryInstance.ByteArray2); // empty string should result in empty array
 
             Assert.Null(inMemoryInstance.ByteArray1);
             Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], inMemoryInstance.ByteArray3);
@@ -3096,16 +3000,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             inMemoryConfiguration.Bind(inMemoryInstance);
             Assert.Equal(["Value1", "Value2", "Value1", "Value2"], inMemoryInstance.StringArray1);
             Assert.Null(inMemoryInstance.StringArray2);
-            if (DisallowNullConfigSwitch)
-            {
-                Assert.Null(inMemoryInstance.StringArray3); // empty string should result in empty array
-                Assert.Null(inMemoryInstance.ByteArray2); // empty string should result in empty array
-            }
-            else
-            {
-                Assert.Empty(inMemoryInstance.StringArray3); // empty string should result in empty array
-                Assert.Empty(inMemoryInstance.ByteArray2); // empty string should result in empty array
-            }
+            Assert.Empty(inMemoryInstance.StringArray3); // empty string should result in empty array
+            Assert.Empty(inMemoryInstance.ByteArray2); // empty string should result in empty array
 
             Assert.Null(inMemoryInstance.ByteArray1);
 #if BUILDING_SOURCE_GENERATOR_TESTS
@@ -3115,96 +3011,6 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 #else
             Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], instance.ByteArray3);
 #endif
-            //
-            // Test with the config switch on
-            //
-
-            ProcessStartInfo psi = new ProcessStartInfo() { UseShellExecute = false };
-            psi.Environment.Add("DOTNET_MICROSOFT_CONFIGURATION_DISALLOWNULL", "true");
-
-            RemoteExecutor.Invoke((jsonConfiguration) =>
-            {
-                var configuration1 = new ConfigurationBuilder()
-                            .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfiguration)))
-                            .Build().GetSection("ArraysContainer");
-
-                ArraysContainer instance1 = new(); // all properties are initialized to null.
-                configuration1.Bind(instance1);
-
-                Assert.NotNull(instance1);
-                Assert.Equal(["Value1", "Value2"], instance1.StringArray1);
-                Assert.Null(instance1.StringArray2);
-                Assert.Null(instance1.StringArray3);
-
-                Assert.Null(instance1.ByteArray1);
-                Assert.Null(instance1.ByteArray2);
-                Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], instance1.ByteArray3);
-
-                // Bind one more time and ensure the values are accumulated correctly.
-                configuration1.Bind(instance1);
-                Assert.Equal(["Value1", "Value2", "Value1", "Value2"], instance1.StringArray1);
-                Assert.Null(instance1.StringArray2);
-                Assert.Null(instance1.StringArray3); // empty string should result in empty array
-
-                Assert.Null(instance1.ByteArray1);
-                Assert.Null(instance1.ByteArray2); // empty string should result in empty array
-#if BUILDING_SOURCE_GENERATOR_TESTS
-                // Source gen has different behavior with the byte array which should be addressed later
-                // Source gen override the existing array instead of merging the values.
-                Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], instance1.ByteArray3);
-#else
-                Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], instance1.ByteArray3);
-#endif
-                // Test the same accumulation behavior with in-memory configuration
-                var inMemoryConfiguration1 = new ConfigurationBuilder()
-                    .AddInMemoryCollection(new Dictionary<string, string?>
-                    {
-                        // String arrays - use indexed keys for array elements
-                        { "ArraysContainer:StringArray1:0", "Value1" },
-                        { "ArraysContainer:StringArray1:1", "Value2" },
-                        { "ArraysContainer:StringArray2", null },
-                        { "ArraysContainer:StringArray3", "" },
-
-                        // Byte arrays
-                        { "ArraysContainer:ByteArray1", null },
-                        { "ArraysContainer:ByteArray2", "" },
-                        { "ArraysContainer:ByteArray3", "AAECAwQFBgcICQo=" } // encode byte values [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-                    })
-                    .Build().GetSection("ArraysContainer");
-
-                ArraysContainer inMemoryInstance1 = new();
-                inMemoryConfiguration1.Bind(inMemoryInstance1);
-                Assert.Equal(["Value1", "Value2"], inMemoryInstance1.StringArray1);
-                Assert.Null(inMemoryInstance1.StringArray2);
-                Assert.Null(inMemoryInstance1.StringArray3); // empty string should result in empty array
-                Assert.Null(inMemoryInstance1.ByteArray2); // empty string should result in empty array
-
-                Assert.Null(inMemoryInstance1.ByteArray1);
-                Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], inMemoryInstance1.ByteArray3);
-
-                // Bind one more time and ensure the values are accumulated correctly.
-                inMemoryConfiguration1.Bind(inMemoryInstance1);
-                Assert.Equal(["Value1", "Value2", "Value1", "Value2"], inMemoryInstance1.StringArray1);
-                Assert.Null(inMemoryInstance1.StringArray2);
-                Assert.Null(inMemoryInstance1.StringArray3); // empty string should result in empty array
-                Assert.Null(inMemoryInstance1.ByteArray2); // empty string should result in empty array
-
-                Assert.Null(inMemoryInstance1.ByteArray1);
-#if BUILDING_SOURCE_GENERATOR_TESTS
-                // Source gen has different behavior with the byte array which should be addressed later
-                // Source gen override the existing array instead of merging the values.
-                Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], inMemoryInstance1.ByteArray3);
-#else
-                Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], inMemoryInstance1.ByteArray3);
-#endif
-            }, jsonConfig, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
-        }
-
-        [Fact]
-        public void DisplayDisallowNullConfigSwitchValue()
-        {
-            _output.WriteLine($"DisallowNullConfigSwitch: {DisallowNullConfigSwitch}");
-            Console.WriteLine($"DisallowNullConfigSwitch: {DisallowNullConfigSwitch}");
         }
     }
 }

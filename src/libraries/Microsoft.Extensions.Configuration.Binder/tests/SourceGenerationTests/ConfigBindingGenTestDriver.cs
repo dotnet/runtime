@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
-        public ConfigurationBindingGeneratorTests(ITestOutputHelper output) : base(output)
+        public ConfigurationBindingGeneratorTests() : base()
         {
         }
 

@@ -15,7 +15,6 @@ namespace Microsoft.Extensions.Configuration.Json
 
         private readonly Dictionary<string, string?> _data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         private readonly Stack<string> _paths = new Stack<string>();
-        private static bool DisallowNullConfigSwitch { get; } = AppContextSwitchHelper.GetBooleanConfig("Microsoft.Configuration.DisallowNull", "DOTNET_MICROSOFT_CONFIGURATION_DISALLOWNULL");
 
         public static IDictionary<string, string?> Parse(Stream input)
             => new JsonConfigurationFileParser().ParseStream(input);
@@ -83,7 +82,7 @@ namespace Microsoft.Extensions.Configuration.Json
         {
             if (isEmpty && _paths.Count > 0)
             {
-                _data[_paths.Peek()] = DisallowNullConfigSwitch ? null : string.Empty;
+                _data[_paths.Peek()] = string.Empty;
             }
         }
 
@@ -111,7 +110,7 @@ namespace Microsoft.Extensions.Configuration.Json
                     {
                         throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key));
                     }
-                    _data[key] = !DisallowNullConfigSwitch && value.ValueKind == JsonValueKind.Null ? null : value.ToString();
+                    _data[key] = value.ValueKind == JsonValueKind.Null ? null : value.ToString();
                     break;
 
                 default:

@@ -64,47 +64,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             if (configuration is ConfigurationSection section)
             {
-                var result = section.TryGetValue(key, out value);
-                if (!DisallowNullConfigSwitch)
-                {
-                    return result;
-                }
-            }
-            else if (key != null)
-            {
-                value = configuration[key];
-            }
-            else
-            {
-                value = configuration is IConfigurationSection sec ? sec.Value : null;
+                return section.TryGetValue(key, out value);
             }
         
+            value = key != null ? configuration[key] : configuration is IConfigurationSection sec ? sec.Value : null;
             return value != null;
-        }
-        
-        /// <summary>Config switch to have the compatibility mode having the binder treat null configuration values as missing.</summary>
-        private static bool DisallowNullConfigSwitch { get; } = GetBooleanConfig("Microsoft.Configuration.DisallowNull", "DOTNET_MICROSOFT_CONFIGURATION_DISALLOWNULL");
-        
-        private static bool GetBooleanConfig(string switchName, string envVariable, bool defaultValue = false)
-        {
-            if (global::System.AppContext.TryGetSwitch(switchName, out bool value))
-            {
-                return value;
-            }
-        
-            if (global::System.Environment.GetEnvironmentVariable(envVariable) is string str)
-            {
-                if (str == "1" || string.Equals(str, bool.TrueString, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-                if (str == "0" || string.Equals(str, bool.FalseString, StringComparison.OrdinalIgnoreCase))
-                {
-                    return false;
-                }
-            }
-        
-            return defaultValue;
         }
 
         public static bool ParseBool(string value, string? path)

@@ -23,7 +23,6 @@ namespace Microsoft.Extensions.Configuration
         private const string TrimmingWarningMessage = "In case the type is non-primitive, the trimmer cannot statically analyze the object's type so its members may be trimmed.";
         private const string InstanceGetTypeTrimmingWarningMessage = "Cannot statically analyze the type of instance so its members may be trimmed";
         private const string PropertyTrimmingWarningMessage = "Cannot statically analyze property.PropertyType so its members may be trimmed.";
-        private static bool DisallowNullConfigSwitch { get; } = AppContextSwitchHelper.GetBooleanConfig("Microsoft.Configuration.DisallowNull", "DOTNET_MICROSOFT_CONFIGURATION_DISALLOWNULL");
 
         /// <summary>
         /// Attempts to bind the configuration instance to a new instance of type T.
@@ -312,7 +311,7 @@ namespace Microsoft.Extensions.Configuration
             // For property binding, there are some cases when HasNewValue is not set in BindingPoint while a non-null Value inside that object can be retrieved from the property getter.
             // As example, when binding a property which not having a configuration entry matching this property and the getter can initialize the Value.
             // It is important to call the property setter as the setters can have a logic adjusting the Value.
-            if (!propertyBindingPoint.IsReadOnly && (propertyBindingPoint.Value is not null || (propertyBindingPoint.HasNewValue && !DisallowNullConfigSwitch)))
+            if (!propertyBindingPoint.IsReadOnly && (propertyBindingPoint.Value is not null || (propertyBindingPoint.HasNewValue)))
             {
                 property.SetValue(instance, propertyBindingPoint.Value);
             }
@@ -343,7 +342,7 @@ namespace Microsoft.Extensions.Configuration
             string? configValue;
             bool isConfigurationExist;
 
-            if (!DisallowNullConfigSwitch && config is ConfigurationSection configSection)
+            if (config is ConfigurationSection configSection)
             {
                 section = configSection;
                 isConfigurationExist = configSection.TryGetValue(key:null, out configValue);
@@ -516,7 +515,7 @@ namespace Microsoft.Extensions.Configuration
                     else if (isConfigurationExist && bindingPoint.Value is null)
                     {
                         // Don't override the existing array in bindingPoint.Value if it is already set.
-                        if (!DisallowNullConfigSwitch && (type.IsArray || IsImmutableArrayCompatibleInterface(type)))
+                        if (type.IsArray || IsImmutableArrayCompatibleInterface(type))
                         {
                             // When having configuration value set to empty string, we create an empty array
                             bindingPoint.TrySetValue(configValue is null ? null : Array.CreateInstance(type.GetElementType()!, 0));
@@ -1013,9 +1012,9 @@ namespace Microsoft.Extensions.Configuration
             {
                 try
                 {
-                    if (value is not null && (!DisallowNullConfigSwitch || value != string.Empty))
+                    if (value is not null )
                     {
-                        result = Convert.FromBase64String(value);
+                        result = value == string.Empty ? Array.Empty<byte>() : Convert.FromBase64String(value);
                     }
                 }
                 catch (FormatException ex)
