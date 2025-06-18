@@ -2210,6 +2210,11 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
         case NI_System_Type_op_Inequality:
         case NI_System_Type_GetTypeFromHandle:
         case NI_System_Type_GetGenericTypeDefinition:
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable:
             return false;
 
         // HACK: These two are special marker IDs so that we still get the inlining profitability boost
@@ -2223,8 +2228,8 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             const char* className = NULL;
             const char* namespaceName = NULL;
             const char* methodName = m_compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, NULL, 0);
-            printf("ERROR: Intrinsic not implemented in interpreter: %s.%s.%s\n", namespaceName, className, methodName);
-            assert(!"EmitNamedIntrinsicCall not implemented intrinsic");
+            printf("WARNING: Intrinsic not implemented in interpreter: %s.%s.%s\n", namespaceName, className, methodName);
+            // assert(!"EmitNamedIntrinsicCall not implemented intrinsic");
             return false;
         }
     }
