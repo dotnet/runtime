@@ -2132,6 +2132,15 @@ int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
 
 bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
 {
+    if ((ni >= NI_SYSTEM_MATH_START) && (ni <= NI_SYSTEM_MATH_END))
+        return false;
+    if ((ni >= NI_PRIMITIVE_START) && (ni <= NI_PRIMITIVE_END))
+        return false;
+
+    // FIXME
+    if ((ni >= NI_SRCS_UNSAFE_START) && (ni <= NI_SRCS_UNSAFE_END))
+        return false;
+
     switch (ni)
     {
         case NI_IsSupported_False:
@@ -2201,6 +2210,12 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
         case NI_System_Type_op_Inequality:
         case NI_System_Type_GetTypeFromHandle:
         case NI_System_Type_GetGenericTypeDefinition:
+            return false;
+
+        // HACK: These two are special marker IDs so that we still get the inlining profitability boost
+        case NI_System_Numerics_Intrinsic:
+        case NI_System_Runtime_Intrinsics_Intrinsic:
+            // Interpreter-TODO: Inlining profitability boost (if we ever do inlining)
             return false;
 
         default:
@@ -2433,11 +2448,13 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             // if (m_methodHnd == callInfo.hMethod)
             {
                 NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
-                assert(ni != NI_Illegal);
-                if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
+                if (ni != NI_Illegal)
                 {
-                    m_ip += 5;
-                    return;
+                    if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
+                    {
+                        m_ip += 5;
+                        return;
+                    }
                 }
             }
         }
