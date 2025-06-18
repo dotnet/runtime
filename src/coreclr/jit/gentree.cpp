@@ -20868,14 +20868,20 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps        op,
 
     assert(op2 != nullptr);
 
+    bool isOp2SimdType = (genActualType(op2) == genActualType(type)) || (genActualType(op2) == genActualType(simdBaseType)) ||
+        (op2->TypeIs(TYP_SIMD12) && (type == TYP_SIMD16));
+
     if ((op == GT_LSH) || (op == GT_RSH) || (op == GT_RSZ))
     {
-        assert(genActualType(op2) == TYP_INT);
+        assert((genActualType(op2) == TYP_INT)
+#if defined (TARGET_ARM64)
+        || (isScalable && isOp2SimdType)
+#endif
+        );
     }
     else
     {
-        assert((genActualType(op2) == genActualType(type)) || (genActualType(op2) == genActualType(simdBaseType)) ||
-               (op2->TypeIs(TYP_SIMD12) && (type == TYP_SIMD16)));
+        assert(isOp2SimdType);
     }
 
     bool     needsReverseOps = false;
@@ -20932,6 +20938,13 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps        op,
                 }
 #endif // TARGET_ARM64
             }
+#ifdef TARGET_ARM64
+            else if (UseSveForType(type) && isScalable && varTypeIsSIMD(op2->TypeGet()))
+            {
+                // SVE already have variant that operates on vector operands.
+                // Do not do anything.
+            }
+#endif
             else
             {
                 op2 = gtNewOperNode(GT_AND, TYP_INT, op2, gtNewIconNode(shiftCountMask));
