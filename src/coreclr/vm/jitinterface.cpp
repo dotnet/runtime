@@ -10615,8 +10615,9 @@ bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
     EX_CATCH
     {
         success = false;
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 
 #endif
 
@@ -11534,7 +11535,7 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry)
     {
         // Just ignore exceptions here. The debugger's structures will still be in a consistent state.
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     EE_TO_JIT_TRANSITION();
 }
@@ -12104,13 +12105,13 @@ InfoAccessType CEECodeGenInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scop
     }
     else
     {
-        // If ConstructStringLiteral returns a pinned reference we can return it by value (IAT_VALUE)
-        void* ppPinnedString = nullptr;
-        STRINGREF* ptr = ConstructStringLiteral(scopeHnd, metaTok, &ppPinnedString);
+        // If ResolveStringRef returns a pinned reference we can return it by value (IAT_VALUE)
+        void* pPinnedString = nullptr;
+        STRINGREF* ptr = ((Module*)scopeHnd)->ResolveStringRef(metaTok, &pPinnedString);
 
-        if (ppPinnedString != nullptr)
+        if (pPinnedString != nullptr)
         {
-            *ppValue = ppPinnedString;
+            *ppValue = pPinnedString;
             result = IAT_VALUE;
         }
         else
@@ -14284,7 +14285,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     {
                         fail = true;
                     }
-                    EX_END_CATCH(SwallowAllExceptions)
+                    EX_END_CATCH
 
                 }
                 else
@@ -14307,7 +14308,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     {
                         fail = true;
                     }
-                    EX_END_CATCH(SwallowAllExceptions)
+                    EX_END_CATCH
                 }
                 else
                 {

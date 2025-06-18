@@ -526,7 +526,7 @@ void BaseBucketParamsManager::GetAppTimeStamp(_Out_writes_(maxLength) WCHAR* tar
     {
         wcsncpy_s(targetParam, maxLength, W("missing"), _TRUNCATE);
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 void BaseBucketParamsManager::GetModuleName(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
@@ -661,7 +661,7 @@ void BaseBucketParamsManager::GetModuleTimeStamp(_Out_writes_(maxLength) WCHAR* 
         {
             failed = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     if (!pModule || failed)
@@ -768,7 +768,7 @@ void BaseBucketParamsManager::GetExceptionName(_Out_writes_(maxLength) WCHAR* ta
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
 
         _ASSERTE(pExceptionName);
@@ -873,7 +873,7 @@ DWORD BaseBucketParamsManager::GetILOffset()
         {
             // Swallow the exception, and just use MAXDWORD.
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     return ilOffset;
