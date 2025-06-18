@@ -149,6 +149,7 @@ namespace ILCompiler
             _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceInterface), "Not tracked by scanner");
             _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceClass), "Not tracked by scanner");
             _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.IsInstanceOfException), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(_nodeFactory.MethodEntrypoint(_nodeFactory.TypeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowFeatureBodyRemoved")), "Substitution for methods removed based on scanning");
 
             _dependencyGraph.ComputeMarkedNodes();
 
