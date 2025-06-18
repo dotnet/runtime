@@ -1818,7 +1818,7 @@ HRESULT RegMeta::_DefineTypeDef(        // S_OK or error.
 
 
 
-    _ASSERTE(IsTdAutoLayout(dwTypeDefFlags) || IsTdSequentialLayout(dwTypeDefFlags) || IsTdExplicitLayout(dwTypeDefFlags));
+    _ASSERTE(IsTdAutoLayout(dwTypeDefFlags) || IsTdSequentialLayout(dwTypeDefFlags) || IsTdExplicitLayout(dwTypeDefFlags) || IsTdExtendedLayout(dwTypeDefFlags));
 
     _ASSERTE(ptd);
     _ASSERTE(TypeFromToken(tkExtends) == mdtTypeRef || TypeFromToken(tkExtends) == mdtTypeDef || TypeFromToken(tkExtends) == mdtTypeSpec

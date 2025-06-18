@@ -158,6 +158,7 @@ namespace System.Reflection.TypeLoading
                     TypeAttributes.ExplicitLayout => LayoutKind.Explicit,
                     TypeAttributes.AutoLayout => LayoutKind.Auto,
                     TypeAttributes.SequentialLayout => LayoutKind.Sequential,
+                    TypeAttributes.ExtendedLayout => LayoutKind.Extended,
                     _ => LayoutKind.Auto,
                 };
                 CharSet charSet = (attributes & TypeAttributes.StringFormatMask) switch
