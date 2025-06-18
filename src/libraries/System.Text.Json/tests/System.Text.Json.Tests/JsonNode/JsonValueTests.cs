@@ -547,24 +547,27 @@ namespace System.Text.Json.Nodes.Tests
 
         [Theory]
         [MemberData(nameof(GetPrimitiveTypes))]
-        public static void PrimitiveTypes_ReturnExpectedTypeKind<T>(T value, JsonValueKind expectedKind)
+        public static void PrimitiveTypes_ReturnExpectedTypeKind<T>(WrappedT<T> wrapped, JsonValueKind expectedKind)
         {
+            T value = wrapped.Value;
             JsonNode node = JsonValue.Create(value);
             Assert.Equal(expectedKind, node.GetValueKind());
         }
 
         [Theory]
         [MemberData(nameof(GetPrimitiveTypes))]
-        public static void PrimitiveTypes_EqualThemselves<T>(T value, JsonValueKind _)
+        public static void PrimitiveTypes_EqualThemselves<T>(WrappedT<T> wrapped, JsonValueKind _)
         {
+            T value = wrapped.Value;
             JsonNode node = JsonValue.Create(value);
             Assert.True(JsonNode.DeepEquals(node, node));
         }
 
         [Theory]
         [MemberData(nameof(GetPrimitiveTypes))]
-        public static void PrimitiveTypes_EqualClonedValue<T>(T value, JsonValueKind _)
+        public static void PrimitiveTypes_EqualClonedValue<T>(WrappedT<T> wrapped, JsonValueKind _)
         {
+            T value = wrapped.Value;
             JsonNode node = JsonValue.Create(value);
             JsonNode clone = node.DeepClone();
 
@@ -575,14 +578,54 @@ namespace System.Text.Json.Nodes.Tests
 
         [Theory]
         [MemberData(nameof(GetPrimitiveTypes))]
-        public static void PrimitiveTypes_EqualDeserializedValue<T>(T value, JsonValueKind _)
+        public static void PrimitiveTypes_EqualDeserializedValue<T>(WrappedT<T> wrapped, JsonValueKind _)
         {
+            T value = wrapped.Value;
             JsonNode node = JsonValue.Create(value);
             JsonNode clone = JsonSerializer.Deserialize<JsonNode>(node.ToJsonString());
 
             Assert.True(JsonNode.DeepEquals(clone, clone));
             Assert.True(JsonNode.DeepEquals(node, clone));
             Assert.True(JsonNode.DeepEquals(clone, node));
+        }
+
+        private static readonly HashSet<Type> s_convertableTypes =
+        [
+            // True/False
+            typeof(bool), typeof(bool?),
+
+            // Number
+            typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int), typeof(uint),
+            typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal),
+
+            typeof(byte?), typeof(sbyte?), typeof(short?), typeof(ushort?), typeof(int?), typeof(uint?),
+            typeof(long?), typeof(ulong?), typeof(float?), typeof(double?), typeof(decimal?),
+
+            // String
+            typeof(char), typeof(char?),
+            typeof(string),
+            typeof(DateTimeOffset), typeof(DateTimeOffset?),
+            typeof(DateTime), typeof(DateTime?),
+            typeof(Guid), typeof(Guid?),
+        ];
+
+        [Theory]
+        [MemberData(nameof(GetPrimitiveTypes))]
+        public static void PrimitiveTypes_Conversion<T>(WrappedT<T> wrapped, JsonValueKind _)
+        {
+            T value = wrapped.Value;
+            string json = JsonSerializer.Serialize(value);
+            bool canGetValue = s_convertableTypes.Contains(typeof(T));
+
+            JsonValue jsonValue = JsonSerializer.Deserialize<JsonValue>(json)!;
+            AssertExtensions.TrueExpression(jsonValue.TryGetValue(out T unused) == canGetValue);
+
+            JsonValue jsonNode = (JsonValue)JsonSerializer.Deserialize<JsonNode>(json)!;
+            AssertExtensions.TrueExpression(jsonNode.TryGetValue(out unused) == canGetValue);
+
+            // Ensure the eager evaluation code path also produces the same result
+            jsonNode = (JsonValue)JsonSerializer.Deserialize<JsonNode>(json, new JsonSerializerOptions { AllowDuplicateProperties = false })!;
+            AssertExtensions.TrueExpression(jsonNode.TryGetValue(out unused) == canGetValue);
         }
 
         public static IEnumerable<object[]> GetPrimitiveTypes()
@@ -592,23 +635,35 @@ namespace System.Text.Json.Nodes.Tests
             yield return Wrap((bool?)false, JsonValueKind.False);
             yield return Wrap((bool?)true, JsonValueKind.True);
             yield return Wrap((byte)42, JsonValueKind.Number);
+            yield return Wrap((byte?)42, JsonValueKind.Number);
             yield return Wrap((sbyte)42, JsonValueKind.Number);
+            yield return Wrap((sbyte?)42, JsonValueKind.Number);
             yield return Wrap((short)42, JsonValueKind.Number);
+            yield return Wrap((short?)42, JsonValueKind.Number);
             yield return Wrap((ushort)42, JsonValueKind.Number);
+            yield return Wrap((ushort?)42, JsonValueKind.Number);
             yield return Wrap(42, JsonValueKind.Number);
             yield return Wrap((int?)42, JsonValueKind.Number);
             yield return Wrap((uint)42, JsonValueKind.Number);
+            yield return Wrap((uint?)42, JsonValueKind.Number);
             yield return Wrap((long)42, JsonValueKind.Number);
+            yield return Wrap((long?)42, JsonValueKind.Number);
             yield return Wrap((ulong)42, JsonValueKind.Number);
+            yield return Wrap((ulong?)42, JsonValueKind.Number);
             yield return Wrap(42.0f, JsonValueKind.Number);
+            yield return Wrap((float?)42.0f, JsonValueKind.Number);
             yield return Wrap(42.0, JsonValueKind.Number);
+            yield return Wrap((double?)42.0, JsonValueKind.Number);
             yield return Wrap(42.0m, JsonValueKind.Number);
+            yield return Wrap((decimal?)42.0m, JsonValueKind.Number);
             yield return Wrap('A', JsonValueKind.String);
             yield return Wrap((char?)'A', JsonValueKind.String);
             yield return Wrap("A", JsonValueKind.String);
             yield return Wrap(new byte[] { 1, 2, 3 }, JsonValueKind.String);
             yield return Wrap(new DateTimeOffset(2024, 06, 20, 10, 29, 0, TimeSpan.Zero), JsonValueKind.String);
+            yield return Wrap((DateTimeOffset?)new DateTimeOffset(2024, 06, 20, 10, 29, 0, TimeSpan.Zero), JsonValueKind.String);
             yield return Wrap(new DateTime(2024, 06, 20, 10, 29, 0), JsonValueKind.String);
+            yield return Wrap((DateTime?)new DateTime(2024, 06, 20, 10, 29, 0), JsonValueKind.String);
             yield return Wrap(Guid.Empty, JsonValueKind.String);
             yield return Wrap((Guid?)Guid.Empty, JsonValueKind.String);
             yield return Wrap(new Uri("http://example.com"), JsonValueKind.String);
@@ -624,7 +679,14 @@ namespace System.Text.Json.Nodes.Tests
             yield return Wrap(new DateOnly(2024, 06, 20), JsonValueKind.String);
             yield return Wrap(new TimeOnly(10, 29), JsonValueKind.String);
 #endif
-            static object[] Wrap<T>(T value, JsonValueKind expectedKind) => [value, expectedKind];
+            static object[] Wrap<T>(T value, JsonValueKind expectedKind) => [new WrappedT<T> { Value = value }, expectedKind];
+        }
+
+        public class WrappedT<T>
+        {
+            public T Value;
+
+            public override string ToString() => Value?.ToString();
         }
     }
 }
