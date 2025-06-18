@@ -88,6 +88,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Nodes\JsonValue.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValueOfTCustomized.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValueOfT.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonValueOfJsonPrimitive.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValueOfTPrimitive.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeNumberResult.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeTokenResult.cs" />
