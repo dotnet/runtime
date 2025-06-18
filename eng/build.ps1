@@ -370,6 +370,22 @@ if ($failedBuilds.Count -ne 0) {
     foreach ($failedBuild in $failedBuilds) {
         Write-Host "`t$failedBuild"
     }
+    
+    Write-Host "Check windows events for defender related messages"
+    Get-WinEvent -LogName "Microsoft-Windows-Windows Defender/Operational" |
+      Where-Object { $_.Message -like "*threat*" } |
+      ForEach-Object {
+        [xml]$eventXml = [xml]$_.ToXml()
+        [PSCustomObject]@{
+          TimeCreated = $_.TimeCreated
+          Id          = $_.Id
+          Provider    = $_.ProviderName
+          Message     = $_.Message
+          Computer    = $_.MachineName
+          ActionData  = ($eventXml.Event.EventData.Data | ForEach-Object { "$($_.Name): $($_.'#text')" }) -join "`n"
+        }
+      }
+  
     exit 1
 }
 
