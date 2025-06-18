@@ -2487,6 +2487,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(numArgs == 2);
                 assert(dstCount == 2);
                 assert(isRMW);
+                assert(!op1->isContained());
 
                 if ((baseType == TYP_ULONG || baseType == TYP_UINT) &&
                     compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
@@ -2495,9 +2496,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                     SingleTypeRegSet apxAwareRegCandidates =
                         ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
-                    // mulx, prefer op1 in EDX
-                    SingleTypeRegSet op1RegCandidates = op2->isContained() ? SRBM_EDX : apxAwareRegCandidates;
-                    srcCount = BuildOperandUses(op1, op1RegCandidates);
+                    // mulx, place op1 in implicit EDX register since op2 might be contained
+                    srcCount = BuildOperandUses(op1, SRBM_EDX);
                     srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
 
                     // result in any register
@@ -2509,12 +2509,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 else // Signed multiply or normal unsigned multiply in one operand form
                 {
                     SingleTypeRegSet apxAwareRegCandidates =
-                        ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
+                        ForceLowGprForApxIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
 
-                    // mulEAX always use EAX, if one operand is contained, we use EAX as the target reg
-                    // if not then we do not fix it, we might get the second parameter in EAX
-                    SingleTypeRegSet op1RegCandidates = op2->isContained() ? SRBM_EAX : apxAwareRegCandidates;
-                    srcCount = BuildOperandUses(op1, op1RegCandidates);
+                    // mulEAX always use EAX, if one operand is contained, specify other op with fixed EAX register
+                    // otherwise dont force any register, we might get the second parameter in EAX
+                    srcCount = BuildOperandUses(op1, op2->isContained() ? SRBM_EAX : apxAwareRegCandidates);
                     srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
 
                     // result put in EAX and EDX

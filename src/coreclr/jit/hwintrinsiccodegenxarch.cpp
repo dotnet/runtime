@@ -2426,10 +2426,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             if (ins == INS_mulEAX && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 // op1: EDX, op2: reg/mem (operand 3) => hiRes: (operand 1), lowReg: (operand 2)
-                if (rmOp->isUsedFromReg() && rmOp->GetRegNum() == REG_EDX)
-                {
-                    std::swap(rmOp, regOp);
-                }
+                assert((regOp->GetRegNum() == REG_EDX) || (rmOp->GetRegNum() != REG_EDX));
 
                 // mov the first operand into implicit source operand EDX/RDX
                 emit->emitIns_Mov(INS_mov, attr, REG_EDX, regOp->GetRegNum(), /* canSkip */ true);
