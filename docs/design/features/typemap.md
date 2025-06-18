@@ -8,11 +8,11 @@ The most common mechanism for this is the generation of a large look-up table at
 
 Prior to .NET 10 there were at least three (3) bespoke mechanisms for this in the .NET ecosystem:
 
-* C#/WinRT - [Built-in mappings](https://github.com/microsoft/CsWinRT/blob/master/src/WinRT.Runtime/Projections.CustomTypeMappings.tt), [Generation of vtables for AOT](https://github.com/microsoft/CsWinRT/blob/b1733e95c6d35b551fc8cf6fe04e2a0c287346dd/src/Authoring/WinRT.SourceGenerator/AotOptimizer.cs#L1597).
+* C#/WinRT - [Built-in mappings](https://github.com/microsoft/CsWinRT/b1733e95c6d35b551fc8cf6fe04e2a0c287346dd/master/src/WinRT.Runtime/Projections.CustomTypeMappings.tt), [Generation of vtables for AOT](https://github.com/microsoft/CsWinRT/blob/b1733e95c6d35b551fc8cf6fe04e2a0c287346dd/src/Authoring/WinRT.SourceGenerator/AotOptimizer.cs#L1597).
 
-* .NET For Android - [Assembly Store doc](https://github.com/dotnet/android/blob/main/Documentation/project-docs/AssemblyStores.md), [Assembly Store generator](https://github.com/dotnet/android/blob/main/src/Xamarin.Android.Build.Tasks/Utilities/TypeMappingReleaseNativeAssemblyGenerator.cs), [unmanaged Assembly Store types](https://github.com/dotnet/android/blob/main/src/native/xamarin-app-stub/xamarin-app.hh).
+* .NET For Android - [Assembly Store doc](https://github.com/dotnet/android/blob/b8d0669e951d683443c19ecac06dc96363791820/Documentation/project-docs/AssemblyStores.md), [Assembly Store generator](https://github.com/dotnet/android/blob/b8d0669e951d683443c19ecac06dc96363791820/src/Xamarin.Android.Build.Tasks/Utilities/TypeMappingReleaseNativeAssemblyGenerator.cs), [unmanaged Assembly Store types](https://github.com/dotnet/android/blob/b8d0669e951d683443c19ecac06dc96363791820/src/native/xamarin-app-stub/xamarin-app.hh).
 
-* Objective-C - [Registrar](https://github.com/xamarin/xamarin-macios/blob/cee75657955e29981ded2fb0c6f0ee832db9a8d3/src/ObjCRuntime/Registrar.cs#L87), [Managed Static Registrar](https://github.com/xamarin/xamarin-macios/blob/main/docs/managed-static-registrar.md).
+* Objective-C - [Registrar](https://github.com/dotnet/macios/blob/cee75657955e29981ded2fb0c6f0ee832db9a8d3/src/ObjCRuntime/Registrar.cs#L87), [Managed Static Registrar](https://github.com/dotnet/macios/blob/cee75657955e29981ded2fb0c6f0ee832db9a8d3/docs/managed-static-registrar.md).
 
 ## Priorties
 
@@ -138,7 +138,7 @@ take a trim-target is used, the "target type" will be treated as the "trim-targe
 
 2. Types used in a managed-to-unmanaged interop operation would use `TypeMapAssociationAttribute`
 to define a conditional link between the source and proxy type. In other words, if the
-source is kept, so is the proxy type. If Trimmer observes an explicit allocation of the source
+source is kept, so is the proxy type. If the Trimmer observes an explicit allocation of the source
 type, the entry will be inserted into the map.
 
 3. During application build, source would be generated and injected into the application
@@ -200,7 +200,7 @@ An entry in an External Type Map is included when the "trim target" type is refe
 - The generic argument to the `Activator.CreateInstance<T>` method.
 - Calls to `Type.GetType` with a constant string representing the type name.
 
-Many of these instructions that can be passed a generic parameter. In that case, the trimming tool should consider type arguments of instantiations of that type as having met one of these rules and include any entries with those types as "trim target" types.
+Many of these instructions can be passed a generic parameter. In that case, the trimming tool should consider type arguments of instantiations of that type as having met one of these rules and include any entries with those types as "trim target" types.
 
 ### Proxy Type Map
 
