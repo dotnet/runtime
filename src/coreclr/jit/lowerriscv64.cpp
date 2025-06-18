@@ -117,8 +117,20 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 {
     assert(mul->OperIsMul());
 
-    ContainCheckMul(mul);
+    GenTree* op2 = mul->gtGetOp2();
+    if (op2->IsCnsIntOrI())
+    {
+        GenTreeIntConCommon* cns    = op2->AsIntConCommon();
+        ssize_t              cnsVal = cns->IconValue();
+        if (isPow2(cnsVal))
+        {
+            MakeSrcContained(mul, op2);
 
+            return mul->gtNext;
+        }
+    }
+
+    ContainCheckMul(mul);
     return mul->gtNext;
 }
 
