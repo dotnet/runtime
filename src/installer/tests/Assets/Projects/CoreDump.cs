@@ -11,6 +11,14 @@ namespace Utilities
     {
         public static void Disable()
         {
+            string? envValue = Environment.GetEnvironmentVariable("DOTNET_DbgEnableMiniDump");
+            if (envValue is not null && envValue != "0")
+                throw new InvalidOperationException("DOTNET_DbgEnableMiniDump is set and not 0. Ensure it is unset or set to 0 to disable dumps.");
+
+            envValue = Environment.GetEnvironmentVariable("COMPlus_DbgEnableMiniDump");
+            if (envValue is not null && envValue != "0")
+                throw new InvalidOperationException("COMPlus_DbgEnableMiniDump is set and not 0. Ensure it is unset or set to 0 to disable dumps.");
+
             if (OperatingSystem.IsLinux())
             {
                 if (prctl(PR_SET_DUMPABLE, 0) != 0)
