@@ -46,7 +46,7 @@ Section3:
         [Fact]
         public virtual void Null_values_are_included_in_the_config()
         {
-            AssertConfig(BuildConfigRoot(LoadThroughProvider(TestSection.NullsTestConfig)), expectNulls: true, nullValue: null);
+            AssertConfig(BuildConfigRoot(LoadThroughProvider(TestSection.NullsTestConfig)), expectNulls: true, nullValue: SupportNullValues ? null : string.Empty);
         }
 
         [Fact]
@@ -324,6 +324,8 @@ Section3:
         }
 
         protected abstract (IConfigurationProvider Provider, Action Initializer) LoadThroughProvider(TestSection testConfig);
+
+        protected virtual bool SupportNullValues => true;
 
         protected virtual IConfigurationRoot BuildConfigRoot(
             params (IConfigurationProvider Provider, Action Initializer)[] providers)
