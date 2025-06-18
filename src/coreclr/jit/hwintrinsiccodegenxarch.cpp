@@ -2423,7 +2423,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             emitter* emit = GetEmitter();
 
             // Unsigned multiplication can use mulx on BMI2-capable CPUs
-            if (ins == INS_mulEAX && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
+            if (ins == INS_mulEAX && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
                 // op1: EDX, op2: reg/mem (operand 3) => hiRes: (operand 1), lowReg: (operand 2)
                 assert((regOp->GetRegNum() == REG_EDX) || (rmOp->GetRegNum() != REG_EDX));
