@@ -36,7 +36,6 @@ internal sealed class FrameIterator
 
         TailCallFrame,
 
-
         /* Other Frame Types not handled by the iterator */
         UnmanagedToManagedFrame,
         ComMethodFrame,
