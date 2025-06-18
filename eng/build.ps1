@@ -358,21 +358,11 @@ foreach ($config in $configuration) {
   $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";
   foreach ($singleArch in $arch) {
     $argumentsWithArch =  "/p:TargetArchitecture=$singleArch " + $argumentsWithConfig
-    Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
-    if ($lastExitCode -ne 0) {
-        $failedBuilds += "Configuration: $config, Architecture: $singleArch"
-    }
-  }
-}
-
-if ($failedBuilds.Count -ne 0) {
-    Write-Host "Some builds failed:"
-    foreach ($failedBuild in $failedBuilds) {
-        Write-Host "`t$failedBuild"
-    }
-    
-    Write-Host "Check windows events for defender related messages"
-    Get-WinEvent -LogName "Microsoft-Windows-Windows Defender/Operational" |
+    try {
+      Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
+    } finally {
+      Write-Host "Check windows events for defender related messages"
+      Get-WinEvent -LogName "Microsoft-Windows-Windows Defender/Operational" |
       Where-Object { $_.Message -like "*threat*" } |
       ForEach-Object {
         [xml]$eventXml = [xml]$_.ToXml()
@@ -385,7 +375,18 @@ if ($failedBuilds.Count -ne 0) {
           ActionData  = ($eventXml.Event.EventData.Data | ForEach-Object { "$($_.Name): $($_.'#text')" }) -join "`n"
         }
       }
-  
+      if ($lastExitCode -ne 0) {
+          $failedBuilds += "Configuration: $config, Architecture: $singleArch"
+      }
+    }
+  }
+}
+
+if ($failedBuilds.Count -ne 0) {
+    Write-Host "Some builds failed:"
+    foreach ($failedBuild in $failedBuilds) {
+        Write-Host "`t$failedBuild"
+    }
     exit 1
 }
 
