@@ -1600,16 +1600,15 @@ namespace System.Reflection.Emit
                     if (body != null)
                         throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadMethodBody, meth.Name));
                 }
-                else if (body == null || body.Length == 0)
+                else if (body == null)
                 {
                     // If it's not an abstract or an interface, set the IL.
                     if (meth.m_ilGenerator != null)
                     {
                         // we need to bake the method here.
                         meth.CreateMethodBodyHelper(((RuntimeILGenerator)meth.GetILGenerator()));
+                        body = meth.GetBody();
                     }
-
-                    body = meth.GetBody();
 
                     // No IL body means we can avoid attempting to set method IL.
                     if (body == null)

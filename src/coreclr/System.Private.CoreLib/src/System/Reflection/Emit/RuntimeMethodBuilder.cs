@@ -657,8 +657,6 @@ namespace System.Reflection.Emit
 
             m_dwMethodImplFlags = attributes;
 
-            m_canBeRuntimeImpl = true;
-
             RuntimeModuleBuilder module = m_module;
             RuntimeTypeBuilder.SetMethodImpl(new QCallModule(ref module), MetadataToken, attributes);
         }
@@ -718,23 +716,12 @@ namespace System.Reflection.Emit
         private void ParseCA(ConstructorInfo con)
         {
             Type? caType = con.DeclaringType;
-            if (caType == typeof(MethodImplAttribute))
+            if (caType == typeof(DllImportAttribute))
             {
-                // dig through the blob looking for the MethodImplAttributes flag
-                // that must be in the MethodCodeType field
-
-                // for now we simply set a flag that relaxes the check when saving and
-                // allows this method to have no body when any kind of MethodImplAttribute is present
-                m_canBeRuntimeImpl = true;
-            }
-            else if (caType == typeof(DllImportAttribute))
-            {
-                m_canBeRuntimeImpl = true;
                 m_isDllImport = true;
             }
         }
 
-        internal bool m_canBeRuntimeImpl;
         internal bool m_isDllImport;
 
         #endregion
