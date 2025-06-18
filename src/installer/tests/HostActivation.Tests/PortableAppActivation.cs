@@ -217,6 +217,33 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void AppHost_DotNetRoot_DevicePath()
+        {
+            string appExe = sharedTestState.PortableAppFixture_Published.TestProject.AppExe;
+
+            string dotnetPath = $@"\\?\{sharedTestState.PortableAppFixture_Published.BuiltDotnet.BinPath}";
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .DotNetRoot(dotnetPath, sharedTestState.RepoDirectories.BuildArchitecture)
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
+
+            dotnetPath = $@"\\.\{sharedTestState.PortableAppFixture_Published.BuiltDotnet.BinPath}";
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .DotNetRoot(dotnetPath, sharedTestState.RepoDirectories.BuildArchitecture)
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
+        }
+
+        [Fact]
         public void RuntimeConfig_FilePath_Breaks_MAX_PATH_Threshold()
         {
             var project = sharedTestState.PortableAppFixture_Published
