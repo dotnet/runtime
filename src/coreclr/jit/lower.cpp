@@ -7934,8 +7934,8 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         }
 
 #ifdef TARGET_XARCH
-        // force input transformation to RAX/RDX because the following MULHI will kill RDX:RAX (RDX if mulx is awalible)
-        // anyway and LSRA often causes redundant copies otherwise
+        // force input transformation to RAX/RDX because the following MULHI will kill RDX:RAX (RDX if mulx is
+        // available) anyway and LSRA often causes redundant copies otherwise
         if (firstNode && !simpleMul)
         {
             regNumber implicitReg = comp->compOpportunisticallyDependsOn(InstructionSet_AVX2) ? REG_RDX : REG_RAX;

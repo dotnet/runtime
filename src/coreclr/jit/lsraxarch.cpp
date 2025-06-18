@@ -3258,12 +3258,12 @@ int LinearScan::BuildMul(GenTree* tree)
 
     if (useMulx)
     {
-        assert(!op1->isContained() || !op2->isContained());
         // If one of the operands is contained, specify RDX for the other operand
         SingleTypeRegSet srcCandidates1 = RBM_NONE;
         SingleTypeRegSet srcCandidates2 = RBM_NONE;
         if (op1->isContained())
         {
+            assert(!op2->isContained());
             srcCandidates2 = SRBM_RDX;
         }
         else if (op2->isContained())
@@ -3284,7 +3284,7 @@ int LinearScan::BuildMul(GenTree* tree)
     else
     {
         assert(!(op1->isContained() && !op1->IsCnsIntOrI()) || !(op2->isContained() && !op2->IsCnsIntOrI()));
-        srcCount = BuildRMWUses(tree, op1, op2, RBM_NONE, RBM_NONE);
+        srcCount = BuildBinaryUses(tree->AsOp());
 
         // We do use the widening multiply to implement
         // the overflow checking for unsigned multiply
