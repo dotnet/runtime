@@ -12,6 +12,7 @@ internal sealed class RealCodeHeader : IData<RealCodeHeader>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.RealCodeHeader);
         MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);
+<<<<<<< cdac-remove-funclets
         NumUnwindInfos = target.Read<uint>(address + (ulong)type.Fields[nameof(NumUnwindInfos)].Offset);
         UnwindInfos = address + (ulong)type.Fields[nameof(UnwindInfos)].Offset;
     }
@@ -19,4 +20,21 @@ internal sealed class RealCodeHeader : IData<RealCodeHeader>
     public TargetPointer MethodDesc { get; init; }
     public uint NumUnwindInfos { get; init; }
     public TargetPointer UnwindInfos { get; init; }
+=======
+        GCInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(GCInfo)].Offset);
+
+        // Only available if FEATURE_EH_FUNCLETS is enabled.
+        if (type.Fields.ContainsKey(nameof(NumUnwindInfos)))
+            NumUnwindInfos = target.Read<uint>(address + (ulong)type.Fields[nameof(NumUnwindInfos)].Offset);
+
+        // Only available if FEATURE_EH_FUNCLETS is enabled.
+        if (type.Fields.ContainsKey(nameof(UnwindInfos)))
+            UnwindInfos = address + (ulong)type.Fields[nameof(UnwindInfos)].Offset;
+    }
+
+    public TargetPointer MethodDesc { get; init; }
+    public TargetPointer GCInfo { get; init; }
+    public uint? NumUnwindInfos { get; init; }
+    public TargetPointer? UnwindInfos { get; init; }
+>>>>>>> main
 }

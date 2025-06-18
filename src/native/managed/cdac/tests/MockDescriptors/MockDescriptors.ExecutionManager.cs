@@ -17,7 +17,7 @@ internal partial class MockDescriptors
     {
         public const ulong ExecutionManagerCodeRangeMapAddress = 0x000a_fff0;
 
-        const int RealCodeHeaderSize = 0x08; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
+        const int RealCodeHeaderSize = 0x10; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
 
         public struct AllocationRange
         {
@@ -232,6 +232,7 @@ internal partial class MockDescriptors
             Fields =
             [
                 new(nameof(Data.RealCodeHeader.MethodDesc), DataType.pointer),
+                new(nameof(Data.RealCodeHeader.GCInfo), DataType.pointer),
             ]
         };
 
@@ -240,6 +241,7 @@ internal partial class MockDescriptors
             DataType = DataType.ReadyToRunInfo,
             Fields =
             [
+                new(nameof(Data.ReadyToRunInfo.ReadyToRunHeader), DataType.pointer),
                 new(nameof(Data.ReadyToRunInfo.CompositeInfo), DataType.pointer),
                 new(nameof(Data.ReadyToRunInfo.NumRuntimeFunctions), DataType.uint32),
                 new(nameof(Data.ReadyToRunInfo.RuntimeFunctions), DataType.pointer),

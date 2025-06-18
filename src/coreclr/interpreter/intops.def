@@ -207,6 +207,7 @@ OPDEF(INTOP_CONV_OVF_U8_R4, "conv.ovf.u8.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_U8_R8, "conv.ovf.u8.r8", 3, 1, 1, InterpOpNoArgs)
 
 OPDEF(INTOP_BOX, "box", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
+OPDEF(INTOP_BOX_PTR, "box.ptr", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
 OPDEF(INTOP_UNBOX, "unbox", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
 OPDEF(INTOP_UNBOX_ANY, "unbox.any", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
 // Unary operations end

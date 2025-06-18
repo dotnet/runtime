@@ -11,11 +11,6 @@
 // for numeric_limits
 #include <limits>
 
-FCDECL1(float, JIT_ULng2Flt, uint64_t val);
-FCDECL1(double, JIT_ULng2Dbl, uint64_t val);
-FCDECL1(float, JIT_Lng2Flt, int64_t val);
-FCDECL1(double, JIT_Lng2Dbl, int64_t val);
-
 void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
 {
     CONTRACTL
@@ -551,11 +546,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_R4_I4:
-                    LOCAL_VAR(ip[1], float) = HCCALL1(JIT_Lng2Flt, (int64_t)LOCAL_VAR(ip[2], int32_t));
+                    LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
                     break;
                 case INTOP_CONV_R4_I8:
-                    LOCAL_VAR(ip[1], float) = HCCALL1(JIT_Lng2Flt, LOCAL_VAR(ip[2], int64_t));
+                    LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], int64_t);
                     ip += 3;
                     break;
                 case INTOP_CONV_R4_R8:
@@ -563,11 +558,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_R8_I4:
-                    LOCAL_VAR(ip[1], double) = HCCALL1(JIT_Lng2Dbl, (int64_t)LOCAL_VAR(ip[2], int32_t));
+                    LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
                     break;
                 case INTOP_CONV_R8_I8:
-                    LOCAL_VAR(ip[1], double) = HCCALL1(JIT_Lng2Dbl, LOCAL_VAR(ip[2], int64_t));
+                    LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], int64_t);
                     ip += 3;
                     break;
                 case INTOP_CONV_R8_R4:
@@ -1758,6 +1753,7 @@ CALL_INTERP_METHOD:
                     ip += 2;
                     break;
                 case INTOP_BOX:
+                case INTOP_BOX_PTR:
                 case INTOP_UNBOX:
                 case INTOP_UNBOX_ANY:
                 {
@@ -1767,10 +1763,14 @@ CALL_INTERP_METHOD:
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
                     HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod->pDataItems[ip[4]]);
 
-                    if (opcode == INTOP_BOX) {
+                    if (opcode == INTOP_BOX || opcode == INTOP_BOX_PTR) {
                         // internal static object Box(MethodTable* typeMT, ref byte unboxedData)
-                        void *unboxedData = LOCAL_VAR_ADDR(sreg, void);
-                        LOCAL_VAR(dreg, Object*) = (Object*)helper(pMT, unboxedData);
+                        void *unboxedData;
+                        if (opcode == INTOP_BOX)
+                            unboxedData = LOCAL_VAR_ADDR(sreg, void);
+                        else
+                            unboxedData = LOCAL_VAR(sreg, void*);
+                        LOCAL_VAR(dreg, OBJECTREF) = ObjectToOBJECTREF((Object*)helper(pMT, unboxedData));
                     } else {
                         // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
                         Object *src = LOCAL_VAR(sreg, Object*);
