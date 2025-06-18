@@ -2952,7 +2952,7 @@ MethodTableBuilder::EnumerateClassMethods()
             // RVA : 0
             if (dwMethodRVA != 0)
             {
-                if(fIsClassComImport && !IsMdInstanceInitializer(dwMemberAttrs, strMethodName))
+                if(fIsClassComImport)
                 {
                     BuildMethodTableThrowException(BFA_METHOD_WITH_NONZERO_RVA);
                 }
