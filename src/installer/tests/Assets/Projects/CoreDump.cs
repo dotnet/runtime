@@ -15,7 +15,7 @@ namespace Utilities
             {
                 if (prctl(PR_SET_DUMPABLE, 0) != 0)
                 {
-                    throw new Exception($"Failed to disable core dump. Error: {Marshal.GetLastPInvokeError()}.");
+                    throw new InvalidOperationException($"Failed to disable core dump. Error: {Marshal.GetLastPInvokeError()}.");
                 }
             }
             else if (OperatingSystem.IsMacOS())
@@ -23,7 +23,7 @@ namespace Utilities
                 RLimit rlimit = new() { rlim_cur = 0, rlim_max = 0 };
                 if (setrlimit(RLIMIT_CORE, rlimit) != 0)
                 {
-                    throw new Exception($"Failed to disable core dump. Error: {Marshal.GetLastPInvokeError()}.");
+                    throw new InvalidOperationException($"Failed to disable core dump. Error: {Marshal.GetLastPInvokeError()}.");
                 }
             }
         }
