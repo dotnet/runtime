@@ -398,6 +398,11 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
   TakeLock
 fi
 
+if [ ! -z "$RunInterpreter" ]; then
+# $(InputAssemblyName)
+  export DOTNET_Interpreter='$(AssemblyName)!*'
+fi
+
 echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
 $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
 

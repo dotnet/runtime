@@ -4067,9 +4067,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static byte ShiftRightLogicalRoundedAdd(byte op1, byte op2, byte op3) => (byte)(op1 + ShiftRightLogicalRounded(op2, op3));
 
-        private static byte UnsignedShift(byte op1, sbyte op2, bool rounding = false, bool saturating = false)
+        private static byte UnsignedShift(byte op1, sbyte op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 8, shiftSat);
 
             byte rndCns = 0;
 
@@ -4369,9 +4369,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort ShiftRightLogicalRoundedAdd(ushort op1, ushort op2, byte op3) => (ushort)(op1 + ShiftRightLogicalRounded(op2, op3));
 
-        private static ushort UnsignedShift(ushort op1, short op2, bool rounding = false, bool saturating = false)
+        private static ushort UnsignedShift(ushort op1, short op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 16, shiftSat);
 
             ushort rndCns = 0;
 
@@ -4637,9 +4637,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint ShiftRightLogicalRoundedAdd(uint op1, uint op2, byte op3) => (uint)(op1 + ShiftRightLogicalRounded(op2, op3));
 
-        private static uint UnsignedShift(uint op1, int op2, bool rounding = false, bool saturating = false)
+        private static uint UnsignedShift(uint op1, int op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 32, shiftSat);
 
             uint rndCns = 0;
 
@@ -4905,9 +4905,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ulong ShiftRightLogicalRoundedAdd(ulong op1, ulong op2, byte op3) => (ulong)(op1 + ShiftRightLogicalRounded(op2, op3));
 
-        private static ulong UnsignedShift(ulong op1, long op2, bool rounding = false, bool saturating = false)
+        private static ulong UnsignedShift(ulong op1, long op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 64, shiftSat);
 
             ulong rndCns = 0;
 
@@ -10494,6 +10494,24 @@ namespace JIT.HardwareIntrinsics.Arm
             return (left & select) | (~right & ~select);
         }
 
+        public static T[] InterleavingXorEvenOdd<T>(T[] odd, T[] left, T[] right) where T : IBinaryInteger<T>
+        {
+            for (int i = 0; i < odd.Length; i += 2)
+            {
+                odd[i] = left[i] ^ right[i + 1];
+            }
+            return odd;
+        }
+
+        public static T[] InterleavingXorOddEven<T>(T[] even, T[] left, T[] right) where T : IBinaryInteger<T>
+        {
+            for (int i = 0; i < even.Length; i += 2)
+            {
+                even[i+1] = left[i+1] ^ right[i];
+            }
+            return even;
+        }
+
         public static T Xor<T>(params T[] ops) where T : IBitwiseOperators<T, T, T>
         {
             T result = ops[0];
@@ -10532,5 +10550,21 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long SveShiftArithmeticSaturate(long op1, long op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
 
         public static long SveShiftArithmeticRoundedSaturate(long op1, long op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static byte SveShiftLeftLogicalSaturate(byte op1, sbyte op2) => UnsignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static ushort SveShiftLeftLogicalSaturate(ushort op1, short op2) => UnsignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static uint SveShiftLeftLogicalSaturate(uint op1, int op2) => UnsignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static ulong SveShiftLeftLogicalSaturate(ulong op1, long op2) => UnsignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static byte SveShiftLeftLogicalSaturateUnsigned(sbyte op1, byte op2) => UnsignedShift((byte)op1, (sbyte)op2, saturating: true, shiftSat: true);
+
+        public static ushort SveShiftLeftLogicalSaturateUnsigned(short op1, byte op2) => UnsignedShift((ushort)op1, (sbyte)op2, saturating: true, shiftSat: true);
+
+        public static uint SveShiftLeftLogicalSaturateUnsigned(int op1, byte op2) => UnsignedShift((uint)op1, (sbyte)op2, saturating: true, shiftSat: true);
+
+        public static ulong SveShiftLeftLogicalSaturateUnsigned(long op1, byte op2) => UnsignedShift((ulong)op1, (sbyte)op2, saturating: true, shiftSat: true);
     }
 }
