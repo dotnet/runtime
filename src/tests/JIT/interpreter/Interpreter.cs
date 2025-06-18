@@ -3,6 +3,7 @@
 
 using System;
 using System.Numerics;
+using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
 
 public interface ITest
@@ -865,6 +866,10 @@ public class InterpreterTest
         if (!TestDelegate())
             Environment.FailFast(null);
 
+        Console.WriteLine("TestIntrinsics");
+        if (!TestIntrinsics())
+            Environment.FailFast(null);
+
         Console.WriteLine("TestCalli");
         if (!TestCalli())
             Environment.FailFast(null);
@@ -872,6 +877,20 @@ public class InterpreterTest
         System.GC.Collect();
 
         Console.WriteLine("All tests passed successfully!");
+    }
+
+    public static bool TestIntrinsics()
+    {
+        if (Vector128.IsHardwareAccelerated)
+            return false;
+
+        if (!Vector128<int>.IsSupported)
+            return false;
+
+        if (Vector128<decimal>.IsSupported)
+            return false;
+
+        return true;
     }
 
     public static void TestExceptionHandling()

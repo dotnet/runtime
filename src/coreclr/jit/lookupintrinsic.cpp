@@ -623,8 +623,11 @@ NamedIntrinsic NamedIntrinsicLookup::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE 
                                 CORINFO_SIG_INFO sig;
                                 m_compHnd->getMethodSig(method, &sig);
 
-                                result = m_lookupHWNamedIntrinsic(m_context, &sig, lookupClassName, lookupMethodName,
-                                                                   enclosingClassNames[0], enclosingClassNames[1]);
+                                if (m_lookupHWNamedIntrinsic)
+                                    result = m_lookupHWNamedIntrinsic(m_context, &sig, lookupClassName, lookupMethodName,
+                                                                    enclosingClassNames[0], enclosingClassNames[1]);
+                                else
+                                    result = NI_Illegal;
                             }
                         }
 #endif // FEATURE_HW_INTRINSICS
@@ -887,8 +890,11 @@ NamedIntrinsic NamedIntrinsicLookup::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE 
                             CORINFO_SIG_INFO sig;
                             m_compHnd->getMethodSig(method, &sig);
 
-                            result = m_lookupHWNamedIntrinsic(m_context, &sig, className, methodName,
-                                                               enclosingClassNames[0], enclosingClassNames[1]);
+                            if (m_lookupHWNamedIntrinsic)
+                                result = m_lookupHWNamedIntrinsic(m_context, &sig, className, methodName,
+                                                                enclosingClassNames[0], enclosingClassNames[1]);
+                            else
+                                result = NI_Illegal;
                         }
 #endif // FEATURE_HW_INTRINSICS
 

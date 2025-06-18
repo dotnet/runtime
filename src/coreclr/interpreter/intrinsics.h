@@ -6,6 +6,6 @@
 
 #include "..\jit\namedintrinsiclist.h"
 
-NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE method);
+NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE compMethod, CORINFO_METHOD_HANDLE method);
 
 #endif // __INTERPRETER_INTRINSICS_H__

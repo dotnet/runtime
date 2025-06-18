@@ -10,6 +10,8 @@ typedef NamedIntrinsic (*lookupHWNamedIntrinsicHandler)(void* context,
                                                 const char*       innerEnclosingClassName,
                                                 const char*       outerEnclosingClassName);
 
+// HACK: We can't guarantee that COMP_HANDLE has been defined by the headers we include so we need to provide a definition here
+typedef class ICorJitInfo* COMP_HANDLE;
 
 class NamedIntrinsicLookup
 {

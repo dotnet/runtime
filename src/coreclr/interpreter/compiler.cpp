@@ -2130,9 +2130,89 @@ int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
     return GetDataItemIndex(addr);
 }
 
-void InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni)
+bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
 {
-    assert(!"EmitNamedIntrinsicCall");
+    switch (ni)
+    {
+        case NI_IsSupported_False:
+        case NI_IsSupported_True:
+            AddIns(INTOP_LDC_I4);
+            m_pLastNewIns->data[0] = ni == NI_IsSupported_True;
+            PushStackType(StackTypeI4, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return true;
+
+        case NI_IsSupported_Type:
+        {
+            // See importercalls.cpp
+            bool isSupported;
+            CORINFO_CLASS_HANDLE typeArgHnd;
+            CorInfoType          simdBaseJitType;
+
+            typeArgHnd      = m_compHnd->getTypeInstantiationArgument(clsHnd, 0);
+            simdBaseJitType = m_compHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
+
+            switch (simdBaseJitType)
+            {
+                case CORINFO_TYPE_BYTE:
+                case CORINFO_TYPE_UBYTE:
+                case CORINFO_TYPE_SHORT:
+                case CORINFO_TYPE_USHORT:
+                case CORINFO_TYPE_INT:
+                case CORINFO_TYPE_UINT:
+                case CORINFO_TYPE_LONG:
+                case CORINFO_TYPE_ULONG:
+                case CORINFO_TYPE_FLOAT:
+                case CORINFO_TYPE_DOUBLE:
+                case CORINFO_TYPE_NATIVEINT:
+                case CORINFO_TYPE_NATIVEUINT:
+                {
+                    isSupported = true;
+                    break;
+                }
+
+                default:
+                {
+                    isSupported = false;
+                    break;
+                }
+            }
+
+            AddIns(INTOP_LDC_I4);
+            m_pLastNewIns->data[0] = isSupported ? 1 : 0;
+            PushStackType(StackTypeI4, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return true;
+        }
+
+        // HACK: For many intrinsics we can simply fall back to interpreting them or calling the native implementation.
+        // Normally we would check whether the intrinsic is 'must expand', but right now that doesn't work if the intrinsic
+        //  was already compiled by the JIT or R2R, because we preferentially invoke the native version instead of interpreting.
+        case NI_System_Type_get_IsEnum:
+        case NI_System_Type_GetEnumUnderlyingType:
+        case NI_System_Type_get_IsValueType:
+        case NI_System_Type_get_IsPrimitive:
+        case NI_System_Type_get_IsByRefLike:
+        case NI_System_Type_get_TypeHandle:
+        case NI_System_Type_get_IsGenericType:
+        case NI_System_Type_IsAssignableFrom:
+        case NI_System_Type_IsAssignableTo:
+        case NI_System_Type_op_Equality:
+        case NI_System_Type_op_Inequality:
+        case NI_System_Type_GetTypeFromHandle:
+        case NI_System_Type_GetGenericTypeDefinition:
+            return false;
+
+        default:
+        {
+            const char* className = NULL;
+            const char* namespaceName = NULL;
+            const char* methodName = m_compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, NULL, 0);
+            printf("ERROR: Intrinsic not implemented in interpreter: %s.%s.%s\n", namespaceName, className, methodName);
+            assert(!"EmitNamedIntrinsicCall not implemented intrinsic");
+            return false;
+        }
+    }
 }
 
 bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
@@ -2347,11 +2427,19 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
-        if (flags & CORINFO_FLG_INTRINSIC)
+        if (callInfo.methodFlags & CORINFO_FLG_INTRINSIC)
         {
-            NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, callInfo.hMethod);
-            assert(ni != NI_Illegal);
-            EmitNamedIntrinsicCall(ni);
+            // FIXME: This doesn't work if the intrinsic was already compiled by the JIT or R2R
+            // if (m_methodHnd == callInfo.hMethod)
+            {
+                NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+                assert(ni != NI_Illegal);
+                if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
+                {
+                    m_ip += 5;
+                    return;
+                }
+            }
         }
 
         if (EmitCallIntrinsics(callInfo.hMethod, callInfo.sig))
