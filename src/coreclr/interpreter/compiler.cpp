@@ -2197,6 +2197,8 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
         // HACK: For many intrinsics we can simply fall back to interpreting them or calling the native implementation.
         // Normally we would check whether the intrinsic is 'must expand', but right now that doesn't work if the intrinsic
         //  was already compiled by the JIT or R2R, because we preferentially invoke the native version instead of interpreting.
+        case NI_System_Object_GetType:
+        case NI_System_Object_MemberwiseClone:
         case NI_System_Type_get_IsEnum:
         case NI_System_Type_GetEnumUnderlyingType:
         case NI_System_Type_get_IsValueType:
@@ -2215,6 +2217,30 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable:
+        case NI_System_String_Equals:
+        case NI_System_String_get_Chars:
+        case NI_System_String_get_Length:
+        case NI_System_String_op_Implicit:
+        case NI_System_String_StartsWith:
+        case NI_System_String_EndsWith:
+        case NI_System_Span_get_Item:
+        case NI_System_Span_get_Length:
+        case NI_System_SpanHelpers_ClearWithoutReferences:
+        case NI_System_SpanHelpers_Fill:
+        case NI_System_SpanHelpers_SequenceEqual:
+        case NI_System_ReadOnlySpan_get_Item:
+        case NI_System_ReadOnlySpan_get_Length:
+        case NI_System_MemoryExtensions_AsSpan:
+        case NI_System_MemoryExtensions_Equals:
+        case NI_System_MemoryExtensions_SequenceEqual:
+        case NI_System_MemoryExtensions_StartsWith:
+        case NI_System_MemoryExtensions_EndsWith:
+            return false;
+
+        case NI_Array_Address:
+        case NI_Array_Get:
+        case NI_Array_Set:
+            // Interpreter-FIXME: Do these need special handling?
             return false;
 
         // HACK: These two are special marker IDs so that we still get the inlining profitability boost
