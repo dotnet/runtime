@@ -1,5 +1,6 @@
 # Configuring and hosting .NET WebAssembly applications
 
+
 ## Table of contents
 - [Configuring browser features](#Configuring-browser-features)
 - [Project folder structure](#Project-folder-structure)
