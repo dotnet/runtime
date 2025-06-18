@@ -2300,16 +2300,9 @@ AGAIN:
                 {
                     continue;
                 }
-                else if (isValidSimm21(jmpDist + maxPlaceholderSize))
-                {
-                    // convert to opposite branch and jal
-                    extra = sizeof(code_t);
-                }
-                else
-                {
-                    // convert to opposite branch and auipc+jalr
-                    extra = 2 * sizeof(code_t);
-                }
+                // convert branch to opposite branch and jump
+                int insCount = isValidSimm21(jmpDist + maxPlaceholderSize) ? 1 /*jal*/ : 2 /*auipc+jalr*/;
+                extra        = insCount * sizeof(code_t);
             }
             else if (ins == INS_jal || ins == INS_j)
             {
@@ -2317,11 +2310,8 @@ AGAIN:
                 {
                     continue;
                 }
-                else
-                {
-                    // convert to auipc+jalr
-                    extra = sizeof(code_t);
-                }
+                // convert jal to auipc+jalr
+                extra = sizeof(code_t);
             }
             else
             {
@@ -3181,20 +3171,18 @@ BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insG
     assert((immediate & 0x03) == 0);
 
     *ins = jmp->idIns();
-    if (jmp->idInsIs(INS_jal, INS_j))
+    if (jmp->idInsIs(INS_jal, INS_j)) // far jump
     {
         assert(jmp->idCodeSize() == 2 * sizeof(code_t));
         assert(isValidSimm32(immediate));
         dst += emitOutput_UTypeInstr(dst, INS_auipc, REG_RA, UpperNBitsOfWordSignExtend<20>(immediate));
         dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_RA, REG_RA, LowerNBitsOfWord<12>(immediate));
     }
-    else
+    else // opposite branch + jump
     {
-        assert(*ins > INS_jalr || (*ins<INS_jalr&& * ins> INS_j)); // branch
-        regNumber reg1 = jmp->idReg1();
+        assert(jmp->idInsIs(INS_beqz, INS_bnez, INS_beq, INS_bne, INS_blt, INS_bltu, INS_bge, INS_bgeu));
         regNumber reg2 = jmp->idInsIs(INS_beqz, INS_bnez) ? REG_R0 : jmp->idReg2();
-
-        dst += emitOutput_BTypeInstr_InvertComparation(dst, jmp->idIns(), reg1, reg2, jmp->idCodeSize());
+        dst += emitOutput_BTypeInstr_InvertComparation(dst, jmp->idIns(), jmp->idReg1(), reg2, jmp->idCodeSize());
         if (jmp->idCodeSize() == 2 * sizeof(code_t))
         {
             dst += emitOutput_JTypeInstr(dst, INS_jal, REG_ZERO, TrimSignedToImm21(immediate));
