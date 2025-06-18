@@ -919,14 +919,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/reflection/SetValue/TrySetReadonlyStaticField/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/200</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/**">
-            <Issue>https://github.com/dotnet/runtime/issues/83051: not supported in net8</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/**">
             <Issue>https://github.com/dotnet/runtime/issues/83051: not supported in net8</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/runtimeeventsource/nativeruntimeeventsource/**">
-            <Issue>https://github.com/dotnet/runtime/issues/90021</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b426654/b426654/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/208</Issue>
@@ -1074,6 +1068,13 @@
 
         <ExcludeList Include="$(XunitTestBinBase)/Loader/CustomAttributes/**">
             <Issue>Dynamic code generation is not supported on this platform</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- NativeAOT Linux specific -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'linux'">
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/**">
+            <Issue>https://github.com/dotnet/runtime/issues/116686</Issue>
         </ExcludeList>
     </ItemGroup>
 

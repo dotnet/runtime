@@ -171,6 +171,7 @@ const loaderConfig = {
             format: "es",
             file: nativeBinDir + "/dotnet.js",
             banner,
+            intro: "/*! bundlerFriendlyImports */",
             plugins,
             sourcemap: true,
             sourcemapPathTransform,

@@ -1454,7 +1454,7 @@ NOINLINE void GCInterface::SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocate
     {
         // Ignore failures
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.

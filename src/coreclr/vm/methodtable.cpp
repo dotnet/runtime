@@ -3557,7 +3557,7 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
         *pThrowable = GET_THROWABLE();
         _ASSERTE(fRet == FALSE);
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return fRet;
 }
@@ -3661,7 +3661,7 @@ void MethodTable::DoRunClassInitThrowing()
                     hNewInitException = pEntry->m_pLoaderAllocator->AllocateHandle(gc.pNewInitException);
                 } EX_CATCH {
                     // If we failed to create the handle we'll just leave the originally alloc'd one in place.
-                } EX_END_CATCH(SwallowAllExceptions);
+                } EX_END_CATCH
 
                 // if two threads are racing to set m_hInitException, clear the handle created by the loser
                 if (hNewInitException != 0 &&
@@ -3766,7 +3766,7 @@ void MethodTable::DoRunClassInitThrowing()
                             // If we failed to create the handle (due to OOM), we'll just store the preallocated OOM
                             // handle here instead.
                             pEntry->m_hInitException = pEntry->m_pLoaderAllocator->AllocateHandle(CLRException::GetPreallocatedOutOfMemoryException());
-                        } EX_END_CATCH(SwallowAllExceptions);
+                        } EX_END_CATCH
 
                         pEntry->m_hrResultCode = E_FAIL;
                         SetClassInitError();

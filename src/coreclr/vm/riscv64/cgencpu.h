@@ -287,7 +287,7 @@ inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
         mem = (TADDR)NULL;
         _ASSERTE(!"Memory read within jitted Code Failed, this should not happen!!!!");
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
     return mem;
 }
 

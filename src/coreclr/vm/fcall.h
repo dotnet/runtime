@@ -59,7 +59,6 @@
 #define __FCall_h__
 
 #include "runtimeexceptionkind.h"
-#include "debugreturn.h"
 
 //==============================================================================================
 // FDECLn: A set of macros for generating header declarations for FC targets.
@@ -437,9 +436,6 @@ public:
 #define HCIMPL2_VV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(int /* EAX */, int /* EDX */, int /* ECX */, a2, a1) { HCIMPL_PROLOG(funcname)
 #define HCIMPL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a3) { HCIMPL_PROLOG(funcname)
 #define HCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a3) {
-
-#define HCCALL1(funcname, a1)           funcname(0, 0, a1)
-#define HCCALL1_PTR(rettype, funcptr, a1)        rettype (F_CALL_CONV * funcptr)(int /* EAX */, int /* EDX */, a1)
 #else // SWIZZLE_REGARG_ORDER
 
 #define HCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname() { HCIMPL_PROLOG(funcname)
@@ -451,9 +447,6 @@ public:
 #define HCIMPL2_VV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a2, a1) { HCIMPL_PROLOG(funcname)
 #define HCIMPL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) { HCIMPL_PROLOG(funcname)
 #define HCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) {
-
-#define HCCALL1(funcname, a1)           funcname(a1)
-#define HCCALL1_PTR(rettype, funcptr, a1)        rettype (F_CALL_CONV * (funcptr))(a1)
 #endif // !SWIZZLE_REGARG_ORDER
 #else // SWIZZLE_STKARG_ORDER
 
@@ -466,10 +459,6 @@ public:
 #define HCIMPL2_VV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a1, a2) { HCIMPL_PROLOG(funcname)
 #define HCIMPL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) { HCIMPL_PROLOG(funcname)
 #define HCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) {
-
-#define HCCALL1(funcname, a1)           funcname(a1)
-#define HCCALL1_PTR(rettype, funcptr, a1)        rettype (F_CALL_CONV * (funcptr))(a1)
-
 #endif // !SWIZZLE_STKARG_ORDER
 
 #define HCIMPLEND_RAW }

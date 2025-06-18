@@ -418,7 +418,7 @@ FCIMPLEND
 C_ASSERT(sizeof(Thread) == sizeof(RuntimeThreadLocals));
 
 #ifndef _MSC_VER
-__thread RuntimeThreadLocals tls_CurrentThread;
+PLATFORM_THREAD_LOCAL RuntimeThreadLocals tls_CurrentThread;
 #endif
 
 EXTERN_C RuntimeThreadLocals* RhpGetThread()

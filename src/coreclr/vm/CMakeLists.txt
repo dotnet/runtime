@@ -37,10 +37,6 @@ if(FEATURE_GDBJIT)
     )
 endif(FEATURE_GDBJIT)
 
-if(FEATURE_JIT_PITCHING)
-   add_definitions(-DFEATURE_JIT_PITCHING)
-endif(FEATURE_JIT_PITCHING)
-
 if(FEATURE_PERFTRACING)
     set(CORECLR_EVENTPIPE_SHIM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/eventing/eventpipe)
     include_directories(${CORECLR_EVENTPIPE_SHIM_DIR})
@@ -274,12 +270,6 @@ if(FEATURE_READYTORUN)
         readytoruninfo.h
     )
 endif(FEATURE_READYTORUN)
-
-if(FEATURE_JIT_PITCHING)
-    list(APPEND VM_SOURCES_DAC_AND_WKS_COMMON
-        codepitchingmanager.cpp
-    )
-endif(FEATURE_JIT_PITCHING)
 
 set(VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_COMMON}

@@ -612,10 +612,7 @@ const char* FormatSigHelper(MethodDesc* pMD, CQuickBytes *out, LoaderHeap *pHeap
             ret = mem;
         }
     }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_SWALLOW_NONTERMINAL
 
     return ret;
 }

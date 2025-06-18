@@ -10,14 +10,13 @@ internal sealed class ReadyToRunInfo : IData<ReadyToRunInfo>
     static ReadyToRunInfo IData<ReadyToRunInfo>.Create(Target target, TargetPointer address)
         => new ReadyToRunInfo(target, address);
 
-    private readonly Target _target;
-
     public ReadyToRunInfo(Target target, TargetPointer address)
     {
-        _target = target;
         Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunInfo);
 
         CompositeInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(CompositeInfo)].Offset);
+
+        ReadyToRunHeader = target.ReadPointer(address + (ulong)type.Fields[nameof(ReadyToRunHeader)].Offset);
 
         NumRuntimeFunctions = target.Read<uint>(address + (ulong)type.Fields[nameof(NumRuntimeFunctions)].Offset);
         RuntimeFunctions = NumRuntimeFunctions > 0
@@ -34,9 +33,11 @@ internal sealed class ReadyToRunInfo : IData<ReadyToRunInfo>
 
         // Map is from the composite info pointer (set to itself for non-multi-assembly composite images)
         EntryPointToMethodDescMap = CompositeInfo + (ulong)type.Fields[nameof(EntryPointToMethodDescMap)].Offset;
-     }
+    }
 
     internal TargetPointer CompositeInfo { get; }
+
+    public TargetPointer ReadyToRunHeader { get; }
 
     public uint NumRuntimeFunctions { get; }
     public TargetPointer RuntimeFunctions { get; }

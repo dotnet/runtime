@@ -60,6 +60,9 @@ namespace System.Linq
                 case ExceptionArgument.third: return nameof(ExceptionArgument.third);
                 case ExceptionArgument.size: return nameof(ExceptionArgument.size);
                 case ExceptionArgument.other: return nameof(ExceptionArgument.other);
+                case ExceptionArgument.start: return nameof(ExceptionArgument.start);
+                case ExceptionArgument.step: return nameof(ExceptionArgument.step);
+                case ExceptionArgument.endInclusive: return nameof(ExceptionArgument.endInclusive);
                 default:
                     Debug.Fail("The ExceptionArgument value is not defined.");
                     return string.Empty;
@@ -90,5 +93,8 @@ namespace System.Linq
         third,
         size,
         other,
+        start,
+        step,
+        endInclusive,
     }
 }

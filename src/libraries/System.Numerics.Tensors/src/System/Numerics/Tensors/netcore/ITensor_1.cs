@@ -87,6 +87,9 @@ namespace System.Numerics.Tensors
         /// <inheritdoc cref="ITensor.Fill(object)" />
         void Fill(T value);
 
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.GetDimensionSpan(int)" />
+        new TensorDimensionSpan<T> GetDimensionSpan(int dimension);
+
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.GetPinnableReference" />
         new ref T GetPinnableReference();
     }

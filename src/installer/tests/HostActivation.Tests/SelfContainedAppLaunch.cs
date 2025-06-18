@@ -157,6 +157,29 @@ namespace HostActivation.Tests
                 .And.HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void DevicePath()
+        {
+            string appExe = $@"\\?\{sharedTestState.App.AppExe}";
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+
+            appExe = $@"\\.\{sharedTestState.App.AppExe}";
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+        }
+
         public class SharedTestState : IDisposable
         {
             public TestApp App { get; }

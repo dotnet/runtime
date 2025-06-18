@@ -335,12 +335,6 @@ extern uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
 #define C_ASSERT(e) static_assert(e, #e)
 #endif // C_ASSERT
 
-#ifdef _MSC_VER
-#define DECLSPEC_THREAD __declspec(thread)
-#else // _MSC_VER
-#define DECLSPEC_THREAD __thread
-#endif // !_MSC_VER
-
 // PAL Numbers
 // Used to ensure cross-compiler compatibility when declaring large
 // integer constants. 64-bit integer constants should be wrapped in the

@@ -42,6 +42,55 @@ namespace JIT.HardwareIntrinsics.X86
             return !(float.IsNaN(actual) && float.IsNaN(expected));
         }
 
+        public static T Compress<T>(T[] merge, T[] mask, T[] value, int i)
+            where T : INumber<T>
+        {
+            int match = -1;
+
+            for (int j = 0; j < merge.Length; j++)
+            {
+                if (mask[j] == T.Zero)
+                {
+                    continue;
+                }
+                match++;
+
+                if (match == i)
+                {
+                    return value[j];
+                }
+            }
+
+            return merge[i];
+        }
+
+        public static T Expand<T>(T[] merge, T[] mask, T[] value, int i)
+            where T : INumber<T>
+        {
+            int match = -1;
+
+            if (mask[i] == T.Zero)
+            {
+                return merge[i];
+            }
+
+            for (int j = 0; j < merge.Length; j++)
+            {
+                if (mask[j] == T.Zero)
+                {
+                    continue;
+                }
+                match++;
+
+                if (j == i)
+                {
+                    return value[match];
+                }
+            }
+
+            return merge[i];
+        }
+
         public static TInteger DetectConflicts<TInteger>(TInteger[] firstOp, int i)
             where TInteger : IBinaryInteger<TInteger>
         {

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
@@ -36,6 +37,28 @@ internal static partial class Interop
 
         internal static string[] GetAllMountPoints()
         {
+            // Prefer using proc mountinfo as the mount point paths are relative to the process's root.
+            if (OperatingSystem.IsLinux())
+            {
+                if (File.Exists(Interop.procfs.ProcMountInfoFilePath))
+                {
+                    List<string> mountPoints = new();
+
+                    using StreamReader reader = new(Interop.procfs.ProcMountInfoFilePath);
+
+                    string? line;
+                    while ((line = reader.ReadLine()) is not null)
+                    {
+                        if (Interop.procfs.TryParseMountInfoLine(line, out Interop.procfs.ParsedMount mount))
+                        {
+                            mountPoints.Add(mount.MountPoint.ToString());
+                        }
+                    }
+
+                    return mountPoints.ToArray();
+                }
+            }
+
             AllMountPointsContext context = default;
             context._results = new List<string>();
 

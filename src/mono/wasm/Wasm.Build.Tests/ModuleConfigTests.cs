@@ -57,7 +57,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
-    [Fact]
+    [Fact, TestCategory("bundler-friendly")]
     public async Task OutErrOverrideWorks()
     {
         Configuration config = Configuration.Debug;

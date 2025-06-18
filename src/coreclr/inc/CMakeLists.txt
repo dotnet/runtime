@@ -51,10 +51,6 @@ else(CLR_CMAKE_HOST_WIN32)
 
 endif(CLR_CMAKE_HOST_WIN32)
 
-if(FEATURE_JIT_PITCHING)
-   add_definitions(-DFEATURE_JIT_PITCHING)
-endif(FEATURE_JIT_PITCHING)
-
 # Compile *_i.cpp to lib
 add_library_clr(corguids OBJECT ${CORGUIDS_SOURCES})
 

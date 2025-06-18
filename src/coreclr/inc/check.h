@@ -624,14 +624,15 @@ CHECK CheckValue(TYPENAME &val)
 
 #define CCHECK_END                                                              \
         } EX_CATCH {                                                            \
-            if (___result.IsInAssert())                                            \
+            if (___result.IsInAssert())                                         \
             {                                                                   \
                 ___exception = TRUE;                                            \
                 ___transient = GET_EXCEPTION()->IsTransient();                  \
             }                                                                   \
             else                                                                \
                 EX_RETHROW;                                                     \
-        } EX_END_CATCH(RethrowTerminalExceptions);                              \
+            RethrowTerminalExceptions();                                          \
+        } EX_END_CATCH                                                          \
                                                                                 \
         if (___exception)                                                       \
         {                                                                       \

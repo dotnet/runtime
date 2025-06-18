@@ -1646,6 +1646,15 @@ internal sealed unsafe partial class SOSDacImpl
         catch (System.Exception ex)
         {
             hr = ex.HResult;
+
+            // There are some scenarios where SOS can call GetUsefulGlobals before the globals are initialized,
+            // in these cases set the method table pointers to 0 and assert that the legacy DAC returns the same
+            // uninitialized values.
+            data->ArrayMethodTable = 0;
+            data->StringMethodTable = 0;
+            data->ObjectMethodTable = 0;
+            data->ExceptionMethodTable = 0;
+            data->FreeMethodTable = 0;
         }
 
 #if DEBUG
@@ -1653,8 +1662,13 @@ internal sealed unsafe partial class SOSDacImpl
         {
             DacpUsefulGlobalsData dataLocal;
             int hrLocal = _legacyImpl.GetUsefulGlobals(&dataLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-            if (hr == HResults.S_OK)
+            // SOS can call GetUsefulGlobals before the global pointers are initialized.
+            // In the DAC, this behavior depends on the compiler.
+            // MSVC builds: the DAC global table is a compile time constant and the DAC will return successfully.
+            // Clang builds: the DAC global table is constructed at runtime and the DAC will fail.
+            // Because of this variation, we cannot match the DAC behavior exactly.
+            // As long as the returned data matches, it should be fine.
+            if (hr == HResults.S_OK || hrLocal == HResults.S_OK)
             {
                 Debug.Assert(data->ArrayMethodTable == dataLocal.ArrayMethodTable);
                 Debug.Assert(data->StringMethodTable == dataLocal.StringMethodTable);

@@ -148,7 +148,7 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting
     {
         strTokenFormatting.Printf("%d", token);
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 void ILCodeStream::Emit(ILInstrEnum instr, INT16 iStackDelta, UINT_PTR uArg)

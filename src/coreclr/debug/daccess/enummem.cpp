@@ -201,8 +201,9 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     {
         // Catch the exception and keep going unless COR_E_OPERATIONCANCELED
         // was thrown. Used generating dumps, where rethrow will cancel dump.
+        RethrowCancelExceptions();
     }
-    EX_END_CATCH(RethrowCancelExceptions)
+    EX_END_CATCH
 
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem(m_dacGlobals.dac__g_pStressLog, sizeof(StressLog *)); )
 
@@ -716,16 +717,18 @@ HRESULT ClrDataAccess::EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags)
             {
                 // Catch the exception and keep going unless COR_E_OPERATIONCANCELED
                 // was thrown. Used generating dumps, where rethrow will cancel dump.
+                RethrowCancelExceptions();
             }
-            EX_END_CATCH(RethrowCancelExceptions)
+            EX_END_CATCH
         }
     }
     EX_CATCH
     {
         // Catch the exception and keep going unless COR_E_OPERATIONCANCELED
         // was thrown. Used generating dumps, where rethrow will cancel dump.
+        RethrowCancelExceptions();
     }
-    EX_END_CATCH(RethrowCancelExceptions)
+    EX_END_CATCH
 
     m_dumpStats.m_cbModuleList = m_cbMemoryReported - cbMemoryReported;
 
@@ -1008,8 +1011,9 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
         status = E_FAIL;
         // Catch the exception and keep going unless a COR_E_OPERATIONCANCELED
         // was thrown. In which case, rethrow to cancel the dump gathering
+        RethrowCancelExceptions();
     }
-    EX_END_CATCH(RethrowCancelExceptions)
+    EX_END_CATCH
 
 #if defined(DAC_MEASURE_PERF)
     uint64_t nEnd = GetCycleCount();
@@ -2068,7 +2072,7 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     // fix for issue 866100: DAC is too late in releasing ICLRDataEnumMemoryRegionsCallback2*
     if (m_updateMemCb)

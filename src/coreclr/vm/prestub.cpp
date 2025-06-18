@@ -44,13 +44,6 @@
 
 #ifndef DACCESS_COMPILE
 
-#if defined(FEATURE_JIT_PITCHING)
-EXTERN_C void CheckStacksAndPitch();
-EXTERN_C void SavePitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode);
-EXTERN_C void DeleteFromPitchingCandidate(MethodDesc* pMD);
-EXTERN_C void MarkMethodNotPitchingCandidate(MethodDesc* pMD);
-#endif
-
 EXTERN_C void STDCALL ThePreStubPatch();
 
 #if defined(HAVE_GCCOVER)
@@ -609,10 +602,6 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
         GetMethodTable()->GetDebugClassName(),
         m_pszDebugMethodName));
 
-#if defined(FEATURE_JIT_PITCHING)
-    CheckStacksAndPitch();
-#endif
-
     PCODE pCode = (PCODE)NULL;
     {
         // Enter the global lock which protects the list of all functions being JITd
@@ -945,8 +934,9 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
             pEntry->m_hrResultCode = E_FAIL;
             EX_RETHROW;
         }
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions)
+    EX_END_CATCH
 
     if (pOtherCode != (PCODE)NULL)
     {
@@ -1010,10 +1000,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     {
         pConfig->SetShouldCountCalls();
     }
-#endif
-
-#if defined(FEATURE_JIT_PITCHING)
-    SavePitchingCandidate(this, *pSizeOfCode);
 #endif
 
 #ifdef FEATURE_MULTICOREJIT
@@ -1973,7 +1959,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
             StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
             EX_RETHROW;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         {
             HardwareExceptionHolder;
@@ -2197,9 +2183,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     {
         LOG((LF_CLASSLOADER, LL_INFO10000,
             "    In PreStubWorker, method already jitted, backpatching call point\n"));
-        #if defined(FEATURE_JIT_PITCHING)
-            MarkMethodNotPitchingCandidate(this);
-        #endif
 
         pCode = DoBackpatch(pMT, pDispatchingMT, TRUE);
         goto Return;
@@ -2759,10 +2742,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 pCode = PatchNonVirtualExternalMethod(pMD, pCode, pImportSection, pIndirection);
             }
         }
-
-#if defined (FEATURE_JIT_PITCHING)
-        DeleteFromPitchingCandidate(pMD);
-#endif
     }
 
     // Force a GC on every jit if the stress level is high enough
@@ -2864,7 +2843,7 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
         pModule->GetLoaderAllocator()->GetHighFrequencyHeap()->
             AllocMem(S_SIZE_T(sizeof(StaticFieldAddressArgs))));
 
-    pArgs->staticBaseHelper = (FnStaticBaseHelper)CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)helpFunc);
+    pArgs->staticBaseHelper = CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)helpFunc);
 
     switch(helpFunc)
     {
@@ -2900,8 +2879,14 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
     }
     pArgs->offset = pFD->GetOffset();
 
+    BinderMethodID managedHelperId = fUnbox ? 
+        METHOD__STATICSHELPERS__STATICFIELDADDRESSUNBOX_DYNAMIC :
+        METHOD__STATICSHELPERS__STATICFIELDADDRESS_DYNAMIC;
+
+    MethodDesc *pManagedHelper = CoreLibBinder::GetMethod(managedHelperId);
+
     PCODE pHelper = DynamicHelpers::CreateHelper(pModule->GetLoaderAllocator(), (TADDR)pArgs,
-        fUnbox ? GetEEFuncEntryPoint(JIT_StaticFieldAddressUnbox_Dynamic) : GetEEFuncEntryPoint(JIT_StaticFieldAddress_Dynamic));
+        pManagedHelper->GetMultiCallableAddrOfCode());
 
     amTracker.SuppressRelease();
 
@@ -3319,7 +3304,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         EX_CATCH
         {
         }
-        EX_END_CATCH (SwallowAllExceptions);
+        EX_END_CATCH
     }
     else
     {

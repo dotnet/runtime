@@ -95,9 +95,10 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Theory]
-        [InlineData(HttpKeepAlivePingPolicy.Always)]
-        [InlineData(HttpKeepAlivePingPolicy.WithActiveRequests)]
-        public async Task KeepAliveConfigured_KeepAlivePingsAreSentAccordingToPolicy(HttpKeepAlivePingPolicy policy)
+        [InlineData(HttpKeepAlivePingPolicy.Always, -1)]
+        [InlineData(HttpKeepAlivePingPolicy.WithActiveRequests, -1)]
+        [InlineData(HttpKeepAlivePingPolicy.WithActiveRequests, 0)]
+        public async Task KeepAliveConfigured_KeepAlivePingsAreSentAccordingToPolicy(HttpKeepAlivePingPolicy policy, int connectionLifetimeMilliseconds)
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
@@ -105,6 +106,7 @@ namespace System.Net.Http.Functional.Tests
                 handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(10);
                 handler.KeepAlivePingPolicy = policy;
                 handler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
+                handler.PooledConnectionLifetime = TimeSpan.FromMilliseconds(connectionLifetimeMilliseconds);
 
                 using HttpClient client = new HttpClient(handler);
                 client.DefaultRequestVersion = HttpVersion.Version20;

@@ -133,13 +133,13 @@ namespace System.Net.Security.Tests
         [Fact]
         public void CheckCertificateRevocation_Get_Set_Succeeds()
         {
-            Assert.Equal(X509RevocationMode.NoCheck, _clientOptions.CertificateRevocationCheckMode);
-            Assert.Equal(X509RevocationMode.NoCheck, _serverOptions.CertificateRevocationCheckMode);
+            Assert.Equal(X509RevocationMode.Online, _clientOptions.CertificateRevocationCheckMode);
+            Assert.Equal(X509RevocationMode.Online, _serverOptions.CertificateRevocationCheckMode);
 
-            _clientOptions.CertificateRevocationCheckMode = X509RevocationMode.Online;
+            _clientOptions.CertificateRevocationCheckMode = X509RevocationMode.NoCheck;
             _serverOptions.CertificateRevocationCheckMode = X509RevocationMode.Offline;
 
-            Assert.Equal(X509RevocationMode.Online, _clientOptions.CertificateRevocationCheckMode);
+            Assert.Equal(X509RevocationMode.NoCheck, _clientOptions.CertificateRevocationCheckMode);
             Assert.Equal(X509RevocationMode.Offline, _serverOptions.CertificateRevocationCheckMode);
 
             Assert.Throws<ArgumentException>(() => _clientOptions.CertificateRevocationCheckMode = (X509RevocationMode)3);

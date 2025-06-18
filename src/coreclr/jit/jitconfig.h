@@ -22,6 +22,7 @@ public:
             MethodName* m_next;
             const char* m_patternStart;
             const char* m_patternEnd;
+            bool        m_containsAssemblyName;
             bool        m_containsClassName;
             bool        m_classNameContainsInstantiation;
             bool        m_methodNameContainsInstantiation;

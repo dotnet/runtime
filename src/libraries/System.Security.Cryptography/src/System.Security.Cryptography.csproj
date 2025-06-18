@@ -1932,6 +1932,7 @@
     <Compile Include="System\Security\Cryptography\KeyPropertyName.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Windows.cs" />
     <Compile Include="System\Security\Cryptography\MLDsaCng.Windows.cs" />
+    <Compile Include="System\Security\Cryptography\MLDsaImplementation.CreateCng.cs" />
     <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\MLKemOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.Windows.cs" />

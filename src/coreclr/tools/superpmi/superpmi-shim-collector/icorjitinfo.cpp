@@ -1462,12 +1462,21 @@ int32_t* interceptor_ICJI::getAddrOfCaptureThreadGlobal(void** ppIndirection)
 }
 
 // return the native entry point to an EE helper (see CorInfoHelpFunc)
-void* interceptor_ICJI::getHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection)
+void interceptor_ICJI::getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP *pNativeEntrypoint, CORINFO_METHOD_HANDLE *methodHandle)
 {
     mc->cr->AddCall("getHelperFtn");
-    void* temp = original_ICorJitInfo->getHelperFtn(ftnNum, ppIndirection);
-    mc->recGetHelperFtn(ftnNum, ppIndirection, temp);
-    return temp;
+    CORINFO_CONST_LOOKUP localNativeEntrypoint;
+    CORINFO_METHOD_HANDLE localMethodHandle;
+    original_ICorJitInfo->getHelperFtn(ftnNum, &localNativeEntrypoint, &localMethodHandle);
+    mc->recGetHelperFtn(ftnNum, localNativeEntrypoint, localMethodHandle);
+    if (pNativeEntrypoint != nullptr)
+    {
+        *pNativeEntrypoint = localNativeEntrypoint;
+    }
+    if (methodHandle != nullptr)
+    {
+        *methodHandle = localMethodHandle;
+    }
 }
 
 // return a callable address of the function (native code). This function
@@ -1590,8 +1599,7 @@ void interceptor_ICJI::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, C
     mc->recGetAddressOfPInvokeTarget(method, pLookup);
 }
 
-// Generate a cookie based on the signature that would needs to be passed
-// to CORINFO_HELP_PINVOKE_CALLI
+// Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
 LPVOID interceptor_ICJI::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection)
 {
     mc->cr->AddCall("GetCookieForPInvokeCalliSig");
@@ -1599,6 +1607,16 @@ LPVOID interceptor_ICJI::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig
     mc->recGetCookieForPInvokeCalliSig(szMetaSig, ppIndirection, temp);
     return temp;
 }
+
+// Generate a cookie based on the signature to pass to INTOP_CALLI
+LPVOID interceptor_ICJI::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
+{
+    mc->cr->AddCall("GetCookieForInterpreterCalliSig");
+    LPVOID temp = original_ICorJitInfo->GetCookieForInterpreterCalliSig(szMetaSig);
+    mc->recGetCookieForInterpreterCalliSig(szMetaSig, temp);
+    return temp;
+}
+
 
 // returns true if a VM cookie can be generated for it (might be false due to cross-module
 // inlining, in which case the inlining should be aborted)

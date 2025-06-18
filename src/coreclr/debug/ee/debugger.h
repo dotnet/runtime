@@ -3054,9 +3054,6 @@ public:
     // Used by Debugger::FirstChanceNativeException to update the context from out of process
     void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL);
     BOOL IsOutOfProcessSetContextEnabled();
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-    void SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext);
-#endif // FEATURE_SPECIAL_USER_MODE_APC
 };
 
 
@@ -3835,7 +3832,7 @@ HANDLE OpenWin32EventOrThrow(
 #define SENDIPCEVENT_RAW_END SENDIPCEVENT_RAW_END_EX
 
 // Suspend-aware SENDIPCEVENT macros:
-// Check whether __thread has been suspended by the debugger via SetDebugState().
+// Check whether thread has been suspended by the debugger via SetDebugState().
 // If this thread has been suspended, it shouldn't send any event to the RS because the
 // debugger may not be expecting it.  Instead, just leave the lock and retry.
 // When we leave, we'll enter coop mode first and get suspended if a suspension is in progress.

@@ -159,6 +159,7 @@
     <HelixCommandPrefixEnvVarItem Condition="'$(TestUsingWorkloads)' == 'true'" Include="TEST_USING_WORKLOADS=true" />
     <HelixCommandPrefixEnvVarItem Condition="'$(WasmEnableWebcil)' == 'false'" Include="WASM_ENABLE_WEBCIL=false" />
     <HelixCommandPrefixEnvVarItem Condition="'$(WasmFingerprintAssets)' == 'false'" Include="WASM_FINGERPRINT_ASSETS=false" />
+    <HelixCommandPrefixEnvVarItem Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'" Include="WASM_BUNDLER_FRIENDLY_BOOT_CONFIG=true" />
     <HelixCommandPrefixEnvVarItem Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" Include="WORKLOADS_TEST_PREVIOUS_VERSIONS=true" />
   </ItemGroup>
 
@@ -348,7 +349,7 @@
   <Target Name="PrintHelixQueues">
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
     <Message Condition="'$(Scenario)' == 'BuildWasmApps'" Importance="High"
-             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads), WasmEnableWebcil: $(WasmEnableWebcil), WasmFingerprintAssets: $(WasmFingerprintAssets)" />
+             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads), WasmEnableWebcil: $(WasmEnableWebcil), WasmFingerprintAssets: $(WasmFingerprintAssets), WasmBundlerFriendlyBootConfig: $(WasmBundlerFriendlyBootConfig)" />
   </Target>
 
   <Target Name="PrintBuildTargetFramework">

@@ -298,7 +298,7 @@ public static class Program
         string nameSuffix = Environment.GetEnvironmentVariable("TF_BUILD") is null ? "-local" : "";
 
         return
-            $$"""
+            $$$"""
             {
               "ConfigVersion": 3,
               "Entries": [
@@ -309,7 +309,7 @@ public static class Program
                     "$type": "libfuzzer",
                     "FuzzingHarnessExecutableName": "libfuzzer-dotnet.exe",
                     "FuzzingTargetBinaries": [
-                      {{string.Join(", ", GetInstrumentationTargets(fuzzer).Select(t => $"\"{t.Assembly}\""))}}
+                      {{{string.Join(", ", GetInstrumentationTargets(fuzzer).Select(t => $"\"{t.Assembly}\""))}}}
                     ],
                     "CheckFuzzerHelp": false
                   },
@@ -317,13 +317,13 @@ public static class Program
                   "OneFuzzJobs": [
                     {
                       "ProjectName": "DotnetFuzzing",
-                      "TargetName": "{{fuzzer.Name}}{{nameSuffix}}",
+                      "TargetName": "{{{fuzzer.Name}}}{{{nameSuffix}}}",
                       "TargetOptions": [
                         "--target_path=DotnetFuzzing.exe",
-                        "--target_arg={{fuzzer.Name}}"
+                        "--target_arg={{{fuzzer.Name}}}"
                       ],
                       "FuzzingTargetOptions": [
-                        {{dictionaryArgument}}
+                        {{{dictionaryArgument}}}
                       ]
                     }
                   ],
@@ -335,7 +335,20 @@ public static class Program
                     "Project": "internal",
                     "AssignedTo": "mizupan@microsoft.com",
                     "AreaPath": "internal\\.NET Libraries",
-                    "IterationPath": "internal"
+                    "IterationPath": "internal",
+                    "AdoFields": {
+                        "System.Title": "[{{ job.project }} {{ job.name }}]: {{ report.crash_site }}",
+                        "Custom.CustomField01": "{{ job.name }}-{{ report.minimized_stack_function_lines_sha256 }}"
+                    },
+                    "UniqueFields": [
+                      "Custom.CustomField01"
+                    ],
+                    "OnDuplicate": {
+                      "SetState": {
+                        "Resolved": "Active",
+                        "Closed": "Active"
+                      }
+                    }
                   }
                 }
               ]

@@ -993,8 +993,8 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                         {
                             for (unsigned int idx = 0; idx < rc->mc->GetHelperFtn->GetCount(); idx++)
                             {
-                                DLDL value = rc->mc->GetHelperFtn->GetItem(idx);
-                                if (value.B == tmp.target)
+                                Agnostic_GetHelperFtn value = rc->mc->GetHelperFtn->GetItem(idx);
+                                if (value.helperLookup.handle == tmp.target)
                                 {
                                     LogDebug("    REL32 target is result of getHelperFtn(): setting delta=%d (0x%X)",
                                              (int)tmp.target, (int)tmp.target);

@@ -96,6 +96,7 @@
       <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">-trait category=no-fingerprinting</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">-trait category=bundler-friendly</_XUnitTraitArg>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
@@ -116,6 +117,9 @@
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WASM_FINGERPRINT_ASSETS=$(WasmFingerprintAssets)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WASM_FINGERPRINT_ASSETS=$(WasmFingerprintAssets)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WASM_BUNDLER_FRIENDLY_BOOT_CONFIG=$(WasmBundlerFriendlyBootConfig)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WASM_BUNDLER_FRIENDLY_BOOT_CONFIG=$(WasmBundlerFriendlyBootConfig)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />

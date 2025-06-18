@@ -261,7 +261,7 @@ ep_rt_init (void)
 	extern CrstStatic _ep_rt_coreclr_config_lock;
 
 	_ep_rt_coreclr_config_lock_handle.lock = &_ep_rt_coreclr_config_lock;
-	_ep_rt_coreclr_config_lock_handle.lock->InitNoThrow (CrstEventPipe, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN | CRST_HOST_BREAKABLE));
+	_ep_rt_coreclr_config_lock_handle.lock->InitNoThrow (CrstEventPipe, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
 
 	if (CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeProcNumbers) != 0) {
 #ifndef TARGET_UNIX
@@ -401,7 +401,7 @@ ep_rt_method_get_full_name (
 	{
 		result = false;
 	}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 
 	return result;
 }
@@ -438,7 +438,7 @@ ep_rt_init_providers_and_events (void)
 		InitProvidersAndEvents ();
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 }
 
 static
@@ -488,7 +488,7 @@ ep_rt_provider_invoke_callback (
 			callback_data);
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 }
 
 /*
@@ -660,7 +660,7 @@ ep_rt_wait_event_alloc (
 				wait_event->event->CreateAutoEvent (initial);
 		}
 		EX_CATCH {}
-		EX_END_CATCH(SwallowAllExceptions);
+		EX_END_CATCH
 	}
 }
 
@@ -708,7 +708,7 @@ ep_rt_wait_event_wait (
 	{
 		result = -1;
 	}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 	return result;
 }
 
@@ -894,7 +894,7 @@ ep_rt_thread_create (
 	{
 		result = false;
 	}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 
 	return result;
 }
@@ -1186,7 +1186,7 @@ ep_rt_lock_acquire (ep_rt_lock_handle_t *lock)
 	{
 		result = false;
 	}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 
 	return result;
 }
@@ -1209,7 +1209,7 @@ ep_rt_lock_release (ep_rt_lock_handle_t *lock)
 	{
 		result = false;
 	}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 
 	return result;
 }
@@ -1250,7 +1250,7 @@ ep_rt_spin_lock_alloc (ep_rt_spin_lock_handle_t *spin_lock)
 		spin_lock->lock->Init (LOCK_TYPE_DEFAULT);
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 }
 
 static

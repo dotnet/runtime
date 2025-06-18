@@ -2,132 +2,6 @@
 <!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.ArrayTensorExtensions</Target>
-    <Left>lib/net462/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net462/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.CompressedSparseTensor`1</Target>
-    <Left>lib/net462/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net462/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.DenseTensor`1</Target>
-    <Left>lib/net462/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net462/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.SparseTensor`1</Target>
-    <Left>lib/net462/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net462/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.Tensor</Target>
-    <Left>lib/net462/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net462/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.Tensor`1</Target>
-    <Left>lib/net462/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net462/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.ArrayTensorExtensions</Target>
-    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.CompressedSparseTensor`1</Target>
-    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.DenseTensor`1</Target>
-    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.SparseTensor`1</Target>
-    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.Tensor</Target>
-    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.Tensor`1</Target>
-    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.ArrayTensorExtensions</Target>
-    <Left>lib/netstandard2.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/netstandard2.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.CompressedSparseTensor`1</Target>
-    <Left>lib/netstandard2.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/netstandard2.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.DenseTensor`1</Target>
-    <Left>lib/netstandard2.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/netstandard2.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.SparseTensor`1</Target>
-    <Left>lib/netstandard2.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/netstandard2.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.Tensor</Target>
-    <Left>lib/netstandard2.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/netstandard2.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Numerics.Tensors.Tensor`1</Target>
-    <Left>lib/netstandard2.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/netstandard2.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Numerics.Tensors.ReadOnlyTensorSpan`1.#ctor(`0[],System.Index,System.ReadOnlySpan{System.IntPtr},System.ReadOnlySpan{System.IntPtr})</Target>
     <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
@@ -339,7 +213,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0006</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.IReadOnlyTensor`2.ToDenseTensor</Target>
+    <Target>M:System.Numerics.Tensors.IReadOnlyTensor`2.GetDimensionSpan(System.Int32)</Target>
     <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
     <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
@@ -347,6 +221,34 @@
   <Suppression>
     <DiagnosticId>CP0006</DiagnosticId>
     <Target>M:System.Numerics.Tensors.IReadOnlyTensor`2.ToDenseTensor</Target>
+    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
+    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0006</DiagnosticId>
+    <Target>M:System.Numerics.Tensors.ITensor`2.GetDimensionSpan(System.Int32)</Target>
+    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
+    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0006</DiagnosticId>
+    <Target>M:System.Numerics.Tensors.IReadOnlyTensor`2.GetDimensionSpan(System.Int32)</Target>
+    <Left>lib/net9.0/System.Numerics.Tensors.dll</Left>
+    <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0006</DiagnosticId>
+    <Target>M:System.Numerics.Tensors.IReadOnlyTensor`2.ToDenseTensor</Target>
+    <Left>lib/net9.0/System.Numerics.Tensors.dll</Left>
+    <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0006</DiagnosticId>
+    <Target>M:System.Numerics.Tensors.ITensor`2.GetDimensionSpan(System.Int32)</Target>
     <Left>lib/net9.0/System.Numerics.Tensors.dll</Left>
     <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
@@ -431,69 +333,6 @@
   <Suppression>
     <DiagnosticId>CP0017</DiagnosticId>
     <Target>M:System.Numerics.Tensors.Tensor.Create``1(System.Collections.Generic.IEnumerable{``0},System.ReadOnlySpan{System.IntPtr},System.ReadOnlySpan{System.IntPtr},System.Boolean)$0</Target>
-    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.GreaterThanOrEqualAll``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$0</Target>
-    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.LessThanAll``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$0</Target>
-    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.LessThanAll``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$1</Target>
-    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.LessThanAny``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$0</Target>
-    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.LessThanAny``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$1</Target>
-    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.LessThanOrEqualAll``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$0</Target>
-    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.LessThanOrEqualAll``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$1</Target>
-    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.LessThanOrEqualAny``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$0</Target>
-    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.LessThanOrEqualAny``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$1</Target>
     <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
     <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
@@ -669,69 +508,6 @@
   <Suppression>
     <DiagnosticId>CP0017</DiagnosticId>
     <Target>M:System.Numerics.Tensors.Tensor.Create``1(System.Collections.Generic.IEnumerable{``0},System.ReadOnlySpan{System.IntPtr},System.ReadOnlySpan{System.IntPtr},System.Boolean)$0</Target>
-    <Left>lib/net9.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.GreaterThanOrEqualAll``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$0</Target>
-    <Left>lib/net9.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.LessThanAll``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$0</Target>
-    <Left>lib/net9.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.LessThanAll``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$1</Target>
-    <Left>lib/net9.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.LessThanAny``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$0</Target>
-    <Left>lib/net9.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.LessThanAny``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$1</Target>
-    <Left>lib/net9.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.LessThanOrEqualAll``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$0</Target>
-    <Left>lib/net9.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.LessThanOrEqualAll``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$1</Target>
-    <Left>lib/net9.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.LessThanOrEqualAny``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$0</Target>
-    <Left>lib/net9.0/System.Numerics.Tensors.dll</Left>
-    <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Numerics.Tensors.Tensor.LessThanOrEqualAny``1(System.Numerics.Tensors.ReadOnlyTensorSpan{``0}@,``0)$1</Target>
     <Left>lib/net9.0/System.Numerics.Tensors.dll</Left>
     <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>

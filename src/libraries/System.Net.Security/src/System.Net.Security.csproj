@@ -31,6 +31,8 @@
              Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs"
              Link="Common\System\Net\UriScheme.cs" />
+    <Compile Include="$(CommonPath)System\AppContextSwitchHelper.cs"
+             Link="Common\System\AppContextSwitchHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
@@ -186,6 +188,8 @@
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
              Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlInitUnicodeString.cs"
+             Link="Common\Interop\Windows\NtDll\Interop.RtlInitUnicodeString.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_INFO.cs"

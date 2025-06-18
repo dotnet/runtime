@@ -18,6 +18,7 @@ namespace System.Numerics.Tensors
     /// Represents a contiguous region of arbitrary memory. Unlike arrays, it can point to either managed
     /// or native memory, or to memory allocated on the stack. It is type-safe and memory-safe.
     /// </summary>
+    /// <typeparam name="T">The type of the elements within the tensor span.</typeparam>
     [DebuggerTypeProxy(typeof(TensorSpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
@@ -381,6 +382,9 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
         }
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.GetDimensionSpan(int)" />
+        public ReadOnlyTensorDimensionSpan<T> GetDimensionSpan(int dimension) => new ReadOnlyTensorDimensionSpan<T>(this, dimension);
 
         /// <summary>Gets an enumerator for the readonly tensor span.</summary>
         public Enumerator GetEnumerator() => new Enumerator(this);

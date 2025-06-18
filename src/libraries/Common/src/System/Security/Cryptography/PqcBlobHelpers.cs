@@ -122,7 +122,7 @@ namespace System.Security.Cryptography
                 int index = 0;
 
                 // Write header
-                ref BCRYPT_PQDSA_KEY_BLOB blobHeader = ref MemoryMarshal.AsRef<BCRYPT_PQDSA_KEY_BLOB>(blobBytes);
+                ref BCRYPT_PQDSA_KEY_BLOB blobHeader = ref MemoryMarshal.Cast<byte, BCRYPT_PQDSA_KEY_BLOB>(blobBytes)[0];
                 blobHeader.Magic = magic;
                 blobHeader.cbParameterSet = parameterSetLengthWithNullTerminator;
                 blobHeader.cbKey = data.Length;
@@ -157,7 +157,7 @@ namespace System.Security.Cryptography
         {
             int index = 0;
 
-            ref readonly BCRYPT_PQDSA_KEY_BLOB blob = ref MemoryMarshal.AsRef<BCRYPT_PQDSA_KEY_BLOB>(blobBytes);
+            ref readonly BCRYPT_PQDSA_KEY_BLOB blob = ref MemoryMarshal.Cast<byte, BCRYPT_PQDSA_KEY_BLOB>(blobBytes)[0];
             magic = blob.Magic;
             int parameterSetLength = blob.cbParameterSet - 2; // Null terminator char, '\0'
             int keyLength = blob.cbKey;

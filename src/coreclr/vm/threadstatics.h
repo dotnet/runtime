@@ -87,11 +87,11 @@ typedef DPTR(ThreadLocalData) PTR_ThreadLocalData;
 
 // Using compiler specific thread local storage directives due to linkage issues.
 #ifndef DACCESS_COMPILE
+extern
 #ifdef _MSC_VER
-extern __declspec(selectany) __declspec(thread) ThreadLocalData t_ThreadStatics;
-#else
-extern __thread ThreadLocalData t_ThreadStatics;
+__declspec(selectany)
 #endif // _MSC_VER
+PLATFORM_THREAD_LOCAL ThreadLocalData t_ThreadStatics;
 #endif // !DACCESS_COMPILE
 
 #define NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY 2

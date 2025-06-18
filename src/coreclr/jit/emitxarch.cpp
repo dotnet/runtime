@@ -4953,7 +4953,17 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
     // If Byte 4 (which is 0xFF00) is zero, that's where the RM encoding goes.
     // Otherwise, it will be placed after the 4 byte encoding, making the total 5 bytes.
     // This would probably be better expressed as a different format or something?
-    code_t code = insCodeRM(ins);
+    code_t code = 0;
+
+    if (hasCodeRM(ins))
+    {
+        code = insCodeRM(ins);
+    }
+    else
+    {
+        code = insCodeMR(ins);
+    }
+
     if (IsKInstruction(ins))
     {
         code = AddVexPrefix(ins, code, EA_SIZE(id->idOpSize()));
@@ -16689,6 +16699,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     emitAttr    size = id->idOpSize();
 
     assert(!id->idHasReg3());
+    bool isInsCodeMR = false;
 
     if (IsSimdInstruction(ins))
     {
@@ -16705,13 +16716,43 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 code |= 0x01;
             }
         }
-        else if (((ins != INS_movd32) && (ins != INS_movd64)) || isFloatReg(reg1))
-        {
-            code = insCodeRM(ins);
-        }
         else
         {
-            code = insCodeMR(ins);
+            switch (ins)
+            {
+                case INS_vcompresspd:
+                case INS_vcompressps:
+                case INS_vpcompressb:
+                case INS_vpcompressd:
+                case INS_vpcompressq:
+                case INS_vpcompressw:
+                {
+                    isInsCodeMR = true;
+                    break;
+                }
+
+                case INS_movd32:
+                case INS_movd64:
+                {
+                    isInsCodeMR = !isFloatReg(reg1);
+                    break;
+                }
+
+                default:
+                {
+                    isInsCodeMR = false;
+                    break;
+                }
+            }
+
+            if (isInsCodeMR)
+            {
+                code = insCodeMR(ins);
+            }
+            else
+            {
+                code = insCodeRM(ins);
+            }
         }
         code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeRMreg(id, code);
@@ -16870,21 +16911,20 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 
     regNumber regFor012Bits = reg2;
     regNumber regFor345Bits = REG_NA;
+
     if (IsBMIInstruction(ins))
     {
         regFor345Bits = getBmiRegNumber(ins);
     }
+
     if (regFor345Bits == REG_NA)
     {
         regFor345Bits = reg1;
     }
-    if ((ins == INS_movd32) || (ins == INS_movd64))
+
+    if (isInsCodeMR)
     {
-        assert(isFloatReg(reg1) != isFloatReg(reg2));
-        if (isFloatReg(reg2))
-        {
-            std::swap(regFor012Bits, regFor345Bits);
-        }
+        std::swap(regFor012Bits, regFor345Bits);
     }
 
     unsigned regCode;
@@ -21527,6 +21567,24 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insThroughput = PERFSCORE_THROUGHPUT_3X;
             }
             result.insLatency += PERFSCORE_LATENCY_3C;
+            break;
+        }
+
+        case INS_vcompresspd:
+        case INS_vcompressps:
+        case INS_vpcompressb:
+        case INS_vpcompressd:
+        case INS_vpcompressq:
+        case INS_vpcompressw:
+        case INS_vexpandpd:
+        case INS_vexpandps:
+        case INS_vpexpandb:
+        case INS_vpexpandd:
+        case INS_vpexpandq:
+        case INS_vpexpandw:
+        {
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency += PERFSCORE_LATENCY_6C;
             break;
         }
 

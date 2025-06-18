@@ -1849,6 +1849,9 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress_Impl()
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_INTERPRETER
+
+TADDR InterpreterFrame::DummyCallerIP = (TADDR)&InterpreterFrame::DummyFuncletCaller;
+
 PTR_InterpMethodContextFrame InterpreterFrame::GetTopInterpMethodContextFrame()
 {
     LIMITED_METHOD_CONTRACT;

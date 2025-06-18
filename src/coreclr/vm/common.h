@@ -207,18 +207,6 @@ EXTERN_C AppDomain* STDCALL GetAppDomain();
 
 extern BOOL isMemoryReadable(const TADDR start, unsigned len);
 
-#ifndef memcpyUnsafe_f
-#define memcpyUnsafe_f
-
-// use this when you want to memcpy something that contains GC refs
-FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
-{
-    WRAPPER_NO_CONTRACT;
-    return memcpy(dest, src, len);
-}
-
-#endif // !memcpyUnsafe_f
-
 FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len)
 {
     WRAPPER_NO_CONTRACT;

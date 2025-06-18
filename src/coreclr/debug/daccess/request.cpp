@@ -60,7 +60,7 @@
             EX_RETHROW; \
         }               \
     }                   \
-    EX_END_CATCH(SwallowAllExceptions) \
+    EX_END_CATCH \
     DAC_LEAVE();
 
 // Use this when you don't want to instantiate an Object * in the host.
@@ -131,7 +131,7 @@ BOOL DacValidateEEClass(PTR_EEClass pEEClass)
     {
         retval = FALSE; // Something is wrong
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     return retval;
 
 }
@@ -179,7 +179,7 @@ BadMethodTable: ;
     {
         retval = FALSE; // Something is wrong
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     return retval;
 
 }
@@ -251,7 +251,7 @@ BOOL DacValidateMD(PTR_MethodDesc pMD)
     {
         retval = FALSE; // Something is wrong
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     return retval;
 }
 
@@ -471,7 +471,7 @@ HRESULT DacMethodTableSlotEnumerator::Init(PTR_MethodTable mTable)
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (pMD != nullptr)
         {
@@ -1135,7 +1135,7 @@ HRESULT ClrDataAccess::GetMethodDescData(
             if (pcNeededRevertedRejitData != NULL)
                 *pcNeededRevertedRejitData = 0;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
         hr = S_OK; // Failure to get rejitids is not fatal
 
 #endif // FEATURE_REJIT
@@ -1298,7 +1298,7 @@ HRESULT ClrDataAccess::GetTieredVersions(
     {
         hr = E_FAIL;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
 cleanup:
     ;
@@ -1506,7 +1506,7 @@ ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count,
 #endif
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (SUCCEEDED(hr))
     {
@@ -1798,7 +1798,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     SOSDacLeave();
     return hr;
@@ -1923,7 +1923,7 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, _Inout
                     EX_RETHROW;
                 }
             }
-            EX_END_CATCH(SwallowAllExceptions)
+            EX_END_CATCH
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
             if (s.IsEmpty())
@@ -1983,7 +1983,7 @@ ClrDataAccess::GetFieldDescData(CLRDATA_ADDRESS addr, struct DacpFieldDescData *
     {
         FieldDescData->MTOfType = (CLRDATA_ADDRESS)NULL;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     // TODO: This is not currently useful, I need to get the module of the
     // type definition not that of the field description.
@@ -3958,7 +3958,7 @@ ClrDataAccess::Request(IN ULONG32 reqCode,
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;

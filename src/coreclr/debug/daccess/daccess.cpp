@@ -3325,7 +3325,7 @@ ClrDataAccess::StartEnumTasks(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3369,7 +3369,7 @@ ClrDataAccess::EnumTask(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3395,7 +3395,7 @@ ClrDataAccess::EndEnumTasks(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3427,7 +3427,7 @@ ClrDataAccess::GetTaskByOSThreadID(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3462,7 +3462,7 @@ ClrDataAccess::GetTaskByUniqueID(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3489,7 +3489,7 @@ ClrDataAccess::GetFlags(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3515,7 +3515,7 @@ ClrDataAccess::IsSameObject(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3541,7 +3541,7 @@ ClrDataAccess::GetManagedObject(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3567,7 +3567,7 @@ ClrDataAccess::GetDesiredExecutionState(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3593,7 +3593,7 @@ ClrDataAccess::SetDesiredExecutionState(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3640,7 +3640,7 @@ ClrDataAccess::GetAddressType(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3674,7 +3674,7 @@ ClrDataAccess::GetRuntimeNameByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3701,7 +3701,7 @@ ClrDataAccess::StartEnumAppDomains(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3737,7 +3737,7 @@ ClrDataAccess::EnumAppDomain(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3763,7 +3763,7 @@ ClrDataAccess::EndEnumAppDomains(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3798,7 +3798,7 @@ ClrDataAccess::GetAppDomainByUniqueID(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3832,7 +3832,7 @@ ClrDataAccess::StartEnumAssemblies(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3870,7 +3870,7 @@ ClrDataAccess::EnumAssembly(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3897,7 +3897,7 @@ ClrDataAccess::EndEnumAssemblies(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3931,7 +3931,7 @@ ClrDataAccess::StartEnumModules(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3969,7 +3969,7 @@ ClrDataAccess::EnumModule(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3996,7 +3996,7 @@ ClrDataAccess::EndEnumModules(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4050,7 +4050,7 @@ ClrDataAccess::GetModuleByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4096,7 +4096,7 @@ ClrDataAccess::StartEnumMethodDefinitionsByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4122,7 +4122,7 @@ ClrDataAccess::EnumMethodDefinitionByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4147,7 +4147,7 @@ ClrDataAccess::EndEnumMethodDefinitionsByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4198,7 +4198,7 @@ ClrDataAccess::StartEnumMethodInstancesByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4224,7 +4224,7 @@ ClrDataAccess::EnumMethodInstanceByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4249,7 +4249,7 @@ ClrDataAccess::EndEnumMethodInstancesByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4288,7 +4288,7 @@ ClrDataAccess::GetDataByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4315,7 +4315,7 @@ ClrDataAccess::GetExceptionStateByExceptionRecord(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4485,7 +4485,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
 
@@ -4653,7 +4653,7 @@ ClrDataAccess::CreateMemoryValue(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4680,7 +4680,7 @@ ClrDataAccess::SetAllTypeNotifications(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4735,7 +4735,7 @@ ClrDataAccess::SetAllCodeNotifications(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4765,7 +4765,7 @@ ClrDataAccess::GetTypeNotifications(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4796,7 +4796,7 @@ ClrDataAccess::SetTypeNotifications(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4861,7 +4861,7 @@ ClrDataAccess::GetCodeNotifications(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4967,7 +4967,7 @@ Exit: ;
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4993,7 +4993,7 @@ ClrDataAccess::GetOtherNotificationFlags(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -5027,7 +5027,7 @@ ClrDataAccess::SetOtherNotificationFlags(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -5306,7 +5306,7 @@ ClrDataAccess::FollowStub2(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -5358,7 +5358,7 @@ ClrDataAccess::GetGcNotification(GcEvtArgs* gcEvtArgs)
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -5404,7 +5404,7 @@ ClrDataAccess::SetGcNotification(IN GcEvtArgs gcEvtArgs)
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -5840,7 +5840,7 @@ ClrDataAccess::RawGetMethodName(
                 EX_CATCH
                 {
                 }
-                EX_END_CATCH(SwallowAllExceptions)
+                EX_END_CATCH
             }
         }
         else
@@ -6765,7 +6765,7 @@ void ClrDataAccess::InitStreamsForWriting(IN CLRDataEnumMemoryFlags flags)
             m_streams = NULL;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 bool ClrDataAccess::MdCacheAddEEName(TADDR taEEStruct, const SString& name)
@@ -6780,7 +6780,7 @@ bool ClrDataAccess::MdCacheAddEEName(TADDR taEEStruct, const SString& name)
     {
         result = false;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return result;
 }
@@ -6799,7 +6799,7 @@ void ClrDataAccess::EnumStreams(IN CLRDataEnumMemoryFlags flags)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 bool ClrDataAccess::MdCacheGetEEName(TADDR taEEStruct, SString & eeName)
@@ -6816,7 +6816,7 @@ bool ClrDataAccess::MdCacheGetEEName(TADDR taEEStruct, SString & eeName)
     {
         result = false;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return result;
 }
@@ -8079,7 +8079,7 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
             curr->pNext = err;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
 #if 0
     // todo

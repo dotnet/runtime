@@ -405,7 +405,7 @@ FCIMPLEND
 
 // The MethodTable is remembered in some slow-path allocation paths. This value is used in event tracing.
 // It may statistically correlate with the most allocated type on the given stack/thread.
-DECLSPEC_THREAD
+static PLATFORM_THREAD_LOCAL
 MethodTable* tls_pLastAllocationEEType = NULL;
 
 MethodTable* GetLastAllocEEType()

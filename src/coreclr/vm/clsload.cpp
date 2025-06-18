@@ -1124,9 +1124,9 @@ bool CompareNameHandleWithTypeHandleNoThrow(
         // Technically, the above operations should never result in a non-OOM
         // exception, but we'll put the rethrow line in there just in case.
         CONSISTENCY_CHECK(!GET_EXCEPTION()->IsTerminal());
-        RethrowTerminalExceptions;
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return fRet;
 }
@@ -2947,13 +2947,10 @@ void ClassLoader::NotifyUnload(MethodTable* pMT, bool unloadStarted)
                 else
                     (&g_profControlBlock)->ClassUnloadFinished((ClassID) pMT, S_OK);
             }
-            EX_CATCH
-            {
-                // The exception here came from the profiler itself. We'll just
-                // swallow the exception, since we don't want the profiler to bring
-                // down the runtime.
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_SWALLOW_NONTERMINAL
+            // The exception here came from the profiler itself. We'll just
+            // swallow the exception, since we don't want the profiler to bring
+            // down the runtime.
         }
         END_PROFILER_CALLBACK();
     }

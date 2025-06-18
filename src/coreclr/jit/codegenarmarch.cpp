@@ -3452,9 +3452,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(params.methHnd);
                     noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
-                    void* pAddr = nullptr;
-                    params.addr = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
-                    assert(pAddr == nullptr);
+                    CORINFO_CONST_LOOKUP helperLookup = compiler->compGetHelperFtn(helperNum);
+                    params.addr                       = helperLookup.addr;
+                    assert(helperLookup.accessType == IAT_VALUE);
                 }
                 else
                 {

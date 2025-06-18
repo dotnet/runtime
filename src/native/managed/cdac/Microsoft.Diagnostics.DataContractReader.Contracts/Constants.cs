@@ -60,6 +60,8 @@ public static class Constants
 
         public const string Architecture = nameof(Architecture);
         public const string OperatingSystem = nameof(OperatingSystem);
+
+        public const string GCInfoVersion = nameof(GCInfoVersion);
     }
     public static class FieldNames
     {

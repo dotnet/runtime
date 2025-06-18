@@ -77,13 +77,15 @@ struct GCInfoToken
     }
 #endif
 
+    // Keep this in sync with GetR2RGCInfoVersion in cDac (ExecutionManagerCore.ReadyToRunJitManager.cs)
     static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion, uint32_t readyToRunMinorVersion)
     {
-#ifdef SOS_INCLUDE
-        return GCInfoVersion();
-#else
-        return GCINFO_VERSION;
-#endif
+        if (readyToRunMajorVersion >= 11)
+            return 4;
+
+        // Since v2 and v3 had the same file format and v1 is no longer supported,
+        // we can assume GCInfo v3.
+        return 3;
     }
 };
 
