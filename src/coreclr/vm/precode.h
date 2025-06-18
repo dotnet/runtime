@@ -52,8 +52,10 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 
 #elif defined(TARGET_WASM)
 
+// on wasm we have "fake" precode, with precode type and MethodDesc information stored
 #define SIZEOF_PRECODE_BASE         2*sizeof(void*)
 #define OFFSETOF_PRECODE_TYPE       0
+#define OFFSETOF_PRECODE_MD         4
 
 #endif // TARGET_AMD64
 

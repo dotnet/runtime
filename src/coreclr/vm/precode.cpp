@@ -133,8 +133,8 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
     TADDR pMD = (TADDR)NULL;
 
     PrecodeType precodeType = GetType();
-#ifdef __wasm__
-    pMD = *(TADDR*)(m_data + OFFSETOF_PRECODE_TYPE + 4);
+#ifdef TARGET_WASM
+    pMD = *(TADDR*)(m_data + OFFSETOF_PRECODE_MD);
 #else
     switch (precodeType)
     {
@@ -168,7 +168,7 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
     default:
         break;
     }
-#endif // __wasm__
+#endif // TARGET_WASM
 
     if (pMD == (TADDR)NULL)
     {
@@ -291,9 +291,9 @@ void Precode::Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAl
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef __wasm__  
+#ifdef TARGET_WASM
     m_data[OFFSETOF_PRECODE_TYPE] = t;
-    *(TADDR*)(m_data + OFFSETOF_PRECODE_TYPE + 4) = (TADDR)pMD;
+    *(TADDR*)(m_data + OFFSETOF_PRECODE_MD) = (TADDR)pMD;
 #else
     switch (t) {
     case PRECODE_STUB:
