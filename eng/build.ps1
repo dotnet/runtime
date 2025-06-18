@@ -336,6 +336,16 @@ if ($env:TreatWarningsAsErrors -eq 'false') {
 # disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
 $arguments += " /tl:false"
 
+# Exclude the source directory from Windows Defender scanning if running on Windows and in Azure Pipelines
+if ($env:BUILD_SOURCESDIRECTORY) {
+  try {
+    Write-Host "Excluding $env:BUILD_SOURCESDIRECTORY from Windows Defender scanning..."
+    Add-MpPreference -ExclusionPath $env:BUILD_SOURCESDIRECTORY
+  } catch {
+    Write-Warning "Failed to add Windows Defender exclusion for $env:BUILD_SOURCESDIRECTORY: $_"
+  }
+}
+
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.
 $env:DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
