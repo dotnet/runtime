@@ -81,6 +81,7 @@ namespace ILCompiler
             public const int Vaes = (1 << 15);
             public const int WaitPkg = (1 << 16);
             public const int X86Serialize = (1 << 17);
+            public const int AvxVnniInt = (1 << 18);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -99,7 +100,12 @@ namespace ILCompiler
                 if ((flags & Avx10v1) != 0)
                     builder.AddSupportedInstructionSet("avx10v1");
                 if ((flags & Avx10v2) != 0)
+                {
                     builder.AddSupportedInstructionSet("avx10v2");
+                    builder.AddSupportedInstructionSet("avxvnniint_v512");
+                }
+                if ((flags & AvxVnniInt) != 0)
+                    builder.AddSupportedInstructionSet("avxvnniint");
                 if ((flags & Apx) != 0)
                     builder.AddSupportedInstructionSet("apx");
 
@@ -188,6 +194,8 @@ namespace ILCompiler
                     InstructionSet.X64_GFNI_X64 => Gfni,
                     InstructionSet.X64_GFNI_V256 => (Gfni | Avx),
                     InstructionSet.X64_GFNI_V512 => (Gfni | Avx512),
+                    InstructionSet.X64_AVXVNNIINT => AvxVnniInt,
+                    InstructionSet.X64_AVXVNNIINT_V512 => Avx10v2,
 
                     InstructionSet.X64_SHA => Sha,
                     InstructionSet.X64_SHA_X64 => Sha,
