@@ -1116,9 +1116,7 @@ namespace System.Net
                         // return a null stream to avoid blocking.
                         return Stream.Null;
                     }
-
                     _requestStream = new RequestStream(await getStreamTask.ConfigureAwait(false), completeTcs);
-
                 }
                 catch (Exception ex)
                 {
