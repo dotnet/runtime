@@ -45,7 +45,7 @@
 #define HANDLES_REUSE_WRAPPER		HANDLES
 #define MONO_HANDLE_REGISTER_ICALL(...) /* nothing  */
 
-//#define TEST_ICALL_SYMBOL_MAP 1
+#define TEST_ICALL_SYMBOL_MAP 1
 
 // Generate Icall_ constants
 enum {

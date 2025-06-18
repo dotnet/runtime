@@ -64,6 +64,7 @@
 #include "interp-internals.h"
 #include "mintops.h"
 #include "interp-intrins.h"
+#include "interp-icalls.h"
 #include "tiering.h"
 
 #ifdef INTERP_ENABLE_SIMD
@@ -93,6 +94,8 @@
 #include "jiterpreter.h"
 #include <emscripten.h>
 #endif
+
+#include <mono/metadata/mh_log.h>
 
 /* Arguments that are passed when invoking only a finally/filter clause from the frame */
 struct FrameClauseArgs {
@@ -2348,120 +2351,70 @@ interp_entry (InterpEntryData *data)
 		stackval_to_data (type, frame.stack, data->res, FALSE);
 }
 
-static void
-do_icall (MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error)
+static void log_op(MintICallSig op)
 {
-	if (save_last_error)
-		mono_marshal_clear_last_error ();
-
-	switch (op) {
-	case MINT_ICALLSIG_V_V: {
-		typedef void (*T)(void);
-		T func = (T)ptr;
-        	func ();
+	switch(op) {
+	case MINT_ICALLSIG_V_V:
+		MH_LOG("MINT_ICALLSIG_V_V");
 		break;
-	}
-	case MINT_ICALLSIG_V_P: {
-		typedef gpointer (*T)(void);
-		T func = (T)ptr;
-		ret_sp->data.p = func ();
+	case MINT_ICALLSIG_V_P:
+		MH_LOG("MINT_ICALLSIG_V_P");
 		break;
-	}
-	case MINT_ICALLSIG_P_V: {
-		typedef void (*T)(gpointer);
-		T func = (T)ptr;
-		func (sp [0].data.p);
+	case MINT_ICALLSIG_P_V:
+		MH_LOG("MINT_ICALLSIG_P_V");
 		break;
-	}
-	case MINT_ICALLSIG_P_P: {
-		typedef gpointer (*T)(gpointer);
-		T func = (T)ptr;
-		ret_sp->data.p = func (sp [0].data.p);
+	case MINT_ICALLSIG_P_P:
+		MH_LOG("MINT_ICALLSIG_P_P");
 		break;
-	}
-	case MINT_ICALLSIG_PP_V: {
-		typedef void (*T)(gpointer,gpointer);
-		T func = (T)ptr;
-		func (sp [0].data.p, sp [1].data.p);
+	case MINT_ICALLSIG_PP_V:
+		MH_LOG("MINT_ICALLSIG_PP_V");
 		break;
-	}
-	case MINT_ICALLSIG_PP_P: {
-		typedef gpointer (*T)(gpointer,gpointer);
-		T func = (T)ptr;
-		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p);
+	case MINT_ICALLSIG_PP_P:
+		MH_LOG("MINT_ICALLSIG_PP_P");
 		break;
-	}
-	case MINT_ICALLSIG_PPP_V: {
-		typedef void (*T)(gpointer,gpointer,gpointer);
-		T func = (T)ptr;
-		func (sp [0].data.p, sp [1].data.p, sp [2].data.p);
+	case MINT_ICALLSIG_PPP_V:
+		MH_LOG("MINT_ICALLSIG_PPP_V");
 		break;
-	}
-	case MINT_ICALLSIG_PPP_P: {
-		typedef gpointer (*T)(gpointer,gpointer,gpointer);
-		T func = (T)ptr;
-		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p);
+	case MINT_ICALLSIG_PPP_P:
+		MH_LOG("MINT_ICALLSIG_PPP_P");
 		break;
-	}
-	case MINT_ICALLSIG_PPPP_V: {
-		typedef void (*T)(gpointer,gpointer,gpointer,gpointer);
-		T func = (T)ptr;
-		func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p);
+	case MINT_ICALLSIG_PPPP_V:
+		MH_LOG("MINT_ICALLSIG_PPPP_V");
 		break;
-	}
-	case MINT_ICALLSIG_PPPP_P: {
-		typedef gpointer (*T)(gpointer,gpointer,gpointer,gpointer);
-		T func = (T)ptr;
-		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p);
+	case MINT_ICALLSIG_PPPP_P:
+		MH_LOG("MINT_ICALLSIG_PPPP_P");
 		break;
-	}
-	case MINT_ICALLSIG_PPPPP_V: {
-		typedef void (*T)(gpointer,gpointer,gpointer,gpointer,gpointer);
-		T func = (T)ptr;
-		func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p);
+	case MINT_ICALLSIG_PPPPP_V:
+		MH_LOG("MINT_ICALLSIG_PPPPP_V");
 		break;
-	}
-	case MINT_ICALLSIG_PPPPP_P: {
-		typedef gpointer (*T)(gpointer,gpointer,gpointer,gpointer,gpointer);
-		T func = (T)ptr;
-		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p);
+	case MINT_ICALLSIG_PPPPP_P:
+		MH_LOG("MINT_ICALLSIG_PPPPP_P");
 		break;
-	}
-	case MINT_ICALLSIG_PPPPPP_V: {
-		typedef void (*T)(gpointer,gpointer,gpointer,gpointer,gpointer,gpointer);
-		T func = (T)ptr;
-		func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p, sp [5].data.p);
+	case MINT_ICALLSIG_PPPPPP_V:
+		MH_LOG("MINT_ICALLSIG_PPPPPP_V");
 		break;
-	}
-	case MINT_ICALLSIG_PPPPPP_P: {
-		typedef gpointer (*T)(gpointer,gpointer,gpointer,gpointer,gpointer,gpointer);
-		T func = (T)ptr;
-		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p, sp [5].data.p);
+	case MINT_ICALLSIG_PPPPPP_P:
+		MH_LOG("MINT_ICALLSIG_PPPPPP_P");
 		break;
-	}
 	default:
-		g_assert_not_reached ();
+		MH_LOG("Unknown MintICallSig: %d", op);
+		break;
 	}
-
-	if (save_last_error)
-		mono_marshal_set_last_error ();
-
-	/* convert the native representation to the stackval representation */
-	if (sig)
-		stackval_from_data (sig->ret, ret_sp, (char*) &ret_sp->data.p, sig->pinvoke && !sig->marshalling_disabled);
 }
 
 /* MONO_NO_OPTIMIZATION is needed due to usage of INTERP_PUSH_LMF_WITH_CTX. */
 #ifdef _MSC_VER
 #pragma optimize ("", off)
-#endif
+#endif 
+
 // Do not inline in case order of frame addresses matters, and maybe other reasons.
 static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE gpointer
 do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error, gboolean *gc_transitions)
 {
 	MonoLMFExt ext;
 	INTERP_PUSH_LMF_WITH_CTX (frame, ext, exit_icall);
-
+	MH_LOG_INDENT();
+	MH_LOG("calling do_icall for %s", mono_method_full_name (frame->imethod->method, TRUE));
 	if (*gc_transitions) {
 		MONO_ENTER_GC_SAFE;
 		do_icall (sig, op, ret_sp, sp, ptr, save_last_error);
@@ -2470,7 +2423,7 @@ do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, MintICallSig op,
 	} else {
 		do_icall (sig, op, ret_sp, sp, ptr, save_last_error);
 	}
-
+	MH_LOG_UNINDENT();
 	interp_pop_lmf (&ext);
 
 	goto exit_icall; // prevent unused label warning in some configurations
@@ -3686,6 +3639,7 @@ mono_interp_leave (InterpFrame* parent_frame)
 	 * to check the abort threshold. For this to work we use frame as a
 	 * dummy frame that is stored in the lmf and serves as the transition frame
 	 */
+	
 	do_icall_wrapper (&frame, NULL, MINT_ICALLSIG_V_P, &tmp_sp, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE, &gc_transitions);
 
 	return (MonoException*)tmp_sp.data.p;
