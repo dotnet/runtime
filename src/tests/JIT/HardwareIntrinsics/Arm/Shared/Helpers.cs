@@ -2500,7 +2500,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             if (i % 2 == 0)
             {
-                if (i + 1 >= op2.Length)
+                if ((i + 1) >= op2.Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range for op3.");
                 }
