@@ -311,7 +311,8 @@ namespace Microsoft.Extensions.Configuration
             // For property binding, there are some cases when HasNewValue is not set in BindingPoint while a non-null Value inside that object can be retrieved from the property getter.
             // As example, when binding a property which not having a configuration entry matching this property and the getter can initialize the Value.
             // It is important to call the property setter as the setters can have a logic adjusting the Value.
-            if (!propertyBindingPoint.IsReadOnly && (propertyBindingPoint.Value is not null || (propertyBindingPoint.HasNewValue)))
+            // Otherwise, if the HasNewValue set to true, it means that the property setter should be called anyway as encountering a new value.
+            if (!propertyBindingPoint.IsReadOnly && (propertyBindingPoint.Value is not null || propertyBindingPoint.HasNewValue))
             {
                 property.SetValue(instance, propertyBindingPoint.Value);
             }

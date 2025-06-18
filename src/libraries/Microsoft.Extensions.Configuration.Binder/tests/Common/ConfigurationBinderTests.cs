@@ -16,7 +16,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.Configuration.Test;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Microsoft.Extensions
 #if BUILDING_SOURCE_GENERATOR_TESTS
@@ -36,10 +35,6 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
     public partial class ConfigurationBinderTests : ConfigurationBinderTestsBase
     {
-        public ConfigurationBinderTests() : base()
-        {
-        }
-
         [Fact]
         public void BindWithNestedTypesWithReadOnlyProperties()
         {

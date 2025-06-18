@@ -10,7 +10,6 @@ using System.Text;
 using Microsoft.Extensions.Configuration;
 #endif
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Microsoft.Extensions
 #if BUILDING_SOURCE_GENERATOR_TESTS
@@ -20,10 +19,6 @@ namespace Microsoft.Extensions
 {
     public sealed partial class ConfigurationBinderCollectionTests : ConfigurationBinderTestsBase
     {
-        public ConfigurationBinderCollectionTests() : base()
-        {
-        }
-
         [Fact]
         public void GetList()
         {
