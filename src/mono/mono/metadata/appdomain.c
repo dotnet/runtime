@@ -150,8 +150,7 @@ mono_runtime_set_no_exec (gboolean val)
  */
 gboolean
 mono_runtime_get_no_exec (void)
-{
-	MH_LOG("inside mono_runtime_get_no_exec");
+{	
 	return no_exec;
 }
 
