@@ -363,7 +363,7 @@ foreach ($config in $configuration) {
     } finally {
       Write-Host "Check windows events for defender related messages"
       Get-WinEvent -LogName "Microsoft-Windows-Windows Defender/Operational" |
-      Where-Object { $_.Message -like "*threat*" } |
+      Where-Object { $_.Message -like "*artifacts*" } |
       ForEach-Object {
         [xml]$eventXml = [xml]$_.ToXml()
         [PSCustomObject]@{
