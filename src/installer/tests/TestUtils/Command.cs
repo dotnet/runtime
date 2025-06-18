@@ -180,7 +180,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
                 // Explicitly set the core file size to 0 before launching the process in the same shell
                 Process.StartInfo.Arguments = $"-c \"ulimit -c 0 && exec {Process.StartInfo.FileName} {args}\"";
-                Process.StartInfo.FileName = "/bin/bash";
+                Process.StartInfo.FileName = "/bin/sh";
             }
 
             if (Process.StartInfo.RedirectStandardOutput)
