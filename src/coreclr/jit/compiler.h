@@ -3205,7 +3205,7 @@ public:
                                     unsigned    simdSize);
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-    GenTree* gtNewSimdCvtVectorToMaskNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
+    GenTreeHWIntrinsic* gtNewSimdCvtVectorToMaskNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
     GenTree* gtNewSimdCreateBroadcastNode(
@@ -6713,8 +6713,7 @@ private:
     GenTreeHWIntrinsic* fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* node);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #ifdef TARGET_ARM64
-    bool canMorphVectorOperandToMask(GenTree* node);
-    bool canMorphAllVectorOperandsToMasks(GenTreeHWIntrinsic* node);
+    void costMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic* parent, weight_t *currentCost, weight_t *switchCost);
     GenTree* doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic* parent);
     GenTreeHWIntrinsic* fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node);
 #endif // TARGET_ARM64
