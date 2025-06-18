@@ -20451,6 +20451,19 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
             return false;
         }
 
+        case NI_AVX512_CompressMask:
+        case NI_AVX512_ExpandMask:
+        {
+            GenTree* op1 = hwintrinsic->Op(1);
+
+            if (op1->isContained())
+            {
+                assert(op1->IsVectorZero());
+                return false;
+            }
+            return true;
+        }
+
         case NI_AVX512_Fixup:
         case NI_AVX512_FixupScalar:
         {
