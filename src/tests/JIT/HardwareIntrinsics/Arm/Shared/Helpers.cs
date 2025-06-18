@@ -2511,7 +2511,7 @@ namespace JIT.HardwareIntrinsics.Arm
             }
             else
             {
-                if ((i - 1 < 0) || (i - 1 >= op1.Length) || (i - 1 >= op3.Length))
+                if (((i - 1) < 0) || ((i - 1) >= op1.Length) || ((i - 1) >= op3.Length))
                 {
                     throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
                 }
