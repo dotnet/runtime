@@ -162,8 +162,8 @@ namespace System.Runtime.CompilerServices
         [RequiresPreviewFeatures]
         private static void SwitchOffThread()
         {
-            // This is basically AwaitTaskContinuation.isValidLocationForInlining, but without initializing Thread.CurrentThread
-            // (which is always valid in runtime async methods).
+            // This is basically AwaitTaskContinuation.IsValidLocationForInlining, but without
+            // initializing Thread.CurrentThread (which is always valid in runtime async methods).
             Thread thread = Thread.CurrentThreadNoInit!;
             SynchronizationContext? ctx = thread._synchronizationContext;
             if (ctx == null || ctx.GetType() == typeof(SynchronizationContext))
