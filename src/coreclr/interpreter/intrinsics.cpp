@@ -4,7 +4,7 @@
 #include "interpreter.h"
 #include "intrinsics.h"
 
-#include "..\jit\lookupintrinsic.h"
+#include "../jit/lookupintrinsic.h"
 
 NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE compMethod, CORINFO_METHOD_HANDLE method)
 {
