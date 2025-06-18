@@ -341,6 +341,8 @@ if ($env:BUILD_SOURCESDIRECTORY) {
   try {
     Write-Host "Excluding $env:BUILD_SOURCESDIRECTORY from Windows Defender scanning..."
     Add-MpPreference -ExclusionPath $env:BUILD_SOURCESDIRECTORY
+    Write-Host "Check the exclusions"
+    Get-MpPreference | Select-Object -ExpandProperty ExclusionPath
   } catch {
     Write-Warning "Failed to add Windows Defender exclusion for $env:BUILD_SOURCESDIRECTORY: $_"
   }
