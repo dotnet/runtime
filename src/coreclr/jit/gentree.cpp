@@ -18609,6 +18609,84 @@ void GenTreeVecCon::EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_type
 }
 
 //------------------------------------------------------------------------
+// GenTreeVecCon::EvaluateUnaryInPlace: Evaluates this constant using the given operation, when the other
+//                                      operand is a constant mask
+//
+// Arguments:
+//    oper     - the operation to use in the evaluation
+//    scalar   - true if this is a scalar operation; otherwise, false
+//    baseType - the base type of the constant being checked
+//    other    - the mask constant to use in the evaluation
+//
+void GenTreeVecCon::EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_types baseType, GenTreeMskCon* other)
+{
+    switch (gtType)
+    {
+        case TYP_SIMD8:
+        {
+            simd8_t otherSimdVal;
+            EvaluateSimdCvtMaskToVector<simd8_t>(baseType, &otherSimdVal, other->gtSimdMaskVal);
+
+            simd8_t result = {};
+            EvaluateBinarySimd<simd8_t>(oper, scalar, baseType, &result, gtSimd8Val, otherSimdVal);
+            gtSimd8Val = result;
+            break;
+        }
+
+        case TYP_SIMD12:
+        {
+            simd12_t otherSimdVal;
+            EvaluateSimdCvtMaskToVector<simd12_t>(baseType, &otherSimdVal, other->gtSimdMaskVal);
+
+            simd12_t result = {};
+            EvaluateBinarySimd<simd12_t>(oper, scalar, baseType, &result, gtSimd12Val, otherSimdVal);
+            gtSimd12Val = result;
+            break;
+        }
+
+        case TYP_SIMD16:
+        {
+            simd16_t otherSimdVal;
+            EvaluateSimdCvtMaskToVector<simd16_t>(baseType, &otherSimdVal, other->gtSimdMaskVal);
+
+            simd16_t result = {};
+            EvaluateBinarySimd<simd16_t>(oper, scalar, baseType, &result, gtSimd16Val, otherSimdVal);
+            gtSimd16Val = result;
+            break;
+        }
+
+#if defined(TARGET_XARCH)
+        case TYP_SIMD32:
+        {
+            simd32_t otherSimdVal;
+            EvaluateSimdCvtMaskToVector<simd32_t>(baseType, &otherSimdVal, other->gtSimdMaskVal);
+
+            simd32_t result = {};
+            EvaluateBinarySimd<simd32_t>(oper, scalar, baseType, &result, gtSimd32Val, otherSimdVal);
+            gtSimd32Val = result;
+            break;
+        }
+
+        case TYP_SIMD64:
+        {
+            simd64_t otherSimdVal;
+            EvaluateSimdCvtMaskToVector<simd64_t>(baseType, &otherSimdVal, other->gtSimdMaskVal);
+
+            simd64_t result = {};
+            EvaluateBinarySimd<simd64_t>(oper, scalar, baseType, &result, gtSimd64Val, otherSimdVal);
+            gtSimd64Val = result;
+            break;
+        }
+#endif // TARGET_XARCH
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // GenTreeVecCon::EvaluateBroadcastInPlace: Evaluates this constant using a broadcast
 //
 // Arguments:
@@ -32838,12 +32916,26 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 if (op2->IsCnsVec() && op3->IsCnsVec())
                 {
-                    // op2 = op2 & op1
-                    op2->AsVecCon()->EvaluateBinaryInPlace(GT_AND, false, simdBaseType, op1->AsVecCon());
+                    if (op1->IsCnsVec())
+                    {
+                        // op2 = op2 & op1
+                        op2->AsVecCon()->EvaluateBinaryInPlace(GT_AND, false, simdBaseType, op1->AsVecCon());
 
-                    // op3 = op2 & ~op1
-                    op3->AsVecCon()->EvaluateBinaryInPlace(GT_AND_NOT, false, simdBaseType, op1->AsVecCon());
+                        // op3 = op2 & ~op1
+                        op3->AsVecCon()->EvaluateBinaryInPlace(GT_AND_NOT, false, simdBaseType, op1->AsVecCon());
+                    }
+#if defined(TARGET_ARM64)
+                    else if (op1->IsCnsMsk())
+                    {
+                        assert(ni == NI_Sve_ConditionalSelect);
 
+                        // op2 = op2 & op1
+                        op2->AsVecCon()->EvaluateBinaryInPlace(GT_AND, false, simdBaseType, op1->AsMskCon());
+
+                        // op3 = op2 & ~op1
+                        op3->AsVecCon()->EvaluateBinaryInPlace(GT_AND_NOT, false, simdBaseType, op1->AsMskCon());
+                    }
+#endif
                     // op2 = op2 | op3
                     op2->AsVecCon()->EvaluateBinaryInPlace(GT_OR, false, simdBaseType, op3->AsVecCon());
 

@@ -6851,6 +6851,7 @@ struct GenTreeVecCon : public GenTree
 
     void EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType);
     void EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_types baseType, GenTreeVecCon* other);
+    void EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_types baseType, GenTreeMskCon* other);
 
     template <typename TBase>
     void EvaluateBroadcastInPlace(TBase scalar)
