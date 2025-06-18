@@ -362,8 +362,8 @@ foreach ($config in $configuration) {
       Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
     } finally {
       Write-Host "Check windows events for defender related messages"
-      Get-WinEvent -LogName "Microsoft-Windows-Windows Defender/Operational" |
-      Where-Object { $_.Message -like "*artifacts*" } |
+      
+      Get-WinEvent -LogName "*Defender*" |
       ForEach-Object {
         [xml]$eventXml = [xml]$_.ToXml()
         [PSCustomObject]@{
@@ -375,6 +375,7 @@ foreach ($config in $configuration) {
           ActionData  = ($eventXml.Event.EventData.Data | ForEach-Object { "$($_.Name): $($_.'#text')" }) -join "`n"
         }
       }
+
       if ($lastExitCode -ne 0) {
           $failedBuilds += "Configuration: $config, Architecture: $singleArch"
       }
