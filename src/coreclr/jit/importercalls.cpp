@@ -8405,6 +8405,15 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
+        // If we don't know the array type exactly we may have the wrong interface type here.
+        // Bail out.
+        //
+        if (!isExact)
+        {
+            JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
+            return;
+        }
+
         // We want to inline the instantiating stub. Fetch the relevant info.
         //
         CORINFO_CLASS_HANDLE ignored = NO_CLASS_HANDLE;
