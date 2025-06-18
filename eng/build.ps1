@@ -363,7 +363,8 @@ foreach ($config in $configuration) {
     } finally {
       Write-Host "Check windows events for defender related messages"
       
-      Get-WinEvent -LogName "*Defender*" |
+      $StartTime = (Get-Date).AddMinutes(-5)
+      Get-WinEvent -FilterHashtable @{LogName="*"; StartTime=$StartTime} |
       ForEach-Object {
         [xml]$eventXml = [xml]$_.ToXml()
         [PSCustomObject]@{
