@@ -175,6 +175,33 @@ namespace System.Text.Json
             return false;
         }
 
+        public static bool TryGetValue(ReadOnlySpan<byte> segment, bool isEscaped, out Guid value)
+        {
+            if (segment.Length > JsonConstants.MaximumEscapedGuidLength)
+            {
+                value = default;
+                return false;
+            }
+
+            // Segment needs to be unescaped
+            if (isEscaped)
+            {
+                return TryGetEscapedGuid(segment, out value);
+            }
+
+            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
+
+            if (segment.Length == JsonConstants.MaximumFormatGuidLength
+                && Utf8Parser.TryParse(segment, out Guid tmp, out _, 'D'))
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
         public static bool TryGetEscapedGuid(ReadOnlySpan<byte> source, out Guid value)
         {
             Debug.Assert(source.Length <= JsonConstants.MaximumEscapedGuidLength);
