@@ -137,7 +137,7 @@ namespace System.Net.Test.Common
                 Stream stream = null;
 #if TARGET_BROWSER
                 closableWrapper = new SocketWrapper(_listenSocket);
-                stream = new WebSocketStream(_listenSocket, ownsSocket: true);
+                stream = WebSocketStream.Create(_listenSocket, WebSocketMessageType.Binary, ownsWebSocket: true);
 #else
                 var socket = await _listenSocket.AcceptAsync().ConfigureAwait(false);
                 closableWrapper = new SocketWrapper(socket);
