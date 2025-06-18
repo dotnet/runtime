@@ -800,6 +800,19 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
+        public static void Uri_AbsoluteImplicitFileWithUnicodeAndLeadingWhitespace()
+        {
+            string uriString = PlatformDetection.IsWindows ? "\tC:\\\u005C" : "\t/\u005C";
+            string toString = PlatformDetection.IsWindows ? "file:///C:/\u005C" : "file:///\u005C";
+
+            Uri uriFromCtor = new Uri(uriString, UriKind.Absolute);
+            Assert.True(Uri.TryCreate(uriString, UriKind.Absolute, out var uriFromTryCreate));
+
+            Assert.Equal(toString, uriFromCtor.ToString());
+            Assert.Equal(toString, uriFromTryCreate.ToString());
+        }
+
+        [Fact]
         public static void UriWithUnicodeAndEmptyAuthority_ParsedCorrectly()
         {
             const string UriString = "custom:///\u00FC";
