@@ -10271,90 +10271,6 @@ int32_t * CEEInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
     return result;
 }
 
-
-// This method is called from CEEInfo::FilterException which
-// is run as part of the SEH filter clause for the JIT.
-// It is fatal to throw an exception while running a SEH filter clause
-// so our contract is NOTHROW, NOTRIGGER.
-//
-LONG EEFilterException(struct _EXCEPTION_POINTERS *pExceptionPointers, void *unused)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    int result = 0;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    unsigned code = pExceptionPointers->ExceptionRecord->ExceptionCode;
-
-#ifdef _DEBUG
-    if (code == EXCEPTION_ACCESS_VIOLATION)
-    {
-        static int hit = 0;
-        if (hit++ == 0)
-        {
-            _ASSERTE(!"Access violation while Jitting!");
-            // If you set the debugger to catch access violations and 'go'
-            // you will get back to the point at which the access violation occurred
-            result = EXCEPTION_CONTINUE_EXECUTION;
-        }
-        else
-        {
-            result = EXCEPTION_CONTINUE_SEARCH;
-        }
-    }
-    else
-#endif // _DEBUG
-    // No one should be catching breakpoint
-    // Similarly the JIT doesn't know how to reset the guard page, so it shouldn't
-    // be catching a hard stack overflow
-    if (code == EXCEPTION_BREAKPOINT || code == EXCEPTION_SINGLE_STEP || code == EXCEPTION_STACK_OVERFLOW)
-    {
-        result = EXCEPTION_CONTINUE_SEARCH;
-    }
-    else if (!IsComPlusException(pExceptionPointers->ExceptionRecord))
-    {
-        result = EXCEPTION_EXECUTE_HANDLER;
-    }
-    else
-    {
-        GCX_COOP();
-
-        // This is actually the LastThrown exception object.
-        OBJECTREF throwable = CLRException::GetThrowableFromExceptionRecord(pExceptionPointers->ExceptionRecord);
-
-        if (throwable != NULL)
-        {
-            struct
-            {
-                OBJECTREF oLastThrownObject;
-            } _gc;
-
-            ZeroMemory(&_gc, sizeof(_gc));
-
-            // Setup the throwables
-            _gc.oLastThrownObject = throwable;
-
-            GCPROTECT_BEGIN(_gc);
-
-            // Don't catch ThreadAbort and other uncatchable exceptions
-            if (IsUncatchable(&_gc.oLastThrownObject))
-                result = EXCEPTION_CONTINUE_SEARCH;
-            else
-                result = EXCEPTION_EXECUTE_HANDLER;
-
-            GCPROTECT_END();
-        }
-    }
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
-}
-
 // This code is called if FilterException chose to handle the exception.
 void CEEInfo::HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers)
 {
@@ -10553,15 +10469,16 @@ bool CEEInfo::runWithSPMIErrorTrap(void (*function)(void*), void* param)
 
 bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
 {
-    // No dynamic contract here because SEH is used
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_PREEMPTIVE;
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
 
     // NOTE: the lack of JIT/EE transition markers in this method is intentional. Any
-    //       transitions into the EE proper should occur either via the call to
-    //       `EEFilterException` (which is appropriately marked) or via JIT/EE
-    //       interface calls made by `function`.
+    //       transitions into the EE proper should occur via JIT/EE interface calls
+    //       made by `function`.
 
     bool success = true;
 
