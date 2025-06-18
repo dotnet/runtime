@@ -1045,17 +1045,12 @@ struct VirtualFunctionPointerArgs
     CORINFO_METHOD_HANDLE methodHnd;
 };
 
-typedef HCCALL1_PTR(TADDR, FnStaticBaseHelper, TADDR arg0);
-
 struct StaticFieldAddressArgs
 {
-    FnStaticBaseHelper staticBaseHelper;
+    PCODE staticBaseHelper;
     TADDR arg0;
     SIZE_T offset;
 };
-
-FCDECL1(TADDR, JIT_StaticFieldAddress_Dynamic, StaticFieldAddressArgs * pArgs);
-FCDECL1(TADDR, JIT_StaticFieldAddressUnbox_Dynamic, StaticFieldAddressArgs * pArgs);
 
 struct GenericHandleArgs
 {
