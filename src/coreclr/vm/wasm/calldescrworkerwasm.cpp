@@ -17,5 +17,5 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData * pCallDescrData)
         targetIp = pMethod->GetInterpreterCode();
     }
 
-    ExecuteInterpretedMethodWithArgs(((TransitionBlock*)pCallDescrData->pSrc) - 1, (TADDR)targetIp, (int8_t*)pCallDescrData->pSrc, pCallDescrData->nArgsSize, pCallDescrData->returnValue);
+    ExecuteInterpretedMethodWithArgs(pCallDescrData->pTransitionBlock, (TADDR)targetIp, (int8_t*)pCallDescrData->pSrc, pCallDescrData->nArgsSize, pCallDescrData->returnValue);
 }

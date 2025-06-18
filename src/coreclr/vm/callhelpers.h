@@ -31,6 +31,7 @@ struct CallDescrData
 #ifdef TARGET_WASM
     MethodDesc*                 pMD;
     size_t                      nArgsSize;
+    TransitionBlock*            pTransitionBlock;
 #endif
 
 #ifdef CALLDESCR_RETBUFFARGREG

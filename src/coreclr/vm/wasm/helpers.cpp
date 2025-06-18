@@ -230,7 +230,7 @@ extern "C" void STDCALL JIT_ByRefWriteBarrier()
 
 void InitJITHelpers1()
 {
-    /* no-op TODO do we need to do anything for the interpreter? */
+    /* no-op WASM-TODO do we need to do anything for the interpreter? */
 }
 
 extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface)
@@ -439,18 +439,18 @@ EXTERN_C void STDMETHODCALLTYPE ProfileTailcallNaked(UINT_PTR clientData)
 
 void InitJITWriteBarrierHelpers()
 {
-    // TODO: implement me
+    // WASM-TODO: implement me
 }
 
 int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
-    // TODO: implement me
+    // WASM-TODO: implement me
     return 0;
 }
 
 int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
-    // TODO: implement me
+    // WASM-TODO: implement me
     return 0;
 }
 

@@ -515,6 +515,9 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     CallDescrData callDescrData;
 
     callDescrData.pSrc = pTransitionBlock + sizeof(TransitionBlock);
+#ifdef TARGET_WASM
+    callDescrData.pTransitionBlock = (TransitionBlock*)pTransitionBlock;
+#endif
     _ASSERTE((nStackBytes % TARGET_POINTER_SIZE) == 0);
     callDescrData.numStackSlots = nStackBytes / TARGET_POINTER_SIZE;
 #ifdef CALLDESCR_ARGREGS
