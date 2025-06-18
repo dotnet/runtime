@@ -789,93 +789,7 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 	}
 }
 
-static void
-stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean pinvoke)
-{
-	if (m_type_is_byref (type)) {
-		result->data.p = *(gpointer*)data;
-		return;
-	}
-	switch (type->type) {
-	case MONO_TYPE_VOID:
-		break;;
-	case MONO_TYPE_I1:
-		result->data.i = *(gint8*)data;
-		break;
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-		result->data.i = *(guint8*)data;
-		break;
-	case MONO_TYPE_I2:
-		result->data.i = *(gint16*)data;
-		break;
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-		result->data.i = *(guint16*)data;
-		break;
-	case MONO_TYPE_I4:
-		result->data.i = *(gint32*)data;
-		break;
-	case MONO_TYPE_U:
-	case MONO_TYPE_I:
-		result->data.nati = *(mono_i*)data;
-		break;
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_FNPTR:
-		result->data.p = *(gpointer*)data;
-		break;
-	case MONO_TYPE_U4:
-		result->data.i = *(guint32*)data;
-		break;
-	case MONO_TYPE_R4:
-		/* memmove handles unaligned case */
-		memmove (&result->data.f_r4, data, sizeof (float));
-		break;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		memmove (&result->data.l, data, sizeof (gint64));
-		break;
-	case MONO_TYPE_R8:
-		memmove (&result->data.f, data, sizeof (double));
-		break;
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_ARRAY:
-		result->data.p = *(gpointer*)data;
-		break;
-	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
-			stackval_from_data (mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type)), result, data, pinvoke);
-			break;
-		} else {
-			int size;
-			if (pinvoke)
-				size = mono_class_native_size (m_type_data_get_klass_unchecked (type), NULL);
-			else
-				size = mono_class_value_size (m_type_data_get_klass_unchecked (type), NULL);
-			memcpy (result, data, size);
-			break;
-		}
-	case MONO_TYPE_GENERICINST: {
-		if (mono_type_generic_inst_is_valuetype (type)) {
-			MonoClass *klass = mono_class_from_mono_type_internal (type);
-			int size;
-			if (pinvoke)
-				size = mono_class_native_size (klass, NULL);
-			else
-				size = mono_class_value_size (klass, NULL);
-			memcpy (result, data, size);
-			break;
-		}
-		stackval_from_data (m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class), result, data, pinvoke);
-		break;
-	}
-	default:
-		g_error ("got type 0x%02x", type->type);
-	}
-}
+
 
 static int
 stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
@@ -2218,11 +2132,12 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	// method is transformed.
 	context->stack_pointer = (guchar*)(sp + 4);
 	g_assert (context->stack_pointer < context->stack_end);
-
+	MH_LOG_INDENT();
+	MH_LOG("calling mono_interp_exec_method for %s : %s", method->name, mono_method_full_name (method, TRUE));
 	MONO_ENTER_GC_UNSAFE;
 	mono_interp_exec_method (&frame, context, NULL);
 	MONO_EXIT_GC_UNSAFE;
-
+	MH_LOG_UNINDENT();
 	context->stack_pointer = (guchar*)sp;
 
 	if (context->has_resume_state) {
@@ -2351,56 +2266,6 @@ interp_entry (InterpEntryData *data)
 		stackval_to_data (type, frame.stack, data->res, FALSE);
 }
 
-static void log_op(MintICallSig op)
-{
-	switch(op) {
-	case MINT_ICALLSIG_V_V:
-		MH_LOG("MINT_ICALLSIG_V_V");
-		break;
-	case MINT_ICALLSIG_V_P:
-		MH_LOG("MINT_ICALLSIG_V_P");
-		break;
-	case MINT_ICALLSIG_P_V:
-		MH_LOG("MINT_ICALLSIG_P_V");
-		break;
-	case MINT_ICALLSIG_P_P:
-		MH_LOG("MINT_ICALLSIG_P_P");
-		break;
-	case MINT_ICALLSIG_PP_V:
-		MH_LOG("MINT_ICALLSIG_PP_V");
-		break;
-	case MINT_ICALLSIG_PP_P:
-		MH_LOG("MINT_ICALLSIG_PP_P");
-		break;
-	case MINT_ICALLSIG_PPP_V:
-		MH_LOG("MINT_ICALLSIG_PPP_V");
-		break;
-	case MINT_ICALLSIG_PPP_P:
-		MH_LOG("MINT_ICALLSIG_PPP_P");
-		break;
-	case MINT_ICALLSIG_PPPP_V:
-		MH_LOG("MINT_ICALLSIG_PPPP_V");
-		break;
-	case MINT_ICALLSIG_PPPP_P:
-		MH_LOG("MINT_ICALLSIG_PPPP_P");
-		break;
-	case MINT_ICALLSIG_PPPPP_V:
-		MH_LOG("MINT_ICALLSIG_PPPPP_V");
-		break;
-	case MINT_ICALLSIG_PPPPP_P:
-		MH_LOG("MINT_ICALLSIG_PPPPP_P");
-		break;
-	case MINT_ICALLSIG_PPPPPP_V:
-		MH_LOG("MINT_ICALLSIG_PPPPPP_V");
-		break;
-	case MINT_ICALLSIG_PPPPPP_P:
-		MH_LOG("MINT_ICALLSIG_PPPPPP_P");
-		break;
-	default:
-		MH_LOG("Unknown MintICallSig: %d", op);
-		break;
-	}
-}
 
 /* MONO_NO_OPTIMIZATION is needed due to usage of INTERP_PUSH_LMF_WITH_CTX. */
 #ifdef _MSC_VER
@@ -2414,7 +2279,7 @@ do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, MintICallSig op,
 	MonoLMFExt ext;
 	INTERP_PUSH_LMF_WITH_CTX (frame, ext, exit_icall);
 	MH_LOG_INDENT();
-	MH_LOG("calling do_icall for %s", mono_method_full_name (frame->imethod->method, TRUE));
+	MH_LOG("calling do_icall for %s : %s", frame->imethod->method->name, mono_method_full_name (frame->imethod->method, TRUE));
 	if (*gc_transitions) {
 		MONO_ENTER_GC_SAFE;
 		do_icall (sig, op, ret_sp, sp, ptr, save_last_error);
@@ -4299,8 +4164,10 @@ main_loop:
 			gpointer *cache = (gpointer*)&frame->imethod->data_items [ip [7]];
 			/* for calls, have ip pointing at the start of next instruction */
 			frame->state.ip = ip + 8;
+			MH_LOG_INDENT();
+			MH_LOG ("Calling native method %s with signature %s\n", mono_method_full_name (imethod->method, TRUE), mono_signature_full_name (csignature));
 			ves_pinvoke_method (imethod, csignature, (MonoFuncV)code, context, frame, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [3]), save_last_error, cache, &gc_transitions);
-
+			MH_LOG_UNINDENT();
 			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 

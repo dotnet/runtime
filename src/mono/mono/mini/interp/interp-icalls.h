@@ -3,10 +3,9 @@
 
 #include <glib.h>
 #include <mono/metadata/object.h>
-#include "mintSigs.h"
+#include "mintops.h"
 #include "interp-internals.h"
-#include "interp-enum-codecs.h"
-
+extern void stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean pinvoke);
 extern void do_icall(MonoMethodSignature * sig, MintICallSig op, stackval * ret_sp, stackval * sp, gpointer ptr, gboolean save_last_error);
 
 #endif
