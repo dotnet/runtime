@@ -1802,8 +1802,8 @@ public:
     inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
     inline bool IsVectorBroadcast(var_types simdBaseType) const;
-    inline bool IsMaskAllBitsSet() const;
-    inline bool IsMaskZero() const;
+    inline bool IsTrueMask(var_types simdBaseType) const;
+    inline bool IsFalseMask() const;
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
 
@@ -9550,54 +9550,46 @@ inline bool GenTree::IsVectorBroadcast(var_types simdBaseType) const
     return false;
 }
 
-inline bool GenTree::IsMaskAllBitsSet() const
+//------------------------------------------------------------------------
+// IsTrueMask: Is the given node a true mask
+//
+// Arguments:
+//   simdBaseType - the base type of the mask
+//
+// Returns true if the node is a true mask for the given simdBaseType.
+//
+// Note that a byte true mask (1111...) is different to an int true mask
+// (10001000...), therefore the simdBaseType of the mask needs to be
+// taken into account.
+//
+inline bool GenTree::IsTrueMask(var_types simdBaseType) const
 {
 #ifdef TARGET_ARM64
-    static_assert_no_msg(AreContiguous(NI_Sve_CreateTrueMaskByte, NI_Sve_CreateTrueMaskDouble,
-                                       NI_Sve_CreateTrueMaskInt16, NI_Sve_CreateTrueMaskInt32,
-                                       NI_Sve_CreateTrueMaskInt64, NI_Sve_CreateTrueMaskSByte,
-                                       NI_Sve_CreateTrueMaskSingle, NI_Sve_CreateTrueMaskUInt16,
-                                       NI_Sve_CreateTrueMaskUInt32, NI_Sve_CreateTrueMaskUInt64));
+    // TODO-SVE: For agnostic VL, vector type may not be simd16_t
 
-    if (OperIsHWIntrinsic())
+    if (IsCnsMsk())
     {
-        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
-        if (id == NI_Sve_ConvertMaskToVector)
-        {
-            GenTree* op1 = AsHWIntrinsic()->Op(1);
-            assert(op1->OperIsHWIntrinsic());
-            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
-        }
-        return ((id == NI_Sve_CreateTrueMaskAll) ||
-                ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)));
+        return SveMaskPatternAll == EvaluateSimdMaskToPattern<simd16_t>(simdBaseType, AsMskCon()->gtSimdMaskVal);
     }
-
 #endif
+
     return false;
 }
 
-inline bool GenTree::IsMaskZero() const
+//------------------------------------------------------------------------
+// IsFalseMask: Is the given node a false mask
+//
+// Returns true if the node is a false mask, ie all zeros
+//
+inline bool GenTree::IsFalseMask() const
 {
 #ifdef TARGET_ARM64
-    static_assert_no_msg(AreContiguous(NI_Sve_CreateFalseMaskByte, NI_Sve_CreateFalseMaskDouble,
-                                       NI_Sve_CreateFalseMaskInt16, NI_Sve_CreateFalseMaskInt32,
-                                       NI_Sve_CreateFalseMaskInt64, NI_Sve_CreateFalseMaskSByte,
-                                       NI_Sve_CreateFalseMaskSingle, NI_Sve_CreateFalseMaskUInt16,
-                                       NI_Sve_CreateFalseMaskUInt32, NI_Sve_CreateFalseMaskUInt64));
-
-    if (OperIsHWIntrinsic())
+    if (IsCnsMsk())
     {
-        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
-        if (id == NI_Sve_ConvertMaskToVector)
-        {
-            GenTree* op1 = AsHWIntrinsic()->Op(1);
-            assert(op1->OperIsHWIntrinsic());
-            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
-        }
-        return ((id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64));
+        return AsMskCon()->IsZero();
     }
-
 #endif
+
     return false;
 }
 
