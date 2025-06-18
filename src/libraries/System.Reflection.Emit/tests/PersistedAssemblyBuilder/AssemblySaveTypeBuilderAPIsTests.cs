@@ -547,7 +547,6 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-
         [Fact]
         public void CreateType_ValidateMethods()
         {
@@ -568,6 +567,10 @@ namespace System.Reflection.Emit.Tests
             dllImportMethod.SetCustomAttribute(new CustomAttributeBuilder(typeof(DllImportAttribute).GetConstructor([typeof(string)]), ["kernel32.dll"]));
             MethodBuilder implFlagsSetMethod = concreteTypeWithNativeAndPinvokeMethod.DefineMethod("InternalCall", MethodAttributes.Public);
             implFlagsSetMethod.SetImplementationFlags(MethodImplAttributes.InternalCall);
+
+            MethodBuilder methodNeedsIL = concreteTypeWithNativeAndPinvokeMethod.DefineMethod("MethodNeedsIL", MethodAttributes.Public);
+            methodNeedsIL.GetILGenerator().Emit(OpCodes.Ret);
+            concreteTypeWithNativeAndPinvokeMethod.CreateType(); // succeeds
         }
 
         [Fact]
