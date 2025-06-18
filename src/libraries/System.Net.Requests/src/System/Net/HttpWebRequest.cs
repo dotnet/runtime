@@ -1089,6 +1089,12 @@ namespace System.Net
 
         private async Task<Stream> InternalGetRequestStream()
         {
+            // Ensure that we only create the request stream once.
+            if (_requestStream != null)
+            {
+                return _requestStream;
+            }
+
             // If we aren't buffering we need to open the connection right away.
             // Because we need to send the data as soon as possible when it's available from the RequestStream.
             // Making this allows us to keep the sync send request path for buffering cases.
@@ -1111,8 +1117,7 @@ namespace System.Net
                         return Stream.Null;
                     }
 
-                    // Ensure that we only create the request stream once.
-                    _requestStream ??= new RequestStream(await getStreamTask.ConfigureAwait(false), completeTcs);
+                    _requestStream = new RequestStream(await getStreamTask.ConfigureAwait(false), completeTcs);
 
                 }
                 catch (Exception ex)
@@ -1122,8 +1127,7 @@ namespace System.Net
             }
             else
             {
-                // Ensure that we only create the request stream once.
-                _requestStream ??= new RequestBufferingStream();
+                _requestStream = new RequestBufferingStream();
             }
 
             return _requestStream;
