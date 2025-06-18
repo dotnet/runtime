@@ -788,6 +788,14 @@ CDAC_TYPE_FIELD(FaultingExceptionFrame, /*T_CONTEXT*/, TargetContext, cdac_data<
 #endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(FaultingExceptionFrame)
 
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+CDAC_TYPE_BEGIN(TailCallFrame)
+CDAC_TYPE_SIZE(sizeof(TailCallFrame))
+CDAC_TYPE_FIELD(TailCallFrame, /*CalleeSavedRegisters*/, CalleeSavedRegisters, cdac_data<TailCallFrame>::CalleeSavedRegisters)
+CDAC_TYPE_FIELD(TailCallFrame, /*pointer*/, ReturnAddress, cdac_data<TailCallFrame>::ReturnAddress)
+CDAC_TYPE_END(TailCallFrame)
+#endif // TARGET_X86 && !UNIX_X86_ABI
+
 // CalleeSavedRegisters struct is different on each platform
 CDAC_TYPE_BEGIN(CalleeSavedRegisters)
 CDAC_TYPE_SIZE(sizeof(CalleeSavedRegisters))
