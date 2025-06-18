@@ -2156,14 +2156,20 @@ namespace System.Net.Http.Functional.Tests
         [InlineData('\n', HeaderType.Request)]
         [InlineData('\0', HeaderType.Request)]
         [InlineData('\u0100', HeaderType.Request)]
+        [InlineData('\u0080', HeaderType.Request)]
+        [InlineData('\u009F', HeaderType.Request)]
         [InlineData('\r', HeaderType.Content)]
         [InlineData('\n', HeaderType.Content)]
         [InlineData('\0', HeaderType.Content)]
         [InlineData('\u0100', HeaderType.Content)]
+        [InlineData('\u0080', HeaderType.Content)]
+        [InlineData('\u009F', HeaderType.Content)]
         [InlineData('\r', HeaderType.Cookie)]
         [InlineData('\n', HeaderType.Cookie)]
         [InlineData('\0', HeaderType.Cookie)]
         [InlineData('\u0100', HeaderType.Cookie)]
+        [InlineData('\u0080', HeaderType.Cookie)]
+        [InlineData('\u009F', HeaderType.Cookie)]
         public async Task SendAsync_RequestWithDangerousControlHeaderValue_ThrowsHttpRequestException(char dangerousChar, HeaderType headerType)
         {
             string uri = "https://example.com"; // URI doesn't matter, the request should never leave the client
@@ -2219,15 +2225,24 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [InlineData('\u0001', HeaderType.Request)]
+        [InlineData('\u0007', HeaderType.Request)]
+        [InlineData('\u007F', HeaderType.Request)]
+        [InlineData('\u00A0', HeaderType.Request)]
         [InlineData('\u00A9', HeaderType.Request)]
         [InlineData('\u00FF', HeaderType.Request)]
-        [InlineData('\u0001', HeaderType.Request)]
+        [InlineData('\u0001', HeaderType.Content)]
+        [InlineData('\u0007', HeaderType.Content)]
+        [InlineData('\u007F', HeaderType.Content)]
+        [InlineData('\u00A0', HeaderType.Content)]
         [InlineData('\u00A9', HeaderType.Content)]
         [InlineData('\u00FF', HeaderType.Content)]
-        [InlineData('\u0001', HeaderType.Content)]
+        [InlineData('\u0001', HeaderType.Cookie)]
+        [InlineData('\u0007', HeaderType.Cookie)]
+        [InlineData('\u007F', HeaderType.Cookie)]
+        [InlineData('\u00A0', HeaderType.Cookie)]
         [InlineData('\u00A9', HeaderType.Cookie)]
         [InlineData('\u00FF', HeaderType.Cookie)]
-        [InlineData('\u0001', HeaderType.Cookie)]
         public async Task SendAsync_RequestWithLatin1HeaderValue_Succeeds(char safeChar, HeaderType headerType)
         {
             if (!IsWinHttpHandler && safeChar > 0x7F)
@@ -2268,16 +2283,22 @@ namespace System.Net.Http.Functional.Tests
                 }, async server =>
                 {
                     var data = await server.AcceptConnectionSendResponseAndCloseAsync();
+                    var expectedValue = headerValue;
+                    if (safeChar > 0x7F)
+                    {
+                        Assert.True(IsWinHttpHandler);
+                        expectedValue = headerValue.Replace(safeChar, '?'); // WinHttpHandler replaces Latin-1 characters with '?'.
+                    }
                     switch (headerType)
                     {
                         case HeaderType.Request:
-                            Assert.Equal(headerValue, data.GetSingleHeaderValue("Custom-Header"));
+                            Assert.Equal(expectedValue, data.GetSingleHeaderValue("Custom-Header"));
                             break;
                         case HeaderType.Content:
-                            Assert.Equal(headerValue, data.GetSingleHeaderValue("Custom-Content-Header"));
+                            Assert.Equal(expectedValue, data.GetSingleHeaderValue("Custom-Content-Header"));
                             break;
                         case HeaderType.Cookie:
-                            Assert.Equal($"CustomCookie={headerValue}", data.GetSingleHeaderValue("cookie"));
+                            Assert.Equal($"CustomCookie={expectedValue}", data.GetSingleHeaderValue("cookie"));
                             break;
                     }
                 });
