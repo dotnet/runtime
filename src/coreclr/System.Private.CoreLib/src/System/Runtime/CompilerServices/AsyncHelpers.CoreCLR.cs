@@ -157,6 +157,40 @@ namespace System.Runtime.CompilerServices
             AsyncSuspend(sentinelContinuation);
         }
 
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        [RequiresPreviewFeatures]
+        private static void SwitchOffThread()
+        {
+            // This is basically AwaitTaskContinuation.isValidLocationForInlining, but without initializing Thread.CurrentThread
+            // (which is always valid in runtime async methods).
+            Thread thread = Thread.CurrentThreadNoInit!;
+            SynchronizationContext? ctx = thread._synchronizationContext;
+            if (ctx == null || ctx.GetType() == typeof(SynchronizationContext))
+            {
+                TaskScheduler? sched = TaskScheduler.InternalCurrent;
+                if (sched == null || sched == TaskScheduler.Default)
+                {
+                    return;
+                }
+            }
+
+            SuspendToSwitchOffThread();
+        }
+
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.NoInlining)]
+        [RequiresPreviewFeatures]
+        private static void SuspendToSwitchOffThread()
+        {
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation? sentinelContinuation = state.SentinelContinuation;
+            if (sentinelContinuation == null)
+                state.SentinelContinuation = sentinelContinuation = new Continuation();
+
+            AsyncSuspend(sentinelContinuation);
+        }
+
         private static Continuation AllocContinuation(Continuation prevContinuation, nuint numGCRefs, nuint dataSize)
         {
             Continuation newContinuation = new Continuation
@@ -226,21 +260,13 @@ namespace System.Runtime.CompilerServices
             return RuntimeTypeHandle.InternalAllocNoChecks((MethodTable*)pMT);
         }
 
-        private static Continuation UnlinkHeadContinuation(out SynchronizationContext? syncContext, out ICriticalNotifyCompletion? criticalNotifier, out INotifyCompletion? notifier)
+        private interface IThunkTaskOps<T>
         {
-            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-            syncContext = state.ResumptionContext;
-            criticalNotifier = state.CriticalNotifier;
-            notifier = state.Notifier;
-
-            state.ResumptionContext = null;
-            state.CriticalNotifier = null;
-            state.Notifier = null;
-
-            Continuation sentinelContinuation = state.SentinelContinuation!;
-            Continuation head = sentinelContinuation.Next!;
-            sentinelContinuation.Next = null;
-            return head;
+            static abstract Action GetContinuationAction(T task);
+            static abstract Continuation GetContinuationState(T task);
+            static abstract void SetContinuationState(T task, Continuation value);
+            static abstract bool SetCompleted(T task, Continuation continuation);
+            static abstract void PostToSyncContext(T task, SynchronizationContext syncCtx);
         }
 
         private sealed class ThunkTask<T> : Task<T>
@@ -251,111 +277,14 @@ namespace System.Runtime.CompilerServices
                 m_stateFlags |= (int)InternalTaskOptions.HiddenState;
             }
 
-            public unsafe void MoveNext()
+            private void MoveNext()
             {
-                ExecutionAndSyncBlockStore contexts = default;
-                contexts.PushExceptDefault();
-                while (true)
-                {
-                    try
-                    {
-                        Continuation continuation = (Continuation)m_stateObject!;
-
-                        while (true)
-                        {
-                            // Inner hot loop where continuations are executed.
-                            Continuation? nextContinuation = continuation.Resume(continuation);
-                            if (nextContinuation != null)
-                            {
-                                nextContinuation.Next = continuation.Next;
-                                HandleSuspended();
-                                contexts.Pop();
-                                return;
-                            }
-
-                            Debug.Assert(continuation.Next != null);
-                            continuation = continuation.Next;
-
-                            if (continuation.Resume == null)
-                            {
-                                // Final continuation, extract the result.
-                                T result;
-                                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                                {
-                                    if (typeof(T).IsValueType)
-                                    {
-                                        result = Unsafe.As<byte, T>(ref continuation.GCData![0]!.GetRawData());
-                                    }
-                                    else
-                                    {
-                                        result = Unsafe.As<object, T>(ref continuation.GCData![0]!);
-                                    }
-                                }
-                                else
-                                {
-                                    result = Unsafe.As<byte, T>(ref continuation.Data![0]);
-                                }
-
-                                if (!TrySetResult(result))
-                                {
-                                    contexts.Pop();
-                                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
-                                }
-
-                                contexts.Pop();
-                                return;
-                            }
-
-                            if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT) != 0 &&
-                                PostToSyncContextIfNecessary(continuation, ref contexts))
-                            {
-                                contexts.Pop();
-                                return;
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Continuation nextContinuation = UnwindToPossibleHandler((Continuation)m_stateObject!);
-                        if (nextContinuation.Resume == null)
-                        {
-                            // Tail of AsyncTaskMethodBuilderT.SetException
-                            bool successfullySet = ex is OperationCanceledException oce ?
-                                TrySetCanceled(oce.CancellationToken, oce) :
-                                TrySetException(ex);
-
-                            if (!successfullySet)
-                            {
-                                contexts.Pop();
-                                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
-                            }
-
-                            return;
-                        }
-
-                        nextContinuation.GCData![(nextContinuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA) != 0 ? 1 : 0] = ex;
-
-                        if ((nextContinuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT) != 0 &&
-                            PostToSyncContextIfNecessary(nextContinuation, ref contexts))
-                        {
-                            contexts.Pop();
-                            return;
-                        }
-
-                        m_stateObject = nextContinuation;
-                    }
-                }
-            }
-
-            private bool PostToSyncContextIfNecessary(Continuation continuation, ref ExecutionAndSyncBlockStore contexts)
-            {
-                return ThunkTask.PostToSyncContextIfNecessaryCore(continuation, ref contexts, ref m_stateObject, s_postCallback, this);
+                ThunkTaskCore.MoveNext<ThunkTask<T>, Ops>(this);
             }
 
             public void HandleSuspended()
             {
-                Debug.Assert(m_action != null);
-                ThunkTask.HandleSuspendedCore(ref m_stateObject, m_action, s_postCallback, this);
+                ThunkTaskCore.HandleSuspended<ThunkTask<T>, Ops>(this);
             }
 
             private static readonly SendOrPostCallback s_postCallback = static state =>
@@ -363,6 +292,270 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(state is ThunkTask<T>);
                 ((ThunkTask<T>)state).MoveNext();
             };
+
+            private struct Ops : IThunkTaskOps<ThunkTask<T>>
+            {
+                public static Action GetContinuationAction(ThunkTask<T> task) => (Action)task.m_action!;
+                public static void MoveNext(ThunkTask<T> task) => task.MoveNext();
+                public static Continuation GetContinuationState(ThunkTask<T> task) => (Continuation)task.m_stateObject!;
+                public static void SetContinuationState(ThunkTask<T> task, Continuation value)
+                {
+                    task.m_stateObject = value;
+                }
+
+                public static bool SetCompleted(ThunkTask<T> task, Continuation continuation)
+                {
+                    T result;
+                    if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                    {
+                        if (typeof(T).IsValueType)
+                        {
+                            result = Unsafe.As<byte, T>(ref continuation.GCData![0]!.GetRawData());
+                        }
+                        else
+                        {
+                            result = Unsafe.As<object, T>(ref continuation.GCData![0]!);
+                        }
+                    }
+                    else
+                    {
+                        result = Unsafe.As<byte, T>(ref continuation.Data![0]);
+                    }
+
+                    return task.TrySetResult(result);
+                }
+
+                public static void PostToSyncContext(ThunkTask<T> task, SynchronizationContext syncContext)
+                {
+                    syncContext.Post(s_postCallback, task);
+                }
+            }
+        }
+
+        private sealed class ThunkTask : Task
+        {
+            public ThunkTask()
+            {
+                m_action = MoveNext;
+                m_stateFlags |= (int)InternalTaskOptions.HiddenState;
+            }
+
+            private void MoveNext()
+            {
+                ThunkTaskCore.MoveNext<ThunkTask, Ops>(this);
+            }
+
+            public void HandleSuspended()
+            {
+                ThunkTaskCore.HandleSuspended<ThunkTask, Ops>(this);
+            }
+
+            private static readonly SendOrPostCallback s_postCallback = static state =>
+            {
+                Debug.Assert(state is ThunkTask);
+                ((ThunkTask)state).MoveNext();
+            };
+
+            private struct Ops : IThunkTaskOps<ThunkTask>
+            {
+                public static Action GetContinuationAction(ThunkTask task) => (Action)task.m_action!;
+                public static void MoveNext(ThunkTask task) => task.MoveNext();
+                public static Continuation GetContinuationState(ThunkTask task) => (Continuation)task.m_stateObject!;
+                public static void SetContinuationState(ThunkTask task, Continuation value)
+                {
+                    task.m_stateObject = value;
+                }
+
+                public static bool SetCompleted(ThunkTask task, Continuation continuation)
+                {
+                    return task.TrySetResult();
+                }
+
+                public static void PostToSyncContext(ThunkTask task, SynchronizationContext syncContext)
+                {
+                    syncContext.Post(s_postCallback, task);
+                }
+            }
+        }
+
+        private static class ThunkTaskCore
+        {
+            public static unsafe void MoveNext<T, TOps>(T task) where T : Task where TOps : IThunkTaskOps<T>
+            {
+                ExecutionAndSyncBlockStore contexts = default;
+                contexts.PushExceptDefault();
+                Continuation continuation = TOps.GetContinuationState(task);
+
+                while (true)
+                {
+                    try
+                    {
+                        Continuation? newContinuation = continuation.Resume(continuation);
+
+                        if (newContinuation != null)
+                        {
+                            newContinuation.Next = continuation.Next;
+                            HandleSuspended<T, TOps>(task);
+                            contexts.Pop();
+                            return;
+                        }
+
+                        Debug.Assert(continuation.Next != null);
+                        continuation = continuation.Next;
+                    }
+                    catch (Exception ex)
+                    {
+                        Continuation nextContinuation = UnwindToPossibleHandler(continuation);
+                        if (nextContinuation.Resume == null)
+                        {
+                            // Tail of AsyncTaskMethodBuilderT.SetException
+                            bool successfullySet = ex is OperationCanceledException oce ?
+                                task.TrySetCanceled(oce.CancellationToken, oce) :
+                                task.TrySetException(ex);
+
+                            if (!successfullySet)
+                            {
+                                contexts.Pop();
+                                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
+                            }
+
+                            contexts.Pop();
+                            return;
+                        }
+
+                        nextContinuation.GCData![(nextContinuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA) != 0 ? 1 : 0] = ex;
+
+                        continuation = nextContinuation;
+                    }
+
+                    if (continuation.Resume == null)
+                    {
+                        if (!TOps.SetCompleted(task, continuation))
+                        {
+                            contexts.Pop();
+                            ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
+                        }
+
+                        contexts.Pop();
+                        return;
+                    }
+
+                    if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT) != 0 &&
+                        QueueSyncContextFollowUpActionIfNecessary<T, TOps>(task, continuation))
+                    {
+                        contexts.Pop();
+                        return;
+                    }
+                }
+            }
+
+            public static void HandleSuspended<T, TOps>(T task) where T : Task where TOps : IThunkTaskOps<T>
+            {
+                Continuation headContinuation =
+                    UnlinkHeadContinuation(
+                        out SynchronizationContext? resumptionContext,
+                        out ICriticalNotifyCompletion? criticalNotifier,
+                        out INotifyCompletion? notifier);
+
+                // Head continuation should be the result of async call to
+                // AwaitAwaiter, UnsafeAwaitAwaiter or SwitchContext, and these
+                // cannot be configured.
+                Debug.Assert(!headContinuation.Flags.HasFlag(CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT));
+
+                // TODO: Does this need a volatile write, or is the data dependency enough?
+                TOps.SetContinuationState(task, headContinuation);
+
+                try
+                {
+                    if (criticalNotifier != null)
+                    {
+                        criticalNotifier.UnsafeOnCompleted(TOps.GetContinuationAction(task));
+                    }
+                    else if (notifier != null)
+                    {
+                        Debug.Assert(notifier != null);
+                        notifier.OnCompleted(TOps.GetContinuationAction(task));
+                    }
+                    else if (resumptionContext != null)
+                    {
+                        // Async method is requesting to be switched to a specific SynchronizationContext
+                        // (because of finishing running an inlinee).
+                        TOps.PostToSyncContext(task, resumptionContext);
+                    }
+                    else
+                    {
+                        // Async method is requesting to be switched off the current thread
+                        // (because of finishing running an inlinee that does not continue on captured context,
+                        // and we do not want to run on the current context).
+                        // TODO: Implement IThreadPoolWorkItem on ThunkTask to run it directly?
+                        // It does not work because ThreadPoolWorkQueue.Enqueue does not allow
+                        // a class to be both Task derived and IThreadPoolWorkItem.
+                        ThreadPool.UnsafeQueueUserWorkItem(new ThunkTaskThreadPoolWorkItem<T, TOps>(task), preferLocal: true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Task.ThrowAsync(ex, targetContext: null);
+                }
+            }
+
+            private static Continuation UnlinkHeadContinuation(out SynchronizationContext? syncContext, out ICriticalNotifyCompletion? criticalNotifier, out INotifyCompletion? notifier)
+            {
+                ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+                syncContext = state.ResumptionContext;
+                criticalNotifier = state.CriticalNotifier;
+                notifier = state.Notifier;
+
+                state.ResumptionContext = null;
+                state.CriticalNotifier = null;
+                state.Notifier = null;
+
+                Continuation sentinelContinuation = state.SentinelContinuation!;
+                Continuation head = sentinelContinuation.Next!;
+                sentinelContinuation.Next = null;
+                return head;
+            }
+
+            private static bool QueueSyncContextFollowUpActionIfNecessary<T, TOps>(T task, Continuation continuation) where TOps : IThunkTaskOps<T>
+            {
+                int syncContextIndex = 0;
+                if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA) != 0)
+                    syncContextIndex++;
+                if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
+                    syncContextIndex++;
+
+                object?[]? gcData = continuation.GCData;
+                Debug.Assert(gcData != null && gcData.Length > syncContextIndex && gcData[syncContextIndex] is SynchronizationContext);
+                SynchronizationContext? continuationSyncCtx = (SynchronizationContext?)gcData[syncContextIndex];
+
+                if (continuationSyncCtx == null || continuationSyncCtx.GetType() == typeof(SynchronizationContext) ||
+                    continuationSyncCtx == SynchronizationContext.Current)
+                {
+                    return false;
+                }
+
+                // TODO: Does this need a volatile write, or is the data dependency enough?
+                TOps.SetContinuationState(task, continuation);
+
+                try
+                {
+                    TOps.PostToSyncContext(task, continuationSyncCtx);
+                }
+                catch (Exception ex)
+                {
+                    Task.ThrowAsync(ex, targetContext: null);
+                }
+
+                return true;
+            }
+
+            private sealed class ThunkTaskThreadPoolWorkItem<T, TOps>(T task) : IThreadPoolWorkItem where T : Task where TOps : IThunkTaskOps<T>
+            {
+                public void Execute()
+                {
+                    MoveNext<T, TOps>(task);
+                }
+            }
         }
 
  // Change return type to ThunkTask<T?> -- no benefit since this is used for Task returning thunks only
@@ -392,192 +585,6 @@ namespace System.Runtime.CompilerServices
             ThunkTask<T?> result = new();
             result.HandleSuspended();
             return result;
-        }
-
-        private sealed class ThunkTask : Task
-        {
-            public ThunkTask()
-            {
-                m_action = MoveNext;
-                m_stateFlags |= (int)InternalTaskOptions.HiddenState;
-            }
-
-            public unsafe void MoveNext()
-            {
-                ExecutionAndSyncBlockStore contexts = default;
-                contexts.PushExceptDefault();
-                while (true)
-                {
-                    try
-                    {
-                        Continuation continuation = (Continuation)m_stateObject!;
-
-                        while (true)
-                        {
-                            // Inner hot loop where continuations are executed.
-                            Continuation? nextContinuation = continuation.Resume(continuation);
-                            if (nextContinuation != null)
-                            {
-                                nextContinuation.Next = continuation.Next;
-                                HandleSuspended();
-                                contexts.Pop();
-                                return;
-                            }
-
-                            Debug.Assert(continuation.Next != null);
-                            continuation = continuation.Next;
-
-                            if (continuation.Resume == null)
-                            {
-                                if (!TrySetResult())
-                                {
-                                    contexts.Pop();
-                                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
-                                }
-
-                                contexts.Pop();
-                                return;
-                            }
-
-                            if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT) != 0 &&
-                                PostToSyncContextIfNecessary(continuation, ref contexts))
-                            {
-                                contexts.Pop();
-                                return;
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Continuation nextContinuation = UnwindToPossibleHandler((Continuation)m_stateObject!);
-                        if (nextContinuation.Resume == null)
-                        {
-                            // Tail of AsyncTaskMethodBuilderT.SetException
-                            bool successfullySet = ex is OperationCanceledException oce ?
-                                TrySetCanceled(oce.CancellationToken, oce) :
-                                TrySetException(ex);
-
-                            if (!successfullySet)
-                            {
-                                contexts.Pop();
-                                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
-                            }
-
-                            return;
-                        }
-
-                        nextContinuation.GCData![(nextContinuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA) != 0 ? 1 : 0] = ex;
-
-                        if ((nextContinuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT) != 0 &&
-                            PostToSyncContextIfNecessary(nextContinuation, ref contexts))
-                        {
-                            contexts.Pop();
-                            return;
-                        }
-
-                        m_stateObject = nextContinuation;
-                    }
-                }
-            }
-
-            private bool PostToSyncContextIfNecessary(Continuation continuation, ref ExecutionAndSyncBlockStore contexts)
-            {
-                return PostToSyncContextIfNecessaryCore(continuation, ref contexts, ref m_stateObject, s_postCallback, this);
-            }
-
-            internal static bool PostToSyncContextIfNecessaryCore(
-                Continuation continuation,
-                ref ExecutionAndSyncBlockStore contexts,
-                ref object? thunkTaskStateObject,
-                SendOrPostCallback callback,
-                object callbackState)
-            {
-                int syncContextIndex = 0;
-                if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA) != 0)
-                    syncContextIndex++;
-                if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
-                    syncContextIndex++;
-
-                object?[]? gcData = continuation.GCData;
-                Debug.Assert(gcData != null && gcData.Length > syncContextIndex && gcData[syncContextIndex] is SynchronizationContext);
-                SynchronizationContext? continuationSyncCtx = (SynchronizationContext?)gcData[syncContextIndex];
-
-                if (continuationSyncCtx == null || continuationSyncCtx.GetType() == typeof(SynchronizationContext) ||
-                    continuationSyncCtx == SynchronizationContext.Current)
-                {
-                    return false;
-                }
-
-                try
-                {
-                    // TODO: Does this need a volatile write, or is the data dependency enough?
-                    thunkTaskStateObject = continuation;
-                    continuationSyncCtx.Post(callback, callbackState);
-                }
-                catch (Exception ex)
-                {
-                    contexts.Pop();
-                    ThrowAsync(ex, targetContext: null);
-                }
-
-                return true;
-            }
-
-            public void HandleSuspended()
-            {
-                Debug.Assert(m_action != null);
-                HandleSuspendedCore(ref m_stateObject, m_action, s_postCallback, this);
-            }
-
-            internal static void HandleSuspendedCore(
-                ref object? thunkTaskStateObject,
-                object continuation,
-                SendOrPostCallback postCallback,
-                object callbackState)
-            {
-                Continuation headContinuation =
-                    UnlinkHeadContinuation(
-                        out SynchronizationContext? resumptionContext,
-                        out ICriticalNotifyCompletion? criticalNotifier,
-                        out INotifyCompletion? notifier);
-
-                // Head continuation should be the result of async call to
-                // AwaitAwaiter, UnsafeAwaitAwaiter or SwitchContext, and these
-                // cannot be configured.
-                Debug.Assert(!headContinuation.Flags.HasFlag(CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT));
-
-                // TODO: Does this need a volatile write, or is the data dependency enough?
-                thunkTaskStateObject = headContinuation;
-
-                try
-                {
-                    if (criticalNotifier != null)
-                    {
-                        criticalNotifier.UnsafeOnCompleted((Action)continuation);
-                    }
-                    else if (resumptionContext != null)
-                    {
-                        // Async method is requesting to be switched to a specific SynchronizationContext
-                        // (because of finishing running an inlinee).
-                        resumptionContext.Post(postCallback, callbackState);
-                    }
-                    else
-                    {
-                        Debug.Assert(notifier != null);
-                        notifier.OnCompleted((Action)continuation);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    ThrowAsync(ex, targetContext: null);
-                }
-            }
-
-            private static readonly SendOrPostCallback s_postCallback = static state =>
-            {
-                Debug.Assert(state is ThunkTask);
-                ((ThunkTask)state).MoveNext();
-            };
         }
 
         private static Task FinalizeTaskReturningThunk(Continuation continuation)
