@@ -4496,7 +4496,7 @@ init_class (MonoClass *klass)
 	}
 #endif
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_S390X)
 	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
 		if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") ||!strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
 			mono_class_set_is_simd_type (klass, TRUE);

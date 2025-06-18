@@ -83,6 +83,7 @@ struct SeqPointInfo {
 #define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX	1
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 		1
 #define MONO_ARCH_FLOAT32_SUPPORTED			1
+#define MONO_ARCH_SIMD_INTRINSICS                      mono_hwcap_s390x_has_vec
 
 #define S390_STACK_ALIGNMENT		 8
 #define S390_FIRST_ARG_REG 		s390_r2
@@ -258,6 +259,20 @@ s390_patch_addr (guchar *code, guint64 target)
 } while (0)
 
 /*========================= End of Function ========================*/
+#define S390_LONG_VEC(loc, opy, op, r, off, ix, br)                    \
+       if (s390_is_imm12(off)) {                                       \
+               s390_##opy (loc, r, off, ix, br);                       \
+       } else {                                                        \
+               if (ix == 0) {                                          \
+                       S390_SET(loc, s390_r13, off);                   \
+                       s390_la (loc, s390_r13, s390_r13, br, 0);       \
+               } else {                                                \
+                       s390_la   (loc, s390_r13, ix, br, 0);           \
+                       S390_SET  (loc, s390_r0, off);                  \
+                       s390_agr  (loc, s390_r13, s390_r0);             \
+               }                                                       \
+               s390_##op (loc, r, 0, 0, s390_r13);                     \
+       }
 
 #define S390_SET(loc, dr, v)					\
 	do {							\
