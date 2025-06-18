@@ -366,7 +366,7 @@ tracepoint_format_alloc (ep_char8_t *tracepoint_name)
 	const int format_max_size = 512;
 	const ep_char8_t *args = "u8 version; u16 event_id; __rel_loc u8[] extension; __rel_loc u8[] payload";
 
-	if ((strlen(tracepoint_name) + strlen(args) + 2) > format_max_size) // +2 for the space and null terminator
+	if ((strlen(tracepoint_name) + strlen(args) + 2) > (size_t)format_max_size) // +2 for the space and null terminator
 		return NULL;
 
 	return ep_rt_utf8_string_printf_alloc ("%s %s", tracepoint_name, args);
