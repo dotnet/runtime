@@ -10471,7 +10471,7 @@ bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
 {
     CONTRACTL {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
