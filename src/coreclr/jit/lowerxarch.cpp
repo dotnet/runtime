@@ -9744,6 +9744,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_Permute4x64:
                         case NI_AVX2_ShuffleHigh:
                         case NI_AVX2_ShuffleLow:
+                        case NI_AVX512_ClassifyMask:
+                        case NI_AVX512_ClassifyScalarMask:
                         case NI_AVX512_Permute2x64:
                         case NI_AVX512_Permute4x32:
                         case NI_AVX512_Permute4x64:
@@ -9929,6 +9931,24 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
             switch (category)
             {
+                case HW_Category_MemoryLoad:
+                {
+                    if (op3->IsVectorZero())
+                    {
+                        // When we are merging with zero, we can specialize
+                        // and avoid instantiating the vector constant.
+                        MakeSrcContained(node, op3);
+                    }
+                    ContainCheckHWIntrinsicAddr(node, op1, simdSize);
+                    break;
+                }
+
+                case HW_Category_MemoryStore:
+                {
+                    ContainCheckHWIntrinsicAddr(node, op1, simdSize);
+                    break;
+                }
+
                 case HW_Category_SimpleSIMD:
                 case HW_Category_SIMDScalar:
                 case HW_Category_Scalar:

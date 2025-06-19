@@ -295,11 +295,32 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
 
     if (pEEType->IsParameterizedType())
     {
-        ASSERT(pEEType->IsArray());
-        // Array
-        pVal->fixedSizedData.Flags |= kEtwTypeFlagsArray;
+        if (pEEType->IsArray())
+        {
+            pVal->fixedSizedData.Flags |= kEtwTypeFlagsArray;
+
+            if (!pEEType->IsSzArray())
+            {
+                // Multidimensional arrays set the rank bits, SzArrays do not set the rank bits
+                uint32_t rank = pEEType->GetArrayRank();
+                if (rank < kEtwTypeFlagsArrayRankMax)
+                {
+                    // Only ranks less than kEtwTypeFlagsArrayRankMax are supported.
+                    // Fortunately kEtwTypeFlagsArrayRankMax should be greater than the
+                    // number of ranks the type loader will support
+                    rank <<= kEtwTypeFlagsArrayRankShift;
+                    ASSERT((rank & kEtwTypeFlagsArrayRankMask) == rank);
+                    pVal->fixedSizedData.Flags |= rank;
+                }
+            }
+        }
+        
         pVal->cTypeParameters = 1;
         pVal->ullSingleTypeParameter = (ULONGLONG) pEEType->GetRelatedParameterType();
+    }
+    else if (pEEType->IsFunctionPointer())
+    {
+        // No extra logging for function pointers
     }
     else
     {
