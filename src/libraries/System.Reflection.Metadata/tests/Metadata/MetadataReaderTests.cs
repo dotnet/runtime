@@ -3100,30 +3100,5 @@ namespace System.Reflection.Metadata.Tests
 #pragma warning restore SYSLIB0037
             }
         }
-
-        [Fact]
-        public void GetAssemblyNameInfo()
-        {
-            AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => MetadataReader.GetAssemblyNameInfo(null));
-            AssertExtensions.Throws<ArgumentException>("path", null, () => MetadataReader.GetAssemblyNameInfo(string.Empty));
-            Assert.Throws<FileNotFoundException>(() => MetadataReader.GetAssemblyNameInfo("IDontExist"));
-
-            using (var tempFile = new TempFile(Path.GetTempFileName(), 0)) // Zero-size file
-            {
-                Assert.Throws<BadImageFormatException>(() => MetadataReader.GetAssemblyNameInfo(tempFile.Path));
-            }
-
-            using (var tempFile = new TempFile(Path.GetTempFileName(), 42))
-            {
-                Assert.Throws<BadImageFormatException>(() => MetadataReader.GetAssemblyNameInfo(tempFile.Path));
-            }
-
-            if (PlatformDetection.HasAssemblyFiles)
-            {
-                Assembly a = typeof(MetadataReader).Assembly;
-                AssemblyNameInfo name = MetadataReader.GetAssemblyNameInfo(AssemblyPathHelper.GetAssemblyLocation(a));
-                Assert.Equal(new AssemblyNameInfo(a.FullName).ToString(), name.ToString());
-            }
-        }
     }
 }

@@ -196,20 +196,6 @@ namespace System.Reflection.Metadata
             return assemblyName;
         }
 
-#if SYSTEM_REFLECTION_METADATA
-        /// <summary>
-        /// Gets the <see cref="AssemblyNameInfo"/> for a given file.
-        /// </summary>
-        /// <param name="assemblyFile">The path for the assembly whose <see cref="AssemblyNameInfo"/> is to be returned.</param>
-        /// <returns>An <see cref="AssemblyNameInfo"/> that represents the given <paramref name="assemblyFile"/>.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="assemblyFile"/> is null.</exception>
-        /// <exception cref="ArgumentException">If <paramref name="assemblyFile"/> is invalid.</exception>
-        /// <exception cref="FileNotFoundException">If <paramref name="assemblyFile"/> is not found.</exception>
-        /// <exception cref="BadImageFormatException">If <paramref name="assemblyFile"/> is not a valid assembly.</exception>
-        public static AssemblyNameInfo GetAssemblyNameInfo(string assemblyFile) =>
-            MetadataReader.GetAssemblyNameInfo(assemblyFile);
-#endif
-
         /// <summary>
         /// Parses a span of characters into a assembly name.
         /// </summary>

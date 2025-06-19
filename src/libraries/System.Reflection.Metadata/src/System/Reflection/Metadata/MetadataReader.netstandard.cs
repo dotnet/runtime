@@ -111,62 +111,6 @@ namespace System.Reflection.Metadata
             }
         }
 
-        /// <summary>
-        /// Gets the <see cref="AssemblyNameInfo"/> for a given file.
-        /// </summary>
-        /// <param name="assemblyFile">The path for the assembly which <see cref="AssemblyNameInfo"/> is to be returned.</param>
-        /// <returns>An <see cref="AssemblyNameInfo"/> that represents the given <paramref name="assemblyFile"/>.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="assemblyFile"/> is null.</exception>
-        /// <exception cref="ArgumentException">If <paramref name="assemblyFile"/> is invalid.</exception>
-        /// <exception cref="FileNotFoundException">If <paramref name="assemblyFile"/> is not found.</exception>
-        /// <exception cref="BadImageFormatException">If <paramref name="assemblyFile"/> is not a valid assembly.</exception>
-        public static unsafe AssemblyNameInfo GetAssemblyNameInfo(string assemblyFile)
-        {
-            if (assemblyFile is null)
-            {
-                Throw.ArgumentNull(nameof(assemblyFile));
-            }
-
-            FileStream? fileStream = null;
-            MemoryMappedFile? mappedFile = null;
-            MemoryMappedViewAccessor? accessor = null;
-            PEReader? peReader = null;
-
-            try
-            {
-                try
-                {
-                    // Create stream because CreateFromFile(string, ...) uses FileShare.None which is too strict
-                    fileStream = new FileStream(assemblyFile, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, useAsync: false);
-                    if (fileStream.Length == 0)
-                    {
-                        throw new BadImageFormatException(SR.PEImageDoesNotHaveMetadata, assemblyFile);
-                    }
-
-                    mappedFile = MemoryMappedFile.CreateFromFile(
-                        fileStream, null, fileStream.Length, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
-                    accessor = mappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
-
-                    SafeMemoryMappedViewHandle? safeBuffer = accessor.SafeMemoryMappedViewHandle;
-                    peReader = new PEReader((byte*)safeBuffer.DangerousGetHandle(), (int)safeBuffer.ByteLength);
-                    MetadataReader mdReader = peReader.GetMetadataReader(MetadataReaderOptions.None);
-                    AssemblyNameInfo assemblyNameInfo = mdReader.GetAssemblyDefinition().GetAssemblyNameInfo();
-                    return assemblyNameInfo;
-                }
-                finally
-                {
-                    peReader?.Dispose();
-                    accessor?.Dispose();
-                    mappedFile?.Dispose();
-                    fileStream?.Dispose();
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                throw new BadImageFormatException(ex.Message, assemblyFile, ex);
-            }
-        }
-
         private static AssemblyNameFlags GetAssemblyNameFlags(AssemblyFlags flags)
         {
             AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;
