@@ -65,6 +65,7 @@
 #include "mintops.h"
 #include "interp-intrins.h"
 #include "interp-icalls.h"
+#include "interp-pinvoke.h"
 #include "tiering.h"
 
 #ifdef INTERP_ENABLE_SIMD
@@ -1630,150 +1631,6 @@ typedef struct {
 	MonoPIFunc entry_func;
 	BuildArgsFromSigInfo *call_info;
 } WasmPInvokeCacheData;
-#endif
-
-/* MONO_NO_OPTIMIZATION is needed due to usage of INTERP_PUSH_LMF_WITH_CTX. */
-#ifdef _MSC_VER
-#pragma optimize ("", off)
-#endif
-static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE gpointer
-ves_pinvoke_method (
-	InterpMethod *imethod,
-	MonoMethodSignature *sig,
-	MonoFuncV addr,
-	ThreadContext *context,
-	InterpFrame *parent_frame,
-	stackval *ret_sp,
-	stackval *sp,
-	gboolean save_last_error,
-	gpointer *cache,
-	gboolean *gc_transitions)
-{
-	InterpFrame frame = {0};
-	frame.parent = parent_frame;
-	frame.imethod = imethod;
-	frame.stack = sp;
-	frame.retval = ret_sp;
-
-	MonoLMFExt ext;
-	gpointer args;
-
-	MONO_REQ_GC_UNSAFE_MODE;
-
-#ifdef HOST_WASM
-	/*
-	 * Use a per-signature entry function.
-	 * Cache it in imethod->data_items.
-	 * This is GC safe.
-	 */
-	MonoPIFunc entry_func = NULL;
-	WasmPInvokeCacheData *cache_data = (WasmPInvokeCacheData*)*cache;
-	if (!cache_data) {
-		cache_data = g_new0 (WasmPInvokeCacheData, 1);
-		cache_data->entry_func = (MonoPIFunc)mono_wasm_get_interp_to_native_trampoline (sig);
-		cache_data->call_info = get_build_args_from_sig_info (get_default_mem_manager (), sig);
-		mono_memory_barrier ();
-		*cache = cache_data;
-	}
-	entry_func = cache_data->entry_func;
-#else
-	static MonoPIFunc entry_func = NULL;
-	if (!entry_func) {
-		MONO_ENTER_GC_UNSAFE;
-#ifdef MONO_ARCH_HAS_NO_PROPER_MONOCTX
-		ERROR_DECL (error);
-		entry_func = (MonoPIFunc) mono_jit_compile_method_jit_only (mini_get_interp_lmf_wrapper ("mono_interp_to_native_trampoline", (gpointer) mono_interp_to_native_trampoline), error);
-		mono_error_assert_ok (error);
-#else
-		entry_func = get_interp_to_native_trampoline ();
-#endif
-		mono_memory_barrier ();
-		MONO_EXIT_GC_UNSAFE;
-	}
-#endif
-
-	if (save_last_error) {
-		mono_marshal_clear_last_error ();
-	}
-
-#ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
-	gpointer call_info = *cache;
-
-	if (!call_info) {
-		call_info = mono_arch_get_interp_native_call_info (get_default_mem_manager (), sig);
-		mono_memory_barrier ();
-		*cache = call_info;
-	}
-	CallContext ccontext;
-	mono_arch_set_native_call_context_args (&ccontext, &frame, sig, call_info);
-	args = &ccontext;
-#else
-
-#ifdef HOST_WASM
-	BuildArgsFromSigInfo *call_info = cache_data->call_info;
-#else
-	BuildArgsFromSigInfo *call_info = NULL;
-	g_assert_not_reached ();
-#endif
-
-	InterpMethodArguments margs;
-	memset (&margs, 0, sizeof (InterpMethodArguments));
-	build_args_from_sig (&margs, sig, call_info, &frame);
-	args = &margs;
-#endif
-
-	INTERP_PUSH_LMF_WITH_CTX (&frame, ext, exit_pinvoke);
-
-	if (*gc_transitions) {
-		MONO_ENTER_GC_SAFE;
-		entry_func ((gpointer) addr, args);
-		MONO_EXIT_GC_SAFE;
-		*gc_transitions = FALSE;
-	} else {
-		entry_func ((gpointer) addr, args);
-	}
-
-	if (save_last_error)
-		mono_marshal_set_last_error ();
-	interp_pop_lmf (&ext);
-
-#ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
-	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
-		int arg_index = -1;
-		gpointer data = mono_arch_get_swift_error (&ccontext, sig, &arg_index);
-
-		// Perform an indirect store at arg_index stack location
-		if (arg_index >= 0) {
-			g_assert (data);
-			stackval *result = (stackval*) STACK_ADD_BYTES (frame.stack, get_arg_offset (frame.imethod, sig, arg_index));
-			*(gpointer*)result->data.p = *(gpointer*)data;
-		}
-	}
-#endif
-	if (!context->has_resume_state) {
-		mono_arch_get_native_call_context_ret (&ccontext, &frame, sig, call_info);
-	}
-
-	g_free (ccontext.stack);
-#else
-	// Only the vt address has been returned, we need to copy the entire content on interp stack
-	if (!context->has_resume_state && MONO_TYPE_ISSTRUCT (call_info->ret_mono_type)) {
-		if (call_info->ret_pinvoke_type != PINVOKE_ARG_WASM_VALUETYPE_RESULT)
-			stackval_from_data (call_info->ret_mono_type, frame.retval, (char*)frame.retval->data.p, sig->pinvoke && !sig->marshalling_disabled);
-	}
-
-	if (margs.iargs != margs.iargs_buf)
-		g_free (margs.iargs);
-	if (margs.fargs != margs.fargs_buf)
-		g_free (margs.fargs);
-#endif
-	goto exit_pinvoke; // prevent unused label warning in some configurations
-exit_pinvoke:
-	return NULL;
-}
-#ifdef _MSC_VER
-#pragma optimize ("", on)
 #endif
 
 /*
@@ -8001,7 +7858,10 @@ interp_parse_options (const char *options)
 				opt = INTERP_OPT_SIMD;
 #if HOST_BROWSER
 			else if (strncmp (arg, "jiterp", 6) == 0)
+			{
+				#pragma message ("ENABLING JITERPRETER!!")
 				opt = INTERP_OPT_JITERPRETER;
+			}
 #endif
 			else if (strncmp (arg, "ssa", 3) == 0)
 				opt = INTERP_OPT_SSA;
