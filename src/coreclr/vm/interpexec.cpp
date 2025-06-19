@@ -62,8 +62,9 @@ void InvokeCalliStub(PCODE ftn, CallStubHeader *stubHeaderTemplate, int8_t *pArg
 
     // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
     // copied to a local buffer before we can actually set their target address.
-    uint8_t* actualCallStub = (uint8_t*)alloca(stubHeaderTemplate->GetSize());
-    memcpy(actualCallStub, stubHeaderTemplate, stubHeaderTemplate->GetSize());
+    size_t templateSize = stubHeaderTemplate->GetSize();
+    uint8_t* actualCallStub = (uint8_t*)alloca(templateSize);
+    memcpy(actualCallStub, stubHeaderTemplate, templateSize);
     CallStubHeader *pHeader = (CallStubHeader*)actualCallStub;
     pHeader->SetTarget(ftn); // The method to call
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
