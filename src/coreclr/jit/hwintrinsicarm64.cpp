@@ -3907,16 +3907,29 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 // Return Value:
 //    The mask
 //
-GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType)
+GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize)
 {
     // Import as a constant mask
 
     var_types      simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     GenTreeMskCon* mskCon       = gtNewMskConNode(TYP_MASK);
 
-    // TODO-SVE: For agnostic VL, vector type may not be simd16_t
+    bool found = false;
 
-    bool found = EvaluateSimdPatternToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, SveMaskPatternAll);
+    switch (simdSize)
+    {
+        case 16:
+            found = EvaluateSimdPatternToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, SveMaskPatternAll);
+            break;
+        case 32:
+            found = EvaluateSimdPatternToMask<simd32_t>(simdBaseType, &mskCon->gtSimdMaskVal, SveMaskPatternAll);
+            break;
+        case 64:
+            found = EvaluateSimdPatternToMask<simd64_t>(simdBaseType, &mskCon->gtSimdMaskVal, SveMaskPatternAll);
+            break;
+        default:
+            unreached();
+    }
     assert(found);
 
     return mskCon;

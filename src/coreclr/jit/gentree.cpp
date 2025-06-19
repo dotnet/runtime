@@ -22475,7 +22475,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps        op,
                 GenTree* allTrue = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
                 op1              = gtNewSimdHWIntrinsicNode(TYP_LONG, allTrue, cmpResult, NI_Sve_GetActiveElementCount,
                                                             simdBaseJitType, simdSize);
-                op2              = gtNewSimdAllFalseMaskNode(simdBaseJitType, simdSize);
+                op2              = gtNewSimdFalseMaskByteNode();
             }
             else
             {
@@ -22519,7 +22519,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps        op,
                 GenTree* allTrue = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
                 op1              = gtNewSimdHWIntrinsicNode(TYP_LONG, allTrue, cmpResult, NI_Sve_GetActiveElementCount,
                                                             simdBaseJitType, simdSize);
-                op2              = gtNewSimdAllFalseMaskNode(simdBaseJitType, simdSize);
+                op2              = gtNewSimdFalseMaskByteNode();
             }
             else
             {
@@ -22676,7 +22676,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps        op,
                 op1              = gtNewSimdHWIntrinsicNode(TYP_LONG, allTrue, cmpResult, NI_Sve_GetActiveElementCount,
                                                             simdBaseJitType, simdSize);
 
-                op2 = gtNewSimdAllFalseMaskNode(simdBaseJitType, simdSize);
+                op2 = gtNewSimdFalseMaskByteNode();
             }
             else
             {
@@ -22719,7 +22719,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps        op,
                 op1              = gtNewSimdHWIntrinsicNode(TYP_LONG, allTrue, cmpResult, NI_Sve_GetActiveElementCount,
                                                             simdBaseJitType, simdSize);
 
-                op2 = gtNewSimdAllFalseMaskNode(simdBaseJitType, simdSize);
+                op2 = gtNewSimdFalseMaskByteNode();
             }
             else
             {

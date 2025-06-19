@@ -1985,7 +1985,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
 
         bool      foundUse = BlockRange().TryGetUse(node, &use);
-        GenTree*  trueMask = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType);
+        GenTree*  trueMask = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
         GenTree*  falseVal = comp->gtNewZeroConNode(simdType);
         var_types nodeType = simdType;
 
@@ -2098,12 +2098,12 @@ GenTree* Lowering::LowerHWIntrinsicCmpOpVL(GenTreeHWIntrinsic* node, genTreeOps 
 
     GenTree* op     = nullptr;
     GenTree* opZero = nullptr;
-    if (op1->IsMaskZero())
+    if (op1->IsFalseMask())
     {
         op     = op2;
         opZero = op1;
     }
-    else if (op2->IsMaskZero())
+    else if (op2->IsFalseMask())
     {
         op     = op1;
         opZero = op2;
