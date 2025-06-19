@@ -5,10 +5,7 @@
 #include <mono/metadata/object.h>
 #include "mintops.h"
 #include "interp-internals.h"
-#include "interp-frame.h"
-#include "interp-mono.h"
-#include "interp-mono-abi.h"
-#include "interp-mono-abi-pinvoke.h"
+
 
 extern MONO_NO_OPTIMIZATION MONO_NEVER_INLINE gpointer
 ves_pinvoke_method (
