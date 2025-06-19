@@ -127,7 +127,7 @@ namespace System.Diagnostics
             // This is the only purpose the field has, however, so we can assign it to zero AFTER resolving
             // symbol information to indicate that it's already been resolved without causing any issues
             // elsewhere.
-            if (rgiMethodToken[index] == 0)
+            if (Volatile.Read(ref rgiMethodToken[index]) == 0)
                 return;
 
             // Check if this function is being reentered because of an exception in the code below
@@ -146,10 +146,14 @@ namespace System.Diagnostics
 
                 GetSourceLineInfo(s_stackTraceSymbolsCache!, rgAssembly![index], rgAssemblyPath![index]!, rgLoadedPeAddress![index], rgiLoadedPeSize![index], rgiIsFileLayout![index],
                     rgInMemoryPdbAddress![index], rgiInMemoryPdbSize![index], rgiMethodToken![index],
-                    rgiILOffset![index], out rgFilename![index], out rgiLineNumber![index], out rgiColumnNumber![index]);
+                    rgiILOffset![index], out string? filename, out int lineNumber, out int columnNumber);
+
+                rgFilename![index] = filename;
+                rgiLineNumber![index] = lineNumber;
+                rgiColumnNumber![index] = columnNumber;
 
                 // Make sure we mark down that debug information for this frame was resolved
-                rgiMethodToken[index] = 0;
+                Volatile.Write(ref rgiMethodToken[index], 0);
             }
             catch
             {
