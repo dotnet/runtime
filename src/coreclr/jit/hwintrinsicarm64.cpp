@@ -132,6 +132,10 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         {
             return InstructionSet_ILLEGAL;
         }
+        else if (strncmp(className, "VectorMath", 10) == 0)
+        {
+            return InstructionSet_ILLEGAL;
+        }
         else if (strncmp(className, "Vector", 6) == 0)
         {
             return InstructionSet_Vector;
