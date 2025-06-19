@@ -491,6 +491,15 @@ ds_ipc_stream_read (
 }
 
 bool
+ds_ipc_stream_read_fd (
+	DiagnosticsIpcStream *ipc_stream,
+	int *data_fd)
+{
+	// Not Supported
+	return false;
+}
+
+bool
 ds_ipc_stream_write (
 	DiagnosticsIpcStream *ipc_stream,
 	const uint8_t *buffer,
