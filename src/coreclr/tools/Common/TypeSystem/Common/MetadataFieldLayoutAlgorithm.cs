@@ -73,7 +73,7 @@ namespace Internal.TypeSystem
                 }
 
                 MetadataType baseType = type.MetadataBaseType;
-                if (!baseType.IsObject && !baseType.IsAutoLayout)
+                if (!baseType.IsObject && baseType.IsAutoLayout)
                 {
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
                 }
