@@ -143,6 +143,7 @@ namespace System.Reflection.TypeLoading
             }
         }
 
+        private const TypeAttributes TypeAttributesExtendedLayout = (TypeAttributes)0x00000018; // TypeAttributes.ExtendedLayout
         private const LayoutKind LayoutKindExtended = (LayoutKind)1;
 
         public sealed override StructLayoutAttribute? StructLayoutAttribute
@@ -160,7 +161,7 @@ namespace System.Reflection.TypeLoading
                     TypeAttributes.ExplicitLayout => LayoutKind.Explicit,
                     TypeAttributes.AutoLayout => LayoutKind.Auto,
                     TypeAttributes.SequentialLayout => LayoutKind.Sequential,
-                    TypeAttributes.ExtendedLayout => LayoutKindExtended,
+                    TypeAttributesExtendedLayout => LayoutKindExtended,
                     _ => LayoutKind.Auto,
                 };
                 CharSet charSet = (attributes & TypeAttributes.StringFormatMask) switch
