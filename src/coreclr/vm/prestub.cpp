@@ -918,7 +918,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
 
     PCODE pCode = (PCODE)NULL;
     bool isTier0 = false;
-    bool isInterpreterCode = false;
     PCODE pOtherCode = (PCODE)NULL;
 
     EX_TRY
