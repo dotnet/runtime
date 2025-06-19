@@ -20996,7 +20996,11 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps        op,
             if (broadcastOp != nullptr)
             {
 #if defined(TARGET_ARM64)
-                if (varTypeIsLong(simdBaseType))
+                if (isScalable)
+                {
+                    *broadcastOp = gtNewSimdHWIntrinsicNode(type, *broadcastOp, NI_Sve_DuplicateScalarToVector, simdBaseJitType, simdSize);
+                }
+                else if (varTypeIsLong(simdBaseType))
                 {
                     // This is handled via emulation and the scalar is consumed directly
                     break;
@@ -21006,10 +21010,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps        op,
                     op2ForLookup = *broadcastOp;
                     *broadcastOp = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, *broadcastOp, simdBaseJitType, 8);
                     break;
-                }
-                else if (isScalable)
-                {
-                    *broadcastOp = gtNewSimdHWIntrinsicNode(type, *broadcastOp, NI_Sve_DuplicateScalarToVector, simdBaseJitType, simdSize);
                 }
                 else
 #endif // TARGET_ARM64
