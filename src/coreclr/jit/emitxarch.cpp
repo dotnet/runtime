@@ -4953,7 +4953,17 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
     // If Byte 4 (which is 0xFF00) is zero, that's where the RM encoding goes.
     // Otherwise, it will be placed after the 4 byte encoding, making the total 5 bytes.
     // This would probably be better expressed as a different format or something?
-    code_t code = insCodeRM(ins);
+    code_t code = 0;
+
+    if (hasCodeRM(ins))
+    {
+        code = insCodeRM(ins);
+    }
+    else
+    {
+        code = insCodeMR(ins);
+    }
+
     if (IsKInstruction(ins))
     {
         code = AddVexPrefix(ins, code, EA_SIZE(id->idOpSize()));
@@ -6116,7 +6126,7 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
 //    attr - the instruction operand size
 //    mem - the GT_STOREIND node
 //
-void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem)
+void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem, insOpts instOptions)
 {
     assert(mem->OperIs(GT_STOREIND));
 
@@ -6140,6 +6150,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
 
         if (data->isContainedIntOrIImmed())
         {
+            assert(instOptions == INS_OPTS_NONE);
             emitIns_S_I(ins, attr, varNode->GetLclNum(), offset, (int)data->AsIntConCommon()->IconValue());
         }
 #if defined(FEATURE_HW_INTRINSICS)
@@ -6152,11 +6163,12 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
 
             if (numArgs == 1)
             {
-                emitIns_S_R(ins, attr, op1->GetRegNum(), varNode->GetLclNum(), offset);
+                emitIns_S_R(ins, attr, op1->GetRegNum(), varNode->GetLclNum(), offset, instOptions);
             }
             else
             {
                 assert(numArgs == 2);
+                assert(instOptions == INS_OPTS_NONE);
 
                 int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntConCommon()->IconValue());
                 emitIns_S_R_I(ins, attr, varNode->GetLclNum(), offset, op1->GetRegNum(), icon);
@@ -6166,7 +6178,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         else
         {
             assert(!data->isContained());
-            emitIns_S_R(ins, attr, data->GetRegNum(), varNode->GetLclNum(), offset);
+            emitIns_S_R(ins, attr, data->GetRegNum(), varNode->GetLclNum(), offset, instOptions);
         }
 
         // Updating variable liveness after instruction was emitted
@@ -6180,6 +6192,8 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
 
     if (data->isContainedIntOrIImmed())
     {
+        assert(instOptions == INS_OPTS_NONE);
+
         int icon = (int)data->AsIntConCommon()->IconValue();
         id       = emitNewInstrAmdCns(attr, offset, icon);
         id->idIns(ins);
@@ -6201,12 +6215,18 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
             id->idIns(ins);
             emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_ARD_RRD), ins);
             id->idReg1(op1->GetRegNum());
+
+            assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
+            SetEvexEmbMaskIfNeeded(id, instOptions);
+
             sz = emitInsSizeAM(id, insCodeMR(ins));
             id->idCodeSize(sz);
         }
         else
         {
             assert(numArgs == 2);
+            assert(instOptions == INS_OPTS_NONE);
+
             int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntConCommon()->IconValue());
 
             id = emitNewInstrAmdCns(attr, offset, icon);
@@ -6225,6 +6245,10 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         id->idIns(ins);
         emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_ARD_RRD), ins);
         id->idReg1(data->GetRegNum());
+
+        assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
+        SetEvexEmbMaskIfNeeded(id, instOptions);
+
         sz = emitInsSizeAM(id, insCodeMR(ins));
         id->idCodeSize(sz);
     }
@@ -10717,7 +10741,7 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
     return false;
 }
 
-void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs)
+void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions)
 {
     insFormat fmt = (ins == INS_xchg) ? IF_SRW_RRW : emitInsModeFormat(ins, IF_SRD_RRD);
     if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
@@ -10731,6 +10755,9 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int va
     id->idInsFmt(fmt);
     id->idReg1(ireg);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
+
+    assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
+    SetEvexEmbMaskIfNeeded(id, instOptions);
 
     sz = emitInsSizeSV(id, insCodeMR(ins), varx, offs);
 
@@ -16689,6 +16716,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     emitAttr    size = id->idOpSize();
 
     assert(!id->idHasReg3());
+    bool isInsCodeMR = false;
 
     if (IsSimdInstruction(ins))
     {
@@ -16705,13 +16733,43 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 code |= 0x01;
             }
         }
-        else if (((ins != INS_movd32) && (ins != INS_movd64)) || isFloatReg(reg1))
-        {
-            code = insCodeRM(ins);
-        }
         else
         {
-            code = insCodeMR(ins);
+            switch (ins)
+            {
+                case INS_vcompresspd:
+                case INS_vcompressps:
+                case INS_vpcompressb:
+                case INS_vpcompressd:
+                case INS_vpcompressq:
+                case INS_vpcompressw:
+                {
+                    isInsCodeMR = true;
+                    break;
+                }
+
+                case INS_movd32:
+                case INS_movd64:
+                {
+                    isInsCodeMR = !isFloatReg(reg1);
+                    break;
+                }
+
+                default:
+                {
+                    isInsCodeMR = false;
+                    break;
+                }
+            }
+
+            if (isInsCodeMR)
+            {
+                code = insCodeMR(ins);
+            }
+            else
+            {
+                code = insCodeRM(ins);
+            }
         }
         code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeRMreg(id, code);
@@ -16870,21 +16928,20 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 
     regNumber regFor012Bits = reg2;
     regNumber regFor345Bits = REG_NA;
+
     if (IsBMIInstruction(ins))
     {
         regFor345Bits = getBmiRegNumber(ins);
     }
+
     if (regFor345Bits == REG_NA)
     {
         regFor345Bits = reg1;
     }
-    if ((ins == INS_movd32) || (ins == INS_movd64))
+
+    if (isInsCodeMR)
     {
-        assert(isFloatReg(reg1) != isFloatReg(reg2));
-        if (isFloatReg(reg2))
-        {
-            std::swap(regFor012Bits, regFor345Bits);
-        }
+        std::swap(regFor012Bits, regFor345Bits);
     }
 
     unsigned regCode;
@@ -21005,6 +21062,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_comisd:
         case INS_ucomiss:
         case INS_ucomisd:
+        case INS_vfpclasspd:
+        case INS_vfpclassps:
+        case INS_vfpclasssd:
+        case INS_vfpclassss:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_3C;
             break;
@@ -21527,6 +21588,24 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insThroughput = PERFSCORE_THROUGHPUT_3X;
             }
             result.insLatency += PERFSCORE_LATENCY_3C;
+            break;
+        }
+
+        case INS_vcompresspd:
+        case INS_vcompressps:
+        case INS_vpcompressb:
+        case INS_vpcompressd:
+        case INS_vpcompressq:
+        case INS_vpcompressw:
+        case INS_vexpandpd:
+        case INS_vexpandps:
+        case INS_vpexpandb:
+        case INS_vpexpandd:
+        case INS_vpexpandq:
+        case INS_vpexpandw:
+        {
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency += PERFSCORE_LATENCY_6C;
             break;
         }
 

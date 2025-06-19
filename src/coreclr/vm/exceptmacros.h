@@ -67,7 +67,7 @@
 //          ...guarded code...
 //      } EX_CATCH {
 //          ...handler...
-//      } EX_END_CATCH(SwallowAllExceptions)
+//      } EX_END_CATCH
 //
 //
 // EX_TRY blocks can be nested.

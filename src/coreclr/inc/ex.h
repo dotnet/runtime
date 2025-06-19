@@ -647,8 +647,9 @@ private:
 // {
 //      Exception *e = GET_EXCEPTION();
 //      EX_RETHROW;
+//      RethrowTerminalExceptions(), RethrowTransientExceptions
 // }
-// EX_END_CATCH(RethrowTerminalExceptions, RethrowTransientExceptions or SwallowAllExceptions)
+// EX_END_CATCH
 //
 // ---------------------------------------------------------------------------
 
@@ -693,20 +694,17 @@ private:
 #endif
 
 //-----------------------------------------------------------------------
-// EX_END_CATCH has a mandatory argument which is one of "RethrowTerminalExceptions",
-// "RethrowTransientExceptions", or "SwallowAllExceptions".
+// There are a number of "rethrow" macros provided below: "RethrowTerminalExceptions()",
+// "RethrowTransientExceptions()".
+//
+// These macros should be used in the EX_CATCH block to determine how to handle
+// exceptions that are caught that aren't handled by the catch block.
 //
 // If an exception is considered "terminal" (e->IsTerminal()), it should normally
-// be allowed to proceed. Hence, most of the time, you should use RethrowTerminalExceptions.
+// be allowed to proceed. Hence, most of the time, you should use RethrowTerminalExceptions().
 //
 // In some cases you will want transient exceptions (terminal plus things like
-// resource exhaustion) to proceed as well.  Use RethrowTransientExceptions for this cas.
-//
-// If you have a good reason to use SwallowAllExceptions, (e.g. a hard COM interop boundary)
-// use one of the higher level macros for this if available, or consider developing one.
-// Otherwise, clearly document why you're swallowing terminal exceptions. Raw uses of
-// SwallowAllExceptions will cause the cleanup police to come knocking on your door
-// at some point.
+// resource exhaustion) to proceed as well.  Use RethrowTransientExceptions() for this cas.
 //
 // A lot of existing TRY's swallow terminals right now simply because there is
 // backout code following the END_CATCH that has to be executed. The solution is
@@ -714,17 +712,15 @@ private:
 
 //-----------------------------------------------------------------------
 
-#define RethrowTransientExceptions                                      \
+#define RethrowTransientExceptions()                                    \
     if (GET_EXCEPTION()->IsTransient())                                 \
     {                                                                   \
         EX_RETHROW;                                                     \
     }                                                                   \
 
-#define SwallowAllExceptions ;
-
 // When applied to EX_END_CATCH, this policy will always rethrow Terminal exceptions if they are
 // encountered.
-#define RethrowTerminalExceptions                                       \
+#define RethrowTerminalExceptions()                                     \
     if (GET_EXCEPTION()->IsTerminal())                                  \
     {                                                                   \
         EX_RETHROW;                                                     \
@@ -732,10 +728,10 @@ private:
 
 // Special define to be used in EEStartup that will also check for VM initialization before
 // commencing on a path that may use the managed thread object.
-#define RethrowTerminalExceptionsWithInitCheck  \
+#define RethrowTerminalExceptionsWithInitCheck()                  \
     if ((g_fEEStarted == TRUE) && (GetThreadNULLOk() != NULL))    \
-    {                                                       \
-        RethrowTerminalExceptions                           \
+    {                                                             \
+        RethrowTerminalExceptions()                               \
     }
 
 #ifdef _DEBUG
@@ -814,14 +810,10 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             {                                                                           \
                 CAutoTryCleanup<STATETYPE> __autoCleanupTry(__state);                   \
                 {                                                                       \
-                    /* Disallow returns to make exception handling work. */             \
-                    /* Some work is done after the catch, see EX_ENDTRY. */             \
-                    DEBUG_ASSURE_NO_RETURN_BEGIN(EX_TRY)                                \
                     EX_TRY_HOLDER                                                       \
 
 
 #define EX_CATCH_IMPL_EX(DerivedExceptionClass)                                         \
-                    DEBUG_ASSURE_NO_RETURN_END(EX_TRY)                                  \
                 }                                                                       \
             }                                                                           \
             PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                     \
@@ -845,7 +837,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             ExceptionHolder __pException(__state.m_pExceptionPtr);                      \
             /* work around unreachable code warning */                                  \
             if (true) {                                                                 \
-                DEBUG_ASSURE_NO_RETURN_BEGIN(EX_CATCH)                                  \
                 /* don't embed file names in retail to save space and avoid IP */       \
                 /* a findstr /n will allow you to locate it in a pinch */               \
                 __state.SetupCatch(INDEBUG_COMMA(__FILE__) __LINE__);                   \
@@ -862,12 +853,8 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             {                                                                       \
                 CAutoTryCleanup<STATETYPE> __autoCleanupTry(__state);               \
                 {                                                                   \
-                    /* Disallow returns to make exception handling work. */         \
-                   /* Some work is done after the catch, see EX_ENDTRY. */          \
-                    DEBUG_ASSURE_NO_RETURN_BEGIN(EX_TRY)                            \
 
 #define EX_CATCH_IMPL_CPP_ONLY                                                      \
-                    DEBUG_ASSURE_NO_RETURN_END(EX_TRY)                              \
                 }                                                                   \
             }                                                                       \
             PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                 \
@@ -887,7 +874,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             ExceptionHolder __pException(__state.m_pExceptionPtr);                  \
             /* work around unreachable code warning */                              \
             if (true) {                                                             \
-                DEBUG_ASSURE_NO_RETURN_BEGIN(EX_CATCH)                              \
                 /* don't embed file names in retail to save space and avoid IP */   \
                 /* a findstr /n will allow you to locate it in a pinch */           \
                 __state.SetupCatch(INDEBUG_COMMA(__FILE__) __LINE__);               \
@@ -920,7 +906,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 #endif
 
 #define EX_END_CATCH_UNREACHABLE                                                        \
-                DEBUG_ASSURE_NO_RETURN_END(EX_CATCH)                                    \
             }                                                                           \
             UNREACHABLE();                                                              \
         }                                                                               \
@@ -928,13 +913,8 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
     }                                                                                   \
 
 
-// "terminalexceptionpolicy" must be one of "RethrowTerminalExceptions",
-// "RethrowTransientExceptions", or "SwallowAllExceptions"
-
-#define EX_END_CATCH(terminalexceptionpolicy)                                           \
-                terminalexceptionpolicy;                                                \
+#define EX_END_CATCH                                                                    \
                 __state.SucceedCatch();                                                 \
-                DEBUG_ASSURE_NO_RETURN_END(EX_CATCH)                                    \
             }                                                                           \
         }                                                                               \
         EX_ENDTRY                                                                       \
@@ -943,7 +923,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 
 #define EX_END_CATCH_FOR_HOOK                                                           \
                 __state.SucceedCatch();                                                 \
-                DEBUG_ASSURE_NO_RETURN_END(EX_CATCH)                                    \
             }                                                                           \
         }                                                                               \
         EX_ENDTRY
@@ -989,7 +968,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
         (_hr) = GET_EXCEPTION()->GetHR();                                       \
         _ASSERTE(FAILED(_hr));                                                  \
     }                                                                           \
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
 
 //===================================================================================
@@ -1009,7 +988,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
     {                                                                           \
         *ppThrowable = GET_THROWABLE();                                         \
     }                                                                           \
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
 
 #ifdef FEATURE_COMINTEROP
@@ -1043,7 +1022,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             pErr->Release();                                                    \
         }                                                                       \
     }                                                                           \
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
 //===================================================================================
 // Macro to make conditional catching more succinct.
@@ -1072,7 +1051,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             pErr->Release();                                                    \
         }                                                                       \
     }                                                                           \
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
 #else // FEATURE_COMINTEROP
 
@@ -1098,8 +1077,9 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 #define EX_SWALLOW_NONTERMINAL                           \
     EX_CATCH                                             \
     {                                                    \
+        RethrowTerminalExceptions()                      \
     }                                                    \
-    EX_END_CATCH(RethrowTerminalExceptions)              \
+    EX_END_CATCH                                         \
 
 
 //===================================================================================
@@ -1120,8 +1100,9 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 #define EX_SWALLOW_NONTRANSIENT                          \
     EX_CATCH                                             \
     {                                                    \
+        RethrowTransientExceptions()                     \
     }                                                    \
-    EX_END_CATCH(RethrowTransientExceptions)             \
+    EX_END_CATCH                                         \
 
 
 //===================================================================================

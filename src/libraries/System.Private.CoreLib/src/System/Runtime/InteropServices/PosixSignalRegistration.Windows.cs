@@ -8,23 +8,20 @@ namespace System.Runtime.InteropServices
 {
     public sealed partial class PosixSignalRegistration
     {
-        private static readonly HashSet<Token> s_registrations = new();
+        private static readonly Dictionary<int, List<Token>> s_registrations = new();
 
         private static unsafe PosixSignalRegistration Register(PosixSignal signal, Action<PosixSignalContext> handler)
         {
-            switch (signal)
+            int signo = signal switch
             {
-                case PosixSignal.SIGINT:
-                case PosixSignal.SIGQUIT:
-                case PosixSignal.SIGTERM:
-                case PosixSignal.SIGHUP:
-                    break;
+                PosixSignal.SIGINT => Interop.Kernel32.CTRL_C_EVENT,
+                PosixSignal.SIGQUIT => Interop.Kernel32.CTRL_BREAK_EVENT,
+                PosixSignal.SIGTERM => Interop.Kernel32.CTRL_SHUTDOWN_EVENT,
+                PosixSignal.SIGHUP => Interop.Kernel32.CTRL_CLOSE_EVENT,
+                _ => throw new PlatformNotSupportedException()
+            };
 
-                default:
-                    throw new PlatformNotSupportedException();
-            }
-
-            var token = new Token(signal, handler);
+            var token = new Token(signal, signo, handler);
             var registration = new PosixSignalRegistration(token);
 
             lock (s_registrations)
@@ -35,7 +32,12 @@ namespace System.Runtime.InteropServices
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
 
-                s_registrations.Add(token);
+                if (!s_registrations.TryGetValue(signo, out List<Token>? tokens))
+                {
+                    s_registrations[signo] = tokens = new List<Token>();
+                }
+
+                tokens.Add(token);
             }
 
             return registration;
@@ -49,17 +51,25 @@ namespace System.Runtime.InteropServices
                 {
                     _token = null;
 
-                    s_registrations.Remove(token);
-                    if (s_registrations.Count == 0 &&
-                        !Interop.Kernel32.SetConsoleCtrlHandler(&HandlerRoutine, Add: false))
+                    if (s_registrations.TryGetValue(token.SigNo, out List<Token>? tokens))
                     {
-                        // Ignore errors due to the handler no longer being registered; this can happen, for example, with
-                        // direct use of Alloc/Attach/FreeConsole which result in the table of control handlers being reset.
-                        // Throw for everything else.
-                        int error = Marshal.GetLastPInvokeError();
-                        if (error != Interop.Errors.ERROR_INVALID_PARAMETER)
+                        tokens.Remove(token);
+                        if (tokens.Count == 0)
                         {
-                            throw Win32Marshal.GetExceptionForWin32Error(error);
+                            s_registrations.Remove(token.SigNo);
+                        }
+
+                        if (s_registrations.Count == 0 &&
+                            !Interop.Kernel32.SetConsoleCtrlHandler(&HandlerRoutine, Add: false))
+                        {
+                            // Ignore errors due to the handler no longer being registered; this can happen, for example, with
+                            // direct use of Alloc/Attach/FreeConsole which result in the table of control handlers being reset.
+                            // Throw for everything else.
+                            int error = Marshal.GetLastPInvokeError();
+                            if (error != Interop.Errors.ERROR_INVALID_PARAMETER)
+                            {
+                                throw Win32Marshal.GetExceptionForWin32Error(error);
+                            }
                         }
                     }
                 }
@@ -69,38 +79,14 @@ namespace System.Runtime.InteropServices
         [UnmanagedCallersOnly]
         private static Interop.BOOL HandlerRoutine(int dwCtrlType)
         {
-            PosixSignal signal;
-            switch (dwCtrlType)
-            {
-                case Interop.Kernel32.CTRL_C_EVENT:
-                    signal = PosixSignal.SIGINT;
-                    break;
+            Token[]? tokens = null;
 
-                case Interop.Kernel32.CTRL_BREAK_EVENT:
-                    signal = PosixSignal.SIGQUIT;
-                    break;
-
-                case Interop.Kernel32.CTRL_SHUTDOWN_EVENT:
-                    signal = PosixSignal.SIGTERM;
-                    break;
-
-                case Interop.Kernel32.CTRL_CLOSE_EVENT:
-                    signal = PosixSignal.SIGHUP;
-                    break;
-
-                default:
-                    return Interop.BOOL.FALSE;
-            }
-
-            List<Token>? tokens = null;
             lock (s_registrations)
             {
-                foreach (Token token in s_registrations)
+                if (s_registrations.TryGetValue(dwCtrlType, out List<Token>? registrations))
                 {
-                    if (token.Signal == signal)
-                    {
-                        (tokens ??= new List<Token>()).Add(token);
-                    }
+                    tokens = new Token[registrations.Count];
+                    registrations.CopyTo(tokens);
                 }
             }
 
@@ -109,10 +95,14 @@ namespace System.Runtime.InteropServices
                 return Interop.BOOL.FALSE;
             }
 
-            var context = new PosixSignalContext(signal);
-            foreach (Token handler in tokens)
+            var context = new PosixSignalContext(0);
+
+            // Iterate through the tokens in reverse order to match the order of registration.
+            for (int i = tokens.Length - 1; i >= 0; i--)
             {
-                handler.Handler(context);
+                Token token = tokens[i];
+                context.Signal = token.Signal;
+                token.Handler(context);
             }
 
             return context.Cancel ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
