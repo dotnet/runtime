@@ -1330,6 +1330,21 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector_CreateSequence:
+        {
+            assert(Compiler::UseSveForType(retType));
+
+            if ((simdBaseJitType != CORINFO_TYPE_FLOAT) && (simdBaseJitType != CORINFO_TYPE_DOUBLE))
+            {
+                // There is no way to do floating point `initial and `step` in SVE, corresponding
+                //  to the `Vector.CreateSequence<float>().
+                op2 = impPopStack().val;
+                op1 = impPopStack().val;
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_Sve_Index, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
         case NI_Vector64_CreateSequence:
         case NI_Vector128_CreateSequence:
         {
@@ -1679,27 +1694,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector_CreateSequence:
-        {
-            assert(Compiler::UseSveForType(retType));
-
-            op2 = impPopStack().val;
-            op1 = impPopStack().val;
-
-            // TODO-VL: There is no way to do floating point `initial and `step` in SVE, corresponding
-            //  to the `Vector.CreateSequence<float>(). For now, just treat it as integral.
-            if (!varTypeIsIntegral(op1))
-            {
-                op1 = gtNewCastNode(TYP_LONG, op1, false, TYP_LONG);
-            }
-            if (!varTypeIsIntegral(op2))
-            {
-                op2 = gtNewCastNode(TYP_LONG, op2, false, TYP_LONG);
-            }
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_Sve_Index, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector_ToScalar:
         {
             op1 = impSIMDPopStack();
@@ -1720,9 +1714,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector_get_Indices:
         {
-            GenTree* start = gtNewIconNode(0, TYP_INT);
-            GenTree* step  = gtNewIconNode(1, TYP_INT);
-            retNode        = gtNewSimdHWIntrinsicNode(retType, start, step, NI_Sve_Index, simdBaseJitType, simdSize);
+            if ((simdBaseJitType != CORINFO_TYPE_FLOAT) && (simdBaseJitType != CORINFO_TYPE_DOUBLE))
+            {
+                GenTree* start = gtNewIconNode(0, TYP_INT);
+                GenTree* step = gtNewIconNode(1, TYP_INT);
+                retNode = gtNewSimdHWIntrinsicNode(retType, start, step, NI_Sve_Index, simdBaseJitType, simdSize);
+            }
             break;
         }
         case NI_Vector64_get_Indices:
