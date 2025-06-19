@@ -6204,6 +6204,14 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<byte> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<uint> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<ulong> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftLogicalRounded(System.Numerics.Vector<byte> value, System.Numerics.Vector<sbyte> count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLogicalRounded(System.Numerics.Vector<ushort> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLogicalRounded(System.Numerics.Vector<uint> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLogicalRounded(System.Numerics.Vector<ulong> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftLogicalRoundedSaturate(System.Numerics.Vector<byte> value, System.Numerics.Vector<sbyte> count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLogicalRoundedSaturate(System.Numerics.Vector<ushort> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLogicalRoundedSaturate(System.Numerics.Vector<uint> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLogicalRoundedSaturate(System.Numerics.Vector<ulong> value, System.Numerics.Vector<long> count) { throw null; }
         public static System.Numerics.Vector<byte> Xor(System.Numerics.Vector<byte> value1, System.Numerics.Vector<byte> value2, System.Numerics.Vector<byte> value3) { throw null; }
         public static System.Numerics.Vector<short> Xor(System.Numerics.Vector<short> value1, System.Numerics.Vector<short> value2, System.Numerics.Vector<short> value3) { throw null; }
         public static System.Numerics.Vector<int> Xor(System.Numerics.Vector<int> value1, System.Numerics.Vector<int> value2, System.Numerics.Vector<int> value3) { throw null; }
