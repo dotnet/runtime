@@ -4968,9 +4968,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     op2 = new (this, GT_INTRINSIC)
                         GenTreeIntrinsic(callType, op2, NI_System_Math_Abs, nullptr R2RARG(nullEntry));
                 }
-                NamedIntrinsic name = isMax ? NI_System_Math_MaxNumber : NI_System_Math_MinNumber;
+                ni = isMax ? NI_System_Math_MaxNumber : NI_System_Math_MinNumber;
                 GenTree*       minMax =
-                    new (this, GT_INTRINSIC) GenTreeIntrinsic(callType, op1, op2, name, nullptr R2RARG(nullEntry));
+                    new (this, GT_INTRINSIC) GenTreeIntrinsic(callType, op1, op2, ni, nullptr R2RARG(nullEntry));
 
                 if (!isNumber)
                 {
@@ -5016,10 +5016,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     }
 
                     if (varTypeIsUnsigned(preciseType))
-                        intrinsicName = isMax ? NI_System_Math_MaxUnsigned : NI_System_Math_MinUnsigned;
+                        ni = isMax ? NI_System_Math_MaxUnsigned : NI_System_Math_MinUnsigned;
 
                     GenTreeIntrinsic* minMax =
-                        new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_I_IMPL, op1, op2, intrinsicName,
+                        new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_I_IMPL, op1, op2, ni,
                                                                   nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
 
                     return minMax;
@@ -5028,7 +5028,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             }
 
             // TODO-CQ: Returning this as an intrinsic blocks inlining and is undesirable
-            // return impMathIntrinsic(method, sig, callType, intrinsicName, tailCall, isSpecial);
+            // return impMathIntrinsic(method, sig, callType, ni, tailCall, isSpecial);
 
             return nullptr;
         }
