@@ -164,17 +164,18 @@ namespace Microsoft.NET.HostModel.AppHost
                                 }
                             }
                         }
-                        if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
-                        {
-                            using var updater = new ResourceUpdater(appHostDestinationMap, true);
-                            updater.AddResourcesFromPEImage(assemblyToCopyResourcesFrom);
-                            updater.Update();
-                        }
-                        using (var appHostDestinationStream = new FileStream(appHostDestinationFilePath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 1))
+                        using (var appHostDestinationStream = new FileStream(appHostDestinationFilePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize: 1))
                         using (var appHostAccessor = appHostDestinationMap.CreateViewAccessor(0, appHostDestinationLength, MemoryMappedFileAccess.Read))
                         {
                             // Write the final content to the destination file.
                             BinaryUtils.WriteToStream(appHostAccessor, appHostDestinationStream, appHostDestinationLength);
+                            // This could be moved to work on the MemoryMappedFile if we can precalculate the size required.
+                            if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
+                            {
+                                using var updater = new ResourceUpdater(appHostDestinationStream, leaveOpen: true);
+                                updater.AddResourcesFromPEImage(assemblyToCopyResourcesFrom);
+                                updater.Update();
+                            }
                         }
                     }
                 });
