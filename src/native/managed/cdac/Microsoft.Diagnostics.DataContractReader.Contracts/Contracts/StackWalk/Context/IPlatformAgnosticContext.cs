@@ -28,6 +28,7 @@ public interface IPlatformAgnosticContext
         IRuntimeInfo runtimeInfo = target.Contracts.RuntimeInfo;
         return runtimeInfo.GetTargetArchitecture() switch
         {
+            RuntimeInfoArchitecture.X86 => new ContextHolder<X86Context>(),
             RuntimeInfoArchitecture.X64 => new ContextHolder<AMD64Context>(),
             RuntimeInfoArchitecture.Arm => new ContextHolder<ARMContext>(),
             RuntimeInfoArchitecture.Arm64 => new ContextHolder<ARM64Context>(),

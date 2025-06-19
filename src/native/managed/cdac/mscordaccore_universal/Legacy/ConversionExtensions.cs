@@ -42,7 +42,7 @@ internal static class ConversionExtensions
             long signedAddr = (long)address.Value;
             if (!overrideCheck && (signedAddr > int.MaxValue || signedAddr < int.MinValue))
             {
-                throw new ArgumentException(nameof(address), "ClrDataAddress out of range for the target platform.");
+                throw new ArgumentException($"ClrDataAddress 0x{address.Value:x} out of range for the target platform.", nameof(address));
             }
             return new TargetPointer((uint)address);
         }
@@ -62,7 +62,7 @@ internal static class ConversionExtensions
             long signedAddr = (long)address.Value;
             if (signedAddr > int.MaxValue || signedAddr < int.MinValue)
             {
-                throw new ArgumentException(nameof(address), "ClrDataAddress out of range for the target platform.");
+                throw new ArgumentException($"ClrDataAddress 0x{address.Value:x} out of range for the target platform.", nameof(address));
             }
             return new TargetCodePointer((uint)address);
         }

@@ -155,8 +155,9 @@ Unknown_QueryInterface_Internal(ComCallWrapper* pWrap, IUnknown* pUnk, REFIID ri
             {
                 Exception *e = GET_EXCEPTION();
                 hr = e->GetHR();
+                RethrowTerminalExceptions();
             }
-            EX_END_CATCH(RethrowTerminalExceptions)
+            EX_END_CATCH
         }
 
 ErrExit:
@@ -417,7 +418,7 @@ Unknown_ReleaseSpecial_IErrorInfo_Internal(IUnknown* pUnk)
         SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
         cbRef = pSimpleWrap->Release();
     EX_CATCH
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return cbRef;
 }
@@ -699,7 +700,7 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
                     {
                         pThrowable = GET_THROWABLE();
                     }
-                    EX_END_CATCH(SwallowAllExceptions);
+                    EX_END_CATCH
 
                     if (pThrowable != NULL)
                         hr = SetupErrorInfo(pThrowable);

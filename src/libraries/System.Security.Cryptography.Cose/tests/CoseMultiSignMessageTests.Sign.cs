@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.Cose.Tests
 {
     public class CoseMultiSignMessageTests_Sign : CoseMessageTests_Sign<AsymmetricAlgorithm>
     {
-        internal override List<CoseAlgorithm> CoseAlgorithms => Enum.GetValues(typeof(CoseAlgorithm)).Cast<CoseAlgorithm>().ToList();
+        internal override List<CoseAlgorithm> CoseAlgorithms => Enum.GetValues(typeof(CoseAlgorithm)).Cast<CoseAlgorithm>().Where(AlgorithmNeedsHashAlgorithm).ToList();
 
         internal override CoseMessageKind MessageKind => CoseMessageKind.MultiSign;
 
