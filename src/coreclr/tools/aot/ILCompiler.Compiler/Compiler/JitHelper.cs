@@ -195,12 +195,6 @@ namespace ILCompiler
                 case ReadyToRunHelper.Dbl2ULng:
                     mangledName = "RhpDbl2ULng";
                     break;
-                case ReadyToRunHelper.Dbl2Int:
-                    mangledName = "RhpDbl2Int";
-                    break;
-                case ReadyToRunHelper.Dbl2UInt:
-                    mangledName = "RhpDbl2UInt";
-                    break;
 
                 case ReadyToRunHelper.Dbl2IntOvf:
                     methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ConvertToInt32Checked", null);

@@ -7,7 +7,7 @@ jobs:
   # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
   # See https://docs.github.com/en/copilot/customizing-copilot/customizing-the-development-environment-for-copilot-coding-agent
   copilot-setup-steps:
-    runs-on: ubuntu-latest
+    runs-on: 8-core-ubuntu-latest
 
     permissions:
       contents: read
@@ -17,11 +17,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4.2.2
 
-      - name: Install dependencies
-        run: sudo ./eng/common/native/install-dependencies.sh
+      - name: Install Dependencies
+        env:
+          LIBMSQUIC_VERSION: '2.4.8'
+        run: |
+          sudo ./eng/common/native/install-dependencies.sh && \
+          sudo apt-get install -qq -y \
+            curl \
+            libbpf1 \
+            libelf1t64 \
+            libnl-3-200 \
+            libnl-route-3-200 \
+            libnuma1 \
+            libxdp1 && \
+          curl -LO "https://packages.microsoft.com/ubuntu/24.04/prod/pool/main/libm/libmsquic/libmsquic_${LIBMSQUIC_VERSION}_amd64.deb" && \
+          sudo dpkg -i libmsquic* && \
+          rm libmsquic*
+
       - name: Restore solution
-        run: ./build.sh --restore --excludecibinarylog --warnaserror false /p:BuildAllConfigurations=true /p:DotNetBuildAllRuntimePacks=true
+        run: ./build.sh --restore --excludecibinarylog --warnaserror false /p:BuildAllConfigurations=true /p:DotNetBuildAllRuntimePacks=true /p:DotNetBuildTests=true
+
       - name: Put dotnet on the path
         run: echo "PATH=$PWD/.dotnet:$PATH" >> $GITHUB_ENV
+
       - name: Run dotnet info
         run: dotnet --info
+
+      - name: Build clr+libs
+        run: ./build.sh clr+libs -rc release

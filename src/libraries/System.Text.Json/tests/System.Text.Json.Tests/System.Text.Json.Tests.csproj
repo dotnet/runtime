@@ -70,6 +70,7 @@
     <Compile Include="..\Common\JsonSchemaExporterTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSchemaExporterTests.cs" />
     <Compile Include="..\Common\JsonSchemaExporterTests.TestTypes.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSchemaExporterTests.TestTypes.cs" />
     <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
+    <Compile Include="..\Common\JsonTestSerializerOptions.cs" Link="CommonTest\System\Text\Json\JsonTestSerializerOptions.cs" />
     <Compile Include="..\Common\MetadataTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.cs" />
     <Compile Include="..\Common\MetadataTests.JsonSerializer.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.JsonSerializer.cs" />
     <Compile Include="..\Common\MetadataTests.Options.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.Options.cs" />

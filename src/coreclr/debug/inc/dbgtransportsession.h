@@ -8,9 +8,9 @@
 #ifndef RIGHT_SIDE_COMPILE
 #include <utilcode.h>
 #include <crst.h>
-
 #endif // !RIGHT_SIDE_COMPILE
 
+#include <minipal/mutex.h>
 #include <minipal/guid.h>
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
@@ -271,7 +271,7 @@ inline UINT32 DBGIPC_HTONL(UINT32 x)
 
 // Lock abstraction (we can't use the same lock implementation on LS and RS since we really want a Crst on the
 // LS and this isn't available in the RS environment).
-class DbgTransportLock
+class DbgTransportLock final
 {
 public:
     void Init();
@@ -281,10 +281,30 @@ public:
 
 private:
 #ifdef RIGHT_SIDE_COMPILE
-    CRITICAL_SECTION    m_sLock;
+    minipal_mutex       m_sLock;
 #else // RIGHT_SIDE_COMPILE
     CrstExplicitInit    m_sLock;
 #endif // RIGHT_SIDE_COMPILE
+};
+
+class TransportLockHolder final
+{
+    DbgTransportLock& _lock;
+public:
+    TransportLockHolder(DbgTransportLock& lock)
+        : _lock(lock)
+    {
+        _lock.Enter();
+    }
+    ~TransportLockHolder()
+    {
+        _lock.Leave();
+    }
+
+    TransportLockHolder(TransportLockHolder const&) = delete;
+    TransportLockHolder& operator=(TransportLockHolder const&) = delete;
+    TransportLockHolder(TransportLockHolder&& other) = delete;
+    TransportLockHolder&& operator=(TransportLockHolder&&) = delete;
 };
 
 // The transport has only one queue for IPC events, but each IPC event can be marked as one of two types.
@@ -401,7 +421,6 @@ public:
     // Read and write memory on the LS from the RS.
     HRESULT ReadMemory(PBYTE pbRemoteAddress, PBYTE pbBuffer, SIZE_T cbBuffer);
     HRESULT WriteMemory(PBYTE pbRemoteAddress, PBYTE pbBuffer, SIZE_T cbBuffer);
-    HRESULT VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context);
 
     // Read and write the debugger control block on the LS from the RS.
     HRESULT GetDCB(DebuggerIPCControlBlock *pDCB);
@@ -448,7 +467,6 @@ private:
         // Misc management operations.
         MT_ReadMemory,      // RS <-> LS : RS wants to read LS memory block (or LS is replying to such a request)
         MT_WriteMemory,     // RS <-> LS : RS wants to write LS memory block (or LS is replying to such a request)
-        MT_VirtualUnwind,   // RS <-> LS : RS wants to LS unwind a stack frame (or LS is replying to such a request)
         MT_GetDCB,          // RS <-> LS : RS wants to read LS DCB (or LS is replying to such a request)
         MT_SetDCB,          // RS <-> LS : RS wants to write LS DCB (or LS is replying to such a request)
         MT_GetAppDomainCB,  // RS <-> LS : RS wants to read LS AppDomainCB (or LS is replying to such a request)
@@ -555,26 +573,6 @@ private:
         }
     };
 
-    // Holder class used to take a transport lock in a given scope and automatically release it once that
-    // scope is exited.
-    class TransportLockHolder
-    {
-    public:
-        TransportLockHolder(DbgTransportLock *pLock)
-        {
-            m_pLock = pLock;
-            m_pLock->Enter();
-        }
-
-        ~TransportLockHolder()
-        {
-            m_pLock->Leave();
-        }
-
-    private:
-        DbgTransportLock   *m_pLock;
-    };
-
 #ifdef _DEBUG
     // Store statistics for various session activities that will be useful for performance analysis and tracking
     // down bugs.
@@ -589,7 +587,6 @@ private:
         LONG        m_cSentEvent;
         LONG        m_cSentReadMemory;
         LONG        m_cSentWriteMemory;
-        LONG        m_cSentVirtualUnwind;
         LONG        m_cSentGetDCB;
         LONG        m_cSentSetDCB;
         LONG        m_cSentGetAppDomainCB;
@@ -604,7 +601,6 @@ private:
         LONG        m_cReceivedEvent;
         LONG        m_cReceivedReadMemory;
         LONG        m_cReceivedWriteMemory;
-        LONG        m_cReceivedVirtualUnwind;
         LONG        m_cReceivedGetDCB;
         LONG        m_cReceivedSetDCB;
         LONG        m_cReceivedGetAppDomainCB;

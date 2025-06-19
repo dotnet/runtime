@@ -257,7 +257,7 @@ namespace Microsoft.Interop
             return Block(statements);
         }
 
-        private static FunctionPointerTypeSyntax GenerateUnmanagedFunctionPointerTypeForMethod(
+        public static FunctionPointerTypeSyntax GenerateUnmanagedFunctionPointerTypeForMethod(
             IncrementalMethodStubGenerationContext method,
             Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
         {

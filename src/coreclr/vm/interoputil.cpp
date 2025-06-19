@@ -139,7 +139,7 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
                 {
                     hr = GET_EXCEPTION()->GetHR();
                 }
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
             }
         }
         EX_CATCH
@@ -147,7 +147,7 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
             if (SUCCEEDED(hr))
                 hr = E_FAIL;
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
     GCPROTECT_END();
     return hr;
@@ -607,9 +607,9 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     }
     EX_CATCH
     {
-        IfFailGo(COR_E_BADIMAGEFORMAT);
+        return COR_E_BADIMAGEFORMAT;
     }
-    EX_END_CATCH(RethrowTerminalExceptions)
+    EX_END_CATCH
 
 
 #ifdef FEATURE_COMINTEROP
@@ -1056,7 +1056,7 @@ HRESULT SafeGetErrorInfo(IErrorInfo **ppIErrInfo)
     {
         hr = E_OUTOFMEMORY;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }
@@ -1297,7 +1297,7 @@ void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 //--------------------------------------------------------------------------------
@@ -1370,7 +1370,7 @@ HRESULT LoadRegTypeLib(_In_ REFGUID guid,
     {
         hr = GET_EXCEPTION()->GetHR();
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }
@@ -1556,7 +1556,7 @@ HRESULT SafeVariantChangeType(_Inout_ VARIANT* pVarRes, _In_ VARIANT* pVarSrc,
         {
             hr = GET_EXCEPTION()->GetHR();
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
     return hr;
@@ -1947,7 +1947,7 @@ HRESULT TryGetDefaultInterfaceForClass(TypeHandle hndClass, TypeHandle *pHndDefC
         {
             pThrowable = GET_THROWABLE();
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 
         if (pThrowable != NULL)
             hr = SetupErrorInfo(pThrowable);
@@ -2354,7 +2354,7 @@ HRESULT TryGenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
         {
             pThrowable = GET_THROWABLE();
         }
-        EX_END_CATCH (SwallowAllExceptions);
+        EX_END_CATCH
 
         if (pThrowable != NULL)
             hr = SetupErrorInfo(pThrowable);
@@ -2918,8 +2918,9 @@ static void DoIUInvokeDispMethod(IDispatchEx* pDispEx, IDispatch* pDisp, DISPID 
             // If we get here we need to throw an TargetInvocationException
             pThrowable = GET_THROWABLE();
             _ASSERTE(pThrowable != NULL);
+            RethrowTerminalExceptions();
         }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_END_CATCH
 
         if (pThrowable != NULL)
         {

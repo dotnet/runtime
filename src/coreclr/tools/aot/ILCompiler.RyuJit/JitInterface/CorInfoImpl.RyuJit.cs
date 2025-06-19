@@ -614,10 +614,12 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT:
                     id = ReadyToRunHelper.NewArray;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_PTR:
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewPtrArrayFast");
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_ALIGN8:
-                    return _compilation.NodeFactory.ExternSymbol("RhpNewArrayAlign8");
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewArrayFastAlign8");
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_VC:
-                    return _compilation.NodeFactory.ExternSymbol("RhpNewArray");
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewArrayFast");
 
                 case CorInfoHelpFunc.CORINFO_HELP_STACK_PROBE:
                     return _compilation.NodeFactory.ExternSymbol("RhpStackProbe");
@@ -675,9 +677,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.UMod;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2INT:
-                    id = ReadyToRunHelper.Dbl2Int;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2INT_OVF:
                     id = ReadyToRunHelper.Dbl2IntOvf;
                     break;
@@ -686,9 +685,6 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2LNG_OVF:
                     id = ReadyToRunHelper.Dbl2LngOvf;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT:
-                    id = ReadyToRunHelper.Dbl2UInt;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT_OVF:
                     id = ReadyToRunHelper.Dbl2UIntOvf;
@@ -1158,6 +1154,11 @@ namespace Internal.JitInterface
             TypeDesc type = HandleToObject(arrayCls);
 
             Debug.Assert(type.IsArray);
+
+            TypeDesc elementType = ((ArrayType)type).ElementType;
+
+            if (elementType.GetElementSize().AsInt == _compilation.TypeSystemContext.Target.PointerSize)
+                return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_PTR;
 
             if (type.RequiresAlign8())
                 return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_ALIGN8;

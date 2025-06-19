@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
@@ -139,55 +140,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(null)]
-        [InlineData(false)]
-        public void ListRuntimes(bool? multiLevelLookup)
-        {
-            // Multi-level lookup is only supported on Windows.
-            if (!OperatingSystem.IsWindows() && multiLevelLookup != false)
-                return;
-
-            string expectedOutput = string.Join(
-                string.Empty,
-                GetExpectedFrameworks(false) // MLL Is always disabled for dotnet --list-runtimes
-                    .Select(t => $"{MicrosoftNETCoreApp} {t.Version} [{Path.Combine(t.Path, "shared", MicrosoftNETCoreApp)}]{Environment.NewLine}"));
-
-            // !!IMPORTANT!!: This test verifies the exact match of the entire output of the command (not a substring!)
-            // This is important as the output of --list-runtimes is considered machine readable and thus must not change even in a minor way (unintentionally)
-            RunTest(
-                new TestSettings().WithCommandLine("--list-runtimes"),
-                multiLevelLookup,
-                testApp: null)
-                .Should().HaveStdOut(expectedOutput)
-                .And.HaveStdErrContaining("Ignoring FX version [9999.9.9] without .deps.json");
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(null)]
-        [InlineData(false)]
-        public void DotnetInfo(bool? multiLevelLookup)
-        {
-            // Multi-level lookup is only supported on Windows.
-            if (!OperatingSystem.IsWindows() && multiLevelLookup != false)
-                return;
-
-            string expectedOutput =
-                $".NET runtimes installed:{Environment.NewLine}" +
-                string.Join(string.Empty,
-                    GetExpectedFrameworks(false) // MLL is always disabled for dotnet --info
-                        .Select(t => $"  {MicrosoftNETCoreApp} {t.Version} [{Path.Combine(t.Path, "shared", MicrosoftNETCoreApp)}]{Environment.NewLine}"));
-
-            RunTest(
-                new TestSettings().WithCommandLine("--info"),
-                multiLevelLookup,
-                testApp: null)
-                .Should().HaveStdOutContaining(expectedOutput)
-                .And.HaveStdErrContaining("Ignoring FX version [9999.9.9] without .deps.json");
-        }
-
-        [Theory]
         [InlineData("net6.0", true, true)]
         [InlineData("net6.0", null, true)]
         [InlineData("net6.0", false, false)]
@@ -262,24 +214,22 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             }
         }
 
-        private CommandResult RunTest(Func<RuntimeConfig, RuntimeConfig> runtimeConfig, bool? multiLevelLookup = true)
-            => RunTest(new TestSettings().WithRuntimeConfigCustomizer(runtimeConfig), multiLevelLookup);
+        private CommandResult RunTest(Func<RuntimeConfig, RuntimeConfig> runtimeConfig, bool? multiLevelLookup, [CallerMemberName] string caller = "")
+            => RunTest(new TestSettings().WithRuntimeConfigCustomizer(runtimeConfig), multiLevelLookup, caller);
 
-        private CommandResult RunTest(TestSettings testSettings, bool? multiLevelLookup)
-            => RunTest(testSettings, multiLevelLookup, SharedState.FrameworkReferenceApp);
-
-        private CommandResult RunTest(TestSettings testSettings, bool? multiLevelLookup, TestApp testApp)
+        private CommandResult RunTest(TestSettings testSettings, bool? multiLevelLookup, [CallerMemberName] string caller = "")
         {
             return RunTest(
                 SharedState.DotNetMainHive,
-                testApp,
+                SharedState.FrameworkReferenceApp,
                 testSettings
                     .WithEnvironment(Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath, SharedState.DotNetGlobalHive.BinPath)
                     .WithEnvironment( // Redirect the default install location to an invalid location so that a machine-wide install is not used
                         Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
                         System.IO.Path.Combine(SharedState.DotNetMainHive.BinPath, "invalid")),
                 // Must enable multi-level lookup otherwise multiple hives are not enabled
-                multiLevelLookup: multiLevelLookup);
+                multiLevelLookup: multiLevelLookup,
+                caller: caller);
         }
 
         public class SharedTestState : SharedTestStateBase
@@ -291,8 +241,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             public DotNetCli DotNetGlobalHive { get; }
 
             public DotNetCli DotNetCurrentHive { get; }
-
-            private readonly IDisposable _testOnlyProductBehaviorScope;
 
             public SharedTestState()
             {
@@ -326,16 +274,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
                 FrameworkReferenceApp = CreateFrameworkReferenceApp();
 
-                _testOnlyProductBehaviorScope = TestOnlyProductBehavior.Enable(DotNetMainHive.GreatestVersionHostFxrFilePath);
+                // Enable test-only behaviour. We don't bother disabling the behaviour later,
+                // as we just delete the entire copy after the tests run.
+                _ = TestOnlyProductBehavior.Enable(DotNetMainHive.GreatestVersionHostFxrFilePath);
             }
 
             protected override void Dispose(bool disposing)
             {
-                if (disposing)
-                {
-                    _testOnlyProductBehaviorScope.Dispose();
-                }
-
                 base.Dispose(disposing);
             }
         }

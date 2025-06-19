@@ -450,7 +450,6 @@ enum GenTreeFlags : unsigned int
     GTF_VAR_MOREUSES      = 0x00800000, // GT_LCL_VAR -- this node has additional uses, for example due to cloning
     GTF_VAR_CONTEXT       = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
     GTF_VAR_EXPLICIT_INIT = 0x00200000, // GT_LCL_VAR -- this node is an "explicit init" store. Valid until rationalization.
-    GTF_VAR_CONNECTED     = 0x00100000, // GT_STORE_LCL_VAR -- this store was modelled in the connection graph during escape analysis
 
     // For additional flags for GT_CALL node see GTF_CALL_M_*
 
@@ -1072,7 +1071,7 @@ public:
             return false;
         }
 
-        if (gtType == TYP_VOID)
+        if (TypeIs(TYP_VOID))
         {
             // These are the only operators which can produce either VOID or non-VOID results.
             assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsLong() || OperIsHWIntrinsic() ||
@@ -1180,7 +1179,7 @@ public:
 
     static bool OperIsLocalField(genTreeOps gtOper)
     {
-        return (gtOper == GT_LCL_FLD || gtOper == GT_LCL_ADDR || gtOper == GT_STORE_LCL_FLD);
+        return StaticOperIs(gtOper, GT_LCL_FLD, GT_LCL_ADDR, GT_STORE_LCL_FLD);
     }
 
     bool OperIsLocalField() const
@@ -1190,7 +1189,7 @@ public:
 
     static bool OperIsScalarLocal(genTreeOps gtOper)
     {
-        return (gtOper == GT_LCL_VAR || gtOper == GT_STORE_LCL_VAR);
+        return StaticOperIs(gtOper, GT_LCL_VAR, GT_STORE_LCL_VAR);
     }
 
     static bool OperIsNonPhiLocal(genTreeOps gtOper)
@@ -1205,17 +1204,17 @@ public:
 
     static bool OperIsLocalStore(genTreeOps gtOper)
     {
-        return (gtOper == GT_STORE_LCL_VAR || gtOper == GT_STORE_LCL_FLD);
+        return StaticOperIs(gtOper, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD);
     }
 
     static bool OperIsAddrMode(genTreeOps gtOper)
     {
-        return (gtOper == GT_LEA);
+        return gtOper == GT_LEA;
     }
 
     static bool OperIsInitVal(genTreeOps gtOper)
     {
-        return (gtOper == GT_INIT_VAL);
+        return gtOper == GT_INIT_VAL;
     }
 
     bool OperIsInitVal() const
@@ -1230,7 +1229,7 @@ public:
 
     bool IsConstInitVal() const
     {
-        return (gtOper == GT_CNS_INT) || (OperIsInitVal() && (gtGetOp1()->gtOper == GT_CNS_INT));
+        return (OperIs(GT_CNS_INT)) || (OperIsInitVal() && (gtGetOp1()->OperIs(GT_CNS_INT)));
     }
 
     bool OperIsBlkOp();
@@ -1257,34 +1256,19 @@ public:
         return OperIsStoreBlk(OperGet());
     }
 
-    bool OperIsPutArgSplit() const
-    {
-#if FEATURE_ARG_SPLIT
-        assert((gtOper != GT_PUTARG_SPLIT) || compFeatureArgSplit());
-        return gtOper == GT_PUTARG_SPLIT;
-#else // !FEATURE_ARG_SPLIT
-        return false;
-#endif
-    }
-
     bool OperIsPutArgStk() const
     {
-        return gtOper == GT_PUTARG_STK;
-    }
-
-    bool OperIsPutArgStkOrSplit() const
-    {
-        return OperIsPutArgStk() || OperIsPutArgSplit();
+        return OperIs(GT_PUTARG_STK);
     }
 
     bool OperIsPutArgReg() const
     {
-        return gtOper == GT_PUTARG_REG;
+        return OperIs(GT_PUTARG_REG);
     }
 
     bool OperIsPutArg() const
     {
-        return OperIsPutArgStk() || OperIsPutArgReg() || OperIsPutArgSplit();
+        return OperIsPutArgStk() || OperIsPutArgReg();
     }
 
     bool OperIsFieldList() const
@@ -1381,7 +1365,7 @@ public:
 
     static bool OperIsCC(genTreeOps gtOper)
     {
-        return (gtOper == GT_JCC) || (gtOper == GT_SETCC);
+        return StaticOperIs(gtOper, GT_JCC, GT_SETCC);
     }
 
     bool OperIsCC() const
@@ -1391,7 +1375,7 @@ public:
 
     static bool OperIsShift(genTreeOps gtOper)
     {
-        return (gtOper == GT_LSH) || (gtOper == GT_RSH) || (gtOper == GT_RSZ);
+        return StaticOperIs(gtOper, GT_LSH, GT_RSH, GT_RSZ);
     }
 
     bool OperIsShift() const
@@ -1404,7 +1388,7 @@ public:
 #ifdef TARGET_64BIT
         return false;
 #else
-        return (gtOper == GT_LSH_HI) || (gtOper == GT_RSH_LO);
+        return StaticOperIs(gtOper, GT_LSH_HI, GT_RSH_LO);
 #endif
     }
 
@@ -1415,7 +1399,7 @@ public:
 
     static bool OperIsRotate(genTreeOps gtOper)
     {
-        return (gtOper == GT_ROL) || (gtOper == GT_ROR);
+        return StaticOperIs(gtOper, GT_ROL, GT_ROR);
     }
 
     bool OperIsRotate() const
@@ -1435,7 +1419,7 @@ public:
 
     static bool OperIsMul(genTreeOps gtOper)
     {
-        return (gtOper == GT_MUL) || (gtOper == GT_MULHI)
+        return StaticOperIs(gtOper, GT_MUL, GT_MULHI)
 #if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
                || (gtOper == GT_MUL_LONG)
 #endif
@@ -1451,8 +1435,8 @@ public:
     static bool OperIsRMWMemOp(genTreeOps gtOper)
     {
         // Return if binary op is one of the supported operations for RMW of memory.
-        return (gtOper == GT_ADD || gtOper == GT_SUB || gtOper == GT_AND || gtOper == GT_OR || gtOper == GT_XOR ||
-                gtOper == GT_NOT || gtOper == GT_NEG || OperIsShiftOrRotate(gtOper));
+        return StaticOperIs(gtOper, GT_ADD, GT_SUB, GT_AND, GT_OR, GT_XOR, GT_NOT, GT_NEG) ||
+               OperIsShiftOrRotate(gtOper);
     }
     bool OperIsRMWMemOp() const
     {
@@ -1500,7 +1484,10 @@ public:
     bool isCommutativeHWIntrinsic() const;
     bool isContainableHWIntrinsic() const;
     bool isRMWHWIntrinsic(Compiler* comp);
+#if defined(TARGET_XARCH)
     bool isEvexCompatibleHWIntrinsic(Compiler* comp) const;
+    bool isEmbeddedBroadcastCompatibleHWIntrinsic(Compiler* comp) const;
+#endif // TARGET_XARCH
     bool isEmbeddedMaskingCompatibleHWIntrinsic() const;
 #else
     bool isCommutativeHWIntrinsic() const
@@ -1518,10 +1505,17 @@ public:
         return false;
     }
 
-    bool isEvexCompatibleHWIntrinsic() const
+#if defined(TARGET_XARCH)
+    bool isEvexCompatibleHWIntrinsic(Compiler* comp) const
     {
         return false;
     }
+
+    bool isEmbeddedBroadcastCompatibleHWIntrinsic(Compiler* comp) const
+    {
+        return false;
+    }
+#endif // TARGET_XARCH
 
     bool isEmbeddedMaskingCompatibleHWIntrinsic() const
     {
@@ -1541,11 +1535,11 @@ public:
 
     static bool OperMayOverflow(genTreeOps gtOper)
     {
-        return ((gtOper == GT_ADD) || (gtOper == GT_SUB) || (gtOper == GT_MUL) || (gtOper == GT_CAST)
+        return StaticOperIs(gtOper, GT_ADD, GT_SUB, GT_MUL, GT_CAST)
 #if !defined(TARGET_64BIT)
-                || (gtOper == GT_ADD_HI) || (gtOper == GT_SUB_HI)
+               || StaticOperIs(gtOper, GT_ADD_HI, GT_SUB_HI)
 #endif
-        );
+            ;
     }
 
     bool OperMayOverflow() const
@@ -1565,18 +1559,18 @@ public:
 
     static bool OperIsArrLength(genTreeOps gtOper)
     {
-        return (gtOper == GT_ARR_LENGTH) || (gtOper == GT_MDARR_LENGTH);
+        return StaticOperIs(gtOper, GT_ARR_LENGTH, GT_MDARR_LENGTH);
     }
 
     static bool OperIsMDArr(genTreeOps gtOper)
     {
-        return (gtOper == GT_MDARR_LENGTH) || (gtOper == GT_MDARR_LOWER_BOUND);
+        return StaticOperIs(gtOper, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND);
     }
 
     // Is this an access of an SZ array length, MD array length, or MD array lower bounds?
     static bool OperIsArrMetaData(genTreeOps gtOper)
     {
-        return (gtOper == GT_ARR_LENGTH) || (gtOper == GT_MDARR_LENGTH) || (gtOper == GT_MDARR_LOWER_BOUND);
+        return StaticOperIs(gtOper, GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND);
     }
 
     static bool OperIsIndirOrArrMetaData(genTreeOps gtOper)
@@ -1637,7 +1631,7 @@ public:
 
     static bool OperIsLoad(genTreeOps gtOper)
     {
-        return (gtOper == GT_IND) || (gtOper == GT_BLK);
+        return StaticOperIs(gtOper, GT_IND, GT_BLK);
     }
 
     bool OperIsLoad() const
@@ -1751,7 +1745,7 @@ public:
             case GT_FIELD_ADDR:
                 return true;
             case GT_RETURN:
-                return gtType == TYP_VOID;
+                return TypeIs(TYP_VOID);
             default:
                 return false;
         }
@@ -1776,7 +1770,7 @@ public:
                 return true;
 
             case GT_SWIFT_ERROR_RET:
-                return (gtType == TYP_VOID);
+                return (TypeIs(TYP_VOID));
             default:
                 return false;
         }
@@ -1808,8 +1802,8 @@ public:
     inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
     inline bool IsVectorBroadcast(var_types simdBaseType) const;
-    inline bool IsMaskAllBitsSet() const;
-    inline bool IsMaskZero() const;
+    inline bool IsTrueMask(var_types simdBaseType) const;
+    inline bool IsFalseMask() const;
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
 
@@ -1900,6 +1894,7 @@ public:
 
     ExceptionSetFlags OperExceptions(Compiler* comp);
     bool              OperMayThrow(Compiler* comp);
+    bool              NodeOrContainedOperandsMayThrow(Compiler* comp);
 
     bool OperRequiresGlobRefFlag(Compiler* comp) const;
 
@@ -1940,8 +1935,8 @@ public:
 
     static GenTree** EffectiveUse(GenTree** use);
 
-#if defined(DEBUG) || CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_MEM_ALLOC ||     \
-    NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS || DUMP_FLOWGRAPHS
+#if defined(DEBUG) || CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_MEM_ALLOC || NODEBASH_STATS ||  \
+    MEASURE_NODE_SIZE || COUNT_AST_OPERS || DUMP_FLOWGRAPHS
     static const char* OpName(genTreeOps op);
 #endif
 
@@ -1970,7 +1965,7 @@ public:
         var_types oldType = gtType;
         gtType            = newType;
         GenTree* node     = this;
-        while (node->gtOper == GT_COMMA)
+        while (node->OperIs(GT_COMMA))
         {
             node = node->gtGetOp2();
             if (node->gtType != newType)
@@ -2233,7 +2228,7 @@ public:
 
     bool IsIconHandle() const
     {
-        return (gtOper == GT_CNS_INT) && ((gtFlags & GTF_ICON_HDL_MASK) != 0);
+        return (OperIs(GT_CNS_INT)) && ((gtFlags & GTF_ICON_HDL_MASK) != 0);
     }
 
     bool IsIconHandle(GenTreeFlags handleType) const
@@ -2241,7 +2236,7 @@ public:
         // check that handleType is one of the valid GTF_ICON_* values
         assert((handleType & GTF_ICON_HDL_MASK) != 0);
         assert((handleType & ~GTF_ICON_HDL_MASK) == 0);
-        return (gtOper == GT_CNS_INT) && ((gtFlags & GTF_ICON_HDL_MASK) == handleType);
+        return (OperIs(GT_CNS_INT)) && ((gtFlags & GTF_ICON_HDL_MASK) == handleType);
     }
 
     template <typename... T>
@@ -2254,7 +2249,7 @@ public:
     // For non-icon handle trees, returns GTF_EMPTY.
     GenTreeFlags GetIconHandleFlag() const
     {
-        return (gtOper == GT_CNS_INT) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
+        return (OperIs(GT_CNS_INT)) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
     }
 
     bool IsTlsIconHandle()
@@ -2270,7 +2265,7 @@ public:
     // Mark this node as no longer being a handle; clear its GTF_ICON_*_HDL bits.
     void ClearIconHandleMask()
     {
-        assert(gtOper == GT_CNS_INT);
+        assert(OperIs(GT_CNS_INT));
         gtFlags &= ~GTF_ICON_HDL_MASK;
     }
 
@@ -2725,16 +2720,10 @@ struct GenTreeFieldList : public GenTree
 
     class UseList
     {
-        Use* m_head;
-        Use* m_tail;
+        Use* m_head = nullptr;
+        Use* m_tail = nullptr;
 
     public:
-        UseList()
-            : m_head(nullptr)
-            , m_tail(nullptr)
-        {
-        }
-
         Use* GetHead() const
         {
             return m_head;
@@ -2792,6 +2781,12 @@ struct GenTreeFieldList : public GenTree
             }
         }
 
+        void Clear()
+        {
+            m_head = nullptr;
+            m_tail = nullptr;
+        }
+
         bool IsSorted() const
         {
             unsigned offset = 0;
@@ -2846,8 +2841,8 @@ public:
     //
     static bool Equals(GenTreeFieldList* list1, GenTreeFieldList* list2)
     {
-        assert(list1->TypeGet() == TYP_STRUCT);
-        assert(list2->TypeGet() == TYP_STRUCT);
+        assert(list1->TypeIs(TYP_STRUCT));
+        assert(list2->TypeIs(TYP_STRUCT));
 
         UseIterator i1   = list1->Uses().begin();
         UseIterator end1 = list1->Uses().end();
@@ -3339,7 +3334,7 @@ struct GenTreeLngCon : public GenTreeIntConCommon
 inline INT64 GenTreeIntConCommon::LngValue() const
 {
 #ifndef TARGET_64BIT
-    assert(gtOper == GT_CNS_LNG);
+    assert(OperIs(GT_CNS_LNG));
     return AsLngCon()->gtLconVal;
 #else
     return IconValue();
@@ -3349,7 +3344,7 @@ inline INT64 GenTreeIntConCommon::LngValue() const
 inline void GenTreeIntConCommon::SetLngValue(INT64 val)
 {
 #ifndef TARGET_64BIT
-    assert(gtOper == GT_CNS_LNG);
+    assert(OperIs(GT_CNS_LNG));
     AsLngCon()->gtLconVal = val;
 #else
     // Compile time asserts that these two fields overlap and have the same offsets:  gtIconVal and gtLconVal
@@ -3362,13 +3357,13 @@ inline void GenTreeIntConCommon::SetLngValue(INT64 val)
 
 inline ssize_t GenTreeIntConCommon::IconValue() const
 {
-    assert(gtOper == GT_CNS_INT); //  We should never see a GT_CNS_LNG for a 64-bit target!
+    assert(OperIs(GT_CNS_INT)); //  We should never see a GT_CNS_LNG for a 64-bit target!
     return AsIntCon()->gtIconVal;
 }
 
 inline void GenTreeIntConCommon::SetIconValue(ssize_t val)
 {
-    assert(gtOper == GT_CNS_INT); //  We should never see a GT_CNS_LNG for a 64-bit target!
+    assert(OperIs(GT_CNS_INT)); //  We should never see a GT_CNS_LNG for a 64-bit target!
     AsIntCon()->gtIconVal = val;
 }
 
@@ -3377,7 +3372,7 @@ inline INT64 GenTreeIntConCommon::IntegralValue() const
 #ifdef TARGET_64BIT
     return LngValue();
 #else
-    return gtOper == GT_CNS_LNG ? LngValue() : (INT64)IconValue();
+    return OperIs(GT_CNS_LNG) ? LngValue() : (INT64)IconValue();
 #endif // TARGET_64BIT
 }
 
@@ -4580,6 +4575,7 @@ enum class WellKnownArg : unsigned
     SwiftSelf,
     X86TailCallSpecialArg,
     StackArrayLocal,
+    RuntimeMethodHandle,
 };
 
 #ifdef DEBUG
@@ -4592,8 +4588,8 @@ struct NewCallArg
     GenTree* Node = nullptr;
     // The signature type of the node.
     var_types SignatureType = TYP_UNDEF;
-    // The class handle if SignatureType == TYP_STRUCT.
-    CORINFO_CLASS_HANDLE SignatureClsHnd = NO_CLASS_HANDLE;
+    // The class layout if varTypeIsStruct(SignatureType).
+    ClassLayout* SignatureLayout = nullptr;
     // The type of well known arg
     enum WellKnownArg WellKnownArg = ::WellKnownArg::None;
 
@@ -4604,13 +4600,13 @@ struct NewCallArg
         return copy;
     }
 
-    static NewCallArg Struct(GenTree* node, var_types type, CORINFO_CLASS_HANDLE clsHnd)
+    static NewCallArg Struct(GenTree* node, var_types type, ClassLayout* layout)
     {
         assert(varTypeIsStruct(node) && varTypeIsStruct(type));
         NewCallArg arg;
         arg.Node            = node;
         arg.SignatureType   = type;
-        arg.SignatureClsHnd = clsHnd;
+        arg.SignatureLayout = layout;
         arg.ValidateTypes();
         return arg;
     }
@@ -4643,8 +4639,8 @@ class CallArg
     CallArg* m_next;
     CallArg* m_lateNext;
 
-    // The class handle for the signature type (when varTypeIsStruct(SignatureType)).
-    CORINFO_CLASS_HANDLE m_signatureClsHnd;
+    // The class layout for the signature type (when varTypeIsStruct(SignatureType)).
+    ClassLayout* m_signatureLayout;
     // The type of the argument in the signature.
     var_types m_signatureType : 5;
     // The type of well-known argument this is.
@@ -4662,7 +4658,7 @@ private:
         , m_lateNode(nullptr)
         , m_next(nullptr)
         , m_lateNext(nullptr)
-        , m_signatureClsHnd(NO_CLASS_HANDLE)
+        , m_signatureLayout(nullptr)
         , m_signatureType(TYP_UNDEF)
         , m_wellKnownArg(WellKnownArg::None)
         , m_needTmp(false)
@@ -4680,7 +4676,7 @@ public:
         m_earlyNode       = arg.Node;
         m_wellKnownArg    = arg.WellKnownArg;
         m_signatureType   = arg.SignatureType;
-        m_signatureClsHnd = arg.SignatureClsHnd;
+        m_signatureLayout = arg.SignatureLayout;
     }
 
     CallArg(const CallArg&)      = delete;
@@ -4699,7 +4695,8 @@ public:
     CallArg*& LateNextRef() { return m_lateNext; }
     CallArg* GetLateNext() { return m_lateNext; }
     void SetLateNext(CallArg* lateNext) { m_lateNext = lateNext; }
-    CORINFO_CLASS_HANDLE GetSignatureClassHandle() { return m_signatureClsHnd; }
+    ClassLayout* GetSignatureLayout() { return m_signatureLayout; }
+    CORINFO_CLASS_HANDLE GetSignatureClassHandle() { return m_signatureLayout == nullptr ? NO_CLASS_HANDLE : m_signatureLayout->GetClassHandle(); }
     var_types GetSignatureType() { return m_signatureType; }
     WellKnownArg GetWellKnownArg() { return m_wellKnownArg; }
     // clang-format on
@@ -5201,6 +5198,9 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_VTABLE;
     }
+
+    bool IsDevirtualizationCandidate(Compiler* compiler) const;
+
     bool IsInlineCandidate() const
     {
         return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0;
@@ -5251,7 +5251,7 @@ struct GenTreeCall final : public GenTree
     {
 #ifdef FEATURE_MULTIREG_RET
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        return (gtType == TYP_STRUCT) && (gtReturnTypeDesc.GetReturnRegCount() > 1);
+        return (TypeIs(TYP_STRUCT)) && (gtReturnTypeDesc.GetReturnRegCount() > 1);
 #else
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
@@ -5647,12 +5647,9 @@ struct GenTreeCall final : public GenTree
 
     // IL offset of the call wrt its parent method.
     IL_OFFSET gtRawILOffset;
-
-    // In DEBUG we report even non inline candidates in the inline tree in
-    // fgNoteNonInlineCandidate. We need to keep around the inline context for
-    // this as normally it's part of the candidate info.
-    class InlineContext* gtInlineContext;
 #endif // defined(DEBUG)
+
+    class InlineContext* gtInlineContext;
 
     bool IsHelperCall() const
     {
@@ -5714,7 +5711,7 @@ struct GenTreeMultiRegOp : public GenTreeOp
 
     unsigned GetRegCount() const
     {
-        return (TypeGet() == TYP_LONG) ? 2 : 1;
+        return TypeIs(TYP_LONG) ? 2 : 1;
     }
 
     //---------------------------------------------------------------------------
@@ -6442,7 +6439,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryStore(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryLoadOrStore() const;
     bool OperIsMemoryStoreOrBarrier() const;
-    bool OperIsEmbBroadcastCompatible() const;
     bool OperIsBroadcastScalar() const;
     bool OperIsBitwiseHWIntrinsic() const;
     bool OperIsEmbRoundingEnabled() const;
@@ -6455,7 +6451,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsConvertMaskToVector() const
     {
 #if defined(TARGET_XARCH)
-        return OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector);
+        return OperIsHWIntrinsic(NI_AVX512_ConvertMaskToVector);
 #elif defined(TARGET_ARM64)
         return OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector);
 #else
@@ -6466,7 +6462,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsConvertVectorToMask() const
     {
 #if defined(TARGET_XARCH)
-        return OperIsHWIntrinsic(NI_EVEX_ConvertVectorToMask);
+        return OperIsHWIntrinsic(NI_AVX512_ConvertVectorToMask);
 #elif defined(TARGET_ARM64)
         return OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask);
 #else
@@ -6611,20 +6607,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     }
 
     bool ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon);
-
-    void NormalizeJitBaseTypeToInt(NamedIntrinsic id, var_types simdBaseType)
-    {
-        assert(varTypeIsSmall(simdBaseType));
-
-        if (varTypeIsUnsigned(simdBaseType))
-        {
-            SetSimdBaseJitType(CORINFO_TYPE_UINT);
-        }
-        else
-        {
-            SetSimdBaseJitType(CORINFO_TYPE_UINT);
-        }
-    }
 
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);
@@ -8679,154 +8661,6 @@ public:
 #endif
 };
 
-#if FEATURE_ARG_SPLIT
-// Represent the struct argument: split value in register(s) and stack
-struct GenTreePutArgSplit : public GenTreePutArgStk
-{
-    unsigned gtNumRegs;
-
-    GenTreePutArgSplit(GenTree*     op1,
-                       unsigned     stackByteOffset,
-                       unsigned     stackByteSize,
-                       unsigned     numRegs,
-                       GenTreeCall* callNode,
-                       bool         putIncomingArgArea)
-        : GenTreePutArgStk(GT_PUTARG_SPLIT,
-                           TYP_STRUCT,
-                           op1,
-                           stackByteOffset,
-                           stackByteSize,
-                           callNode,
-                           putIncomingArgArea)
-        , gtNumRegs(numRegs)
-    {
-        ClearOtherRegs();
-        ClearOtherRegFlags();
-    }
-
-    // Type required to support multi-reg struct arg.
-    var_types m_regType[MAX_REG_ARG];
-
-    // First reg of struct is always given by GetRegNum().
-    // gtOtherRegs holds the other reg numbers of struct.
-    regNumberSmall gtOtherRegs[MAX_REG_ARG - 1];
-
-    MultiRegSpillFlags gtSpillFlags;
-
-    //---------------------------------------------------------------------------
-    // GetRegNumByIdx: get i'th register allocated to this struct argument.
-    //
-    // Arguments:
-    //     idx   -   index of the struct
-    //
-    // Return Value:
-    //     Return regNumber of i'th register of this struct argument
-    //
-    regNumber GetRegNumByIdx(unsigned idx) const
-    {
-        assert(idx < MAX_REG_ARG);
-
-        if (idx == 0)
-        {
-            return GetRegNum();
-        }
-
-        return (regNumber)gtOtherRegs[idx - 1];
-    }
-
-    //----------------------------------------------------------------------
-    // SetRegNumByIdx: set i'th register of this struct argument
-    //
-    // Arguments:
-    //    reg    -   reg number
-    //    idx    -   index of the struct
-    //
-    // Return Value:
-    //    None
-    //
-    void SetRegNumByIdx(regNumber reg, unsigned idx)
-    {
-        assert(idx < MAX_REG_ARG);
-        if (idx == 0)
-        {
-            SetRegNum(reg);
-        }
-        else
-        {
-            gtOtherRegs[idx - 1] = (regNumberSmall)reg;
-            assert(gtOtherRegs[idx - 1] == reg);
-        }
-    }
-
-    //----------------------------------------------------------------------------
-    // ClearOtherRegs: clear multi-reg state to indicate no regs are allocated
-    //
-    // Arguments:
-    //    None
-    //
-    // Return Value:
-    //    None
-    //
-    void ClearOtherRegs()
-    {
-        for (unsigned i = 0; i < MAX_REG_ARG - 1; ++i)
-        {
-            gtOtherRegs[i] = REG_NA;
-        }
-    }
-
-    GenTreeFlags GetRegSpillFlagByIdx(unsigned idx) const
-    {
-        return GetMultiRegSpillFlagsByIdx(gtSpillFlags, idx);
-    }
-
-    void SetRegSpillFlagByIdx(GenTreeFlags flags, unsigned idx)
-    {
-#if FEATURE_MULTIREG_RET
-        gtSpillFlags = SetMultiRegSpillFlagsByIdx(gtSpillFlags, flags, idx);
-#endif
-    }
-
-    //--------------------------------------------------------------------------
-    // GetRegType:  Get var_type of the register specified by index.
-    //
-    // Arguments:
-    //    index - Index of the register.
-    //            First register will have an index 0 and so on.
-    //
-    // Return Value:
-    //    var_type of the register specified by its index.
-
-    var_types GetRegType(unsigned index) const
-    {
-        assert(index < gtNumRegs);
-        var_types result = m_regType[index];
-        return result;
-    }
-
-    //-------------------------------------------------------------------
-    // clearOtherRegFlags: clear GTF_* flags associated with gtOtherRegs
-    //
-    // Arguments:
-    //     None
-    //
-    // Return Value:
-    //     None
-    //
-    void ClearOtherRegFlags()
-    {
-        gtSpillFlags = 0;
-    }
-
-#if DEBUGGABLE_GENTREE
-    GenTreePutArgSplit()
-        : GenTreePutArgStk()
-    {
-    }
-#endif
-};
-#endif // FEATURE_ARG_SPLIT
-
 // Represents GT_COPY or GT_RELOAD node
 //
 // Needed to support multi-reg ops.
@@ -9498,12 +9332,12 @@ inline bool GenTree::OperIsCopyBlkOp()
 
 inline bool GenTree::IsIntegralConst(ssize_t constVal) const
 {
-    if ((gtOper == GT_CNS_INT) && (AsIntConCommon()->IconValue() == constVal))
+    if ((OperIs(GT_CNS_INT)) && (AsIntConCommon()->IconValue() == constVal))
     {
         return true;
     }
 
-    if ((gtOper == GT_CNS_LNG) && (AsIntConCommon()->LngValue() == constVal))
+    if ((OperIs(GT_CNS_LNG)) && (AsIntConCommon()->LngValue() == constVal))
     {
         return true;
     }
@@ -9716,54 +9550,46 @@ inline bool GenTree::IsVectorBroadcast(var_types simdBaseType) const
     return false;
 }
 
-inline bool GenTree::IsMaskAllBitsSet() const
+//------------------------------------------------------------------------
+// IsTrueMask: Is the given node a true mask
+//
+// Arguments:
+//   simdBaseType - the base type of the mask
+//
+// Returns true if the node is a true mask for the given simdBaseType.
+//
+// Note that a byte true mask (1111...) is different to an int true mask
+// (10001000...), therefore the simdBaseType of the mask needs to be
+// taken into account.
+//
+inline bool GenTree::IsTrueMask(var_types simdBaseType) const
 {
 #ifdef TARGET_ARM64
-    static_assert_no_msg(AreContiguous(NI_Sve_CreateTrueMaskByte, NI_Sve_CreateTrueMaskDouble,
-                                       NI_Sve_CreateTrueMaskInt16, NI_Sve_CreateTrueMaskInt32,
-                                       NI_Sve_CreateTrueMaskInt64, NI_Sve_CreateTrueMaskSByte,
-                                       NI_Sve_CreateTrueMaskSingle, NI_Sve_CreateTrueMaskUInt16,
-                                       NI_Sve_CreateTrueMaskUInt32, NI_Sve_CreateTrueMaskUInt64));
+    // TODO-SVE: For agnostic VL, vector type may not be simd16_t
 
-    if (OperIsHWIntrinsic())
+    if (IsCnsMsk())
     {
-        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
-        if (id == NI_Sve_ConvertMaskToVector)
-        {
-            GenTree* op1 = AsHWIntrinsic()->Op(1);
-            assert(op1->OperIsHWIntrinsic());
-            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
-        }
-        return ((id == NI_Sve_CreateTrueMaskAll) ||
-                ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)));
+        return SveMaskPatternAll == EvaluateSimdMaskToPattern<simd16_t>(simdBaseType, AsMskCon()->gtSimdMaskVal);
     }
-
 #endif
+
     return false;
 }
 
-inline bool GenTree::IsMaskZero() const
+//------------------------------------------------------------------------
+// IsFalseMask: Is the given node a false mask
+//
+// Returns true if the node is a false mask, ie all zeros
+//
+inline bool GenTree::IsFalseMask() const
 {
 #ifdef TARGET_ARM64
-    static_assert_no_msg(AreContiguous(NI_Sve_CreateFalseMaskByte, NI_Sve_CreateFalseMaskDouble,
-                                       NI_Sve_CreateFalseMaskInt16, NI_Sve_CreateFalseMaskInt32,
-                                       NI_Sve_CreateFalseMaskInt64, NI_Sve_CreateFalseMaskSByte,
-                                       NI_Sve_CreateFalseMaskSingle, NI_Sve_CreateFalseMaskUInt16,
-                                       NI_Sve_CreateFalseMaskUInt32, NI_Sve_CreateFalseMaskUInt64));
-
-    if (OperIsHWIntrinsic())
+    if (IsCnsMsk())
     {
-        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
-        if (id == NI_Sve_ConvertMaskToVector)
-        {
-            GenTree* op1 = AsHWIntrinsic()->Op(1);
-            assert(op1->OperIsHWIntrinsic());
-            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
-        }
-        return ((id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64));
+        return AsMskCon()->IsZero();
     }
-
 #endif
+
     return false;
 }
 
@@ -9838,7 +9664,7 @@ inline uint64_t GenTree::GetIntegralVectorConstElement(size_t index, var_types s
 inline bool GenTree::IsBoxedValue()
 {
     assert(gtOper != GT_BOX || AsBox()->BoxOp() != nullptr);
-    return (gtOper == GT_BOX) && (gtFlags & GTF_BOX_VALUE);
+    return (OperIs(GT_BOX)) && (gtFlags & GTF_BOX_VALUE);
 }
 
 inline GenTree* GenTree::gtGetOp1() const
@@ -10035,13 +9861,6 @@ inline regNumber GenTree::GetRegByIndex(int regIndex) const
         return AsCall()->GetRegNumByIdx(regIndex);
     }
 
-#if FEATURE_ARG_SPLIT
-    if (OperIsPutArgSplit())
-    {
-        return AsPutArgSplit()->GetRegNumByIdx(regIndex);
-    }
-#endif
-
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
     {
@@ -10097,13 +9916,6 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex) const
         return AsCall()->AsCall()->GetReturnTypeDesc()->GetReturnRegType(regIndex);
     }
 
-#if FEATURE_ARG_SPLIT
-    if (OperIsPutArgSplit())
-    {
-        return AsPutArgSplit()->GetRegType(regIndex);
-    }
-#endif // FEATURE_ARG_SPLIT
-
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
     {
@@ -10115,7 +9927,7 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex) const
 #ifdef FEATURE_HW_INTRINSICS
     if (OperIsHWIntrinsic())
     {
-        assert(TypeGet() == TYP_STRUCT);
+        assert(TypeIs(TYP_STRUCT));
 #ifdef TARGET_ARM64
         if (AsHWIntrinsic()->GetSimdSize() == 16)
         {
@@ -10136,11 +9948,11 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex) const
 
     if (OperIsScalarLocal())
     {
-        if (TypeGet() == TYP_LONG)
+        if (TypeIs(TYP_LONG))
         {
             return TYP_INT;
         }
-        assert(TypeGet() == TYP_STRUCT);
+        assert(TypeIs(TYP_STRUCT));
         assert((gtFlags & GTF_VAR_MULTIREG) != 0);
         // The register type for a multireg lclVar requires looking at the LclVarDsc,
         // which requires a Compiler instance. The caller must use the GetFieldTypeByIndex
@@ -10173,13 +9985,6 @@ inline GenTreeFlags GenTree::GetRegSpillFlagByIdx(int regIndex) const
     {
         return AsCall()->GetRegSpillFlagByIdx(regIndex);
     }
-
-#if FEATURE_ARG_SPLIT
-    if (OperIsPutArgSplit())
-    {
-        return AsPutArgSplit()->GetRegSpillFlagByIdx(regIndex);
-    }
-#endif // FEATURE_ARG_SPLIT
 
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
@@ -10226,14 +10031,6 @@ inline void GenTree::SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex)
         AsCall()->SetRegSpillFlagByIdx(flags, regIndex);
         return;
     }
-
-#if FEATURE_ARG_SPLIT
-    if (OperIsPutArgSplit())
-    {
-        AsPutArgSplit()->SetRegSpillFlagByIdx(flags, regIndex);
-        return;
-    }
-#endif // FEATURE_ARG_SPLIT
 
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
@@ -10354,7 +10151,7 @@ inline void GenTree::ClearLastUse(int fieldIndex)
 //
 inline bool GenTree::IsCopyOrReload() const
 {
-    return (gtOper == GT_COPY || gtOper == GT_RELOAD);
+    return (OperIs(GT_COPY) || OperIs(GT_RELOAD));
 }
 
 //-----------------------------------------------------------------------------------
@@ -10379,7 +10176,7 @@ inline bool GenTree::IsCopyOrReloadOfMultiRegCall() const
 
 inline bool GenTree::IsCnsIntOrI() const
 {
-    return (gtOper == GT_CNS_INT);
+    return (OperIs(GT_CNS_INT));
 }
 
 inline bool GenTree::IsIntegralConst() const
@@ -10387,7 +10184,7 @@ inline bool GenTree::IsIntegralConst() const
 #ifdef TARGET_64BIT
     return IsCnsIntOrI();
 #else  // !TARGET_64BIT
-    return ((gtOper == GT_CNS_INT) || (gtOper == GT_CNS_LNG));
+    return ((OperIs(GT_CNS_INT)) || (OperIs(GT_CNS_LNG)));
 #endif // !TARGET_64BIT
 }
 

@@ -38,8 +38,8 @@ static void GetExecutableFileNameUtf8(SString& value)
     CONTRACTL_END;
 
     SString tmp;
-    WCHAR * pCharBuf = tmp.OpenUnicodeBuffer(_MAX_PATH);
-    DWORD numChars = GetModuleFileNameW(0 /* Get current executable */, pCharBuf, _MAX_PATH);
+    WCHAR * pCharBuf = tmp.OpenUnicodeBuffer(MAX_PATH);
+    DWORD numChars = GetModuleFileNameW(0 /* Get current executable */, pCharBuf, MAX_PATH);
     tmp.CloseBuffer(numChars);
 
     tmp.ConvertToUTF8(value);
@@ -133,7 +133,7 @@ BOOL RaiseExceptionOnAssert(RaiseOnAssertOptions option = rTestAndRaise)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (option == rTestAndRaise && fRet != 0)
     {
@@ -250,7 +250,7 @@ bool _DbgBreakCheck(
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
     // Emit assert in debug output and console for easy access.
@@ -308,7 +308,7 @@ bool _DbgBreakCheckNoThrow(
     {
         failed = true;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (failed)
     {
@@ -417,7 +417,7 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 #endif  // DACCESS_COMPILE
 #endif  // TARGET_UNIX
 
@@ -465,7 +465,7 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
     {
         // Nothing to do here.
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif // TARGET_UNIX
 
     return fSuccess;

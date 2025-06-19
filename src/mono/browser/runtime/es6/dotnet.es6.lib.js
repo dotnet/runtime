@@ -8,7 +8,7 @@
 
 // because we can't pass custom define symbols to acorn optimizer, we use environment variables to pass other build options
 const WASM_ENABLE_SIMD = process.env.WASM_ENABLE_SIMD === "1";
-const WASM_PERFTRACING = process.env.WASM_PERFTRACING === "1";
+const WASM_ENABLE_EVENTPIPE = process.env.WASM_ENABLE_EVENTPIPE === "1";
 const WASM_ENABLE_EH = process.env.WASM_ENABLE_EH === "1";
 const ENABLE_DEVTOOLS_PROFILER = process.env.ENABLE_DEVTOOLS_PROFILER === "1";
 const ENABLE_AOT_PROFILER = process.env.ENABLE_AOT_PROFILER === "1";
@@ -89,7 +89,7 @@ function injectDependencies() {
         `enableAotProfiler: ${ENABLE_AOT_PROFILER}, ` +
         `enableDevToolsProfiler: ${ENABLE_DEVTOOLS_PROFILER}, ` +
         `enableLogProfiler: ${ENABLE_LOG_PROFILER}, ` +
-        `enablePerfTracing: ${WASM_PERFTRACING}, ` +
+        `enableEventPipe: ${WASM_ENABLE_EVENTPIPE}, ` +
         `runAOTCompilation: ${RUN_AOT_COMPILATION}, ` +
         `wasmEnableThreads: ${!!USE_PTHREADS}, ` +
         `gitHash: "${gitHash}", ` +

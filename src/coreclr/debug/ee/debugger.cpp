@@ -647,8 +647,9 @@ Debugger *CreateDebugger(void)
             delete pDebugger;
             pDebugger = NULL;
         }
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 
     return pDebugger;
 }
@@ -827,7 +828,7 @@ HRESULT ValidateGCHandle(OBJECTHANDLE oh)
         LOG((LF_CORDB, LL_INFO10000, "GAV: exception indicated ref is bad.\n"));
         hr = E_INVALIDARG;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }
@@ -868,7 +869,7 @@ HRESULT ValidateObject(Object *objPtr)
         LOG((LF_CORDB, LL_INFO10000, "GAV: exception indicated ref is bad.\n"));
         hr = E_INVALIDARG;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }   // ValidateObject
@@ -1139,8 +1140,9 @@ HRESULT Debugger::CheckInitMethodInfoTable()
         EX_CATCH
         {
             pMethodInfos = NULL;
+            RethrowTerminalExceptions();
         }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_END_CATCH
 
 
         if (pMethodInfos == NULL)
@@ -1674,7 +1676,7 @@ void Debugger::SendRawEvent(const DebuggerIPCEvent * pManagedEvent)
         // We may also get here if a debugger detaches at the Exception notification
         // (and thus implicitly continues GN).
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
 }
 
@@ -2151,7 +2153,7 @@ HRESULT Debugger::LazyInitWrapper()
         hr = _ex->GetHR();
         STRESS_LOG1(LF_CORDB, LL_ALWAYS, "LazyInit failed w/ hr:0x%08x\n", hr);
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }
@@ -3727,7 +3729,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 
     }
 
@@ -5586,7 +5588,7 @@ void Debugger::TraceCall(const BYTE *code)
             // for entering managed code.
             LOG((LF_CORDB, LL_INFO10000, "Debugger::TraceCall - inside catch, %p\n", code));
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 }
 
@@ -6796,7 +6798,7 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     STARTUPINFOW startupInfo = {0};
     startupInfo.cb = sizeof(STARTUPINFOW);
@@ -7900,8 +7902,6 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     }
     CONTRACTL_END;
 
-    SCAN_IGNORE_TRIGGER; // Scan can't handle conditional contracts.
-
     // @@@
     // Implements DebugInterface
     // Can only be called from EE
@@ -8347,7 +8347,7 @@ void Debugger::ExceptionFilter(MethodDesc *fd, TADDR pMethodAddr, SIZE_T offset,
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (!fd->IsDynamicMethod() && (pDJI == NULL))
     {
@@ -8394,7 +8394,7 @@ void Debugger::ExceptionHandle(MethodDesc *fd, TADDR pMethodAddr, SIZE_T offset,
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (!fd->IsDynamicMethod() && (pDJI == NULL))
     {
@@ -8602,7 +8602,7 @@ LONG Debugger::LastChanceManagedException(EXCEPTION_POINTERS * pExceptionInfo,
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
         if (m_pRCThread->GetDCB()->m_rightSideIsWin32Debugger)
         {
             GCX_COOP();
@@ -10171,7 +10171,7 @@ BYTE* Debugger::SerializeModuleMetaData(Module * pModule, DWORD * countBytes)
         pInternalEmitter->SetMDUpdateMode(originalUpdateMode, NULL);
         EX_RETHROW;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
     _ASSERTE(metadataBuffer != NULL); // allocation would throw first
 
     // Caller ensures serialization that guarantees that the metadata doesn't grow underneath us.
@@ -13580,7 +13580,7 @@ VOID Debugger::M2UHandoffHijackWorker(CONTEXT *pContext,
         // so there's not a lot we can do besides just swallow the exception and hope for the best.
         LOG((LF_CORDB, LL_INFO1000, "D::M2UHHW: ERROR! FirstChanceNativeException threw an exception\n"));
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     _ASSERTE(!ISREDIRECTEDTHREAD(pEEThread));
     _ASSERTE(pEEThread->GetInteropDebuggingHijacked());
@@ -15003,9 +15003,11 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
     }
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
-    if (pThread->m_hasPendingActivation)
+    if (pThread->m_hasPendingActivation && Thread::AreShadowStacksEnabled())
     {
-        _ASSERTE(!"Should never get here with a pending activation. (Debugger::FuncEvalSetup)");
+        // Debugger::FuncEvalSetup will attempt to hijack the thread's context
+        // to set up the function evaluation, but this is not allowed if the thread
+        // has a pending activation via an APC and CET is enabled
         return CORDBG_E_ILLEGAL_IN_NATIVE_CODE;
     }
 #endif
@@ -15214,8 +15216,9 @@ Debugger::FuncEvalAbort(
             EX_CATCH
             {
                 _ASSERTE(!"Unknown exception from UserAbort(), not expected");
+                EX_RETHROW;
             }
-            EX_END_CATCH(EX_RETHROW);
+            EX_END_CATCH
 
         }
 
@@ -15281,8 +15284,9 @@ Debugger::FuncEvalRudeAbort(
             {
                     _ASSERTE(!"Unknown exception from UserAbort(), not expected");
                     EX_RETHROW;
+                    RethrowTerminalExceptions();
             }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_END_CATCH
         }
 
         LOG((LF_CORDB, LL_INFO1000, "D::FEA: RudeAbort complete.\n"));
@@ -15871,7 +15875,7 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx)
             // If we fault trying to read the byte before EIP, then we know that its not a breakpoint.
             // Do nothing.  The default return value is FALSE.
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 #else // TARGET_X86
         // Non-x86 can detect whether the thread is suspended after an exception is hit but before
         // the kernel has dispatched the exception to user mode by trap frame reporting.
@@ -16747,7 +16751,7 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #else
     #error Platform not supported
 #endif
@@ -16781,15 +16785,6 @@ void Debugger::ExternalMethodFixupNextStep(PCODE address)
 {
     DebuggerController::DispatchExternalMethodFixup(address);
 }
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-void Debugger::SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext)
-{
-    pThread->SetThreadState(Thread::TS_SSToExitApcCall);
-    g_pEEInterface->SetThreadFilterContext(pThread, interruptedContext);
-    DebuggerController::EnableSingleStep(pThread);
-    g_pEEInterface->SetThreadFilterContext(pThread, NULL);
-}
-#endif //FEATURE_SPECIAL_USER_MODE_APC
 #endif //DACCESS_COMPILE
 
 unsigned FuncEvalFrame::GetFrameAttribs_Impl(void)

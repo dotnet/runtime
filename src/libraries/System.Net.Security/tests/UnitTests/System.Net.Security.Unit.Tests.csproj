@@ -34,6 +34,8 @@
     <Compile Include="$(CommonTestPath)System\Net\Security\FakeNegotiateServer.cs"
              Link="Common\System\Net\Security\FakeNegotiateServer.cs" />
     <!-- Common test files -->
+    <Compile Include="$(CommonPath)System\AppContextSwitchHelper.cs"
+             Link="Common\System\AppContextSwitchHelper.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
@@ -162,8 +164,6 @@
              Link="ProductionCode\System\Net\Security\SslConnectionInfo.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.cs"
              Link="ProductionCode\System\Net\Security\SslStreamCertificateContext.cs" />
-    <Compile Include="..\..\src\System\Net\Security\ReadWriteAdapter.cs"
-             Link="ProductionCode\System\Net\Security\ReadWriteAdapter.cs" />
     <Compile Include="..\..\src\System\Net\SslStreamContext.cs"
 	    Link="ProductionCode\System\Net\SslStreamContext.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslCertificateTrust.cs"
@@ -172,6 +172,8 @@
              Link="ProductionCode\Common\System\Net\TlsAlertType.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsFrameHelper.cs"
              Link="ProductionCode\Common\System\Net\TlsFrameHelper.cs" />
+    <Compile Include="$(CommonPath)\System\Net\ReadWriteAdapter.cs"
+             Link="Common\System\Net\ReadWriteAdapter.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs"
              Link="Common\Interop\Windows\SChannel\Interop.Alerts.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
@@ -235,8 +237,6 @@
              Link="Common\System\Net\Security\SecurityBufferType.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SecurityContextTokenHandle.cs"
              Link="Common\System\Net\Security\SecurityContextTokenHandle.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Windows.cs"
-             Link="Common\System\Net\ContextAwareResult.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.Windows.cs"
              Link="Common\System\Net\Security\NetEventSource.Security.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs"

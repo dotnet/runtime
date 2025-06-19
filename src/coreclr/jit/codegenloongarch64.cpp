@@ -624,7 +624,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     addrInfo.addr       = nullptr;
     addrInfo.accessType = IAT_VALUE;
 
-    if (jmpEpilog && (lastNode->gtOper == GT_JMP))
+    if (jmpEpilog && lastNode->OperIs(GT_JMP))
     {
         methHnd = (CORINFO_METHOD_HANDLE)lastNode->AsVal()->gtVal1;
         compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo);
@@ -642,19 +642,18 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         /* figure out what jump we have */
         GenTree* jmpNode = lastNode;
 #if !FEATURE_FASTTAILCALL
-        noway_assert(jmpNode->gtOper == GT_JMP);
+        noway_assert(jmpNode->OperIs(GT_JMP));
 #else  // FEATURE_FASTTAILCALL
        // armarch
        // If jmpNode is GT_JMP then gtNext must be null.
        // If jmpNode is a fast tail call, gtNext need not be null since it could have embedded stmts.
-        noway_assert((jmpNode->gtOper != GT_JMP) || (jmpNode->gtNext == nullptr));
+        noway_assert(!jmpNode->OperIs(GT_JMP) || (jmpNode->gtNext == nullptr));
 
         // Could either be a "jmp method" or "fast tail call" implemented as epilog+jmp
-        noway_assert((jmpNode->gtOper == GT_JMP) ||
-                     ((jmpNode->gtOper == GT_CALL) && jmpNode->AsCall()->IsFastTailCall()));
+        noway_assert(jmpNode->OperIs(GT_JMP) || (jmpNode->OperIs(GT_CALL) && jmpNode->AsCall()->IsFastTailCall()));
 
         // The next block is associated with this "if" stmt
-        if (jmpNode->gtOper == GT_JMP)
+        if (jmpNode->OperIs(GT_JMP))
 #endif // FEATURE_FASTTAILCALL
         {
             // Simply emit a jump to the methodHnd. This is similar to a call so we can use
@@ -1169,7 +1168,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
 #ifdef FEATURE_SIMD
     // storing of TYP_SIMD12 (i.e. Vector3) field
-    if (tree->TypeGet() == TYP_SIMD12)
+    if (tree->TypeIs(TYP_SIMD12))
     {
         genStoreLclTypeSIMD12(tree);
         return;
@@ -1253,7 +1252,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             assert(varReg != REG_NA);
             unsigned   fieldLclNum = varDsc->lvFieldLclStart + i;
             LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
-            assert(fieldVarDsc->TypeGet() == TYP_FLOAT);
+            assert(fieldVarDsc->TypeIs(TYP_FLOAT));
             GetEmitter()->emitIns_R_R_I(INS_st_d, emitTypeSize(TYP_FLOAT), varReg, operandReg, i);
         }
         genProduceReg(lclNode);
@@ -1267,7 +1266,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
 
 #ifdef FEATURE_SIMD
         // storing of TYP_SIMD12 (i.e. Vector3) field
-        if (lclNode->TypeGet() == TYP_SIMD12)
+        if (lclNode->TypeIs(TYP_SIMD12))
         {
             genStoreLclTypeSIMD12(lclNode);
             return;
@@ -1355,7 +1354,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
 //
 void CodeGen::genSimpleReturn(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    assert(treeNode->OperIs(GT_RETURN) || treeNode->OperIs(GT_RETFILT));
     GenTree*  op1        = treeNode->gtGetOp1();
     var_types targetType = treeNode->TypeGet();
 
@@ -1368,7 +1367,7 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
 
     if (!movRequired)
     {
-        if (op1->OperGet() == GT_LCL_VAR)
+        if (op1->OperIs(GT_LCL_VAR))
         {
             GenTreeLclVarCommon* lcl            = op1->AsLclVarCommon();
             bool                 isRegCandidate = compiler->lvaTable[lcl->GetLclNum()].lvIsRegCandidate();
@@ -1409,7 +1408,7 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
  */
 void CodeGen::genLclHeap(GenTree* tree)
 {
-    assert(tree->OperGet() == GT_LCLHEAP);
+    assert(tree->OperIs(GT_LCLHEAP));
     assert(compiler->compLocallocUsed);
 
     emitter* emit = GetEmitter();
@@ -2083,7 +2082,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     bool      sourceIsLocal = false;
 
     assert(source->isContained());
-    if (source->gtOper == GT_IND)
+    if (source->OperIs(GT_IND))
     {
         GenTree* srcAddr = source->gtGetOp1();
         assert(!srcAddr->isContained());
@@ -2676,7 +2675,7 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
 //
 void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 {
-    assert(tree->OperGet() == GT_RETURNTRAP);
+    assert(tree->OperIs(GT_RETURNTRAP));
 
     // this is nothing but a conditional call to CORINFO_HELP_STOP_FOR_GC
     // based on the contents of 'data'
@@ -2689,11 +2688,19 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 
     EmitCallParams params;
 
-    void* pAddr = nullptr;
-    params.addr = compiler->compGetHelperFtn(CORINFO_HELP_STOP_FOR_GC, &pAddr);
-
-    if (params.addr == nullptr)
+    CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn(CORINFO_HELP_STOP_FOR_GC);
+    if (helperFunction.accessType == IAT_VALUE)
     {
+        // If the helper is a value, we need to use the address of the helper.
+        params.addr     = helperFunction.addr;
+        params.callType = EC_FUNC_TOKEN;
+    }
+    else
+    {
+        params.addr = nullptr;
+        assert(helperFunction.accessType == IAT_PVALUE);
+        void* pAddr = helperFunction.addr;
+
         params.callType = EC_INDIR_R;
         params.ireg     = REG_DEFAULT_HELPER_CALL_TARGET;
 
@@ -2712,10 +2719,6 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
                                         ((ssize_t)pAddr & 0xfff) >> 2);
         }
         regSet.verifyRegUsed(params.ireg);
-    }
-    else
-    {
-        params.callType = EC_FUNC_TOKEN;
     }
 
     // TODO-LOONGARCH64: can optimize further !!!
@@ -2740,7 +2743,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 {
 #ifdef FEATURE_SIMD
     // Storing Vector3 of size 12 bytes through indirection
-    if (tree->TypeGet() == TYP_SIMD12)
+    if (tree->TypeIs(TYP_SIMD12))
     {
         genStoreIndTypeSIMD12(tree);
         return;
@@ -2838,7 +2841,7 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
 void CodeGen::genIntToFloatCast(GenTree* treeNode)
 {
     // int type --> float/double conversions are always non-overflow ones
-    assert(treeNode->OperGet() == GT_CAST);
+    assert(treeNode->OperIs(GT_CAST));
     assert(!treeNode->gtOverflow());
 
     regNumber targetReg = treeNode->GetRegNum();
@@ -2953,7 +2956,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 {
     // we don't expect to see overflow detecting float/double --> int type conversions here
     // as they should have been converted into helper calls by front-end.
-    assert(treeNode->OperGet() == GT_CAST);
+    assert(treeNode->OperIs(GT_CAST));
     assert(!treeNode->gtOverflow());
 
     regNumber targetReg = treeNode->GetRegNum();
@@ -3110,7 +3113,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 //
 void CodeGen::genCkfinite(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_CKFINITE);
+    assert(treeNode->OperIs(GT_CKFINITE));
 
     GenTree*  op1        = treeNode->AsOp()->gtOp1;
     var_types targetType = treeNode->TypeGet();
@@ -3239,7 +3242,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
         if (targetReg != REG_NA)
         {
-            assert(tree->TypeGet() != TYP_VOID);
+            assert(!tree->TypeIs(TYP_VOID));
             assert(emitter::isGeneralRegister(targetReg));
 
             emit->emitIns_R_R(INS_mov, EA_PTRSIZE, targetReg, REG_R0);
@@ -3250,7 +3253,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     else
     {
         assert(targetReg != REG_NA);
-        assert(tree->TypeGet() != TYP_VOID);
+        assert(!tree->TypeIs(TYP_VOID));
 
         assert(!op1->isContainedIntOrIImmed());
         assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
@@ -3472,7 +3475,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 
     assert(tree->OperIs(GT_JCMP));
     assert(!varTypeIsFloating(tree));
-    assert(tree->TypeGet() == TYP_VOID);
+    assert(tree->TypeIs(TYP_VOID));
     assert(tree->GetRegNum() == REG_NA);
 
     GenTree* op1 = tree->gtOp1;
@@ -3759,15 +3762,23 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
 {
-    void* pAddr = nullptr;
-
     EmitCallParams params;
-    params.callType   = EC_FUNC_TOKEN;
-    params.addr       = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
-    regMaskTP killSet = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
-    if (params.addr == nullptr)
+    CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
+    regMaskTP            killSet        = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+
+    params.callType = EC_FUNC_TOKEN;
+
+    if (helperFunction.accessType == IAT_VALUE)
     {
+        params.addr = (void*)helperFunction.addr;
+    }
+    else
+    {
+        params.addr = nullptr;
+        assert(helperFunction.accessType == IAT_PVALUE);
+        void* pAddr = helperFunction.addr;
+
         // This is call to a runtime helper.
         // li reg, pAddr     #NOTE: this maybe multi-instructions.
         // ld_d reg, reg
@@ -4044,7 +4055,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     if (treeNode->IsReuseRegVal())
     {
         // For now, this is only used for constant nodes.
-        assert((treeNode->OperGet() == GT_CNS_INT) || (treeNode->OperGet() == GT_CNS_DBL));
+        assert(treeNode->OperIs(GT_CNS_INT) || treeNode->OperIs(GT_CNS_DBL));
         JITDUMP("  TreeNode is marked ReuseReg\n");
         return;
     }
@@ -4274,10 +4285,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_PUTARG_REG:
             genPutArgReg(treeNode->AsOp());
-            break;
-
-        case GT_PUTARG_SPLIT:
-            genPutArgSplit(treeNode->AsPutArgSplit());
             break;
 
         case GT_CALL:
@@ -4585,7 +4592,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
     }
 
-    bool isStruct = (targetType == TYP_STRUCT) || (source->OperGet() == GT_FIELD_LIST);
+    bool isStruct = (targetType == TYP_STRUCT) || source->OperIs(GT_FIELD_LIST);
 
     if (!isStruct) // a normal non-Struct argument
     {
@@ -4600,7 +4607,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         // If it is contained then source must be the integer constant zero
         if (source->isContained())
         {
-            assert(source->OperGet() == GT_CNS_INT);
+            assert(source->OperIs(GT_CNS_INT));
             assert(source->AsIntConCommon()->IconValue() == 0);
 
             emit->emitIns_S_R(storeIns, storeAttr, REG_R0, varNumOut, argOffsetOut);
@@ -4623,13 +4630,13 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     {
         assert(source->isContained()); // We expect that this node was marked as contained in Lower
 
-        if (source->OperGet() == GT_FIELD_LIST)
+        if (source->OperIs(GT_FIELD_LIST))
         {
             genPutArgStkFieldList(treeNode, varNumOut);
         }
         else // We must have a GT_BLK or a GT_LCL_VAR
         {
-            noway_assert((source->OperGet() == GT_LCL_VAR) || (source->OperGet() == GT_BLK));
+            noway_assert(source->OperIs(GT_LCL_VAR) || source->OperIs(GT_BLK));
 
             var_types targetType = source->TypeGet();
             noway_assert(varTypeIsStruct(targetType));
@@ -4642,13 +4649,13 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             GenTreeLclVarCommon* varNode  = nullptr;
             GenTree*             addrNode = nullptr;
 
-            if (source->OperGet() == GT_LCL_VAR)
+            if (source->OperIs(GT_LCL_VAR))
             {
                 varNode = source->AsLclVarCommon();
             }
             else // we must have a GT_BLK
             {
-                assert(source->OperGet() == GT_BLK);
+                assert(source->OperIs(GT_BLK));
 
                 addrNode = source->AsOp()->gtOp1;
 
@@ -4685,7 +4692,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
             // gcPtrCount = treeNode->gtNumSlots;
             // Setup the srcSize and layout
-            if (source->OperGet() == GT_LCL_VAR)
+            if (source->OperIs(GT_LCL_VAR))
             {
                 assert(varNode != nullptr);
                 LclVarDsc* varDsc = compiler->lvaGetDesc(varNode);
@@ -4701,7 +4708,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             }
             else // we must have a GT_BLK
             {
-                assert(source->OperGet() == GT_BLK);
+                assert(source->OperIs(GT_BLK));
 
                 // If the source is an BLK node then we need to use the type information
                 // it provides (size and GC layout) even if the node wraps a lclvar. Due
@@ -4846,213 +4853,6 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
         }
     }
     genProduceReg(tree);
-}
-
-//---------------------------------------------------------------------
-// genPutArgSplit - generate code for a GT_PUTARG_SPLIT node
-//
-// Arguments
-//    tree - the GT_PUTARG_SPLIT node
-//
-// Return value:
-//    None
-//
-void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
-{
-    assert(treeNode->OperIs(GT_PUTARG_SPLIT));
-
-    GenTree* source       = treeNode->gtOp1;
-    emitter* emit         = GetEmitter();
-    unsigned varNumOut    = compiler->lvaOutgoingArgSpaceVar;
-    unsigned argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
-
-    if (source->OperGet() == GT_FIELD_LIST)
-    {
-        // Evaluate each of the GT_FIELD_LIST items into their register
-        // and store their register into the outgoing argument area
-        unsigned regIndex         = 0;
-        unsigned firstOnStackOffs = UINT_MAX;
-
-        for (GenTreeFieldList::Use& use : source->AsFieldList()->Uses())
-        {
-            GenTree*  nextArgNode = use.GetNode();
-            regNumber fieldReg    = nextArgNode->GetRegNum();
-            genConsumeReg(nextArgNode);
-
-            if (regIndex >= treeNode->gtNumRegs)
-            {
-                if (firstOnStackOffs == UINT_MAX)
-                {
-                    firstOnStackOffs = use.GetOffset();
-                }
-                var_types type = nextArgNode->TypeGet();
-                emitAttr  attr = emitTypeSize(type);
-
-                unsigned offset = treeNode->getArgOffset() + use.GetOffset() - firstOnStackOffs;
-                // We can't write beyond the outgoing arg area
-                assert(offset + EA_SIZE_IN_BYTES(attr) <= argOffsetMax);
-
-                // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
-                // argument area
-                emit->emitIns_S_R(ins_Store(type), attr, fieldReg, varNumOut, offset);
-            }
-            else
-            {
-                var_types type   = treeNode->GetRegType(regIndex);
-                regNumber argReg = treeNode->GetRegNumByIdx(regIndex);
-
-                // If child node is not already in the register we need, move it
-                if (argReg != fieldReg)
-                {
-                    inst_RV_RV(ins_Copy(type), argReg, fieldReg, type);
-                }
-                regIndex++;
-            }
-        }
-    }
-    else
-    {
-        var_types targetType = source->TypeGet();
-        assert(source->OperGet() == GT_BLK);
-        assert(varTypeIsStruct(targetType));
-
-        regNumber baseReg = internalRegisters.Extract(treeNode);
-        regNumber addrReg = REG_NA;
-
-        GenTreeLclVarCommon* varNode  = nullptr;
-        GenTree*             addrNode = nullptr;
-
-        addrNode = source->AsOp()->gtOp1;
-
-        // addrNode can either be a GT_LCL_ADDR<0> or an address expression
-        //
-        if (addrNode->isContained() && addrNode->IsLclVarAddr())
-        {
-            // We have a GT_BLK(GT_LCL_ADDR<0>)
-            //
-            // We will treat this case the same as above
-            // (i.e if we just had this GT_LCL_VAR directly as the source)
-            // so update 'source' to point this GT_LCL_ADDR node
-            // and continue to the codegen for the LCL_VAR node below
-            //
-            varNode  = addrNode->AsLclVarCommon();
-            addrNode = nullptr;
-        }
-
-        // Either varNode or addrNOde must have been setup above,
-        // the xor ensures that only one of the two is setup, not both
-        assert((varNode != nullptr) ^ (addrNode != nullptr));
-
-        // This is the varNum for our load operations,
-        // only used when we have a struct with a LclVar source
-        unsigned srcVarNum = BAD_VAR_NUM;
-
-        if (varNode != nullptr)
-        {
-            assert(varNode->isContained());
-            srcVarNum         = varNode->GetLclNum();
-            LclVarDsc* varDsc = compiler->lvaGetDesc(srcVarNum);
-
-            // This struct also must live in the stack frame.
-            // And it can't live in a register.
-            assert(varDsc->lvOnFrame && !varDsc->lvRegister);
-        }
-        else // addrNode is used
-        {
-            addrReg = genConsumeReg(addrNode);
-
-            // If addrReg equal to baseReg, we use the last target register as alternative baseReg.
-            // Because the candidate mask for the internal baseReg does not include any of the target register,
-            // we can ensure that baseReg, addrReg, and the last target register are not all same.
-            assert(baseReg != addrReg);
-        }
-
-        ClassLayout* layout = source->AsBlk()->GetLayout();
-
-        // Put on stack first
-        unsigned structOffset  = treeNode->gtNumRegs * TARGET_POINTER_SIZE;
-        unsigned remainingSize = layout->GetSize() - structOffset;
-        unsigned argOffsetOut  = treeNode->getArgOffset();
-
-        assert((remainingSize > 0) && (roundUp(remainingSize, TARGET_POINTER_SIZE) == treeNode->GetStackByteSize()));
-        while (remainingSize > 0)
-        {
-            var_types type;
-            if (remainingSize >= TARGET_POINTER_SIZE)
-            {
-                type = layout->GetGCPtrType(structOffset / TARGET_POINTER_SIZE);
-            }
-            else if (remainingSize >= 4)
-            {
-                type = TYP_INT;
-            }
-            else if (remainingSize >= 2)
-            {
-                type = TYP_USHORT;
-            }
-            else
-            {
-                assert(remainingSize == 1);
-                type = TYP_UBYTE;
-            }
-
-            emitAttr attr     = emitActualTypeSize(type);
-            unsigned moveSize = genTypeSize(type);
-
-            instruction loadIns = ins_Load(type);
-            if (varNode != nullptr)
-            {
-                // Load from our local source
-                emit->emitIns_R_S(loadIns, attr, baseReg, srcVarNum, structOffset);
-            }
-            else
-            {
-                // check for case of destroying the addrRegister while we still need it
-                assert(baseReg != addrReg);
-
-                // Load from our address expression source
-                emit->emitIns_R_R_I(loadIns, attr, baseReg, addrReg, structOffset);
-            }
-
-            // Emit the instruction to store the register into the outgoing argument area
-            emit->emitIns_S_R(ins_Store(type), attr, baseReg, varNumOut, argOffsetOut);
-            argOffsetOut += moveSize;
-            assert(argOffsetOut <= argOffsetMax);
-
-            remainingSize -= moveSize;
-            structOffset += moveSize;
-        }
-
-        // We set up the registers in order, so that we assign the last target register `baseReg` is no longer in use,
-        // in case we had to reuse the last target register for it.
-        structOffset = 0;
-        for (unsigned idx = 0; idx < treeNode->gtNumRegs; idx++)
-        {
-            regNumber targetReg = treeNode->GetRegNumByIdx(idx);
-            var_types type      = treeNode->GetRegType(idx);
-
-            if (varNode != nullptr)
-            {
-                // Load from our local source
-                emit->emitIns_R_S(ins_Load(type), emitTypeSize(type), targetReg, srcVarNum, structOffset);
-            }
-            else
-            {
-                // check for case of destroying the addrRegister while we still need it
-                if (targetReg == addrReg && idx != treeNode->gtNumRegs - 1)
-                {
-                    assert(targetReg != baseReg);
-                    emit->emitIns_R_R_I(INS_ori, emitActualTypeSize(type), baseReg, addrReg, 0);
-                    addrReg = baseReg;
-                }
-
-                // Load from our address expression source
-                emit->emitIns_R_R_I(ins_Load(type), emitTypeSize(type), targetReg, addrReg, structOffset);
-            }
-            structOffset += TARGET_POINTER_SIZE;
-        }
-    }
-    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
@@ -5440,7 +5240,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
 #ifdef FEATURE_SIMD
     // Handling of Vector3 type values loaded through indirection.
-    if (tree->TypeGet() == TYP_SIMD12)
+    if (tree->TypeIs(TYP_SIMD12))
     {
         genLoadIndTypeSIMD12(tree);
         return;
@@ -5846,16 +5646,26 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         {
             params.retSize       = emitTypeSize(pRetTypeDesc->GetReturnRegType(0));
             params.secondRetSize = emitTypeSize(pRetTypeDesc->GetReturnRegType(1));
+
+            if (pRetTypeDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv()) == REG_INTRET)
+            {
+                // If the second return register is REG_INTRET, then the first return is expected to be in a floating
+                // register. The emitter has hardcoded belief that params.retSize corresponds to REG_INTRET and
+                // secondRetSize to REG_INTRET_1, so fix up the situation here.
+                assert(!EA_IS_GCREF_OR_BYREF(params.retSize));
+                params.retSize       = params.secondRetSize;
+                params.secondRetSize = EA_UNKNOWN;
+            }
         }
         else
         {
-            assert(call->gtType != TYP_STRUCT);
+            assert(!call->TypeIs(TYP_STRUCT));
 
-            if (call->gtType == TYP_REF)
+            if (call->TypeIs(TYP_REF))
             {
                 params.retSize = EA_GCREF;
             }
-            else if (call->gtType == TYP_BYREF)
+            else if (call->TypeIs(TYP_BYREF))
             {
                 params.retSize = EA_BYREF;
             }
@@ -5995,9 +5805,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(params.methHnd);
                     noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
-                    void* pAddr = nullptr;
-                    params.addr = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
-                    assert(pAddr == nullptr);
+                    CORINFO_CONST_LOOKUP helperLookup = compiler->compGetHelperFtn(helperNum);
+                    params.addr                       = helperLookup.addr;
+                    assert(helperLookup.accessType == IAT_VALUE);
                 }
                 else
                 {
@@ -6200,7 +6010,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 void CodeGen::genFloatToFloatCast(GenTree* treeNode)
 {
     // float <--> double conversions are always non-overflow ones
-    assert(treeNode->OperGet() == GT_CAST);
+    assert(treeNode->OperIs(GT_CAST));
     assert(!treeNode->gtOverflow());
 
     regNumber targetReg = treeNode->GetRegNum();
@@ -6685,9 +6495,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
         // The code to throw the exception will be generated inline, and
         //  we will jump around it in the normal non-exception case.
 
-        void*          pAddr = nullptr;
         EmitCallParams params;
-        params.addr = compiler->compGetHelperFtn((CorInfoHelpFunc)(compiler->acdHelper(codeKind)), &pAddr);
 
         // maybe optimize
         // ins = (instruction)(ins^((ins != INS_beq)+(ins != INS_bne)));
@@ -6712,8 +6520,30 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             ins = ins == INS_beq ? INS_bne : INS_beq;
         }
 
-        if (params.addr == nullptr)
+        CORINFO_CONST_LOOKUP helperFunction =
+            compiler->compGetHelperFtn((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
+        if (helperFunction.accessType == IAT_VALUE)
         {
+            // INS_OPTS_C
+
+            // If the helper is a value, we need to use the address of the helper.
+            params.addr     = helperFunction.addr;
+            params.callType = EC_FUNC_TOKEN;
+
+            ssize_t imm = 5 << 2;
+            if (compiler->opts.compReloc)
+            {
+                imm = 3 << 2;
+            }
+
+            emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
+        }
+        else
+        {
+            params.addr = nullptr;
+            assert(helperFunction.accessType == IAT_PVALUE);
+            void* pAddr = helperFunction.addr;
+
             params.callType = EC_INDIR_R;
             params.ireg     = REG_DEFAULT_HELPER_CALL_TARGET;
 
@@ -6735,18 +6565,6 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
                 GetEmitter()->emitIns_R_R_I(INS_ldptr_d, EA_PTRSIZE, params.ireg, params.ireg,
                                             ((ssize_t)pAddr & 0xfff) >> 2);
             }
-        }
-        else
-        { // INS_OPTS_C
-            params.callType = EC_FUNC_TOKEN;
-
-            ssize_t imm = 5 << 2;
-            if (compiler->opts.compReloc)
-            {
-                imm = 3 << 2;
-            }
-
-            emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
         }
 
         BasicBlock* skipLabel = genCreateTempLabel();

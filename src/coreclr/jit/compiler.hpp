@@ -291,7 +291,7 @@ inline bool Compiler::jitIsBetweenInclusive(unsigned value, unsigned start, unsi
 
 #define HISTOGRAM_MAX_SIZE_COUNT 64
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
 class Dumpable
 {
@@ -388,7 +388,7 @@ public:
     static void DumpAll();
 };
 
-#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
+#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE
 
 /******************************************************************************************
  * Return the EH descriptor for the given region index.
@@ -1513,6 +1513,13 @@ inline GenTree* Compiler::gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd)
 
 //-----------------------------------------------------------------------------
 
+inline GenTree* Compiler::gtNewIconEmbObjHndNode(CORINFO_OBJECT_HANDLE objHnd)
+{
+    return gtNewIconEmbHndNode((void*)objHnd, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+}
+
+//-----------------------------------------------------------------------------
+
 inline GenTree* Compiler::gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHnd)
 {
     void *embedMethHnd, *pEmbedMethHnd;
@@ -1594,6 +1601,60 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
         result->gtArgs.PushFront(this, NewCallArg::Primitive(arg1));
         result->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
     }
+
+    return result;
+}
+
+/*****************************************************************************/
+
+//------------------------------------------------------------------------------
+// gtNewHelperCallNode : Helper to create a call helper node.
+//
+//
+// Arguments:
+//    helper  - Call helper
+//    type    - Type of the node
+//    thisPtr - 'this' argument
+//    methHnd - Runtime method handle argument
+//    clsHnd  - Class handle argument
+//
+// Return Value:
+//    New CT_HELPER node
+//
+inline GenTreeCall* Compiler::gtNewVirtualFunctionLookupHelperCallNode(
+    unsigned helper, var_types type, GenTree* thisPtr, GenTree* methHnd, GenTree* clsHnd)
+{
+    GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
+
+    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
+    {
+        result->gtFlags |= GTF_EXCEPT;
+
+        if (s_helperCallProperties.AlwaysThrow((CorInfoHelpFunc)helper))
+        {
+            setCallDoesNotReturn(result);
+        }
+    }
+#if DEBUG
+    // Helper calls are never candidates.
+
+    result->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
+#endif
+
+    assert(methHnd != nullptr);
+    result->gtArgs.PushFront(this, NewCallArg::Primitive(methHnd).WellKnown(WellKnownArg::RuntimeMethodHandle));
+    result->gtFlags |= methHnd->gtFlags & GTF_ALL_EFFECT;
+
+    if (clsHnd != nullptr)
+    {
+        result->gtArgs.PushFront(this, NewCallArg::Primitive(clsHnd));
+        result->gtFlags |= clsHnd->gtFlags & GTF_ALL_EFFECT;
+    }
+
+    assert(thisPtr != nullptr);
+
+    result->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtr).WellKnown(WellKnownArg::ThisPointer));
+    result->gtFlags |= thisPtr->gtFlags & GTF_ALL_EFFECT;
 
     return result;
 }
@@ -1809,7 +1870,7 @@ inline GenTree* Compiler::gtNewNothingNode()
 
 inline bool GenTree::IsNothingNode() const
 {
-    return (gtOper == GT_NOP && gtType == TYP_VOID);
+    return OperIs(GT_NOP) && TypeIs(TYP_VOID);
 }
 
 /*****************************************************************************
@@ -1945,7 +2006,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     assert(GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_SMALL || (gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
 #if defined(HOST_64BIT) && !defined(TARGET_64BIT)
-    if (gtOper == GT_CNS_LNG && oper == GT_CNS_INT)
+    if (OperIs(GT_CNS_LNG) && oper == GT_CNS_INT)
     {
         // When casting from LONG to INT, we need to force cast of the value,
         // if the host architecture represents INT and LONG with the same data size.
@@ -2202,6 +2263,74 @@ inline bool GenTree::gtOverflow() const
 inline bool GenTree::gtOverflowEx() const
 {
     return OperMayOverflow() && gtOverflow();
+}
+
+//------------------------------------------------------------------------
+// gtFindNodeInTree:
+//   Check if a tree contains a node matching the specified predicate. Descend
+//   only into subtrees with the specified flags set on them (can be GTF_EMPTY
+//   to descend into all nodes).
+//
+// Type parameters:
+//   RequiredFlagsToDescendIntoNode - Flags that must be set on the node to
+//                                    descend into it (GTF_EMPTY to descend into all nodes)
+//   Predicate - Type of the predicate (GenTree* -> bool)
+//
+// Parameters:
+//   tree - The tree
+//   pred - Predicate that the call must match
+//
+// Returns:
+//   Node matching the predicate, or nullptr if no such node was found.
+//
+template <GenTreeFlags RequiredFlagsToDescendIntoNode, typename Predicate>
+GenTree* Compiler::gtFindNodeInTree(GenTree* tree, Predicate pred)
+{
+    struct FindNodeVisitor : GenTreeVisitor<FindNodeVisitor>
+    {
+    private:
+        Predicate& m_pred;
+
+    public:
+        GenTree* Result = nullptr;
+
+        enum
+        {
+            DoPreOrder = true
+        };
+
+        FindNodeVisitor(Compiler* comp, Predicate& pred)
+            : GenTreeVisitor<FindNodeVisitor>(comp)
+            , m_pred(pred)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if ((node->gtFlags & RequiredFlagsToDescendIntoNode) != RequiredFlagsToDescendIntoNode)
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+
+            if (m_pred(node))
+            {
+                Result = node;
+                return WALK_ABORT;
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    if ((tree->gtFlags & RequiredFlagsToDescendIntoNode) != RequiredFlagsToDescendIntoNode)
+    {
+        return nullptr;
+    }
+
+    FindNodeVisitor findNode(this, pred);
+    findNode.WalkTree(&tree, nullptr);
+    return findNode.Result;
 }
 
 /*
@@ -3228,7 +3357,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
     //
     GenTree* const call = block->lastNode();
 
-    if ((call == nullptr) || (call->gtOper != GT_CALL))
+    if ((call == nullptr) || !call->OperIs(GT_CALL))
     {
         return false;
     }
@@ -4055,7 +4184,7 @@ inline bool Compiler::impIsThis(GenTree* obj)
     }
     else
     {
-        return ((obj != nullptr) && (obj->gtOper == GT_LCL_VAR) &&
+        return ((obj != nullptr) && obj->OperIs(GT_LCL_VAR) &&
                 lvaIsOriginalThisArg(obj->AsLclVarCommon()->GetLclNum()));
     }
 }
@@ -4459,9 +4588,6 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-#if FEATURE_ARG_SPLIT
-        case GT_PUTARG_SPLIT:
-#endif // FEATURE_ARG_SPLIT
         case GT_RETURNTRAP:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
@@ -4557,7 +4683,8 @@ void GenTree::VisitOperands(TVisitor visitor)
 
             if (call->gtCallType == CT_INDIRECT)
             {
-                if ((call->gtCallCookie != nullptr) && (visitor(call->gtCallCookie) == VisitResult::Abort))
+                if (!call->IsVirtualStub() && (call->gtCallCookie != nullptr) &&
+                    (visitor(call->gtCallCookie) == VisitResult::Abort))
                 {
                     return;
                 }

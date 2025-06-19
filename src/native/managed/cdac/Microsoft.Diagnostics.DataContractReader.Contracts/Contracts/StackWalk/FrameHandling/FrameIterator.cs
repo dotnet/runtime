@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 internal sealed class FrameIterator
 {
-    private enum FrameType
+    internal enum FrameType
     {
         Unknown,
 
@@ -35,16 +35,10 @@ internal sealed class FrameIterator
         HijackFrame,
 
         /* Other Frame Types not handled by the iterator */
-        HelperMethodFrame,
-        HelperMethodFrame_1OBJ,
-        HelperMethodFrame_2OBJ,
-        HelperMethodFrame_3OBJ,
-        HelperMethodFrame_PROTECTOBJ,
         UnmanagedToManagedFrame,
         ComMethodFrame,
         ComPrestubMethodFrame,
         TailCallFrame,
-        ProtectByRefsFrame,
         ProtectValueClassFrame,
         DebuggerClassInitMarkFrame,
         DebuggerExitFrame,
@@ -157,6 +151,8 @@ internal sealed class FrameIterator
         return frameType.ToString();
     }
 
+    public FrameType GetCurrentFrameType() => GetFrameType(target, CurrentFrame.Identifier);
+
     private static FrameType GetFrameType(Target target, TargetPointer frameIdentifier)
     {
         foreach (FrameType frameType in Enum.GetValues<FrameType>())
@@ -177,6 +173,7 @@ internal sealed class FrameIterator
     {
         return context switch
         {
+            ContextHolder<X86Context> contextHolder => new X86FrameHandler(target, contextHolder),
             ContextHolder<AMD64Context> contextHolder => new AMD64FrameHandler(target, contextHolder),
             ContextHolder<ARM64Context> contextHolder => new ARM64FrameHandler(target, contextHolder),
             _ => throw new InvalidOperationException("Unsupported context type"),

@@ -33,7 +33,7 @@ static bool blockNeedsGCPoll(BasicBlock* block)
         {
             for (GenTree* const tree : stmt->TreeList())
             {
-                if (tree->OperGet() == GT_CALL)
+                if (tree->OperIs(GT_CALL))
                 {
                     GenTreeCall* call = tree->AsCall();
                     if (call->IsUnmanaged())
@@ -48,7 +48,7 @@ static bool blockNeedsGCPoll(BasicBlock* block)
                         blockMayNeedGCPoll = true;
                     }
                 }
-                else if (tree->OperGet() == GT_GCPOLL)
+                else if (tree->OperIs(GT_GCPOLL))
                 {
                     blockMayNeedGCPoll = true;
                 }
@@ -277,7 +277,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         // We need to keep a few flags...
         //
-        noway_assert((originalFlags & (BBF_SPLIT_NONEXIST & ~(BBF_LOOP_HEAD | BBF_RETLESS_CALL))) == 0);
+        noway_assert((originalFlags & (BBF_SPLIT_NONEXIST & ~BBF_RETLESS_CALL)) == 0);
         top->SetFlagsRaw(originalFlags & (~(BBF_SPLIT_LOST | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT));
         bottom->SetFlags(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_RETLESS_CALL));
         bottom->inheritWeight(top);
@@ -582,7 +582,7 @@ PhaseStatus Compiler::fgImport()
     }
 
     // Now that we've made it through the importer, we know the IL was valid.
-    // If we synthesized profile data and though it should be consistent,
+    // If we synthesized profile data and thought it should be consistent,
     // but it wasn't, assert now.
     //
     if (fgPgoSynthesized && fgPgoConsistent)
@@ -667,7 +667,7 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
     }
 
     /* Check for cast of a GT_COMMA with a throw overflow */
-    if ((tree->gtOper == GT_COMMA) && (tree->gtFlags & GTF_CALL) && (tree->gtFlags & GTF_EXCEPT))
+    if (tree->OperIs(GT_COMMA) && (tree->gtFlags & GTF_CALL) && (tree->gtFlags & GTF_EXCEPT))
     {
         return (fgIsThrow(tree->AsOp()->gtOp1));
     }
@@ -882,7 +882,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             return !addr->IsHelperCall() || !s_helperCallProperties.NonNullReturn(addr->AsCall()->GetHelperNum());
 
         case GT_ADD:
-            if (addr->AsOp()->gtOp1->gtOper == GT_CNS_INT)
+            if (addr->AsOp()->gtOp1->OperIs(GT_CNS_INT))
             {
                 GenTree* cns1Tree = addr->AsOp()->gtOp1;
                 if (!cns1Tree->IsIconHandle())
@@ -896,7 +896,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
                 else // Op1 was a handle represented as a constant
                 {
                     // Is Op2 also a constant?
-                    if (addr->AsOp()->gtOp2->gtOper == GT_CNS_INT)
+                    if (addr->AsOp()->gtOp2->OperIs(GT_CNS_INT))
                     {
                         GenTree* cns2Tree = addr->AsOp()->gtOp2;
                         // Is this an addition of a handle and constant
@@ -914,7 +914,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             else
             {
                 // Op1 is not a constant. What about Op2?
-                if (addr->AsOp()->gtOp2->gtOper == GT_CNS_INT)
+                if (addr->AsOp()->gtOp2->OperIs(GT_CNS_INT))
                 {
                     GenTree* cns2Tree = addr->AsOp()->gtOp2;
                     // Is this an addition of a small constant
@@ -999,7 +999,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     assert(call->gtArgs.CountArgs() == 3);
     assert(!call->gtArgs.AreArgsComplete());
     GenTree* targetMethod = call->gtArgs.GetArgByIndex(2)->GetNode();
-    noway_assert(targetMethod->TypeGet() == TYP_I_IMPL);
+    noway_assert(targetMethod->TypeIs(TYP_I_IMPL));
     genTreeOps            oper            = targetMethod->OperGet();
     CORINFO_METHOD_HANDLE targetMethodHnd = nullptr;
     GenTree*              qmarkNode       = nullptr;
@@ -1014,14 +1014,14 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         assert(targetMethod->AsCall()->gtArgs.CountArgs() == 3);
         GenTree* handleNode = targetMethod->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();
 
-        if (handleNode->OperGet() == GT_CNS_INT)
+        if (handleNode->OperIs(GT_CNS_INT))
         {
             // it's a ldvirtftn case, fetch the methodhandle off the helper for ldvirtftn. It's the 3rd arg
             targetMethodHnd = CORINFO_METHOD_HANDLE(handleNode->AsIntCon()->gtCompileTimeHandle);
         }
         // Sometimes the argument to this is the result of a generic dictionary lookup, which shows
         // up as a GT_QMARK.
-        else if (handleNode->OperGet() == GT_QMARK)
+        else if (handleNode->OperIs(GT_QMARK))
         {
             qmarkNode = handleNode;
         }
@@ -1034,7 +1034,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     }
     if (qmarkNode)
     {
-        noway_assert(qmarkNode->OperGet() == GT_QMARK);
+        noway_assert(qmarkNode->OperIs(GT_QMARK));
         // The argument is actually a generic dictionary lookup.  For delegate creation it looks
         // like:
         // GT_QMARK
@@ -1046,13 +1046,13 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         //
         // In this case I can find the token (which is a method handle) and that is the compile time
         // handle.
-        noway_assert(qmarkNode->AsOp()->gtOp2->OperGet() == GT_COLON);
-        noway_assert(qmarkNode->AsOp()->gtOp2->AsOp()->gtOp1->OperGet() == GT_CALL);
+        noway_assert(qmarkNode->AsOp()->gtOp2->OperIs(GT_COLON));
+        noway_assert(qmarkNode->AsOp()->gtOp2->AsOp()->gtOp1->OperIs(GT_CALL));
         GenTreeCall* runtimeLookupCall = qmarkNode->AsOp()->gtOp2->AsOp()->gtOp1->AsCall();
 
         // This could be any of CORINFO_HELP_RUNTIMEHANDLE_(METHOD|CLASS)(_LOG?)
         GenTree* tokenNode = runtimeLookupCall->gtArgs.GetArgByIndex(1)->GetNode();
-        noway_assert(tokenNode->OperGet() == GT_CNS_INT);
+        noway_assert(tokenNode->OperIs(GT_CNS_INT));
         targetMethodHnd = CORINFO_METHOD_HANDLE(tokenNode->AsIntCon()->gtCompileTimeHandle);
     }
 
@@ -1284,9 +1284,9 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
     if (!kind.needsRuntimeLookup)
     {
         CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(info.compClassHnd);
-        if (ptr != NULL)
+        if (ptr != NO_OBJECT_HANDLE)
         {
-            tree = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+            tree = gtNewIconEmbObjHndNode(ptr);
         }
         else
         {
@@ -5729,7 +5729,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
         return false;
     }
 
-    if (iterOp->gtType != TYP_INT)
+    if (!iterOp->TypeIs(TYP_INT))
     {
         return false;
     }
@@ -6780,7 +6780,7 @@ unsigned NaturalLoopIterInfo::VarLimit()
     assert(HasInvariantLocalLimit);
 
     GenTree* limit = Limit();
-    assert(limit->OperGet() == GT_LCL_VAR);
+    assert(limit->OperIs(GT_LCL_VAR));
     return limit->AsLclVarCommon()->GetLclNum();
 }
 
