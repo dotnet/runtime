@@ -13,7 +13,6 @@ set(INTERPRETER_SOURCES
   naming.cpp
   methodset.cpp
   intrinsics.cpp
-  ../jit/lookupintrinsic.cpp
   ../../native/containers/dn-simdhash.c
   ../../native/containers/dn-simdhash-ptr-ptr.c)
 

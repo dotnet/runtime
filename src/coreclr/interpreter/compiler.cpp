@@ -2132,13 +2132,8 @@ int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
 
 bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
 {
-    if ((ni >= NI_SYSTEM_MATH_START) && (ni <= NI_SYSTEM_MATH_END))
-        return false;
-    if ((ni >= NI_PRIMITIVE_START) && (ni <= NI_PRIMITIVE_END))
-        return false;
-
-    // FIXME
-    if ((ni >= NI_SRCS_UNSAFE_START) && (ni <= NI_SRCS_UNSAFE_END))
+    bool mustExpand = (method == m_methodHnd);
+    if (!mustExpand && (ni == NI_Illegal))
         return false;
 
     switch (ni)
@@ -2151,110 +2146,16 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             return true;
 
-        case NI_IsSupported_Type:
-        {
-            // See importercalls.cpp
-            bool isSupported;
-            CORINFO_CLASS_HANDLE typeArgHnd;
-            CorInfoType          simdBaseJitType;
-
-            typeArgHnd      = m_compHnd->getTypeInstantiationArgument(clsHnd, 0);
-            simdBaseJitType = m_compHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
-
-            switch (simdBaseJitType)
-            {
-                case CORINFO_TYPE_BYTE:
-                case CORINFO_TYPE_UBYTE:
-                case CORINFO_TYPE_SHORT:
-                case CORINFO_TYPE_USHORT:
-                case CORINFO_TYPE_INT:
-                case CORINFO_TYPE_UINT:
-                case CORINFO_TYPE_LONG:
-                case CORINFO_TYPE_ULONG:
-                case CORINFO_TYPE_FLOAT:
-                case CORINFO_TYPE_DOUBLE:
-                case CORINFO_TYPE_NATIVEINT:
-                case CORINFO_TYPE_NATIVEUINT:
-                {
-                    isSupported = true;
-                    break;
-                }
-
-                default:
-                {
-                    isSupported = false;
-                    break;
-                }
-            }
-
-            AddIns(INTOP_LDC_I4);
-            m_pLastNewIns->data[0] = isSupported ? 1 : 0;
-            PushStackType(StackTypeI4, NULL);
-            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        case NI_Throw_PlatformNotSupportedException:
+            AddIns(INTOP_THROW_PNSE);
             return true;
-        }
-
-        // HACK: For many intrinsics we can simply fall back to interpreting them or calling the native implementation.
-        // Normally we would check whether the intrinsic is 'must expand', but right now that doesn't work if the intrinsic
-        //  was already compiled by the JIT or R2R, because we preferentially invoke the native version instead of interpreting.
-        case NI_System_Object_GetType:
-        case NI_System_Object_MemberwiseClone:
-        case NI_System_Type_get_IsEnum:
-        case NI_System_Type_GetEnumUnderlyingType:
-        case NI_System_Type_get_IsValueType:
-        case NI_System_Type_get_IsPrimitive:
-        case NI_System_Type_get_IsByRefLike:
-        case NI_System_Type_get_TypeHandle:
-        case NI_System_Type_get_IsGenericType:
-        case NI_System_Type_IsAssignableFrom:
-        case NI_System_Type_IsAssignableTo:
-        case NI_System_Type_op_Equality:
-        case NI_System_Type_op_Inequality:
-        case NI_System_Type_GetTypeFromHandle:
-        case NI_System_Type_GetGenericTypeDefinition:
-        case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
-        case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
-        case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
-        case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
-        case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable:
-        case NI_System_String_Equals:
-        case NI_System_String_get_Chars:
-        case NI_System_String_get_Length:
-        case NI_System_String_op_Implicit:
-        case NI_System_String_StartsWith:
-        case NI_System_String_EndsWith:
-        case NI_System_Span_get_Item:
-        case NI_System_Span_get_Length:
-        case NI_System_SpanHelpers_ClearWithoutReferences:
-        case NI_System_SpanHelpers_Fill:
-        case NI_System_SpanHelpers_SequenceEqual:
-        case NI_System_ReadOnlySpan_get_Item:
-        case NI_System_ReadOnlySpan_get_Length:
-        case NI_System_MemoryExtensions_AsSpan:
-        case NI_System_MemoryExtensions_Equals:
-        case NI_System_MemoryExtensions_SequenceEqual:
-        case NI_System_MemoryExtensions_StartsWith:
-        case NI_System_MemoryExtensions_EndsWith:
-            return false;
-
-        case NI_Array_Address:
-        case NI_Array_Get:
-        case NI_Array_Set:
-            // Interpreter-FIXME: Do these need special handling?
-            return false;
-
-        // HACK: These two are special marker IDs so that we still get the inlining profitability boost
-        case NI_System_Numerics_Intrinsic:
-        case NI_System_Runtime_Intrinsics_Intrinsic:
-            // Interpreter-TODO: Inlining profitability boost (if we ever do inlining)
-            return false;
 
         default:
         {
             const char* className = NULL;
             const char* namespaceName = NULL;
             const char* methodName = m_compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, NULL, 0);
-            printf("WARNING: Intrinsic not implemented in interpreter: %s.%s.%s\n", namespaceName, className, methodName);
+            printf("WARNING: Intrinsic not implemented in EmitNamedIntrinsicCall: %d (for %s.%s.%s)\n", ni, namespaceName, className, methodName);
             // assert(!"EmitNamedIntrinsicCall not implemented intrinsic");
             return false;
         }
@@ -2475,18 +2376,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
         if (callInfo.methodFlags & CORINFO_FLG_INTRINSIC)
         {
-            // FIXME: This doesn't work if the intrinsic was already compiled by the JIT or R2R
-            // if (m_methodHnd == callInfo.hMethod)
+            NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+            if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
             {
-                NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
-                if (ni != NI_Illegal)
-                {
-                    if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
-                    {
-                        m_ip += 5;
-                        return;
-                    }
-                }
+                m_ip += 5;
+                return;
             }
         }
 
