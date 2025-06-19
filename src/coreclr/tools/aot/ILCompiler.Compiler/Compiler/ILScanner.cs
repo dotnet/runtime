@@ -280,13 +280,23 @@ namespace ILCompiler
         {
             Dictionary<MethodDesc, BodySubstitution> bodySubstitutions = [];
 
-            TypeDesc iDynamicInterfaceCastableType = _factory.TypeSystemContext.SystemModule.GetType("System.Runtime.InteropServices", "IDynamicInterfaceCastable");
+            bool hasIDynamicInterfaceCastableType = false;
 
-            if (!_factory.ConstructedTypeSymbol(iDynamicInterfaceCastableType).Marked)
+            foreach (var type in ConstructedEETypes)
             {
-                // We can't easily trim out some of the IDynamicInterfaceCastable infrastructure because do type checks based on
-                // flags on the MethodTable.
+                if (type.IsIDynamicInterfaceCastable)
+                {
+                    hasIDynamicInterfaceCastableType = true;
+                    break;
+                }
+            }
+
+            if (hasIDynamicInterfaceCastableType)
+            {
+                // We can't easily trim out some of the IDynamicInterfaceCastable infrastructure because
+                // the callers do type checks based on flags on the MethodTable instead of an actual type cast.
                 // Trim out the logic that we can't do easily here.
+                TypeDesc iDynamicInterfaceCastableType = _factory.TypeSystemContext.SystemModule.GetType("System.Runtime.InteropServices", "IDynamicInterfaceCastable");
                 MethodDesc getDynamicInterfaceImplementationMethod = iDynamicInterfaceCastableType.GetMethod("GetDynamicInterfaceImplementation", null);
                 bodySubstitutions.Add(getDynamicInterfaceImplementationMethod, BodySubstitution.ThrowingBody);
             }
