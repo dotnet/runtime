@@ -7798,7 +7798,7 @@ BOOL Thread::IsAddressInCurrentStack(PTR_VOID addr)
     InterpThreadContext* pInterpThreadContext = currentThread->m_pInterpThreadContext;
     if ((pInterpThreadContext != NULL) && ((PTR_VOID)pInterpThreadContext->pStackStart < addr) && (addr <= (PTR_VOID)pInterpThreadContext->pStackPointer))
     {
-        return true;
+        return TRUE;
     }
 #endif // FEATURE_INTERPRETER
 
