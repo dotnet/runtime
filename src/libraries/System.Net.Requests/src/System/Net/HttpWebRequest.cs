@@ -1145,6 +1145,8 @@ namespace System.Net
 
         public override IAsyncResult BeginGetRequestStream(AsyncCallback? callback, object? state)
         {
+            _endGetRequestStreamCalled = false;
+
             CheckAbort();
 
             if (Interlocked.Exchange(ref _beginGetRequestStreamCalled, true))
@@ -1183,6 +1185,8 @@ namespace System.Net
             {
                 throw WebException.CreateCompatibleException(ex);
             }
+
+            _beginGetRequestStreamCalled = false;
 
             return stream;
         }
