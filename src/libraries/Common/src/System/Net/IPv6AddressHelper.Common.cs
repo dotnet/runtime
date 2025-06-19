@@ -420,7 +420,7 @@ namespace System.Net
                     default:
                         int characterValue = HexConverter.FromChar(currentCh);
 
-                        number = number * IPv6AddressHelper.Hex + (byte)characterValue;
+                        number = number * IPv6AddressHelper.Hex + characterValue;
                         i++;
                         break;
                 }
