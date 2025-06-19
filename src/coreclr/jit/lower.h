@@ -440,7 +440,7 @@ private:
     GenTree* LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
-    void     LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
+    void     LowerFusedMultiplyOp(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node);
