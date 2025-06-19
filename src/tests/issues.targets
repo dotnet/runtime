@@ -522,6 +522,9 @@
 
     <!-- Crossgen2 specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/interpreter/InterpreterTester/*">
+            <Issue>https://github.com/dotnet/runtime/issues/116823</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/NativeVarargs/NativeVarargsTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/83942</Issue>
         </ExcludeList>
