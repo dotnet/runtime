@@ -42,6 +42,7 @@ This contract depends on the following descriptors:
 | `InlinedCallFrame` | `CallSiteSP` | SP saved in Frame |
 | `InlinedCallFrame` | `CallerReturnAddress` | Return address saved in Frame |
 | `InlinedCallFrame` | `CalleeSavedFP` | FP saved in Frame |
+| `InlinedCallFrame` (arm32) | `SPAfterProlog` | Value of the SP after prolog. Used on ARM to maintain additional JIT invariant |
 | `SoftwareExceptionFrame` | `TargetContext` | Context object saved in Frame |
 | `SoftwareExceptionFrame` | `ReturnAddress` | Return address saved in Frame |
 | `FramedMethodFrame` | `TransitionBlockPtr` | Pointer to Frame's TransitionBlock |
@@ -241,6 +242,8 @@ Most of the handlers are implemented in `BaseFrameHandler`. Platform specific co
 #### InlinedCallFrame
 
 InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context.
+
+* On ARM, the InlinedCallFrame stores the value of the SP after the prolog (`SPAfterProlog`) to allow unwinding for functions with stackalloc. When a function uses stackalloc, the CallSiteSP can already have been adjusted. This value should be placed in R9.
 
 #### SoftwareExceptionFrame
 
