@@ -587,7 +587,7 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
         return;
     }
 
-    assert(pal::is_path_rooted(path));
+    assert(pal::is_path_fully_qualified(path));
     if (m_coreclr_path.empty() && utils::ends_with(path, DIR_SEPARATOR_STR LIBCORECLR_NAME, false))
     {
         m_coreclr_path = path;

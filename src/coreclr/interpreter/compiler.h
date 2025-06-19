@@ -266,20 +266,16 @@ struct StackInfo
 {
     StackType type;
     CORINFO_CLASS_HANDLE clsHnd;
-    // Size that this value will occupy on the interpreter stack. It is a multiple
-    // of INTERP_STACK_SLOT_SIZE
-    int size;
 
     // The var associated with the value of this stack entry. Every time we push on
     // the stack a new var is created.
     int var;
 
-    StackInfo(StackType type)
+    StackInfo(StackType type, CORINFO_CLASS_HANDLE clsHnd, int var)
     {
         this->type = type;
-        clsHnd = NULL;
-        size = 0;
-        var = -1;
+        this->clsHnd = clsHnd;
+        this->var = var;
     }
 };
 
@@ -491,7 +487,7 @@ private:
     void    EmitUnaryArithmeticOp(int32_t opBase);
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
-    void    EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall, bool newObj, bool isCalli);
+    void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
     bool    EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
@@ -500,6 +496,7 @@ private:
     void    EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken);
     void    EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad);
     void    EmitLdLocA(int32_t var);
+    void    EmitBox(StackInfo* pStackInfo, CORINFO_CLASS_HANDLE clsHnd, bool argByRef);
 
     // Var Offset allocator
     TArray<InterpInst*> *m_pActiveCalls;

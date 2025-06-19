@@ -1440,11 +1440,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-#if defined(FEATURE_JIT_PITCHING)
-        if (IsPitchable())
-            return false;
-#endif
-
         return !IsVersionable() && !InEnCEnabledModule();
     }
 
@@ -1581,11 +1576,6 @@ public:
     // is a non-default code version that is populated with a code body and returns that.
     // Perf warning: takes the CodeVersionManagerLock on every call
     PCODE GetNativeCodeAnyVersion();
-
-#if defined(FEATURE_JIT_PITCHING)
-    bool IsPitchable();
-    void PitchNativeCode();
-#endif
 
     //================================================================
     // FindOrCreateAssociatedMethodDesc

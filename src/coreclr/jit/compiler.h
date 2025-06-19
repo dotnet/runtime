@@ -3158,9 +3158,8 @@ public:
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
 #if defined(TARGET_ARM64)
-    GenTree* gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize);
-    GenTree* gtNewSimdAllFalseMaskNode(CorInfoType simdBaseJitType, unsigned simdSize);
-    GenTree* gtNewSimdFalseMaskByteNode(unsigned simdSize);
+    GenTree* gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType);
+    GenTree* gtNewSimdFalseMaskByteNode();
 #endif
 
     GenTree* gtNewSimdBinOpNode(genTreeOps  op,
@@ -3747,6 +3746,7 @@ public:
 
 #if defined(FEATURE_HW_INTRINSICS)
     GenTree* gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree);
+    GenTreeMskCon* gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon);
 #endif // FEATURE_HW_INTRINSICS
 
     // Options to control behavior of gtTryRemoveBoxUpstreamEffects
@@ -6195,8 +6195,6 @@ public:
     bool fgCanCompactInitBlock();
 
     void fgCompactBlock(BasicBlock* block);
-
-    bool fgRenumberBlocks();
 
     bool fgExpandRarelyRunBlocks();
 
@@ -11989,7 +11987,7 @@ public:
 
                 if (call->gtCallType == CT_INDIRECT)
                 {
-                    if (call->gtCallCookie != nullptr)
+                    if (!call->IsVirtualStub() && (call->gtCallCookie != nullptr))
                     {
                         result = WalkTree(&call->gtCallCookie, call);
                         if (result == fgWalkResult::WALK_ABORT)
