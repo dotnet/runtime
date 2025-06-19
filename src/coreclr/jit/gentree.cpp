@@ -20993,11 +20993,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps        op,
                 broadcastOp = &op2;
             }
 
-            if ((broadcastOp != nullptr)
-#if defined(TARGET_ARM64)
-                && !isScalable
-#endif
-            )
+            if (broadcastOp != nullptr)
             {
 #if defined(TARGET_ARM64)
                 if (varTypeIsLong(simdBaseType))
@@ -21011,9 +21007,15 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps        op,
                     *broadcastOp = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, *broadcastOp, simdBaseJitType, 8);
                     break;
                 }
+                else if (isScalable)
+                {
+                    *broadcastOp = gtNewSimdHWIntrinsicNode(type, *broadcastOp, NI_Sve_DuplicateScalarToVector, simdBaseJitType, simdSize);
+                }
+                else
 #endif // TARGET_ARM64
-
-                *broadcastOp = gtNewSimdCreateBroadcastNode(type, *broadcastOp, simdBaseJitType, simdSize);
+                {
+                    *broadcastOp = gtNewSimdCreateBroadcastNode(type, *broadcastOp, simdBaseJitType, simdSize);
+                }
             }
             break;
         }

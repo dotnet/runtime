@@ -1614,6 +1614,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     switch (intrinsicId)
     {
 #ifdef TARGET_ARM64
+        //TODO-VL: Remove this entry because this is not handled properly inside LowerHWIntrinsicCreate
         case NI_Vector_Create:
 #endif
         case NI_Vector64_Create:
