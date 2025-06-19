@@ -881,16 +881,27 @@ public class InterpreterTest
 
     public static bool TestIntrinsics()
     {
-        if (Vector128.IsHardwareAccelerated)
-            return false;
+        Console.WriteLine("Vector128.IsHardwareAccelerated=");
+        Console.WriteLine(Vector128.IsHardwareAccelerated);
+        Console.WriteLine("X86Base.IsSupported=");
+        Console.WriteLine(System.Runtime.Intrinsics.X86.X86Base.IsSupported);
+        Console.WriteLine("ArmBase.IsSupported=");
+        Console.WriteLine(System.Runtime.Intrinsics.Arm.ArmBase.IsSupported);
 
-        if (!Vector128<int>.IsSupported)
-            return false;
+        // HACK: Try block that should always throw
+        try {
+            // HACK: FIXME: Opcode padding inside the try block because if the first opcode of the try (X86Base.Pause) throws, it isn't caught
+            // Console.WriteLine("Inside try block");
 
-        if (Vector128<decimal>.IsSupported)
+            // NOTE: Depending on the target architecture, these method calls will not have FLG_INTRINSIC, so the interpreter will not
+            //  recognize them as intrinsics and handle them. This *should* be fine, because we conditionally compile CoreLib based on
+            //  architecture, providing pure-managed implementations of the relevant methods that throw a PNSE.
+            System.Runtime.Intrinsics.X86.X86Base.Pause();
+            System.Runtime.Intrinsics.Arm.ArmBase.Yield();
             return false;
-
-        return true;
+        } catch (PlatformNotSupportedException) {
+            return true;
+        }
     }
 
     public static void TestExceptionHandling()

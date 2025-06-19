@@ -2189,6 +2189,9 @@ do {                                                                           \
                 case INTOP_LEAVE_CATCH:
                     *(const int32_t**)pFrame->pRetVal = ip + ip[1];
                     goto EXIT_FRAME;
+                case INTOP_THROW_PNSE:
+                    COMPlusThrow(kPlatformNotSupportedException);
+                    break;
                 case INTOP_FAILFAST:
                     assert(0);
                     break;

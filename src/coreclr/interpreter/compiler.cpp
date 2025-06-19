@@ -1116,8 +1116,10 @@ void InterpCompiler::BuildEHInfo()
         int32_t handlerEndNativeOffset;
         GetNativeRangeForClause(clause.HandlerOffset, clause.HandlerOffset + clause.HandlerLength, &handlerStartNativeOffset, &handlerEndNativeOffset);
 
-        nativeClause.TryOffset = ConvertOffset(tryStartNativeOffset);
-        nativeClause.TryLength = ConvertOffset(tryEndNativeOffset);
+        // Interpreter-FIXME
+        const int hackOffsetToFixExceptionsThrownByFirstOpcodeInATryBlock = 1;
+        nativeClause.TryOffset = ConvertOffset(tryStartNativeOffset) - hackOffsetToFixExceptionsThrownByFirstOpcodeInATryBlock;
+        nativeClause.TryLength = ConvertOffset(tryEndNativeOffset) + hackOffsetToFixExceptionsThrownByFirstOpcodeInATryBlock;
 
         nativeClause.HandlerOffset = ConvertOffset(handlerStartNativeOffset);
         nativeClause.HandlerLength = ConvertOffset(handlerEndNativeOffset);
@@ -2156,7 +2158,8 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             const char* namespaceName = NULL;
             const char* methodName = m_compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, NULL, 0);
             printf("WARNING: Intrinsic not implemented in EmitNamedIntrinsicCall: %d (for %s.%s.%s)\n", ni, namespaceName, className, methodName);
-            // assert(!"EmitNamedIntrinsicCall not implemented intrinsic");
+            if (mustExpand)
+                assert(!"EmitNamedIntrinsicCall not implemented must-expand intrinsic");
             return false;
         }
     }
@@ -2376,7 +2379,14 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
         if (callInfo.methodFlags & CORINFO_FLG_INTRINSIC)
         {
-            NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+            NamedIntrinsic ni = GetNamedIntrinsic(
+                m_compHnd, m_methodHnd, callInfo.hMethod,
+#ifdef FEATURE_JIT
+                true
+#else
+                false
+#endif
+            );
             if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
             {
                 m_ip += 5;
