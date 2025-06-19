@@ -16,28 +16,28 @@ struct DynPtrArray
     char* data;
 };
 
-static void dyn_ptr_array_init (DynPtrArray* da)
+static void DynPtrArrayInit(DynPtrArray* da)
 {
     da->size = 0;
     da->capacity = 0;
     da->data = NULL;
 }
 
-static int dyn_ptr_array_size (DynPtrArray* da)
+static int DynPtrArraySize(DynPtrArray* da)
 {
     return da->size;
 }
 
-static void dyn_ptr_array_empty (DynPtrArray* da)
+static void DynPtrArrayEmpty(DynPtrArray* da)
 {
     da->size = 0;
 }
 
-static void dyn_ptr_array_uninit (DynPtrArray* da)
+static void DynPtrArrayUninit(DynPtrArray* da)
 {
     if (da->capacity < 0)
     {
-        dyn_ptr_array_init (da);
+        DynPtrArrayInit(da);
         return;
     }
 
@@ -48,7 +48,7 @@ static void dyn_ptr_array_uninit (DynPtrArray* da)
     da->data = NULL;
 }
 
-static char* dyn_ptr_array_ensure_capacity_internal (DynPtrArray* da, int capacity)
+static char* DynPtrArrayEnsureCapacityInternal(DynPtrArray* da, int capacity)
 {
     if (da->capacity <= 0)
         da->capacity = 2;
@@ -58,29 +58,29 @@ static char* dyn_ptr_array_ensure_capacity_internal (DynPtrArray* da, int capaci
     return (char*)new (nothrow) void*[da->capacity];
 }
 
-static void dyn_ptr_array_ensure_capacity (DynPtrArray* da, int capacity)
+static void DynPtrArrayEnsureCapacity(DynPtrArray* da, int capacity)
 {
-    int old_capacity = da->capacity;
-    char* new_data;
+    int oldCapacity = da->capacity;
+    char* newData;
 
     assert(capacity > 0);
 
-    if (capacity <= old_capacity)
+    if (capacity <= oldCapacity)
         return;
 
-    new_data = dyn_ptr_array_ensure_capacity_internal(da, capacity);
-    assert(new_data);
-    memcpy(new_data, da->data, sizeof(void*) * da->size);
-    if (old_capacity > 0)
+    newData = DynPtrArrayEnsureCapacityInternal(da, capacity);
+    assert(newData);
+    memcpy(newData, da->data, sizeof(void*) * da->size);
+    if (oldCapacity > 0)
         free(da->data);
-    da->data = new_data;
+    da->data = newData;
 }
 
-static void dyn_ptr_array_add (DynPtrArray* da, void* ptr)
+static void DynPtrArrayAdd(DynPtrArray* da, void* ptr)
 {
     void* p;
 
-    dyn_ptr_array_ensure_capacity(da, da->size + 1);
+    DynPtrArrayEnsureCapacity(da, da->size + 1);
 
     p = da->data + da->size * sizeof(void*);
     da->size++;
@@ -88,40 +88,37 @@ static void dyn_ptr_array_add (DynPtrArray* da, void* ptr)
     *(void**)p = ptr;
 }
 
-static void* dyn_ptr_array_get (DynPtrArray* da, int x)
+static void* DynPtrArrayGet(DynPtrArray* da, int x)
 {
     return ((void**)da->data)[x];
 }
 
-inline
-static void dyn_ptr_array_set (DynPtrArray* da, int x, void* ptr)
+static void DynPtrArraySet(DynPtrArray* da, int x, void* ptr)
 {
     ((void**)da->data)[x] = ptr;
 }
 
-#define dyn_ptr_array_push dyn_ptr_array_add
+#define DynPtrArrayPush DynPtrArrayAdd
 
-static void*
-dyn_ptr_array_pop (DynPtrArray* da)
+static void* DynPtrArrayPop(DynPtrArray* da)
 {
     int size = da->size;
     void *p;
     assert(size > 0);
     assert(da->capacity > 1);
-    p = dyn_ptr_array_get(da, size - 1);
+    p = DynPtrArrayGet(da, size - 1);
     da->size--;
     return p;
 }
 
-inline
-static void dyn_ptr_array_set_all (DynPtrArray* dst, DynPtrArray* src)
+static void DynPtrArraySetAll(DynPtrArray* dst, DynPtrArray* src)
 {
-    const int copysize = src->size;
-    if (copysize > 0)
+    const int copySize = src->size;
+    if (copySize > 0)
     {
-        dyn_ptr_array_ensure_capacity(dst, copysize);
+        DynPtrArrayEnsureCapacity(dst, copySize);
 
-        memcpy(dst->data, src->data, copysize * sizeof (void*));
+        memcpy(dst->data, src->data, copySize * sizeof(void*));
     }
     dst->size = src->size;
 }
@@ -139,7 +136,7 @@ static void dyn_ptr_array_set_all (DynPtrArray* dst, DynPtrArray* src)
 
 // #define DUMP_GRAPH 1
 
-// Used in bridgeless_color_is_heavy:
+// Used in BridgelessColorIsHeavy:
 // The idea here is as long as the reference fanin and fanout on a node are both 2 or greater, then
 // removing that node will result in a net increase in edge count. So the question is which node
 // removals are counterproductive (i.e., how many edges saved balances out one node added).
@@ -181,13 +178,13 @@ enum
 struct ColorData
 {
     // Colors (ColorDatas) linked to by objects with this color
-    DynPtrArray other_colors;
+    DynPtrArray otherColors;
     // Bridge objects (Objects) held by objects with this color
     DynPtrArray bridges;
-    // Index of this color's MonoGCBridgeSCC in the array passed to the client (or -1 for none)
-    signed api_index         : API_INDEX_BITS;
-    // Count of colors that list this color in their other_colors
-    unsigned incoming_colors : INCOMING_COLORS_BITS;
+    // Index of this color's SCC in the array passed to the client (or -1 for none)
+    signed apiIndex         : API_INDEX_BITS;
+    // Count of colors that list this color in their otherColors
+    unsigned incomingColors : INCOMING_COLORS_BITS;
     unsigned visited : 1;
 };
 
@@ -197,7 +194,7 @@ struct ScanData
     // FIXME this can be eliminated; if we have a ScanData we generally looked it up from its Object
     Object* obj;
     // We use the header in Object to store a pointer to the ScanData. Cache the original here to restore later:
-    size_t header_word;
+    size_t headerWord;
 
     // Only for bridge objects, stores the context attached to the crossref gc handle
     uintptr_t context;
@@ -210,61 +207,61 @@ struct ScanData
     // Tarjan algorithm index (order visited)
     int index;
     // Tarjan index of lowest-index object known reachable from here
-    signed low_index : 27;
+    signed lowIndex : 27;
 
     // See "ScanData state" enum above
     unsigned state : 2;
-    unsigned is_bridge : 1;
+    unsigned isBridge : 1;
 };
 
 // If true, disable an optimization where sometimes SCC nodes don't contain any bridge objects, in order to reduce total xrefs.
-static bool disable_non_bridge_scc;
+static bool DisableNonBridgeScc;
 
 // Should color be made visible to client even though it has no bridges?
 // True if we predict the number of reduced edges to be enough to justify the extra node.
 
-static bool bridgeless_color_is_heavy (ColorData* data)
+static bool BridgelessColorIsHeavy(ColorData* data)
 {
-    if (disable_non_bridge_scc)
+    if (DisableNonBridgeScc)
         return false;
-    int fanin = data->incoming_colors;
-    int fanout = dyn_ptr_array_size(&data->other_colors);
+    int fanin = data->incomingColors;
+    int fanout = DynPtrArraySize(&data->otherColors);
     return fanin > HEAVY_REFS_MIN && fanout > HEAVY_REFS_MIN
         && fanin*fanout >= HEAVY_COMBINED_REFS_MIN;
 }
 
 // Should color be made visible to client?
-static bool color_visible_to_client (ColorData* data)
+static bool ColorVisibleToClient(ColorData* data)
 {
-    return dyn_ptr_array_size(&data->bridges) || bridgeless_color_is_heavy(data);
+    return DynPtrArraySize(&data->bridges) || BridgelessColorIsHeavy(data);
 }
 
 // Stacks of ScanData objects used for tarjan algorithm.
-// The Tarjan algorithm is normally defined recursively; here scan_stack simulates the call stack of a recursive algorithm,
-// and loop_stack is the stack structure used by the algorithm itself.
-static DynPtrArray scan_stack, loop_stack;
+// The Tarjan algorithm is normally defined recursively; here g_scanStack simulates the call stack of a recursive algorithm,
+// and g_loopStack is the stack structure used by the algorithm itself.
+static DynPtrArray g_scanStack, g_loopStack;
 
 // Objects from crossref handles registered with RegisterBridgeObject
-static DynPtrArray registered_bridges;
-static DynPtrArray registered_bridges_context;
+static DynPtrArray g_registeredBridges;
+static DynPtrArray g_registeredBridgesContexts;
 
 // As we traverse the graph, which ColorData objects are accessible from our current position?
-static DynPtrArray color_merge_array;
-// Running hash of the contents of the color_merge_array.
-static unsigned int color_merge_array_hash;
+static DynPtrArray g_colorMergeArray;
+// Running hash of the contents of the g_colorMergeArray.
+static unsigned int g_colorMergeArrayHash;
 
-static void color_merge_array_empty ()
+static void ColorMergeArrayEmpty()
 {
-    dyn_ptr_array_empty(&color_merge_array);
-    color_merge_array_hash = 0;
+    DynPtrArrayEmpty(&g_colorMergeArray);
+    g_colorMergeArrayHash = 0;
 }
 
-static int object_index;
-static int num_colors_with_bridges;
-static int num_sccs;
-static int xref_count;
+static int g_objectIndex;
+static int g_numColorsWithBridges;
+static int g_numSccs;
+static int g_xrefCount;
 
-static size_t tarjan_time;
+static size_t g_tarjanTime;
 
 #define BUCKET_SIZE 8184
 
@@ -274,70 +271,70 @@ static size_t tarjan_time;
 struct ObjectBucket
 {
     ObjectBucket* next;
-    ScanData* next_data;
+    ScanData* nextData;
     ScanData data[NUM_SCAN_ENTRIES];
 };
 
-static ObjectBucket* root_object_bucket;
-static ObjectBucket* cur_object_bucket;
-static int object_data_count;
+static ObjectBucket* g_rootObjectBucket;
+static ObjectBucket* g_curObjectBucket;
+static int g_objectDataCount;
 
 // Arenas to allocate ScanData from
-static ObjectBucket* new_object_bucket ()
+static ObjectBucket* NewObjectBucket()
 {
     ObjectBucket* res = new (nothrow) ObjectBucket;
     assert(res);
     res->next = NULL;
-    res->next_data = &res->data[0];
+    res->nextData = &res->data[0];
     return res;
 }
 
-static void object_alloc_init ()
+static void ObjectAllocInit()
 {
-    if (!root_object_bucket)
-        root_object_bucket = cur_object_bucket = new_object_bucket();
+    if (!g_rootObjectBucket)
+        g_rootObjectBucket = g_curObjectBucket = NewObjectBucket();
 }
 
-static ScanData* alloc_object_data ()
+static ScanData* AllocObjectData()
 {
     ScanData* res;
 retry:
 
-    // next_data points to the first free entry
-    res = cur_object_bucket->next_data;
-    if (res >= &cur_object_bucket->data[NUM_SCAN_ENTRIES])
+    // nextData points to the first free entry
+    res = g_curObjectBucket->nextData;
+    if (res >= &g_curObjectBucket->data[NUM_SCAN_ENTRIES])
     {
-        if (cur_object_bucket->next)
+        if (g_curObjectBucket->next)
         {
-            cur_object_bucket = cur_object_bucket->next;
+            g_curObjectBucket = g_curObjectBucket->next;
         }
         else
         {
-            ObjectBucket* b = new_object_bucket ();
-            cur_object_bucket->next = b;
-            cur_object_bucket = b;
+            ObjectBucket* b = NewObjectBucket();
+            g_curObjectBucket->next = b;
+            g_curObjectBucket = b;
         }
         goto retry;
     }
-    cur_object_bucket->next_data = res + 1;
-    object_data_count++;
+    g_curObjectBucket->nextData = res + 1;
+    g_objectDataCount++;
     new (res) ScanData(); // zero memory
     return res;
 }
 
-static void empty_object_buckets ()
+static void EmptyObjectBuckets()
 {
-    ObjectBucket* cur = root_object_bucket;
+    ObjectBucket* cur = g_rootObjectBucket;
 
-    object_data_count = 0;
+    g_objectDataCount = 0;
 
     while (cur)
     {
-        cur->next_data = &cur->data[0];
+        cur->nextData = &cur->data[0];
         cur = cur->next;
     }
 
-    cur_object_bucket = root_object_bucket;
+    g_curObjectBucket = g_rootObjectBucket;
 }
 
 //ColorData buckets
@@ -347,94 +344,92 @@ static void empty_object_buckets ()
 struct ColorBucket
 {
     ColorBucket* next;
-    ColorData* next_data;
+    ColorData* nextData;
     ColorData data[NUM_COLOR_ENTRIES];
 };
 
-static ColorBucket* root_color_bucket;
-static ColorBucket* cur_color_bucket;
-static int color_data_count;
+static ColorBucket* g_rootColorBucket;
+static ColorBucket* g_curColorBucket;
+static int g_colorDataCount;
 
-
-static ColorBucket* new_color_bucket ()
+static ColorBucket* NewColorBucket()
 {
     ColorBucket* res = new (nothrow) ColorBucket;
     assert(res);
     res->next = NULL;
-    res->next_data = &res->data[0];
+    res->nextData = &res->data[0];
     return res;
 }
 
-static void color_alloc_init ()
+static void ColorAllocInit()
 {
-    if (!root_color_bucket)
-        root_color_bucket = cur_color_bucket = new_color_bucket();
+    if (!g_rootColorBucket)
+        g_rootColorBucket = g_curColorBucket = NewColorBucket();
 }
 
-static ColorData* alloc_color_data ()
+static ColorData* AllocColorData()
 {
     ColorData* res;
 retry:
 
-    // next_data points to the first free entry
-    res = cur_color_bucket->next_data;
-    if (res >= &cur_color_bucket->data[NUM_COLOR_ENTRIES])
+    // nextData points to the first free entry
+    res = g_curColorBucket->nextData;
+    if (res >= &g_curColorBucket->data[NUM_COLOR_ENTRIES])
     {
-        if (cur_color_bucket->next)
+        if (g_curColorBucket->next)
         {
-            cur_color_bucket = cur_color_bucket->next;
+            g_curColorBucket = g_curColorBucket->next;
         }
         else
         {
-            ColorBucket* b = new_color_bucket();
-            cur_color_bucket->next = b;
-            cur_color_bucket = b;
+            ColorBucket* b = NewColorBucket();
+            g_curColorBucket->next = b;
+            g_curColorBucket = b;
         }
         goto retry;
     }
-    cur_color_bucket->next_data = res + 1;
-    color_data_count++;
+    g_curColorBucket->nextData = res + 1;
+    g_colorDataCount++;
     new (res) ColorData(); // zero memory
     return res;
 }
 
-static void empty_color_buckets ()
+static void EmptyColorBuckets()
 {
     ColorBucket* cur;
 
-    color_data_count = 0;
+    g_colorDataCount = 0;
 
-    for (cur = root_color_bucket; cur; cur = cur->next)
+    for (cur = g_rootColorBucket; cur; cur = cur->next)
     {
         ColorData* cd;
-        for (cd = &cur->data[0]; cd < cur->next_data; cd++)
+        for (cd = &cur->data[0]; cd < cur->nextData; cd++)
         {
-            dyn_ptr_array_uninit(&cd->other_colors);
-            dyn_ptr_array_uninit(&cd->bridges);
+            DynPtrArrayUninit(&cd->otherColors);
+            DynPtrArrayUninit(&cd->bridges);
         }
 
-        cur->next_data = &cur->data[0];
+        cur->nextData = &cur->data[0];
     }
 
-    cur_color_bucket = root_color_bucket;
+    g_curColorBucket = g_rootColorBucket;
 }
 
-
-static ScanData* create_data (Object* obj)
+static ScanData* CreateData(Object* obj)
 {
     size_t* o = (size_t*)obj;
-    ScanData* res = alloc_object_data();
+    ScanData* res = AllocObjectData();
     res->obj = obj;
-    res->index = res->low_index = -1;
+    res->index = res->lowIndex = -1;
     res->state = INITIAL;
-    res->header_word = o[-1];
+    res->headerWord = o[-1];
 
     o[0] |= BRIDGE_MARKED_BIT;
     o[-1] = (size_t)res;
     return res;
 }
 
-static ScanData* find_data (Object* obj)
+static ScanData* FindData(Object* obj)
 {
     ScanData* a = NULL;
     size_t* o = (size_t*)obj;
@@ -443,18 +438,18 @@ static ScanData* find_data (Object* obj)
     return a;
 }
 
-static void reset_objects_header ()
+static void ResetObjectsHeader()
 {
     ObjectBucket* cur;
 
-    for (cur = root_object_bucket; cur; cur = cur->next)
+    for (cur = g_rootObjectBucket; cur; cur = cur->next)
     {
         ScanData* sd;
-        for (sd = &cur->data[0]; sd < cur->next_data; sd++)
+        for (sd = &cur->data[0]; sd < cur->nextData; sd++)
         {
             size_t *o = (size_t*)sd->obj;
             o[0] &= ~BRIDGE_MARKED_BIT;
-            o[-1] = sd->header_word;
+            o[-1] = sd->headerWord;
         }
     }
 }
@@ -465,7 +460,7 @@ struct HashEntry
     unsigned int hash;
 };
 
-// The merge cache maps an ordered list of ColorDatas [the color_merge_array] to a single ColorData.
+// The merge cache maps an ordered list of ColorDatas [the g_colorMergeArray] to a single ColorData.
 // About cache bucket tuning: We tried 2/32, 2/128, 4/32, 4/128, 6/128 and 8/128.
 // The performance cost between 4/128 and 8/128 is so small since cache movement happens completely in the same cacheline,
 // making the extra space pretty much free.
@@ -474,20 +469,20 @@ struct HashEntry
 
 #define ELEMENTS_PER_BUCKET 8
 #define COLOR_CACHE_SIZE 128
-static HashEntry merge_cache[COLOR_CACHE_SIZE][ELEMENTS_PER_BUCKET];
-static unsigned int hash_perturb;
+static HashEntry g_mergeCache[COLOR_CACHE_SIZE][ELEMENTS_PER_BUCKET];
+static unsigned int g_hashPerturb;
 
 // If true, disable an optimization where sometimes SCC nodes are merged without a perfect check
-static bool scc_precise_merge;
+static bool g_sccPreciseMerge;
 
-static unsigned int mix_hash (uintptr_t source)
+static unsigned int MixHash(uintptr_t source)
 {
     unsigned int hash = (unsigned int)source;
 
     // The full hash determines whether two colors can be merged-- sometimes exclusively.
     // This value changes every GC, so XORing it in before performing the hash will make the
     // chance that two different colors will produce the same hash on successive GCs very low.
-    hash = hash ^ hash_perturb;
+    hash = hash ^ g_hashPerturb;
 
     // Actual hash
     hash = (((hash * 215497) >> 16) ^ ((hash * 1823231) + hash));
@@ -499,99 +494,98 @@ static unsigned int mix_hash (uintptr_t source)
     return hash;
 }
 
-static void reset_cache ()
+static void ResetCache()
 {
-    memset(merge_cache, 0, sizeof (merge_cache));
+    memset(g_mergeCache, 0, sizeof(g_mergeCache));
 
-    // When using the precise merge debug option, we do not want the inconsistency caused by hash_perturb.
-    if (!scc_precise_merge)
-        hash_perturb++;
+    // When using the precise merge debug option, we do not want the inconsistency caused by g_hashPerturb.
+    if (!g_sccPreciseMerge)
+        g_hashPerturb++;
 }
 
 
-static bool dyn_ptr_array_contains (DynPtrArray* da, void* x)
+static bool DynPtrArrayContains(DynPtrArray* da, void* x)
 {
     int i;
-    for (i = 0; i < dyn_ptr_array_size(da); i++)
+    for (i = 0; i < DynPtrArraySize(da); i++)
     {
-        if (dyn_ptr_array_get(da, i) == x)
+        if (DynPtrArrayGet(da, i) == x)
             return true;
     }
     return false;
 }
 
-static bool match_colors_estimate (DynPtrArray* a, DynPtrArray* b)
+static bool MatchColorsEstimate(DynPtrArray* a, DynPtrArray* b)
 {
-    return dyn_ptr_array_size(a) == dyn_ptr_array_size(b);
+    return DynPtrArraySize(a) == DynPtrArraySize(b);
 }
 
-
-static bool match_colors (DynPtrArray* a, DynPtrArray* b)
+static bool MatchColors(DynPtrArray* a, DynPtrArray* b)
 {
     int i;
-    if (dyn_ptr_array_size(a) != dyn_ptr_array_size(b))
+    if (DynPtrArraySize(a) != DynPtrArraySize(b))
         return false;
 
-    for (i = 0; i < dyn_ptr_array_size(a); i++)
+    for (i = 0; i < DynPtrArraySize(a); i++)
     {
-        if (!dyn_ptr_array_contains(b, dyn_ptr_array_get(a, i)))
+        if (!DynPtrArrayContains(b, DynPtrArrayGet(a, i)))
             return false;
     }
     return true;
 }
 
-// If scc_precise_merge, "semihits" refers to find_in_cache calls aborted because the merge array was too large.
+// If g_sccPreciseMerge, "semihits" refers to FindInCache calls aborted because the merge array was too large.
 // Otherwise "semihits" refers to cache hits where the match was only estimated.
-static int cache_hits, cache_semihits, cache_misses;
+static int g_cacheHits, g_cacheSemiHits, g_cacheMisses;
 
 // The cache contains only non-bridged colors.
-static ColorData* find_in_cache (int* insert_index)
+static ColorData* FindInCache(int* insertIndex)
 {
     HashEntry* bucket;
     int i, size, index;
 
-    size = dyn_ptr_array_size(&color_merge_array);
+    size = DynPtrArraySize(&g_colorMergeArray);
 
     // Color equality checking is very expensive with a lot of elements, so when there are many
     // elements we switch to a cheap comparison method which allows false positives. When false
     // positives occur the worst that can happen is two items will be inappropriately merged
     // and memory will be retained longer than it should be. We assume that will correct itself
-    // on the next GC (the hash_perturb mechanism increases the probability of this).
+    // on the next GC (the g_hashPerturb mechanism increases the probability of this).
     //
     // Because this has *some* potential to create problems, if the user set the debug option
     // 'enable-tarjan-precise-merge' we bail out early (and never merge SCCs with >3 colors).
 
-    bool color_merge_array_large = size > 3;
-    if (scc_precise_merge && color_merge_array_large)
+    bool colorMergeArrayLarge = size > 3;
+    if (g_sccPreciseMerge && colorMergeArrayLarge)
     {
-        cache_semihits++;
+        g_cacheSemiHits++;
         return NULL;
     }
 
-    unsigned int hash = color_merge_array_hash;
+    unsigned int hash = g_colorMergeArrayHash;
     if (!hash) // 0 is used to indicate an empty bucket entry
         hash = 1;
 
     index = hash & (COLOR_CACHE_SIZE - 1);
-    bucket = merge_cache[index];
+    bucket = g_mergeCache[index];
     for (i = 0; i < ELEMENTS_PER_BUCKET; i++)
     {
         if (bucket[i].hash != hash)
             continue;
 
-        if (color_merge_array_large)
+        if (colorMergeArrayLarge)
         {
-            if (match_colors_estimate(&bucket[i].color->other_colors, &color_merge_array))
+            if (MatchColorsEstimate(&bucket[i].color->otherColors, &g_colorMergeArray))
             {
-                cache_semihits++;
+                g_cacheSemiHits++;
                 return bucket[i].color;
             }
         }
         else
         {
-            if (match_colors(&bucket[i].color->other_colors, &color_merge_array))
+            if (MatchColors(&bucket[i].color->otherColors, &g_colorMergeArray))
             {
-                cache_hits++;
+                g_cacheHits++;
                 return bucket[i].color;
             }
         }
@@ -600,67 +594,60 @@ static ColorData* find_in_cache (int* insert_index)
     //move elements to the back
     for (i = ELEMENTS_PER_BUCKET - 1; i > 0; i--)
         bucket[i] = bucket[i - 1];
-    cache_misses++;
-    *insert_index = index;
+    g_cacheMisses++;
+    *insertIndex = index;
     bucket[0].hash = hash;
     return NULL;
 }
 
-// Populate other_colors for a give color (other_colors represent the xrefs for this color)
-static void add_other_colors (ColorData* color, DynPtrArray* other_colors, bool check_visited)
+// Populate otherColors for a give color (otherColors represent the xrefs for this color)
+static void AddOtherColors(ColorData* color, DynPtrArray* otherColors, bool checkVisited)
 {
-    for (int i = 0; i < dyn_ptr_array_size(other_colors); i++)
+    for (int i = 0; i < DynPtrArraySize(otherColors); i++)
     {
-        ColorData* points_to = (ColorData*)dyn_ptr_array_get(other_colors, i);
-        if (check_visited)
+        ColorData* pointsTo = (ColorData*)DynPtrArrayGet(otherColors, i);
+        if (checkVisited)
         {
-            if (points_to->visited)
+            if (pointsTo->visited)
                 continue;
-            points_to->visited = true;
+            pointsTo->visited = true;
         }
-        dyn_ptr_array_add(&color->other_colors, points_to);
+        DynPtrArrayAdd(&color->otherColors, pointsTo);
         // Inform targets
-        if (points_to->incoming_colors < INCOMING_COLORS_MAX)
-            points_to->incoming_colors++;
+        if (pointsTo->incomingColors < INCOMING_COLORS_MAX)
+            pointsTo->incomingColors++;
     }
 }
 
 // A color is needed for an SCC. If the SCC has bridges, the color MUST be newly allocated.
 // If the SCC lacks bridges, the allocator MAY use the cache to merge it with an existing one.
-static ColorData* new_color (bool has_bridges)
+static ColorData* NewColor(bool hasBridges)
 {
     int cacheSlot = -1;
     ColorData* cd;
     // Try to find an equal one and return it
-    if (!has_bridges)
+    if (!hasBridges)
     {
-        cd = find_in_cache(&cacheSlot);
+        cd = FindInCache(&cacheSlot);
         if (cd)
             return cd;
     }
 
-    cd = alloc_color_data();
-    cd->api_index = -1;
+    cd = AllocColorData();
+    cd->apiIndex = -1;
 
-    add_other_colors(cd, &color_merge_array, false);
+    AddOtherColors(cd, &g_colorMergeArray, false);
 
     // if cacheSlot >= 0, it means we prepared a given slot to receive the new color
     if (cacheSlot >= 0)
-        merge_cache[cacheSlot][0].color = cd;
+        g_mergeCache[cacheSlot][0].color = cd;
 
     return cd;
 }
 
 
-static void register_bridge_object (Object* obj, uintptr_t context)
-{
-    ScanData *sd = create_data(obj);
-    sd->is_bridge = true;
-    sd->context = context;
-}
-
 // Called during DFS; visits one child. If it is a candidate to be scanned, pushes it to the stacks.
-static bool push_object (Object* obj, void* unused)
+static bool PushObject(Object* obj, void* unused)
 {
     ScanData* data;
 
@@ -668,7 +655,7 @@ static bool push_object (Object* obj, void* unused)
     printf ("\t= pushing %p mt(%p) -> ", obj, obj->GetGCSafeMethodTable());
 #endif
 
-    data = find_data(obj);
+    data = FindData(obj);
 
     if (data && data->state != INITIAL)
     {
@@ -692,16 +679,16 @@ static bool push_object (Object* obj, void* unused)
 #endif
 
     if (!data)
-        data = create_data(obj);
+        data = CreateData(obj);
     assert(data->state == INITIAL);
     assert(data->index == -1);
-    dyn_ptr_array_push(&scan_stack, data);
+    DynPtrArrayPush(&g_scanStack, data);
 
     return true;
 }
 
-// dfs () function's queue-children-of-object operation.
-static void push_all (ScanData* data)
+// DFS () function's queue-children-of-object operation.
+static void PushAll(ScanData* data)
 {
     Object* obj = data->obj;
 
@@ -709,27 +696,27 @@ static void push_all (ScanData* data)
     printf ("+scanning %p mt(%p) index %d color %p\n", obj, obj->GetGCSafeMethodTable(), data->index, data->color);
 #endif
 
-    g_theGCHeap->DiagWalkObject(obj, push_object, NULL);
+    g_theGCHeap->DiagWalkObject(obj, PushObject, NULL);
 }
 
-static bool compute_low_index (Object* obj, void* context)
+static bool ComputeLowIndex(Object* obj, void* context)
 {
     ScanData* data = (ScanData*)context;
     ScanData* other;
     ColorData* cd;
 
-    other = find_data(obj);
+    other = FindData(obj);
 
     if (!other)
         return true;
 #if DUMP_GRAPH
-    printf("\tcompute low %p ->%p mt(%p) %p (%d / %d, color %p)\n", data->obj, obj, obj->GetGCSafeMethodTable(), other, other ? other->index : -2, other->low_index, other->color);
+    printf("\tcompute low %p ->%p mt(%p) %p (%d / %d, color %p)\n", data->obj, obj, obj->GetGCSafeMethodTable(), other, other ? other->index : -2, other->lowIndex, other->color);
 #endif
 
     assert(other->state != INITIAL);
 
-    if ((other->state == SCANNED || other->state == FINISHED_ON_STACK) && data->low_index > other->low_index)
-        data->low_index = other->low_index;
+    if ((other->state == SCANNED || other->state == FINISHED_ON_STACK) && data->lowIndex > other->lowIndex)
+        data->lowIndex = other->lowIndex;
 
     // Compute the low color
     if (other->color == NULL)
@@ -742,29 +729,29 @@ static bool compute_low_index (Object* obj, void* context)
     // for the current object (data)
     if (!cd->visited)
     {
-        color_merge_array_hash += mix_hash((uintptr_t) other->color);
+        g_colorMergeArrayHash += MixHash((uintptr_t) other->color);
 #if DUMP_GRAPH
-        printf("\t\tadd color %p to color_merge_array\n", other->color);
+        printf("\t\tadd color %p to g_colorMergeArray\n", other->color);
 #endif
-        dyn_ptr_array_add(&color_merge_array, other->color);
+        DynPtrArrayAdd(&g_colorMergeArray, other->color);
         cd->visited = true;
     }
 
     return true;
 }
 
-static void compute_low (ScanData* data)
+static void ComputeLow(ScanData* data)
 {
     Object* obj = data->obj;
 
-    g_theGCHeap->DiagWalkObject(obj, compute_low_index, data);
+    g_theGCHeap->DiagWalkObject(obj, ComputeLowIndex, data);
 }
 
 // A non-bridged object needs a single color describing the current merge array.
-static ColorData* reduce_color ()
+static ColorData* ReduceColor()
 {
     ColorData *color = NULL;
-    int size = dyn_ptr_array_size(&color_merge_array);
+    int size = DynPtrArraySize(&g_colorMergeArray);
 
     // Merge array is empty-- this SCC points to no bridged colors.
     // This SCC can be ignored completely.
@@ -776,71 +763,71 @@ static ColorData* reduce_color ()
     else if (size == 1)
     {
         // This SCC gets to talk to the color allocator.
-        color = (ColorData *)dyn_ptr_array_get(&color_merge_array, 0);
+        color = (ColorData *)DynPtrArrayGet(&g_colorMergeArray, 0);
     }
     else
     {
-        color = new_color(false);
+        color = NewColor(false);
     }
 
     return color;
 }
 
-static void create_scc (ScanData* data)
+static void CreateScc(ScanData* data)
 {
     int i;
     bool found = false;
-    bool found_bridge = false;
-    ColorData* color_data = NULL;
-    bool can_reduce_color = true;
+    bool foundBridge = false;
+    ColorData* colorData = NULL;
+    bool canReduceColor = true;
 
-    for (i = dyn_ptr_array_size (&loop_stack) - 1; i >= 0; i--)
+    for (i = DynPtrArraySize(&g_loopStack) - 1; i >= 0; i--)
     {
-        ScanData* other = (ScanData*)dyn_ptr_array_get(&loop_stack, i);
-        found_bridge |= other->is_bridge;
-        if (dyn_ptr_array_size(&other->xrefs) > 0 || found_bridge)
+        ScanData* other = (ScanData*)DynPtrArrayGet(&g_loopStack, i);
+        foundBridge |= other->isBridge;
+        if (DynPtrArraySize(&other->xrefs) > 0 || foundBridge)
         {
-            // This scc will have more xrefs than the ones from the color_merge_array,
+            // This scc will have more xrefs than the ones from the g_colorMergeArray,
             // we will need to create a new color to store this information.
-            can_reduce_color = false;
+            canReduceColor = false;
         }
-        if (found_bridge || other == data)
+        if (foundBridge || other == data)
             break;
     }
 
-    if (found_bridge)
+    if (foundBridge)
     {
-        color_data = new_color(true);
-        num_colors_with_bridges++;
+        colorData = NewColor(true);
+        g_numColorsWithBridges++;
     }
-    else if (can_reduce_color)
+    else if (canReduceColor)
     {
-        color_data = reduce_color();
+        colorData = ReduceColor();
     }
     else
     {
-        color_data = new_color(false);
+        colorData = NewColor(false);
     }
 #if DUMP_GRAPH
-    printf("|SCC %p rooted in %p mt(%p) has bridge %d\n", color_data, data->obj, data->obj->GetGCSafeMethodTable(), data->obj, found_bridge);
+    printf("|SCC %p rooted in %p mt(%p) has bridge %d\n", colorData, data->obj, data->obj->GetGCSafeMethodTable(), data->obj, foundBridge);
     printf("\tloop stack: ");
-    for (i = 0; i < dyn_ptr_array_size(&loop_stack); i++)
+    for (i = 0; i < DynPtrArraySize(&g_loopStack); i++)
     {
-        ScanData* other = (ScanData*)dyn_ptr_array_get(&loop_stack, i);
-        printf("(%d/%d)", other->index, other->low_index);
+        ScanData* other = (ScanData*)DynPtrArrayGet(&g_loopStack, i);
+        printf("(%d/%d)", other->index, other->lowIndex);
     }
     printf("\n");
 #endif
 
-    while (dyn_ptr_array_size(&loop_stack) > 0)
+    while (DynPtrArraySize(&g_loopStack) > 0)
     {
-        ScanData* other = (ScanData*)dyn_ptr_array_pop(&loop_stack);
+        ScanData* other = (ScanData*)DynPtrArrayPop(&g_loopStack);
 
 #if DUMP_GRAPH
-        printf("\tmember %p mt(%p) index %d low-index %d color %p state %d\n", other->obj, other->obj->GetGCSafeMethodTable(), other->index, other->low_index, other->color, other->state);
+        printf("\tmember %p mt(%p) index %d low-index %d color %p state %d\n", other->obj, other->obj->GetGCSafeMethodTable(), other->index, other->lowIndex, other->color, other->state);
 #endif
 
-        other->color = color_data;
+        other->color = colorData;
         switch (other->state)
         {
             case FINISHED_ON_STACK:
@@ -853,27 +840,27 @@ static void create_scc (ScanData* data)
                 assert(0);
         }
 
-        if (other->is_bridge)
+        if (other->isBridge)
         {
-            assert(color_data);
-            dyn_ptr_array_add(&color_data->bridges, other->obj);
+            assert(colorData);
+            DynPtrArrayAdd(&colorData->bridges, other->obj);
         }
 
-        if (dyn_ptr_array_size(&other->xrefs) > 0)
+        if (DynPtrArraySize(&other->xrefs) > 0)
         {
-            assert(color_data != NULL);
-            assert(can_reduce_color == false);
+            assert(colorData != NULL);
+            assert(canReduceColor == false);
             // We need to eliminate duplicates early otherwise the heaviness property
-            // can change in gather_xrefs and it breaks down the loop that reports the
+            // can change in GatherXRefs and it breaks down the loop that reports the
             // xrefs to the client.
             //
             // We reuse the visited flag to mark the objects that are already part of
-            // the color_data array. The array was created above with the new_color call
-            // and xrefs were populated from color_merge_array, which is already
+            // the colorData array. The array was created above with the NewColor call
+            // and xrefs were populated from g_colorMergeArray, which is already
             // deduplicated and every entry is marked as visited.
-            add_other_colors(color_data, &other->xrefs, true);
+            AddOtherColors(colorData, &other->xrefs, true);
         }
-        dyn_ptr_array_uninit(&other->xrefs);
+        DynPtrArrayUninit(&other->xrefs);
 
         if (other == data)
         {
@@ -883,38 +870,38 @@ static void create_scc (ScanData* data)
     }
     assert(found);
 
-    // Clear the visited flag on nodes that were added with add_other_colors in the loop above
-    if (!can_reduce_color)
+    // Clear the visited flag on nodes that were added with AddOtherColors in the loop above
+    if (!canReduceColor)
     {
-        for (i = dyn_ptr_array_size(&color_merge_array); i < dyn_ptr_array_size(&color_data->other_colors); i++)
+        for (i = DynPtrArraySize(&g_colorMergeArray); i < DynPtrArraySize(&colorData->otherColors); i++)
         {
-            ColorData *cd = (ColorData *)dyn_ptr_array_get(&color_data->other_colors, i);
+            ColorData *cd = (ColorData *)DynPtrArrayGet(&colorData->otherColors, i);
             assert(cd->visited);
             cd->visited = false;
         }
     }
 
 #if DUMP_GRAPH
-    if (color_data)
+    if (colorData)
     {
         printf("\tpoints-to-colors: ");
-        for (i = 0; i < dyn_ptr_array_size(&color_data->other_colors); i++)
-            printf("%p ", dyn_ptr_array_get(&color_data->other_colors, i));
+        for (i = 0; i < DynPtrArraySize(&colorData->otherColors); i++)
+            printf("%p ", DynPtrArrayGet(&colorData->otherColors, i));
         printf("\n");
     }
 #endif
 }
 
-static void dfs ()
+static void DFS()
 {
-    assert(dyn_ptr_array_size(&scan_stack) == 1);
-    assert(dyn_ptr_array_size(&loop_stack) == 0);
+    assert(DynPtrArraySize(&g_scanStack) == 1);
+    assert(DynPtrArraySize(&g_loopStack) == 0);
 
-    color_merge_array_empty();
+    ColorMergeArrayEmpty();
 
-    while (dyn_ptr_array_size(&scan_stack) > 0)
+    while (DynPtrArraySize(&g_scanStack) > 0)
     {
-        ScanData* data = (ScanData*)dyn_ptr_array_pop(&scan_stack);
+        ScanData* data = (ScanData*)DynPtrArrayPop(&g_scanStack);
 
         // Ignore finished objects on stack, they happen due to loops. For example:
         // A -> C
@@ -935,15 +922,15 @@ static void dfs ()
         if (data->state == INITIAL)
         {
             assert(data->index == -1);
-            assert(data->low_index == -1);
+            assert(data->lowIndex == -1);
 
             data->state = SCANNED;
-            data->low_index = data->index = object_index++;
-            dyn_ptr_array_push(&scan_stack, data);
-            dyn_ptr_array_push(&loop_stack, data);
+            data->lowIndex = data->index = g_objectIndex++;
+            DynPtrArrayPush(&g_scanStack, data);
+            DynPtrArrayPush(&g_loopStack, data);
 
             // push all refs
-            push_all(data);
+            PushAll(data);
         }
         else
         {
@@ -951,71 +938,71 @@ static void dfs ()
             data->state = FINISHED_ON_STACK;
 
 #if DUMP_GRAPH
-            printf("-finishing %p mt(%p) index %d low-index %d color %p\n", data->obj, data->obj->GetGCSafeMethodTable(), data->index, data->low_index, data->color);
+            printf("-finishing %p mt(%p) index %d low-index %d color %p\n", data->obj, data->obj->GetGCSafeMethodTable(), data->index, data->lowIndex, data->color);
 #endif
 
             // Compute low index
-            compute_low(data);
+            ComputeLow(data);
 
 #if DUMP_GRAPH
-            printf("-finished %p mt(%p) index %d low-index %d color %p\n", data->obj, data->obj->GetGCSafeMethodTable(), data->index, data->low_index, data->color);
+            printf("-finished %p mt(%p) index %d low-index %d color %p\n", data->obj, data->obj->GetGCSafeMethodTable(), data->index, data->lowIndex, data->color);
 #endif
             //SCC root
-            if (data->index == data->low_index)
+            if (data->index == data->lowIndex)
             {
-                create_scc(data);
+                CreateScc(data);
             }
             else
             {
                 // We need to clear colo_merge_array from all xrefs. We flush them to the current color
                 // and will add them to the scc when we reach the root of the scc.
-                assert(dyn_ptr_array_size(&data->xrefs) == 0);
-                dyn_ptr_array_set_all(&data->xrefs, &color_merge_array);
+                assert(DynPtrArraySize(&data->xrefs) == 0);
+                DynPtrArraySetAll(&data->xrefs, &g_colorMergeArray);
             }
-            // We populated color_merge_array while scanning the object with each neighbor color. Clear it now
-            for (int i = 0; i < dyn_ptr_array_size(&color_merge_array); i++)
+            // We populated g_colorMergeArray while scanning the object with each neighbor color. Clear it now
+            for (int i = 0; i < DynPtrArraySize(&g_colorMergeArray); i++)
             {
-                ColorData* cd = (ColorData*)dyn_ptr_array_get(&color_merge_array, i);
+                ColorData* cd = (ColorData*)DynPtrArrayGet(&g_colorMergeArray, i);
                 assert(cd->visited);
                 cd->visited = false;
             }
-            color_merge_array_empty();
+            ColorMergeArrayEmpty();
         }
     }
 }
 
-static void reset_data ()
+static void ResetData()
 {
-    dyn_ptr_array_empty(&registered_bridges);
+    DynPtrArrayEmpty(&g_registeredBridges);
 }
 
 #ifdef DUMP_GRAPH
-static void dump_color_table (const char* why, bool do_index)
+static void DumpColorTable(const char* why, bool doIndex)
 {
     ColorBucket* cur;
     int i = 0, j;
     printf("colors%s:\n", why);
 
-    for (cur = root_color_bucket; cur; cur = cur->next, i++)
+    for (cur = g_rootColorBucket; cur; cur = cur->next, i++)
     {
         ColorData* cd;
-        for (cd = &cur->data[0]; cd < cur->next_data; cd++)
+        for (cd = &cur->data[0]; cd < cur->nextData; cd++)
         {
-            if (do_index)
-                printf("\t%d(%d):", i, cd->api_index);
+            if (doIndex)
+                printf("\t%d(%d):", i, cd->apiIndex);
             else
                 printf("\t%d: ", i);
 
-            for (j = 0; j < dyn_ptr_array_size(&cd->other_colors); j++)
-                printf ("%p ", dyn_ptr_array_get(&cd->other_colors, j));
+            for (j = 0; j < DynPtrArraySize(&cd->otherColors); j++)
+                printf ("%p ", DynPtrArrayGet(&cd->otherColors, j));
 
-            if (dyn_ptr_array_size(&cd->bridges))
+            if (DynPtrArraySize(&cd->bridges))
             {
                 printf(" bridges: ");
-                for (j = 0; j < dyn_ptr_array_size(&cd->bridges); j++)
+                for (j = 0; j < DynPtrArraySize(&cd->bridges); j++)
                 {
-                    Object* obj = (Object*)dyn_ptr_array_get(&cd->bridges, j);
-                    ScanData* data = find_data(obj);
+                    Object* obj = (Object*)DynPtrArrayGet(&cd->bridges, j);
+                    ScanData* data = FindData(obj);
                     if (!data)
                         printf("%p ", obj);
                     else
@@ -1028,97 +1015,97 @@ static void dump_color_table (const char* why, bool do_index)
 }
 #endif
 
-static void gather_xrefs (ColorData* color)
+static void GatherXRefs(ColorData* color)
 {
     int i;
-    for (i = 0; i < dyn_ptr_array_size(&color->other_colors); i++)
+    for (i = 0; i < DynPtrArraySize(&color->otherColors); i++)
     {
-        ColorData* src = (ColorData*)dyn_ptr_array_get(&color->other_colors, i);
+        ColorData* src = (ColorData*)DynPtrArrayGet(&color->otherColors, i);
         if (src->visited)
             continue;
         src->visited = true;
-        if (color_visible_to_client(src))
-            dyn_ptr_array_add(&color_merge_array, src);
+        if (ColorVisibleToClient(src))
+            DynPtrArrayAdd(&g_colorMergeArray, src);
         else
-            gather_xrefs(src);
+            GatherXRefs(src);
     }
 }
 
-static void reset_xrefs (ColorData* color)
+static void ResetXRefs(ColorData* color)
 {
     int i;
-    for (i = 0; i < dyn_ptr_array_size(&color->other_colors); i++)
+    for (i = 0; i < DynPtrArraySize(&color->otherColors); i++)
     {
-        ColorData* src = (ColorData*)dyn_ptr_array_get(&color->other_colors, i);
+        ColorData* src = (ColorData*)DynPtrArrayGet(&color->otherColors, i);
         if (!src->visited)
             continue;
         src->visited = false;
-        if (!color_visible_to_client(src))
-            reset_xrefs(src);
+        if (!ColorVisibleToClient(src))
+            ResetXRefs(src);
     }
 }
 
-static double qpf_us = 0.0;
+static double g_QPFus = 0.0;
 static uint64_t GetHighPrecisionTimeStamp()
 {
-    if (qpf_us == 0.0)
-        qpf_us = 1000.0 * 1000.0 / (double)GCToOSInterface::QueryPerformanceFrequency();
-    return (uint64_t)((double)GCToOSInterface::QueryPerformanceCounter() * qpf_us);
+    if (g_QPFus == 0.0)
+        g_QPFus = 1000.0 * 1000.0 / (double)GCToOSInterface::QueryPerformanceFrequency();
+    return (uint64_t)((double)GCToOSInterface::QueryPerformanceCounter() * g_QPFus);
 }
 
-static uint64_t start_time;
-static uint64_t after_tarjan_time;
+static uint64_t g_startTime;
+static uint64_t g_afterTarjanTime;
 
-static void bridge_finish ()
+static void BridgeFinish()
 {
 #if DUMP_GRAPH
-    int bridge_count = dyn_ptr_array_size(&registered_bridges);
-    int object_count = object_data_count;
-    int color_count = color_data_count;
-    int colors_with_bridges_count = num_colors_with_bridges;
+    int bridgeCount = DynPtrArraySize(&g_registeredBridges);
+    int objectCount = g_objectDataCount;
+    int colorCount = g_colorDataCount;
+    int colorsWithBridgesCount = g_numColorsWithBridges;
 
     uint64_t curtime = GetHighPrecisionTimeStamp();
 
     printf("GC_TAR_BRIDGE bridges %d objects %d colors %d colors-bridged %d colors-visible %d xref %d cache-hit %d cache-%s %d cache-miss %d tarjan %dms scc-setup %dms\n",
-        bridge_count, object_count,
-        color_count, colors_with_bridges_count, num_sccs, xref_count,
-        cache_hits, (scc_precise_merge ? "abstain" : "semihit"), cache_semihits, cache_misses,
-        (int)(after_tarjan_time - start_time) / 1000,
-        (int)(curtime - after_tarjan_time) / 1000);
+        bridgeCount, objectCount,
+        colorCount, colorsWithBridgesCount, g_numSccs, g_xrefCount,
+        g_cacheHits, (g_sccPreciseMerge ? "abstain" : "semihit"), g_cacheSemiHits, g_cacheMisses,
+        (int)(g_afterTarjanTime - g_startTime) / 1000,
+        (int)(curtime - g_afterTarjanTime) / 1000);
 
-    cache_hits = cache_semihits = cache_misses = 0;
+    g_cacheHits = g_cacheSemiHits = g_cacheMisses = 0;
 #endif
 }
 
-void BridgeResetData ()
+void BridgeResetData()
 {
-    dyn_ptr_array_empty(&registered_bridges);
-    dyn_ptr_array_empty(&registered_bridges_context);
-    dyn_ptr_array_empty(&scan_stack);
-    dyn_ptr_array_empty(&loop_stack);
-    empty_object_buckets();
-    empty_color_buckets();
-    reset_cache();
-    object_index = 0;
-    num_colors_with_bridges = 0;
+    DynPtrArrayEmpty(&g_registeredBridges);
+    DynPtrArrayEmpty(&g_registeredBridgesContexts);
+    DynPtrArrayEmpty(&g_scanStack);
+    DynPtrArrayEmpty(&g_loopStack);
+    EmptyObjectBuckets();
+    EmptyColorBuckets();
+    ResetCache();
+    g_objectIndex = 0;
+    g_numColorsWithBridges = 0;
 }
 
-void RegisterBridgeObject (Object* object, uintptr_t context)
+void RegisterBridgeObject(Object* object, uintptr_t context)
 {
-    dyn_ptr_array_add(&registered_bridges, object);
-    dyn_ptr_array_add(&registered_bridges_context, (void*)context);
+    DynPtrArrayAdd(&g_registeredBridges, object);
+    DynPtrArrayAdd(&g_registeredBridgesContexts, (void*)context);
 }
 
 uint8_t** GetRegisteredBridges(size_t* pNumBridges)
 {
-    *pNumBridges = (size_t)registered_bridges.size;
-    return (uint8_t**)registered_bridges.data;
+    *pNumBridges = (size_t)g_registeredBridges.size;
+    return (uint8_t**)g_registeredBridges.data;
 }
 
-static bool tarjan_scc_algorithm ()
+static bool TarjanSccAlgorithm()
 {
     int i;
-    int bridgeCount = dyn_ptr_array_size(&registered_bridges);
+    int bridgeCount = DynPtrArraySize(&g_registeredBridges);
 
     if (!bridgeCount)
         return false;
@@ -1127,26 +1114,28 @@ static bool tarjan_scc_algorithm ()
     printf ("-----------------\n");
 #endif
 
-    start_time = GetHighPrecisionTimeStamp();
+    g_startTime = GetHighPrecisionTimeStamp();
 
-    object_alloc_init ();
-    color_alloc_init ();
+    ObjectAllocInit();
+    ColorAllocInit();
 
     for (i = 0; i < bridgeCount; i++)
     {
-        Object* obj = (Object*)dyn_ptr_array_get(&registered_bridges, i);
-        uintptr_t context = (uintptr_t)dyn_ptr_array_get(&registered_bridges_context, i);
+        Object* obj = (Object*)DynPtrArrayGet(&g_registeredBridges, i);
+        uintptr_t context = (uintptr_t)DynPtrArrayGet(&g_registeredBridgesContexts, i);
 
-        register_bridge_object(obj, context);
+        ScanData *sd = CreateData(obj);
+        sd->isBridge = true;
+        sd->context = context;
     }
 
     for (i = 0; i < bridgeCount; i++)
     {
-        ScanData* sd = find_data((Object*)dyn_ptr_array_get(&registered_bridges, i));
+        ScanData* sd = FindData((Object*)DynPtrArrayGet(&g_registeredBridges, i));
         if (sd->state == INITIAL)
         {
-            dyn_ptr_array_push(&scan_stack, sd);
-            dfs();
+            DynPtrArrayPush(&g_scanStack, sd);
+            DFS();
         }
         else
         {
@@ -1159,141 +1148,141 @@ static bool tarjan_scc_algorithm ()
     printf("bridges:\n");
     for (i = 0; i < bridgeCount; i++)
     {
-        ScanData* sd = find_data((Object*)dyn_ptr_array_get(&registered_bridges, i));
+        ScanData* sd = FindData((Object*)DynPtrArrayGet(&g_registeredBridges, i));
         printf("\t%p mt(%p) index %d color %p\n", sd->obj, sd->obj->GetGCSafeMethodTable(), sd->index, sd->color);
     }
 
-    dump_color_table(" after tarjan", false);
+    DumpColorTable(" after tarjan", false);
 #endif
 
-    after_tarjan_time = GetHighPrecisionTimeStamp();
+    g_afterTarjanTime = GetHighPrecisionTimeStamp();
 
     return true;
 }
 
-static MarkCrossReferencesArgs* build_scc_callback_data ()
+static MarkCrossReferencesArgs* BuildSccCallbackData()
 {
     ColorBucket *cur;
     int j;
 
 #if defined (DUMP_GRAPH)
     printf("***** API *****\n");
-    printf("number of SCCs %d\n", num_colors_with_bridges);
+    printf("number of SCCs %d\n", g_numColorsWithBridges);
 #endif
 
     // Count the number of SCCs visible to the client
-    num_sccs = 0;
-    for (cur = root_color_bucket; cur; cur = cur->next)
+    g_numSccs = 0;
+    for (cur = g_rootColorBucket; cur; cur = cur->next)
     {
         ColorData* cd;
-        for (cd = &cur->data[0]; cd < cur->next_data; cd++)
+        for (cd = &cur->data[0]; cd < cur->nextData; cd++)
         {
-            if (color_visible_to_client(cd))
-                num_sccs++;
+            if (ColorVisibleToClient(cd))
+                g_numSccs++;
         }
     }
 
     // This is a straightforward translation from colors to the bridge callback format.
-    StronglyConnectedComponent* api_sccs = new (nothrow) StronglyConnectedComponent[num_sccs];
-    assert(api_sccs);
-    int api_index = 0;
-    xref_count = 0;
+    StronglyConnectedComponent* apiSccs = new (nothrow) StronglyConnectedComponent[g_numSccs];
+    assert(apiSccs);
+    int apiIndex = 0;
+    g_xrefCount = 0;
 
     // Convert visible SCCs, along with their bridged object list, to StronglyConnectedComponent in the client's SCC list
-    for (cur = root_color_bucket; cur; cur = cur->next)
+    for (cur = g_rootColorBucket; cur; cur = cur->next)
     {
         ColorData* cd;
-        for (cd = &cur->data[0]; cd < cur->next_data; cd++)
+        for (cd = &cur->data[0]; cd < cur->nextData; cd++)
         {
-            int bridges = dyn_ptr_array_size(&cd->bridges);
-            if (!(bridges || bridgeless_color_is_heavy(cd)))
+            int bridges = DynPtrArraySize(&cd->bridges);
+            if (!(bridges || BridgelessColorIsHeavy(cd)))
                 continue;
 
-            api_sccs[api_index].Count = bridges;
+            apiSccs[apiIndex].Count = bridges;
             uintptr_t *contexts = new (nothrow) uintptr_t[bridges];
             assert(contexts);
 
             for (j = 0; j < bridges; ++j)
-                contexts[j] = find_data((Object*)dyn_ptr_array_get(&cd->bridges, j))->context;
+                contexts[j] = FindData((Object*)DynPtrArrayGet(&cd->bridges, j))->context;
 
-            api_sccs[api_index].Contexts = contexts;
-            cd->api_index = api_index;
+            apiSccs[apiIndex].Contexts = contexts;
+            cd->apiIndex = apiIndex;
 
-            assert(api_index < API_INDEX_MAX);
-            api_index++;
+            assert(apiIndex < API_INDEX_MAX);
+            apiIndex++;
         }
     }
 
     // Eliminate non-visible SCCs from the SCC list and redistribute xrefs
-    for (cur = root_color_bucket; cur; cur = cur->next)
+    for (cur = g_rootColorBucket; cur; cur = cur->next)
     {
         ColorData* cd;
-        for (cd = &cur->data[0]; cd < cur->next_data; cd++)
+        for (cd = &cur->data[0]; cd < cur->nextData; cd++)
         {
-            if (!color_visible_to_client(cd))
+            if (!ColorVisibleToClient(cd))
                 continue;
 
-            color_merge_array_empty();
-            gather_xrefs(cd);
-            reset_xrefs(cd);
-            dyn_ptr_array_set_all(&cd->other_colors, &color_merge_array);
-            assert(color_visible_to_client (cd));
-            xref_count += dyn_ptr_array_size(&cd->other_colors);
+            ColorMergeArrayEmpty();
+            GatherXRefs(cd);
+            ResetXRefs(cd);
+            DynPtrArraySetAll(&cd->otherColors, &g_colorMergeArray);
+            assert(ColorVisibleToClient(cd));
+            g_xrefCount += DynPtrArraySize(&cd->otherColors);
         }
     }
 
 #if defined (DUMP_GRAPH)
-    printf("TOTAL XREFS %d\n", xref_count);
-    dump_color_table(" after xref pass", true);
+    printf("TOTAL XREFS %d\n", g_xrefCount);
+    DumpColorTable(" after xref pass", true);
 #endif
 
     // Write out xrefs array
-    ComponentCrossReference* api_xrefs = new (nothrow) ComponentCrossReference[xref_count];
-    assert(api_xrefs);
-    int xref_index = 0;
-    for (cur = root_color_bucket; cur; cur = cur->next)
+    ComponentCrossReference* apiXRefs = new (nothrow) ComponentCrossReference[g_xrefCount];
+    assert(apiXRefs);
+    int xrefIndex = 0;
+    for (cur = g_rootColorBucket; cur; cur = cur->next)
     {
         ColorData* src;
-        for (src = &cur->data[0]; src < cur->next_data; ++src)
+        for (src = &cur->data[0]; src < cur->nextData; ++src)
         {
-            if (!color_visible_to_client(src))
+            if (!ColorVisibleToClient(src))
                 continue;
 
-            for (j = 0; j < dyn_ptr_array_size (&src->other_colors); j++)
+            for (j = 0; j < DynPtrArraySize(&src->otherColors); j++)
             {
-                ColorData *dest = (ColorData *)dyn_ptr_array_get(&src->other_colors, j);
+                ColorData *dest = (ColorData *)DynPtrArrayGet(&src->otherColors, j);
                 // Supposedly we already eliminated all xrefs to non-visible objects
-                assert (color_visible_to_client (dest));
+                assert (ColorVisibleToClient (dest));
 
-                api_xrefs[xref_index].SourceGroupIndex = src->api_index;
-                api_xrefs[xref_index].DestinationGroupIndex = dest->api_index;
+                apiXRefs[xrefIndex].SourceGroupIndex = src->apiIndex;
+                apiXRefs[xrefIndex].DestinationGroupIndex = dest->apiIndex;
 
-                xref_index++;
+                xrefIndex++;
             }
         }
     }
 
-    assert(xref_count == xref_index);
+    assert(g_xrefCount == xrefIndex);
 
 #if defined (DUMP_GRAPH)
     printf("---xrefs:\n");
-    for (int i = 0; i < xref_count; i++)
-        printf("\t%ld -> %ld\n", api_xrefs[i].SourceGroupIndex, api_xrefs[i].DestinationGroupIndex);
+    for (int i = 0; i < g_xrefCount; i++)
+        printf("\t%ld -> %ld\n", apiXRefs[i].SourceGroupIndex, apiXRefs[i].DestinationGroupIndex);
 #endif
 
-    return new (nothrow) MarkCrossReferencesArgs(num_sccs, api_sccs, xref_count, api_xrefs); 
+    return new (nothrow) MarkCrossReferencesArgs(g_numSccs, apiSccs, g_xrefCount, apiXRefs);
 }
 
 MarkCrossReferencesArgs* ProcessBridgeObjects()
 {
-    if (!tarjan_scc_algorithm())
+    if (!TarjanSccAlgorithm())
         return NULL;
 
-    MarkCrossReferencesArgs* args = build_scc_callback_data();
+    MarkCrossReferencesArgs* args = BuildSccCallbackData();
 
-    reset_objects_header();
+    ResetObjectsHeader();
 
-    bridge_finish();
+    BridgeFinish();
 
     return args;
 }
