@@ -2637,7 +2637,18 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 // We should not have a type argument for the ldvirtftn path since we don't know
                 // the exact method to call until the ldvirtftn is resolved, and that only
                 // produces a function pointer.
-                EmitPushLdvirtftn(callArgs[0], &resolvedCallToken, &callInfo);
+
+                // We need to copy the this argument to the target function to another var,
+                // since var's which are passed to call instructions are destroyed (unless
+                // they are global, and there is no reason to promote the this arg to a global)
+                AddIns(INTOP_MOV_P);
+                m_pLastNewIns->SetSVar(callArgs[0]);
+                PushInterpType(InterpTypeO, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                int thisVarForLdvirtftn = m_pStackPointer[-1].var;
+                m_pStackPointer--;
+
+                EmitPushLdvirtftn(thisVarForLdvirtftn, &resolvedCallToken, &callInfo);
                 m_pStackPointer--;
                 int synthesizedLdvirtftnPtrVar = m_pStackPointer[0].var;
 
