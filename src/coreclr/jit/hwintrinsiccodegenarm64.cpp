@@ -719,8 +719,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         break;
                     }
 
-                    insScalableOpts sopt     = INS_SCALABLE_OPTS_NONE;
-                    bool            hasShift = false;
+                    insScalableOpts sopt        = INS_SCALABLE_OPTS_NONE;
+                    bool            hasImmShift = (intrinEmbMask.category == HW_Category_ShiftLeftByImmediate ||
+                                        intrinEmbMask.category == HW_Category_ShiftRightByImmediate) &&
+                                       HWIntrinsicInfo::HasImmediateOperand(intrinEmbMask.id);
 
                     insOpts embOpt = opt;
                     switch (intrinEmbMask.id)
@@ -738,10 +740,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
-                        case NI_Sve_ShiftRightArithmeticForDivide:
-                            hasShift = true;
-                            break;
-
                         case NI_Sve_CreateBreakPropagateMask:
                             embOpt = INS_OPTS_SCALABLE_B;
                             break;
@@ -758,7 +756,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
 
                     auto emitInsHelper = [&](regNumber reg1, regNumber reg2, regNumber reg3) {
-                        if (hasShift)
+                        if (hasImmShift)
                         {
                             HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op2, op2->AsHWIntrinsic());
                             for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
@@ -774,7 +772,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     };
 
                     auto emitInsMovPrfxHelper = [&](regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4) {
-                        if (hasShift)
+                        if (hasImmShift)
                         {
                             HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op2, op2->AsHWIntrinsic(), 2);
                             for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
@@ -818,7 +816,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // Finally, perform the actual "predicated" operation so that `targetReg` is the first
                                 // operand and `embMaskOp2Reg` is the second operand.
 
-                                if (hasShift)
+                                if (hasImmShift)
                                 {
                                     HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op2, op2->AsHWIntrinsic(), 2);
                                     for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())

@@ -67,11 +67,14 @@ namespace System.Runtime.InteropServices
 
         internal static IntPtr GetOrCreateComInterfaceForObjectWithGlobalMarshallingInstance(object obj)
         {
+            if (s_globalInstanceForMarshalling == null)
+            {
+                return IntPtr.Zero;
+            }
+
             try
             {
-                return s_globalInstanceForMarshalling is null
-                    ? IntPtr.Zero
-                    : s_globalInstanceForMarshalling.GetOrCreateComInterfaceForObject(obj, CreateComInterfaceFlags.TrackerSupport);
+                return ComInterfaceForObject(obj);
             }
             catch (ArgumentException)
             {
@@ -83,9 +86,14 @@ namespace System.Runtime.InteropServices
 
         internal static object? GetOrCreateObjectForComInstanceWithGlobalMarshallingInstance(IntPtr comObject, CreateObjectFlags flags)
         {
+            if (s_globalInstanceForMarshalling == null)
+            {
+                return null;
+            }
+
             try
             {
-                return s_globalInstanceForMarshalling?.GetOrCreateObjectForComInstance(comObject, flags);
+                return ComObjectForInterface(comObject, flags);
             }
             catch (ArgumentNullException)
             {
