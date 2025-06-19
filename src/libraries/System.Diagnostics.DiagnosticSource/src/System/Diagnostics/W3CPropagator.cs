@@ -390,8 +390,9 @@ namespace System.Diagnostics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryDecodeHexDigit(char c, out byte value)
         {
-            value = (byte)HexConverter.FromChar((int)c);
-            return value != 0xFF; // invalid hex digit
+            int result = HexConverter.FromChar(c);
+            value = (byte)result;
+            return result >= 0;
         }
 
         // Allowed baggage key characters:

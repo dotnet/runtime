@@ -521,7 +521,7 @@ namespace System
             int a = HexConverter.FromChar(first);
             int b = HexConverter.FromChar(second);
 
-            if ((a | b) == 0xFF)
+            if ((a | b) < 0)
             {
                 // either a or b is 0xFF (invalid)
                 return Uri.c_DummyChar;

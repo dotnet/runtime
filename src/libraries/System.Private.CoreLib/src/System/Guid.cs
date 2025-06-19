@@ -815,16 +815,14 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static byte DecodeByte<TChar>(TChar ch1, TChar ch2, ref int invalidIfNegative) where TChar : unmanaged, IUtfChar<TChar>
         {
-            ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
+            ReadOnlySpan<sbyte> lookup = HexConverter.CharToHexLookup;
             Debug.Assert(lookup.Length == 256);
-            int upper = (sbyte)lookup[byte.CreateTruncating(ch1)];
-            int lower = (sbyte)lookup[byte.CreateTruncating(ch2)];
-            int result = (upper << 4) | lower;
 
-            uint c1 = TChar.CastToUInt32(ch1);
-            uint c2 = TChar.CastToUInt32(ch2);
-            // Result will be negative if ch1 or/and ch2 are greater than 0xFF
-            result = (c1 | c2) >> 8 == 0 ? result : -1;
+            uint c1 = typeof(TChar) == typeof(byte) ? TChar.CastToUInt32(ch1) : Math.Min(TChar.CastToUInt32(ch1), 0x7F);
+            uint c2 = typeof(TChar) == typeof(byte) ? TChar.CastToUInt32(ch2) : Math.Min(TChar.CastToUInt32(ch2), 0x7F);
+            int upper = lookup[(int)c1];
+            int lower = lookup[(int)c2];
+            int result = (upper << 4) | lower;
             invalidIfNegative |= result;
             return (byte)result;
         }
@@ -867,7 +865,7 @@ namespace System
             {
                 int c = int.CreateTruncating(guidString[i]);
                 int numValue = HexConverter.FromChar(c);
-                if (numValue == 0xFF)
+                if (numValue < 0)
                 {
                     if (processedDigits > 8) overflow = true;
                     result = 0;

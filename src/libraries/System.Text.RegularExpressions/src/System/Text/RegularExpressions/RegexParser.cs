@@ -1485,7 +1485,7 @@ namespace System.Text.RegularExpressions
                 {
                     char ch = _pattern[_pos++];
                     int result = HexConverter.FromChar(ch);
-                    if (result == 0xFF)
+                    if (result < 0)
                     {
                         break;
                     }

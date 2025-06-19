@@ -223,7 +223,7 @@ namespace System.Web.Util
                     int h1 = HexConverter.FromChar(bytes[i + 1]);
                     int h2 = HexConverter.FromChar(bytes[i + 2]);
 
-                    if ((h1 | h2) != 0xFF)
+                    if ((h1 | h2) >= 0)
                     {
                         // valid 2 hex chars
                         b = (byte)((h1 << 4) | h2);
@@ -273,7 +273,7 @@ namespace System.Web.Util
                         int h3 = HexConverter.FromChar(bytes[pos + 4]);
                         int h4 = HexConverter.FromChar(bytes[pos + 5]);
 
-                        if ((h1 | h2 | h3 | h4) != 0xFF)
+                        if ((h1 | h2 | h3 | h4) >= 0)
                         {   // valid 4 hex chars
                             char ch = (char)((h1 << 12) | (h2 << 8) | (h3 << 4) | h4);
                             i += 5;
@@ -288,7 +288,7 @@ namespace System.Web.Util
                         int h1 = HexConverter.FromChar(bytes[pos + 1]);
                         int h2 = HexConverter.FromChar(bytes[pos + 2]);
 
-                        if ((h1 | h2) != 0xFF)
+                        if ((h1 | h2) >= 0)
                         {     // valid 2 hex chars
                             b = (byte)((h1 << 4) | h2);
                             i += 2;
@@ -346,7 +346,7 @@ namespace System.Web.Util
                         int h3 = HexConverter.FromChar(value[pos + 4]);
                         int h4 = HexConverter.FromChar(value[pos + 5]);
 
-                        if ((h1 | h2 | h3 | h4) != 0xFF)
+                        if ((h1 | h2 | h3 | h4) >= 0)
                         {   // valid 4 hex chars
                             ch = (char)((h1 << 12) | (h2 << 8) | (h3 << 4) | h4);
                             pos += 5;
@@ -361,7 +361,7 @@ namespace System.Web.Util
                         int h1 = HexConverter.FromChar(value[pos + 1]);
                         int h2 = HexConverter.FromChar(value[pos + 2]);
 
-                        if ((h1 | h2) != 0xFF)
+                        if ((h1 | h2) >= 0)
                         {     // valid 2 hex chars
                             byte b = (byte)((h1 << 4) | h2);
                             pos += 2;
