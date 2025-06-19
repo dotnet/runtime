@@ -1058,6 +1058,14 @@ static void reset_xrefs (ColorData* color)
     }
 }
 
+static double qpf_us = 0.0;
+static uint64_t GetHighPrecisionTimeStamp()
+{
+    if (qpf_us == 0.0)
+        qpf_us = 1000.0 * 1000.0 / (double)GCToOSInterface::QueryPerformanceFrequency();
+    return (uint64_t)((double)GCToOSInterface::QueryPerformanceCounter() * qpf_us);
+}
+
 static uint64_t start_time;
 static uint64_t after_tarjan_time;
 
@@ -1069,14 +1077,14 @@ static void bridge_finish ()
     int color_count = color_data_count;
     int colors_with_bridges_count = num_colors_with_bridges;
 
-    uint64_t curtime = GCToOSInterface::GetLowPrecisionTimeStamp();
+    uint64_t curtime = GetHighPrecisionTimeStamp();
 
     printf("GC_TAR_BRIDGE bridges %d objects %d colors %d colors-bridged %d colors-visible %d xref %d cache-hit %d cache-%s %d cache-miss %d tarjan %dms scc-setup %dms\n",
         bridge_count, object_count,
         color_count, colors_with_bridges_count, num_sccs, xref_count,
         cache_hits, (scc_precise_merge ? "abstain" : "semihit"), cache_semihits, cache_misses,
-        (int)(after_tarjan_time - start_time),
-        (int)(curtime - after_tarjan_time));
+        (int)(after_tarjan_time - start_time) / 1000,
+        (int)(curtime - after_tarjan_time) / 1000);
 
     cache_hits = cache_semihits = cache_misses = 0;
 #endif
@@ -1119,7 +1127,7 @@ static bool tarjan_scc_algorithm ()
     printf ("-----------------\n");
 #endif
 
-    start_time = GCToOSInterface::GetLowPrecisionTimeStamp();
+    start_time = GetHighPrecisionTimeStamp();
 
     object_alloc_init ();
     color_alloc_init ();
@@ -1158,7 +1166,7 @@ static bool tarjan_scc_algorithm ()
     dump_color_table(" after tarjan", false);
 #endif
 
-    after_tarjan_time = GCToOSInterface::GetLowPrecisionTimeStamp();
+    after_tarjan_time = GetHighPrecisionTimeStamp();
 
     return true;
 }
