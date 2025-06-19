@@ -59,7 +59,7 @@ This contract depends on the following descriptors:
 | `HijackArgs` (arm64) | For each register `r` saved in HijackArgs, `r` | Register names associated with stored register values |
 | `CalleeSavedRegisters` | For each callee saved register `r`, `r` | Register names associated with stored register values |
 | `TailCallFrame` (x86 Windows) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
-| `TailCallFrame` (x86 Windows) | `ReturnAddress` | Frame's stored instruction pointer | 
+| `TailCallFrame` (x86 Windows) | `ReturnAddress` | Frame's stored instruction pointer |
 
 Global variables used:
 | Global Name | Type | Purpose |
