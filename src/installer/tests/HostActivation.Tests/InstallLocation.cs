@@ -64,7 +64,7 @@ namespace HostActivation.Tests
         [Fact]
         public void EnvironmentVariable_DotNetRootIsUsedOverInstallLocationIfSet()
         {
-            var app = sharedTestState.App.Copy();
+            var app = sharedTestState.TestBehaviourEnabledApp;
             var appExe = app.AppExe;
             var arch = TestContext.BuildArchitecture.ToUpper();
             var dotnet = TestContext.BuiltDotNet.BinPath;
@@ -87,9 +87,7 @@ namespace HostActivation.Tests
         [Fact]
         public void EnvironmentVariable_DotnetRootPathDoesNotExist()
         {
-            var app = sharedTestState.App.Copy();
-            using (TestOnlyProductBehavior.Enable(app.AppExe))
-            {
+            var app = sharedTestState.TestBehaviourEnabledApp;
                 Command.Create(app.AppExe)
                     .EnableTracingAndCaptureOutputs()
                     .DotNetRoot("non_existent_path")
@@ -103,15 +101,12 @@ namespace HostActivation.Tests
                     // If DOTNET_ROOT points to a folder that does not exist, we fall back to the global install path.
                     .And.HaveUsedGlobalInstallLocation(TestContext.BuiltDotNet.BinPath)
                     .And.HaveStdOutContaining("Hello World");
-            }
         }
 
         [Fact]
         public void EnvironmentVariable_DotnetRootPathExistsButHasNoHost()
         {
-            var app = sharedTestState.App.Copy();
-            using (TestOnlyProductBehavior.Enable(app.AppExe))
-            {
+            var app = sharedTestState.TestBehaviourEnabledApp;
                 Command.Create(app.AppExe)
                     .EnableTracingAndCaptureOutputs()
                     .DotNetRoot(app.Location)
@@ -124,7 +119,6 @@ namespace HostActivation.Tests
                     .And.HaveUsedDotNetRootInstallLocation(app.Location, TestContext.BuildRID)
                     // If DOTNET_ROOT points to a folder that exists we assume that there's a dotnet installation in it
                     .And.HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
-            }
         }
 
         [Fact]
@@ -166,7 +160,7 @@ namespace HostActivation.Tests
         [Fact]
         public void RegisteredInstallLocation_ArchSpecificLocationIsPickedFirst()
         {
-            var app = sharedTestState.App.Copy();
+            var app = sharedTestState.TestBehaviourEnabledApp;
             var arch1 = "someArch";
             var path1 = "x/y/z";
             var arch2 = TestContext.BuildArchitecture;
@@ -202,7 +196,7 @@ namespace HostActivation.Tests
         [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         public void InstallLocationFile_ReallyLongInstallPathIsParsedCorrectly()
         {
-            var app = sharedTestState.App.Copy();
+            var app = sharedTestState.TestBehaviourEnabledApp;
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(app.AppExe))
             {
                 var reallyLongPath =
@@ -225,9 +219,8 @@ namespace HostActivation.Tests
         [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         public void InstallLocationFile_MissingFile()
         {
-            var app = sharedTestState.App.Copy();
+            var app = sharedTestState.TestBehaviourEnabledApp;
             using (var testArtifact = TestArtifact.Create("missingInstallLocation"))
-            using (var testOnlyProductBehavior = TestOnlyProductBehavior.Enable(app.AppExe))
             {
                 string installLocationDirectory = Path.Combine(testArtifact.Location, "installLocationOverride");
                 Directory.CreateDirectory(installLocationDirectory);
@@ -345,7 +338,7 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        public void AppHost_AppRelative_MissingPath()
+        public void SearchOptions_AppRelative_MissingPath()
         {
             TestApp app = sharedTestState.App.Copy();
             app.CreateAppHost(dotNetRootOptions: new HostWriter.DotNetSearchOptions()
@@ -450,16 +443,25 @@ namespace HostActivation.Tests
         public class SharedTestState : IDisposable
         {
             public TestApp App { get; }
+            public TestApp TestBehaviourEnabledApp { get; }
 
             public SharedTestState()
             {
                 App = TestApp.CreateFromBuiltAssets("HelloWorld");
                 App.CreateAppHost();
+
+                TestBehaviourEnabledApp = TestApp.CreateFromBuiltAssets("HelloWorld");
+                TestBehaviourEnabledApp.CreateAppHost();
+
+                // Enable test-only behavior for the app. We don't bother disabling the behaviour later,
+                // as we just delete the entire app after the tests run.
+                _ = TestOnlyProductBehavior.Enable(TestBehaviourEnabledApp.AppExe);
             }
 
             public void Dispose()
             {
                 App?.Dispose();
+                TestBehaviourEnabledApp?.Dispose();
             }
         }
     }
