@@ -1376,7 +1376,7 @@ void Lowering::LowerCast(GenTree* tree)
                 comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcClone, maxFloatingValue,
                                                NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual, srcBaseType, 16);
             castResult = comp->gtNewConditionalNode(GT_SELECT, compareMax, maxIntegralValue, convertResult,
-                                                         genActualType(dstType));
+                                                    genActualType(dstType));
 
             castRange.InsertAtEnd(srcClone);
             castRange.InsertAtEnd(compareMax);
