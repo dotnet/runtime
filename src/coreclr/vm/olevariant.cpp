@@ -2975,7 +2975,7 @@ BOOL OleVariant::CheckVariant(VARIANT* pOle)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return bValidVariant;
 }

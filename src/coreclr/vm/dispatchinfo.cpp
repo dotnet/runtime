@@ -196,8 +196,9 @@ void DispatchMemberInfo::Init()
         // If we do throw an exception, then the status of the object
         // is in limbo - just neuter it.
         Neuter();
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 }
 
 HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astrNames, int NumNames, DISPID *aDispIds, BOOL bCaseSensitive)
@@ -719,7 +720,7 @@ void DispatchMemberInfo::DetermineCultureAwareness()
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         GCPROTECT_BEGIN(CustomAttrArray)
         {
@@ -1038,7 +1039,7 @@ void DispatchMemberInfo::SetUpDispParamAttributes(int iParam, MarshalInfo* Info)
 DispatchInfo::DispatchInfo(MethodTable *pMT)
 : m_pMT(pMT)
 , m_pFirstMemberInfo(NULL)
-, m_lock(CrstInterop, (CrstFlags)(CRST_HOST_BREAKABLE | CRST_REENTRANCY))
+, m_lock(CrstInterop, (CrstFlags)(CRST_REENTRANCY))
 , m_CurrentDispID(0x10000)
 , m_bAllowMembersNotInComMTMemberMap(FALSE)
 , m_bInvokeUsingInvokeMember(FALSE)
@@ -2168,6 +2169,7 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         // which may swallow managed exceptions.  The debugger needs this in order to send a
         // CatchHandlerFound (CHF) notification.
         DebuggerU2MCatchHandlerFrame catchFrame(true /* catchesAllExceptions */);
+
         EX_TRY
         {
             InvokeMemberDebuggerWrapper(pDispMemberInfo,
@@ -2192,8 +2194,9 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         EX_CATCH
         {
             pThrowable = GET_THROWABLE();
+            RethrowTerminalExceptions();
         }
-        EX_END_CATCH(RethrowTerminalExceptions)
+        EX_END_CATCH
         catchFrame.Pop();
 
         if (pThrowable != NULL)
@@ -2413,7 +2416,7 @@ void DispatchInfo::CleanUpNativeParam(DispatchMemberInfo *pDispMemberInfo, int i
     {
         // if the argument was totally corrupted and cleanup failed, just swallow it and continue
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 void DispatchInfo::SetUpNamedParamArray(DispatchMemberInfo *pMemberInfo, DISPID *pSrcArgNames, int NumNamedArgs, PTRARRAYREF *pNamedParamArray)

@@ -11,6 +11,7 @@
   <PropertyGroup>
     <!-- Override the compiler version with a private build that supports runtime-async -->
     <MicrosoftNetCompilersToolsetVersion>5.0.0-1.25259.6</MicrosoftNetCompilersToolsetVersion>
+    <RoslynCompilerType>Custom</RoslynCompilerType>
   </PropertyGroup>
 
   <PropertyGroup>
