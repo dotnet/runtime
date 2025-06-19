@@ -265,7 +265,7 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
         FireBulkTypeEvent();
     }
 
-    _ASSERTE(m_nBulkTypeValueCount < _countof(m_rgBulkTypeValues));
+    _ASSERTE(m_nBulkTypeValueCount < (int)_countof(m_rgBulkTypeValues));
 
     BulkTypeValue * pVal = &m_rgBulkTypeValues[m_nBulkTypeValueCount];
 
