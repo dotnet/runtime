@@ -42,7 +42,6 @@ using std::min;
 #include "iallocator.h"
 #include "hashbv.h"
 #include "compiler.h"
-#include "lookupintrinsic.h"
 #include "dataflow.h"
 #include "block.h"
 #include "jiteh.h"

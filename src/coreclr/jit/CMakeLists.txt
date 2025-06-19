@@ -127,7 +127,6 @@ set( JIT_SOURCES
   ifconversion.cpp
   importer.cpp
   importercalls.cpp
-  lookupintrinsic.cpp
   importervectorization.cpp
   indirectcalltransformer.cpp
   inductionvariableopts.cpp

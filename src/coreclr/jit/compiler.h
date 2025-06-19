@@ -2548,7 +2548,6 @@ class Compiler
     friend class Promotion;
     friend class ReplaceVisitor;
     friend class FlowGraphNaturalLoop;
-    friend class NamedIntrinsicLookup;
 
 #ifdef FEATURE_HW_INTRINSICS
     friend struct GenTreeHWIntrinsic;
@@ -4681,6 +4680,8 @@ protected:
                                 bool                  isMagnitude,
                                 bool                  isNumber);
 
+    NamedIntrinsic lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
+    NamedIntrinsic lookupPrimitiveIntNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig,
@@ -7071,7 +7072,7 @@ public:
 
     bool optCanonicalizeExits(FlowGraphNaturalLoop* loop);
     bool optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit);
-
+    
     bool optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned limit);
 
     PhaseStatus optCloneLoops();
