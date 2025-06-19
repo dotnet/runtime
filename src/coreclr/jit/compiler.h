@@ -5598,6 +5598,8 @@ public:
 
     bool fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange);
 
+    bool fgCanUncontainOrRemoveOperands(GenTree* node);
+
     bool fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclNode, BasicBlock* block);
 
     bool fgRemoveDeadStore(GenTree**        pTree,
