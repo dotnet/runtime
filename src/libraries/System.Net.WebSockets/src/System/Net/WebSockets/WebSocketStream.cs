@@ -16,13 +16,13 @@ namespace System.Net.WebSockets
         private const int DefaultCloseTimeoutSeconds = 60;
 
         /// <summary>Whether the stream has been disposed.</summary>
-        private protected bool _disposed;
+        private bool _disposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WebSocketStream"/> class using a specified <see cref="WebSocket"/> instance.
         /// </summary>
         /// <param name="webSocket">The <see cref="WebSocket"/> wrapped by this instance.</param>
-        private protected WebSocketStream(WebSocket webSocket) => WebSocket = webSocket;
+        private WebSocketStream(WebSocket webSocket) => WebSocket = webSocket;
 
         /// <summary>Creates a <see cref="WebSocketStream"/> that delegates to a wrapped <see cref="WebSocket"/>.</summary>
         /// <param name="webSocket">The wrapped <see cref="WebSocket"/>.</param>
@@ -249,7 +249,7 @@ namespace System.Net.WebSockets
 
                     if (_closeTimeout is { } timeout)
                     {
-                        if (WebSocket.State is < WebSocketState.CloseSent)
+                        if (WebSocket.State is < WebSocketState.Closed)
                         {
                             CancellationTokenSource? cts = null;
                             CancellationToken ct;
