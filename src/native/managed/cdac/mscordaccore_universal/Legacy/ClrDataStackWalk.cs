@@ -149,7 +149,7 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
 
             for (int i = 0; i < outBufferSize; i++)
             {
-                Debug.Assert(localOutBuffer[i] == outBuffer[i]);
+                Debug.Assert(localOutBuffer[i] == outBuffer[i], $"cDAC: {outBuffer[i]:x}, DAC: {localOutBuffer[i]:x}");
             }
         }
 #endif
