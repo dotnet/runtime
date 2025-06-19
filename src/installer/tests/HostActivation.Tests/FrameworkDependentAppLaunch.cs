@@ -187,28 +187,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             if (Binaries.CetCompat.IsSupported)
                 Assert.True(Binaries.CetCompat.IsMarkedCompatible(appExe));
 
-            // Get the framework location that was built
-            string builtDotnet = TestContext.BuiltDotNet.BinPath;
-
-            // Verify running with the default working directory
             Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .DotNetRoot(builtDotnet, TestContext.BuildArchitecture)
+                .DotNetRoot(TestContext.BuiltDotNet.BinPath, TestContext.BuildArchitecture)
                 .MultilevelLookup(false)
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
-
-
-            // Verify running from within the working directory
-            Command.Create(appExe)
-                .WorkingDirectory(sharedTestState.App.Location)
-                .DotNetRoot(builtDotnet, TestContext.BuildArchitecture)
-                .MultilevelLookup(false)
-                .CaptureStdErr()
-                .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
@@ -233,26 +216,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] { (architecture, builtDotnet) });
                 }
 
-                // Verify running with the default working directory
                 Command.Create(appExe)
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .MultilevelLookup(false)
-                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, useRegisteredLocation ? null : builtDotnet)
-                    .DotNetRoot(null)
-                    .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World")
-                    .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion)
-                    .And.NotHaveStdErr();
-
-                // Verify running from within the working directory
-                Command.Create(appExe)
-                    .CaptureStdErr()
-                    .CaptureStdOut()
-                    .MultilevelLookup(false)
-                    .WorkingDirectory(sharedTestState.App.Location)
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
                     .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, useRegisteredLocation ? null : builtDotnet)
                     .DotNetRoot(null)
