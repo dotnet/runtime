@@ -187,10 +187,9 @@ MethodDesc *LoadedMethodDescIterator::Current()
         return m_methodIteratorEntry->GetMethod();
     }
 
-    if (!m_mainMD->HasClassInstantiation() || m_mainMD->IsILStub())
+    if (!m_mainMD->HasClassInstantiation())
     {
         // No Method or Class instantiation,then it's not generic.
-        // ILStub methods cannot be looked up via the GetParallelMethodDesc route
         return m_mainMD;
     }
 
