@@ -76,7 +76,7 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
                 contextStruct.FillFromBuffer(contextBuf);
                 localContextStruct.FillFromBuffer(localContextBuf);
 
-                Debug.Assert(contextStruct.Equals(localContextStruct), $"\ncDAC: {contextStruct} \n DAC: {localContextStruct}");
+                Debug.Assert(contextStruct.Equals(localContextStruct));
             }
         }
 #endif
@@ -149,7 +149,7 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
 
             for (int i = 0; i < outBufferSize; i++)
             {
-                Debug.Assert(localOutBuffer[i] == outBuffer[i], $"cDAC: {Convert.ToHexString(new ReadOnlySpan<byte>(outBuffer, (int)outBufferSize))}, DAC: {Convert.ToHexString(localOutBuffer)}");
+                Debug.Assert(localOutBuffer[i] == outBuffer[i]);
             }
         }
 #endif

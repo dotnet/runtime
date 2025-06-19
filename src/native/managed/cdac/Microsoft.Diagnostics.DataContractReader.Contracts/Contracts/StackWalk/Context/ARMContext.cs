@@ -232,19 +232,4 @@ internal struct ARMContext : IPlatformContext
 
     [FieldOffset(0x198)]
     public ulong Padding;
-
-    public override readonly string ToString() =>
-        $"ARM Context: ContextFlags={ContextFlags:X8} PC={Pc:X8} SP={Sp:X8} LR={Lr:X8} " +
-        $"R0={R0:X8} R1={R1:X8} R2={R2:X8} R3={R3:X8} " +
-        $"R4={R4:X8} R5={R5:X8} R6={R6:X8} R7={R7:X8} " +
-        $"R8={R8:X8} R9={R9:X8} R10={R10:X8} R11={R11:X8} R12={R12:X8} " +
-        $"Cpsr={Cpsr:X8} Fpscr={Fpscr:X8} " +
-        $"Q0={Q0.Low:X16}:{Q0.High:X16} Q1={Q1.Low:X16}:{Q1.High:X16} " +
-        $"Q2={Q2.Low:X16}:{Q2.High:X16} Q3={Q3.Low:X16}:{Q3.High:X16} " +
-        $"Q4={Q4.Low:X16}:{Q4.High:X16} Q5={Q5.Low:X16}:{Q5.High:X16} " +
-        $"Q6={Q6.Low:X16}:{Q6.High:X16} Q7={Q7.Low:X16}:{Q7.High:X16} " +
-        $"Q8={Q8.Low:X16}:{Q8.High:X16} Q9={Q9.Low:X16}:{Q9.High:X16} " +
-        $"Q10={Q10.Low:X16}:{Q10.High:X16} Q11={Q11.Low:X16}:{Q11.High:X16} " +
-        $"Q12={Q12.Low:X16}:{Q12.High:X16} Q13={Q13.Low:X16}:{Q13.High:X16} " +
-        $"Q14={Q14.Low:X16}:{Q14.High:X16} Q15={Q15.Low:X16}:{Q15.High:X16}";
 }
