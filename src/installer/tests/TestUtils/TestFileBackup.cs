@@ -107,7 +107,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
         }
 
-        private static void RetryOnIOError(Func<bool> action, string errorMessage, int maxRetries = 5)
+        private static void RetryOnIOError(Func<bool> action, string errorMessage, int maxRetries = 25)
         {
             IOException exception = null;
             for (int i = 0; i < maxRetries; i++)
@@ -119,7 +119,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                         return;
                     }
                 }
-                catch (IOException e) 
+                catch (IOException e)
                 {
                     exception = e;
                 }
