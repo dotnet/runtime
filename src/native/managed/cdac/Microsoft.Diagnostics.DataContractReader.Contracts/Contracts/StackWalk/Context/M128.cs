@@ -26,5 +26,5 @@ public struct M128A : IEquatable<M128A>
 
     public bool Equals(M128A other) => Low == other.Low && High == other.High;
 
-    public override int GetHashCode() => base.GetHashCode();
+    public override int GetHashCode() => HashCode.Combine(Low, High);
 }
