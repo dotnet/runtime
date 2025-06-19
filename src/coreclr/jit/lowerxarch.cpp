@@ -826,7 +826,7 @@ void Lowering::LowerCast(GenTree* tree)
 
     GenTree*  castOp  = tree->AsCast()->CastOp();
     var_types dstType = tree->CastToType();
-    var_types srcType = castOp->TypeGet();
+    var_types srcType = genActualType(castOp);
 
     // force the srcType to unsigned if GT_UNSIGNED flag is set
     if (tree->IsUnsigned())
@@ -843,14 +843,146 @@ void Lowering::LowerCast(GenTree* tree)
         // Long types should have been handled by helper call or in DecomposeLongs on x86.
         assert(!varTypeIsLong(dstType) || TargetArchitecture::Is64Bit);
     }
-    else if (srcType == TYP_UINT)
-    {
-        // uint->float casts should have an intermediate cast to long unless
-        // we have the EVEX unsigned conversion instructions available.
-        assert(dstType != TYP_FLOAT || comp->canUseEvexEncodingDebugOnly());
-    }
 
 #ifdef FEATURE_HW_INTRINSICS
+#ifdef TARGET_X86
+    if ((srcType == TYP_UINT) && varTypeIsFloating(dstType) &&
+        !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+    {
+        // Pre-AVX-512, there was no conversion instruction for uint->floating, so we emulate it
+        // using signed int conversion. This is necessary only on 32-bit, because x64 simply casts
+        // the uint up to a signed long before conversion.
+        //
+        // This logic depends on the fact that conversion from int to double is lossless. When
+        // converting to float, we use a double intermediate, and convert to float only after the
+        // double result is fixed up. This ensures the floating result is rounded correctly.
+
+        JITDUMP("LowerCast before:\n");
+        DISPTREERANGE(BlockRange(), tree);
+
+        LIR::Range  castRange   = LIR::EmptyRange();
+        CorInfoType dstBaseType = CORINFO_TYPE_DOUBLE;
+
+        // We will use the input value twice, so replace it with a lclVar.
+        LIR::Use srcUse;
+        LIR::Use::MakeDummyUse(castRange, castOp, &srcUse);
+        srcUse.ReplaceWithLclVar(comp);
+        castOp = srcUse.Def();
+
+        // This creates the equivalent of the following C# code:
+        //   var castResult = Sse2.ConvertScalarToVector128Double(Vector128<double>.Zero, (int)castOp);
+
+        GenTree* zero = comp->gtNewZeroConNode(TYP_SIMD16);
+        GenTree* castResult =
+            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, zero, castOp, NI_X86Base_ConvertScalarToVector128Double,
+                                           CORINFO_TYPE_INT, 16);
+
+        castRange.InsertAtEnd(zero);
+        castRange.InsertAtEnd(castResult);
+
+        // If the input had the MSB set, it will have converted as a negative, so we must wrap the
+        // result back around to positive by adding 2^32.
+
+        if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE42))
+        {
+            // We will use the conversion result multiple times, so replace it with a lclVar.
+            LIR::Use resUse;
+            LIR::Use::MakeDummyUse(castRange, castResult, &resUse);
+            resUse.ReplaceWithLclVar(comp);
+            castResult = resUse.Def();
+
+            // With SSE4.1 support, we use `blendvpd`, which uses only the MSB of the mask element,
+            // so any negative value will cause selection of the adjusted result.
+            //
+            // This creates the equivalent of the following C# code:
+            //   var addRes = Sse2.AddScalar(castResult, Vector128.CreateScalar(4294967296.0));
+            //   castResult = Sse41.BlendVariable(castResult, addRes, castResult);
+
+            GenTreeVecCon* addCns    = comp->gtNewVconNode(TYP_SIMD16);
+            addCns->gtSimdVal.f64[0] = 4294967296.0;
+
+            GenTree* addRes =
+                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, castResult, addCns, NI_X86Base_AddScalar, dstBaseType, 16);
+
+            castRange.InsertAtEnd(addCns);
+            castRange.InsertAtEnd(addRes);
+
+            GenTree* resClone1 = comp->gtClone(castResult);
+            GenTree* resClone2 = comp->gtClone(castResult);
+            castResult         = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, resClone1, addRes, resClone2,
+                                                                NI_SSE42_BlendVariable, dstBaseType, 16);
+            castRange.InsertAtEnd(resClone1);
+            castRange.InsertAtEnd(resClone2);
+            castRange.InsertAtEnd(castResult);
+        }
+        else
+        {
+            // SSE2 fallback uses a CnsVec as a mini lookup table, to add either 0 or 2^32 to the value.
+            //
+            // This creates the equivalent of the following C# code:
+            //   var lutCns = Vector128.Create(0, 4294967296.0);
+            //   var adjVec = Vector128.CreateScalarUnsafe(Vector128.GetElement(lutCns, castOp >>> 31));
+            //   castResult = Sse2.AddScalar(castResult, adjVec);
+
+            GenTreeVecCon* lutCns    = comp->gtNewVconNode(TYP_SIMD16);
+            lutCns->gtSimdVal.f64[0] = 0;
+            lutCns->gtSimdVal.f64[1] = 4294967296.0;
+
+            GenTree* srcClone  = comp->gtClone(castOp);
+            GenTree* thirtyOne = comp->gtNewIconNode(31);
+            GenTree* signBit   = comp->gtNewOperNode(GT_RSZ, TYP_INT, srcClone, thirtyOne);
+
+            castRange.InsertAtEnd(lutCns);
+            castRange.InsertAtEnd(srcClone);
+            castRange.InsertAtEnd(thirtyOne);
+            castRange.InsertAtEnd(signBit);
+
+            GenTree* adjVal =
+                comp->gtNewSimdHWIntrinsicNode(TYP_DOUBLE, lutCns, signBit, NI_Vector128_GetElement, dstBaseType, 16);
+            GenTree* adjVec = comp->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, adjVal, dstBaseType, 16);
+
+            castResult =
+                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, castResult, adjVec, NI_X86Base_AddScalar, dstBaseType, 16);
+
+            castRange.InsertAtEnd(adjVal);
+            castRange.InsertAtEnd(adjVec);
+            castRange.InsertAtEnd(castResult);
+        }
+
+        // Convert to float if necessary, then ToScalar() the result out.
+        if (dstType == TYP_FLOAT)
+        {
+            castResult  = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, castResult, NI_X86Base_ConvertToVector128Single,
+                                                         dstBaseType, 16);
+            dstBaseType = CORINFO_TYPE_FLOAT;
+            castRange.InsertAtEnd(castResult);
+        }
+
+        GenTree* toScalar = comp->gtNewSimdToScalarNode(dstType, castResult, dstBaseType, 16);
+        castRange.InsertAtEnd(toScalar);
+
+        LIR::ReadOnlyRange lowerRange(castRange.FirstNode(), castRange.LastNode());
+        BlockRange().InsertBefore(tree, std::move(castRange));
+
+        JITDUMP("LowerCast after:\n");
+        DISPTREERANGE(BlockRange(), toScalar);
+
+        LIR::Use castUse;
+        if (BlockRange().TryGetUse(tree, &castUse))
+        {
+            castUse.ReplaceWith(toScalar);
+        }
+        else
+        {
+            toScalar->SetUnusedValue();
+        }
+
+        BlockRange().Remove(tree);
+        LowerRange(lowerRange);
+        return;
+    }
+#endif // TARGET_X86
+
     if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType) &&
         !comp->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
     {
@@ -860,8 +992,9 @@ void Lowering::LowerCast(GenTree* tree)
         JITDUMP("LowerCast before:\n");
         DISPTREERANGE(BlockRange(), tree);
 
-        CorInfoType srcBaseType = (srcType == TYP_FLOAT) ? CORINFO_TYPE_FLOAT : CORINFO_TYPE_DOUBLE;
+        GenTree*    castResult  = nullptr;
         LIR::Range  castRange   = LIR::EmptyRange();
+        CorInfoType srcBaseType = (srcType == TYP_FLOAT) ? CORINFO_TYPE_FLOAT : CORINFO_TYPE_DOUBLE;
 
         // We'll be using SIMD instructions to fix up castOp before conversion.
         //
@@ -876,7 +1009,7 @@ void Lowering::LowerCast(GenTree* tree)
             castOp->SetUnusedValue();
         }
 
-        if (varTypeIsUnsigned(dstType) && comp->canUseEvexEncoding())
+        if (varTypeIsUnsigned(dstType) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
         {
             // EVEX unsigned conversion instructions saturate positive overflow properly, so as
             // long as we fix up NaN and negative values, we can preserve the existing cast node.
@@ -885,21 +1018,21 @@ void Lowering::LowerCast(GenTree* tree)
             // NaN, which allows us to fix up both negative and NaN values with a single instruction.
             //
             // This creates the equivalent of the following C# code:
-            //   castOp = Sse.MaxScalar(srcVec, Vector128<T>.Zero).ToScalar();
+            //   AVX512F.ConvertToUInt32WithTruncation(Sse.MaxScalar(srcVec, Vector128<T>.Zero);
 
-            NamedIntrinsic maxScalarIntrinsic = NI_X86Base_MaxScalar;
+            NamedIntrinsic convertIntrinsic = (dstType == TYP_UINT) ? NI_AVX512_ConvertToUInt32WithTruncation
+                                                                    : NI_AVX512_X64_ConvertToUInt64WithTruncation;
 
             GenTree* zero = comp->gtNewZeroConNode(TYP_SIMD16);
             GenTree* fixupVal =
-                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, zero, maxScalarIntrinsic, srcBaseType, 16);
+                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, zero, NI_X86Base_MaxScalar, srcBaseType, 16);
 
-            GenTree* toScalar = comp->gtNewSimdToScalarNode(srcType, fixupVal, srcBaseType, 16);
+            castResult =
+                comp->gtNewSimdHWIntrinsicNode(genActualType(dstType), fixupVal, convertIntrinsic, srcBaseType, 16);
 
             castRange.InsertAtEnd(zero);
             castRange.InsertAtEnd(fixupVal);
-            castRange.InsertAtEnd(toScalar);
-
-            tree->AsCast()->CastOp() = toScalar;
+            castRange.InsertAtEnd(castResult);
         }
         else
         {
@@ -1008,11 +1141,9 @@ void Lowering::LowerCast(GenTree* tree)
                 //   var fixupVal = Sse.And(srcVec, nanMask);
                 //   convertResult = Sse.ConvertToInt32WithTruncation(fixupVal);
 
-                NamedIntrinsic compareNaNIntrinsic = NI_X86Base_CompareScalarOrdered;
-
                 srcClone         = comp->gtClone(srcVector);
-                GenTree* nanMask = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, srcClone, compareNaNIntrinsic,
-                                                                  srcBaseType, 16);
+                GenTree* nanMask = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, srcClone,
+                                                                  NI_X86Base_CompareScalarOrdered, srcBaseType, 16);
 
                 castRange.InsertAtEnd(srcClone);
                 castRange.InsertAtEnd(nanMask);
@@ -1033,11 +1164,9 @@ void Lowering::LowerCast(GenTree* tree)
                 // This creates the equivalent of the following C# code:
                 //   var fixupVal = Sse.MaxScalar(srcVec, Vector128<T>.Zero);
 
-                NamedIntrinsic maxScalarIntrinsic = NI_X86Base_MaxScalar;
-
                 GenTree* zero = comp->gtNewZeroConNode(TYP_SIMD16);
                 GenTree* fixupVal =
-                    comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, zero, maxScalarIntrinsic, srcBaseType, 16);
+                    comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, zero, NI_X86Base_MaxScalar, srcBaseType, 16);
 
                 castRange.InsertAtEnd(zero);
                 castRange.InsertAtEnd(fixupVal);
@@ -1057,7 +1186,7 @@ void Lowering::LowerCast(GenTree* tree)
                     // result is selected.
                     //
                     // This creates the equivalent of the following C# code:
-                    //   var wrapVal = Sse.SubtractScalar(srcVec, maxFloatingValue);
+                    //   var adjVal = Sse.SubtractScalar(srcVec, maxFloatingValue);
 
                     NamedIntrinsic subtractIntrinsic = NI_X86Base_SubtractScalar;
 
@@ -1129,7 +1258,7 @@ void Lowering::LowerCast(GenTree* tree)
                         //
                         // This creates the equivalent of the following C# code:
                         //   var result = Sse2.ConvertToVector128Int32WithTruncation(fixupVal);
-                        //   var negated = Sse2.ConvertToVector128Int32WithTruncation(wrapVal);
+                        //   var negated = Sse2.ConvertToVector128Int32WithTruncation(adjVal);
 
                         GenTree* result =
                             comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, fixupVal, convertIntrinsic, srcBaseType, 16);
@@ -1199,7 +1328,7 @@ void Lowering::LowerCast(GenTree* tree)
                         //
                         // This creates the equivalent of the following C# code:
                         //   long result = Sse.X64.ConvertToInt64WithTruncation(fixupVal);
-                        //   long negated = Sse.X64.ConvertToInt64WithTruncation(wrapVal);
+                        //   long negated = Sse.X64.ConvertToInt64WithTruncation(adjVal);
                         //   convertResult = (ulong)(result | (negated & (result >> 63)));
 
                         GenTree* result =
@@ -1237,34 +1366,42 @@ void Lowering::LowerCast(GenTree* tree)
             //   bool isOverflow = Sse.CompareScalarUnorderedGreaterThanOrEqual(srcVec, maxFloatingValue);
             //   return isOverflow ? maxIntegralValue : convertResult;
 
-            NamedIntrinsic compareIntrinsic = NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual;
-
             // These nodes were all created above but not used until now.
             castRange.InsertAtEnd(maxFloatingValue);
             castRange.InsertAtEnd(maxIntegralValue);
             castRange.InsertAtEnd(convertResult);
 
-            srcClone            = comp->gtClone(srcVector);
-            GenTree* compareMax = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcClone, maxFloatingValue,
-                                                                 compareIntrinsic, srcBaseType, 16);
-            GenTree* select     = comp->gtNewConditionalNode(GT_SELECT, compareMax, maxIntegralValue, convertResult,
-                                                             genActualType(dstType));
+            srcClone = comp->gtClone(srcVector);
+            GenTree* compareMax =
+                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcClone, maxFloatingValue,
+                                               NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual, srcBaseType, 16);
+            castResult = comp->gtNewConditionalNode(GT_SELECT, compareMax, maxIntegralValue, convertResult,
+                                                         genActualType(dstType));
 
             castRange.InsertAtEnd(srcClone);
             castRange.InsertAtEnd(compareMax);
-            castRange.InsertAtEnd(select);
-
-            // The original cast becomes a no-op, because its input is already the correct type.
-            tree->AsCast()->CastOp() = select;
+            castRange.InsertAtEnd(castResult);
         }
 
         LIR::ReadOnlyRange lowerRange(castRange.FirstNode(), castRange.LastNode());
         BlockRange().InsertBefore(tree, std::move(castRange));
 
         JITDUMP("LowerCast after:\n");
-        DISPTREERANGE(BlockRange(), tree);
+        DISPTREERANGE(BlockRange(), castResult);
 
+        LIR::Use castUse;
+        if (BlockRange().TryGetUse(tree, &castUse))
+        {
+            castUse.ReplaceWith(castResult);
+        }
+        else
+        {
+            castResult->SetUnusedValue();
+        }
+
+        BlockRange().Remove(tree);
         LowerRange(lowerRange);
+        return;
     }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -9890,7 +10027,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 MakeSrcContained(node, op2);
                             }
 
-                            if (IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1))
+                            if (op1->IsCnsVec() || (IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1)))
                             {
                                 MakeSrcContained(node, op1);
                             }

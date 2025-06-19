@@ -1270,6 +1270,33 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
     return true;
 }
 
+bool Compiler::fgCastRequiresHelper(var_types fromType, var_types toType, bool overflow /* false */)
+{
+    if (varTypeIsFloating(fromType))
+    {
+        return (varTypeIsIntegral(toType) && overflow)
+#if defined(TARGET_X86)
+               || (varTypeIsLong(toType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512))
+#elif !defined(TARGET_64BIT)
+               || varTypeIsLong(toType)
+#endif
+            ;
+    }
+
+#if !defined(TARGET_64BIT)
+    if (varTypeIsFloating(toType))
+    {
+        return varTypeIsLong(fromType)
+#if defined(TARGET_X86)
+               && !compOpportunisticallyDependsOn(InstructionSet_AVX512)
+#endif // TARGET_X86
+            ;
+    }
+#endif // !TARGET_64BIT
+
+    return false;
+}
+
 GenTree* Compiler::fgGetCritSectOfStaticMethod()
 {
     noway_assert(!compIsForInlining());
