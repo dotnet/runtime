@@ -4,7 +4,7 @@
 #ifndef __INTERPRETER_INTRINSICS_H__
 #define __INTERPRETER_INTRINSICS_H__
 
-#include "..\jit\namedintrinsiclist.h"
+#include "../jit/namedintrinsiclist.h"
 
 NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE compMethod, CORINFO_METHOD_HANDLE method, bool enableFallback);
 
