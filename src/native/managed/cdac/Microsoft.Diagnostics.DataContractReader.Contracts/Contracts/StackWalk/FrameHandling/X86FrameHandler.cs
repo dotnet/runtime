@@ -28,7 +28,7 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
     {
         HijackArgsX86 args = _target.ProcessedData.GetOrAdd<HijackArgsX86>(frame.HijackArgsPtr);
 
-        // The stack pointer is the address immediately following HijacksArgs
+        // The stack pointer is the address immediately following HijackArgs
         uint hijackArgsSize = _target.GetTypeInfo(DataType.HijackArgs).Size ?? throw new InvalidOperationException("HijackArgs size is not set");
         _context.Context.Esp = (uint)frame.HijackArgsPtr + hijackArgsSize;
 
