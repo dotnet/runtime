@@ -796,6 +796,60 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> ShiftLeftLogicalWideningOdd(Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
 
+        // Rounding shift left
+
+        /// <summary>
+        /// svuint8_t svrshl[_u8]_m(svbool_t pg, svuint8_t op1, svint8_t op2)
+        ///   URSHL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<byte> ShiftLogicalRounded(Vector<byte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svrshl[_u16]_m(svbool_t pg, svuint16_t op1, svint16_t op2)
+        ///   URSHL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<ushort> ShiftLogicalRounded(Vector<ushort> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svrshl[_u32]_m(svbool_t pg, svuint32_t op1, svint32_t op2)
+        ///   URSHL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<uint> ShiftLogicalRounded(Vector<uint> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svrshl[_u64]_m(svbool_t pg, svuint64_t op1, svint64_t op2)
+        ///   URSHL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<ulong> ShiftLogicalRounded(Vector<ulong> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating rounding shift left
+
+        /// <summary>
+        /// svuint8_t svqrshl[_u8]_m(svbool_t pg, svuint8_t op1, svint8_t op2)
+        ///   UQRSHL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<byte> ShiftLogicalRoundedSaturate(Vector<byte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqrshl[_u16]_m(svbool_t pg, svuint16_t op1, svint16_t op2)
+        ///   UQRSHL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<ushort> ShiftLogicalRoundedSaturate(Vector<ushort> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqrshl[_u32]_m(svbool_t pg, svuint32_t op1, svint32_t op2)
+        ///   UQRSHL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<uint> ShiftLogicalRoundedSaturate(Vector<uint> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svqrshl[_u64]_m(svbool_t pg, svuint64_t op1, svint64_t op2)
+        ///   UQRSHL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<ulong> ShiftLogicalRoundedSaturate(Vector<ulong> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
+
+
         // Bitwise exclusive OR of three vectors
 
         /// <summary>

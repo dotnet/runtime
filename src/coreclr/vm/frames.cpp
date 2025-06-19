@@ -1893,7 +1893,7 @@ void InterpreterFrame::SetContextToInterpMethodContextFrame(T_CONTEXT * pContext
     SetIP(pContext, (TADDR)pFrame->ip);
     SetSP(pContext, dac_cast<TADDR>(pFrame));
     SetFP(pContext, (TADDR)pFrame->pStack);
-    SetFirstArgReg(pContext, (TADDR)this);
+    SetFirstArgReg(pContext, dac_cast<TADDR>(this));
 }
 
 void InterpreterFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
