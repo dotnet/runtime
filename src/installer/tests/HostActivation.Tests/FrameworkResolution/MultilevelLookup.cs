@@ -119,22 +119,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
         private CommandResult RunTest(TestSettings testSettings, bool? multiLevelLookup, [CallerMemberName] string caller = "")
         {
-            return RunTest(
+            Command command = GetTestCommand(
                 SharedState.DotNetMainHive,
-                SharedState.FrameworkReferenceApp,
+                SharedState.App,
                 testSettings
                     .WithEnvironment(Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath, SharedState.DotNetGlobalHive.BinPath)
                     .WithEnvironment( // Redirect the default install location to an invalid location so that a machine-wide install is not used
                         Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
-                        System.IO.Path.Combine(SharedState.DotNetMainHive.BinPath, "invalid")),
-                // Must enable multi-level lookup otherwise multiple hives are not enabled
-                multiLevelLookup: multiLevelLookup,
-                caller: caller);
+                        System.IO.Path.Combine(SharedState.DotNetMainHive.BinPath, "invalid")));
+            return command.MultilevelLookup(multiLevelLookup)
+                .Execute(caller);
         }
 
         public class SharedTestState : SharedTestStateBase
         {
-            public TestApp FrameworkReferenceApp { get; }
+            public TestApp App { get; }
 
             public DotNetCli DotNetMainHive { get; }
             public string[] MainHiveVersions { get; } = ["6.1.3", "6.2.1", "7.1.2" ];
@@ -163,7 +162,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("7.3.0")
                     .Build();
 
-                FrameworkReferenceApp = CreateFrameworkReferenceApp();
+                App = CreateFrameworkReferenceApp();
 
                 // Enable test-only behaviour. We don't bother disabling the behaviour later,
                 // as we just delete the entire copy after the tests run.

@@ -44,7 +44,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [Fact]
         public void FrameworkResolutionError()
         {
-            IEnumerable<string> installedVersions = SharedState.InstalledVersions.Select(v => $"  {v} at [{SharedState.DotNetMainHive.SharedFxPath}]{Environment.NewLine}");
+            IEnumerable<string> installedVersions = SharedState.InstalledVersions.Select(v => $"  {v} at [{SharedState.InstalledDotNet.SharedFxPath}]{Environment.NewLine}");
             string expectedOutput =
                 $"""
                 The following frameworks were found:
@@ -63,7 +63,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [Fact]
         public void FrameworkResolutionError_ListOtherArchitectures()
         {
-            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(SharedState.DotNetMainHive.GreatestVersionHostFxrFilePath))
+            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(SharedState.InstalledDotNet.GreatestVersionHostFxrFilePath))
             using (var otherArchArtifact = TestArtifact.Create("otherArch"))
             {
                 string requestedVersion = "9999.9.9";
@@ -106,7 +106,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         private CommandResult RunTest(TestSettings testSettings, [CallerMemberName] string caller = "")
         {
             return RunTest(
-                SharedState.DotNetMainHive,
+                SharedState.InstalledDotNet,
                 SharedState.App,
                 testSettings,
                 caller: caller);
@@ -116,7 +116,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         {
             public TestApp App { get; }
 
-            public DotNetCli DotNetMainHive { get; }
+            public DotNetCli InstalledDotNet { get; }
 
             // Versions are assumed to be in ascending order. We use this property to check against the
             // exact expected output of --list-sdks and --list-runtimes.
@@ -126,16 +126,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
             public SharedTestState()
             {
-                var builder = DotNet("MainHive");
+                var builder = DotNet("DotNet");
                 foreach (string version in InstalledVersions)
                     builder.AddMicrosoftNETCoreAppFrameworkMockHostPolicy(version);
 
-                DotNetMainHive = builder.Build();
+                InstalledDotNet = builder.Build();
 
                 // Empty Microsoft.NETCore.App directory - should not be recognized as a valid framework
                 // Version is the best match for some test cases, but they should be ignored
                 foreach (string version in EmptyVersions)
-                    Directory.CreateDirectory(Path.Combine(DotNetMainHive.SharedFxPath, version));
+                    Directory.CreateDirectory(Path.Combine(InstalledDotNet.SharedFxPath, version));
 
                 App = CreateFrameworkReferenceApp();
             }
