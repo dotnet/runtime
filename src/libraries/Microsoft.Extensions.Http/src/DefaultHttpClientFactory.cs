@@ -356,6 +356,12 @@ namespace Microsoft.Extensions.Http
                     {
                         // During explicit disposal, we force disposal of all handlers regardless of CanDispose status
                         disposables.Add(entry);
+
+                        // Force dispose the scope even if the handler is still alive
+                        if (entry.Scope != null)
+                        {
+                            disposables.Add(entry.Scope);
+                        }
                     }
                 }
 
