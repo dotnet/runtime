@@ -71,12 +71,9 @@
   <PropertyGroup>
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">FEATURE_PERFTRACING;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup>
-    <!-- !TODO-JAVA! Limit to Android build -->
+  <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' OR '$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked'">
     <FeatureJavaMarshal>true</FeatureJavaMarshal>
-  </PropertyGroup>
-  <PropertyGroup>
-    <DefineConstants Condition="'$(FeatureJavaMarshal)' == 'true'">FEATURE_JAVAMARSHAL;$(DefineConstants)</DefineConstants>
+    <DefineConstants>FEATURE_JAVAMARSHAL;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <!-- Platform specific properties -->

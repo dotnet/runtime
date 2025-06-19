@@ -1208,7 +1208,7 @@ static MarkCrossReferencesArgs* build_scc_callback_data ()
             for (j = 0; j < bridges; ++j)
                 contexts[j] = find_data((Object*)dyn_ptr_array_get(&cd->bridges, j))->context;
 
-            api_sccs[api_index].Context = contexts;
+            api_sccs[api_index].Contexts = contexts;
             cd->api_index = api_index;
 
             assert(api_index < API_INDEX_MAX);

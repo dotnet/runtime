@@ -36,7 +36,7 @@ namespace
         // Free memory in each of the SCCs
         for (size_t i = 0; i < args->ComponentCount; i++)
         {
-            free(args->Components[i].Context);
+            free(args->Components[i].Contexts);
         }
         free(args->Components);
         free(args->CrossReferences);

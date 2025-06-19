@@ -15,7 +15,7 @@
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define EE_INTERFACE_MAJOR_VERSION 3
+#define EE_INTERFACE_MAJOR_VERSION 4
 
 struct ScanContext;
 struct gc_alloc_context;
@@ -147,7 +147,7 @@ struct EtwGCSettingsInfo
 struct StronglyConnectedComponent
 {
     size_t Count;
-    uintptr_t* Context;
+    uintptr_t* Contexts;
 };
 
 struct ComponentCrossReference
@@ -164,15 +164,15 @@ struct MarkCrossReferencesArgs
     ComponentCrossReference* CrossReferences;
 
     MarkCrossReferencesArgs(
-        size_t ComponentCount,
-        StronglyConnectedComponent* Components,
-        size_t CrossReferenceCount,
-        ComponentCrossReference* CrossReferences)
+        size_t componentCount,
+        StronglyConnectedComponent* components,
+        size_t crossReferenceCount,
+        ComponentCrossReference* crossReferences)
+        : ComponentCount { componentCount }
+        , Components { components }
+        , CrossReferenceCount { crossReferenceCount }
+        , CrossReferences { crossReferences }
     {
-        this->ComponentCount = ComponentCount;
-        this->Components = Components;
-        this->CrossReferenceCount = CrossReferenceCount;
-        this->CrossReferences = CrossReferences;
     }
 };
 
