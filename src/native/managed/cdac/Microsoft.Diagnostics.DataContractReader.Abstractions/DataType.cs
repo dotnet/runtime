@@ -88,6 +88,7 @@ public enum DataType
     ProfControlBlock,
     ILCodeVersionNode,
     ReadyToRunInfo,
+    ReadyToRunHeader,
     ImageDataDirectory,
     RuntimeFunction,
     HashMap,

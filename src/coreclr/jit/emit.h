@@ -663,8 +663,8 @@ protected:
     private:
 // The assembly instruction
 #if defined(TARGET_XARCH)
-        static_assert_no_msg(INS_count <= 1024);
-        instruction _idIns : 10;
+        static_assert_no_msg(INS_count <= 2048);
+        instruction _idIns : 11;
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
 #define INSTR_ENCODED_SIZE 4
@@ -752,8 +752,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         17 bits
-        // amd64:       17 bits
+        // x86:         18 bits
+        // amd64:       18 bits
         // arm:         16 bits
         // arm64:       21 bits
         // loongarch64: 14 bits
@@ -786,21 +786,22 @@ protected:
 
         // The idReg1 and idReg2 fields hold the first and second register
         // operand(s), whenever these are present. Note that currently the
-        // size of these fields is 6 bits on all targets, and care needs to
-        // be taken to make sure all of these fields stay reasonably packed.
+        // size of these fields is 6 bits on most targets, but 7 on others,
+        // and care needs to be taken to make sure all of these fields stay
+        // reasonably packed.
 
         // Note that we use the _idReg1 and _idReg2 fields to hold
         // the live gcrefReg mask for the call instructions on x86/x64
         //
-#if !defined(TARGET_AMD64)
+#if !defined(TARGET_XARCH)
         regNumber _idReg1 : REGNUM_BITS; // register num
         regNumber _idReg2 : REGNUM_BITS;
 #endif
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         38 bits
-        // amd64:       26 bits
+        // x86:         27 bits
+        // amd64:       27 bits
         // arm:         32 bits
         // arm64:       46 bits
         // loongarch64: 28 bits
@@ -818,7 +819,7 @@ protected:
         unsigned _idCustom1 : 1;
         unsigned _idCustom2 : 1;
         unsigned _idCustom3 : 1;
-#if defined(TARGET_AMD64)
+#if defined(TARGET_XARCH)
         regNumber _idReg1 : REGNUM_BITS; // register num
         regNumber _idReg2 : REGNUM_BITS;
 #endif
@@ -888,8 +889,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         49 bits
-        // amd64:       51 bits
+        // x86:         50 bits
+        // amd64:       52 bits
         // arm:         48 bits
         // arm64:       55 bits
         // loongarch64: 46 bits
@@ -906,8 +907,10 @@ protected:
 #define ID_EXTRA_BITFIELD_BITS (23)
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
-#elif defined(TARGET_XARCH)
-#define ID_EXTRA_BITFIELD_BITS (19)
+#elif defined(TARGET_X86)
+#define ID_EXTRA_BITFIELD_BITS (18)
+#elif defined(TARGET_AMD64)
+#define ID_EXTRA_BITFIELD_BITS (20)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -941,8 +944,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
-        // x86:         55/51 bits
-        // amd64:       58/53 bits
+        // x86:         56/52 bits
+        // amd64:       59/54 bits
         // arm:         54/50 bits
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
@@ -953,12 +956,11 @@ protected:
         /* Use whatever bits are left over for small constants */
 
 #define ID_BIT_SMALL_CNS (32 - ID_EXTRA_BITS)
-        C_ASSERT(ID_BIT_SMALL_CNS > 0);
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size (with/without prev offset, assuming host==target):
-        // x86:         10/14 bits
-        // amd64:       9/14 bits
+        // x86:          8/12 bits
+        // amd64:        5/10 bits
         // arm:         10/14 bits
         // arm64:        2/7 bits
         // loongarch64: 11/16 bits
@@ -2668,12 +2670,13 @@ private:
 
 #if defined(TARGET_XARCH)
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src, regNumber targetReg = REG_NA);
+    void emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem, insOpts instOptions = INS_OPTS_NONE);
 #else
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
+    void      emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem);
 #endif
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
     void      emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
-    void      emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem);
     void      emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommon* varNode);
     insFormat emitMapFmtForIns(insFormat fmt, instruction ins);
     insFormat emitMapFmtAtoM(insFormat fmt);

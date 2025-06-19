@@ -120,10 +120,8 @@ static bool IsSSEInstruction(instruction ins);
 static bool IsSSEOrAVXInstruction(instruction ins);
 static bool IsAVXOnlyInstruction(instruction ins);
 static bool IsAvx512OnlyInstruction(instruction ins);
-static bool IsFMAInstruction(instruction ins);
-static bool IsPermuteVar2xInstruction(instruction ins);
 static bool IsKMOVInstruction(instruction ins);
-static bool IsAVXVNNIInstruction(instruction ins);
+static bool Is3OpRmwInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
 static bool IsKInstruction(instruction ins);
 static bool IsKInstructionWithLBit(instruction ins);
@@ -131,8 +129,6 @@ static bool IsApxOnlyInstruction(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
-static bool      HasVexEncoding(instruction ins);
-static bool      HasEvexEncoding(instruction ins);
 static bool      HasRex2Encoding(instruction ins);
 static bool      HasApxNdd(instruction ins);
 static bool      HasApxNf(instruction ins);
@@ -523,15 +519,12 @@ void SetEvexEmbMaskIfNeeded(instrDesc* id, insOpts instOptions)
     {
         assert(UseEvexEncoding());
         id->idSetEvexAaaContext(instOptions);
-
-        if ((instOptions & INS_OPTS_EVEX_z_MASK) == INS_OPTS_EVEX_em_zero)
-        {
-            id->idSetEvexZContext();
-        }
     }
-    else
+
+    if ((instOptions & INS_OPTS_EVEX_z_MASK) == INS_OPTS_EVEX_em_zero)
     {
-        assert((instOptions & INS_OPTS_EVEX_z_MASK) == 0);
+        assert(UseEvexEncoding());
+        id->idSetEvexZContext();
     }
 }
 
@@ -1008,7 +1001,8 @@ void emitIns_R_R_R_R(instruction ins,
 
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 
-void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
+void emitIns_S_R(
+    instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_R_S(
     instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions = INS_OPTS_NONE);
@@ -1290,7 +1284,7 @@ inline bool HasEmbeddedBroadcast(const instrDesc* id) const
 //
 inline bool HasEmbeddedMask(const instrDesc* id) const
 {
-    return id->idIsEvexAaaContextSet();
+    return id->idIsEvexAaaContextSet() || id->idIsEvexZContextSet();
 }
 
 inline bool HasHighSIMDReg(const instrDesc* id) const;

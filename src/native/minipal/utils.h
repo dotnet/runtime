@@ -44,6 +44,17 @@
 #define LIBC_CALLBACK
 #endif
 
+// Define a macro to declare TLS variables. There are cases
+// where we want to use the platform specific thread-local
+// storage mechanism:
+//  * Better performance characteristics compared to C++'s thread_local keyword.
+//  * Makes consuming TLS variables from assembly code easier.
+#if defined(_MSC_VER)
+#define PLATFORM_THREAD_LOCAL __declspec(thread)
+#else
+#define PLATFORM_THREAD_LOCAL __thread
+#endif
+
 #if defined(_MSC_VER)
 #  if defined(__SANITIZE_ADDRESS__)
 #    define HAS_ADDRESS_SANITIZER

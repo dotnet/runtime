@@ -483,7 +483,7 @@ extends:
           jobParameters:
             testScope: innerloop
             nameSuffix: CoreCLR_NonPortable
-            buildArgs: -s clr.native+clr.tools+clr.corelib+clr.nativecorelib+clr.aot+clr.packages --outputrid tizen.9.0.0-armel -c $(_BuildConfig) /p:PortableBuild=false
+            buildArgs: -s clr.native+clr.tools+clr.corelib+clr.nativecorelib+clr.aot+clr.packages --targetrid tizen.9.0.0-armel -c $(_BuildConfig) /p:PortableBuild=false
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -531,7 +531,7 @@ extends:
           - name: timeoutPerTestCollectionInMinutes
             value: 180
           jobParameters:
-            timeoutInMinutes: 120
+            timeoutInMinutes: 180
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
@@ -614,7 +614,7 @@ extends:
             value: 180
           jobParameters:
             testGroup: innerloop
-            timeoutInMinutes: 120
+            timeoutInMinutes: 180
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
@@ -966,16 +966,16 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
-            # postBuildSteps:
-            #   - template: /eng/pipelines/libraries/helix.yml
-            #     parameters:
-            #       creator: dotnet-bot
-            #       testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-            #       condition: >-
-            #         or(
-            #         eq(variables['librariesContainsChange'], true),
-            #         eq(variables['coreclrContainsChange'], true),
-            #         eq(variables['isRollingBuild'], true))
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  condition: >-
+                    or(
+                    eq(variables['librariesContainsChange'], true),
+                    eq(variables['coreclrContainsChange'], true),
+                    eq(variables['isRollingBuild'], true))
 
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size

@@ -98,6 +98,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task MultipleMethodsUseSameAsyncStateMachine ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task NoWarnRegardlessOfWarnAsError ()
 		{
 			return RunTest (allowMissingWarnings: true);

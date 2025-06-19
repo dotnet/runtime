@@ -6,8 +6,8 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "regdisplay.h"
@@ -418,7 +418,7 @@ FCIMPLEND
 C_ASSERT(sizeof(Thread) == sizeof(RuntimeThreadLocals));
 
 #ifndef _MSC_VER
-__thread RuntimeThreadLocals tls_CurrentThread;
+PLATFORM_THREAD_LOCAL RuntimeThreadLocals tls_CurrentThread;
 #endif
 
 EXTERN_C RuntimeThreadLocals* RhpGetThread()

@@ -1234,8 +1234,9 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
 #endif // !DACCESS_COMPILE
 }
 
+#if defined(TARGET_X86) && defined(HAVE_GCCOVER)
 //*******************************************************************************
-ReturnKind MethodDesc::ParseReturnKindFromSig(INDEBUG(bool supportStringConstructors))
+ReturnKind MethodDesc::GetReturnKind()
 {
     CONTRACTL
     {
@@ -1247,6 +1248,14 @@ ReturnKind MethodDesc::ParseReturnKindFromSig(INDEBUG(bool supportStringConstruc
 
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
+    // For simplicity, we don't hijack in funclets, but if you ever change that,
+    // be sure to choose the OnHijack... callback type to match that of the FUNCLET
+    // not the main method (it would probably be Scalar).
+
+    // Mark that we are performing a stackwalker like operation on the current thread.
+    // This is necessary to allow the signature parsing functions to work without triggering any loads
+    StackWalkerWalkingThreadHolder threadStackWalking(GetThread());
+
     TypeHandle thValueType;
 
     MetaSig sig(this);
@@ -1254,6 +1263,14 @@ ReturnKind MethodDesc::ParseReturnKindFromSig(INDEBUG(bool supportStringConstruc
 
     switch (et)
     {
+        case ELEMENT_TYPE_R4:
+        case ELEMENT_TYPE_R8:
+            // Figuring out whether the function returns FP or not is hard to do
+            // on-the-fly, so we use a different callback helper on x86 where this
+            // piece of information is needed in order to perform the right save &
+            // restore of the return value around the call to OnHijackScalarWorker.
+            return RT_Float;
+
         case ELEMENT_TYPE_STRING:
         case ELEMENT_TYPE_CLASS:
         case ELEMENT_TYPE_SZARRAY:
@@ -1262,7 +1279,6 @@ ReturnKind MethodDesc::ParseReturnKindFromSig(INDEBUG(bool supportStringConstruc
         case ELEMENT_TYPE_VAR:
             return RT_Object;
 
-#ifdef ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
         case ELEMENT_TYPE_VALUETYPE:
             // We return value types in registers if they fit in ENREGISTERED_RETURNTYPE_MAXSIZE
             // These valuetypes could contain gc refs.
@@ -1275,68 +1291,29 @@ ReturnKind MethodDesc::ParseReturnKindFromSig(INDEBUG(bool supportStringConstruc
                     if (!thValueType.IsTypeDesc())
                     {
                         MethodTable * pReturnTypeMT = thValueType.AsMethodTable();
-#ifdef UNIX_AMD64_ABI
-                        if (pReturnTypeMT->IsRegPassedStruct())
+                        if (pReturnTypeMT->ContainsGCPointers())
                         {
-                            // The Multi-reg return case using the classhandle is only implemented for AMD64 SystemV ABI.
-                            // On other platforms, multi-reg return is not supported with GcInfo v1.
-                            // So, the relevant information must be obtained from the GcInfo tables (which requires version2).
-                            EEClass* eeClass = pReturnTypeMT->GetClass();
-                            ReturnKind regKinds[2] = { RT_Unset, RT_Unset };
-                            int orefCount = 0;
-                            for (int i = 0; i < 2; i++)
-                            {
-                                if (eeClass->GetEightByteClassification(i) == SystemVClassificationTypeIntegerReference)
-                                {
-                                    regKinds[i] = RT_Object;
-                                }
-                                else if (eeClass->GetEightByteClassification(i) == SystemVClassificationTypeIntegerByRef)
-                                {
-                                    regKinds[i] = RT_ByRef;
-                                }
-                                else
-                                {
-                                    regKinds[i] = RT_Scalar;
-                                }
-                            }
-                            ReturnKind structReturnKind = GetStructReturnKind(regKinds[0], regKinds[1]);
-                            return structReturnKind;
+                            _ASSERTE(pReturnTypeMT->GetNumInstanceFieldBytes() == sizeof(void*));
+                            return RT_Object;
                         }
-#endif // UNIX_AMD64_ABI
 
-                        if (pReturnTypeMT->ContainsGCPointers() || pReturnTypeMT->IsByRefLike())
+                        if (pReturnTypeMT->IsByRefLike())
                         {
-                            if (pReturnTypeMT->GetNumInstanceFields() == 1)
-                            {
-                                _ASSERTE(pReturnTypeMT->GetNumInstanceFieldBytes() == sizeof(void*));
-                                // Note: we can't distinguish RT_Object from RT_ByRef, the caller has to tolerate that.
-                                return RT_Object;
-                            }
-                            else
-                            {
-                                // Multi reg return case with pointers, can't restore the actual kind.
-                                return RT_Illegal;
-                            }
+                            // This would require going through all fields
+                            return RT_Illegal;
                         }
                     }
                 }
             }
             break;
-#endif // ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 
-#ifdef _DEBUG
         case ELEMENT_TYPE_VOID:
-            // String constructors return objects.  We should not have any ecall string
-            // constructors, except when called from gc coverage codes (which is only
-            // done under debug).  We will therefore optimize the retail version of this
-            // method to not support string constructors.
+            // String constructors return objects..
             if (IsCtor() && GetMethodTable()->HasComponentSize())
             {
-                _ASSERTE(supportStringConstructors);
                 return RT_Object;
             }
             break;
-#endif // _DEBUG
 
         case ELEMENT_TYPE_BYREF:
             return RT_ByRef;
@@ -1347,32 +1324,7 @@ ReturnKind MethodDesc::ParseReturnKindFromSig(INDEBUG(bool supportStringConstruc
 
     return RT_Scalar;
 }
-
-ReturnKind MethodDesc::GetReturnKind(INDEBUG(bool supportStringConstructors))
-{
-    // For simplicity, we don't hijack in funclets, but if you ever change that,
-    // be sure to choose the OnHijack... callback type to match that of the FUNCLET
-    // not the main method (it would probably be Scalar).
-
-    ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-    // Mark that we are performing a stackwalker like operation on the current thread.
-    // This is necessary to allow the signature parsing functions to work without triggering any loads
-    StackWalkerWalkingThreadHolder threadStackWalking(GetThread());
-
-#ifdef TARGET_X86
-    MetaSig msig(this);
-    if (msig.HasFPReturn())
-    {
-        // Figuring out whether the function returns FP or not is hard to do
-        // on-the-fly, so we use a different callback helper on x86 where this
-        // piece of information is needed in order to perform the right save &
-        // restore of the return value around the call to OnHijackScalarWorker.
-        return RT_Float;
-    }
-#endif // TARGET_X86
-
-    return ParseReturnKindFromSig(INDEBUG(supportStringConstructors));
-}
+#endif // TARGET_X86 && HAVE_GCCOVER
 
 #ifdef FEATURE_COMINTEROP
 
@@ -3220,6 +3172,17 @@ void MethodDesc::ResetCodeEntryPointForEnC()
     _ASSERTE(!IsVersionableWithPrecode());
     _ASSERTE(!MayHaveEntryPointSlotsToBackpatch());
 
+    // Updates are expressed via metadata diff and a methoddef of a runtime async method
+    // would be resolved to the thunk.
+    // If we see a thunk here, fetch the other variant that owns the IL and reset that.
+    if (IsAsyncThunkMethod())
+    {
+        MethodDesc *otherVariant = GetAsyncOtherVariantNoCreate();
+        _ASSERTE(otherVariant != NULL);
+        otherVariant->ResetCodeEntryPointForEnC();
+        return;
+    }
+
     LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s - HasPrecode():%s, HasNativeCodeSlot():%s\n",
         this, m_pszDebugClassName, m_pszDebugMethodName, (HasPrecode() ? "true" : "false"), (HasNativeCodeSlot() ? "true" : "false")));
     if (HasPrecode())
@@ -3752,18 +3715,21 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #ifdef FEATURE_CODE_VERSIONING
     // Make sure the active IL and native code version are in triage dumps.
-    CodeVersionManager* pCodeVersionManager = GetCodeVersionManager();
-    ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(dac_cast<PTR_MethodDesc>(this));
-    if (!ilVersion.IsNull())
+    if (IsIL())
     {
-        EX_TRY
+        CodeVersionManager* pCodeVersionManager = GetCodeVersionManager();
+        ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(dac_cast<PTR_MethodDesc>(this));
+        if (!ilVersion.IsNull())
         {
-            ilVersion.GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
-            ilVersion.GetVersionId();
-            ilVersion.GetRejitState();
-            ilVersion.GetIL();
+            EX_TRY
+            {
+                ilVersion.GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
+                ilVersion.GetVersionId();
+                ilVersion.GetRejitState();
+                ilVersion.GetIL();
+            }
+            EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
         }
-        EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
     }
 #endif
 
@@ -3995,10 +3961,7 @@ void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
     {
         WalkValueTypeParameters(this->GetMethodTable(), NULL, NULL);
     }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_SWALLOW_NONTERMINAL
     _ASSERTE(HaveValueTypeParametersBeenWalked());
 }
 

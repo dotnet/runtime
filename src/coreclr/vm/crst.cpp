@@ -21,19 +21,6 @@
 #include <crsttypes_generated.h>
 #undef __IN_CRST_CPP
 
-#if defined(DACCESS_COMPILE) && defined(TARGET_UNIX) && !defined(CROSS_COMPILE)
-    // Validate the DAC T_CRITICAL_SECTION matches the runtime CRITICAL section when we are not cross compiling.
-    // This is important when we are cross OS compiling the DAC
-    static_assert(PAL_CS_NATIVE_DATA_SIZE == DAC_CS_NATIVE_DATA_SIZE,     T_CRITICAL_SECTION_VALIDATION_MESSAGE);
-    static_assert(sizeof(CRITICAL_SECTION) == sizeof(T_CRITICAL_SECTION), T_CRITICAL_SECTION_VALIDATION_MESSAGE);
-
-    static_assert(offsetof(CRITICAL_SECTION, DebugInfo)      == offsetof(T_CRITICAL_SECTION, DebugInfo),      T_CRITICAL_SECTION_VALIDATION_MESSAGE);
-    static_assert(offsetof(CRITICAL_SECTION, LockCount)      == offsetof(T_CRITICAL_SECTION, LockCount),      T_CRITICAL_SECTION_VALIDATION_MESSAGE);
-    static_assert(offsetof(CRITICAL_SECTION, RecursionCount) == offsetof(T_CRITICAL_SECTION, RecursionCount), T_CRITICAL_SECTION_VALIDATION_MESSAGE);
-    static_assert(offsetof(CRITICAL_SECTION, OwningThread)   == offsetof(T_CRITICAL_SECTION, OwningThread),   T_CRITICAL_SECTION_VALIDATION_MESSAGE);
-    static_assert(offsetof(CRITICAL_SECTION, SpinCount)      == offsetof(T_CRITICAL_SECTION, SpinCount),      T_CRITICAL_SECTION_VALIDATION_MESSAGE);
-#endif // defined(DACCESS_COMPILE) && defined(TARGET_UNIX) && !defined(CROSS_COMPILE)
-
 #ifndef DACCESS_COMPILE
 Volatile<LONG> g_ShutdownCrstUsageCount = 0;
 
@@ -49,13 +36,8 @@ VOID CrstBase::InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags)
 
     _ASSERTE((flags & CRST_INITIALIZED) == 0);
 
-    {
-        SetOSCritSec ();
-    }
-
-    {
-        InitializeCriticalSection(&m_criticalsection);
-    }
+    bool suc = minipal_mutex_init(&m_lock._mtx);
+    _ASSERTE(suc);
 
     SetFlags(flags);
     SetCrstInitialized();
@@ -84,13 +66,7 @@ void CrstBase::Destroy()
     _ASSERTE(holderthreadid.IsUnknown() || IsAtProcessExit() || g_fEEShutDown);
 #endif
 
-    // If a lock is host breakable, a host is required to block the release call until
-    // deadlock detection is finished.
-    GCPreemp __gcHolder((m_dwFlags & CRST_HOST_BREAKABLE) == CRST_HOST_BREAKABLE);
-
-    {
-        DeleteCriticalSection(&m_criticalsection);
-    }
+    minipal_mutex_destroy(&m_lock._mtx);
 
     LOG((LF_SYNC, INFO3, "CrstBase::Destroy %p\n", this));
 #ifdef _DEBUG
@@ -174,15 +150,6 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
     //
     // What's worse, the implied contract differs for different flavors of crst.
     //
-    // THROWS/FAULT
-    //
-    //     A crst can be HOST_BREAKBALE or not. A HOST_BREAKABLE crst can throw on an attempt to enter
-    //     (due to deadlock breaking by the host.) A non-breakable crst will never
-    //     throw or OOM or fail an enter.
-    //
-    //
-    //
-    //
     // GC/MODE
     //     Orthogonally, a crst can be one of the following flavors. We only want to see the
     //     "normal" type used in new code. Other types, kept for legacy reasons, are listed in
@@ -216,30 +183,6 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
     ClrDebugState *pClrDebugState = CheckClrDebugState();
     if (pClrDebugState)
     {
-        if (m_dwFlags & CRST_HOST_BREAKABLE)
-        {
-            if (pClrDebugState->IsFaultForbid() &&
-                !(pClrDebugState->ViolationMask() & (FaultViolation|FaultNotFatal|BadDebugState)))
-            {
-                CONTRACT_ASSERT("You cannot enter a HOST_BREAKABLE lock in a FAULTFORBID region.",
-                                Contract::FAULT_Forbid,
-                                Contract::FAULT_Mask,
-                                __FUNCTION__,
-                                __FILE__,
-                                __LINE__);
-            }
-
-            if (!(pClrDebugState->CheckOkayToThrowNoAssert()))
-            {
-                CONTRACT_ASSERT("You cannot enter a HOST_BREAKABLE lock in a NOTHROW region.",
-                                Contract::THROWS_No,
-                                Contract::THROWS_Mask,
-                                __FUNCTION__,
-                                __FILE__,
-                                __LINE__);
-            }
-        }
-
         // If we might want to toggle the GC mode, then we better not be in a GC_NOTRIGGERS region
         if (!(m_dwFlags & (CRST_UNSAFE_COOPGC | CRST_UNSAFE_ANYMODE | CRST_GC_NOTRIGGER_WHEN_TAKEN)))
         {
@@ -273,16 +216,10 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
 
 
 
-    SCAN_IGNORE_THROW;
-    SCAN_IGNORE_FAULT;
-    SCAN_IGNORE_TRIGGER;
     STATIC_CONTRACT_CAN_TAKE_LOCK;
 
     _ASSERTE(IsCrstInitialized());
 
-    // Is Critical Section entered?
-    // We could have perhaps used m_criticalsection.LockCount, but
-    // while spinning, we want to fire the ETW event only once
     BOOL fIsCriticalSectionEnteredAfterFailingOnce = FALSE;
 
     Thread * pThread;
@@ -319,7 +256,7 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
         }
     }
 
-    EnterCriticalSection(&m_criticalsection);
+    minipal_mutex_enter(&m_lock._mtx);
 
 #ifdef _DEBUG
     PostEnter();
@@ -350,7 +287,7 @@ void CrstBase::Leave()
     Thread * pThread = GetThreadNULLOk();
 #endif
 
-    LeaveCriticalSection(&m_criticalsection);
+    minipal_mutex_leave(&m_lock._mtx);
 
     // Check for both rare case using one if-check
     if (m_dwFlags & (CRST_TAKEN_DURING_SHUTDOWN | CRST_DEBUGGER_THREAD))
@@ -450,14 +387,7 @@ void CrstBase::PostEnter()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    if ((m_dwFlags & CRST_HOST_BREAKABLE) != 0)
-    {
-        HOST_BREAKABLE_CRST_TAKEN(this);
-    }
-    else
-    {
-        EE_LOCK_TAKEN(this);
-    }
+    EE_LOCK_TAKEN(this);
 
     _ASSERTE((m_entercount == 0 && m_holderthreadid.IsUnknown()) ||
              m_holderthreadid.IsCurrentThread() ||
@@ -485,12 +415,9 @@ void CrstBase::PostEnter()
     }
 
     Thread * pThread = GetThreadNULLOk();
-    if ((m_dwFlags & CRST_HOST_BREAKABLE) == 0)
+    if (pThread)
     {
-        if (pThread)
-        {
-            pThread->IncUnbreakableLockCount();
-        }
+        pThread->IncLockCount();
     }
 
     if ((ThreadStore::s_pThreadStore != NULL)
@@ -542,12 +469,9 @@ void CrstBase::PreLeave()
 
     Thread * pThread = GetThreadNULLOk();
 
-    if ((m_dwFlags & CRST_HOST_BREAKABLE) == 0)
+    if (pThread)
     {
-        if (pThread)
-        {
-            pThread->DecUnbreakableLockCount();
-        }
+        pThread->DecLockCount();
     }
 
     if (m_countNoTriggerGC > 0 && !ThreadStore::s_pThreadStore->IsCrstForThreadStore(this))
@@ -559,14 +483,7 @@ void CrstBase::PreLeave()
         }
     }
 
-    if ((m_dwFlags & CRST_HOST_BREAKABLE) != 0)
-    {
-        HOST_BREAKABLE_CRST_RELEASED(this);
-    }
-    else
-    {
-        EE_LOCK_RELEASED(this);
-    }
+    EE_LOCK_RELEASED(this);
 
     // Are we in the shutdown sequence and in phase 2 of it?
     if (IsAtProcessExit() && (g_fEEShutDown & ShutDown_Phase2))
@@ -607,8 +524,6 @@ void CrstBase::DebugInit(CrstType crstType, CrstFlags flags)
                           CRST_UNSAFE_COOPGC |
                           CRST_UNSAFE_ANYMODE |
                           CRST_DEBUGGER_THREAD |
-                          CRST_HOST_BREAKABLE |
-                          CRST_OS_CRIT_SEC |
                           CRST_INITIALIZED |
                           CRST_TAKEN_DURING_SHUTDOWN |
                           CRST_GC_NOTRIGGER_WHEN_TAKEN |
@@ -667,7 +582,7 @@ void CrstBase::DebugDestroy()
             "this=0x%p, m_prev=0x%p. m_next=0x%p", m_tag, this, this->m_prev, this->m_next));
     }
 
-    FillMemory(&m_criticalsection, sizeof(m_criticalsection), 0xcc);
+    FillMemory(&m_lock, sizeof(m_lock), 0xcc);
     m_holderthreadid.Clear();
     m_entercount     = 0xcccccccc;
 
