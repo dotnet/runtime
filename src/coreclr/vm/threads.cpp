@@ -7796,7 +7796,7 @@ BOOL Thread::IsAddressInCurrentStack(PTR_VOID addr)
 
 #ifdef FEATURE_INTERPRETER
     InterpThreadContext* pInterpThreadContext = currentThread->m_pInterpThreadContext;
-    if ((pInterpThreadContext != NULL) && ((PTR_VOID)pInterpThreadContext->pStackStart < addr) && (addr <= (PTR_VOID)pInterpThreadContext->pStackPointer))
+    if ((pInterpThreadContext != NULL) && ((PTR_VOID)pInterpThreadContext->pStackStart <= addr) && (addr < (PTR_VOID)pInterpThreadContext->pStackPointer))
     {
         return TRUE;
     }
@@ -7817,7 +7817,7 @@ BOOL Thread::IsAddressInStack (PTR_VOID addr) const
     _ASSERTE(m_CacheStackLimit != NULL);
     _ASSERTE(m_CacheStackLimit < m_CacheStackBase);
 #ifdef FEATURE_INTERPRETER
-    if ((m_pInterpThreadContext != NULL) && ((PTR_VOID)m_pInterpThreadContext->pStackStart < addr) && (addr <= (PTR_VOID)m_pInterpThreadContext->pStackPointer))
+    if ((m_pInterpThreadContext != NULL) && ((PTR_VOID)m_pInterpThreadContext->pStackStart <= addr) && (addr < (PTR_VOID)m_pInterpThreadContext->pStackPointer))
     {
         return TRUE;
     }
