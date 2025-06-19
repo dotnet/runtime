@@ -189,10 +189,12 @@ namespace Internal.TypeSystem.Interop
 
         public override ClassLayoutMetadata GetClassLayout()
         {
-            ClassLayoutMetadata result = default(ClassLayoutMetadata);
-            result.PackingSize = 0;
-            result.Size = checked((int)Length * ElementType.GetElementSize().AsInt);
-            return result;
+            return new ClassLayoutMetadata()
+            {
+                LayoutKind = MetadataLayoutKind.Sequential,
+                PackingSize = 0,
+                Size = checked((int)Length * ElementType.GetElementSize().AsInt),
+            };
         }
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
