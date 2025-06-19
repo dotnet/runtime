@@ -18,7 +18,6 @@ namespace System.Reflection
         NestedFamORAssem = 0x00000007,     // Class is nested with family or assembly visibility.
 
         // Use this mask to retrieve class layout information
-        // 0 is AutoLayout, 0x2 is SequentialLayout, 4 is ExplicitLayout
         LayoutMask = 0x00000018,
         AutoLayout = 0x00000000,     // Class fields are auto-laid out
         SequentialLayout = 0x00000008,     // Class fields are laid out sequentially

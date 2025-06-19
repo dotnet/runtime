@@ -191,7 +191,7 @@ namespace Internal.TypeSystem.Interop
         {
             return new ClassLayoutMetadata()
             {
-                LayoutKind = MetadataLayoutKind.Sequential,
+                Kind = MetadataLayoutKind.Sequential,
                 PackingSize = 0,
                 Size = checked((int)Length * ElementType.GetElementSize().AsInt),
             };
