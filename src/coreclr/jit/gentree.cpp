@@ -24548,7 +24548,15 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
                 GenTree* op3 = gtNewIconNode(ctrlByte);
                 intrinsic    = isScalar ? NI_AVX512_RangeScalar : NI_AVX512_Range;
 
-                retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+                if (isNumber)
+                {
+                    retNode = gtNewSimdHWIntrinsicNode(type, op1Clone, op2Clone, op3, intrinsic, simdBaseJitType,
+                                                       simdSize);
+                }
+                else
+                {
+                    retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+                }
 
                 // FixupScalar(left, right, table, control) computes the input type of right
                 // adjusts it based on the table and then returns
@@ -24605,10 +24613,10 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
                     // Thus if either input was snan, we now have norm as expected
                     // Otherwise, the result was already correct
 
-                    op1Clone = gtNewSimdHWIntrinsicNode(type, op1Clone, op2Clone, tblVecCon1, gtNewIconNode(0),
-                                                        intrinsic, simdBaseJitType, simdSize);
+                    op1 = gtNewSimdHWIntrinsicNode(type, op1, op2, tblVecCon1, gtNewIconNode(0), intrinsic,
+                                                   simdBaseJitType, simdSize);
 
-                    retNode = gtNewSimdHWIntrinsicNode(type, op1Clone, retNode, tblVecCon2, gtNewIconNode(0), intrinsic,
+                    retNode = gtNewSimdHWIntrinsicNode(type, op1, retNode, tblVecCon2, gtNewIconNode(0), intrinsic,
                                                        simdBaseJitType, simdSize);
                 }
                 else
