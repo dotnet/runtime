@@ -14,7 +14,6 @@ using System.Text;
 namespace System.Numerics.Tensors
 {
     /// <summary>Provides methods for tensor operations.</summary>
-    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public static partial class Tensor
     {
         #region AsTensorSpan

@@ -9,7 +9,6 @@ namespace System.Numerics.Tensors
     /// <summary>Represents a tensor.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="T">The element type.</typeparam>
-    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public interface ITensor<TSelf, T> : ITensor, IReadOnlyTensor<TSelf, T>
         where TSelf : ITensor<TSelf, T>
     {

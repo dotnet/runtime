@@ -16,7 +16,6 @@ namespace System.Numerics.Tensors
     /// <summary>
     /// Represents a tensor.
     /// </summary>
-    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class Tensor<T> : ITensor<Tensor<T>, T>
     {
         /// <summary>Gets an empty tensor.</summary>

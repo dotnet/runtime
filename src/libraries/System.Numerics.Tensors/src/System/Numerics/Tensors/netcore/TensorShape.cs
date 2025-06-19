@@ -42,7 +42,6 @@ namespace System.Numerics.Tensors
         HasAnyDenseDimensions = (1 << 2),
     }
 
-    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     internal readonly struct TensorShape : IEquatable<TensorShape>
     {
         // The layout of the fields here is very particular and is intentionally designed to
