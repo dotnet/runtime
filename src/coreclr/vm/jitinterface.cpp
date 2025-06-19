@@ -8686,7 +8686,15 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             }
             else if (pObjMT->IsArray())
             {
-                pDevirtMD = GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(pBaseMD, pObjMT->GetArrayElementTypeHandle());
+                // We cannot devirtualize unless we know the exact array element type
+                //
+                TypeHandle elemType = pObjMT->GetArrayElementTypeHandle();
+                if (elemType.IsCanonicalSubtype())
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
+                    return false;
+                }
+                pDevirtMD = GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(pBaseMD, elemType);
             }
             else
             {
