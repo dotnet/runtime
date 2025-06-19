@@ -4969,7 +4969,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         GenTreeIntrinsic(callType, op2, NI_System_Math_Abs, nullptr R2RARG(nullEntry));
                 }
                 ni = isMax ? NI_System_Math_MaxNumber : NI_System_Math_MinNumber;
-                GenTree*       minMax =
+                GenTree* minMax =
                     new (this, GT_INTRINSIC) GenTreeIntrinsic(callType, op1, op2, ni, nullptr R2RARG(nullEntry));
 
                 if (!isNumber)
@@ -5018,9 +5018,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     if (varTypeIsUnsigned(preciseType))
                         ni = isMax ? NI_System_Math_MaxUnsigned : NI_System_Math_MinUnsigned;
 
-                    GenTreeIntrinsic* minMax =
-                        new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_I_IMPL, op1, op2, ni,
-                                                                  nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+                    GenTreeIntrinsic* minMax = new (this, GT_INTRINSIC)
+                        GenTreeIntrinsic(TYP_I_IMPL, op1, op2, ni, nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
 
                     return minMax;
                 }

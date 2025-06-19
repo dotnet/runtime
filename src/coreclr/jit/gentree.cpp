@@ -24711,15 +24711,13 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
 
                 if (isMax)
                 {
-                    signMask = gtNewSimdIsPositiveNode(type, gtCloneExpr(op1Dup), simdBaseJitType, simdSize);
-                    cmpMask  = gtNewSimdCmpOpNode(GT_GT, type, gtCloneExpr(absOp1Dup), gtCloneExpr(absOp2Dup),
-                                                  simdBaseJitType, simdSize);
+                    signMask = gtNewSimdIsPositiveNode(type, op1Dup, simdBaseJitType, simdSize);
+                    cmpMask  = gtNewSimdCmpOpNode(GT_GT, type, absOp1Dup, absOp2Dup, simdBaseJitType, simdSize);
                 }
                 else
                 {
-                    signMask = gtNewSimdIsNegativeNode(type, gtCloneExpr(op1Dup), simdBaseJitType, simdSize);
-                    cmpMask  = gtNewSimdCmpOpNode(GT_LT, type, gtCloneExpr(absOp1Dup), gtCloneExpr(absOp2Dup),
-                                                  simdBaseJitType, simdSize);
+                    signMask = gtNewSimdIsNegativeNode(type, op1Dup, simdBaseJitType, simdSize);
+                    cmpMask  = gtNewSimdCmpOpNode(GT_LT, type, absOp1Dup, absOp2Dup, simdBaseJitType, simdSize);
                 }
 
                 if (isNumber)
@@ -24737,15 +24735,13 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
 
                 if (isMax)
                 {
-                    signMask = gtNewSimdIsNegativeNode(type, gtCloneExpr(op2Dup), simdBaseJitType, simdSize);
-                    cmpMask = gtNewSimdCmpOpNode(GT_LT, type, gtCloneExpr(op2Dup), gtCloneExpr(op1Dup), simdBaseJitType,
-                                                 simdSize);
+                    signMask = gtNewSimdIsNegativeNode(type, op2Dup, simdBaseJitType, simdSize);
+                    cmpMask  = gtNewSimdCmpOpNode(GT_LT, type, gtCloneExpr(op2Dup), op1Dup, simdBaseJitType, simdSize);
                 }
                 else
                 {
-                    signMask = gtNewSimdIsNegativeNode(type, gtCloneExpr(op1Dup), simdBaseJitType, simdSize);
-                    cmpMask = gtNewSimdCmpOpNode(GT_LT, type, gtCloneExpr(op1Dup), gtCloneExpr(op2Dup), simdBaseJitType,
-                                                 simdSize);
+                    signMask = gtNewSimdIsNegativeNode(type, op1Dup, simdBaseJitType, simdSize);
+                    cmpMask  = gtNewSimdCmpOpNode(GT_LT, type, gtCloneExpr(op1Dup), op2Dup, simdBaseJitType, simdSize);
                 }
 
                 if (isNumber)
@@ -24756,14 +24752,15 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
                 {
                     nanMask = gtNewSimdIsNaNNode(type, gtCloneExpr(op1Dup), simdBaseJitType, simdSize);
                 }
+
+                op2Dup = gtCloneExpr(op2Dup);
             }
 
             GenTree* mask = gtNewSimdBinOpNode(GT_AND, type, equalsMask, signMask, simdBaseJitType, simdSize);
             mask          = gtNewSimdBinOpNode(GT_OR, type, mask, nanMask, simdBaseJitType, simdSize);
             mask          = gtNewSimdBinOpNode(GT_OR, type, mask, cmpMask, simdBaseJitType, simdSize);
 
-            retNode =
-                gtNewSimdCndSelNode(type, mask, gtCloneExpr(op1Dup), gtCloneExpr(op2Dup), simdBaseJitType, simdSize);
+            retNode = gtNewSimdCndSelNode(type, mask, gtCloneExpr(op1Dup), op2Dup, simdBaseJitType, simdSize);
         }
         assert(retNode != nullptr);
 
@@ -24772,6 +24769,51 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
             retNode = gtNewSimdToScalarNode(simdBaseType, retNode, simdBaseJitType, simdSize);
         }
         return retNode;
+    }
+
+    assert(!isScalar);
+
+    if (isMagnitude)
+    {
+        GenTree* op1Dup = fgMakeMultiUse(&op1);
+        GenTree* op2Dup = fgMakeMultiUse(&op2);
+
+        GenTree* absOp1 = gtNewSimdAbsNode(type, op1, simdBaseJitType, simdSize);
+        GenTree* absOp2 = gtNewSimdAbsNode(type, op2, simdBaseJitType, simdSize);
+
+        GenTree* absOp1Dup = fgMakeMultiUse(&absOp1);
+        GenTree* absOp2Dup = fgMakeMultiUse(&absOp2);
+
+        GenTree* equalsMask = gtNewSimdCmpOpNode(GT_EQ, type, absOp1, absOp2, simdBaseJitType, simdSize);
+        ;
+        GenTree* signMask1 = nullptr;
+        GenTree* signMask2 = nullptr;
+        GenTree* signMask3 = nullptr;
+        GenTree* cmpMask   = nullptr;
+
+        if (isMax)
+        {
+            signMask1 = gtNewSimdIsNegativeNode(type, op2Dup, simdBaseJitType, simdSize);
+            signMask2 = gtNewSimdIsPositiveNode(type, absOp2Dup, simdBaseJitType, simdSize);
+            signMask3 = gtNewSimdIsNegativeNode(type, absOp1Dup, simdBaseJitType, simdSize);
+            cmpMask   = gtNewSimdCmpOpNode(GT_GT, type, gtCloneExpr(absOp1Dup), gtCloneExpr(absOp2Dup), simdBaseJitType,
+                                           simdSize);
+        }
+        else
+        {
+            signMask1 = gtNewSimdIsNegativeNode(type, op1Dup, simdBaseJitType, simdSize);
+            signMask2 = gtNewSimdIsPositiveNode(type, absOp1Dup, simdBaseJitType, simdSize);
+            signMask3 = gtNewSimdIsNegativeNode(type, absOp2Dup, simdBaseJitType, simdSize);
+            cmpMask   = gtNewSimdCmpOpNode(GT_LT, type, gtCloneExpr(absOp1Dup), gtCloneExpr(absOp2Dup), simdBaseJitType,
+                                           simdSize);
+        }
+
+        GenTree* mask1 = gtNewSimdBinOpNode(GT_AND, type, equalsMask, signMask1, simdBaseJitType, simdSize);
+        GenTree* mask2 = gtNewSimdBinOpNode(GT_AND, type, cmpMask, signMask2, simdBaseJitType, simdSize);
+        GenTree* mask3 = gtNewSimdBinOpNode(GT_OR, type, mask1, mask2, simdBaseJitType, simdSize);
+        mask3          = gtNewSimdBinOpNode(GT_OR, type, mask3, signMask3, simdBaseJitType, simdSize);
+
+        return gtNewSimdCndSelNode(type, mask3, gtCloneExpr(op1Dup), gtCloneExpr(op2Dup), simdBaseJitType, simdSize);
     }
     return gtNewSimdMinMaxNativeNode(type, op1, op2, simdBaseJitType, simdSize, isMax);
 }
