@@ -291,7 +291,7 @@ namespace ILCompiler
                 }
             }
 
-            if (hasIDynamicInterfaceCastableType)
+            if (!hasIDynamicInterfaceCastableType)
             {
                 // We can't easily trim out some of the IDynamicInterfaceCastable infrastructure because
                 // the callers do type checks based on flags on the MethodTable instead of an actual type cast.
