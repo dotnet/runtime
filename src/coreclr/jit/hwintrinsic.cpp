@@ -1344,7 +1344,15 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         {
             return ni;
         }
-        return binarySearchId(InstructionSet_AVX512v2, sig, methodName, isLimitedVector256Isa);
+
+        ni = binarySearchId(InstructionSet_AVX512v2, sig, methodName, isLimitedVector256Isa);
+
+        if (ni != NI_Illegal)
+        {
+            return ni;
+        }
+
+        return binarySearchId(InstructionSet_AVX512v3, sig, methodName, isLimitedVector256Isa);
     }
     else if (isa == InstructionSet_AVX10v1_X64)
     {
