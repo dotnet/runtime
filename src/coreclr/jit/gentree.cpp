@@ -20873,11 +20873,11 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps        op,
 
     if ((op == GT_LSH) || (op == GT_RSH) || (op == GT_RSZ))
     {
-        assert((genActualType(op2) == TYP_INT)
+        bool op2Type = genActualType(op2) == TYP_INT;
 #if defined (TARGET_ARM64)
-        || (isScalable && isOp2SimdType)
+        op2Type |= (isScalable && isOp2SimdType);
 #endif
-        );
+        assert(op2Type && "op2's type is unexpected.");
     }
     else
     {
@@ -22732,7 +22732,7 @@ GenTree* Compiler::gtNewSimdCndSelNode(var_types         type,
                                        GenTree*          op2,
                                        GenTree*          op3,
                                        CorInfoType       simdBaseJitType,
-                                       unsigned simdSize ARM64_ARG(bool isScalable))
+                                       unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
@@ -22768,17 +22768,7 @@ GenTree* Compiler::gtNewSimdCndSelNode(var_types         type,
     }
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
 #elif defined(TARGET_ARM64)
-    if (UseSveForType(type) && isScalable)
-    {
-        intrinsic = NI_Sve_ConditionalSelect;
-        op1       = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
-    }
-    else
-    {
-        intrinsic = NI_AdvSimd_BitwiseSelect;
-    }
-
-    return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, NI_AdvSimd_BitwiseSelect, simdBaseJitType, simdSize);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -24744,7 +24734,7 @@ GenTree* Compiler::gtNewSimdMaxNativeNode(var_types         type,
     op1 = gtNewSimdCmpOpNode(GT_GT, type, op1, op2, simdBaseJitType, simdSize ARM64_ARG(false));
 
     // result = ConditionalSelect(op1, op1Dup, op2Dup)
-    return gtNewSimdCndSelNode(type, op1, op1Dup, op2Dup, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+    return gtNewSimdCndSelNode(type, op1, op1Dup, op2Dup, simdBaseJitType, simdSize);
 }
 
 GenTree* Compiler::gtNewSimdMinNode(var_types         type,
@@ -25021,7 +25011,7 @@ GenTree* Compiler::gtNewSimdMinNativeNode(var_types         type,
     op1 = gtNewSimdCmpOpNode(GT_LT, type, op1, op2, simdBaseJitType, simdSize ARM64_ARG(isScalable));
 
     // result = ConditionalSelect(op1, op1Dup, op2Dup)
-    return gtNewSimdCndSelNode(type, op1, op1Dup, op2Dup, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+    return gtNewSimdCndSelNode(type, op1, op1Dup, op2Dup, simdBaseJitType, simdSize);
 }
 
 GenTree* Compiler::gtNewSimdNarrowNode(
@@ -29554,6 +29544,9 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(var_types      simdT
                 break;
             case NI_AdvSimd_And:
                 sveId = NI_Sve_And;
+                break;
+            case NI_AdvSimd_BitwiseSelect:
+                sveId = NI_Sve2_BitwiseSelect;
                 break;
             case NI_AdvSimd_Ceiling:
             case NI_AdvSimd_Arm64_Ceiling:

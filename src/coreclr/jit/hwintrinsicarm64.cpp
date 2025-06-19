@@ -975,8 +975,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdCndSelNode(retType, op1, op2, op3, simdBaseJitType, simdSize,
-                                          intrinsic == NI_Vector_ConditionalSelect);
+            retNode = gtNewSimdCndSelNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
             break;
         }
 
@@ -3724,6 +3723,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             case NI_Vector_Abs:
             case NI_Vector_Ceiling:
+            case NI_Vector_ConditionalSelect:
             case NI_Vector_ConvertToDouble:
             case NI_Vector_ConvertToInt32Native:
             case NI_Vector_ConvertToInt32:
@@ -3771,7 +3771,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 assert((FIRST_NI_Sve <= sveIntrinsic) && (sveIntrinsic <= LAST_NI_Sve));
                 break;
             }
-            case NI_Vector_ConditionalSelect:
             case NI_Vector_Equals:
             case NI_Vector_op_Equality:
             case NI_Vector_EqualsAny:

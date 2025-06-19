@@ -3208,9 +3208,7 @@ public:
                                  GenTree*    op2,
                                  GenTree*    op3,
                                  CorInfoType simdBaseJitType,
-                                 unsigned    simdSize
-                                 ARM64_ARG(bool isScalable)
-                                 );
+                                 unsigned    simdSize);
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     GenTree* gtNewSimdCvtMaskToVectorNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
