@@ -12,23 +12,8 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal sealed class AnalyzedExternalTypeMapNode(TypeDesc typeMapGroup, IReadOnlyDictionary<string, TypeDesc> entries) : DependencyNodeCore<NodeFactory>, IExternalTypeMapNode
     {
-        public override bool InterestingForDynamicDependencyAnalysis => false;
-
-        public override bool HasDynamicDependencies => false;
-
-        public override bool HasConditionalStaticDependencies => false;
-
-        public override bool StaticDependenciesAreComputed => true;
-
         public TypeDesc TypeMapGroup => typeMapGroup;
 
-        public int ClassCode => -874354558;
-
-        public int CompareToImpl(ISortableNode other, CompilerComparer comparer)
-        {
-            AnalyzedExternalTypeMapNode otherEntry = (AnalyzedExternalTypeMapNode)other;
-            return comparer.Compare(TypeMapGroup, otherEntry.TypeMapGroup);
-        }
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, ExternalReferencesTableNode externalReferences)
         {
             VertexHashtable typeMapHashTable = new();
@@ -56,7 +41,22 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];
+        protected override string GetName(NodeFactory context) => $"Analyzed External Type Map: {TypeMapGroup}";
         public IExternalTypeMapNode ToAnalysisBasedNode(NodeFactory factory) => this;
-        protected override string GetName(NodeFactory context) => $"Analyzed External Type Map: {typeMapGroup}";
+
+        public override bool InterestingForDynamicDependencyAnalysis => false;
+
+        public override bool HasDynamicDependencies => false;
+
+        public override bool HasConditionalStaticDependencies => false;
+
+        public override bool StaticDependenciesAreComputed => true;
+        public int ClassCode => -874354558;
+
+        public int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            AnalyzedExternalTypeMapNode otherEntry = (AnalyzedExternalTypeMapNode)other;
+            return comparer.Compare(TypeMapGroup, otherEntry.TypeMapGroup);
+        }
     }
 }

@@ -14,22 +14,6 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal sealed class ExternalTypeMapObjectNode(ExternalReferencesTableNode externalReferences) : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__external_type_map__"u8);
-        }
-
-        public int Size { get; private set; }
-        public int Offset => 0;
-        public override bool IsShareable => false;
-        public override ObjectNodeSection GetSection(NodeFactory factory) => externalReferences.GetSection(factory);
-        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
-
-        public override int ClassCode => (int)ObjectNodeOrder.ExternalTypeMapObjectNode;
-
-        public override bool StaticDependenciesAreComputed => true;
-
-        protected override string GetName(NodeFactory context) => "External Type Map Hash Table";
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
@@ -53,5 +37,21 @@ namespace ILCompiler.DependencyAnalysis
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, [this]);
         }
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__external_type_map__"u8);
+        }
+
+        public int Size { get; private set; }
+        public int Offset => 0;
+        public override bool IsShareable => false;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => externalReferences.GetSection(factory);
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+
+        public override int ClassCode => (int)ObjectNodeOrder.ExternalTypeMapObjectNode;
+
+        public override bool StaticDependenciesAreComputed => true;
+
+        protected override string GetName(NodeFactory context) => "External Type Map Hash Table";
     }
 }

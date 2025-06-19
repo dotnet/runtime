@@ -13,11 +13,19 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ProxyTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> mapEntries) : DependencyNodeCore<NodeFactory>, IProxyTypeMapNode
+    internal sealed class ProxyTypeMapNode : DependencyNodeCore<NodeFactory>, IProxyTypeMapNode
     {
-        public TypeDesc TypeMapGroup { get; } = typeMapGroup;
+        private readonly IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> _mapEntries;
 
-        public IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> MapEntries => mapEntries;
+        public ProxyTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> mapEntries)
+        {
+            _mapEntries = mapEntries;
+            TypeMapGroup = typeMapGroup;
+        }
+
+        public TypeDesc TypeMapGroup { get; }
+
+        public IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> MapEntries => _mapEntries;
         public override bool InterestingForDynamicDependencyAnalysis => false;
 
         public override bool HasDynamicDependencies => false;
@@ -32,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
         {
-            foreach (var (key, value) in mapEntries)
+            foreach (var (key, value) in _mapEntries)
             {
                 yield return new CombinedDependencyListEntry(
                     context.MaximallyConstructableType(value),

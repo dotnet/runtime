@@ -17,12 +17,22 @@ namespace ILCompiler
 {
     public sealed class TypeMapMetadata
     {
-        internal sealed class Map(TypeDesc typeMapGroup)
+        internal sealed class Map
         {
-            private sealed class ThrowingMethodStub(TypeDesc owningType, TypeDesc typeMapGroup, bool externalTypeMap, TypeSystemException ex) : ILStubMethod
+            private sealed class ThrowingMethodStub : ILStubMethod
             {
-                public TypeSystemException Exception => ex;
-                public override string Name => $"InvalidTypeMapStub_{typeMapGroup}_{(externalTypeMap ? "External" : "Proxy")}";
+                private readonly TypeDesc _typeMapGroup;
+
+                public ThrowingMethodStub(TypeDesc owningType, TypeDesc typeMapGroup, bool externalTypeMap, TypeSystemException ex)
+                {
+                    OwningType = owningType;
+                    _typeMapGroup = typeMapGroup;
+                    Name = $"InvalidTypeMapStub_{_typeMapGroup}_{(externalTypeMap ? "External" : "Proxy")}";
+                    Exception = ex;
+                }
+
+                public TypeSystemException Exception { get; }
+                public override string Name { get; }
                 public override MethodIL EmitIL()
                 {
                     return TypeSystemThrowingILEmitter.EmitIL(this, Exception);
@@ -39,11 +49,11 @@ namespace ILCompiler
 
                 protected override int ClassCode => 1744789196;
 
-                public override TypeDesc OwningType => owningType;
+                public override TypeDesc OwningType { get; }
 
                 public override MethodSignature Signature => new MethodSignature(MethodSignatureFlags.Static, 0, Context.GetWellKnownType(WellKnownType.Void), []);
 
-                public override TypeSystemContext Context => owningType.Context;
+                public override TypeSystemContext Context => OwningType.Context;
             }
 
             private readonly Dictionary<TypeDesc, TypeDesc> _associatedTypeMap = [];
@@ -51,7 +61,12 @@ namespace ILCompiler
             private ThrowingMethodStub _externalTypeMapExceptionStub;
             private ThrowingMethodStub _associatedTypeMapExceptionStub;
 
-            public TypeDesc TypeMapGroup { get; } = typeMapGroup;
+            public Map(TypeDesc typeMapGroup)
+            {
+                TypeMapGroup = typeMapGroup;
+            }
+
+            public TypeDesc TypeMapGroup { get; }
 
             public void AddAssociatedTypeMapEntry(TypeDesc type, TypeDesc associatedType)
             {

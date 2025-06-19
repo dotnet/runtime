@@ -13,23 +13,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal sealed class AnalyzedProxyTypeMapNode(TypeDesc typeMapGroup, IReadOnlyDictionary<TypeDesc, TypeDesc> entries) : DependencyNodeCore<NodeFactory>, IProxyTypeMapNode
     {
-        public override bool InterestingForDynamicDependencyAnalysis => false;
-
-        public override bool HasDynamicDependencies => false;
-
-        public override bool HasConditionalStaticDependencies => false;
-
-        public override bool StaticDependenciesAreComputed => true;
-
         public TypeDesc TypeMapGroup => typeMapGroup;
-
-        public int ClassCode => 171742984;
-
-        public int CompareToImpl(ISortableNode other, CompilerComparer comparer)
-        {
-            AnalyzedProxyTypeMapNode otherEntry = (AnalyzedProxyTypeMapNode)other;
-            return comparer.Compare(TypeMapGroup, otherEntry.TypeMapGroup);
-        }
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, ExternalReferencesTableNode externalReferences)
         {
             VertexHashtable typeMapHashTable = new();
@@ -58,7 +42,22 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];
-        public IProxyTypeMapNode ToAnalysisBasedNode(NodeFactory factory) => this;
         protected override string GetName(NodeFactory context) => $"Analyzed Proxy Type Map: {typeMapGroup}";
+        public IProxyTypeMapNode ToAnalysisBasedNode(NodeFactory factory) => this;
+        public override bool InterestingForDynamicDependencyAnalysis => false;
+
+        public override bool HasDynamicDependencies => false;
+
+        public override bool HasConditionalStaticDependencies => false;
+
+        public override bool StaticDependenciesAreComputed => true;
+
+        public int ClassCode => 171742984;
+
+        public int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            AnalyzedProxyTypeMapNode otherEntry = (AnalyzedProxyTypeMapNode)other;
+            return comparer.Compare(TypeMapGroup, otherEntry.TypeMapGroup);
+        }
     }
 }
