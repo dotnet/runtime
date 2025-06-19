@@ -227,5 +227,47 @@ namespace System.Net.WebSockets.Client.Tests
                 await connection.SendResponseHeadersAsync(streamId2, endStream: false, HttpStatusCode.OK);
             }, new Http2Options() { WebSocketEndpoint = true, UseSsl = false });
         }
+
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+        [Theory]
+        [MemberData(nameof(EchoServers))]
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
+        public async Task ConnectAsync_Http11WithRequestVersionOrHigher_DowngradeSuccess(Uri server)
+        {
+            using (var cws = new ClientWebSocket())
+            using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+            {
+                cws.Options.HttpVersion = HttpVersion.Version11;
+                cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+                await cws.ConnectAsync(server, GetInvoker(), cts.Token);
+                Assert.Equal(WebSocketState.Open, cws.State);
+            }
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
+        public async Task ConnectAsync_Http11WithRequestVersionOrHigher_Loopback_Success()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (var cws = new ClientWebSocket())
+                using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+                {
+                    cws.Options.HttpVersion = HttpVersion.Version11;
+                    cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+
+                    Uri wsUrl = new Uri(url.ToString().Replace("http://", "ws://"));
+                    Task connectTask = cws.ConnectAsync(wsUrl, GetInvoker(), cts.Token);
+
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await LoopbackHelper.WebSocketHandshakeAsync(connection);
+                    });
+
+                    await connectTask;
+                    Assert.Equal(WebSocketState.Open, cws.State);
+                }
+            });
+        }
     }
 }
