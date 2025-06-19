@@ -24303,82 +24303,66 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
 
             retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
         }
-        else if (!isMagnitude && (cnsNode != nullptr))
+        else if ((cnsNode != nullptr) && !otherNode->OperIsConst())
         {
-            bool needsFixup = false;
-            bool canHandle  = false;
+            bool isNaN = false;
 
-            if (isMax)
+            if (isScalar)
             {
-                // xarch max return op2 if both inputs are 0 of either sign
-                // we require +0 to be greater than -0 we also require NaN to
-                // not be propagated for isNumber and to be propagated otherwise.
-                //
-                // This means for isNumber we want to do `max other, cns` and
-                // can only handle cns being -0 if Avx512F is supported. This is
-                // because if other was NaN, we want to return the non-NaN cns.
-                // But if cns was -0 and other was +0 we'd want to return +0 and
-                // so need to be able to fixup the result.
-                //
-                // For !isNumber we have the inverse and want `max cns, other` and
-                // can only handle cns being +0 if Avx512F is supported. This is
-                // because if other was NaN, we want to return other and if cns
-                // was +0 and other was -0 we'd want to return +0 and so need
-                // so need to be able to fixup the result.
-
-                if (isNumber)
-                {
-                    if (isScalar)
-                    {
-                        needsFixup = cnsNode->IsFloatNegativeZero();
-                    }
-                    else
-                    {
-                        needsFixup = cnsNode->IsVectorNegativeZero(simdBaseType);
-                    }
-                }
-                else if (isScalar)
-                {
-                    needsFixup = cnsNode->IsFloatPositiveZero();
-                }
-                else
-                {
-                    needsFixup = cnsNode->IsVectorZero();
-                }
-
-                if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512))
-                {
-                    // Given the checks, op1 can safely be the cns and op2 the other node
-
-                    intrinsic = isScalar ? NI_X86Base_MaxScalar : NI_X86Base_Max;
-
-                    op1 = cnsNode;
-                    op2 = otherNode;
-
-                    canHandle = true;
-                }
+                isNaN = cnsNode->IsFloatNaN();
             }
             else
             {
-                // xarch min return op2 if both inputs are 0 of either sign
-                // we require -0 to be lesser than +0, we also require NaN to
-                // not be propagated for isNumber and to be propagated otherwise.
-                //
-                // This means for isNumber we want to do `min other, cns` and
-                // can only handle cns being +0 if Avx512F is supported. This is
-                // because if other was NaN, we want to return the non-NaN cns.
-                // But if cns was +0 and other was -0 we'd want to return -0 and
-                // so need to be able to fixup the result.
-                //
-                // For !isNumber we have the inverse and want `min cns, other` and
-                // can only handle cns being -0 if Avx512F is supported. This is
-                // because if other was NaN, we want to return other and if cns
-                // was -0 and other was +0 we'd want to return -0 and so need
-                // so need to be able to fixup the result.
+                isNaN = cnsNode->IsVectorNaN(simdBaseType);
+            }
 
+            if (isNaN)
+            {
                 if (isNumber)
                 {
-                    if (isScalar)
+                    return otherNode;
+                }
+                else
+                {
+                    return cnsNode;
+                }
+            }
+
+            if (!isMagnitude)
+            {
+                bool needsFixup = false;
+                bool canHandle  = false;
+
+                if (isMax)
+                {
+                    // xarch max return op2 if both inputs are 0 of either sign
+                    // we require +0 to be greater than -0 we also require NaN to
+                    // not be propagated for isNumber and to be propagated otherwise.
+                    //
+                    // This means for isNumber we want to do `max other, cns` and
+                    // can only handle cns being -0 if Avx512F is supported. This is
+                    // because if other was NaN, we want to return the non-NaN cns.
+                    // But if cns was -0 and other was +0 we'd want to return +0 and
+                    // so need to be able to fixup the result.
+                    //
+                    // For !isNumber we have the inverse and want `max cns, other` and
+                    // can only handle cns being +0 if Avx512F is supported. This is
+                    // because if other was NaN, we want to return other and if cns
+                    // was +0 and other was -0 we'd want to return +0 and so need
+                    // so need to be able to fixup the result.
+
+                    if (isNumber)
+                    {
+                        if (isScalar)
+                        {
+                            needsFixup = cnsNode->IsFloatNegativeZero();
+                        }
+                        else
+                        {
+                            needsFixup = cnsNode->IsVectorNegativeZero(simdBaseType);
+                        }
+                    }
+                    else if (isScalar)
                     {
                         needsFixup = cnsNode->IsFloatPositiveZero();
                     }
@@ -24386,107 +24370,151 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
                     {
                         needsFixup = cnsNode->IsVectorZero();
                     }
-                }
-                else if (isScalar)
-                {
-                    needsFixup = cnsNode->IsFloatNegativeZero();
+
+                    if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        // Given the checks, op1 can safely be the cns and op2 the other node
+
+                        intrinsic = isScalar ? NI_X86Base_MaxScalar : NI_X86Base_Max;
+
+                        op1 = cnsNode;
+                        op2 = otherNode;
+
+                        canHandle = true;
+                    }
                 }
                 else
                 {
-                    needsFixup = cnsNode->IsVectorZero();
-                }
-                {
-                    needsFixup = cnsNode->IsVectorNegativeZero(simdBaseType);
-                }
-
-                if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512))
-                {
-                    // Given the checks, op1 can safely be the cns and op2 the other node
-
-                    intrinsic = isScalar ? NI_X86Base_MinScalar : NI_X86Base_Min;
-
-                    op1 = cnsNode;
-                    op2 = otherNode;
-
-                    canHandle = true;
-                }
-            }
-
-            if (canHandle)
-            {
-                assert(op1->OperIsConst() && !op2->OperIsConst());
-
-                if (isScalar)
-                {
-                    GenTreeVecCon* vecCon = gtNewVconNode(type);
-                    vecCon->EvaluateBroadcastInPlace(simdBaseType, cnsNode->AsDblCon()->DconValue());
-
-                    op1 = vecCon;
-                    op2 = gtNewSimdCreateScalarUnsafeNode(type, op2, simdBaseJitType, simdSize);
-                }
-
-                retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
-
-                if (needsFixup)
-                {
-                    GenTree* op2Clone               = fgMakeMultiUse(&op2);
-                    retNode->AsHWIntrinsic()->Op(2) = op2;
-
-                    GenTreeVecCon* tblVecCon = gtNewVconNode(type);
-
-                    // FixupScalar(left, right, table, control) computes the input type of right
-                    // adjusts it based on the table and then returns
+                    // xarch min return op2 if both inputs are 0 of either sign
+                    // we require -0 to be lesser than +0, we also require NaN to
+                    // not be propagated for isNumber and to be propagated otherwise.
                     //
-                    // In our case, left is going to be the result of the RangeScalar operation
-                    // and right is going to be op1 or op2. In the case op1/op2 is QNaN or SNaN
-                    // we want to preserve it instead. Otherwise we want to preserve the original
-                    // result computed by RangeScalar.
+                    // This means for isNumber we want to do `min other, cns` and
+                    // can only handle cns being +0 if Avx512F is supported. This is
+                    // because if other was NaN, we want to return the non-NaN cns.
+                    // But if cns was +0 and other was -0 we'd want to return -0 and
+                    // so need to be able to fixup the result.
                     //
-                    // If both inputs are NaN, then we'll end up taking op1 by virtue of it being
-                    // the latter fixup.
+                    // For !isNumber we have the inverse and want `min cns, other` and
+                    // can only handle cns being -0 if Avx512F is supported. This is
+                    // because if other was NaN, we want to return other and if cns
+                    // was -0 and other was +0 we'd want to return -0 and so need
+                    // so need to be able to fixup the result.
 
-                    if (isMax)
+                    if (isNumber)
                     {
-                        // QNAN: 0b0000:  Preserve left
-                        // SNAN: 0b0000
-                        // ZERO: 0b1000:  +0
-                        // +ONE: 0b0000
-                        // -INF: 0b0000
-                        // +INF: 0b0000
-                        // -VAL: 0b0000
-                        // +VAL: 0b0000
-
-                        const int64_t tblValue = 0x00000800;
-                        tblVecCon->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
+                        if (isScalar)
+                        {
+                            needsFixup = cnsNode->IsFloatPositiveZero();
+                        }
+                        else
+                        {
+                            needsFixup = cnsNode->IsVectorZero();
+                        }
+                    }
+                    else if (isScalar)
+                    {
+                        needsFixup = cnsNode->IsFloatNegativeZero();
                     }
                     else
                     {
-                        // QNAN: 0b0000:  Preserve left
-                        // SNAN: 0b0000
-                        // ZERO: 0b0111:  -0
-                        // +ONE: 0b0000
-                        // -INF: 0b0000
-                        // +INF: 0b0000
-                        // -VAL: 0b0000
-                        // +VAL: 0b0000
-
-                        const int64_t tblValue = 0x00000700;
-                        tblVecCon->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
+                        needsFixup = cnsNode->IsVectorZero();
+                    }
+                    {
+                        needsFixup = cnsNode->IsVectorNegativeZero(simdBaseType);
                     }
 
-                    intrinsic = isScalar ? NI_AVX512_FixupScalar : NI_AVX512_Fixup;
+                    if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        // Given the checks, op1 can safely be the cns and op2 the other node
 
-                    retNode = gtNewSimdHWIntrinsicNode(type, retNode, op2Clone, tblVecCon, gtNewIconNode(0), intrinsic,
-                                                       simdBaseJitType, simdSize);
+                        intrinsic = isScalar ? NI_X86Base_MinScalar : NI_X86Base_Min;
+
+                        op1 = cnsNode;
+                        op2 = otherNode;
+
+                        canHandle = true;
+                    }
                 }
 
-                if (isNumber)
+                if (canHandle)
                 {
-                    // Swap the operands so that the cnsNode is op1, this prevents
-                    // the unknown value (which could be NaN) from being selected.
+                    assert(op1->OperIsConst() && !op2->OperIsConst());
 
-                    retNode->AsHWIntrinsic()->Op(1) = op2;
-                    retNode->AsHWIntrinsic()->Op(2) = op1;
+                    if (isScalar)
+                    {
+                        GenTreeVecCon* vecCon = gtNewVconNode(type);
+                        vecCon->EvaluateBroadcastInPlace(simdBaseType, cnsNode->AsDblCon()->DconValue());
+
+                        op1 = vecCon;
+                        op2 = gtNewSimdCreateScalarUnsafeNode(type, op2, simdBaseJitType, simdSize);
+                    }
+
+                    retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
+
+                    if (needsFixup)
+                    {
+                        GenTree* op2Clone               = fgMakeMultiUse(&op2);
+                        retNode->AsHWIntrinsic()->Op(2) = op2;
+
+                        GenTreeVecCon* tblVecCon = gtNewVconNode(type);
+
+                        // FixupScalar(left, right, table, control) computes the input type of right
+                        // adjusts it based on the table and then returns
+                        //
+                        // In our case, left is going to be the result of the RangeScalar operation
+                        // and right is going to be op1 or op2. In the case op1/op2 is QNaN or SNaN
+                        // we want to preserve it instead. Otherwise we want to preserve the original
+                        // result computed by RangeScalar.
+                        //
+                        // If both inputs are NaN, then we'll end up taking op1 by virtue of it being
+                        // the latter fixup.
+
+                        if (isMax)
+                        {
+                            // QNAN: 0b0000:  Preserve left
+                            // SNAN: 0b0000
+                            // ZERO: 0b1000:  +0
+                            // +ONE: 0b0000
+                            // -INF: 0b0000
+                            // +INF: 0b0000
+                            // -VAL: 0b0000
+                            // +VAL: 0b0000
+
+                            const int64_t tblValue = 0x00000800;
+                            tblVecCon->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG,
+                                                                tblValue);
+                        }
+                        else
+                        {
+                            // QNAN: 0b0000:  Preserve left
+                            // SNAN: 0b0000
+                            // ZERO: 0b0111:  -0
+                            // +ONE: 0b0000
+                            // -INF: 0b0000
+                            // +INF: 0b0000
+                            // -VAL: 0b0000
+                            // +VAL: 0b0000
+
+                            const int64_t tblValue = 0x00000700;
+                            tblVecCon->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG,
+                                                                tblValue);
+                        }
+
+                        intrinsic = isScalar ? NI_AVX512_FixupScalar : NI_AVX512_Fixup;
+
+                        retNode = gtNewSimdHWIntrinsicNode(type, retNode, op2Clone, tblVecCon, gtNewIconNode(0),
+                                                           intrinsic, simdBaseJitType, simdSize);
+                    }
+
+                    if (isNumber)
+                    {
+                        // Swap the operands so that the cnsNode is op1, this prevents
+                        // the unknown value (which could be NaN) from being selected.
+
+                        retNode->AsHWIntrinsic()->Op(1) = op2;
+                        retNode->AsHWIntrinsic()->Op(2) = op1;
+                    }
                 }
             }
         }
@@ -24783,7 +24811,7 @@ GenTree* Compiler::gtNewSimdMinMaxNativeNode(
 
         if (varTypeIsFloating(simdBaseType))
         {
-            intrinsic = NI_AVX_Min;
+            intrinsic = isMax ? NI_AVX_Max : NI_AVX_Min;
         }
         else
         {
@@ -24791,18 +24819,18 @@ GenTree* Compiler::gtNewSimdMinMaxNativeNode(
 
             if (!varTypeIsLong(simdBaseType))
             {
-                intrinsic = NI_AVX2_Min;
+                intrinsic = isMax ? NI_AVX2_Max : NI_AVX2_Min;
             }
             else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
             {
-                intrinsic = NI_AVX512_Min;
+                intrinsic = isMax ? NI_AVX512_Max : NI_AVX512_Min;
             }
         }
     }
     else if (simdSize == 64)
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX512));
-        intrinsic = NI_AVX512_Min;
+        intrinsic = isMax ? NI_AVX512_Max : NI_AVX512_Min;
     }
     else
     {
