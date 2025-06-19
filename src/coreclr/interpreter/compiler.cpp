@@ -1116,10 +1116,8 @@ void InterpCompiler::BuildEHInfo()
         int32_t handlerEndNativeOffset;
         GetNativeRangeForClause(clause.HandlerOffset, clause.HandlerOffset + clause.HandlerLength, &handlerStartNativeOffset, &handlerEndNativeOffset);
 
-        // Interpreter-FIXME
-        const int hackOffsetToFixExceptionsThrownByFirstOpcodeInATryBlock = 1;
-        nativeClause.TryOffset = ConvertOffset(tryStartNativeOffset) - hackOffsetToFixExceptionsThrownByFirstOpcodeInATryBlock;
-        nativeClause.TryLength = ConvertOffset(tryEndNativeOffset) + hackOffsetToFixExceptionsThrownByFirstOpcodeInATryBlock;
+        nativeClause.TryOffset = ConvertOffset(tryStartNativeOffset);
+        nativeClause.TryLength = ConvertOffset(tryEndNativeOffset);
 
         nativeClause.HandlerOffset = ConvertOffset(handlerStartNativeOffset);
         nativeClause.HandlerLength = ConvertOffset(handlerEndNativeOffset);
@@ -2149,6 +2147,8 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             return true;
 
         case NI_Throw_PlatformNotSupportedException:
+            // Interpreter-FIXME: If an INTOP_THROW_PNSE is the first opcode in a try block, catch doesn't catch the exception
+            AddIns(INTOP_NOP);
             AddIns(INTOP_THROW_PNSE);
             return true;
 
