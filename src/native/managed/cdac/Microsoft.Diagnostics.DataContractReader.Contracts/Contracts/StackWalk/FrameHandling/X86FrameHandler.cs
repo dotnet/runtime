@@ -14,11 +14,7 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
 
     public void HandleFaultingExceptionFrame(FaultingExceptionFrame frame)
     {
-        if (frame.TargetContext is not TargetPointer targetContext)
-        {
-            throw new InvalidOperationException("Unexpected null context pointer on FaultingExceptionFrame");
-        }
-        _context.ReadFromAddress(_target, targetContext);
+        _context.ReadFromAddress(_target, frame.TargetContext);
 
         // Clear the CONTEXT_XSTATE, since the X86Context contains just plain CONTEXT structure
         // that does not support holding any extended state.
