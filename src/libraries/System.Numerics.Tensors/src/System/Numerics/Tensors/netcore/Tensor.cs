@@ -1,11 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -69,8 +67,8 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">The shapes are not broadcast compatible.</exception>
         public static Tensor<T> Broadcast<T>(scoped in ReadOnlyTensorSpan<T> source, scoped ReadOnlySpan<nint> lengths)
         {
-            TensorOperation.ValidateCompatibility<T>(source, lengths);
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(lengths);
+            TensorOperation.ValidateCompatibility(source, lengths);
+            Tensor<T> destination = CreateUninitialized<T>(lengths);
             TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(source, destination);
             return destination;
         }
@@ -106,7 +104,7 @@ namespace System.Numerics.Tensors
         /// <param name="destination"></param>
         public static void BroadcastTo<T>(in this ReadOnlyTensorSpan<T> source, in TensorSpan<T> destination)
         {
-            TensorOperation.ValidateCompatibility<T, T>(source, destination);
+            TensorOperation.ValidateCompatibility(source, destination);
             TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(source, destination);
         }
         #endregion
@@ -161,7 +159,7 @@ namespace System.Numerics.Tensors
                 nint[] lengths = new nint[tensors[0].Rank];
                 tensors[0].Lengths.CopyTo(lengths);
                 lengths[dimension] = sumOfAxis;
-                tensor = Tensor.Create<T>(lengths);
+                tensor = Create<T>(lengths);
             }
             else
             {
@@ -175,7 +173,7 @@ namespace System.Numerics.Tensors
                     }
                 }
 
-                tensor = Tensor.Create<T>([totalLength]);
+                tensor = Create<T>([totalLength]);
             }
 
             ConcatenateOnDimension(dimension, tensors, tensor);
@@ -242,7 +240,7 @@ namespace System.Numerics.Tensors
             }
             Span<T> dstSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)totalLength);
 
-            if (dimension == 0 || dimension == -1)
+            if (dimension is 0 or (-1))
             {
                 for (int i = 0; i < tensors.Length; i++)
                 {
@@ -312,7 +310,7 @@ namespace System.Numerics.Tensors
         /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ReadOnlyTensorSpan(T[], ReadOnlySpan{nint})" />
         /// <returns>A new tensor that uses <paramref name="array" /> as its backing buffer and with the specified <paramref name="lengths" />.</returns>
         public static Tensor<T> Create<T>(T[] array, scoped ReadOnlySpan<nint> lengths)
-            => new Tensor<T>(array, lengths);
+            => new Tensor<T>(array, lengths, strides: []);
 
         /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ReadOnlyTensorSpan(T[], ReadOnlySpan{nint}, ReadOnlySpan{nint})" />
         /// <returns>A new tensor that uses <paramref name="array" /> as its backing buffer and with the specified <paramref name="lengths" /> and <paramref name="strides"/>.</returns>
@@ -327,7 +325,7 @@ namespace System.Numerics.Tensors
         /// <returns>A new tensor that contains elements copied from <paramref name="enumerable" />.</returns>
         public static Tensor<T> Create<T>(IEnumerable<T> enumerable, bool pinned = false)
         {
-            T[] array = enumerable.ToArray();
+            T[] array = [.. enumerable];
 
             if (pinned)
             {
@@ -351,7 +349,7 @@ namespace System.Numerics.Tensors
         /// <returns>A new tensor that contains elements copied from <paramref name="enumerable" /> and with the specified <paramref name="lengths" /> and <paramref name="strides" />.</returns>
         public static Tensor<T> Create<T>(IEnumerable<T> enumerable, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false)
         {
-            T[] array = enumerable.ToArray();
+            T[] array = [.. enumerable];
 
             if (pinned)
             {
@@ -415,33 +413,29 @@ namespace System.Numerics.Tensors
 
         /// <inheritdoc cref="ITensor{TSelf, T}.CreateUninitialized(ReadOnlySpan{nint}, bool)" />
         public static Tensor<T> CreateUninitialized<T>(scoped ReadOnlySpan<nint> lengths, bool pinned = false)
-        {
-            TensorShape shape = TensorShape.Create(lengths, strides: []);
-            T[] array = GC.AllocateUninitializedArray<T>(checked((int)(shape.LinearLength)), pinned);
-            return new Tensor<T>(array, in shape, pinned);
-        }
+            => CreateUninitialized<T>(lengths, strides: [], pinned);
 
         /// <inheritdoc cref="ITensor{TSelf, T}.CreateUninitialized(ReadOnlySpan{nint}, ReadOnlySpan{nint}, bool)" />
         public static Tensor<T> CreateUninitialized<T>(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false)
         {
-            TensorShape shape = TensorShape.Create(lengths, strides);
+            TensorShape shape = TensorShape.Create(lengths, strides, pinned);
             T[] values = GC.AllocateUninitializedArray<T>(checked((int)(shape.LinearLength)), pinned);
-            return new Tensor<T>(values, in shape, pinned);
+            return new Tensor<T>(values, in shape);
         }
         #endregion
 
         #region Fill
         /// <summary>
-        /// Fills the given <see cref="TensorSpan{T}"/> with random data in a Gaussian normal distribution. <see cref="System.Random"/>
+        /// Fills the given <see cref="TensorSpan{T}"/> with random data in a Gaussian normal distribution. <see cref="Random"/>
         /// can optionally be provided for seeding.
         /// </summary>
         /// <typeparam name="T">The element type.</typeparam>
         /// <param name="destination">The destination <see cref="TensorSpan{T}"/> where the data will be stored.</param>
-        /// <param name="random"><see cref="System.Random"/> to provide random seeding. Defaults to <see cref="Random.Shared"/> if not provided.</param>
+        /// <param name="random"><see cref="Random"/> to provide random seeding. Defaults to <see cref="Random.Shared"/> if not provided.</param>
         /// <returns></returns>
         public static ref readonly TensorSpan<T> FillGaussianNormalDistribution<T>(in TensorSpan<T> destination, Random? random = null) where T : IFloatingPoint<T>
         {
-            Span<T> span = MemoryMarshal.CreateSpan<T>(ref destination._reference, (int)destination._shape.LinearLength);
+            Span<T> span = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
             random ??= Random.Shared;
 
             for (int i = 0; i < span.Length; i++)
@@ -455,16 +449,16 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Fills the given <see cref="TensorSpan{T}"/> with random data in a uniform distribution. <see cref="System.Random"/>
+        /// Fills the given <see cref="TensorSpan{T}"/> with random data in a uniform distribution. <see cref="Random"/>
         /// can optionally be provided for seeding.
         /// </summary>
         /// <typeparam name="T">The element type.</typeparam>
         /// <param name="destination">The destination <see cref="TensorSpan{T}"/> where the data will be stored.</param>
-        /// <param name="random"><see cref="System.Random"/> to provide random seeding. Defaults to <see cref="Random.Shared"/> if not provided.</param>
+        /// <param name="random"><see cref="Random"/> to provide random seeding. Defaults to <see cref="Random.Shared"/> if not provided.</param>
         /// <returns></returns>
         public static ref readonly TensorSpan<T> FillUniformDistribution<T>(in TensorSpan<T> destination, Random? random = null) where T : IFloatingPoint<T>
         {
-            Span<T> span = MemoryMarshal.CreateSpan<T>(ref destination._reference, (int)destination._shape.LinearLength);
+            Span<T> span = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
             random ??= Random.Shared;
             for (int i = 0; i < span.Length; i++)
                 span[i] = T.CreateChecked(random.NextDouble());
@@ -676,7 +670,7 @@ namespace System.Numerics.Tensors
         public static Tensor<bool> GreaterThan<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IComparisonOperators<T, T, bool>
         {
-            Tensor<bool> destination = Tensor.Create<bool>(x.Lengths, false);
+            Tensor<bool> destination = Create<bool>(x.Lengths, false);
             GreaterThan(x, y, destination);
             return destination;
         }
@@ -857,7 +851,7 @@ namespace System.Numerics.Tensors
         public static Tensor<bool> GreaterThanOrEqual<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IComparisonOperators<T, T, bool>
         {
-            Tensor<bool> destination = Tensor.Create<bool>(x.Lengths, false);
+            Tensor<bool> destination = Create<bool>(x.Lengths, false);
             GreaterThanOrEqual(x, y, destination);
             return destination;
         }
@@ -1038,7 +1032,7 @@ namespace System.Numerics.Tensors
         public static Tensor<bool> LessThan<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IComparisonOperators<T, T, bool>
         {
-            Tensor<bool> destination = Tensor.Create<bool>(x.Lengths, false);
+            Tensor<bool> destination = Create<bool>(x.Lengths, false);
             LessThan(x, y, destination);
             return destination;
         }
@@ -1219,7 +1213,7 @@ namespace System.Numerics.Tensors
         public static Tensor<bool> LessThanOrEqual<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IComparisonOperators<T, T, bool>
         {
-            Tensor<bool> destination = Tensor.Create<bool>(x.Lengths, false);
+            Tensor<bool> destination = Create<bool>(x.Lengths, false);
             LessThanOrEqual(x, y, destination);
             return destination;
         }
@@ -1372,7 +1366,6 @@ namespace System.Numerics.Tensors
 
                 scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
                 scoped Span<nint> newStrides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
-                scoped Span<int> newLinearOrder = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<int> linearOrderRentedBuffer);
 
                 Tensor<T> outTensor;
 
@@ -1382,7 +1375,6 @@ namespace System.Numerics.Tensors
                     {
                         newLengths[i] = tensor.Lengths[tensor.Rank - 1 - i];
                         newStrides[i] = tensor.Strides[tensor.Rank - 1 - i];
-                        newLinearOrder[i] = tensor._shape.LinearRankOrder[tensor.Rank - 1 - i];
                     }
                 }
                 else
@@ -1395,14 +1387,12 @@ namespace System.Numerics.Tensors
                         }
                         newLengths[i] = tensor.Lengths[dimensions[i]];
                         newStrides[i] = tensor.Strides[dimensions[i]];
-                        newLinearOrder[i] = tensor._shape.LinearRankOrder[dimensions[i]];
                     }
                 }
-                outTensor = new Tensor<T>(tensor._values, tensor._start, newLengths, newStrides, newLinearOrder);
+                outTensor = new Tensor<T>(tensor._values, tensor._start, newLengths, newStrides);
 
                 lengthsRentedBuffer.Dispose();
                 stridesRentedBuffer.Dispose();
-                linearOrderRentedBuffer.Dispose();
 
                 return outTensor;
             }
@@ -1427,7 +1417,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
             }
 
-            nint[] newLengths = lengths.ToArray();
+            nint[] newLengths = [.. lengths];
             // Calculate wildcard info.
             int wildcardIndex = lengths.IndexOf(-1);
             if (wildcardIndex >= 0)
@@ -1459,7 +1449,7 @@ namespace System.Numerics.Tensors
             // If we contain a 0 stride we can only add dimensions of length 1.
             else if (tensor.Strides.Contains(0))
             {
-                List<nint> origStrides = new List<nint>(tensor.Strides.ToArray());
+                List<nint> origStrides = [.. tensor.Strides];
                 int lengthOffset = 0;
                 for (int i = 0; i < newLengths.Length; i++)
                 {
@@ -1475,7 +1465,7 @@ namespace System.Numerics.Tensors
                     else
                         ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
                 }
-                strides = origStrides.ToArray();
+                strides = [.. origStrides];
             }
             else
                 strides = [];
@@ -1500,7 +1490,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
             }
 
-            nint[] newLengths = lengths.ToArray();
+            nint[] newLengths = [.. lengths];
             int wildcardIndex = lengths.IndexOf(-1);
             if (wildcardIndex >= 0)
             {
@@ -1532,7 +1522,7 @@ namespace System.Numerics.Tensors
             // If we contain a 0 stride we can only add dimensions of length 1.
             else if (tensor.Strides.Contains(0))
             {
-                List<nint> origStrides = new List<nint>(tensor.Strides.ToArray());
+                List<nint> origStrides = [.. tensor.Strides];
                 int lengthOffset = 0;
                 for (int i = 0; i < newLengths.Length; i++)
                 {
@@ -1550,12 +1540,12 @@ namespace System.Numerics.Tensors
                     else
                         ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
                 }
-                strides = origStrides.ToArray();
+                strides = [.. origStrides];
             }
             else
                 strides = [];
 
-            TensorSpan<T> output = new TensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, newLengths, strides);
+            TensorSpan<T> output = new TensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, newLengths, strides, tensor.IsPinned);
             return output;
         }
 
@@ -1576,7 +1566,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
             }
 
-            nint[] newLengths = lengths.ToArray();
+            nint[] newLengths = [.. lengths];
             // Calculate wildcard info.
             int wildcardIndex = lengths.IndexOf(-1);
             if (wildcardIndex >= 0)
@@ -1609,7 +1599,7 @@ namespace System.Numerics.Tensors
             // If we contain a 0 stride we can only add dimensions of length 1.
             else if (tensor.Strides.Contains(0))
             {
-                List<nint> origStrides = new List<nint>(tensor.Strides.ToArray());
+                List<nint> origStrides = [.. tensor.Strides];
                 int lengthOffset = 0;
                 for (int i = 0; i < newLengths.Length; i++)
                 {
@@ -1625,12 +1615,12 @@ namespace System.Numerics.Tensors
                     else
                         ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
                 }
-                strides = origStrides.ToArray();
+                strides = [.. origStrides];
             }
             else
                 strides = [];
 
-            ReadOnlyTensorSpan<T> output = new ReadOnlyTensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, newLengths, strides);
+            ReadOnlyTensorSpan<T> output = new ReadOnlyTensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, newLengths, strides, tensor.IsPinned);
             return output;
         }
         #endregion
@@ -1646,8 +1636,8 @@ namespace System.Numerics.Tensors
         {
             nint newSize = TensorPrimitives.Product(lengths);
             T[] values = tensor.IsPinned ? GC.AllocateArray<T>((int)newSize) : (new T[newSize]);
-            Tensor<T> output = Tensor.Create(values, 0, lengths, []);
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref tensor.AsTensorSpan()._reference, tensor._start), (int)tensor._values.Length - tensor._start);
+            Tensor<T> output = Create(values, lengths, []);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref tensor.AsTensorSpan()._reference, tensor._start), tensor._values.Length - tensor._start);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.FlattenedLength);
             if (newSize >= span.Length)
                 span.CopyTo(ospan);
@@ -1703,7 +1693,7 @@ namespace System.Numerics.Tensors
         /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
         public static Tensor<T> Reverse<T>(in ReadOnlyTensorSpan<T> tensor)
         {
-            Tensor<T> output = Tensor.Create<T>(tensor.Lengths);
+            Tensor<T> output = Create<T>(tensor.Lengths);
             ReverseDimension(tensor, output, -1);
 
             return output;
@@ -1717,7 +1707,7 @@ namespace System.Numerics.Tensors
         /// <param name="dimension">dimension along which to reverse over. -1 will reverse over all of the dimensions of the left tensor.</param>
         public static Tensor<T> ReverseDimension<T>(in ReadOnlyTensorSpan<T> tensor, int dimension)
         {
-            Tensor<T> output = Tensor.Create<T>(tensor.Lengths);
+            Tensor<T> output = Create<T>(tensor.Lengths);
             ReverseDimension(tensor, output, dimension);
 
             return output;
@@ -1853,9 +1843,9 @@ namespace System.Numerics.Tensors
 
             nint totalToCopy = tensor.FlattenedLength / splitCount;
 
-            nint[] newShape = tensor.Lengths.ToArray();
-            nint splitLength = newShape[dimension] / splitCount;
-            newShape[dimension] = splitLength;
+            nint[] newLengths = [.. tensor.Lengths];
+            nint splitLength = newLengths[dimension] / splitCount;
+            newLengths[dimension] = splitLength;
 
             scoped Span<NRange> sliceDims = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<NRange> lengthsRentedBuffer);
             for (int i = 0; i < sliceDims.Length; i++)
@@ -1867,7 +1857,7 @@ namespace System.Numerics.Tensors
             {
                 sliceDims[(int)dimension] = new NRange(start, start + splitLength);
                 T[] values = new T[(int)totalToCopy];
-                outputs[i] = new Tensor<T>(values, 0, newShape, [], tensor._shape.LinearRankOrder);
+                outputs[i] = new Tensor<T>(values, newLengths, strides: []);
 
                 tensor.Slice(sliceDims).CopyTo(outputs[i]);
                 start += splitLength;
@@ -1896,37 +1886,31 @@ namespace System.Numerics.Tensors
         /// <param name="dimension">The dimension to remove.</param>
         public static Tensor<T> SqueezeDimension<T>(this Tensor<T> tensor, int dimension)
         {
-            if (dimension >= tensor.Rank || dimension < -1)
-                ThrowHelper.ThrowArgument_AxisLargerThanRank();
+            int rank = tensor.Rank;
 
-            scoped Span<nint> lengths = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
-            scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
-            scoped Span<int> strideOrder = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<int> stridesOrderRentedBuffer);
-            int newRank = 0;
-            int index = 0;
+            if ((dimension >= rank) || (dimension < -1))
+            {
+                ThrowHelper.ThrowArgument_AxisLargerThanRank();
+            }
+
+            scoped Span<nint> lengths = TensorOperation.RentedBuffer.CreateUninitialized(rank, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
+            scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(rank, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
 
             if (dimension == -1)
             {
-                int removalCount = tensor.Lengths.Count(1);
-                int removedIndex = 0;
-                Span<int> removed = TensorOperation.RentedBuffer.CreateUninitialized(removalCount, out TensorOperation.RentedBuffer<int> removedRentedBuffer);
-
-                for (int i = 0; i < tensor.Lengths.Length; i++)
+                for (int i = 0, index = 0; i < tensor.Lengths.Length; i++)
                 {
                     if (tensor.Lengths[i] != 1)
                     {
                         lengths[index] = tensor.Lengths[i];
                         strides[index] = tensor.Strides[i];
-                        newRank++;
-                        strideOrder[index++] = tensor._shape.LinearRankOrder[i];
+                        index++;
                     }
                     else
                     {
-                        removed[removedIndex++] = tensor._shape.LinearRankOrder[i];
+                        rank--;
                     }
                 }
-                SqueezeHelper(removed, strideOrder);
-                removedRentedBuffer.Dispose();
             }
             else
             {
@@ -1934,29 +1918,20 @@ namespace System.Numerics.Tensors
                 {
                     ThrowHelper.ThrowArgument_InvalidSqueezeAxis();
                 }
-                int removed = default;
-                for (int i = 0; i < tensor.Lengths.Length; i++)
-                {
-                    if (i != dimension)
-                    {
-                        lengths[index] = tensor.Lengths[i];
-                        strides[index] = tensor.Strides[i];
-                        newRank++;
-                        strideOrder[index++] = tensor._shape.LinearRankOrder[i];
-                    }
-                    else
-                    {
-                        removed = tensor._shape.LinearRankOrder[i];
-                    }
-                }
-                SqueezeHelper(removed, strideOrder);
+
+                rank--;
+
+                tensor.Lengths[..dimension].CopyTo(lengths);
+                tensor.Lengths[(dimension + 1)..].CopyTo(lengths[dimension..]);
+
+                tensor.Strides[..dimension].CopyTo(strides);
+                tensor.Strides[(dimension + 1)..].CopyTo(strides[dimension..]);
             }
 
-            Tensor<T> output = new Tensor<T>(tensor._values, tensor._start, lengths[..newRank], strides[..newRank], strideOrder[..newRank]);
+            Tensor<T> output = new Tensor<T>(tensor._values, tensor._start, lengths[..rank], strides[..rank]);
 
             lengthsRentedBuffer.Dispose();
             stridesRentedBuffer.Dispose();
-            stridesOrderRentedBuffer.Dispose();
 
             return output;
         }
@@ -1978,37 +1953,31 @@ namespace System.Numerics.Tensors
         /// <param name="dimension">The dimension to remove.</param>
         public static TensorSpan<T> SqueezeDimension<T>(this scoped in TensorSpan<T> tensor, int dimension)
         {
-            if (dimension >= tensor.Rank || dimension < -1)
-                ThrowHelper.ThrowArgument_AxisLargerThanRank();
+            int rank = tensor.Rank;
 
-            scoped Span<nint> lengths = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
-            scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
-            scoped Span<int> strideOrder = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<int> stridesOrderRentedBuffer);
-            int newRank = 0;
-            int index = 0;
+            if ((dimension >= rank) || (dimension < -1))
+            {
+                ThrowHelper.ThrowArgument_AxisLargerThanRank();
+            }
+
+            scoped Span<nint> lengths = TensorOperation.RentedBuffer.CreateUninitialized(rank, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
+            scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(rank, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
 
             if (dimension == -1)
             {
-                int removalCount = tensor.Lengths.Count(1);
-                int removedIndex = 0;
-                Span<int> removed = TensorOperation.RentedBuffer.CreateUninitialized(removalCount, out TensorOperation.RentedBuffer<int> removedRentedBuffer);
-
-                for (int i = 0; i < tensor.Lengths.Length; i++)
+                for (int i = 0, index = 0; i < tensor.Lengths.Length; i++)
                 {
                     if (tensor.Lengths[i] != 1)
                     {
                         lengths[index] = tensor.Lengths[i];
                         strides[index] = tensor.Strides[i];
-                        newRank++;
-                        strideOrder[index++] = tensor._shape.LinearRankOrder[i];
+                        index++;
                     }
                     else
                     {
-                        removed[removedIndex++] = tensor._shape.LinearRankOrder[i];
+                        rank--;
                     }
                 }
-                SqueezeHelper(removed, strideOrder);
-                removedRentedBuffer.Dispose();
             }
             else
             {
@@ -2016,29 +1985,20 @@ namespace System.Numerics.Tensors
                 {
                     ThrowHelper.ThrowArgument_InvalidSqueezeAxis();
                 }
-                int removed = default;
-                for (int i = 0; i < tensor.Lengths.Length; i++)
-                {
-                    if (i != dimension)
-                    {
-                        lengths[index] = tensor.Lengths[i];
-                        strides[index] = tensor.Strides[i];
-                        newRank++;
-                        strideOrder[index++] = tensor._shape.LinearRankOrder[i];
-                    }
-                    else
-                    {
-                        removed = tensor._shape.LinearRankOrder[i];
-                    }
-                }
-                SqueezeHelper(removed, strideOrder);
+
+                rank--;
+
+                tensor.Lengths[..dimension].CopyTo(lengths);
+                tensor.Lengths[(dimension + 1)..].CopyTo(lengths[dimension..]);
+
+                tensor.Strides[..dimension].CopyTo(strides);
+                tensor.Strides[(dimension + 1)..].CopyTo(strides[dimension..]);
             }
 
-            TensorSpan<T> output = new TensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, lengths[..newRank], strides[..newRank], strideOrder[..newRank]);
+            TensorSpan<T> output = new TensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, lengths[..rank], strides[..rank], tensor.IsPinned);
 
             lengthsRentedBuffer.Dispose();
             stridesRentedBuffer.Dispose();
-            stridesOrderRentedBuffer.Dispose();
 
             return output;
         }
@@ -2060,37 +2020,31 @@ namespace System.Numerics.Tensors
         /// <param name="dimension">The dimension to remove.</param>
         public static ReadOnlyTensorSpan<T> SqueezeDimension<T>(this scoped in ReadOnlyTensorSpan<T> tensor, int dimension)
         {
-            if (dimension >= tensor.Rank || dimension < -1)
-                ThrowHelper.ThrowArgument_AxisLargerThanRank();
+            int rank = tensor.Rank;
 
-            scoped Span<nint> lengths = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
-            scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
-            scoped Span<int> strideOrder = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<int> stridesOrderRentedBuffer);
-            int newRank = 0;
-            int index = 0;
+            if ((dimension >= rank) || (dimension < -1))
+            {
+                ThrowHelper.ThrowArgument_AxisLargerThanRank();
+            }
+
+            scoped Span<nint> lengths = TensorOperation.RentedBuffer.CreateUninitialized(rank, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
+            scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(rank, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
 
             if (dimension == -1)
             {
-                int removalCount = tensor.Lengths.Count(1);
-                int removedIndex = 0;
-                Span<int> removed = TensorOperation.RentedBuffer.CreateUninitialized(removalCount, out TensorOperation.RentedBuffer<int> removedRentedBuffer);
-
-                for (int i = 0; i < tensor.Lengths.Length; i++)
+                for (int i = 0, index = 0; i < tensor.Lengths.Length; i++)
                 {
                     if (tensor.Lengths[i] != 1)
                     {
                         lengths[index] = tensor.Lengths[i];
                         strides[index] = tensor.Strides[i];
-                        newRank++;
-                        strideOrder[index++] = tensor._shape.LinearRankOrder[i];
+                        index++;
                     }
                     else
                     {
-                        removed[removedIndex++] = tensor._shape.LinearRankOrder[i];
+                        rank--;
                     }
                 }
-                SqueezeHelper(removed, strideOrder);
-                removedRentedBuffer.Dispose();
             }
             else
             {
@@ -2098,56 +2052,22 @@ namespace System.Numerics.Tensors
                 {
                     ThrowHelper.ThrowArgument_InvalidSqueezeAxis();
                 }
-                int removed = default;
-                for (int i = 0; i < tensor.Lengths.Length; i++)
-                {
-                    if (i != dimension)
-                    {
-                        lengths[index] = tensor.Lengths[i];
-                        strides[index] = tensor.Strides[i];
-                        newRank++;
-                        strideOrder[index++] = tensor._shape.LinearRankOrder[i];
-                    }
-                    else
-                    {
-                        removed = tensor._shape.LinearRankOrder[i];
-                    }
-                }
-                SqueezeHelper(removed, strideOrder);
+
+                rank--;
+
+                tensor.Lengths[..dimension].CopyTo(lengths);
+                tensor.Lengths[(dimension + 1)..].CopyTo(lengths[dimension..]);
+
+                tensor.Strides[..dimension].CopyTo(strides);
+                tensor.Strides[(dimension + 1)..].CopyTo(strides[dimension..]);
             }
 
-            ReadOnlyTensorSpan<T> output =  new ReadOnlyTensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, lengths[..newRank], strides[..newRank], strideOrder[..newRank]);
+            ReadOnlyTensorSpan<T> output = new ReadOnlyTensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, lengths[..rank], strides[..rank], tensor.IsPinned);
 
             lengthsRentedBuffer.Dispose();
             stridesRentedBuffer.Dispose();
-            stridesOrderRentedBuffer.Dispose();
 
             return output;
-        }
-
-        internal static void SqueezeHelper(scoped in Span<int> removed, scoped in Span<int> strideOrder)
-        {
-            for (int i = 0; i < strideOrder.Length; i++)
-            {
-                for (int j = removed.Length - 1; j >= 0; j--)
-                {
-                    if (strideOrder[i] > removed[j])
-                    {
-                        strideOrder[i]--;
-                    }
-                }
-            }
-        }
-
-        internal static void SqueezeHelper(int removed, scoped in Span<int> strideOrder)
-        {
-            for (int i = 0; i < strideOrder.Length; i++)
-            {
-                if (strideOrder[i] > removed)
-                {
-                    strideOrder[i]--;
-                }
-            }
         }
         #endregion
 
@@ -2185,9 +2105,9 @@ namespace System.Numerics.Tensors
             Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
             for (int i = 0; i < tensors.Length; i++)
             {
-                outputs[i] = Tensor.Unsqueeze(tensors[i], dimension);
+                outputs[i] = Unsqueeze(tensors[i], dimension);
             }
-            return Tensor.ConcatenateOnDimension<T>(dimension, outputs);
+            return ConcatenateOnDimension(dimension, outputs);
         }
 
         /// <summary>
@@ -2225,9 +2145,9 @@ namespace System.Numerics.Tensors
             Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
             for (int i = 0; i < tensors.Length; i++)
             {
-                outputs[i] = Tensor.Unsqueeze(tensors[i], dimension);
+                outputs[i] = Unsqueeze(tensors[i], dimension);
             }
-            return ref Tensor.ConcatenateOnDimension<T>(dimension, outputs, destination);
+            return ref ConcatenateOnDimension(dimension, outputs, destination);
         }
         #endregion
 
@@ -2278,7 +2198,7 @@ namespace System.Numerics.Tensors
                     {
                         sb.AppendLine(separator);
 
-                        TensorShape tmpShape = TensorShape.Create(tensor.Lengths[1..], tensor.Strides[1..]);
+                        TensorShape tmpShape = TensorShape.Create(tensor.Lengths[1..], tensor.Strides[1..], tensor.IsPinned);
                         ReadOnlyTensorSpan<T> tmpTensor = new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref tensor._reference, i * tensor.Strides[0]), tmpShape);
                         ToString(tmpTensor, maximumLengths[1..], sb, indentLevel + 1);
 
@@ -2338,29 +2258,17 @@ namespace System.Numerics.Tensors
 
             scoped Span<nint> lengths = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
             scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
-            scoped Span<int> strideOrder = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<int> stridesOrderRentedBuffer);
 
             tensor.Lengths.CopyTo(lengths);
             tensor.Strides.CopyTo(strides);
-            tensor._shape.LinearRankOrder.CopyTo(strideOrder);
 
-            nint temp = lengths[^1];
-            lengths[^1] = lengths[^2];
-            lengths[^2] = temp;
+            (lengths[^1], lengths[^2]) = (lengths[^2], lengths[^1]);
+            (strides[^1], strides[^2]) = (strides[^2], strides[^1]);
 
-            temp = strides[^1];
-            strides[^1] = strides[^2];
-            strides[^2] = temp;
-
-            int tempOrder = strideOrder[^1];
-            strideOrder[^1] = strideOrder[^2];
-            strideOrder[^2] = tempOrder;
-
-            Tensor<T> output = new Tensor<T>(tensor._values, tensor._start, lengths, strides, strideOrder);
+            Tensor<T> output = new Tensor<T>(tensor._values, tensor._start, lengths, strides);
 
             lengthsRentedBuffer.Dispose();
             stridesRentedBuffer.Dispose();
-            stridesOrderRentedBuffer.Dispose();
 
             return output;
         }
@@ -2475,7 +2383,7 @@ namespace System.Numerics.Tensors
                 newStrides[dimension] = 0;
             }
 
-            TensorSpan<T> output = new TensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, newLengths, newStrides);
+            TensorSpan<T> output = new TensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, newLengths, newStrides, tensor.IsPinned);
             lengthsRentedBuffer.Dispose();
             stridesRentedBuffer.Dispose();
             return output;
@@ -2512,7 +2420,7 @@ namespace System.Numerics.Tensors
                 newStrides[dimension] = 0;
             }
 
-            ReadOnlyTensorSpan<T> output = new ReadOnlyTensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, newLengths, newStrides);
+            ReadOnlyTensorSpan<T> output = new ReadOnlyTensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, newLengths, newStrides, tensor.IsPinned);
             lengthsRentedBuffer.Dispose();
             stridesRentedBuffer.Dispose();
             return output;
@@ -2555,7 +2463,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Acos<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Acos<T>, T, T>(x, destination);
             return destination;
         }
@@ -2582,7 +2490,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Acosh<T>(in ReadOnlyTensorSpan<T> x)
             where T : IHyperbolicFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Acosh<T>, T, T>(x, destination);
             return destination;
         }
@@ -2609,7 +2517,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> AcosPi<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.AcosPi<T>, T, T>(x, destination);
             return destination;
         }
@@ -2650,7 +2558,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Add<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Add<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -2692,7 +2600,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Asin<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Asin<T>, T, T>(x, destination);
             return destination;
         }
@@ -2719,7 +2627,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Asinh<T>(in ReadOnlyTensorSpan<T> x)
             where T : IHyperbolicFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Asinh<T>, T, T>(x, destination);
             return destination;
         }
@@ -2746,7 +2654,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> AsinPi<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.AsinPi<T>, T, T>(x, destination);
             return destination;
         }
@@ -2773,7 +2681,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Atan<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Atan<T>, T, T>(x, destination);
             return destination;
         }
@@ -2801,7 +2709,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Atan2<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Atan2<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -2828,7 +2736,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Atan2<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Atan2<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -2855,7 +2763,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Atan2<T>(T x, in ReadOnlyTensorSpan<T> y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(y.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(y.Lengths);
             TensorOperation.Invoke<TensorOperation.Atan2<T>, T, T>(y, x, destination);
             return destination;
         }
@@ -2884,7 +2792,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Atan2Pi<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Atan2Pi<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -2911,7 +2819,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Atan2Pi<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Atan2Pi<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -2938,7 +2846,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Atan2Pi<T>(T x, in ReadOnlyTensorSpan<T> y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(y.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(y.Lengths);
             TensorOperation.Invoke<TensorOperation.Atan2Pi<T>, T, T>(y, x, destination);
             return destination;
         }
@@ -2966,7 +2874,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Atanh<T>(in ReadOnlyTensorSpan<T> x)
             where T : IHyperbolicFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Atanh<T>, T, T>(x, destination);
             return destination;
         }
@@ -2993,7 +2901,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> AtanPi<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.AtanPi<T>, T, T>(x, destination);
             return destination;
         }
@@ -3038,7 +2946,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> BitwiseAnd<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IBitwiseOperators<T, T, T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.BitwiseAnd<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -3065,7 +2973,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> BitwiseAnd<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IBitwiseOperators<T, T, T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.BitwiseAnd<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -3094,7 +3002,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> BitwiseOr<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IBitwiseOperators<T, T, T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.BitwiseOr<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -3121,7 +3029,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> BitwiseOr<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IBitwiseOperators<T, T, T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.BitwiseOr<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -3149,7 +3057,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Cbrt<T>(in ReadOnlyTensorSpan<T> x)
             where T : IRootFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Cbrt<T>, T, T>(x, destination);
             return destination;
         }
@@ -3176,7 +3084,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Ceiling<T>(in ReadOnlyTensorSpan<T> x)
             where T : IFloatingPoint<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Ceiling<T>, T, T>(x, destination);
             return destination;
         }
@@ -3205,7 +3113,7 @@ namespace System.Numerics.Tensors
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>
         {
-            Tensor<TTo> destination = Tensor.CreateUninitialized<TTo>(source.Lengths);
+            Tensor<TTo> destination = CreateUninitialized<TTo>(source.Lengths);
             TensorOperation.Invoke<TensorOperation.ConvertChecked<TFrom, TTo>, TFrom, TTo>(source, destination);
             return destination;
         }
@@ -3236,7 +3144,7 @@ namespace System.Numerics.Tensors
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>
         {
-            Tensor<TTo> destination = Tensor.CreateUninitialized<TTo>(source.Lengths);
+            Tensor<TTo> destination = CreateUninitialized<TTo>(source.Lengths);
             TensorOperation.Invoke<TensorOperation.ConvertSaturating<TFrom, TTo>, TFrom, TTo>(source, destination);
             return destination;
         }
@@ -3267,7 +3175,7 @@ namespace System.Numerics.Tensors
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>
         {
-            Tensor<TTo> destination = Tensor.CreateUninitialized<TTo>(source.Lengths);
+            Tensor<TTo> destination = CreateUninitialized<TTo>(source.Lengths);
             TensorOperation.Invoke<TensorOperation.ConvertTruncating<TFrom, TTo>, TFrom, TTo>(source, destination);
             return destination;
         }
@@ -3297,7 +3205,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> CopySign<T>(in ReadOnlyTensorSpan<T> x, T sign)
             where T : INumber<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.CopySign<T>, T, T>(x, sign, destination);
             return destination;
         }
@@ -3310,7 +3218,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> CopySign<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> sign)
             where T : INumber<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.CopySign<T>, T, T>(x, sign, destination);
             return destination;
         }
@@ -3352,7 +3260,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Cos<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Cos<T>, T, T>(x, destination);
             return destination;
         }
@@ -3379,7 +3287,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Cosh<T>(in ReadOnlyTensorSpan<T> x)
             where T : IHyperbolicFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Cosh<T>, T, T>(x, destination);
             return destination;
         }
@@ -3407,7 +3315,7 @@ namespace System.Numerics.Tensors
         public static T CosineSimilarity<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IRootFunctions<T>
         {
-            TensorOperation.ValidateCompatibility<T, T>(x, y);
+            TensorOperation.ValidateCompatibility(x, y);
             ValueTuple<T, T, T> result = (T.AdditiveIdentity, T.AdditiveIdentity, T.AdditiveIdentity);
             TensorOperation.Invoke<TensorOperation.CosineSimilarity<T>, T, ValueTuple<T, T, T>>(x, y, ref result);
             return result.Item1 / (T.Sqrt(result.Item2) * T.Sqrt(result.Item3));
@@ -3432,7 +3340,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> CosPi<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.CosPi<T>, T, T>(x, destination);
             return destination;
         }
@@ -3469,7 +3377,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> DegreesToRadians<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.DegreesToRadians<T>, T, T>(x, destination);
             return destination;
         }
@@ -3513,7 +3421,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Divide<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IDivisionOperators<T, T, T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Divide<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -3526,7 +3434,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Divide<T>(T x, in ReadOnlyTensorSpan<T> y)
             where T : IDivisionOperators<T, T, T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(y.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(y.Lengths);
             TensorOperation.Invoke<TensorOperation.Divide<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -3613,7 +3521,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Exp<T>(in ReadOnlyTensorSpan<T> x)
             where T : IExponentialFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Exp<T>, T, T>(x, destination);
             return destination;
         }
@@ -3640,7 +3548,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Exp10<T>(in ReadOnlyTensorSpan<T> x)
             where T : IExponentialFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Exp10<T>, T, T>(x, destination);
             return destination;
         }
@@ -3665,7 +3573,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Exp10M1<T>(in ReadOnlyTensorSpan<T> x)
             where T : IExponentialFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Exp10M1<T>, T, T>(x, destination);
             return destination;
         }
@@ -3688,7 +3596,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Exp2<T>(in ReadOnlyTensorSpan<T> x)
             where T : IExponentialFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Exp2<T>, T, T>(x, destination);
             return destination;
         }
@@ -3711,7 +3619,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Exp2M1<T>(in ReadOnlyTensorSpan<T> x)
             where T : IExponentialFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Exp2M1<T>, T, T>(x, destination);
             return destination;
         }
@@ -3734,7 +3642,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> ExpM1<T>(in ReadOnlyTensorSpan<T> x)
             where T : IExponentialFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.ExpM1<T>, T, T>(x, destination);
             return destination;
         }
@@ -3757,7 +3665,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Floor<T>(in ReadOnlyTensorSpan<T> x)
             where T : IFloatingPoint<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Floor<T>, T, T>(x, destination);
             return destination;
         }
@@ -3837,7 +3745,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Ieee754Remainder<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Ieee754Remainder<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -3860,7 +3768,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Ieee754Remainder<T>(T x, in ReadOnlyTensorSpan<T> y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(y.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(y.Lengths);
             TensorOperation.Invoke<TensorOperation.Ieee754Remainder<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -3884,7 +3792,7 @@ namespace System.Numerics.Tensors
         public static Tensor<int> ILogB<T>(in ReadOnlyTensorSpan<T> x)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<int> destination = Tensor.CreateUninitialized<int>(x.Lengths);
+            Tensor<int> destination = CreateUninitialized<int>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.ILogB<T>, T, int>(x, destination);
             return destination;
         }
@@ -3956,7 +3864,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> LeadingZeroCount<T>(in ReadOnlyTensorSpan<T> x)
             where T : IBinaryInteger<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.LeadingZeroCount<T>, T, T>(x, destination);
             return destination;
         }
@@ -3983,7 +3891,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Log<T>(in ReadOnlyTensorSpan<T> x)
             where T : ILogarithmicFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Log<T>, T, T>(x, destination);
             return destination;
         }
@@ -4030,7 +3938,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Log<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : ILogarithmicFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Log<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -4056,7 +3964,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Log10<T>(in ReadOnlyTensorSpan<T> x)
             where T : ILogarithmicFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Log10<T>, T, T>(x, destination);
             return destination;
         }
@@ -4083,7 +3991,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Log10P1<T>(in ReadOnlyTensorSpan<T> x)
             where T : ILogarithmicFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Log10P1<T>, T, T>(x, destination);
             return destination;
         }
@@ -4110,7 +4018,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Log2<T>(in ReadOnlyTensorSpan<T> x)
             where T : ILogarithmicFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Log2<T>, T, T>(x, destination);
             return destination;
         }
@@ -4137,7 +4045,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Log2P1<T>(in ReadOnlyTensorSpan<T> x)
             where T : ILogarithmicFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Log2P1<T>, T, T>(x, destination);
             return destination;
         }
@@ -4164,7 +4072,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> LogP1<T>(in ReadOnlyTensorSpan<T> x)
             where T : ILogarithmicFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.LogP1<T>, T, T>(x, destination);
             return destination;
         }
@@ -4228,7 +4136,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Max<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : INumber<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Max<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -4291,7 +4199,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> MaxMagnitude<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : INumber<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.MaxMagnitude<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -4354,7 +4262,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> MaxMagnitudeNumber<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : INumber<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.MaxMagnitudeNumber<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -4417,7 +4325,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> MaxNumber<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : INumber<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.MaxNumber<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -4480,7 +4388,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Min<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : INumber<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Min<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -4543,7 +4451,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> MinMagnitude<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : INumber<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.MinMagnitude<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -4606,7 +4514,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> MinMagnitudeNumber<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : INumber<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.MinMagnitudeNumber<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -4669,7 +4577,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> MinNumber<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : INumber<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.MinNumber<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -4696,7 +4604,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Multiply<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            Tensor<T> destination = Tensor.Create<T>(x.Lengths);
+            Tensor<T> destination = Create<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Multiply<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -4751,7 +4659,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Negate<T>(in ReadOnlyTensorSpan<T> x)
             where T : IUnaryNegationOperators<T, T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Negate<T>, T, T>(x, destination);
             return destination;
         }
@@ -4788,7 +4696,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> OnesComplement<T>(in ReadOnlyTensorSpan<T> x)
             where T : IBitwiseOperators<T, T, T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.OnesComplement<T>, T, T>(x, destination);
             return destination;
         }
@@ -4811,7 +4719,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> PopCount<T>(in ReadOnlyTensorSpan<T> x)
             where T : IBinaryInteger<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.PopCount<T>, T, T>(x, destination);
             return destination;
         }
@@ -4858,7 +4766,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Pow<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IPowerFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Pow<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -4881,7 +4789,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Pow<T>(T x, in ReadOnlyTensorSpan<T> y)
             where T : IPowerFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(y.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(y.Lengths);
             TensorOperation.Invoke<TensorOperation.Pow<T>, T, T>(x, y, destination);
             return destination;
         }
@@ -4917,7 +4825,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> RadiansToDegrees<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.RadiansToDegrees<T>, T, T>(x, destination);
             return destination;
         }
@@ -4940,7 +4848,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Reciprocal<T>(in ReadOnlyTensorSpan<T> x)
             where T : IFloatingPoint<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Reciprocal<T>, T, T>(x, destination);
             return destination;
         }
@@ -4964,7 +4872,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> RootN<T>(in ReadOnlyTensorSpan<T> x, int n)
             where T : IRootFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.RootN<T>, T, T>(x, n, destination);
             return destination;
         }
@@ -4990,7 +4898,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> RotateLeft<T>(in ReadOnlyTensorSpan<T> x, int rotateAmount)
             where T : IBinaryInteger<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.RotateLeft<T>, T, T>(x, rotateAmount, destination);
             return destination;
         }
@@ -5017,7 +4925,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> RotateRight<T>(in ReadOnlyTensorSpan<T> x, int rotateAmount)
             where T : IBinaryInteger<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.RotateRight<T>, T, T>(x, rotateAmount, destination);
             return destination;
         }
@@ -5042,7 +4950,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Round<T>(in ReadOnlyTensorSpan<T> x)
             where T : IFloatingPoint<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Round<T>, T, T>(x, destination);
             return destination;
         }
@@ -5065,7 +4973,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Round<T>(in ReadOnlyTensorSpan<T> x, int digits, MidpointRounding mode)
             where T : IFloatingPoint<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Round<T>, T, Tuple<int, MidpointRounding>, T>(x, Tuple.Create(digits, mode), destination);
             return destination;
         }
@@ -5089,7 +4997,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Round<T>(in ReadOnlyTensorSpan<T> x, int digits)
             where T : IFloatingPoint<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Round<T>, T, Tuple<int, MidpointRounding>, T>(x, Tuple.Create(digits, MidpointRounding.ToEven), destination);
             return destination;
         }
@@ -5112,7 +5020,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Round<T>(in ReadOnlyTensorSpan<T> x, MidpointRounding mode)
             where T : IFloatingPoint<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Round<T>, T, Tuple<int, MidpointRounding>, T>(x, Tuple.Create(0, mode), destination);
             return destination;
         }
@@ -5136,7 +5044,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Sigmoid<T>(in ReadOnlyTensorSpan<T> x)
             where T : IExponentialFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Sigmoid<T>, T, T>(x, destination);
             return destination;
         }
@@ -5161,7 +5069,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Sin<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Sin<T>, T, T>(x, destination);
             return destination;
         }
@@ -5186,7 +5094,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Sinh<T>(in ReadOnlyTensorSpan<T> x)
             where T : IHyperbolicFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Sinh<T>, T, T>(x, destination);
             return destination;
         }
@@ -5209,7 +5117,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> SinPi<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.SinPi<T>, T, T>(x, destination);
             return destination;
         }
@@ -5235,7 +5143,7 @@ namespace System.Numerics.Tensors
             T sumExp = T.AdditiveIdentity;
             TensorOperation.Invoke<TensorOperation.SumExp<T>, T, T>(x, ref sumExp);
 
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.SoftMax<T>, T, T>(x, sumExp, destination);
             return destination;
         }
@@ -5263,7 +5171,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Sqrt<T>(in ReadOnlyTensorSpan<T> x)
             where T : IRootFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Sqrt<T>, T, T>(x, destination);
             return destination;
         }
@@ -5419,7 +5327,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Tan<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Tan<T>, T, T>(x, destination);
             return destination;
         }
@@ -5442,7 +5350,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Tanh<T>(in ReadOnlyTensorSpan<T> x)
             where T : IHyperbolicFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Tanh<T>, T, T>(x, destination);
             return destination;
         }
@@ -5465,7 +5373,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> TanPi<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.TanPi<T>, T, T>(x, destination);
             return destination;
         }
@@ -5488,7 +5396,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> TrailingZeroCount<T>(in ReadOnlyTensorSpan<T> x)
             where T : IBinaryInteger<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.TrailingZeroCount<T>, T, T>(x, destination);
             return destination;
         }
@@ -5511,7 +5419,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Truncate<T>(in ReadOnlyTensorSpan<T> x)
             where T : IFloatingPoint<T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Truncate<T>, T, T>(x, destination);
             return destination;
         }
@@ -5560,7 +5468,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Xor<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IBitwiseOperators<T, T, T>
         {
-            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
             TensorOperation.Invoke<TensorOperation.Xor<T>, T, T>(x, y, destination);
             return destination;
         }
