@@ -8597,6 +8597,8 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         return false;
     }
 
+    bool isArrayImplicitInterface = false;
+
     if (pBaseMT->IsInterface())
     {
 
@@ -8621,18 +8623,25 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         //
         if (pObjMT->IsArray())
         {
-            // See if this interface is one of the ones arrays implement.
+            // Does the array explicitly implements this interface?
             //
-            if (!pBaseMT->HasInstantiation())
+            if (!TypeHandle(pObjMT).CanCastTo(TypeHandle(pBaseMT)))
             {
-                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
-                return false;
-            }
+                // Does the array implicitly implement this interface?
+                //
+                if (!pBaseMT->HasInstantiation())
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
+                    return false;
+                }
 
-            if (!IsImplicitInterfaceOfSZArray(pBaseMT))
-            {
-                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
-                return false;
+                if (!IsImplicitInterfaceOfSZArray(pBaseMT))
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
+                    return false;
+                }
+
+                isArrayImplicitInterface = true;
             }
         }
         else if (!pBaseMT->IsSharedByGenericInstantiations() && !pObjMT->CanCastToInterface(pBaseMT))
@@ -8647,7 +8656,21 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         {
             MethodTable* interfaceMT = nullptr;
 
-            if (!pObjMT->IsArray() && (pObjMT->IsSharedByGenericInstantiations() || pBaseMT->IsSharedByGenericInstantiations()))
+            if (isArrayImplicitInterface)
+            {
+                _ASSERTE(!pObjMT->IsArray());
+
+                // We cannot devirtualize unless we know the exact array element type
+                //
+                TypeHandle elemType = pObjMT->GetArrayElementTypeHandle();
+                if (elemType.IsCanonicalSubtype())
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
+                    return false;
+                }
+                pDevirtMD = GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(pBaseMD, elemType);
+            }
+            else if ((pObjMT->IsSharedByGenericInstantiations() || pBaseMT->IsSharedByGenericInstantiations()))
             {
                 MethodTable* pCanonBaseMT = pBaseMT->GetCanonicalMethodTable();
                 
@@ -8683,18 +8706,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 }
 
                 pDevirtMD = pObjMT->GetMethodDescForInterfaceMethod(TypeHandle(interfaceMT), pBaseMD, FALSE /* throwOnConflict */);
-            }
-            else if (pObjMT->IsArray())
-            {
-                // We cannot devirtualize unless we know the exact array element type
-                //
-                TypeHandle elemType = pObjMT->GetArrayElementTypeHandle();
-                if (elemType.IsCanonicalSubtype())
-                {
-                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
-                    return false;
-                }
-                pDevirtMD = GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(pBaseMD, elemType);
             }
             else
             {
@@ -8779,27 +8790,17 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     //
     MethodTable* pApproxMT = pDevirtMD->GetMethodTable();
     MethodTable* pExactMT = pApproxMT;
-    bool isArray = false;
 
     if (pApproxMT->IsInterface())
     {
         // As noted above, we can't yet handle generic interfaces
         // with default methods.
         _ASSERTE(!pDevirtMD->HasClassInstantiation());
-
-    }
-    else if (pBaseMT->IsInterface() && pObjMT->IsArray())
-    {
-        isArray = true;
-    }
-    else
-    {
-        pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
     }
 
     // Success! Pass back the results.
     //
-    if (isArray)
+    if (isArrayImplicitInterface)
     {
         // Note if array devirtualization produced an instantiation stub
         // so jit can try and inline it.
@@ -8810,6 +8811,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     }
     else
     {
+        pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
         info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
         info->isInstantiatingStub = false;
         info->wasArrayInterfaceDevirt = false;
