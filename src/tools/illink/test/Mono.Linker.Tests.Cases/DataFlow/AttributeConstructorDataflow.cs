@@ -25,7 +25,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[KeepsPublicMethods ("Mono.Linker.Tests.Cases.DataFlow.AttributeConstructorDataflow+ClassWithKeptPublicMethods, test")]
 		[KeepsPublicFields (null, null)]
 		[TypeArray (new Type[] { typeof (AttributeConstructorDataflow) })]
-		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2273")]
+		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--")]
 		public static void Main ()
 		{
 			typeof (AttributeConstructorDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicConstructorAttribute));
