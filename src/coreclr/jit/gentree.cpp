@@ -24550,8 +24550,8 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
 
                 if (isNumber)
                 {
-                    retNode = gtNewSimdHWIntrinsicNode(type, op1Clone, op2Clone, op3, intrinsic, simdBaseJitType,
-                                                       simdSize);
+                    retNode =
+                        gtNewSimdHWIntrinsicNode(type, op1Clone, op2Clone, op3, intrinsic, simdBaseJitType, simdSize);
                 }
                 else
                 {
