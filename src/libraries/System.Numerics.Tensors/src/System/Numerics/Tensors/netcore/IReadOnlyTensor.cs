@@ -26,7 +26,7 @@ namespace System.Numerics.Tensors
         /// <summary>Gets the total number of items in the tensor.</summary>
         nint FlattenedLength { get; }
 
-        /// <summary>Gets a value that indicates whether the current tensor has any dimension where <c>GetDimensionSpan(int)</c> will iterate through tensors where <see cref="IsDense" /> is <see langword="true"/>.</summary>
+        /// <summary>Gets a value that indicates whether the current tensor has any dimension span where <see cref="IsDense" /> is <see langword="true"/>.</summary>
         /// <value><see langword="true"/> if this tensor has any dense dimensions; otherwise, <see langword="false"/>.</value>
         /// <remarks>
         ///   <para>This does not include the last dimension, <c>GetDimensionSpan(Rank - 1)</c>, as it always iterates one element at a time and would mean this property always returns <see langword="true"/>.</para>
