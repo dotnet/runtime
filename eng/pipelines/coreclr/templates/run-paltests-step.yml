@@ -5,7 +5,6 @@ parameters:
   archType: ''                    # required -- targeting CPU architecture
   osGroup: ''                     # required -- operating system for the job
   osSubgroup: ''                  # optional -- operating system subgroup
-  runInterpreter: 'false'         # optional -- whether to run the interpreter
 
 steps:
   - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
@@ -21,4 +20,3 @@ steps:
       osGroup: ${{ parameters.osGroup }}
       archType: ${{ parameters.archType }}
       shouldContinueOnError: ${{ parameters.continueOnError }}
-      runInterpreter: ${{ parameters.runInterpreter }}
