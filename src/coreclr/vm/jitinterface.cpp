@@ -8623,25 +8623,17 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         //
         if (pObjMT->IsArray())
         {
-            // Does the array explicitly implements this interface?
+            // Does the array implicitly implement this interface?
             //
-            if (!TypeHandle(pObjMT).CanCastTo(TypeHandle(pBaseMT)))
+            isArrayImplicitInterface = pBaseMT->HasInstantiation() && IsImplicitInterfaceOfSZArray(pBaseMT);
+
+            // If we can't cast the array to the interface, proceed
+            // only if this is an implicit implementation.
+            //
+            if (!TypeHandle(pObjMT).CanCastTo(TypeHandle(pBaseMT)) && !isArrayImplicitInterface)
             {
-                // Does the array implicitly implement this interface?
-                //
-                if (!pBaseMT->HasInstantiation())
-                {
-                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
-                    return false;
-                }
-
-                if (!IsImplicitInterfaceOfSZArray(pBaseMT))
-                {
-                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
-                    return false;
-                }
-
-                isArrayImplicitInterface = true;
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
+                return false;
             }
         }
         else if (!pBaseMT->IsSharedByGenericInstantiations() && !pObjMT->CanCastToInterface(pBaseMT))
@@ -8658,7 +8650,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
             if (isArrayImplicitInterface)
             {
-                _ASSERTE(!pObjMT->IsArray());
+                _ASSERTE(pObjMT->IsArray());
 
                 // We cannot devirtualize unless we know the exact array element type
                 //
