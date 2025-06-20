@@ -10050,12 +10050,12 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
-         // Scalable, 3 regs, no predicates, narrowing
-        case IF_SVE_GC_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
+            // Scalable, 3 regs, no predicates, narrowing
+        case IF_SVE_GC_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V<4, 0>(id->idReg1());                      // ddddd
-            code |= insEncodeReg_V<9, 5>(id->idReg2());                      // nnnnn
-            code |= insEncodeReg_V<20, 16>(id->idReg3());                    // mmmmm
+            code |= insEncodeReg_V<4, 0>(id->idReg1());                               // ddddd
+            code |= insEncodeReg_V<9, 5>(id->idReg2());                               // nnnnn
+            code |= insEncodeReg_V<20, 16>(id->idReg3());                             // mmmmm
             code |= insEncodeNarrowingSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -12699,11 +12699,11 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             break;
 
         // Scalable, unpredicated, narrowing
-        case IF_SVE_GC_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
-            assert(insOptsScalableWide(id->idInsOpt()));     // xx
-            assert(isVectorRegister(id->idReg1()));          // ddddd
-            assert(isVectorRegister(id->idReg2()));          // nnnnn
-            assert(isVectorRegister(id->idReg3()));          // mmmmm
+        case IF_SVE_GC_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
+            assert(insOptsScalableWide(id->idInsOpt())); // xx
+            assert(isVectorRegister(id->idReg1()));      // ddddd
+            assert(isVectorRegister(id->idReg2()));      // nnnnn
+            assert(isVectorRegister(id->idReg3()));      // mmmmm
             assert(isScalableVectorSize(id->idOpSize()));
             break;
 
