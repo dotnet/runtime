@@ -7,7 +7,6 @@ using System.Text;
 
 #if !SYSTEM_PRIVATE_CORELIB
 using System.Collections.Immutable;
-using System.IO;
 using System.Linq;
 #endif
 
