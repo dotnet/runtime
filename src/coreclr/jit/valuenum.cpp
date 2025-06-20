@@ -2365,7 +2365,7 @@ ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, CorInfoType simdBaseJit
 
 bool ValueNumStore::VNIsVectorNaN(var_types simdType, var_types simdBaseType, ValueNum valVN)
 {
-    assert(varTypeIsSIMD(simdType));
+    assert(varTypeIsSIMDOrMask(simdType));
 
     simd_t vector = {};
 
@@ -2407,6 +2407,15 @@ bool ValueNumStore::VNIsVectorNaN(var_types simdType, var_types simdBaseType, Va
             break;
         }
 #endif // TARGET_XARCH || TARGET_ARM64
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        case TYP_MASK:
+        {
+            simdmask_t tmp = GetConstantSimdMask(valVN);
+            memcpy(&vector, &tmp, genTypeSize(simdType));
+            break;
+        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         default:
         {
@@ -2473,6 +2482,15 @@ bool ValueNumStore::VNIsVectorNegativeZero(var_types simdType, var_types simdBas
             break;
         }
 #endif // TARGET_XARCH || TARGET_ARM64
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        case TYP_MASK:
+        {
+            simdmask_t tmp = GetConstantSimdMask(valVN);
+            memcpy(&vector, &tmp, genTypeSize(simdType));
+            break;
+        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         default:
         {
@@ -7809,6 +7827,15 @@ ValueNum EvaluateSimdCvtMaskToVector(ValueNumStore* vns, var_types simdType, var
         }
 #endif // TARGET_XARCH || TARGET_ARM64
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        case TYP_MASK:
+        {
+            simdmask_t result = {};
+            EvaluateSimdCvtMaskToVector<simdmask_t>(baseType, &result, arg0);
+            return vns->VNForSimdMaskCon(result);
+        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
         default:
         {
             unreached();
@@ -8836,8 +8863,17 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
             {
                 if (varTypeIsFloating(baseType))
                 {
-                    // Handle `(x == NaN) == false` and `(NaN == x) == false` for floating-point types
-                    var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
+                    var_types simdType;
+
+                    if (varTypeIsMask(TypeOfVN(cnsVN)))
+                    {
+                        simdType = TYP_MASK;
+                    }
+                    else
+                    {
+                        // Handle `(x == NaN) == false` and `(NaN == x) == false` for floating-point types
+                        simdType = Compiler::getSIMDTypeForSize(simdSize);
+                    }
 
                     if (VNIsVectorNaN(simdType, baseType, cnsVN))
                     {
