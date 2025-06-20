@@ -46,17 +46,17 @@ System.Net.Http.Json.JsonContent</PackageDescription>
     <Compile Include="System\Net\Http\Json\TranscodingWriteStream.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <Reference Include="System.IO.Pipelines" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Text.Json" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Http\src\System.Net.Http.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\src\System.Net.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -66,7 +66,6 @@ System.Net.Http.Json.JsonContent</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 
