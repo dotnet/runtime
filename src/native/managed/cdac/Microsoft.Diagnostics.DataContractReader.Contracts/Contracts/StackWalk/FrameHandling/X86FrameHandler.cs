@@ -31,6 +31,21 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
         throw new NotImplementedException();
     }
 
+    public override void HandleTailCallFrame(TailCallFrame frame)
+    {
+        _context.Context.Eip = (uint)frame.ReturnAddress;
+
+        // The stack pointer is set to the address immediately after the TailCallFrame structure.
+        if (_target.GetTypeInfo(DataType.TailCallFrame).Size is not uint tailCallFrameSize)
+        {
+            throw new InvalidOperationException("TailCallFrame missing size information");
+        }
+        _context.Context.Esp = (uint)(frame.Address + tailCallFrameSize);
+
+        CalleeSavedRegisters calleeSavedRegisters = _target.ProcessedData.GetOrAdd<Data.CalleeSavedRegisters>(frame.CalleeSavedRegisters);
+        UpdateFromRegisterDict(calleeSavedRegisters.Registers);
+    }
+
     public override void HandleFuncEvalFrame(FuncEvalFrame funcEvalFrame)
     {
         Data.DebuggerEval debuggerEval = _target.ProcessedData.GetOrAdd<Data.DebuggerEval>(funcEvalFrame.DebuggerEvalPtr);
