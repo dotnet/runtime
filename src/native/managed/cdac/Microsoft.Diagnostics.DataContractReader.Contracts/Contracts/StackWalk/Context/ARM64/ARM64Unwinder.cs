@@ -4,13 +4,46 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using static Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.ARM64.LookupValues;
 using static Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.ARM64Context;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.ARM64;
 
 internal class ARM64Unwinder(Target target)
 {
+    #region Constants
+
+    /// <summary>
+    /// This table describes the size of each unwind code, in bytes, for unwind codes
+    /// in the range 0xE0-0xFF.
+    /// </summary>
+    private static ReadOnlySpan<byte> UnwindCodeSizeTable =>
+    [
+        4, 1, 2, 1, 1, 1, 1, 3,
+        1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1,
+        2, 3, 4, 5, 1, 1, 1, 1,
+    ];
+
+    /// <summary>
+    // This table describes the number of instructions represented by each unwind
+    // code in the range 0xE0-0xFF.
+    /// </summary>
+    private static ReadOnlySpan<byte> UnwindCodeInstructionCountTable =>
+    [
+        1, 1, 1, 1, 1, 1, 1, 1,    // 0xE0-0xE7
+        0,                         // 0xE8 - MSFT_OP_TRAP_FRAME
+        0,                         // 0xE9 - MSFT_OP_MACHINE_FRAME
+        0,                         // 0xEA - MSFT_OP_CONTEXT
+        0,                         // 0xEB - MSFT_OP_EC_CONTEXT / MSFT_OP_RET_TO_GUEST (unused)
+        0,                         // 0xEC - MSFT_OP_CLEAR_UNWOUND_TO_CALL
+        0,                         // 0XED - MSFT_OP_RET_TO_GUEST_LEAF (unused)
+        0, 0,                      // 0xEE-0xEF
+        0, 0, 0, 0, 0, 0, 0, 0,    // 0xF0-0xF7
+        1, 1, 1, 1, 1, 1, 1, 1,    // 0xF8-0xFF
+    ];
+
+    #endregion
+
     private readonly Target _target = target;
     private readonly IExecutionManager _eman = target.Contracts.ExecutionManager;
 
