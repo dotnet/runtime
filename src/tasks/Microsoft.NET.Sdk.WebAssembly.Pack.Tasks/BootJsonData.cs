@@ -222,7 +222,7 @@ public class ResourcesData
     /// Used in .NET < 8
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
-    public ResourceHashesByNameDictionary libraryInitializers { get; set; }
+    public List<JsAsset> libraryInitializers { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary modulesAfterConfigLoaded { get; set; }
