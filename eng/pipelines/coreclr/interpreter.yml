@@ -47,7 +47,6 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: debug
           platforms:
-          - linux_arm
           - linux_arm64
           - linux_musl_arm64
           - linux_musl_x64
@@ -72,12 +71,10 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
-          - linux_arm
           - linux_musl_arm64
           - linux_x64
           - osx_arm64
           - osx_x64
-          - windows_x86
           jobParameters:
             buildArgs: -s clr -c $(_BuildConfig)
             postBuildSteps:
@@ -94,10 +91,14 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
-          platformGroup: all
           platforms:
-          # It is too early to include osx_arm64 in platform group all
-          # Adding it here will enable it also
+          - linux_x64
+          - linux_arm64
+          - linux_musl_x64
+          - linux_musl_arm64
+          - windows_x64
+          - windows_arm64
+          - osx_x64
           - osx_arm64
           jobParameters:
             buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
@@ -135,64 +136,19 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
           buildConfig: checked
-          platformGroup: all
           platforms:
-          # It is too early to include osx_arm64 in platform group all
-          # Adding it here will enable it to also run this test
-          - osx_arm64
-          helixQueueGroup: ci
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: outerloop
-            runInterpreter: true
-            liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-
-      #
-      # Checked R2R test runs
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          buildConfig: checked
-          platforms:
+          - linux_x64
           - linux_arm64
           - linux_musl_x64
           - linux_musl_arm64
-          - linux_x64
-          - osx_x64
           - windows_x64
-          - windows_x86
           - windows_arm64
+          - osx_x64
+          - osx_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
             testGroup: outerloop
-            readyToRun: true
             runInterpreter: true
-            displayNameArgs: R2R_CG2
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-
-      #
-      # PAL Tests
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Debug
-          platforms:
-          - linux_x64
-          - linux_musl_x64
-          - linux_arm64
-          - linux_musl_arm64
-          - osx_x64
-          - osx_arm64
-          jobParameters:
-            buildArgs: -s clr.paltests+clr.paltestlist
-            nameSuffix: PALTests
-            postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/run-paltests-step.yml
-                parameters:
-                  runInterpreter: true
