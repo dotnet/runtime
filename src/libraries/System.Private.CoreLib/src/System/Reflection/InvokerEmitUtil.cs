@@ -7,45 +7,52 @@ using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
-    internal static class InvokerEmitUtil
+    internal static unsafe class InvokerEmitUtil
     {
         // If changed, update native stack walking code that also uses this prefix to ignore reflection frames.
         private const string InvokeStubPrefix = "InvokeStub_";
 
-        internal unsafe delegate object? InvokeFunc_RefArgs(object? obj, IntPtr* refArguments);
-        internal delegate object? InvokeFunc_ObjSpanArgs(object? obj, Span<object?> arguments);
-        internal delegate object? InvokeFunc_Obj4Args(object? obj, object? arg1, object? arg2, object? arg3, object? arg4);
+        internal delegate object? InvokeFunc_Obj0Args(IntPtr functionPointer, object? obj);
+        internal delegate object? InvokeFunc_Obj1Arg(IntPtr functionPointer, object? obj, object? arg1);
+        internal delegate object? InvokeFunc_Obj4Args(IntPtr functionPointer, object? obj, object? arg1, object? arg2, object? arg3, object? arg4);
+        internal delegate object? InvokeFunc_ObjSpanArgs(IntPtr functionPointer, object? obj, Span<object?> arguments);
+        internal delegate object? InvokeFunc_RefArgs(IntPtr functionPointer, object? obj, IntPtr* refArguments);
 
-        public static InvokeFunc_Obj4Args CreateInvokeDelegate_Obj4Args(MethodBase method, bool backwardsCompat)
+        public static InvokeFunc_Obj0Args CreateInvokeDelegateForObj0Args(MethodBase method, bool callCtorAsMethod, bool backwardsCompat)
         {
-            Debug.Assert(!method.ContainsGenericParameters);
-
-            bool emitNew = method is RuntimeConstructorInfo;
-            bool hasThis = !emitNew && !method.IsStatic;
-
-            Type[] delegateParameters = [typeof(object), typeof(object), typeof(object), typeof(object), typeof(object)];
-
-            string declaringTypeName = method.DeclaringType != null ? method.DeclaringType.Name + "." : string.Empty;
-            var dm = new DynamicMethod(
-                InvokeStubPrefix + declaringTypeName + method.Name,
-                returnType: typeof(object),
-                delegateParameters,
-                typeof(object).Module, // Use system module to identify our DynamicMethods.
-                skipVisibility: true);
-
+            DynamicMethod dm = CreateDynamicMethod(method, [typeof(IntPtr), typeof(object)]);
             ILGenerator il = dm.GetILGenerator();
 
-            // Handle instance methods.
-            if (hasThis)
-            {
-                il.Emit(OpCodes.Ldarg_0);
-                if (method.DeclaringType!.IsValueType)
-                {
-                    il.Emit(OpCodes.Unbox, method.DeclaringType);
-                }
-            }
+            EmitLdargForInstance(il, method, callCtorAsMethod);
+            EmitCall(il, method, callCtorAsMethod, backwardsCompat);
+            EmitReturnHandling(il, GetReturnType(method, callCtorAsMethod));
+            return (InvokeFunc_Obj0Args)dm.CreateDelegate(typeof(InvokeFunc_Obj0Args), target: null);
+        }
 
-            // Push the arguments.
+        public static InvokeFunc_Obj1Arg CreateInvokeDelegateForObj1Arg(MethodBase method, bool callCtorAsMethod, bool backwardsCompat)
+        {
+            DynamicMethod dm = CreateDynamicMethod(method, [typeof(IntPtr), typeof(object), typeof(object)]);
+            ILGenerator il = dm.GetILGenerator();
+
+            EmitLdargForInstance(il, method, callCtorAsMethod);
+
+            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
+            Debug.Assert(parameters.Length == 1);
+            il.Emit(OpCodes.Ldarg_2);
+            UnboxSpecialType(il, (RuntimeType)parameters[0].ParameterType);
+
+            EmitCall(il, method, callCtorAsMethod, backwardsCompat);
+            EmitReturnHandling(il, GetReturnType(method, callCtorAsMethod));
+            return (InvokeFunc_Obj1Arg)dm.CreateDelegate(typeof(InvokeFunc_Obj1Arg), target: null);
+        }
+
+        public static InvokeFunc_Obj4Args CreateInvokeDelegateForObj4Args(MethodBase method, bool callCtorAsMethod, bool backwardsCompat)
+        {
+            DynamicMethod dm = CreateDynamicMethod(method, [typeof(IntPtr), typeof(object), typeof(object), typeof(object), typeof(object), typeof(object)]);
+            ILGenerator il = dm.GetILGenerator();
+
+            EmitLdargForInstance(il, method, callCtorAsMethod);
+
             ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
             for (int i = 0; i < parameters.Length; i++)
             {
@@ -54,125 +61,58 @@ namespace System.Reflection
                 switch (i)
                 {
                     case 0:
-                        il.Emit(OpCodes.Ldarg_1);
-                        break;
-                    case 1:
                         il.Emit(OpCodes.Ldarg_2);
                         break;
-                    case 2:
+                    case 1:
                         il.Emit(OpCodes.Ldarg_3);
                         break;
                     default:
-                        il.Emit(OpCodes.Ldarg_S, i + 1);
+                        il.Emit(OpCodes.Ldarg_S, i + 2);
                         break;
                 }
 
-                if (parameterType.IsPointer || parameterType.IsFunctionPointer)
-                {
-                    Unbox(il, typeof(IntPtr));
-                }
-                else if (parameterType.IsValueType)
-                {
-                    Unbox(il, parameterType);
-                }
+                UnboxSpecialType(il, parameterType);
             }
 
-            EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
-
-            // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
+            EmitCall(il, method, callCtorAsMethod, backwardsCompat);
+            EmitReturnHandling(il, GetReturnType(method, callCtorAsMethod));
             return (InvokeFunc_Obj4Args)dm.CreateDelegate(typeof(InvokeFunc_Obj4Args), target: null);
         }
 
-        public static InvokeFunc_ObjSpanArgs CreateInvokeDelegate_ObjSpanArgs(MethodBase method, bool backwardsCompat)
+        public static InvokeFunc_ObjSpanArgs CreateInvokeDelegateForObjSpanArgs(MethodBase method, bool callCtorAsMethod, bool backwardsCompat)
         {
-            Debug.Assert(!method.ContainsGenericParameters);
-
-            bool emitNew = method is RuntimeConstructorInfo;
-            bool hasThis = !emitNew && !method.IsStatic;
-
-            // The first parameter is unused but supports treating the DynamicMethod as an instance method which is slightly faster than a static.
-            Type[] delegateParameters = [typeof(object), typeof(Span<object>)];
-
-            string declaringTypeName = method.DeclaringType != null ? method.DeclaringType.Name + "." : string.Empty;
-            var dm = new DynamicMethod(
-                InvokeStubPrefix + declaringTypeName + method.Name,
-                returnType: typeof(object),
-                delegateParameters,
-                typeof(object).Module, // Use system module to identify our DynamicMethods.
-                skipVisibility: true);
-
+            DynamicMethod dm = CreateDynamicMethod(method, [typeof(IntPtr), typeof(object), typeof(Span<object>)]);
             ILGenerator il = dm.GetILGenerator();
 
-            // Handle instance methods.
-            if (hasThis)
-            {
-                il.Emit(OpCodes.Ldarg_0);
-                if (method.DeclaringType!.IsValueType)
-                {
-                    il.Emit(OpCodes.Unbox, method.DeclaringType);
-                }
-            }
+            EmitLdargForInstance(il, method, callCtorAsMethod);
 
-            // Push the arguments.
-            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
-            for (int i = 0; i < parameters.Length; i++)
+            ReadOnlySpan<ParameterInfo> parameterTypes = method.GetParametersAsSpan();
+            for (int i = 0; i < parameterTypes.Length; i++)
             {
-                RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
+                RuntimeType parameterType = (RuntimeType)parameterTypes[i].ParameterType;
 
-                il.Emit(OpCodes.Ldarga_S, 1);
+                il.Emit(OpCodes.Ldarga_S, 2);
                 il.Emit(OpCodes.Ldc_I4, i);
                 il.Emit(OpCodes.Call, Methods.Span_get_Item());
                 il.Emit(OpCodes.Ldind_Ref);
 
-                if (parameterType.IsPointer || parameterType.IsFunctionPointer)
-                {
-                    Unbox(il, typeof(IntPtr));
-                }
-                else if (parameterType.IsValueType)
-                {
-                    Unbox(il, parameterType);
-                }
+                UnboxSpecialType(il, parameterType);
             }
 
-            EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
-
-            // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
+            EmitCall(il, method, callCtorAsMethod, backwardsCompat);
+            EmitReturnHandling(il, GetReturnType(method, callCtorAsMethod));
             return (InvokeFunc_ObjSpanArgs)dm.CreateDelegate(typeof(InvokeFunc_ObjSpanArgs), target: null);
         }
 
-        public static InvokeFunc_RefArgs CreateInvokeDelegate_RefArgs(MethodBase method, bool backwardsCompat)
+        public static InvokeFunc_RefArgs CreateInvokeDelegateForRefArgs(MethodBase method, bool callCtorAsMethod, bool backwardsCompat)
         {
-            Debug.Assert(!method.ContainsGenericParameters);
-
-            bool emitNew = method is RuntimeConstructorInfo;
-            bool hasThis = !(emitNew || method.IsStatic);
-
-            // The first parameter is unused but supports treating the DynamicMethod as an instance method which is slightly faster than a static.
-            Type[] delegateParameters = [typeof(object), typeof(object), typeof(IntPtr*)];
-
-            string declaringTypeName = method.DeclaringType != null ? method.DeclaringType.Name + "." : string.Empty;
-            var dm = new DynamicMethod(
-                InvokeStubPrefix + declaringTypeName + method.Name,
-                returnType: typeof(object),
-                delegateParameters,
-                typeof(object).Module, // Use system module to identify our DynamicMethods.
-                skipVisibility: true);
-
+            DynamicMethod dm = CreateDynamicMethod(method, [typeof(IntPtr), typeof(object), typeof(IntPtr*)]);
             ILGenerator il = dm.GetILGenerator();
 
-            // Handle instance methods.
-            if (hasThis)
-            {
-                il.Emit(OpCodes.Ldarg_1);
-                if (method.DeclaringType!.IsValueType)
-                {
-                    il.Emit(OpCodes.Unbox, method.DeclaringType);
-                }
-            }
+            EmitLdargForInstance(il, method, callCtorAsMethod);
 
-            // Push the arguments.
-            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
-            for (int i = 0; i < parameters.Length; i++)
+            ReadOnlySpan<ParameterInfo> parameterTypes = method.GetParametersAsSpan();
+            for (int i = 0; i < parameterTypes.Length; i++)
             {
                 il.Emit(OpCodes.Ldarg_2);
                 if (i != 0)
@@ -183,16 +123,15 @@ namespace System.Reflection
 
                 il.Emit(OpCodes.Ldfld, Methods.ByReferenceOfByte_Value());
 
-                RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
+                RuntimeType parameterType = (RuntimeType)parameterTypes[i].ParameterType;
                 if (!parameterType.IsByRef)
                 {
                     il.Emit(OpCodes.Ldobj, parameterType.IsPointer || parameterType.IsFunctionPointer ? typeof(IntPtr) : parameterType);
                 }
             }
 
-            EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
-
-            // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
+            EmitCall(il, method, callCtorAsMethod, backwardsCompat);
+            EmitReturnHandling(il, GetReturnType(method, callCtorAsMethod));
             return (InvokeFunc_RefArgs)dm.CreateDelegate(typeof(InvokeFunc_RefArgs), target: null);
         }
 
@@ -205,10 +144,59 @@ namespace System.Reflection
             il.Emit(OpCodes.Ldobj, parameterType);
         }
 
-        private static void EmitCallAndReturnHandling(ILGenerator il, MethodBase method, bool emitNew, bool backwardsCompat)
+        private static void UnboxSpecialType(ILGenerator il, Type parameterType)
+        {
+            if (parameterType.IsPointer || parameterType.IsFunctionPointer)
+            {
+                Unbox(il, typeof(IntPtr));
+            }
+            else if (parameterType.IsValueType)
+            {
+                Unbox(il, parameterType);
+            }
+        }
+
+        private static DynamicMethod CreateDynamicMethod(MethodBase method, Type[] delegateParameters)
+        {
+            string declaringTypeName = method.DeclaringType != null ? method.DeclaringType.Name + "." : string.Empty;
+            string stubName = InvokeStubPrefix + declaringTypeName + method.Name;
+
+            return new DynamicMethod(
+                stubName,
+                returnType: typeof(object),
+                delegateParameters,
+                method?.DeclaringType is Type declaringType ? declaringType.Module : typeof(object).Module,
+                skipVisibility: true); // Supports creating the delegate immediately when calling CreateDelegate().
+        }
+
+        private static void EmitLdargForInstance(ILGenerator il, MethodBase method, bool callCtorAsMethod)
+        {
+            if (method is RuntimeConstructorInfo)
+            {
+                if (callCtorAsMethod)
+                {
+                    EmitLdArg1();
+                }
+            }
+            else if (!method.IsStatic)
+            {
+                EmitLdArg1();
+            }
+
+            void EmitLdArg1()
+            {
+                il.Emit(OpCodes.Ldarg_1);
+                if (method.DeclaringType!.IsValueType)
+                {
+                    il.Emit(OpCodes.Unbox, method.DeclaringType);
+                }
+            }
+        }
+
+        private static void EmitCall(ILGenerator il, MethodBase method, bool callCtorAsMethod, bool backwardsCompat)
         {
             // For CallStack reasons, don't inline target method.
-            // Mono interpreter does not support\need this.
+            // EmitCalli above and Mono interpreter do not need this.
             if (backwardsCompat && RuntimeFeature.IsDynamicCodeCompiled)
             {
 #if MONO
@@ -219,10 +207,17 @@ namespace System.Reflection
 #endif
             }
 
-            // Invoke the method.
-            if (emitNew)
+            if (method is RuntimeConstructorInfo rci)
             {
-                il.Emit(OpCodes.Newobj, (ConstructorInfo)method);
+                if (callCtorAsMethod)
+                {
+                    il.Emit(OpCodes.Call, rci);
+                    il.Emit(OpCodes.Ldnull);
+                }
+                else
+                {
+                    il.Emit(OpCodes.Newobj, rci);
+                }
             }
             else if (method.IsStatic || method.DeclaringType!.IsValueType)
             {
@@ -232,79 +227,75 @@ namespace System.Reflection
             {
                 il.Emit(OpCodes.Callvirt, (MethodInfo)method);
             }
+        }
 
-            // Handle the return.
-            if (emitNew)
+        private static Type GetReturnType(MethodBase method, bool callCtorAsMethod)
+        {
+            if (method is RuntimeConstructorInfo rci)
             {
-                Type returnType = method.DeclaringType!;
-                if (returnType.IsValueType)
-                {
-                    il.Emit(OpCodes.Box, returnType);
-                }
+                // When calling a constructor as a method we return null.
+                return callCtorAsMethod ? typeof(object) : rci.DeclaringType!;
             }
-            else
-            {
-                RuntimeType returnType;
-                if (method is RuntimeMethodInfo rmi)
-                {
-                    returnType = (RuntimeType)rmi.ReturnType;
-                }
-                else
-                {
-                    Debug.Assert(method is DynamicMethod);
-                    returnType = (RuntimeType)((DynamicMethod)method).ReturnType;
-                }
 
-                if (returnType == typeof(void))
+            if (method is DynamicMethod dm)
+            {
+                return dm.ReturnType;
+            }
+
+            return ((RuntimeMethodInfo)method).ReturnType;
+        }
+
+        private static void EmitReturnHandling(ILGenerator il, Type returnType)
+        {
+            if (returnType == typeof(void))
+            {
+                il.Emit(OpCodes.Ldnull);
+            }
+            else if (returnType.IsValueType)
+            {
+                il.Emit(OpCodes.Box, returnType);
+            }
+            else if (returnType.IsPointer)
+            {
+                il.Emit(OpCodes.Ldtoken, returnType);
+                il.Emit(OpCodes.Call, Methods.Type_GetTypeFromHandle());
+                il.Emit(OpCodes.Call, Methods.Pointer_Box());
+            }
+            else if (returnType.IsFunctionPointer)
+            {
+                il.Emit(OpCodes.Box, typeof(IntPtr));
+            }
+            else if (returnType.IsByRef)
+            {
+                // Check for null ref return.
+                RuntimeType elementType = (RuntimeType)returnType.GetElementType()!;
+                Label retValueOk = il.DefineLabel();
+                il.Emit(OpCodes.Dup);
+                il.Emit(OpCodes.Brtrue_S, retValueOk);
+                il.Emit(OpCodes.Call, Methods.ThrowHelper_Throw_NullReference_InvokeNullRefReturned());
+                il.MarkLabel(retValueOk);
+
+                // Handle per-type differences.
+                if (elementType.IsValueType)
                 {
-                    il.Emit(OpCodes.Ldnull);
+                    il.Emit(OpCodes.Ldobj, elementType);
+                    il.Emit(OpCodes.Box, elementType);
                 }
-                else if (returnType.IsValueType)
+                else if (elementType.IsPointer)
                 {
-                    il.Emit(OpCodes.Box, returnType);
-                }
-                else if (returnType.IsPointer)
-                {
-                    il.Emit(OpCodes.Ldtoken, returnType);
+                    il.Emit(OpCodes.Ldind_Ref);
+                    il.Emit(OpCodes.Conv_U);
+                    il.Emit(OpCodes.Ldtoken, elementType);
                     il.Emit(OpCodes.Call, Methods.Type_GetTypeFromHandle());
                     il.Emit(OpCodes.Call, Methods.Pointer_Box());
                 }
-                else if (returnType.IsFunctionPointer)
+                else if (elementType.IsFunctionPointer)
                 {
                     il.Emit(OpCodes.Box, typeof(IntPtr));
                 }
-                else if (returnType.IsByRef)
+                else
                 {
-                    // Check for null ref return.
-                    RuntimeType elementType = (RuntimeType)returnType.GetElementType()!;
-                    Label retValueOk = il.DefineLabel();
-                    il.Emit(OpCodes.Dup);
-                    il.Emit(OpCodes.Brtrue_S, retValueOk);
-                    il.Emit(OpCodes.Call, Methods.ThrowHelper_Throw_NullReference_InvokeNullRefReturned());
-                    il.MarkLabel(retValueOk);
-
-                    // Handle per-type differences.
-                    if (elementType.IsValueType)
-                    {
-                        il.Emit(OpCodes.Ldobj, elementType);
-                        il.Emit(OpCodes.Box, elementType);
-                    }
-                    else if (elementType.IsPointer)
-                    {
-                        il.Emit(OpCodes.Ldind_Ref);
-                        il.Emit(OpCodes.Conv_U);
-                        il.Emit(OpCodes.Ldtoken, elementType);
-                        il.Emit(OpCodes.Call, Methods.Type_GetTypeFromHandle());
-                        il.Emit(OpCodes.Call, Methods.Pointer_Box());
-                    }
-                    else if (elementType.IsFunctionPointer)
-                    {
-                        il.Emit(OpCodes.Box, typeof(IntPtr));
-                    }
-                    else
-                    {
-                        il.Emit(OpCodes.Ldobj, elementType);
-                    }
+                    il.Emit(OpCodes.Ldobj, elementType);
                 }
             }
 

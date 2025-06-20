@@ -734,7 +734,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodBaseInvoker.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodBaseInvoker.Constructor.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodBody.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodImplAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.cs" />

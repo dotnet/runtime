@@ -151,13 +151,19 @@ namespace System.Reflection
         private string? toString;
         private RuntimeType[]? parameterTypes;
         private MethodBaseInvoker? invoker;
+        private InvocationFlags invocationFlags;
 
         internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                InvocationFlags flags = Invoker._invocationFlags;
+                InvocationFlags flags = invocationFlags;
+                if (flags == InvocationFlags.Unknown)
+                {
+                    invocationFlags = flags = ComputeInvocationFlags();
+                }
+
                 Debug.Assert((flags & InvocationFlags.Initialized) == InvocationFlags.Initialized);
                 return flags;
             }
@@ -168,8 +174,7 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                invoker ??= new MethodBaseInvoker(this);
-                return invoker;
+                return invoker ??= new MethodBaseInvoker(this, ArgumentTypes, ReturnType);
             }
         }
 
@@ -719,13 +724,19 @@ namespace System.Reflection
         private string? toString;
         private RuntimeType[]? parameterTypes;
         private MethodBaseInvoker? invoker;
+        private InvocationFlags invocationFlags;
 
         internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                InvocationFlags flags = Invoker._invocationFlags;
+                InvocationFlags flags = invocationFlags;
+                if (flags == InvocationFlags.Unknown)
+                {
+                    invocationFlags = flags = ComputeInvocationFlags();
+                }
+
                 Debug.Assert((flags & InvocationFlags.Initialized) == InvocationFlags.Initialized);
                 return flags;
             }
@@ -736,8 +747,7 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                invoker ??= new MethodBaseInvoker(this);
-                return invoker;
+                return invoker ??= new MethodBaseInvoker(this, ArgumentTypes, returnType: typeof(void));
             }
         }
 
