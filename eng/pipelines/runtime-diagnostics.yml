@@ -99,6 +99,8 @@ extends:
           buildConfig: release
           platforms:
           - windows_arm64
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          helixQueueGroup: libraries
           jobParameters:
             name: Windows
             isOfficialBuild: ${{ variables.isOfficialBuild }}
