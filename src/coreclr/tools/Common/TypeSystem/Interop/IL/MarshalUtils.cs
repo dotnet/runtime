@@ -29,6 +29,11 @@ namespace Internal.TypeSystem.Interop
 
             var mdType = (MetadataType)type;
 
+            if (mdType.IsExtendedLayout)
+            {
+                return mdType.GetClassLayout().Kind is MetadataLayoutKind.CStruct;
+            }
+
             if (!mdType.IsSequentialLayout && !mdType.IsExplicitLayout)
             {
                 return false;
