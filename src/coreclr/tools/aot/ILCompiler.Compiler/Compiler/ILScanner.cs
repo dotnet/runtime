@@ -476,6 +476,7 @@ namespace ILCompiler
             private HashSet<TypeDesc> _canonConstructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
             private Dictionary<TypeDesc, HashSet<TypeDesc>> _implementators = new();
+            private HashSet<TypeDesc> _dynamicInterfaceCastableImplementationTargets = new();
             private HashSet<TypeDesc> _disqualifiedTypes = new();
             private HashSet<MethodDesc> _overriddenMethods = new();
             private HashSet<MethodDesc> _generatedVirtualMethods = new();
@@ -484,7 +485,6 @@ namespace ILCompiler
             public ScannedDevirtualizationManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
                 var vtables = new Dictionary<TypeDesc, List<MethodDesc>>();
-                var dynamicInterfaceCastableImplementationTargets = new HashSet<TypeDesc>();
 
                 foreach (var node in markedNodes)
                 {
@@ -524,7 +524,7 @@ namespace ILCompiler
                                     // If the interface is implemented through IDynamicInterfaceCastable, there might be
                                     // no real upper bound on the number of actual classes implementing it.
                                     if (CanAssumeWholeProgramViewOnTypeUse(factory, type, baseInterface))
-                                        dynamicInterfaceCastableImplementationTargets.Add(baseInterface);
+                                        _dynamicInterfaceCastableImplementationTargets.Add(baseInterface);
                                 }
                             }
                         }
@@ -658,11 +658,6 @@ namespace ILCompiler
                         }
                     }
                 }
-
-                if (_canHaveDynamicInterfaceImplementations)
-                {
-                    _disqualifiedTypes.UnionWith(dynamicInterfaceCastableImplementationTargets);
-                }
             }
 
             private static bool CanAssumeWholeProgramViewOnTypeUse(NodeFactory factory, TypeDesc implementingType, DefType baseType)
@@ -793,7 +788,7 @@ namespace ILCompiler
 
             public override TypeDesc[] GetImplementingClasses(TypeDesc type)
             {
-                if (_disqualifiedTypes.Contains(type))
+                if (_disqualifiedTypes.Contains(type) || _dynamicInterfaceCastableImplementationTargets.Contains(type))
                     return null;
 
                 if (_implementators.TryGetValue(type, out HashSet<TypeDesc> implementations))
@@ -819,7 +814,8 @@ namespace ILCompiler
                 return null;
             }
 
-            public override bool CanHaveDynamicInterfaceImplementations(TypeDesc type) => _canHaveDynamicInterfaceImplementations;
+            public override bool CanHaveDynamicInterfaceImplementations(TypeDesc type)
+                => _canHaveDynamicInterfaceImplementations && _dynamicInterfaceCastableImplementationTargets.Contains(type);
         }
 
         private sealed class ScannedInliningPolicy : IInliningPolicy
