@@ -7,7 +7,7 @@
 #define HAS_PREFIX(haystack, needle) \
     (strncmp(haystack, needle, strlen(needle)) == 0)
 
-NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE compMethod, CORINFO_METHOD_HANDLE method, bool enableFallback)
+NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE compMethod, CORINFO_METHOD_HANDLE method)
 {
     const char* className = NULL;
     const char* namespaceName = NULL;
@@ -45,9 +45,6 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
     }
     else if (!strcmp(namespaceName, "System.Numerics"))
     {
-        if (enableFallback)
-            return NI_Illegal;
-
         if (!strcmp(className, "Vector") && !strcmp(methodName, "get_IsHardwareAccelerated"))
             return NI_IsSupported_False;
 
@@ -56,9 +53,6 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
     }
     else if (!strcmp(namespaceName, "System.Runtime.Intrinsics"))
     {
-        if (enableFallback)
-            return NI_Illegal;
-
         // Vector128<T> etc
         if (HAS_PREFIX(className, "Vector") && !strcmp(methodName, "get_IsHardwareAccelerated"))
             return NI_IsSupported_False;
@@ -68,9 +62,6 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
     }
     else if (HAS_PREFIX(namespaceName, "System.Runtime.Intrinsics"))
     {
-        if (enableFallback)
-            return NI_Illegal;
-
         // Architecture-specific intrinsics.
         if (!strcmp(methodName, "get_IsSupported"))
             return NI_IsSupported_False;

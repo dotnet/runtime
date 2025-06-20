@@ -2379,18 +2379,14 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
         if (callInfo.methodFlags & CORINFO_FLG_INTRINSIC)
         {
-            NamedIntrinsic ni = GetNamedIntrinsic(
-                m_compHnd, m_methodHnd, callInfo.hMethod,
-#ifdef FEATURE_JIT
-                true
-#else
-                false
-#endif
-            );
-            if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
+            if (InterpConfig.InterpMode() >= 3)
             {
-                m_ip += 5;
-                return;
+                NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+                if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
+                {
+                    m_ip += 5;
+                    return;
+                }
             }
         }
 
