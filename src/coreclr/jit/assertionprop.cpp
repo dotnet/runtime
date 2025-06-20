@@ -3199,8 +3199,7 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
         }
     }
 
-    GenTree* newTree       = tree;
-    bool     propagateType = false;
+    GenTree* newTree = tree;
 
     // Update 'newTree' with the new value from our table
     // Typically newTree == tree and we are updating the node in place
@@ -3217,14 +3216,10 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
         case O2K_CONST_INT:
 
-            // Don't propagate handles if we need to report relocs.
-            if (opts.compReloc && curAssertion->op2.HasIconFlag() && curAssertion->op2.u1.iconVal != 0)
+            // Don't propagate non-nulll non-static handles if we need to report relocs.
+            if (opts.compReloc && curAssertion->op2.HasIconFlag() && (curAssertion->op2.u1.iconVal != 0))
             {
-                if (curAssertion->op2.GetIconFlag() == GTF_ICON_STATIC_HDL)
-                {
-                    propagateType = true;
-                }
-                else
+                if (curAssertion->op2.GetIconFlag() != GTF_ICON_STATIC_HDL)
                 {
                     return nullptr;
                 }
@@ -3244,20 +3239,15 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
                 // Make sure we don't retype const gc handles to TYP_I_IMPL
                 // Although, it's possible for e.g. GTF_ICON_STATIC_HDL
-                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_OBJ_HDL))
+
+                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_OBJ_HDL) && !tree->TypeIs(TYP_REF))
                 {
-                    if (tree->TypeIs(TYP_BYREF))
-                    {
-                        // Conservatively don't allow propagation of ICON TYP_REF into BYREF
-                        return nullptr;
-                    }
-                    propagateType = true;
+                    // If the tree is not a TYP_REF, we should not propagate an ICON TYP_REF
+                    // into it, as it may lead to incorrect code generation.
+                    return nullptr;
                 }
 
-                if (propagateType)
-                {
-                    newTree->ChangeType(tree->TypeGet());
-                }
+                newTree->ChangeType(tree->TypeGet());
             }
             else
             {

@@ -795,6 +795,14 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
             }
             return (!tree->gtGetOp2()->isContainedIntOrIImmed() && !tree->gtGetOp1()->isContainedIntOrIImmed());
         }
+#ifdef TARGET_X86
+        case GT_MUL_LONG:
+#endif
+        case GT_MULHI:
+        {
+            // MUL, IMUL are RMW but mulx is not (which is used for unsigned operands when BMI2 is availible)
+            return !(tree->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2));
+        }
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
@@ -3223,18 +3231,22 @@ int LinearScan::BuildMul(GenTree* tree)
         return BuildSimple(tree);
     }
 
-    // ToDo-APX : imul currently doesn't have rex2 support. So, cannot  use R16-R31.
-    int              srcCount      = BuildBinaryUses(tree->AsOp());
+    bool isUnsignedMultiply    = tree->IsUnsigned();
+    bool requiresOverflowCheck = tree->gtOverflowEx();
+    bool useMulx =
+        !tree->OperIs(GT_MUL) && isUnsignedMultiply && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2);
+
+    // ToDo-APX : imul currently doesn't have rex2 support. So, cannot use R16-R31.
+    int              srcCount      = 0;
     int              dstCount      = 1;
     SingleTypeRegSet dstCandidates = RBM_NONE;
 
-    bool isUnsignedMultiply    = ((tree->gtFlags & GTF_UNSIGNED) != 0);
-    bool requiresOverflowCheck = tree->gtOverflowEx();
-
-    // There are three forms of x86 multiply:
+    // There are three forms of x86 multiply in base instruction set
     // one-op form:     RDX:RAX = RAX * r/m
     // two-op form:     reg *= r/m
     // three-op form:   reg = r/m * imm
+    // If the BMI2 instruction set is supported there is an additional unsigned multiply
+    // mulx             reg1:reg2 = RDX * reg3/m
 
     // This special widening 32x32->64 MUL is not used on x64
 #if defined(TARGET_X86)
@@ -3244,42 +3256,64 @@ int LinearScan::BuildMul(GenTree* tree)
         assert((tree->gtFlags & GTF_MUL_64RSLT) == 0);
     }
 
-    // We do use the widening multiply to implement
-    // the overflow checking for unsigned multiply
-    //
-    if (isUnsignedMultiply && requiresOverflowCheck)
+    if (useMulx)
     {
-        // The only encoding provided is RDX:RAX = RAX * rm
-        //
-        // Here we set RAX as the only destination candidate
-        // In LSRA we set the kill set for this operation to RBM_RAX|RBM_RDX
-        //
-        dstCandidates = SRBM_RAX;
-    }
-    else if (tree->OperIs(GT_MULHI))
-    {
-        // Have to use the encoding:RDX:RAX = RAX * rm. Since we only care about the
-        // upper 32 bits of the result set the destination candidate to REG_RDX.
-        dstCandidates = SRBM_RDX;
-    }
+        // If one of the operands is contained, specify RDX for the other operand
+        SingleTypeRegSet srcCandidates1 = RBM_NONE;
+        SingleTypeRegSet srcCandidates2 = RBM_NONE;
+        if (op1->isContained())
+        {
+            assert(!op2->isContained());
+            srcCandidates2 = SRBM_RDX;
+        }
+        else if (op2->isContained())
+        {
+            srcCandidates1 = SRBM_RDX;
+        }
+
+        srcCount = BuildOperandUses(op1, srcCandidates1);
+        srcCount += BuildOperandUses(op2, srcCandidates2);
+
 #if defined(TARGET_X86)
-    else if (tree->OperIs(GT_MUL_LONG))
-    {
-        // have to use the encoding:RDX:RAX = RAX * rm
-        dstCandidates = SRBM_RAX | SRBM_RDX;
-        dstCount      = 2;
-    }
+        if (tree->OperIs(GT_MUL_LONG))
+        {
+            dstCount = 2;
+        }
 #endif
-    GenTree* containedMemOp = nullptr;
-    if (op1->isContained() && !op1->IsCnsIntOrI())
-    {
-        assert(!op2->isContained() || op2->IsCnsIntOrI());
-        containedMemOp = op1;
     }
-    else if (op2->isContained() && !op2->IsCnsIntOrI())
+    else
     {
-        containedMemOp = op2;
+        assert(!(op1->isContained() && !op1->IsCnsIntOrI()) || !(op2->isContained() && !op2->IsCnsIntOrI()));
+        srcCount = BuildBinaryUses(tree->AsOp());
+
+        // We do use the widening multiply to implement
+        // the overflow checking for unsigned multiply
+        //
+        if (isUnsignedMultiply && requiresOverflowCheck)
+        {
+            // The only encoding provided is RDX:RAX = RAX * rm
+            //
+            // Here we set RAX as the only destination candidate
+            // In LSRA we set the kill set for this operation to RBM_RAX|RBM_RDX
+            //
+            dstCandidates = SRBM_RAX;
+        }
+        else if (tree->OperIs(GT_MULHI))
+        {
+            // Have to use the encoding:RDX:RAX = RAX * rm. Since we only care about the
+            // upper 32 bits of the result set the destination candidate to REG_RDX.
+            dstCandidates = SRBM_RDX;
+        }
+#if defined(TARGET_X86)
+        else if (tree->OperIs(GT_MUL_LONG))
+        {
+            // We have to use the encoding:RDX:RAX = RAX * rm
+            dstCandidates = SRBM_RAX | SRBM_RDX;
+            dstCount      = 2;
+        }
+#endif
     }
+
     regMaskTP killMask = getKillSetForMul(tree->AsOp());
     BuildDefWithKills(tree, dstCount, dstCandidates, killMask);
     return srcCount;

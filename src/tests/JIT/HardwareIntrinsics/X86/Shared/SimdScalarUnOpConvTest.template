@@ -245,7 +245,7 @@ namespace JIT.HardwareIntrinsics.X86
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
-                TestLibrary.TestFramework.LogInformation($"   result: result");
+                TestLibrary.TestFramework.LogInformation($"   result: {result}");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;

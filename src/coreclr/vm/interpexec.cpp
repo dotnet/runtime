@@ -8,18 +8,8 @@
 #include "interpexec.h"
 #include "callstubgenerator.h"
 
-// HACK: debugreturn.h breaks constexpr which is used by <limits>
-#if defined(debug_instrumented_return) || defined(_DEBUGRETURN_H_)
-#undef return
-#endif // debug_instrumented_return
-
 // for numeric_limits
 #include <limits>
-
-FCDECL1(float, JIT_ULng2Flt, uint64_t val);
-FCDECL1(double, JIT_ULng2Dbl, uint64_t val);
-FCDECL1(float, JIT_Lng2Flt, int64_t val);
-FCDECL1(double, JIT_Lng2Dbl, int64_t val);
 
 void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
 {
@@ -72,8 +62,9 @@ void InvokeCalliStub(PCODE ftn, CallStubHeader *stubHeaderTemplate, int8_t *pArg
 
     // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
     // copied to a local buffer before we can actually set their target address.
-    uint8_t* actualCallStub = (uint8_t*)alloca(stubHeaderTemplate->GetSize());
-    memcpy(actualCallStub, stubHeaderTemplate, stubHeaderTemplate->GetSize());
+    size_t templateSize = stubHeaderTemplate->GetSize();
+    uint8_t* actualCallStub = (uint8_t*)alloca(templateSize);
+    memcpy(actualCallStub, stubHeaderTemplate, templateSize);
     CallStubHeader *pHeader = (CallStubHeader*)actualCallStub;
     pHeader->SetTarget(ftn); // The method to call
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
@@ -116,7 +107,7 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
 
 typedef void* (*HELPER_FTN_PP)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
-typedef Object* (*HELPER_FTN_NEWARR)(CORINFO_CLASS_HANDLE, intptr_t);
+typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t);
 typedef void* (*HELPER_FTN_PP_2)(void*, void*);
 
 InterpThreadContext::InterpThreadContext()
@@ -131,9 +122,9 @@ InterpThreadContext::~InterpThreadContext()
     free(pStackStart);
 }
 
-CORINFO_GENERIC_HANDLE GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule);
+DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule);
 
-CORINFO_GENERIC_HANDLE GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
+void* GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
 {
     CONTRACTL
     {
@@ -556,11 +547,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_R4_I4:
-                    LOCAL_VAR(ip[1], float) = HCCALL1(JIT_Lng2Flt, (int64_t)LOCAL_VAR(ip[2], int32_t));
+                    LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
                     break;
                 case INTOP_CONV_R4_I8:
-                    LOCAL_VAR(ip[1], float) = HCCALL1(JIT_Lng2Flt, LOCAL_VAR(ip[2], int64_t));
+                    LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], int64_t);
                     ip += 3;
                     break;
                 case INTOP_CONV_R4_R8:
@@ -568,11 +559,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_R8_I4:
-                    LOCAL_VAR(ip[1], double) = HCCALL1(JIT_Lng2Dbl, (int64_t)LOCAL_VAR(ip[2], int32_t));
+                    LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
                     break;
                 case INTOP_CONV_R8_I8:
-                    LOCAL_VAR(ip[1], double) = HCCALL1(JIT_Lng2Dbl, LOCAL_VAR(ip[2], int64_t));
+                    LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], int64_t);
                     ip += 3;
                     break;
                 case INTOP_CONV_R8_R4:
@@ -980,6 +971,50 @@ MAIN_LOOP:
                     LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) + ip[3];
                     ip += 4;
                     break;
+                case INTOP_ADD_OVF_I4:
+                {
+                    int32_t i1 = LOCAL_VAR(ip[2], int32_t);
+                    int32_t i2 = LOCAL_VAR(ip[3], int32_t);
+                    int32_t i3;
+                    if (!ClrSafeInt<int32_t>::addition(i1, i2, i3))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], int32_t) = i3;
+                    ip += 4;
+                    break;
+                }
+                case INTOP_ADD_OVF_I8:
+                {
+                    int64_t i1 = LOCAL_VAR(ip[2], int64_t);
+                    int64_t i2 = LOCAL_VAR(ip[3], int64_t);
+                    int64_t i3;
+                    if (!ClrSafeInt<int64_t>::addition(i1, i2, i3))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], int64_t) = i3;
+                    ip += 4;
+                    break;
+                }
+                case INTOP_ADD_OVF_UN_I4:
+                {
+                    uint32_t i1 = LOCAL_VAR(ip[2], uint32_t);
+                    uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
+                    uint32_t i3;
+                    if (!ClrSafeInt<uint32_t>::addition(i1, i2, i3))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], uint32_t) = i3;
+                    ip += 4;
+                    break;
+                }
+                case INTOP_ADD_OVF_UN_I8:
+                {
+                    uint64_t i1 = LOCAL_VAR(ip[2], uint64_t);
+                    uint64_t i2 = LOCAL_VAR(ip[3], uint64_t);
+                    uint64_t i3;
+                    if (!ClrSafeInt<uint64_t>::addition(i1, i2, i3))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], uint64_t) = i3;
+                    ip += 4;
+                    break;
+                }
                 case INTOP_SUB_I4:
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) - LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
@@ -996,6 +1031,51 @@ MAIN_LOOP:
                     LOCAL_VAR(ip[1], double) = LOCAL_VAR(ip[2], double) - LOCAL_VAR(ip[3], double);
                     ip += 4;
                     break;
+
+                case INTOP_SUB_OVF_I4:
+                {
+                    int32_t i1 = LOCAL_VAR(ip[2], int32_t);
+                    int32_t i2 = LOCAL_VAR(ip[3], int32_t);
+                    int32_t i3;
+                    if (!ClrSafeInt<int32_t>::subtraction(i1, i2, i3))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], int32_t) = i3;
+                    ip += 4;
+                    break;
+                }
+                case INTOP_SUB_OVF_I8:
+                {
+                    int64_t i1 = LOCAL_VAR(ip[2], int64_t);
+                    int64_t i2 = LOCAL_VAR(ip[3], int64_t);
+                    int64_t i3;
+                    if (!ClrSafeInt<int64_t>::subtraction(i1, i2, i3))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], int64_t) = i3;
+                    ip += 4;
+                    break;
+                }
+                case INTOP_SUB_OVF_UN_I4:
+                {
+                    uint32_t i1 = LOCAL_VAR(ip[2], uint32_t);
+                    uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
+                    uint32_t i3;
+                    if (!ClrSafeInt<uint32_t>::subtraction(i1, i2, i3))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], uint32_t) = i3;
+                    ip += 4;
+                    break;
+                }
+                case INTOP_SUB_OVF_UN_I8:
+                {
+                    uint64_t i1 = LOCAL_VAR(ip[2], uint64_t);
+                    uint64_t i2 = LOCAL_VAR(ip[3], uint64_t);
+                    uint64_t i3;
+                    if (!ClrSafeInt<uint64_t>::subtraction(i1, i2, i3))
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], uint64_t) = i3;
+                    ip += 4;
+                    break;
+                }
 
                 case INTOP_MUL_I4:
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) * LOCAL_VAR(ip[3], int32_t);
@@ -1674,6 +1754,7 @@ CALL_INTERP_METHOD:
                     ip += 2;
                     break;
                 case INTOP_BOX:
+                case INTOP_BOX_PTR:
                 case INTOP_UNBOX:
                 case INTOP_UNBOX_ANY:
                 {
@@ -1683,10 +1764,14 @@ CALL_INTERP_METHOD:
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
                     HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod->pDataItems[ip[4]]);
 
-                    if (opcode == INTOP_BOX) {
+                    if (opcode == INTOP_BOX || opcode == INTOP_BOX_PTR) {
                         // internal static object Box(MethodTable* typeMT, ref byte unboxedData)
-                        void *unboxedData = LOCAL_VAR_ADDR(sreg, void);
-                        LOCAL_VAR(dreg, Object*) = (Object*)helper(pMT, unboxedData);
+                        void *unboxedData;
+                        if (opcode == INTOP_BOX)
+                            unboxedData = LOCAL_VAR_ADDR(sreg, void);
+                        else
+                            unboxedData = LOCAL_VAR(sreg, void*);
+                        LOCAL_VAR(dreg, OBJECTREF) = ObjectToOBJECTREF((Object*)helper(pMT, unboxedData));
                     } else {
                         // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
                         Object *src = LOCAL_VAR(sreg, Object*);
@@ -1706,7 +1791,7 @@ CALL_INTERP_METHOD:
                     if (length < 0)
                         COMPlusThrow(kArgumentOutOfRangeException);
 
-                    CORINFO_CLASS_HANDLE arrayClsHnd = (CORINFO_CLASS_HANDLE)pMethod->pDataItems[ip[3]];
+                    MethodTable* arrayClsHnd = (MethodTable*)pMethod->pDataItems[ip[3]];
                     HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod->pDataItems[ip[4]]);
 
                     Object* arr = helper(arrayClsHnd, (intptr_t)length);
@@ -1979,7 +2064,7 @@ do {                                                                           \
                 }
 #define DO_GENERIC_LOOKUP(mdParam, mtParam) \
                     CORINFO_RUNTIME_LOOKUP *pLookup = (CORINFO_RUNTIME_LOOKUP*)pMethod->pDataItems[ip[3]];  \
-                    CORINFO_GENERIC_HANDLE  result = 0;                                                     \
+                    void* result = 0;                                                                       \
                                                                                                             \
                     assert(!pLookup->indirectFirstOffset);                                                  \
                     assert(!pLookup->indirectSecondOffset);                                                 \
@@ -2007,9 +2092,9 @@ do {                                                                           \
                             result = GenericHandleCommon(mdParam, mtParam, pLookup->signature);             \
                             break;                                                                          \
                         }                                                                                   \
-                        result = (CORINFO_GENERIC_HANDLE)lookup;                                            \
+                        result = lookup;                                                                    \
                     } while (0);                                                                            \
-                    LOCAL_VAR(dreg, CORINFO_GENERIC_HANDLE) = result;                                       \
+                    LOCAL_VAR(dreg, void*) = result;                                                        \
                     ip += 4;
 
                 case INTOP_GENERICLOOKUP_THIS:

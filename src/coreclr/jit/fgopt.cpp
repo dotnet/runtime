@@ -2247,6 +2247,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     //
     fgRedirectTargetEdge(block, target->GetTrueTarget());
     block->GetTargetEdge()->setLikelihood(target->GetTrueEdge()->getLikelihood());
+    block->GetTargetEdge()->setHeuristicBased(target->GetTrueEdge()->isHeuristicBased());
 
     FlowEdge* const falseEdge = fgAddRefPred(target->GetFalseTarget(), block, target->GetFalseEdge());
     block->SetCond(block->GetTargetEdge(), falseEdge);
@@ -2741,6 +2742,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 
     fgRedirectTargetEdge(bJump, falseTarget);
     bJump->GetTargetEdge()->setLikelihood(falseEdge->getLikelihood());
+    bJump->GetTargetEdge()->setHeuristicBased(falseEdge->isHeuristicBased());
 
     FlowEdge* const newTrueEdge = fgAddRefPred(trueTarget, bJump, trueEdge);
 
