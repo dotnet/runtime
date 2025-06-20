@@ -22,6 +22,57 @@ static bool Dbg_ShouldUseCookies()
 }
 #endif
 
+
+static uint32_t u32_min(uint32_t a, uint32_t b)
+{
+    return a < b ? a : b;
+}
+
+static int32_t i32_max(int32_t a, int32_t b)
+{
+    return a > b ? a : b;
+}
+
+static uint32_t u32_max(uint32_t a, uint32_t b)
+{
+    return a > b ? a : b;
+}
+
+static uint64_t ReadFromBitOffsets(PTR_UINT64 pArray, uint32_t bitStart, uint32_t bitCount)
+{
+    uint32_t elementBitSize = (sizeof(uint64_t) * 8);
+    uint32_t bitEnd = bitStart + bitCount - 1;
+    uint32_t lowOffset = bitStart / elementBitSize;
+    uint32_t highOffset = bitEnd / elementBitSize;
+
+    uint64_t low = pArray[lowOffset];
+    uint64_t high = pArray[highOffset];
+
+    uint32_t bitOffsetInLow = bitStart - lowOffset * elementBitSize;
+    uint32_t bitsInLow = u32_min(elementBitSize - bitOffsetInLow, bitCount);
+
+    uint32_t endBitOffsetInHigh = bitEnd - highOffset * elementBitSize;
+    int32_t bitsNotInHigh = i32_max(-((int32_t)bitStart - (int32_t)(highOffset * elementBitSize)), 0);
+
+    int32_t startBitOffsetInHigh = i32_max((int32_t)bitStart - (int32_t)(highOffset * elementBitSize), 0);
+
+    // Extract LowBits from low
+    uint64_t lowShift1 = (low >> (int32_t)bitOffsetInLow);
+
+    int32_t loBitMask = ((1 << (bitsInLow)) - 1);
+    int32_t shiftLoToMaskUpperBitsAmount = (int32_t)(elementBitSize - bitsInLow);
+    uint64_t BitsFromLow = (lowShift1 & loBitMask);
+
+    uint64_t hiShift1 = (high >> startBitOffsetInHigh);
+    int32_t bitsInHigh = ((int32_t)endBitOffsetInHigh + 1) - startBitOffsetInHigh;
+    int32_t hiBitMask = ((1 << (bitsInHigh)) - 1);
+    uint64_t BitsFromHigh = hiShift1 & hiBitMask;
+    uint64_t resultBitsFromHigh = BitsFromHigh << bitsNotInHigh;
+
+    uint64_t result = BitsFromLow | resultBitsFromHigh;
+    return result;
+}
+
 //-----------------------------------------------------------------------------
 // We have "Transfer" objects that sit on top of the streams.
 // The objects look identical, but one serializes and the other deserializes.
@@ -520,6 +571,17 @@ enum EXTRA_DEBUG_INFO_FLAGS
 
 #ifndef DACCESS_COMPILE
 
+BYTE* DecompressNew(void*, size_t cBytes)
+{
+    BYTE* p = (BYTE *)malloc(cBytes);
+    return p;
+}
+
+void DecompressDelete(void* p)
+{
+    free(p);
+}
+
 void CompressDebugInfo::CompressBoundaries(
     IN ULONG32                       cMap,
     IN ICorDebugInfo::OffsetMapping *pMap,
@@ -539,17 +601,133 @@ void CompressDebugInfo::CompressBoundaries(
 
     if (cMap != 0)
     {
+#ifdef USE_V2_BOUNDS_COMPRESSION
+        // Get max IL offset and native offsets
+        uint32_t maxNativeOffsetDelta = 0;
+        uint32_t maxILOffset = 0;
+        for (ULONG32 i = 0; i < cMap; i++)
+        {
+            maxILOffset = u32_max(maxILOffset, (uint32_t)((int32_t)pMap[i].ilOffset - (int32_t)ICorDebugInfo::MAX_MAPPING_VALUE));
+            uint32_t prevNativeOffset = 0;
+            if (i > 0)
+            {
+                prevNativeOffset = pMap[i - 1].nativeOffset;
+            }   
+            uint32_t nativeOffsetDelta = pMap[i].nativeOffset - prevNativeOffset;
+            maxNativeOffsetDelta = u32_max(nativeOffsetDelta, maxNativeOffsetDelta);
+        }
+        uint32_t ilOffsetBits = 0;
+        if (maxILOffset == 0)
+        {
+            ilOffsetBits = 1; // always have at least 1 bit
+        }
+        else
+        {
+            BitScanReverse((DWORD*)&ilOffsetBits, maxILOffset);
+            ilOffsetBits++; // BitScanReverse finds the index of the highest set bit, which is one less than the number of bits needed.
+        }
+        uint32_t nativeOffsetBits = 0;
+        if (maxNativeOffsetDelta == 0)
+        {
+            nativeOffsetBits = 1; // always have at least 1 bit
+        }
+        else
+        {
+            BitScanReverse((DWORD*)&nativeOffsetBits, maxNativeOffsetDelta);
+            nativeOffsetBits++; // BitScanReverse finds the index of the highest set bit, which is one less than the number of bits needed.
+        }
+        
+        pWriter->WriteEncodedU32(cMap);
+        pWriter->WriteEncodedU32(nativeOffsetBits - 1);
+        pWriter->WriteEncodedU32(ilOffsetBits - 1);
+
+        uint32_t bitWidth = 2 + nativeOffsetBits + ilOffsetBits;
+
+        uint8_t bitsInProgress = 0;
+        uint8_t bitsInProgressCount = 0;
+
+        for (uint32_t i = 0; i < cMap; i++)
+        {
+            uint32_t prevNativeOffset = 0;
+            if (i > 0)
+            {
+                prevNativeOffset = pMap[i - 1].nativeOffset;
+            }   
+            uint32_t nativeOffsetDelta = pMap[i].nativeOffset - prevNativeOffset;
+
+            ICorDebugInfo::OffsetMapping * pBound = &pMap[i];
+
+            uint32_t sourceBits = 0;
+            switch (pBound->source)
+            {
+                case ICorDebugInfo::SOURCE_TYPE_INVALID:
+                    sourceBits = 0;
+                    break;
+                case ICorDebugInfo::CALL_INSTRUCTION:
+                    sourceBits = 1;
+                    break;
+                case ICorDebugInfo::STACK_EMPTY:
+                    sourceBits = 2;
+                    break;
+                case ICorDebugInfo::CALL_INSTRUCTION | ICorDebugInfo::STACK_EMPTY:
+                    sourceBits = 3;
+                    break;
+                default:
+                    _ASSERTE(!"Unknown source type in CompressDebugInfo::CompressBoundaries");
+                    sourceBits = 0; // default to invalid
+                    break;
+            }
+
+
+            uint64_t mappingDataEncoded = sourceBits | 
+                ((uint64_t)nativeOffsetDelta << 2) | 
+                ((uint64_t)((int32_t)pBound->ilOffset - (int32_t)ICorDebugInfo::MAX_MAPPING_VALUE) << (2 + nativeOffsetBits));
+
+            for (uint8_t bitsToWrite = (uint8_t)bitWidth; bitsToWrite > 0;)
+            {
+                // Figure out next bits to write if we need to combine with a previous byte.
+                if (bitsInProgressCount > 0)
+                {
+                    uint8_t bitsToAddFromNewEncoding = 8 - bitsInProgressCount;
+                    uint8_t bitsToAddOnToInProgress = (mappingDataEncoded & ((1ULL << bitsToAddFromNewEncoding) - 1)) << bitsInProgressCount;
+                    pWriter->WriteRawByte(bitsToAddOnToInProgress | bitsInProgress);
+                    mappingDataEncoded >>= bitsToAddFromNewEncoding;
+                    bitsToWrite -= bitsToAddFromNewEncoding;
+                    bitsInProgressCount = 0;
+                }
+                else if (bitsToWrite >= 8)
+                {
+                    pWriter->WriteRawByte((uint8_t)mappingDataEncoded);
+                    mappingDataEncoded >>= 8;
+                    bitsToWrite -= 8;
+                }
+                else
+                {
+                    bitsInProgress = (uint8_t)mappingDataEncoded;
+                    bitsInProgressCount = bitsToWrite;
+                    bitsToWrite = 0;
+                }
+            }
+        }
+        if (bitsInProgressCount > 0)
+        {
+            _ASSERTE(bitsInProgressCount < 8);
+            pWriter->WriteRawByte(bitsInProgress);
+        }
+#else
+        // Use the old compression format.
         pWriter->WriteEncodedU32(cMap);
 
         TransferWriter t(*pWriter);
         DoBounds(t, cMap, pMap);
-
+#endif // USE_V2_COMPRESSION
         pWriter->Flush();
     }
 
 #ifdef _DEBUG
     DWORD cbBlob;
     PVOID pBlob = pWriter->GetBlob(&cbBlob);
+
 
     // Track perf #s for compression...
     g_CDI_TotalMethods++;
@@ -753,6 +931,44 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
         memcpy(ptr, pVars, cbVars);
     ptr += cbVars;
 
+#ifdef _DEBUG
+    ULONG32 cNewBounds = 0;
+    ULONG32 cNewVars = 0;
+    ICorDebugInfo::OffsetMapping *pNewMap = NULL;
+    ICorDebugInfo::NativeVarInfo *pNewVars = NULL;
+#ifdef USE_V2_BOUNDS_COMPRESSION
+    RestoreBoundariesAndVars_V2(
+#else
+    RestoreBoundariesAndVars(
+#endif
+        DecompressNew, NULL, ptrStart, &cNewBounds, &pNewMap, &cNewVars, &pNewVars, writeFlagByte);
+
+    _ASSERTE(cNewBounds == iOffsetMapping);
+    _ASSERTE(cNewBounds == 0 || pNewMap != NULL);
+    for (ULONG32 i = 0; i < cNewBounds; i++)
+    {
+        _ASSERTE(pNewMap[i].nativeOffset == pOffsetMapping[i].nativeOffset);
+        _ASSERTE(pNewMap[i].ilOffset == pOffsetMapping[i].ilOffset);
+        _ASSERTE(pNewMap[i].source == pOffsetMapping[i].source);
+    }
+
+    _ASSERTE(cNewVars == iNativeVarInfo);
+    _ASSERTE(cNewVars == 0 || pNewVars != NULL);
+
+    for (ULONG32 i = 0; i < iNativeVarInfo; i++)
+    {
+        _ASSERTE(pNewVars[i].startOffset == pNativeVarInfo[i].startOffset);
+        _ASSERTE(pNewVars[i].endOffset == pNativeVarInfo[i].endOffset);
+        _ASSERTE(pNewVars[i].varNumber == pNativeVarInfo[i].varNumber);
+        _ASSERTE(pNewVars[i].loc == pNativeVarInfo[i].loc);
+    }
+
+    if (pNewMap != NULL)
+    {
+        DecompressDelete(pNewMap);
+    }
+#endif // _DEBUG
+
     return ptrStart;
 }
 
@@ -763,6 +979,151 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
 //-----------------------------------------------------------------------------
 
 // Uncompress data supplied by Compress functions.
+void CompressDebugInfo::RestoreBoundariesAndVars_V2(
+    IN FP_IDS_NEW fpNew, IN void * pNewData,
+    IN PTR_BYTE                         pDebugInfo,
+    OUT ULONG32                       * pcMap, // number of entries in ppMap
+    OUT ICorDebugInfo::OffsetMapping **ppMap, // pointer to newly allocated array
+    OUT ULONG32                         *pcVars,
+    OUT ICorDebugInfo::NativeVarInfo    **ppVars,
+    BOOL hasFlagByte
+    )
+{
+    CONTRACTL
+    {
+        THROWS; // reading from nibble stream may throw on invalid data.
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    if (pcMap != NULL) *pcMap = 0;
+    if (ppMap != NULL) *ppMap = NULL;
+    if (pcVars != NULL) *pcVars = 0;
+    if (ppVars != NULL) *ppVars = NULL;
+
+    if (hasFlagByte)
+    {
+        // Check flag byte and skip over any patchpoint info
+        BYTE flagByte = *pDebugInfo;
+        pDebugInfo++;
+
+        if ((flagByte & EXTRA_DEBUG_INFO_PATCHPOINT) != 0)
+        {
+            PTR_PatchpointInfo patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
+            pDebugInfo += patchpointInfo->PatchpointInfoSize();
+            flagByte &= ~EXTRA_DEBUG_INFO_PATCHPOINT;
+        }
+
+        if ((flagByte & EXTRA_DEBUG_INFO_RICH) != 0)
+        {
+            UINT32 cbRichDebugInfo = *PTR_UINT32(pDebugInfo);
+            pDebugInfo += 4;
+            pDebugInfo += cbRichDebugInfo;
+            flagByte &= ~EXTRA_DEBUG_INFO_RICH;
+        }
+
+        _ASSERTE(flagByte == 0);
+    }
+
+    NibbleReader r(pDebugInfo, 12 /* maximum size of compressed 2 UINT32s */);
+
+    ULONG cbBounds = r.ReadEncodedU32();
+    ULONG cbVars   = r.ReadEncodedU32();
+
+    PTR_BYTE addrBounds = pDebugInfo + r.GetNextByteIndex();
+    PTR_BYTE addrVars   = addrBounds + cbBounds;
+
+    if ((pcMap != NULL || ppMap != NULL) && (cbBounds != 0))
+    {
+        NibbleReader r(addrBounds, cbBounds);
+        uint32_t cNumEntries = r.ReadEncodedU32_NoThrow();//            writer2.WriteUInt((uint)offsetMapping.Length); // We need the total count
+        uint32_t bitsForNativeDelta = r.ReadEncodedU32_NoThrow() + 1; // Number of bits needed for native deltas
+        uint32_t bitsForILOffsets = r.ReadEncodedU32_NoThrow() + 1; // How many bits needed for IL offsets
+
+        uint32_t bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + 2; // 2 bits for source type
+        TADDR addrBoundsArray = dac_cast<TADDR>(addrBounds) + r.GetNextByteIndex();
+        TADDR addrBoundsArrayForReads = AlignDown(addrBoundsArray, sizeof(uint64_t));
+        uint32_t bitOffsetForReads = (uint32_t)((addrBoundsArray - addrBoundsArrayForReads) * 8); // We want to read using aligned 64bit reads, but we want to start at the right bit offset.
+        uint32_t currentNativeOffset = 0;
+        ICorDebugInfo::OffsetMapping bound;
+
+        _ASSERTE(cNumEntries > 0);
+
+        if (pcMap != NULL)
+            *pcMap = cNumEntries;
+
+        if (ppMap != NULL)
+        {
+            ICorDebugInfo::OffsetMapping * pMap = reinterpret_cast<ICorDebugInfo::OffsetMapping *>
+                (fpNew(pNewData, cNumEntries * sizeof(ICorDebugInfo::OffsetMapping)));
+            if (pMap == NULL)
+            {
+                ThrowOutOfMemory();
+            }
+            *ppMap = pMap;
+
+            for (uint32_t iEntry = 0; iEntry < cNumEntries; iEntry++, bitOffsetForReads += bitsPerEntry)
+            {
+                uint64_t mappingDataEncoded = ReadFromBitOffsets(dac_cast<PTR_UINT64>(addrBoundsArrayForReads), bitOffsetForReads, bitsPerEntry);
+                switch (mappingDataEncoded & 0x3) // Last 2 bits are source type
+                {
+                    case 0:
+                        bound.source = ICorDebugInfo::SOURCE_TYPE_INVALID;
+                        break;
+                    case 1:
+                        bound.source = ICorDebugInfo::CALL_INSTRUCTION;
+                        break;
+                    case 2:
+                        bound.source = ICorDebugInfo::STACK_EMPTY;
+                        break;
+                    case 3:
+                        bound.source = (ICorDebugInfo::SourceTypes)(ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::CALL_INSTRUCTION);
+                        break;
+                }
+
+                mappingDataEncoded = mappingDataEncoded >> 2; // Remove source type bits
+                uint32_t nativeOffsetDelta = (uint32_t)(mappingDataEncoded & ((1ULL << bitsForNativeDelta) - 1));
+                currentNativeOffset += nativeOffsetDelta;
+                bound.nativeOffset = currentNativeOffset;
+
+                mappingDataEncoded = mappingDataEncoded >> bitsForNativeDelta; // Remove native offset delta bits
+                bound.ilOffset = (uint32_t)((int32_t)mappingDataEncoded + (int32_t)ICorDebugInfo::MAX_MAPPING_VALUE);
+                pMap[iEntry] = bound;
+            }
+        }
+    }
+
+    if ((pcVars != NULL || ppVars != NULL) && (cbVars != 0))
+    {
+        NibbleReader r(addrVars, cbVars);
+        TransferReader t(r);
+
+        UINT32 cNumEntries = r.ReadEncodedU32();
+        _ASSERTE(cNumEntries > 0);
+
+        if (pcVars != NULL)
+            *pcVars = cNumEntries;
+
+        if (ppVars != NULL)
+        {
+            ICorDebugInfo::NativeVarInfo * pVars = reinterpret_cast<ICorDebugInfo::NativeVarInfo *>
+                (fpNew(pNewData, cNumEntries * sizeof(ICorDebugInfo::NativeVarInfo)));
+            if (pVars == NULL)
+            {
+                ThrowOutOfMemory();
+            }
+            *ppVars = pVars;
+
+            for(UINT32 i = 0; i < cNumEntries; i++)
+            {
+                DoNativeVarInfo(t, &pVars[i]);
+            }
+        }
+    }
+}
+
 void CompressDebugInfo::RestoreBoundariesAndVars(
     IN FP_IDS_NEW fpNew, IN void * pNewData,
     IN PTR_BYTE                         pDebugInfo,
@@ -932,6 +1293,115 @@ size_t CompressDebugInfo::WalkILOffsets(
 
         // Main decompression routine.
         return DoBoundsCallback(t, cNumEntries, pContext, pfnWalkILOffsets);
+    }
+
+    return 0;
+}
+
+
+size_t CompressDebugInfo::WalkILOffsets_V2(
+    IN PTR_BYTE pDebugInfo,
+    BOOL hasFlagByte,
+    void* pContext,
+    size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
+)
+{
+    CONTRACTL
+    {
+        THROWS; // reading from nibble stream may throw on invalid data.
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    if (hasFlagByte)
+    {
+        // Check flag byte and skip over any patchpoint info
+        BYTE flagByte = *pDebugInfo;
+        pDebugInfo++;
+
+        if ((flagByte & EXTRA_DEBUG_INFO_PATCHPOINT) != 0)
+        {
+            PTR_PatchpointInfo patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
+            pDebugInfo += patchpointInfo->PatchpointInfoSize();
+            flagByte &= ~EXTRA_DEBUG_INFO_PATCHPOINT;
+        }
+
+        if ((flagByte & EXTRA_DEBUG_INFO_RICH) != 0)
+        {
+            UINT32 cbRichDebugInfo = *PTR_UINT32(pDebugInfo);
+            pDebugInfo += 4;
+            pDebugInfo += cbRichDebugInfo;
+            flagByte &= ~EXTRA_DEBUG_INFO_RICH;
+        }
+
+        _ASSERTE(flagByte == 0);
+    }
+
+    NibbleReader r(pDebugInfo, 12 /* maximum size of compressed 2 UINT32s */);
+
+    ULONG cbBounds = r.ReadEncodedU32_NoThrow();
+    ULONG cbVars   = r.ReadEncodedU32_NoThrow();
+
+    PTR_BYTE addrBounds = pDebugInfo + r.GetNextByteIndex();
+    PTR_BYTE addrVars   = addrBounds + cbBounds;
+
+    if (cbBounds != 0)
+    {
+        NibbleReader r(addrBounds, cbBounds);
+        TransferReader t(r);
+
+        uint32_t cNumEntries = r.ReadEncodedU32_NoThrow();//            writer2.WriteUInt((uint)offsetMapping.Length); // We need the total count
+        uint32_t bitsForNativeDelta = r.ReadEncodedU32_NoThrow() + 1; // Number of bits needed for native deltas
+        uint32_t bitsForILOffsets = r.ReadEncodedU32_NoThrow() + 1; // How many bits needed for IL offsets
+
+        uint32_t bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + 2; // 2 bits for source type
+        TADDR addrBoundsArray = dac_cast<TADDR>(addrBounds) + r.GetNextByteIndex();
+        TADDR addrBoundsArrayForReads = AlignDown(addrBoundsArray, sizeof(uint64_t));
+        uint32_t bitOffsetForReads = (uint32_t)((addrBoundsArray - addrBoundsArrayForReads) * 8); // We want to read using aligned 64bit reads, but we want to start at the right bit offset.
+        uint32_t currentNativeOffset = 0;
+        ICorDebugInfo::OffsetMapping bound;
+        for (uint32_t iEntry = 0; iEntry < cNumEntries; iEntry++, bitOffsetForReads += bitsPerEntry)
+        {
+            uint64_t mappingDataEncoded = ReadFromBitOffsets(dac_cast<PTR_UINT64>(addrBoundsArrayForReads), bitOffsetForReads, bitsPerEntry);
+            switch (mappingDataEncoded & 0x3) // Last 2 bits are source type
+            {
+                case 0:
+                    bound.source = ICorDebugInfo::SOURCE_TYPE_INVALID;
+                    break;
+                case 1:
+                    bound.source = ICorDebugInfo::CALL_INSTRUCTION;
+                    break;
+                case 2:
+                    bound.source = ICorDebugInfo::STACK_EMPTY;
+                    break;
+                case 3:
+                    bound.source = (ICorDebugInfo::SourceTypes)(ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::CALL_INSTRUCTION);
+                    break;
+            }
+
+            mappingDataEncoded = mappingDataEncoded >> 2; // Remove source type bits
+            uint32_t nativeOffsetDelta = (uint32_t)(mappingDataEncoded & ((1ULL << bitsForNativeDelta) - 1));
+            currentNativeOffset += nativeOffsetDelta;
+            bound.nativeOffset = currentNativeOffset;
+
+            mappingDataEncoded = mappingDataEncoded >> bitsForNativeDelta; // Remove native offset delta bits
+            bound.ilOffset = (uint32_t)((int32_t)mappingDataEncoded + (int32_t)ICorDebugInfo::MAX_MAPPING_VALUE);
+
+            size_t callbackResult = pfnWalkILOffsets(&bound, pContext);
+            if (callbackResult != 0)
+            {
+                // We have a callback that wants to stop the walk.
+                return callbackResult;
+            }
+        }
+
+        bound.nativeOffset = 0xFFFFFFFF;
+        bound.ilOffset = ICorDebugInfo::NO_MAPPING;
+        bound.source = ICorDebugInfo::SOURCE_TYPE_INVALID;
+
+        return pfnWalkILOffsets(&bound, pContext);
     }
 
     return 0;

@@ -3910,7 +3910,11 @@ BOOL EECodeGenManager::GetBoundariesAndVarsWorker(
     }
 
     // Uncompress. This allocates memory and may throw.
+#ifdef USE_V2_BOUNDS_COMPRESSION
+    CompressDebugInfo::RestoreBoundariesAndVars_V2(
+#else
     CompressDebugInfo::RestoreBoundariesAndVars(
+#endif
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
         pcMap, ppMap,    // output
@@ -3988,7 +3992,11 @@ size_t EECodeGenManager::WalkILOffsetsWorker(PTR_BYTE pDebugInfo,
     }
 
     // Uncompress. This allocates memory and may throw.
+#ifdef USE_V2_BOUNDS_COMPRESSION
+    return CompressDebugInfo::WalkILOffsets_V2(
+#else
     return CompressDebugInfo::WalkILOffsets(
+#endif
         pDebugInfo,      // input
         hasFlagByte,
         pContext,

@@ -108,9 +108,27 @@ public:
         OUT ICorDebugInfo::NativeVarInfo    **ppVars,
         BOOL hasFlagByte
     );
+#define USE_V2_BOUNDS_COMPRESSION
+    static void RestoreBoundariesAndVars_V2(
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        IN PTR_BYTE                         pDebugInfo,
+        OUT ULONG32                       * pcMap, // number of entries in ppMap
+        OUT ICorDebugInfo::OffsetMapping **ppMap, // pointer to newly allocated array
+        OUT ULONG32                         *pcVars,
+        OUT ICorDebugInfo::NativeVarInfo    **ppVars,
+        BOOL hasFlagByte
+    );
 
     // Walk the ILOffsets without needing to allocate a buffer
     static size_t WalkILOffsets(
+        IN PTR_BYTE                         pDebugInfo,
+        BOOL hasFlagByte,
+        void* pContext,
+        size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
+    );
+
+    // Walk the ILOffsets without needing to allocate a buffer
+    static size_t WalkILOffsets_V2(
         IN PTR_BYTE                         pDebugInfo,
         BOOL hasFlagByte,
         void* pContext,

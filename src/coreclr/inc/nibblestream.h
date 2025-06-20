@@ -58,7 +58,10 @@ public:
     void Flush()
     {
         if (m_fPending)
+        {
             m_SigBuilder.AppendByte(m_PendingNibble);
+            m_fPending = false;
+        }
     }
 
     PVOID GetBlob(DWORD * pdwLength)
@@ -158,6 +161,12 @@ public:
             WriteNibble(static_cast<NIBBLE>(x & 0b1111));
             x >>= 4;
         }
+    }
+
+    void WriteRawByte(uint8_t b)
+    {
+        Flush();
+        m_SigBuilder.AppendByte(b);
     }
 
 protected:
