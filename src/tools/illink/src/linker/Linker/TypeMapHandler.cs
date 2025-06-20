@@ -109,24 +109,21 @@ namespace Mono.Linker
 			RecordTargetTypeSeen (definition, _unmarkedExternalTypeMapEntries, _referencedExternalTypeMaps, _pendingExternalTypeMapEntries);
 		}
 
-		void RecordTargetTypeSeen (TypeDefinition definition, Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttributeWithOrigin>>> unmarked, HashSet<TypeReference> referenced, Dictionary<TypeReference, List<CustomAttributeWithOrigin>> pending)
+		void RecordTargetTypeSeen (TypeDefinition targetType, Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttributeWithOrigin>>> unmarkedTypeMapAttributes, HashSet<TypeReference> referenceTypeMapGroups, Dictionary<TypeReference, List<CustomAttributeWithOrigin>> typeMapAttributesPendingUniverseMarking)
 		{
-			if (unmarked.Remove (definition, out Dictionary<TypeReference, List<CustomAttributeWithOrigin>>? entries)) {
-				foreach (var (key, attributes) in entries) {
+			if (unmarkedTypeMapAttributes.Remove (targetType, out Dictionary<TypeReference, List<CustomAttributeWithOrigin>>? entries)) {
+				foreach (var (typeMapGroup, attributes) in entries) {
 
-					if (referenced.Contains (key)) {
+					if (referenceTypeMapGroups.Contains (typeMapGroup)) {
 						foreach (var attr in attributes) {
-							MarkTypeMapAttribute (attr, new DependencyInfo (DependencyKind.TypeMapEntry, definition));
+							MarkTypeMapAttribute (attr, new DependencyInfo (DependencyKind.TypeMapEntry, targetType));
 						}
-					}
-
-					if (!pending.TryGetValue (key, out List<CustomAttributeWithOrigin>? value)) {
-						pending[key] = [.. attributes];
+					} else if (!typeMapAttributesPendingUniverseMarking.TryGetValue (typeMapGroup, out List<CustomAttributeWithOrigin>? value)) {
+						typeMapAttributesPendingUniverseMarking[key] = [.. attributes];
 					} else {
 						value.AddRange (attributes);
 					}
 				}
-				unmarked.Remove (definition);
 			}
 		}
 
