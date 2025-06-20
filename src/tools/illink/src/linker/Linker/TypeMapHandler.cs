@@ -119,7 +119,7 @@ namespace Mono.Linker
 							MarkTypeMapAttribute (attr, new DependencyInfo (DependencyKind.TypeMapEntry, targetType));
 						}
 					} else if (!typeMapAttributesPendingUniverseMarking.TryGetValue (typeMapGroup, out List<CustomAttributeWithOrigin>? value)) {
-						typeMapAttributesPendingUniverseMarking[key] = [.. attributes];
+						typeMapAttributesPendingUniverseMarking[typeMapGroup] = [.. attributes];
 					} else {
 						value.AddRange (attributes);
 					}
