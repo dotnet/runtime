@@ -34,7 +34,7 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         // Reflection Mapping Tables
         //==============================================================================================
-        public abstract QTypeDefinition GetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle);
+        public abstract bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition);
         public abstract bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle);
 
         public abstract bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle);

@@ -60,13 +60,36 @@ namespace System
                     return Unsafe.As<RuntimeTypeInfo>(runtimeTypeInfo);
                 }
             }
-            return InitializeRuntimeTypeInfoHandle();
+
+            if (!TryInitializeRuntimeTypeInfoHandle(out RuntimeTypeInfo? typeInfo))
+            {
+                // This should not be reachable. All types that could be reflected on should have a RuntimeTypeInfo.
+                throw new InvalidOperationException();
+            }
+
+            return typeInfo;
+        }
+
+        internal bool TryGetRuntimeTypeInfo([NotNullWhen(true)] out RuntimeTypeInfo? runtimeTypeInfo)
+        {
+            IntPtr handle = _runtimeTypeInfoHandle;
+            if (handle != default)
+            {
+                object? typeInfo = RuntimeImports.RhHandleGet(handle);
+                if (typeInfo != null)
+                {
+                    runtimeTypeInfo = Unsafe.As<RuntimeTypeInfo>(typeInfo);
+                    return true;
+                }
+            }
+            return TryInitializeRuntimeTypeInfoHandle(out runtimeTypeInfo);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private RuntimeTypeInfo InitializeRuntimeTypeInfoHandle()
+        private bool TryInitializeRuntimeTypeInfoHandle([NotNullWhen(true)] out RuntimeTypeInfo? runtimeTypeInfo)
         {
-            RuntimeTypeInfo runtimeTypeInfo = ExecutionDomain.GetRuntimeTypeInfo(_pUnderlyingEEType);
+            if (!ExecutionDomain.TryGetRuntimeTypeInfo(_pUnderlyingEEType, out runtimeTypeInfo))
+                return false;
 
             // We assume that the RuntimeTypeInfo unifiers pick a winner when multiple threads
             // race to create RuntimeTypeInfo.
@@ -83,7 +106,7 @@ namespace System
                 RuntimeImports.RhHandleSet(handle, runtimeTypeInfo);
             }
 
-            return runtimeTypeInfo;
+            return true;
         }
 
         public override string? GetEnumName(object value)

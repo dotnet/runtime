@@ -71,6 +71,11 @@ namespace System.Reflection.Runtime.General
         {
             return Type.GetTypeFromHandle(typeHandle)!.ToRuntimeTypeInfo();
         }
+
+        public static bool TryGetRuntimeTypeInfoForRuntimeTypeHandle(this RuntimeTypeHandle typeHandle, [NotNullWhen(true)] out RuntimeTypeInfo? typeInfo)
+        {
+            return Type.GetTypeFromHandle(typeHandle)!.TryGetRuntimeTypeInfo(out typeInfo);
+        }
     }
 }
 
