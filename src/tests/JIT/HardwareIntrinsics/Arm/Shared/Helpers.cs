@@ -2137,9 +2137,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short AbsoluteDifferenceWideningUpperAndAdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static short AbsoluteDifferenceWideningLowerAndAddEven(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+        public static short AbsoluteDifferenceWideningLowerAndAddEven(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i * 2], op3[i * 2]);
 
-        public static short AbsoluteDifferenceWideningLowerAndAddOdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
+        public static short AbsoluteDifferenceWideningLowerAndAddOdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
         public static short AbsoluteDifferenceWideningEven(sbyte[] op1, sbyte[] op2, int i) => (short) AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
 
@@ -2277,9 +2277,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int AbsoluteDifferenceWideningUpperAndAdd(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static int AbsoluteDifferenceWideningLowerAndAddEven(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+        public static int AbsoluteDifferenceWideningLowerAndAddEven(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i * 2], op3[i * 2]);
 
-        public static int AbsoluteDifferenceWideningLowerAndAddOdd(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
+        public static int AbsoluteDifferenceWideningLowerAndAddOdd(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
         public static int AbsoluteDifferenceWideningEven(short[] op1, short[] op2, int i) => (int) AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
 
@@ -2292,6 +2292,79 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int AddPairwiseWidening(short[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
         public static int AddPairwiseWideningAndAdd(int[] op1, short[] op2, int i) => (int)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        public static uint AddCarryWideningEven(uint[] op1, uint[] op2, uint[] op3, int i)
+        {
+            uint lsb;
+            ulong res;
+
+            if ((i < 0) || (i >= op1.Length) || (i >= op2.Length) || (i >= op3.Length))
+            {
+                throw new ArgumentOutOfRangeException(nameof(i), "Index i is out of range");
+            }
+
+            if (i % 2 == 0)
+            {
+                if (i + 1 >= op2.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range.");
+                }
+
+                lsb = op2[i + 1] & 1u;
+                res = (ulong)op1[i] + op3[i] + lsb;
+                return (uint)res;
+            }
+            else
+            {
+                if (((i - 1) < 0) || ((i - 1) >= op1.Length) || ((i - 1) >= op3.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
+                }
+
+                lsb = op2[i] & 1u;
+                res = (ulong)op1[i - 1] + op3[i - 1] + lsb;
+
+                // Shift result to get the carry bit
+                return (uint)(res >> 32);
+            }
+        }
+
+        public static uint AddCarryWideningOdd(uint[] op1, uint[] op2, uint[] op3, int i)
+        {
+            uint lsb;
+            ulong res;
+
+            if ((i < 0) || (i >= op1.Length) || (i >= op2.Length) || (i >= op3.Length))
+            {
+                throw new ArgumentOutOfRangeException(nameof(i), "Index i is out of range");
+            }
+
+            if (i % 2 == 0)
+            {
+                if (((i + 1) >= op1.Length) || ((i + 1) >= op2.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range.");
+                }
+
+                lsb = op2[i + 1] & 1u;
+                res = (ulong)op1[i + 1] + op3[i] + lsb;
+                return (uint)res;
+            }
+            else
+            {
+                if (((i - 1) < 0) || ((i - 1) >= op3.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
+                }
+
+                lsb = op2[i] & 1u;
+                res = (ulong)op1[i] + op3[i - 1] + lsb;
+
+                // Shift result to get the carry bit
+                return (uint)(res >> 32);
+            }
+        }
+
 
         private static short HighNarrowing(int op1, bool round)
         {
@@ -2401,9 +2474,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long AbsoluteDifferenceWideningUpperAndAdd(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static long AbsoluteDifferenceWideningLowerAndAddEven(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+        public static long AbsoluteDifferenceWideningLowerAndAddEven(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i * 2], op3[i * 2]);
 
-        public static long AbsoluteDifferenceWideningLowerAndAddOdd(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
+        public static long AbsoluteDifferenceWideningLowerAndAddOdd(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
         public static long AbsoluteDifferenceWideningEven(int[] op1, int[] op2, int i) => (long) AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
 
@@ -2414,6 +2487,88 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long AddPairwiseWidening(int[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
         public static long AddPairwiseWideningAndAdd(long[] op1, int[] op2, int i) => (long)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        public static ulong AddCarryWideningEven(ulong[] op1, ulong[] op2, ulong[] op3, int i)
+        {
+            ulong lsb;
+            ulong res;
+
+            if ((i < 0) || (i >= op1.Length) || (i >= op2.Length) || (i >= op3.Length))
+            {
+                throw new ArgumentOutOfRangeException(nameof(i), "Index i is out of range");
+            }
+
+            if (i % 2 == 0)
+            {
+                if ((i + 1) >= op2.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range for op3.");
+                }
+
+                lsb = op2[i + 1] & 1UL;
+                res = op1[i] + op3[i] + lsb;
+                return res;
+            }
+            else
+            {
+                if (((i - 1) < 0) || ((i - 1) >= op1.Length) || ((i - 1) >= op3.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
+                }
+
+                lsb = op2[i] & 1UL;
+
+                // Look for an overflow in the addition to get the carry bit
+                ulong sum1 = op1[i - 1] + op3[i - 1];
+                bool overflow1 = sum1 < op1[i - 1];
+
+                ulong sum2 = sum1 + lsb;
+                bool overflow2 = sum2 < sum1;
+
+                return (overflow1 || overflow2) ? 1UL : 0UL;
+            }
+        }
+
+        public static ulong AddCarryWideningOdd(ulong[] op1, ulong[] op2, ulong[] op3, int i)
+        {
+            ulong lsb;
+            ulong res;
+
+            if ((i < 0) || (i >= op1.Length) || (i >= op2.Length) || (i >= op3.Length))
+            {
+                throw new ArgumentOutOfRangeException(nameof(i), "Index i is out of range");
+            }
+
+            if (i % 2 == 0)
+            {
+                if (((i + 1) >= op1.Length) || ((i + 1) >= op2.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range.");
+                }
+
+                lsb = op2[i + 1] & 1UL;
+                res = op1[i + 1] + op3[i] + lsb;
+                return res;
+            }
+            else
+            {
+                if (((i - 1) < 0) || ((i - 1) >= op3.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
+                }
+
+                lsb = op2[i] & 1UL;
+
+                // Look for an overflow in the addition to get the carry bit
+                ulong sum1 = op1[i] + op3[i - 1];
+                bool overflow1 = sum1 < op1[i];
+
+                ulong sum2 = sum1 + lsb;
+                bool overflow2 = sum2 < sum1;
+
+                return (overflow1 || overflow2) ? 1UL : 0UL;
+            }
+        }
 
         private static int HighNarrowing(long op1, bool round)
         {
@@ -2554,9 +2709,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort AbsoluteDifferenceWideningUpperAndAdd(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static ushort AbsoluteDifferenceWideningLowerAndAddEven(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+        public static ushort AbsoluteDifferenceWideningLowerAndAddEven(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i * 2], op3[i * 2]);
 
-        public static ushort AbsoluteDifferenceWideningLowerAndAddOdd(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
+        public static ushort AbsoluteDifferenceWideningLowerAndAddOdd(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
         public static ushort AbsoluteDifferenceWideningEven(byte[] op1, byte[] op2, int i) =>  AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
 
@@ -2678,9 +2833,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint AbsoluteDifferenceWideningUpperAndAdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static uint AbsoluteDifferenceWideningLowerAndAddEven(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+        public static uint AbsoluteDifferenceWideningLowerAndAddEven(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i * 2], op3[i * 2]);
 
-        public static uint AbsoluteDifferenceWideningLowerAndAddOdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
+        public static uint AbsoluteDifferenceWideningLowerAndAddOdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
         public static uint AbsoluteDifferenceWideningEven(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
 
@@ -2802,9 +2957,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ulong AbsoluteDifferenceWideningUpperAndAdd(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static ulong AbsoluteDifferenceWideningLowerAndAddEven(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i*2], op3[i*2]);
+        public static ulong AbsoluteDifferenceWideningLowerAndAddEven(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i * 2], op3[i * 2]);
 
-        public static ulong AbsoluteDifferenceWideningLowerAndAddOdd(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i*2) + 1], op3[(i*2) + 1]);
+        public static ulong AbsoluteDifferenceWideningLowerAndAddOdd(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
 
         public static ulong AbsoluteDifferenceWideningEven(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[i*2], op2[i*2]);
 
@@ -10566,5 +10721,21 @@ namespace JIT.HardwareIntrinsics.Arm
         public static uint SveShiftLeftLogicalSaturateUnsigned(int op1, byte op2) => UnsignedShift((uint)op1, (sbyte)op2, saturating: true, shiftSat: true);
 
         public static ulong SveShiftLeftLogicalSaturateUnsigned(long op1, byte op2) => UnsignedShift((ulong)op1, (sbyte)op2, saturating: true, shiftSat: true);
+
+        public static byte SveShiftLogicalRounded(byte op1, sbyte op2) => UnsignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static ushort SveShiftLogicalRounded(ushort op1, short op2) => UnsignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static uint SveShiftLogicalRounded(uint op1, int op2) => UnsignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static ulong SveShiftLogicalRounded(ulong op1, long op2) => UnsignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static byte SveShiftLogicalRoundedSaturate(byte op1, sbyte op2) => UnsignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static ushort SveShiftLogicalRoundedSaturate(ushort op1, short op2) => UnsignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static uint SveShiftLogicalRoundedSaturate(uint op1, int op2) => UnsignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static ulong SveShiftLogicalRoundedSaturate(ulong op1, long op2) => UnsignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
     }
 }

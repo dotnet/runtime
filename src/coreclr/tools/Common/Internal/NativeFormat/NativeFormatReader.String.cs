@@ -24,6 +24,11 @@ namespace Internal.NativeFormat
         {
             _offset = _reader.SkipString(_offset);
         }
+
+        public bool StringEquals(string str)
+        {
+            return _reader.StringEquals(_offset, str);
+        }
     }
 
     internal partial class NativeReader

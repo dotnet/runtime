@@ -480,6 +480,9 @@
   <data name="net_http_http3_connection_close" xml:space="preserve">
     <value>The HTTP/3 server closed the connection. HTTP/3 error code '{0}' (0x{1}).</value>
   </data>
+  <data name="net_http_http3_connection_quic_error" xml:space="preserve">
+    <value>The QUIC connection with the HTTP/3 server failed on the transport level.</value>
+  </data>
   <data name="net_http_retry_on_older_version" xml:space="preserve">
     <value>The server is unable to process the request using the current HTTP version and indicates the request should be retried on an older HTTP version.</value>
   </data>
