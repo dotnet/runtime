@@ -2923,7 +2923,7 @@ void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_F
 #else
             m_pLastNewIns->data[0] = 1;
 #endif
-            PushInterpType(InterpTypeI1, NULL);
+            PushInterpType(InterpTypeI4, NULL);
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             break;
         default:
