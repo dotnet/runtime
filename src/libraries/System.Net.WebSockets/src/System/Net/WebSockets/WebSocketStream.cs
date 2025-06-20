@@ -13,7 +13,7 @@ namespace System.Net.WebSockets
     public class WebSocketStream : Stream
     {
         /// <summary>The default number of seconds before canceling CloseAsync operation issued during stream disposal.</summary>
-        private const int DefaultCloseTimeoutSeconds = 60;
+        private const int DefaultCloseTimeoutSeconds = 16;
 
         /// <summary>Whether the stream has been disposed.</summary>
         private bool _disposed;
