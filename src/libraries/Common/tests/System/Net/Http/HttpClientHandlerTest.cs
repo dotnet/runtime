@@ -2283,23 +2283,30 @@ namespace System.Net.Http.Functional.Tests
                 }, async server =>
                 {
                     var data = await server.AcceptConnectionSendResponseAndCloseAsync();
-                    var expectedValue = headerValue;
-                    if (safeChar > 0x7F)
-                    {
-                        Assert.True(IsWinHttpHandler);
-                        expectedValue = headerValue.Replace(safeChar, '?'); // WinHttpHandler replaces Latin-1 characters with '?'.
-                    }
+                    var encoding = Encoding.GetEncoding("ISO-8859-1");
                     switch (headerType)
                     {
                         case HeaderType.Request:
-                            Assert.Equal(expectedValue, data.GetSingleHeaderValue("Custom-Header"));
+                        {
+                            var headerLine = encoding.GetString(data.GetSingleHeaderData("Custom-Header").Raw);
+                            var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
+                            Assert.Equal(headerValue, receivedHeaderValue);
                             break;
+                        }
                         case HeaderType.Content:
-                            Assert.Equal(expectedValue, data.GetSingleHeaderValue("Custom-Content-Header"));
+                        {
+                            var headerLine = encoding.GetString(data.GetSingleHeaderData("Custom-Content-Header").Raw);
+                            var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
+                            Assert.Equal(headerValue, receivedHeaderValue);
                             break;
+                        }
                         case HeaderType.Cookie:
-                            Assert.Equal($"CustomCookie={expectedValue}", data.GetSingleHeaderValue("cookie"));
+                        {
+                            var headerLine = encoding.GetString(data.GetSingleHeaderData("cookie").Raw);
+                            var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
+                            Assert.Equal(headerValue, receivedHeaderValue);
                             break;
+                        }
                     }
                 });
         }

@@ -258,6 +258,24 @@ namespace System.Net.Test.Common
             return result;
         }
 
+        public HttpHeaderData[] GetHeaderData(string headerName)
+        {
+            return Headers.Where(h => h.Name.Equals(headerName, StringComparison.OrdinalIgnoreCase)).ToArray();
+        }
+
+        public HttpHeaderData GetSingleHeaderData(string headerName)
+        {
+            HttpHeaderData[] data = GetHeaderData(headerName);
+            if (data.Length != 1)
+            {
+                throw new Exception(
+                    $"Expected single value for {headerName} header, actual count: {data.Length}{Environment.NewLine}" +
+                    $"{"\t"}{string.Join(Environment.NewLine + "\t", data)}");
+            }
+
+            return data[0];
+        }
+
         public string[] GetHeaderValues(string headerName)
         {
             return Headers.Where(h => h.Name.Equals(headerName, StringComparison.OrdinalIgnoreCase))
