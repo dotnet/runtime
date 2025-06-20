@@ -2148,7 +2148,8 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
 
         case NI_Throw_PlatformNotSupportedException:
             // Interpreter-FIXME: If an INTOP_THROW_PNSE is the first opcode in a try block, catch doesn't catch the exception
-            AddIns(INTOP_NOP);
+            // For now, insert a safepoint as padding.
+            AddIns(INTOP_SAFEPOINT);
             AddIns(INTOP_THROW_PNSE);
             return true;
 

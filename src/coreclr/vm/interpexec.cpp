@@ -49,7 +49,7 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
         }
     }
 
-    pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode()); // The method to call
+    pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY)); // The method to call
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
