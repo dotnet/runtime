@@ -5977,7 +5977,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             if (call->gtCallType == CT_INDIRECT)
             {
                 // pinvoke-calli cookie is a constant, or constant indirection
-                assert(call->gtCallCookie == nullptr || call->gtCallCookie->OperIs(GT_CNS_INT, GT_IND));
+                // or a non-tree if this is a managed call.
+                assert(call->IsVirtualStub() || (call->gtCallCookie == nullptr) ||
+                       call->gtCallCookie->OperIs(GT_CNS_INT, GT_IND));
 
                 GenTree* indirect = call->gtCallAddr;
 
@@ -6725,7 +6727,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             }
             if (call->gtCallType == CT_INDIRECT)
             {
-                if (operand == call->gtCallCookie)
+                if (!call->IsVirtualStub() && (operand == call->gtCallCookie))
                 {
                     *pUse = &call->gtCallCookie;
                     return true;
@@ -9899,16 +9901,23 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     /* Copy the union */
     if (tree->gtCallType == CT_INDIRECT)
     {
-        copy->gtCallCookie = tree->gtCallCookie ? gtCloneExpr(tree->gtCallCookie) : nullptr;
-        copy->gtCallAddr   = tree->gtCallAddr ? gtCloneExpr(tree->gtCallAddr) : nullptr;
+        if (tree->IsVirtualStub())
+        {
+            copy->gtCallCookie = tree->gtCallCookie;
+        }
+        else
+        {
+            copy->gtCallCookie = tree->gtCallCookie ? gtCloneExpr(tree->gtCallCookie) : nullptr;
+        }
+        copy->gtCallAddr = tree->gtCallAddr ? gtCloneExpr(tree->gtCallAddr) : nullptr;
     }
     else
     {
         copy->gtCallMethHnd         = tree->gtCallMethHnd;
         copy->gtInlineCandidateInfo = tree->gtInlineCandidateInfo;
-        copy->gtInlineInfoCount     = tree->gtInlineInfoCount;
     }
 
+    copy->gtInlineInfoCount          = tree->gtInlineInfoCount;
     copy->gtLateDevirtualizationInfo = tree->gtLateDevirtualizationInfo;
 
     copy->gtCallType   = tree->gtCallType;
@@ -10641,7 +10650,7 @@ void GenTreeUseEdgeIterator::AdvanceCall()
             assert(call->gtCallType == CT_INDIRECT);
 
             m_advance = &GenTreeUseEdgeIterator::AdvanceCall<CALL_ADDRESS>;
-            if (call->gtCallCookie != nullptr)
+            if (!call->IsVirtualStub() && (call->gtCallCookie != nullptr))
             {
                 m_edge = &call->gtCallCookie;
                 return;
@@ -10964,6 +10973,11 @@ void Compiler::gtDispNodeName(GenTree* tree)
         }
         else if (tree->AsCall()->gtCallType == CT_INDIRECT)
         {
+            if (tree->AsCall()->IsVirtual())
+            {
+                callType = "CALLV";
+            }
+
             ctType = " ind";
         }
         else
@@ -21945,8 +21959,8 @@ GenTree* Compiler::gtNewSimdCvtVectorToMaskNode(var_types   type,
 #if defined(TARGET_XARCH)
     return gtNewSimdHWIntrinsicNode(TYP_MASK, op1, NI_AVX512_ConvertVectorToMask, simdBaseJitType, simdSize);
 #elif defined(TARGET_ARM64)
-    // We use cmpne which requires an embedded mask.
-    GenTree* trueMask = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+    // ConvertVectorToMask uses cmpne which requires an embedded mask.
+    GenTree* trueMask = gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_ConversionTrueMask, simdBaseJitType, simdSize);
     return gtNewSimdHWIntrinsicNode(TYP_MASK, trueMask, op1, NI_Sve_ConvertVectorToMask, simdBaseJitType, simdSize);
 #else
 #error Unsupported platform
@@ -31669,6 +31683,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
+    // Fold ConvertMaskToVector(ConvertVectorToMask(vec)) to vec
     if (tree->OperIsConvertMaskToVector())
     {
         GenTree* op = op1;
@@ -31701,6 +31716,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         }
     }
 
+    // Fold ConvertVectorToMask(ConvertMaskToVector(mask)) to mask
     if (tree->OperIsConvertVectorToMask())
     {
         GenTree* op        = op1;
@@ -31709,11 +31725,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #if defined(TARGET_XARCH)
         tryHandle = op->OperIsHWIntrinsic();
 #elif defined(TARGET_ARM64)
-        if (op->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll))
-        {
-            op        = op2;
-            tryHandle = op->OperIsHWIntrinsic();
-        }
+        assert(op->OperIsHWIntrinsic(NI_Sve_ConversionTrueMask));
+        op        = op2;
+        tryHandle = op->OperIsHWIntrinsic();
 #endif // TARGET_ARM64
 
         if (tryHandle)
@@ -31799,53 +31813,12 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             resultNode = gtNewVconNode(retType, &simdVal);
         }
+#if defined(TARGET_XARCH)
         else if (tree->OperIsConvertVectorToMask())
         {
-            GenTreeVecCon* vecCon = cnsNode->AsVecCon();
-            GenTreeMskCon* mskCon = gtNewMskConNode(retType);
-
-            switch (vecCon->TypeGet())
-            {
-                case TYP_SIMD8:
-                {
-                    EvaluateSimdCvtVectorToMask<simd8_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd8Val);
-                    break;
-                }
-
-                case TYP_SIMD12:
-                {
-                    EvaluateSimdCvtVectorToMask<simd12_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd12Val);
-                    break;
-                }
-
-                case TYP_SIMD16:
-                {
-                    EvaluateSimdCvtVectorToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd16Val);
-                    break;
-                }
-
-#if defined(TARGET_XARCH)
-                case TYP_SIMD32:
-                {
-                    EvaluateSimdCvtVectorToMask<simd32_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd32Val);
-                    break;
-                }
-
-                case TYP_SIMD64:
-                {
-                    EvaluateSimdCvtVectorToMask<simd64_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd64Val);
-                    break;
-                }
-#endif // TARGET_XARCH
-
-                default:
-                {
-                    unreached();
-                }
-            }
-
-            resultNode = mskCon;
+            resultNode = gtFoldExprConvertVecCnsToMask(tree, cnsNode->AsVecCon());
         }
+#endif // TARGET_XARCH
 #endif // FEATURE_MASKED_HW_INTRINSICS
         else
         {
@@ -32688,6 +32661,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         switch (ni)
         {
 #ifdef TARGET_ARM64
+            case NI_Sve_ConvertVectorToMask:
+                resultNode = gtFoldExprConvertVecCnsToMask(tree, cnsNode->AsVecCon());
+                break;
+
             case NI_AdvSimd_MultiplyByScalar:
             case NI_AdvSimd_Arm64_MultiplyByScalar:
             {
@@ -32829,7 +32806,18 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     break;
                 }
 
-                if (op1->IsVectorAllBitsSet() || op1->IsMaskAllBitsSet())
+#if defined(TARGET_ARM64)
+                if (ni == NI_Sve_ConditionalSelect)
+                {
+                    assert(!op1->IsVectorAllBitsSet() && !op1->IsVectorZero());
+                }
+                else
+                {
+                    assert(!op1->IsTrueMask(simdBaseType) && !op1->IsFalseMask());
+                }
+#endif
+
+                if (op1->IsVectorAllBitsSet() || op1->IsTrueMask(simdBaseType))
                 {
                     if ((op3->gtFlags & GTF_SIDE_EFFECT) != 0)
                     {
@@ -32843,7 +32831,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     return op2;
                 }
 
-                if (op1->IsVectorZero())
+                if (op1->IsVectorZero() || op1->IsFalseMask())
                 {
                     return gtWrapWithSideEffects(op3, op2, GTF_ALL_EFFECT);
                 }
@@ -32895,6 +32883,70 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
     return resultNode;
 }
+
+//------------------------------------------------------------------------------
+// gtFoldExprConvertVecCnsToMask: Folds a constant vector plus conversion to
+//                                mask into a constant mask.
+//
+// Arguments:
+//    tree   -  The convert vector to mask node
+//    vecCon -  The vector constant converted by the convert
+//
+// Return Value:
+//    Returns a constant mask
+//
+GenTreeMskCon* Compiler::gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon)
+{
+    assert(tree->OperIsConvertVectorToMask());
+    assert(vecCon == tree->Op(1) || vecCon == tree->Op(2));
+
+    var_types      retType      = tree->TypeGet();
+    var_types      simdBaseType = tree->GetSimdBaseType();
+    GenTreeMskCon* mskCon       = gtNewMskConNode(retType);
+
+    switch (vecCon->TypeGet())
+    {
+        case TYP_SIMD8:
+        {
+            EvaluateSimdCvtVectorToMask<simd8_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd8Val);
+            break;
+        }
+
+        case TYP_SIMD12:
+        {
+            EvaluateSimdCvtVectorToMask<simd12_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd12Val);
+            break;
+        }
+
+        case TYP_SIMD16:
+        {
+            EvaluateSimdCvtVectorToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd16Val);
+            break;
+        }
+
+#if defined(TARGET_XARCH)
+        case TYP_SIMD32:
+        {
+            EvaluateSimdCvtVectorToMask<simd32_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd32Val);
+            break;
+        }
+
+        case TYP_SIMD64:
+        {
+            EvaluateSimdCvtVectorToMask<simd64_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd64Val);
+            break;
+        }
+#endif // TARGET_XARCH
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    return mskCon;
+}
+
 #endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
