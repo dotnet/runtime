@@ -1236,8 +1236,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
         if (!IsAtProcessExit() && !g_fFastExitProcess)
         {
-            g_fEEShutDown |= ShutDown_Finalize1;
-
             // Wait for the finalizer thread to deliver process exit event
             GCX_PREEMP();
             FinalizerThread::RaiseShutdownEvents();
@@ -1314,9 +1312,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 #endif // PROFILING_SUPPORTED
 
 
-#ifdef _DEBUG
-        g_fEEShutDown |= ShutDown_SyncBlock;
-#endif
         {
             // From here on out we might call stuff that violates mode requirements, but we ignore these
             // because we are shutting down.
