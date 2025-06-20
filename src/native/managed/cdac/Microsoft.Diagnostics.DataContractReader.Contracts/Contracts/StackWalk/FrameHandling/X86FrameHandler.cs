@@ -23,8 +23,13 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
 
     public void HandleHijackFrame(HijackFrame frame)
     {
-        // TODO(cdacX86): Implement handling for HijackFrame
-        throw new NotImplementedException();
+        HijackArgsX86 args = _target.ProcessedData.GetOrAdd<HijackArgsX86>(frame.HijackArgsPtr);
+
+        // The stack pointer is the address immediately following HijackArgs
+        uint hijackArgsSize = _target.GetTypeInfo(DataType.HijackArgs).Size ?? throw new InvalidOperationException("HijackArgs size is not set");
+        _context.Context.Esp = (uint)frame.HijackArgsPtr + hijackArgsSize;
+
+        UpdateFromRegisterDict(args.Registers);
     }
 
     public override void HandleTailCallFrame(TailCallFrame frame)
