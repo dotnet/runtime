@@ -2552,7 +2552,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
      * {
      *   compVectorTLength    = getTargetLength();
      *   compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256) && ((compVectorTLength &
-     * (compVectorTLength - 1)) == 0); compUseSveForVectorT |= JitConfig.UseSveForVectorT();
+     *  (compVectorTLength - 1)) == 0); compUseSveForVectorT |= JitConfig.UseSveForVectorT();
      * }
      * else
      * {
@@ -2578,11 +2578,15 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     if (info.compMatchedVM)
     {
         compVectorTLength    = info.compCompHnd->getTargetVectorLength();
-        compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256) &&
-                               ((compVectorTLength & (compVectorTLength - 1)) == 0);
+
+        if (compExactlyDependsOn(InstructionSet_Sve_Arm64))
+        {
+            compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256) &&
+                                   ((compVectorTLength & (compVectorTLength - 1)) == 0);
 #ifdef DEBUG
-        compUseSveForVectorT |= (bool)JitConfig.UseSveForVectorT();
+            compUseSveForVectorT |= (bool)JitConfig.UseSveForVectorT();
 #endif // DEBUG
+        }
     }
     else
     {

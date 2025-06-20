@@ -8978,13 +8978,13 @@ public:
     FORCEINLINE static bool UseSveForType(var_types type)
     {
         return UseSveForVectorT() && varTypeIsSIMDOrMask(type) &&
-               (type != TYP_SIMD8); // ((type == TYP_SIMD32) || (type == TYP_SIMD64));
+               (type != TYP_SIMD8) && (type != TYP_SIMD12);
     }
     FORCEINLINE static bool UseStrictSveForType(var_types type)
     {
         // This method is used in scenarios where we do not know the type of HIR node or how the LIR node was formed.
         // For such cases, we will generate SVE, only if we are guaranteed to have VL >= 32B.
-        return UseSveForType(type) && (type != TYP_SIMD16);
+        return UseSveForType(type) && (type != TYP_SIMD12) && (type != TYP_SIMD16);
     }
     FORCEINLINE static bool SizeMatchesVectorTLength(unsigned simdSize)
     {
