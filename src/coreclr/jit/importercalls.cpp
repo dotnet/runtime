@@ -4952,10 +4952,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             }
             else if (!isNative || !BlockNonDeterministicIntrinsics(mustExpand))
             {
+#if defined(FEATURE_HW_INTRINSICS)
                 GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
                 GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
 
-#if defined(FEATURE_HW_INTRINSICS)
                 if (isNative)
                 {
                     assert(!isMagnitude && !isNumber);
@@ -4968,6 +4968,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #endif // FEATURE_HW_INTRINSICS
 
 #ifdef TARGET_RISCV64
+                GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
+
                 if (isNative)
                 {
                     assert(!isMagnitude && !isNumber);
