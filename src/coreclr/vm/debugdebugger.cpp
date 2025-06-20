@@ -1087,9 +1087,9 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
         {
             if (pWalkData->skipPrologCase)
             {
-                if (pWalkData->prevILOffsetFound != ICorDebugInfo::NO_MAPPING &&
-                    pWalkData->prevILOffsetFound != ICorDebugInfo::PROLOG && 
-                    pWalkData->prevILOffsetFound != ICorDebugInfo::EPILOG)
+                if (pWalkData->prevILOffsetFound != (DWORD)ICorDebugInfo::NO_MAPPING &&
+                    pWalkData->prevILOffsetFound != (DWORD)ICorDebugInfo::PROLOG && 
+                    pWalkData->prevILOffsetFound != (DWORD)ICorDebugInfo::EPILOG)
                 {
                     // We found a valid IL offset after the prolog, so set the final IL offset to the one we found
                     pWalkData->dwFinalILOffset = pWalkData->dwILOffsetFound;
@@ -1128,7 +1128,7 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
                     // PROLOG case
                     if (pWalkData->skipPrologs)
                     {
-                        _ASSERTE(pWalkData->dwILOffsetFound == ICorDebugInfo::PROLOG);
+                        _ASSERTE(pWalkData->dwILOffsetFound == (DWORD)ICorDebugInfo::PROLOG);
                         pWalkData->skipPrologCase = true;
                     }
                     else
@@ -1179,7 +1179,7 @@ bool CheckILToNativeCacheCore(void* ip, bool fAdjustOffset, uint32_t* pILOffset)
     int hashCode = MixPointerIntoHash(ip);
     int index = hashCode % s_stackWalkCacheSize;
 
-    int count = 0;
+    DWORD count = 0;
     do
     {
         if (VolatileLoadWithoutBarrier(&s_stackWalkILToNativeCacheIP[index]) == ip)

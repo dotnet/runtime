@@ -669,7 +669,7 @@ void CompressDebugInfo::CompressBoundaries(
                 case ICorDebugInfo::STACK_EMPTY:
                     sourceBits = 2;
                     break;
-                case ICorDebugInfo::CALL_INSTRUCTION | ICorDebugInfo::STACK_EMPTY:
+                case (ICorDebugInfo::SourceTypes)(ICorDebugInfo::CALL_INSTRUCTION | ICorDebugInfo::STACK_EMPTY):
                     sourceBits = 3;
                     break;
                 default:
