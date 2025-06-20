@@ -8766,6 +8766,11 @@ VOID MethodTableBuilder::HandleCStructLayout(MethodTable** pByValueClassCache)
         pByValueClassCache,
         bmtEnumFields->dwNumDeclaredFields
     );
+    
+    if (bmtFP->NumInlineArrayElements != 0)
+    {
+        BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+    }
 
     if (pLayoutInfo->IsZeroSized())
     {

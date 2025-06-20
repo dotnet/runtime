@@ -748,6 +748,13 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 				MONO_PROFILER_RAISE (class_failed, (klass));
 				return NULL;
 			}
+
+			if (klass->is_inlinearray) {
+				mono_class_set_type_load_failure (klass, "InlineArray type %s cannot have extended layout.", m_class_get_name (klass));
+				mono_loader_unlock ();
+				MONO_PROFILER_RAISE (class_failed, (klass));
+				return NULL;
+			}
 		}
 	}
 
@@ -2485,6 +2492,13 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 					return;
 			}
 
+			if (any_field_has_auto_layout) {
+				if (mono_class_set_type_load_failure (klass, "CStruct type cannot have AutoLayout fields."))
+					return;
+			}
+
+			klass->blittable = TRUE;
+
 			for (i = 0; i < top; i++){
 				gint32 align;
 				guint32 size;
@@ -2527,6 +2541,8 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				if (real_size != raw_real_size)
 					mono_class_set_type_load_failure (klass, "Can't load type %s. The size is too big.", m_class_get_name (klass));
 			}
+
+			instance_size = real_size;
 
 			if (instance_size & (min_align - 1)) {
 				instance_size += min_align - 1;

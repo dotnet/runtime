@@ -23,8 +23,8 @@ public static class ExtendedLayout
     }
 
     [Fact]
-    public static void ExtendedLayout_InlineArray_Ignored()
+    public static void ExtendedLayout_InlineArray_Invalid()
     {
-        Assert.Equal(sizeof(int), Unsafe.SizeOf<InlineArrayOnExtendedLayout>());
+        Assert.Throws<TypeLoadException>(() => typeof(InlineArrayOnExtendedLayout));
     }
 }

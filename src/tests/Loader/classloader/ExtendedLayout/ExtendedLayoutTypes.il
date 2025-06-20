@@ -13,7 +13,7 @@
 
 .class flags(0x18) public value beforefieldinit InlineArrayOnExtendedLayout
 {
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(int32) = {
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
         int32(0x00000000) // CStruct
     }
 
@@ -26,7 +26,7 @@
 
 .class flags(0x18) public value beforefieldinit ExtendedLayoutInvalidKind
 {
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(int32) = {
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
         int32(-2) // Unknown kind
     }
 
@@ -37,7 +37,7 @@
 
 .class flags(0x18) public value beforefieldinit CStructBlittablePrimitiveFields
 {
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(int32) = {
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
         int32(0x00000000) // CStruct
     }
 
@@ -48,7 +48,7 @@
 
 .class flags(0x18) public value beforefieldinit CStructNonBlittablePrimitiveFields
 {
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(int32) = {
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
         int32(0x00000000) // CStruct
     }
 
@@ -58,7 +58,7 @@
 
 .class flags(0x18) public value beforefieldinit CStructWithReferenceFields
 {
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(int32) = {
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
         int32(0x00000000) // CStruct
     }
 
@@ -67,7 +67,7 @@
 
 .class flags(0x18) public value beforefieldinit CStructWithMixedFields
 {
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(int32) = {
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
         int32(0x00000000) // CStruct
     }
 
@@ -77,7 +77,7 @@
 
 .class flags(0x18) public value beforefieldinit NestedCStructType
 {
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(int32) = {
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
         int32(0x00000000) // CStruct
     }
     .field public int32 x
@@ -85,7 +85,7 @@
 
 .class flags(0x18) public value beforefieldinit CStructCustomCStructField
 {
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(int32) = {
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
         int32(0x00000000) // CStruct
     }
 
@@ -99,7 +99,7 @@
 
 .class flags(0x18) public value beforefieldinit CStructCustomSeqStructField
 {
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(int32) = {
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
         int32(0x00000000) // CStruct
     }
 
@@ -113,7 +113,7 @@
 
 .class flags(0x18) public value beforefieldinit CStructCustomAutoStructField
 {
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(int32) = {
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
         int32(0x00000000) // CStruct
     }
 
@@ -122,14 +122,14 @@
 
 .class flags(0x18) public value beforefieldinit EmptyCStruct
 {
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(int32) = {
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
         int32(0x00000000) // CStruct
     }
 }
 
 .class flags(0x18) public value beforefieldinit CStructWithOffsets
 {
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(int32) = {
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
         int32(0x00000000) // CStruct
     }
 
@@ -138,7 +138,7 @@
 
 .class flags(0x18) public value beforefieldinit CStructWithSize
 {
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(int32) = {
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
         int32(0x00000000) // CStruct
     }
 
@@ -149,7 +149,7 @@
 
 .class flags(0x18) public value beforefieldinit CStructWithPack
 {
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(int32) = {
+    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
         int32(0x00000000) // CStruct
     }
 
