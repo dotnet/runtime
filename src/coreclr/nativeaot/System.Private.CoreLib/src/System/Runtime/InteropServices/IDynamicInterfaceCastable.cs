@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection.Runtime.General;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -16,11 +17,30 @@ namespace System.Runtime.InteropServices
 {
     public unsafe partial interface IDynamicInterfaceCastable
     {
+        internal static bool IsInterfaceImplemented(IDynamicInterfaceCastable instance, MethodTable* interfaceType, bool throwing)
+        {
+            RuntimeTypeHandle handle = new RuntimeTypeHandle(interfaceType);
+            if (!handle.TryGetRuntimeTypeInfoForRuntimeTypeHandle(out _))
+            {
+                // The target type may not have a RuntimeTypeInfo if we've determined that it can never be implemented dynamically.
+                return false;
+            }
+
+            return instance.IsInterfaceImplemented(handle, throwing);
+        }
+
         private static readonly object s_thunkPoolHeap = RuntimeAugments.CreateThunksHeap(RuntimeImports.GetInteropCommonStubAddress());
 
         internal static nint GetDynamicInterfaceImplementation(IDynamicInterfaceCastable instance, MethodTable* interfaceType, ushort slot)
         {
-            RuntimeTypeHandle handle = instance.GetInterfaceImplementation(new RuntimeTypeHandle(interfaceType));
+            RuntimeTypeHandle interfaceTypeHandle = new RuntimeTypeHandle(interfaceType);
+            if (!interfaceTypeHandle.TryGetRuntimeTypeInfoForRuntimeTypeHandle(out _))
+            {
+                // The target type may not have a RuntimeTypeInfo if we've determined that it can never be implemented dynamically.
+                ThrowInvalidCastException(instance, interfaceType);
+            }
+
+            RuntimeTypeHandle handle = instance.GetInterfaceImplementation(interfaceTypeHandle);
             MethodTable* implType = handle.ToMethodTable();
             if (implType == null)
             {
