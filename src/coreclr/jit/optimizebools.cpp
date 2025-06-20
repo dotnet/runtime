@@ -825,6 +825,8 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     FlowEdge* const oldFalseEdge = m_b1->GetFalseEdge();
     FlowEdge* const oldTrueEdge  = m_b1->GetTrueEdge();
     newEdge->setHeuristicBased(oldTrueEdge->isHeuristicBased());
+    newEdge->setLikelihood(inRangeLikelihood);
+    oldTrueEdge->setLikelihood(1.0 - inRangeLikelihood);
 
     if (!cmp2IsReversed)
     {
@@ -832,18 +834,12 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         m_b1->SetTrueEdge(newEdge);
         assert(m_b1->TrueTargetIs(inRangeBb));
         assert(m_b1->FalseTargetIs(notInRangeBb));
-
-        newEdge->setLikelihood(inRangeLikelihood);
-        oldTrueEdge->setLikelihood(1.0 - inRangeLikelihood);
     }
     else
     {
         m_b1->SetFalseEdge(newEdge);
         assert(m_b1->TrueTargetIs(notInRangeBb));
         assert(m_b1->FalseTargetIs(inRangeBb));
-
-        oldTrueEdge->setLikelihood(inRangeLikelihood);
-        newEdge->setLikelihood(1.0 - inRangeLikelihood);
     }
 
     // Remove the 2nd condition block as we no longer need it
