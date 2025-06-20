@@ -891,17 +891,10 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
 
     pNativeLayoutInfo->m_numFields = numTotalInstanceFields;
 
-    // If there's no parent, pretend that the parent alignment requirement is 1.
-    BYTE parentAlignmentRequirement = 1;
+    BYTE parentAlignmentRequirement = 0;
     if (pParentLayoutInfo != nullptr)
     {
         parentAlignmentRequirement = pParentLayoutInfo->GetLargestAlignmentRequirement();
-    }
-
-    BYTE packingSize = pMT->GetLayoutInfo()->GetPackingSize();
-    if (packingSize == 0)
-    {
-        packingSize = DEFAULT_PACKING_SIZE;
     }
 
     BYTE fieldAlignmentRequirement = 0;
@@ -909,19 +902,14 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
     for (LayoutRawFieldInfo* pfwalk = pInfoArray; pfwalk->m_token != mdFieldDefNil; pfwalk++)
     {
         pfwalk->m_placement.m_size = pfwalk->m_nfd.NativeSize();
-        // Allow the packing size to override a looser alignment requirement.
-        pfwalk->m_placement.m_alignment = min(packingSize, (BYTE)pfwalk->m_nfd.AlignmentRequirement());
+        pfwalk->m_placement.m_alignment = pfwalk->m_nfd.AlignmentRequirement();
         if (pfwalk->m_placement.m_alignment > fieldAlignmentRequirement)
         {
             fieldAlignmentRequirement = (BYTE)pfwalk->m_placement.m_alignment;
         }
     }
 
-    // Allow the packing size to require less alignment than the parent's alignment requirement.
-    BYTE initialAlignmentRequirement = min(packingSize, parentAlignmentRequirement);
-
-    // The alignment of the native layout is the stricter of the initial alignment requirement or the alignment requirements of the fields.
-    pNativeLayoutInfo->m_alignmentRequirement = max(initialAlignmentRequirement, fieldAlignmentRequirement);
+    pNativeLayoutInfo->m_alignmentRequirement = max(max<BYTE>(1, parentAlignmentRequirement), fieldAlignmentRequirement);
 
     BOOL fExplicitOffsets = pMT->GetClass()->HasExplicitFieldOffsetLayout();
 
@@ -932,6 +920,11 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
     }
     else
     {
+        BYTE packingSize = pMT->GetLayoutInfo()->GetPackingSize();
+        if (packingSize == 0)
+        {
+            packingSize = DEFAULT_PACKING_SIZE;
+        }
         lastFieldEnd = CalculateOffsetsForSequentialLayout(pInfoArray, cInstanceFields, cbAdjustedParentLayoutNativeSize, packingSize);
     }
 
