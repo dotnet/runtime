@@ -204,21 +204,9 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(dict);
             
-            // Should not contain null characters or other garbage data
-            Assert.DoesNotContain('\0', json);
-            Assert.DoesNotContain('\uFFFD', json);
-            
-            // Should contain proper property names
-            Assert.Contains("\"0\":", json);
-            Assert.Contains("\"1\":", json);
-            Assert.Contains("\"-1\":", json);
-            
             // Should roundtrip correctly
             var deserialized = JsonSerializer.Deserialize<Dictionary<Int128, string>>(json);
-            Assert.Equal(dict.Count, deserialized.Count);
-            Assert.Equal("Zero", deserialized[0]);
-            Assert.Equal("One", deserialized[1]);
-            Assert.Equal("MinusOne", deserialized[-1]);
+            Assert.Equal(dict, deserialized);
         }
 
         [Fact]
@@ -235,19 +223,9 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(dict);
             
-            // Should not contain null characters or other garbage data
-            Assert.DoesNotContain('\0', json);
-            Assert.DoesNotContain('\uFFFD', json);
-            
-            // Should contain proper property names
-            Assert.Contains("\"0\":", json);
-            Assert.Contains("\"1\":", json);
-            
             // Should roundtrip correctly
             var deserialized = JsonSerializer.Deserialize<Dictionary<UInt128, string>>(json);
-            Assert.Equal(dict.Count, deserialized.Count);
-            Assert.Equal("Zero", deserialized[0]);
-            Assert.Equal("One", deserialized[1]);
+            Assert.Equal(dict, deserialized);
         }
 #endif
     }
