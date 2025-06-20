@@ -38,10 +38,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			object t = Activator.CreateInstance (Type.GetType (args[1]));
 			CheckTargetAndTrimTarget (t);
 			CheckTrimTarget (t);
+			CheckTypeCheckOnlyClass (t);
 			if (t is IInterfaceWithDynamicImpl d) {
 				d.Method ();
-			} else if (t is TypeCheckOnlyClass typeCheckOnlyClass) {
-				Console.WriteLine ("Type deriving from TypeCheckOnlyClass instantiated.");
 			}
 
 			Console.WriteLine ("Hash code of SourceClass instance: " + new SourceClass ().GetHashCode ());
@@ -79,6 +78,31 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			"ldloc.0",
 			"brfalse.s il_18",
 			"nop",
+			"ldstr 'Type deriving from TypeCheckOnlyClass instantiated.'",
+			"call System.Void System.Console::WriteLine(System.String)",
+			"nop",
+			"nop",
+			"ret",
+		])]
+		private static void CheckTypeCheckOnlyClass (object o)
+		{
+			if (o is TypeCheckOnlyClass) {
+				Console.WriteLine ("Type deriving from TypeCheckOnlyClass instantiated.");
+			}
+		}
+
+		[Kept]
+		[ExpectedInstructionSequence ([
+			"nop",
+			"ldarg.0",
+			"pop",
+			"ldnull",
+			"ldnull",
+			"cgt.un",
+			"stloc.0",
+			"ldloc.0",
+			"brfalse.s il_18",
+			"nop",
 			"ldstr 'Type deriving from TrimTarget instantiated.'",
 			"call System.Void System.Console::WriteLine(System.String)",
 			"nop",
@@ -100,7 +124,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 	}
 
-	[Kept (By = Tool.Trimmer)]
+	[Kept]
 	class UsedTypeMap;
 
 	[Kept]
@@ -123,7 +147,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	[Kept]
 	class ProxyType;
 
-	[Kept(By = Tool.Trimmer)]
+	[Kept]
 	class UnusedTypeMap;
 	class UnusedTargetType;
 	class UnusedSourceClass;
@@ -169,7 +193,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	[Kept]
 	class TargetType3;
 
-	[Kept]
+	[Kept(By = Tool.NativeAot)] // Kept by NativeAot by the scanner. It is not kept during codegen.
 	class TypeCheckOnlyClass;
 
 	class ProxyType2;
@@ -184,6 +208,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		[KeptBackingField]
 		public int Value { [Kept] get; }
 	}
 
