@@ -782,7 +782,27 @@ regMaskTP LinearScan::getKillSetForMul(GenTreeOp* mulNode)
     regMaskTP killMask = RBM_NONE;
 #ifdef TARGET_XARCH
     assert(mulNode->OperIsMul());
-    if (!mulNode->OperIs(GT_MUL) || (((mulNode->gtFlags & GTF_UNSIGNED) != 0) && mulNode->gtOverflowEx()))
+    if (!mulNode->OperIs(GT_MUL))
+    {
+        // If we can use the mulx instruction, we don't need to kill RAX
+        if (mulNode->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            // If on operand is contained, we define fixed RDX register for use, so we don't need to kill register.
+            if (mulNode->gtGetOp1()->isContained() || mulNode->gtGetOp2()->isContained())
+            {
+                killMask = RBM_NONE;
+            }
+            else
+            {
+                killMask = RBM_RDX;
+            }
+        }
+        else
+        {
+            killMask = RBM_RAX | RBM_RDX;
+        }
+    }
+    else if (mulNode->IsUnsigned() && mulNode->gtOverflowEx())
     {
         killMask = RBM_RAX | RBM_RDX;
     }

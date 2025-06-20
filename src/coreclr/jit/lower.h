@@ -496,6 +496,13 @@ public:
 
 #endif // TARGET_XARCH
 
+#if TARGET_X86
+            if (parentNode->OperIs(GT_MUL_LONG))
+            {
+                return genTypeSize(childNode->TypeGet()) == operatorSize / 2;
+            }
+#endif // TARGET_X86
+
             return genTypeSize(childNode->TypeGet()) == operatorSize;
         }
 
