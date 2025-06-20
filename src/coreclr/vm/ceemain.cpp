@@ -869,29 +869,6 @@ void EEStartupHelper()
         IfFailGo(hr);
 #endif // PROFILING_SUPPORTED
 
-        InitializeExceptionHandling();
-
-        //
-        // Install our global exception filter
-        //
-        if (!InstallUnhandledExceptionFilter())
-        {
-            IfFailGo(E_FAIL);
-        }
-
-        // throws on error
-        SetupThread();
-
-#ifdef DEBUGGING_SUPPORTED
-        // Notify debugger once the first thread is created to finish initialization.
-        if (g_pDebugInterface != NULL)
-        {
-            g_pDebugInterface->StartupPhase2(GetThread());
-        }
-#endif
-
-        // This isn't done as part of InitializeGarbageCollector() above because
-        // debugger must be initialized before creating EE thread objects 
 #ifdef TARGET_WINDOWS
         // Create the finalizer thread on windows earlier, as we will need to wait for
         // the completion of its initialization part that initializes COM as that has to be done
