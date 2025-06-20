@@ -2865,7 +2865,7 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
             // instruction emitted. This will guarantee that the information stays up-to-date. Later if we
             // notice a loop that encloses another loop, this information helps in removing the align field from
             // such loops.
-            // We need to only update emitAlignLast because we do not align intermingled or overlapping loops.
+            // We need to only update emitAlignLastGroup because we do not align intermingled or overlapping loops.
             emitAlignLastGroup->idaLoopHeadPredIG = emitCurIG;
         }
 #endif // FEATURE_LOOP_ALIGN
