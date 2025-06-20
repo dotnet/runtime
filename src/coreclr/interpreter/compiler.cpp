@@ -2380,6 +2380,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
         if (callInfo.methodFlags & CORINFO_FLG_INTRINSIC)
         {
+// Interpreter-FIXME: Necessary to work around InterpConfig members only being defined in DEBUG configurations.
+#if DEBUG
             if (InterpConfig.InterpMode() >= 3)
             {
                 NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
@@ -2389,6 +2391,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     return;
                 }
             }
+#endif
         }
 
         if (EmitCallIntrinsics(callInfo.hMethod, callInfo.sig))
