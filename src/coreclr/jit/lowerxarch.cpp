@@ -7851,7 +7851,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     bool isSafeToContainOp1 = true;
     bool isSafeToContainOp2 = true;
 
-    bool     isUnsignedMultiply    = ((node->gtFlags & GTF_UNSIGNED) != 0);
+    bool     isUnsignedMultiply    = node->IsUnsigned();
     bool     requiresOverflowCheck = node->gtOverflowEx();
     bool     useLeaEncoding        = false;
     GenTree* memOp                 = nullptr;
@@ -7859,6 +7859,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     bool                 hasImpliedFirstOperand = false;
     GenTreeIntConCommon* imm                    = nullptr;
     GenTree*             other                  = nullptr;
+    var_types            nodeType               = node->TypeGet();
 
     // Multiply should never be using small types
     assert(!varTypeIsSmall(node->TypeGet()));
@@ -7878,6 +7879,8 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     else if (node->OperIs(GT_MUL_LONG))
     {
         hasImpliedFirstOperand = true;
+        // GT_MUL_LONG hsa node type LONG but work on INT
+        nodeType = TYP_INT;
     }
 #endif
     else if (IsContainableImmed(node, op2) || IsContainableImmed(node, op1))
@@ -7914,7 +7917,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     //
     if (memOp == nullptr)
     {
-        if ((op2->TypeGet() == node->TypeGet()) && IsContainableMemoryOp(op2))
+        if ((op2->TypeGet() == nodeType) && IsContainableMemoryOp(op2))
         {
             isSafeToContainOp2 = IsSafeToContainMem(node, op2);
             if (isSafeToContainOp2)
@@ -7923,7 +7926,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
             }
         }
 
-        if ((memOp == nullptr) && (op1->TypeGet() == node->TypeGet()) && IsContainableMemoryOp(op1))
+        if ((memOp == nullptr) && (op1->TypeGet() == nodeType) && IsContainableMemoryOp(op1))
         {
             isSafeToContainOp1 = IsSafeToContainMem(node, op1);
             if (isSafeToContainOp1)
@@ -7934,7 +7937,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     }
     else
     {
-        if ((memOp->TypeGet() != node->TypeGet()))
+        if ((memOp->TypeGet() != nodeType))
         {
             memOp = nullptr;
         }
@@ -9744,6 +9747,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_Permute4x64:
                         case NI_AVX2_ShuffleHigh:
                         case NI_AVX2_ShuffleLow:
+                        case NI_AVX512_ClassifyMask:
+                        case NI_AVX512_ClassifyScalarMask:
                         case NI_AVX512_Permute2x64:
                         case NI_AVX512_Permute4x32:
                         case NI_AVX512_Permute4x64:
@@ -9929,6 +9934,24 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
             switch (category)
             {
+                case HW_Category_MemoryLoad:
+                {
+                    if (op3->IsVectorZero())
+                    {
+                        // When we are merging with zero, we can specialize
+                        // and avoid instantiating the vector constant.
+                        MakeSrcContained(node, op3);
+                    }
+                    ContainCheckHWIntrinsicAddr(node, op1, simdSize);
+                    break;
+                }
+
+                case HW_Category_MemoryStore:
+                {
+                    ContainCheckHWIntrinsicAddr(node, op1, simdSize);
+                    break;
+                }
+
                 case HW_Category_SimpleSIMD:
                 case HW_Category_SIMDScalar:
                 case HW_Category_Scalar:

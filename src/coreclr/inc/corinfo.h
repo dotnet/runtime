@@ -791,7 +791,7 @@ enum CorInfoFlag
 enum CorInfoMethodRuntimeFlags
 {
     CORINFO_FLG_BAD_INLINEE         = 0x00000001, // The method is not suitable for inlining
-    CORINFO_FLG_INTERPRETER         = 0x00000002, // The method was compiled by the interpreter
+    // unused                       = 0x00000002, // The method was compiled by the interpreter
     // unused                       = 0x00000004,
     CORINFO_FLG_SWITCHED_TO_MIN_OPT = 0x00000008, // The JIT decided to switch to MinOpt for this method, when it was not requested
     CORINFO_FLG_SWITCHED_TO_OPTIMIZED = 0x00000010, // The JIT decided to switch to tier 1 for this method, when a different tier was requested

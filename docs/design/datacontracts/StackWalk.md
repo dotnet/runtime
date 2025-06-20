@@ -58,6 +58,8 @@ This contract depends on the following descriptors:
 | `HijackArgs` (amd64 Windows) | `Rsp` | Saved stack pointer |
 | `HijackArgs` (arm64) | For each register `r` saved in HijackArgs, `r` | Register names associated with stored register values |
 | `CalleeSavedRegisters` | For each callee saved register `r`, `r` | Register names associated with stored register values |
+| `TailCallFrame` (x86 Windows) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
+| `TailCallFrame` (x86 Windows) | `ReturnAddress` | Frame's stored instruction pointer |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -291,7 +293,7 @@ HijackFrames carry a IP (ReturnAddress) and a pointer to `HijackArgs`. All platf
 
 #### TailCallFrame
 
-TailCallFrames are only used on Windows x86 which is not yet supported in the cDAC and therefore not implemented.
+TailCallFrames only appear on x86 Windows. They hold a `CalleeSavedRegisters` struct as well as a `ReturnAddress`. While the stack pointer is not directly contained in the TailCallFrame structure, it will be on the stack immediately following the Frame (found at the address of the Frame + size of the Frame). To process these Frames, update all of the registers in `CalleeSavedRegisters`, the instruction pointer from the stored return address, and the stack pointer from the address saved on the stack.
 
 ### APIs
 
