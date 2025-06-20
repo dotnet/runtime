@@ -2485,29 +2485,8 @@ public:
 public:
     static BOOL UniqueStack(void* startLoc = 0);
 
-    BOOL IsAddressInStack (PTR_VOID addr) const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(m_CacheStackBase != NULL);
-        _ASSERTE(m_CacheStackLimit != NULL);
-        _ASSERTE(m_CacheStackLimit < m_CacheStackBase);
-        return m_CacheStackLimit < addr && addr <= m_CacheStackBase;
-    }
-
-    static BOOL IsAddressInCurrentStack (PTR_VOID addr)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        Thread* currentThread = GetThreadNULLOk();
-        if (currentThread == NULL)
-        {
-            return FALSE;
-        }
-
-        PTR_VOID sp = dac_cast<PTR_VOID>(GetCurrentSP());
-        _ASSERTE(currentThread->m_CacheStackBase != NULL);
-        _ASSERTE(sp < currentThread->m_CacheStackBase);
-        return sp < addr && addr <= currentThread->m_CacheStackBase;
-    }
+    BOOL IsAddressInStack (PTR_VOID addr) const;
+    static BOOL IsAddressInCurrentStack (PTR_VOID addr);
 
     // DetermineIfGuardPagePresent returns TRUE if the thread's stack contains a proper guard page. This function
     // makes a physical check of the stack, rather than relying on whether or not the CLR is currently processing a
