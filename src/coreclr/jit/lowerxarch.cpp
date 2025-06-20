@@ -3548,6 +3548,8 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
 
+    LABELEDDISPTREERANGE("LowerHWIntrinsicTernaryLogic: (before)\n", BlockRange(), node);
+
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
     GenTree* op3 = node->Op(3);
@@ -3646,7 +3648,18 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                 if (condition->OperIsConvertMaskToVector())
                 {
                     GenTree* tmp = condition->AsHWIntrinsic()->Op(1);
-                    BlockRange().Remove(condition);
+
+                    LIR::Use use;
+                    if (BlockRange().TryGetUse(condition, &use))
+                    {
+                        use.ReplaceWith(tmp);
+                        BlockRange().Remove(condition);
+                    }
+                    else
+                    {
+                        tmp->SetUnusedValue();
+                    }
+
                     condition = tmp;
                 }
                 else if (!varTypeIsMask(condition))
@@ -3973,7 +3986,7 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
 
     // TODO-XARCH-AVX512: We should look for nested TernaryLogic and BitwiseOper
     // nodes so that we can fully take advantage of the instruction where possible
-
+    LABELEDDISPTREERANGE("LowerHWIntrinsicTernaryLogic: (after)\n", BlockRange(), node);
     ContainCheckHWIntrinsic(node);
     return node->gtNext;
 }
