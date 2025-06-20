@@ -1,33 +1,4 @@
-trigger:
-  batch: true
-  branches:
-    include:
-    - release/*.*
-  paths:
-    include:
-    - '*'
-    - src/libraries/System.Private.CoreLib/*
-    exclude:
-    - '**.md'
-    - .devcontainer/*
-    - .github/*
-    - docs/*
-    - LICENSE.TXT
-    - PATENTS.TXT
-    - THIRD-PARTY-NOTICES.TXT
-    - src/installer/*
-    - src/libraries/*
-    - eng/pipelines/installer/*
-    - eng/pipelines/libraries/*
-    - eng/pipelines/runtime.yml
-
-schedules:
-  - cron: "0 9,18,1 * * *" # run at 9:00, 18:00 and 01:00 (UTC) which is 2:00, 11:00 and 18:00 (PST).
-    displayName: runtime-coreclr-outerloop default schedule
-    branches:
-      include:
-      - main
-    always: false # run only if there were changes since the last successful scheduled run.
+trigger: none
 
 variables:
   - template: /eng/pipelines/common/variables.yml
