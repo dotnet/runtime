@@ -222,7 +222,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(testCase.ShouldPass, mldsa.VerifyData(testCase.Message, testCase.Signature, testCase.Context));
         }
 
-        protected virtual void AssertExportPrivateDataFromPublicKey(Action export) =>
+        protected virtual void AssertExportPkcs8FromPublicKey(Action export) =>
             Assert.Throws<CryptographicException>(export);
 
         [Theory]
@@ -231,14 +231,16 @@ namespace System.Security.Cryptography.Tests
         {
             using MLDsa mldsa = ImportPublicKey(info.Algorithm, info.PublicKey);
 
-            MLDsaTestHelpers.AssertExportMLDsaPublicKey(export =>
-                AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)));
+            MLDsaTestHelpers.AssertExportMLDsaPublicKey(
+                export => AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)));
 
-            MLDsaTestHelpers.AssertExportMLDsaSecretKey(export =>
-                AssertExportPrivateDataFromPublicKey(() => export(mldsa)));
+            MLDsaTestHelpers.AssertExportMLDsaSecretKey(
+                export => Assert.Throws<CryptographicException>(() => export(mldsa)),
+                export => AssertExportPkcs8FromPublicKey(() => export(mldsa)));
 
-            MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
-                AssertExportPrivateDataFromPublicKey(() => export(mldsa)));
+            MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(
+                export => Assert.Throws<CryptographicException>(() => export(mldsa)),
+                export => AssertExportPkcs8FromPublicKey(() => export(mldsa)));
         }
 
         [Theory]
