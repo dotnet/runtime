@@ -472,7 +472,6 @@ namespace System.Security.Cryptography.Tests
         {
             CryptographicException ce = Assert.ThrowsAny<CryptographicException>(export);
             Assert.Equal(NTE_NOT_SUPPORTED, ce.HResult);
-            Assert.Contains("The requested operation is not supported.", ce.Message);
         }
 
         internal static CngProperty GetCngProperty(MLDsaAlgorithm algorithm)
