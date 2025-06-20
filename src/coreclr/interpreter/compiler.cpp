@@ -2908,11 +2908,32 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
 
 void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad)
 {
-    EmitStaticFieldAddress(pFieldInfo, pResolvedToken);
-    if (isLoad)
-        EmitLdind(interpFieldType, pFieldInfo->structType, 0);
-    else
-        EmitStind(interpFieldType, pFieldInfo->structType, 0, true);
+    switch (pFieldInfo->fieldAccessor)
+    {
+        case CORINFO_FIELD_INTRINSIC_ZERO:
+            AddIns(INTOP_LDNULL);
+            PushInterpType(InterpTypeI, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            break;
+        case CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN:
+            // This is a field that is used to determine the endianness of the system
+            AddIns(INTOP_LDC_I4);
+#if BIGENDIAN
+            m_pLastNewIns->data[0] = 0;
+#else
+            m_pLastNewIns->data[0] = 1;
+#endif
+            PushInterpType(InterpTypeI1, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            break;
+        default:
+            EmitStaticFieldAddress(pFieldInfo, pResolvedToken);
+            if (isLoad)
+                EmitLdind(interpFieldType, pFieldInfo->structType, 0);
+            else
+                EmitStind(interpFieldType, pFieldInfo->structType, 0, true);
+            break;
+    }
 }
 
 void InterpCompiler::EmitLdLocA(int32_t var)
