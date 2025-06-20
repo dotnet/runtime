@@ -34,7 +34,7 @@ namespace Internal.TypeSystem.Interop
                 return mdType.GetClassLayout().Kind is MetadataLayoutKind.CStruct;
             }
 
-            if (!mdType.IsSequentialLayout && !mdType.IsExplicitLayout)
+            if (mdType.IsAutoLayout)
             {
                 return false;
             }
