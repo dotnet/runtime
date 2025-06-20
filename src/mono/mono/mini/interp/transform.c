@@ -2178,6 +2178,8 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 
 			MonoType *tfrom = ctx->method_inst->type_argv [0];
 			MonoType *tto = ctx->method_inst->type_argv [1];
+			tfrom = mini_get_underlying_type (tfrom);
+			tto = mini_get_underlying_type (tto);
 
 			// The underlying API always throws for reference type inputs, so we
 			// fallback to the managed implementation to let that handling occur
@@ -2186,18 +2188,8 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				return FALSE;
 			}
 
-			// We also always throw for Nullable<T> inputs, so fallback to the
-			// managed implementation here as well.
-
 			MonoClass *tfrom_klass = mono_class_from_mono_type_internal (tfrom);
-			if (mono_class_is_nullable (tfrom_klass)) {
-				return FALSE;
-			}
-
 			MonoClass *tto_klass = mono_class_from_mono_type_internal (tto);
-			if (mono_class_is_nullable (tto_klass)) {
-				return FALSE;
-			}
 
 			// The same applies for when the type sizes do not match, as this will always throw
 			// and so its not an expected case and we can fallback to the managed implementation
@@ -2215,24 +2207,28 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			// back to what is effectively `ReadUnaligned<TTo>(ref As<TFrom, byte>(ref source))`
 			// for anything that can't be special cased as potentially zero-cost move.
 
+#if false
 			bool tfrom_is_primitive_or_enum = m_class_is_primitive (tfrom_klass) || m_class_is_enumtype (tfrom_klass);
 			bool tto_is_primitive_or_enum = m_class_is_primitive (tto_klass) || m_class_is_enumtype (tto_klass);
+
+			*op = -1;
 
 			if (tfrom_is_primitive_or_enum && tto_is_primitive_or_enum) {
 				*op = interp_get_mov_for_type (mono_mint_type (tto), TRUE);
 			}
 
 			if (*op == -1) {
-
-				if (size <= 4) {
-					*op = MINT_MOV_4;
-				} else if (size <= 8) {
-					*op = MINT_MOV_8;
-				} else {
-					*op = MINT_MOV_VT;
-				}
+				return FALSE;
 			}
-
+#else
+			if (size <= 4) {
+				*op = MINT_MOV_4;
+			} else if (size <= 8) {
+				*op = MINT_MOV_8;
+			} else {
+				*op = MINT_MOV_VT;
+			}
+#endif
 			if (*op == MINT_MOV_VT) {
 				td->sp--;
 				interp_add_ins (td, MINT_MOV_VT);
@@ -2241,8 +2237,16 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 				td->last_ins->data [0] = GINT32_TO_UINT16 (size);
 				td->ip += 5;
-				return TRUE;
+
+			} else {
+				td->sp--;
+				interp_add_ins (td, *op);
+				interp_ins_set_sreg (td->last_ins, td->sp [-1].var);
+				push_type (td, tto, tto_klass);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+				td->ip += 5;
 			}
+			return TRUE;
 		} else if (!strcmp (tm, "ByteOffset")) {
 #if SIZEOF_VOID_P == 4
 			interp_add_ins (td, MINT_SUB_I4);
