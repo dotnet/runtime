@@ -8977,8 +8977,7 @@ public:
     }
     FORCEINLINE static bool UseSveForType(var_types type)
     {
-        return UseSveForVectorT() && varTypeIsSIMDOrMask(type) &&
-               (type != TYP_SIMD8) && (type != TYP_SIMD12);
+        return UseSveForVectorT() && varTypeIsSIMDOrMask(type) && (type != TYP_SIMD8) && (type != TYP_SIMD12);
     }
     FORCEINLINE static bool UseStrictSveForType(var_types type)
     {

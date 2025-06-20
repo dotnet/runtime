@@ -2577,7 +2577,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (info.compMatchedVM)
     {
-        compVectorTLength    = info.compCompHnd->getTargetVectorLength();
+        compVectorTLength = info.compCompHnd->getTargetVectorLength();
 
         if (compExactlyDependsOn(InstructionSet_Sve_Arm64))
         {

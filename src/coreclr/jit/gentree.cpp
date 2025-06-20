@@ -20882,13 +20882,14 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps        op,
 
     assert(op2 != nullptr);
 
-    bool isOp2SimdType = (genActualType(op2) == genActualType(type)) || (genActualType(op2) == genActualType(simdBaseType)) ||
-        (op2->TypeIs(TYP_SIMD12) && (type == TYP_SIMD16));
+    bool isOp2SimdType = (genActualType(op2) == genActualType(type)) ||
+                         (genActualType(op2) == genActualType(simdBaseType)) ||
+                         (op2->TypeIs(TYP_SIMD12) && (type == TYP_SIMD16));
 
     if ((op == GT_LSH) || (op == GT_RSH) || (op == GT_RSZ))
     {
         bool op2Type = genActualType(op2) == TYP_INT;
-#if defined (TARGET_ARM64)
+#if defined(TARGET_ARM64)
         op2Type |= (isScalable && isOp2SimdType);
 #endif
         assert(op2Type && "op2's type is unexpected.");
@@ -21012,7 +21013,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps        op,
 #if defined(TARGET_ARM64)
                 if (isScalable)
                 {
-                    *broadcastOp = gtNewSimdHWIntrinsicNode(type, *broadcastOp, NI_Sve_DuplicateScalarToVector, simdBaseJitType, simdSize);
+                    *broadcastOp = gtNewSimdHWIntrinsicNode(type, *broadcastOp, NI_Sve_DuplicateScalarToVector,
+                                                            simdBaseJitType, simdSize);
                 }
                 else if (varTypeIsLong(simdBaseType))
                 {
@@ -22743,12 +22745,8 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps        op,
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
 }
 
-GenTree* Compiler::gtNewSimdCndSelNode(var_types         type,
-                                       GenTree*          op1,
-                                       GenTree*          op2,
-                                       GenTree*          op3,
-                                       CorInfoType       simdBaseJitType,
-                                       unsigned simdSize)
+GenTree* Compiler::gtNewSimdCndSelNode(
+    var_types type, GenTree* op1, GenTree* op2, GenTree* op3, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);

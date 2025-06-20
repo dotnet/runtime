@@ -1347,8 +1347,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // There is no way to do floating point `initial and `step` in SVE, corresponding
                 //  to the `Vector.CreateSequence<float>().
-                op2 = impPopStack().val;
-                op1 = impPopStack().val;
+                op2     = impPopStack().val;
+                op1     = impPopStack().val;
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_Sve_Index, simdBaseJitType, simdSize);
             }
             break;
@@ -1726,7 +1726,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if ((simdBaseJitType != CORINFO_TYPE_FLOAT) && (simdBaseJitType != CORINFO_TYPE_DOUBLE))
             {
                 GenTree* start = gtNewIconNode(0, TYP_INT);
-                GenTree* step = gtNewIconNode(1, TYP_INT);
+                GenTree* step  = gtNewIconNode(1, TYP_INT);
                 retNode = gtNewSimdHWIntrinsicNode(retType, start, step, NI_Sve_Index, simdBaseJitType, simdSize);
             }
             break;
@@ -3056,7 +3056,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        //case NI_Vector_WidenLower:
+        // case NI_Vector_WidenLower:
         case NI_Vector64_WidenLower:
         case NI_Vector128_WidenLower:
         {
@@ -3074,7 +3074,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        //case NI_Vector_WidenUpper:
+        // case NI_Vector_WidenUpper:
         case NI_Vector64_WidenUpper:
         case NI_Vector128_WidenUpper:
         {
@@ -3805,18 +3805,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             case NI_Vector_op_Subtraction:
             case NI_Vector_Sum:
             case NI_Vector_Truncate:
-            //case NI_Vector_WidenLower:
-            //case NI_Vector_WidenUpper:
-            {
-                if (retNode->OperIsHWIntrinsic())
+                // case NI_Vector_WidenLower:
+                // case NI_Vector_WidenUpper:
                 {
-                    intrinsic =
-                        GenTreeHWIntrinsic::GetScalableHWIntrinsicId(retType, simdBaseType,
-                                                                     retNode->AsHWIntrinsic()->GetHWIntrinsicId());
-                    retNode->AsHWIntrinsic()->ChangeHWIntrinsicId(intrinsic);
+                    if (retNode->OperIsHWIntrinsic())
+                    {
+                        intrinsic =
+                            GenTreeHWIntrinsic::GetScalableHWIntrinsicId(retType, simdBaseType,
+                                                                         retNode->AsHWIntrinsic()->GetHWIntrinsicId());
+                        retNode->AsHWIntrinsic()->ChangeHWIntrinsicId(intrinsic);
+                    }
+                    break;
                 }
-                break;
-            }
             case NI_Vector_Add:
             case NI_Vector_op_Addition:
             case NI_Vector_AndNot:
