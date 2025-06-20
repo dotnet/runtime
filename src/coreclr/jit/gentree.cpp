@@ -24198,6 +24198,23 @@ GenTree* Compiler::gtNewSimdLoadNonTemporalNode(var_types   type,
 #endif // !TARGET_XARCH && !TARGET_ARM64
 }
 
+//------------------------------------------------------------------------
+// gtNewSimdMinMaxNode: Creates a new HWIntrinsic node that performs a min
+//                      or max computation that follows IEEE 754 semantics
+//
+// Arguments:
+//    type            -- The type of the node to generate
+//    op1             -- The first operand
+//    op2             -- The second operand
+//    simdBaseJitType -- the base jit type of the node
+//    simdSize        -- the simd size of the node
+//    isMax           -- true to compute the maximum; otherwise, false for the minimum
+//    isMagnitude     -- true to compare the absolute values of op1/op2; otherwise false to compare op1/op2 directly
+//    isNumber        -- true to propagate numeric values if either op1 or op2 is NaN; false to propagate NaN values
+//
+// Return Value:
+//    The node representing the minimum or maximum operation
+//
 GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
                                        GenTree*    op1,
                                        GenTree*    op2,
@@ -24826,6 +24843,26 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
     return gtNewSimdMinMaxNativeNode(type, op1, op2, simdBaseJitType, simdSize, isMax);
 }
 
+//------------------------------------------------------------------------
+// gtNewSimdMinMaxNativeNode: Creates a new HWIntrinsic node that performs a min or max
+//                            computation without consideration for IEEE 754 semantics
+//
+// Arguments:
+//    type            -- The type of the node to generate
+//    op1             -- The first operand
+//    op2             -- The second operand
+//    simdBaseJitType -- the base jit type of the node
+//    simdSize        -- the simd size of the node
+//    isMax           -- true to compute the maximum; otherwise, false for the minimum
+//
+// Return Value:
+//    The node representing the minimum or maximum operation
+//
+// Remarks:
+//    This follows the platform specific behavior for comparisons and will do whatever
+//    is most efficient. This means that the exact result returned if either input is
+//    NaN or -0 can differ based on the underlying hardware.
+//
 GenTree* Compiler::gtNewSimdMinMaxNativeNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isMax)
 {
