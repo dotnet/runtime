@@ -8,7 +8,7 @@
     <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="PInvokeRevPInvokeUnhandled.cs" />
+    <Compile Include="ForeignUnhandled.cs" />
   </ItemGroup>
   <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />
