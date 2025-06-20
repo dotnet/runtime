@@ -1464,14 +1464,24 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     assert(tgtPrefUse == nullptr);
                     assert(tgtPrefUse2 == nullptr);
+                    assert(tgtPrefUse3 == nullptr);
                     tgtPrefUse = delayUse;
                 }
-                else
+                else if (opNum == 2)
                 {
                     assert(opNum == 2);
                     assert(tgtPrefUse == nullptr);
                     assert(tgtPrefUse2 == nullptr);
+                    assert(tgtPrefUse3 == nullptr);
                     tgtPrefUse2 = delayUse;
+                }
+                else
+                {
+                    assert(opNum == 3);
+                    assert(tgtPrefUse == nullptr);
+                    assert(tgtPrefUse2 == nullptr);
+                    assert(tgtPrefUse3 == nullptr);
+                    tgtPrefUse3 = delayUse;
                 }
             }
         }
@@ -2289,6 +2299,14 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
             // RMW operates on the second op.
             assert(isRMW);
             delayFreeOp = intrinsicTree->Op(2);
+            assert(delayFreeOp != nullptr);
+            break;
+
+        case NI_Sve2_AddCarryWideningLower:
+        case NI_Sve2_AddCarryWideningUpper:
+            // RMW operates on the third op.
+            assert(isRMW);
+            delayFreeOp = intrinsicTree->Op(3);
             assert(delayFreeOp != nullptr);
             break;
 

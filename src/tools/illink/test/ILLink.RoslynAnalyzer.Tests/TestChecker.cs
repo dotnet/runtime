@@ -168,9 +168,14 @@ namespace ILLink.RoslynAnalyzer.Tests
 					// For classes, only consider diagnostics which originate from the type (not its members).
 					// Approximate this by getting the location from the start of the type's syntax (which includes
 					// attributes declared on the type) to the opening brace.
+					// A type may not have open and close braces, so use the semicolon token if there is no open brace.
+					SyntaxToken classBodyStartToken = !classSyntax.OpenBraceToken.IsKind (SyntaxKind.None)
+						? classSyntax.OpenBraceToken
+						: classSyntax.SemicolonToken;
+
 					var classSpan = TextSpan.FromBounds (
 						classSyntax.GetLocation ().SourceSpan.Start,
-						classSyntax.OpenBraceToken.GetLocation ().SourceSpan.Start
+						classBodyStartToken.GetLocation ().SourceSpan.Start
 					);
 
 					return d.Location.SourceSpan.IntersectsWith (classSpan);
