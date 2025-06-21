@@ -187,6 +187,60 @@ namespace System.Text.Json.Serialization.Tests
             string json = JsonSerializer.Serialize(ts);
             Assert.Equal($"\"{expectedValue ?? value}\"", json);
         }
+
+        [Fact]
+        public static void Int128_AsDictionaryKey_SerializesCorrectly()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/116855
+            // Int128Converter.WriteAsPropertyNameCore was passing unsliced buffer to WritePropertyName
+            var dict = new Dictionary<Int128, string>
+            {
+                [0] = "Zero",
+                [1] = "One",
+                [-1] = "MinusOne",
+                [Int128.MaxValue] = "Max",
+                [Int128.MinValue] = "Min"
+            };
+
+            string json = JsonSerializer.Serialize(dict);
+            
+            // Validate JSON content contains expected keys and no junk data
+            Assert.Contains("\"0\"", json);
+            Assert.Contains("\"1\"", json);
+            Assert.Contains("\"-1\"", json);
+            Assert.Contains("\"170141183460469231731687303715884105727\"", json); // Int128.MaxValue
+            Assert.Contains("\"-170141183460469231731687303715884105728\"", json); // Int128.MinValue
+            Assert.DoesNotContain('\0', json); // No null characters (junk data)
+            
+            // Should roundtrip correctly
+            var deserialized = JsonSerializer.Deserialize<Dictionary<Int128, string>>(json);
+            Assert.Equal(dict, deserialized);
+        }
+
+        [Fact]
+        public static void UInt128_AsDictionaryKey_SerializesCorrectly()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/116855
+            // UInt128Converter.WriteAsPropertyNameCore was passing unsliced buffer to WritePropertyName
+            var dict = new Dictionary<UInt128, string>
+            {
+                [0] = "Zero", 
+                [1] = "One",
+                [UInt128.MaxValue] = "Max"
+            };
+
+            string json = JsonSerializer.Serialize(dict);
+            
+            // Validate JSON content contains expected keys and no junk data
+            Assert.Contains("\"0\"", json);
+            Assert.Contains("\"1\"", json);
+            Assert.Contains("\"340282366920938463463374607431768211455\"", json); // UInt128.MaxValue
+            Assert.DoesNotContain('\0', json); // No null characters (junk data)
+            
+            // Should roundtrip correctly
+            var deserialized = JsonSerializer.Deserialize<Dictionary<UInt128, string>>(json);
+            Assert.Equal(dict, deserialized);
+        }
 #endif
     }
 }
