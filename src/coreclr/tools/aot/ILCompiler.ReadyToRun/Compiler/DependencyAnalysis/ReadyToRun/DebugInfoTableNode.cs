@@ -127,6 +127,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 definedSymbols: new ISymbolDefinitionNode[] { this });
         }
 
+        static int runningTallySizeSavings = 0;
+        static int RunningTallyNewSize = 0;
+        static int CountOfBoundsBlobs = 0;
         public static byte[] CreateBoundsBlobForMethod(OffsetMapping[] offsetMapping)
         {
             if (offsetMapping == null || offsetMapping.Length == 0)
@@ -136,16 +139,52 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             writer.WriteUInt((uint)offsetMapping.Length);
 
             uint previousNativeOffset = 0;
+
+            uint maxNativeDelta = 0;
+            uint maxILValue = 0;
             foreach (var locInfo in offsetMapping)
             {
                 writer.WriteUInt(locInfo.nativeOffset - previousNativeOffset);
+                maxNativeDelta = Math.Max(maxNativeDelta, locInfo.nativeOffset - previousNativeOffset);
                 writer.WriteUInt(locInfo.ilOffset + 3); // Count of items in Internal.JitInterface.MappingTypes to adjust the IL offset by
+                maxILValue = Math.Max(maxILValue, locInfo.ilOffset + 3);
                 writer.WriteUInt((uint)locInfo.source);
 
                 previousNativeOffset = locInfo.nativeOffset;
             }
 
-            return writer.ToArray();
+            byte[] boundsBlob = writer.ToArray();
+
+            int bitWidthForNativeDelta = Math.Max(1, 32 - System.Numerics.BitOperations.LeadingZeroCount(maxNativeDelta));
+            int bitWidthForILOffset = Math.Max(1, 32 - System.Numerics.BitOperations.LeadingZeroCount(maxILValue));
+
+            int bitWidthReportForNativeDelta = bitWidthForNativeDelta - 1;
+            int bitWidthReportForILOffset = bitWidthForILOffset - 1;
+            NibbleWriter writer2 = new NibbleWriter();
+            writer2.WriteUInt((uint)offsetMapping.Length); // We need the total count
+            writer2.WriteUInt((uint)bitWidthReportForNativeDelta); // Number of bits needed for native deltas
+//            writer2.WriteUInt(maxILValue); // Max IL value to encode (this lets the reader compute the number of bits needed for IL values + encodes this values as an easy access for readers)
+            writer2.WriteUInt((uint)bitWidthReportForILOffset); // How many bits needed for IL offsets
+            int bitSize = bitWidthForNativeDelta +
+                          bitWidthForILOffset +
+                          2; // for the source data
+            int totalBits = bitSize * offsetMapping.Length;
+            int bytesNeededForArray = (totalBits + 7) / 8;
+            int newSize = writer2.ToArray().Length + bytesNeededForArray;
+            System.Threading.Interlocked.Add(ref runningTallySizeSavings, boundsBlob.Length - newSize);
+            System.Threading.Interlocked.Add(ref RunningTallyNewSize, newSize);
+            System.Threading.Interlocked.Increment(ref CountOfBoundsBlobs);
+            Console.WriteLine($"Old ={boundsBlob.Length} byte, New = {newSize} bytes, " +
+                              $"Max Native Delta = {maxNativeDelta}, " +
+                              $"Max IL Value = {maxILValue}, " +
+                              $"Bit Size = {bitSize}, " +
+                              $"Total Bits = {totalBits}, " +
+                              $"Bytes Needed = {bytesNeededForArray}, " +
+                              $"Running Tally Size Savings = {runningTallySizeSavings} bytes, " +
+                              $"Running Tally New Size = {RunningTallyNewSize} bytes" + 
+                              $", Count of Bounds Blobs = {CountOfBoundsBlobs}");
+
+            return boundsBlob;
         }
 
         public static byte[] CreateVarBlobForMethod(NativeVarInfo[] varInfos, TargetDetails target)
