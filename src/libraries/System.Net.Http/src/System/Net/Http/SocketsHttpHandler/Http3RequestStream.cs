@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -46,6 +47,9 @@ namespace System.Net.Http
         /// <summary>Any trailing headers.</summary>
         private List<(HeaderDescriptor name, string value)>? _trailingHeaders;
 
+        /// <summary>Response drain task after receiving trailers.</summary>
+        private Task? _responseDrainTask;
+
         // When reading response content, keep track of the number of bytes left in the current data frame.
         private long _responseDataPayloadRemaining;
 
@@ -84,19 +88,78 @@ namespace System.Net.Http
 
         public void Dispose()
         {
-            if (!_disposed)
+            ValueTask disposeTask = DisposeAsync();
+
+            // DisposeAsync() will fire-and-forget the underlying QuicStream.DisposeAsync() Task in most cases.
+            // Since QuicStream.Dispose() is implemented in a sync-over-async manner, there is no point maintaining
+            // a separate synchronous disposal path for the cases when the QuicStream disposal needs to be awaited.
+            if (!disposeTask.IsCompleted)
             {
-                _disposed = true;
+                disposeTask.AsTask().GetAwaiter().GetResult();
+            }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            ValueTask? disposeTask = default;
+            bool writesClosed = _stream.WritesClosed.IsCompleted;
+
+            if (_responseDrainTask is not null)
+            {
+#pragma warning disable CA2012 // The ValueTask is only consumed once.
+                disposeTask = WaitForDrainCompletionAndDisposeAsync();
+            }
+            else
+            {
                 AbortStream();
-                if (_stream.WritesClosed.IsCompleted)
+                if (writesClosed)
                 {
-                    _connection.LogExceptions(_stream.DisposeAsync().AsTask());
+                    disposeTask = _stream.DisposeAsync();
+#pragma warning restore CA2012
                 }
-                else
+            }
+
+            if (writesClosed)
+            {
+                Debug.Assert(disposeTask.HasValue);
+
+                // The peer has confirmed receipt of the full request, so there's no need to wait for QuicStream disposal -- it's fine to fire-and-forget the task.
+                if (!disposeTask.Value.IsCompleted && NetEventSource.Log.IsEnabled())
                 {
-                    _stream.Dispose();
+                    _connection.LogExceptions(disposeTask.Value.AsTask());
                 }
-                DisposeSyncHelper();
+            }
+            else if (disposeTask.HasValue)
+            {
+                await disposeTask.Value.ConfigureAwait(false);
+            }
+            else
+            {
+                await _stream.DisposeAsync().ConfigureAwait(false);
+            }
+
+            _connection.RemoveStream(_stream);
+            _sendBuffer.Dispose();
+
+            if (_responseDrainTask is null || _responseDrainTask.IsCompleted)
+            {
+                // If response drain is in progress it might be still using _recvBuffer -- let WaitForDrainCompletionAndDisposeAsync() dispose it.
+                _recvBuffer.Dispose();
+            }
+
+            async ValueTask WaitForDrainCompletionAndDisposeAsync()
+            {
+                Debug.Assert(_responseDrainTask is not null);
+                await _responseDrainTask.ConfigureAwait(false);
+                AbortStream();
+                await _stream.DisposeAsync().ConfigureAwait(false);
+                _recvBuffer.Dispose();
             }
         }
 
@@ -106,32 +169,6 @@ namespace System.Net.Http
             {
                 _connection.RemoveStream(_stream);
             }
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            if (!_disposed)
-            {
-                _disposed = true;
-                AbortStream();
-                if (_stream.WritesClosed.IsCompleted)
-                {
-                    _connection.LogExceptions(_stream.DisposeAsync().AsTask());
-                }
-                else
-                {
-                    await _stream.DisposeAsync().ConfigureAwait(false);
-                }
-                DisposeSyncHelper();
-            }
-        }
-
-        private void DisposeSyncHelper()
-        {
-            _connection.RemoveStream(_stream);
-
-            _sendBuffer.Dispose();
-            _recvBuffer.Dispose();
         }
 
         public void GoAway()
@@ -570,10 +607,8 @@ namespace System.Net.Http
                         _trailingHeaders = new List<(HeaderDescriptor name, string value)>();
                         await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
 
-                        // Stop looping after a trailing header.
-                        // There may be extra frames after this one, but they would all be unknown extension
-                        // frames that can be safely ignored. Just stop reading here.
-                        // Note: this does leave us open to a bad server sending us an out of order DATA frame.
+                        // We do not expect more DATA frames after the trailers, but we haven't reached EOS yet.
+                        await CheckForEndOfStreamAsync(cancellationToken).ConfigureAwait(false);
                         goto case null;
                     case null:
                         // Done receiving: copy over trailing headers.
@@ -1341,6 +1376,70 @@ namespace System.Net.Http
             throw new HttpIOException(HttpRequestError.Unknown, SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
         }
 
+        /// <summary>
+        /// Check for EOS and start draining the response stream if needed. This method is expected to be called after receiving trailers.
+        /// </summary>
+        private async ValueTask CheckForEndOfStreamAsync(CancellationToken cancellationToken)
+        {
+            // In most cases, we expect to read an EOS at this point.
+            _recvBuffer.EnsureAvailableSpace(1);
+            int bytesRead = await _stream.ReadAsync(_recvBuffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
+            if (bytesRead == 0)
+            {
+                return;
+            }
+            _recvBuffer.Commit(bytesRead);
+            _recvBuffer.Discard(bytesRead);
+
+            // According to https://datatracker.ietf.org/doc/html/rfc9114#name-http-message-framing the server may send us frames of uknown types after the trailers.
+            // Start draining the stream without trying to interpret the data. Note: this does leave us open to a bad server sending us out of order frames.
+            HttpConnectionSettings settings = _connection.Pool.Settings;
+            TimeSpan drainTime = settings._maxResponseDrainTime;
+            int remaining = settings._maxResponseDrainSize - bytesRead;
+            Debug.Assert(remaining >= 0);
+            if (drainTime == TimeSpan.Zero || remaining <= 0)
+            {
+                return;
+            }
+
+            _responseDrainTask = DrainResponseAsync();
+
+            async Task DrainResponseAsync()
+            {
+                using CancellationTokenSource cts = new CancellationTokenSource(settings._maxResponseDrainTime);
+
+                try
+                {
+                    // If there is more data than MaxResponseDrainSize, we will silently stop draining and let Dispose(Async) abort the reads.
+                    while (remaining > 0)
+                    {
+                        _recvBuffer.EnsureAvailableSpace(1);
+                        Memory<byte> buffer = remaining >= _recvBuffer.AvailableMemory.Length ? _recvBuffer.AvailableMemory : _recvBuffer.AvailableMemory.Slice(0, remaining);
+                        int bytesRead = await _stream.ReadAsync(buffer, cts.Token).ConfigureAwait(false);
+                        if (bytesRead == 0)
+                        {
+                            // Reached EOS.
+                            return;
+                        }
+                        remaining -= bytesRead;
+                        _recvBuffer.Commit(bytesRead);
+                        _recvBuffer.Discard(bytesRead);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Eat exceptions and stop draining to unblock QuicStream disposal waiting for response drain.
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        string message = ex is OperationCanceledException oce && oce.CancellationToken == cts.Token ? "Response drain timed out." : $"Response drain failed with exception: {ex}";
+                        Trace(message);
+                    }
+
+                    return;
+                }
+            }
+        }
+
         private async ValueTask<bool> ReadNextDataFrameAsync(HttpResponseMessage response, CancellationToken cancellationToken)
         {
             if (_responseDataPayloadRemaining == -1)
@@ -1371,11 +1470,8 @@ namespace System.Net.Http
                         _trailingHeaders = new List<(HeaderDescriptor name, string value)>();
                         await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
 
-                        // There may be more frames after this one, but they would all be unknown extension
-                        // frames that we are allowed to skip. Just close the stream early.
-
-                        // Note: if a server sends additional HEADERS or DATA frames at this point, it
-                        // would be a connection error -- not draining the stream means we won't catch this.
+                        // We do not expect more DATA frames after the trailers, but we haven't reached EOS yet.
+                        await CheckForEndOfStreamAsync(cancellationToken).ConfigureAwait(false);
                         goto case null;
                     case null:
                         // End of stream.
