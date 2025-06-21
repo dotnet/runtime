@@ -437,4 +437,61 @@ namespace System.Reflection.Tests
         public void mymethod4(string x) { }
     }
 }
+
+    public static class InheritGetterAndSetterMethodInProperty
+    {
+        [Fact]
+        public static void GetterAndSetterAreAvailableOnSubTypeWhenOverridingOneButInheritingBothFromBaseClass()
+        {
+            // checks that a setter in inherited
+            var pProperty = typeof(DerivedAttributeWithGetter).GetProperty("P", BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+            Assert.NotNull(pProperty);
+            Assert.NotNull(pProperty.SetMethod);
+
+            // check that reflected base setter works as intended when invoked
+            object[] attributes = typeof(ClassWithDerivedAttr).GetCustomAttributes(true);
+            Assert.Equal(2, attributes.Length);
+            Assert.Contains(attributes,
+                a => a is DerivedAttributeWithGetter derivedAttributeWithGetterAttr && derivedAttributeWithGetterAttr.P == 2);
+
+            // checks that a getter in inherited
+            pProperty = typeof(DerivedAttributeWithSetter).GetProperty("P", BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+            Assert.NotNull(pProperty);
+            Assert.NotNull(pProperty.GetMethod);
+        }
+
+        public class BaseAttributeWithGetterSetter : Attribute
+        {
+            protected int _p;
+
+            public virtual int P
+            {
+                get => _p;
+                set
+                {
+                    _p = value;
+                }
+            }
+        }
+
+        public class DerivedAttributeWithGetter : BaseAttributeWithGetterSetter
+        {
+            public override int P
+            {
+                get => _p;
+            }
+        }
+
+        public class DerivedAttributeWithSetter : BaseAttributeWithGetterSetter
+        {
+            public override int P
+            {
+                set => _p = value;
+            }
+        }
+
+        [DerivedAttributeWithGetter(P = 2), DerivedAttributeWithSetter(P = 2)]
+        public class ClassWithDerivedAttr
+        { }
+    }
 }
