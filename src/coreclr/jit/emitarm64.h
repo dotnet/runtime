@@ -801,6 +801,8 @@ static bool isValidUimm_MultipleOf(ssize_t value)
     return isValidUimm<bits>(value / mod) && (value % mod == 0);
 }
 
+public:
+
 // Returns true if 'value' is a legal signed immediate with 'bits' number of bits.
 template <const size_t bits>
 static bool isValidSimm(ssize_t value)
@@ -816,6 +818,8 @@ static bool isValidSimm_MultipleOf(ssize_t value)
     static_assert(mod != 0);
     return isValidSimm<bits>(value / mod) && (value % mod == 0);
 }
+
+private:
 
 // Returns true if 'imm' is a valid broadcast immediate for some SVE DUP variants
 static bool isValidBroadcastImm(ssize_t imm, emitAttr laneSize)
@@ -1031,6 +1035,9 @@ static unsigned insGetRegisterListSize(instruction ins);
 /************************************************************************/
 
 public:
+// true if this 'imm' can be encoded as a input operand to a SVE mov instruction
+static bool emitIns_valid_imm_for_sve_mov(INT64 imm, emitAttr size);
+
 // true if this 'imm' can be encoded as a input operand to a mov instruction
 static bool emitIns_valid_imm_for_mov(INT64 imm, emitAttr size);
 

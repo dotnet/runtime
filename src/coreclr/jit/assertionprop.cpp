@@ -284,6 +284,8 @@ bool IntegralRange::Contains(int64_t value) const
                     // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #elif defined(TARGET_ARM64)
+                case NI_Vector_op_Equality:
+                case NI_Vector_op_Inequality:
                 case NI_Vector64_op_Equality:
                 case NI_Vector64_op_Inequality:
                 case NI_Vector128_op_Equality:
@@ -2983,8 +2985,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
             conValTree = vecCon;
             break;
         }
-
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         case TYP_SIMD32:
         {
             simd32_t value = vnStore->ConstantValue<simd32_t>(vnCns);
@@ -3008,7 +3009,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         }
         break;
 
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 #endif // FEATURE_SIMD
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)

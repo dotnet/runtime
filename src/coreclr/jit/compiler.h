@@ -157,6 +157,12 @@ inline var_types HfaTypeFromElemKind(CorInfoHFAElemType kind)
             return TYP_SIMD8;
         case CORINFO_HFA_ELEM_VECTOR128:
             return TYP_SIMD16;
+#ifdef TARGET_ARM64
+        case CORINFO_HFA_ELEM_VECTOR256:
+            return TYP_SIMD32;
+        case CORINFO_HFA_ELEM_VECTOR512:
+            return TYP_SIMD64;
+#endif // TARGET_ARM64
 #endif
         case CORINFO_HFA_ELEM_NONE:
             return TYP_UNDEF;
@@ -178,6 +184,12 @@ inline CorInfoHFAElemType HfaElemKindFromType(var_types type)
             return CORINFO_HFA_ELEM_VECTOR64;
         case TYP_SIMD16:
             return CORINFO_HFA_ELEM_VECTOR128;
+#ifdef TARGET_ARM64
+        case TYP_SIMD32:
+            return CORINFO_HFA_ELEM_VECTOR256;
+        case TYP_SIMD64:
+            return CORINFO_HFA_ELEM_VECTOR512;
+#endif
 #endif
         case TYP_UNDEF:
             return CORINFO_HFA_ELEM_NONE;
@@ -3146,7 +3158,7 @@ public:
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
 #if defined(TARGET_ARM64)
-    GenTree* gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType);
+    GenTree* gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize);
     GenTree* gtNewSimdFalseMaskByteNode();
 #endif
 
@@ -3155,7 +3167,9 @@ public:
                                 GenTree*    op1,
                                 GenTree*    op2,
                                 CorInfoType simdBaseJitType,
-                                unsigned    simdSize);
+                                unsigned    simdSize
+                                ARM64_ARG(bool isScalable)
+                                );
 
     GenTree* gtNewSimdCeilNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -3165,21 +3179,28 @@ public:
                                 GenTree*    op1,
                                 GenTree*    op2,
                                 CorInfoType simdBaseJitType,
-                                unsigned    simdSize);
+                                unsigned    simdSize
+                                ARM64_ARG(bool isScalable)
+                                ARM64_ARG(bool wrapInCmtv = true)
+                                );
 
     GenTree* gtNewSimdCmpOpAllNode(genTreeOps  op,
                                    var_types   type,
                                    GenTree*    op1,
                                    GenTree*    op2,
                                    CorInfoType simdBaseJitType,
-                                   unsigned    simdSize);
+                                   unsigned    simdSize
+                                   ARM64_ARG(bool isScalable)
+                                   );
 
     GenTree* gtNewSimdCmpOpAnyNode(genTreeOps  op,
                                    var_types   type,
                                    GenTree*    op1,
                                    GenTree*    op2,
                                    CorInfoType simdBaseJitType,
-                                   unsigned    simdSize);
+                                   unsigned    simdSize
+                                   ARM64_ARG(bool isScalable)
+                                   );
 
     GenTree* gtNewSimdCndSelNode(var_types   type,
                                  GenTree*    op1,
@@ -3240,7 +3261,8 @@ public:
                                      GenTree*    op1,
                                      GenTree*    op2,
                                      CorInfoType simdBaseJitType,
-                                     unsigned    simdSize);
+                                     unsigned    simdSize
+                                     ARM64_ARG(bool isScalable));
 
     GenTree* gtNewSimdGetIndicesNode(var_types type, CorInfoType simdBaseJitType, unsigned simdSize);
 
@@ -3277,12 +3299,14 @@ public:
     GenTree* gtNewSimdIsNaNNode(var_types   type,
                                 GenTree*    op1,
                                 CorInfoType simdBaseJitType,
-                                unsigned    simdSize);
+                                unsigned    simdSize
+                                ARM64_ARG(bool isScalable));
 
     GenTree* gtNewSimdIsNegativeNode(var_types   type,
                                      GenTree*    op1,
                                      CorInfoType simdBaseJitType,
-                                     unsigned    simdSize);
+                                     unsigned    simdSize
+                                     ARM64_ARG(bool isScalable));
 
     GenTree* gtNewSimdIsNegativeInfinityNode(var_types   type,
                                              GenTree*    op1,
@@ -3302,12 +3326,14 @@ public:
     GenTree* gtNewSimdIsPositiveNode(var_types   type,
                                      GenTree*    op1,
                                      CorInfoType simdBaseJitType,
-                                     unsigned    simdSize);
+                                     unsigned    simdSize
+                                     ARM64_ARG(bool isScalable));
 
     GenTree* gtNewSimdIsPositiveInfinityNode(var_types   type,
                                              GenTree*    op1,
                                              CorInfoType simdBaseJitType,
-                                             unsigned    simdSize);
+                                             unsigned    simdSize
+                                             ARM64_ARG(bool isScalable));
 
     GenTree* gtNewSimdIsSubnormalNode(var_types   type,
                                       GenTree*    op1,
@@ -3317,7 +3343,8 @@ public:
     GenTree* gtNewSimdIsZeroNode(var_types   type,
                                  GenTree*    op1,
                                  CorInfoType simdBaseJitType,
-                                 unsigned    simdSize);
+                                 unsigned    simdSize
+                                 ARM64_ARG(bool isScalable));
 
     GenTree* gtNewSimdLoadNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -3332,25 +3359,29 @@ public:
                               GenTree*    op1,
                               GenTree*    op2,
                               CorInfoType simdBaseJitType,
-                              unsigned    simdSize);
+                              unsigned    simdSize
+                              ARM64_ARG(bool isScalable));
 
     GenTree* gtNewSimdMaxNativeNode(var_types   type,
                                     GenTree*    op1,
                                     GenTree*    op2,
                                     CorInfoType simdBaseJitType,
-                                    unsigned    simdSize);
+                                    unsigned    simdSize
+                                    ARM64_ARG(bool isScalable));
 
     GenTree* gtNewSimdMinNode(var_types   type,
                               GenTree*    op1,
                               GenTree*    op2,
                               CorInfoType simdBaseJitType,
-                              unsigned    simdSize);
+                              unsigned    simdSize
+                              ARM64_ARG(bool isScalable));
 
     GenTree* gtNewSimdMinNativeNode(var_types   type,
                                     GenTree*    op1,
                                     GenTree*    op2,
                                     CorInfoType simdBaseJitType,
-                                    unsigned    simdSize);
+                                    unsigned    simdSize
+                                    ARM64_ARG(bool isScalable));
 
     GenTree* gtNewSimdNarrowNode(var_types   type,
                                  GenTree*    op1,
@@ -3413,7 +3444,7 @@ public:
                                var_types   type,
                                GenTree*    op1,
                                CorInfoType simdBaseJitType,
-                               unsigned    simdSize);
+                               unsigned    simdSize ARM64_ARG(bool isScalable));
 
     GenTree* gtNewSimdWidenLowerNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -6707,7 +6738,7 @@ private:
     GenTree* fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* cmp);
 #if defined(FEATURE_HW_INTRINSICS)
     GenTree* fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree);
-    GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
+    GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node ARM64_ARG(bool isScalable));
     GenTree* fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* node);
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     GenTreeHWIntrinsic* fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* node);
@@ -8248,7 +8279,7 @@ public:
         assert(type != TYP_STRUCT);
         // ARM64 ABI FP Callee save registers only require Callee to save lower 8 Bytes
         // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
-        return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
+        return ((type == TYP_SIMD16) || (type == TYP_SIMD12) || (UseSveForType(type)));
     }
 #else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
 #error("Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE")
@@ -8928,6 +8959,40 @@ private:
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     */
 
+#if defined(TARGET_ARM64)
+private:
+
+    static unsigned compVectorTLength;
+    // static unsigned compMinVectorTLengthForSve;
+    static bool compUseSveForVectorT;
+
+public:
+    FORCEINLINE static unsigned GetVectorTLength()
+    {
+        return compVectorTLength;
+    }
+    FORCEINLINE static bool UseSveForVectorT()
+    {
+        return compUseSveForVectorT;
+    }
+    FORCEINLINE static bool UseSveForType(var_types type)
+    {
+        return UseSveForVectorT() && varTypeIsSIMDOrMask(type) && (type != TYP_SIMD8) && (type != TYP_SIMD12);
+    }
+    FORCEINLINE static bool UseStrictSveForType(var_types type)
+    {
+        // This method is used in scenarios where we do not know the type of HIR node or how the LIR node was formed.
+        // For such cases, we will generate SVE, only if we are guaranteed to have VL >= 32B.
+        return UseSveForType(type) && (type != TYP_SIMD12) && (type != TYP_SIMD16);
+    }
+    FORCEINLINE static bool SizeMatchesVectorTLength(unsigned simdSize)
+    {
+        return simdSize == compVectorTLength;
+    }
+#endif
+
+public:
+
     bool isIntrinsicType(CORINFO_CLASS_HANDLE clsHnd)
     {
         return info.compCompHnd->isIntrinsicType(clsHnd);
@@ -9171,7 +9236,11 @@ public:
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
-        if (compExactlyDependsOn(InstructionSet_VectorT128))
+        if (compExactlyDependsOn(InstructionSet_Sve_Arm64))
+        {
+            return GetVectorTLength();
+        }
+        else if (compExactlyDependsOn(InstructionSet_VectorT128))
         {
             return FP_REGSIZE_BYTES;
         }
@@ -9213,6 +9282,15 @@ public:
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
+        // TODO-VL: There are several optimizations that use this method
+        // to decide to use higher vector length. E.g. ReadUtf8, Memmove, etc.
+        // To make them functional, some of them need SVE2 intrinsics/instructions.
+        // We will incrementally enable them as we add support for SVE2 APIs.
+        // if (compExactlyDependsOn(InstructionSet_Sve_Arm64))
+        //{
+        //    return Compiler::compVectorTLength;
+        //}
+        // else
         return FP_REGSIZE_BYTES;
 #else
         assert(!"getMaxVectorByteLength() unimplemented on target arch");
@@ -9311,7 +9389,19 @@ public:
         // Return 0 if size is even less than XMM, otherwise - XMM
         return (size >= XMM_REGSIZE_BYTES) ? XMM_REGSIZE_BYTES : 0;
 #elif defined(TARGET_ARM64)
-        assert(getMaxVectorByteLength() == FP_REGSIZE_BYTES);
+        // if (FP_REGSIZE_BYTES < Compiler::compVectorTLength)
+        //{
+        //     if (size >= Compiler::compVectorTLength)
+        //     {
+        //         return Compiler::compVectorTLength;
+        //     }
+        // }
+        // else
+        // TODO-VL: For now, disable most of the optimizations like memmove, struct copy,
+        //  etc. for VL
+        {
+            assert(getMaxVectorByteLength() == FP_REGSIZE_BYTES);
+        }
         return (size >= FP_REGSIZE_BYTES) ? FP_REGSIZE_BYTES : 0;
 #else
         assert(!"roundDownSIMDSize() unimplemented on target arch");
@@ -9340,7 +9430,7 @@ public:
         {
             simdType = TYP_SIMD16;
         }
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         else if (size == 32)
         {
             simdType = TYP_SIMD32;
@@ -9349,7 +9439,7 @@ public:
         {
             simdType = TYP_SIMD64;
         }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
         else
         {
             noway_assert(!"Unexpected size for SIMD type");
@@ -9478,7 +9568,12 @@ public:
 #if defined(FEATURE_SIMD)
         if (canUseSimd)
         {
-            maxRegSize = getPreferredVectorByteLength();
+#if defined(TARGET_ARM64)
+            // For now, just use SIMD register size for unroll threshold
+            // decisions
+            // maxRegSize = getPreferredVectorByteLength();
+            maxRegSize = FP_REGSIZE_BYTES;
+#endif // TARGET_ARM64
 
 #if defined(TARGET_XARCH)
             assert(maxRegSize <= ZMM_REGSIZE_BYTES);
@@ -9555,7 +9650,11 @@ public:
     bool structSizeMightRepresentSIMDType(size_t structSize)
     {
 #ifdef FEATURE_SIMD
+#if defined(TARGET_ARM64)
+        return (structSize >= getMinVectorByteLength()) && (structSize <= getVectorTByteLength());
+#else
         return (structSize >= getMinVectorByteLength()) && (structSize <= getMaxVectorByteLength());
+#endif // TARGET_ARM64
 #else
         return false;
 #endif // FEATURE_SIMD

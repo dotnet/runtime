@@ -2874,9 +2874,6 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
     }
     else
     {
-        // This is not an EXTEND group.
-        assert((emitCurIG->igFlags & IGF_EXTEND) == 0);
-
 #if defined(DEBUG) || defined(LATE_DISASM)
         emitCurIG->igWeight    = getCurrentBlockWeight();
         emitCurIG->igPerfScore = 0.0;
@@ -8196,7 +8193,7 @@ CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 //------------------------------------------------------------------------
 // emitSimdConst: Create a simd data section constant.
 //
@@ -8228,7 +8225,9 @@ CORINFO_FIELD_HANDLE emitter::emitSimdConst(simd_t* constValue, emitAttr attr)
     UNATIVE_OFFSET cnum = emitDataConst(constValue, cnsSize, cnsAlign, dataType);
     return emitComp->eeFindJitDataOffs(cnum);
 }
+#endif // TARGET_XARCH || TARGET_ARM64
 
+#if defined(TARGET_XARCH)
 //------------------------------------------------------------------------
 // emitSimdConstCompressedLoad: Create a simd data section constant,
 //   compressing it if possible, and emit an appropiate instruction

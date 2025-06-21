@@ -591,6 +591,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_Sve_ConvertToInt64:
                         case NI_Sve_ConvertToUInt64:
                         case NI_Sve_ConvertToDouble:
+                        case NI_Sve_ConvertToDoubleUpper:
                         {
                             embOpt = emitTypeSize(intrinEmbMask.baseType) == EA_4BYTE ? INS_OPTS_S_TO_D
                                                                                       : INS_OPTS_SCALABLE_D;
@@ -809,6 +810,20 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                           embMaskOp1Reg, /* canSkip */ true);
                                 emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
                                 break;
+
+                            case NI_Sve_MultiplyByScalar:
+                            {
+                                if (targetReg != embMaskOp1Reg)
+                                {
+                                    GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, maskReg,
+                                                                embMaskOp1Reg, opt);
+                                }
+                                assert(intrinEmbMask.op2->IsCnsFltOrDbl());
+                                double imm = intrinEmbMask.op2->AsDblCon()->DconValue();
+                                assert((imm == 0.5) || (imm == 2.0));
+                                GetEmitter()->emitIns_R_R_F(insEmbMask, emitSize, targetReg, op1Reg, imm, opt);
+                                break;
+                            }
 
                             default:
                                 assert(targetReg != embMaskOp2Reg);
@@ -2684,6 +2699,62 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 break;
             }
+            case NI_Sve_Index:
+            {
+                if ((op1Reg == REG_NA) && (op2Reg == REG_NA))
+                {
+                    int start = (int)intrin.op1->AsIntCon()->gtIconVal;
+                    int step  = (int)intrin.op2->AsIntCon()->gtIconVal;
+                    GetEmitter()->emitInsSve_R_I_I(ins, EA_SCALABLE, targetReg, start, step,
+                                                   emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                }
+                else if ((op1Reg != REG_NA) && (op2Reg != REG_NA))
+                {
+                    emitAttr scalarSize = emitActualTypeSize(node->GetSimdBaseType());
+                    GetEmitter()->emitInsSve_R_R_R(ins, scalarSize, targetReg, op1Reg, op2Reg,
+                                                   emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                }
+                else if (op1Reg != REG_NA)
+                {
+                    assert(op2Reg == REG_NA);
+                    int step = (int)intrin.op2->AsIntCon()->gtIconVal;
+                    GetEmitter()->emitInsSve_R_R_I(ins, EA_SCALABLE, targetReg, op1Reg, step,
+                                                   emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                }
+                else
+                {
+                    assert(op1Reg == REG_NA);
+
+                    int start = (int)intrin.op1->AsIntCon()->gtIconVal;
+                    GetEmitter()->emitInsSve_R_R_I(ins, EA_SCALABLE, targetReg, op2Reg, start,
+                                                   emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)),
+                                                   INS_SCALABLE_OPTS_IMM_FIRST);
+                }
+                break;
+            }
+            case NI_Sve_DuplicateScalarToVector:
+            {
+                if (op1Reg == REG_NA)
+                {
+                    GetEmitter()->emitIns_R_I(ins, emitTypeSize(intrin.baseType), targetReg,
+                                              intrin.op1->AsIntCon()->IconValue(),
+                                              emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                }
+                else
+                {
+                    if (varTypeIsIntegral(intrin.op1))
+                    {
+                        GetEmitter()->emitIns_R_R(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg,
+                                                  emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                    }
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, 0,
+                                                    emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                    }
+                }
+                break;
+            }
 
             case NI_Sve2_AddCarryWideningLower:
             case NI_Sve2_AddCarryWideningUpper:
@@ -2719,8 +2790,22 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op3Reg, op1Reg, INS_OPTS_SCALABLE_D);
                 break;
 
+            case NI_Sve_MultiplyByScalar:
+            {
+                if (targetReg != op2Reg)
+                {
+                    GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op2Reg);
+                }
+                assert(node->IsCnsFltOrDbl());
+                unsigned imm = node->AsDblCon()->DconValue() == 0.5 ? 0 : 1;
+                GetEmitter()->emitInsSve_R_R_I(ins, emitSize, targetReg, op1Reg, opt);
+                break;
+            }
             default:
+            {
                 unreached();
+                break;
+            }
         }
     }
 
