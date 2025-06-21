@@ -1718,5 +1718,13 @@ namespace System.Text.Json.Nodes.Tests
                 () => JsonSerializer.Deserialize<JsonNode>(jsonPayload, options),
                 "An item with the same key has already been added.");
         }
+
+        [Theory]
+        [InlineData("42")]
+        [InlineData("[]")]
+        public static void Deserialize_WrongType(string json)
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<JsonObject>(json));
+        }
     }
 }

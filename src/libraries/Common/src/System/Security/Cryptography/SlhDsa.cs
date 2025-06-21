@@ -569,7 +569,11 @@ namespace System.Security.Cryptography
         ///   This instance has been disposed.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   An error occurred while exporting the key.
+        ///   <para>This instance only represents a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>The private key is not exportable.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         public byte[] ExportPkcs8PrivateKey()
         {
@@ -603,7 +607,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            // A private key export with no attributes has at least 8 bytes overhead so a buffer smaller than that cannot hold a
+            // A private key export with no attributes has at least 12 bytes overhead so a buffer smaller than that cannot hold a
             // PKCS#8 encoded key. If we happen to get a buffer smaller than that, it won't export.
             int MinimumPossiblePkcs8SlhDsaKey =
                 2 + // PrivateKeyInfo Sequence
@@ -1053,7 +1057,7 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="destination">
         ///   The buffer to receive the public key. Its length must be exactly
-        ///   <see cref="SlhDsaAlgorithm.SecretKeySizeInBytes"/>.
+        ///   <see cref="SlhDsaAlgorithm.PublicKeySizeInBytes"/>.
         /// </param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="destination"/> is the incorrect length to receive the public key.
@@ -1157,6 +1161,9 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Generates a new SLH-DSA key for the specified algorithm.
         /// </summary>
+        /// <param name="algorithm">
+        ///   An algorithm identifying what kind of SLH-DSA key to generate.
+        /// </param>
         /// <returns>
         ///   The generated object.
         /// </returns>
@@ -1213,26 +1220,20 @@ namespace System.Security.Cryptography
             ThrowIfInvalidLength(source);
             ThrowIfNotSupported();
 
-            unsafe
+            KeyFormatHelper.ReadSubjectPublicKeyInfo(s_knownOids, source, SubjectPublicKeyReader, out int read, out SlhDsa slhDsa);
+            Debug.Assert(read == source.Length);
+            return slhDsa;
+
+            static void SubjectPublicKeyReader(ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn identifier, out SlhDsa slhDsa)
             {
-                fixed (byte* pointer = source)
+                SlhDsaAlgorithm algorithm = GetAlgorithmIdentifier(in identifier);
+
+                if (key.Length != algorithm.PublicKeySizeInBytes)
                 {
-                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
-                    {
-                        AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
-                        SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
-
-                        SlhDsaAlgorithm algorithm = GetAlgorithmIdentifier(ref spki.Algorithm);
-                        ReadOnlySpan<byte> publicKey = spki.SubjectPublicKey.Span;
-
-                        if (publicKey.Length != algorithm.PublicKeySizeInBytes)
-                        {
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                        }
-
-                        return ImportSlhDsaPublicKey(algorithm, spki.SubjectPublicKey.Span);
-                    }
+                    throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
                 }
+
+                slhDsa = SlhDsaImplementation.ImportPublicKey(algorithm, key.Span);
             }
         }
 
@@ -1981,9 +1982,8 @@ namespace System.Security.Cryptography
 
         private static SlhDsaAlgorithm GetAlgorithmIdentifier(ref readonly AlgorithmIdentifierAsn identifier)
         {
-            SlhDsaAlgorithm algorithm = SlhDsaAlgorithm.GetAlgorithmFromOid(identifier.Algorithm) ??
-                throw new CryptographicException(
-                    SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, identifier.Algorithm));
+            SlhDsaAlgorithm? algorithm = SlhDsaAlgorithm.GetAlgorithmFromOid(identifier.Algorithm);
+            Debug.Assert(algorithm is not null, "Algorithm identifier should have been pre-validated by KeyFormatHelper.");
 
             if (identifier.Parameters.HasValue)
             {

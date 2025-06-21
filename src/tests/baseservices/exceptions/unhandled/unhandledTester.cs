@@ -47,7 +47,7 @@ namespace TestUnhandledExceptionTester
             }
             else if (!OperatingSystem.IsWindows())
             {
-                expectedExitCode = 128 + 6;
+                expectedExitCode = 128 + 6; // SIGABRT
             }
             else if (TestLibrary.Utilities.IsNativeAot)
             {
@@ -55,7 +55,15 @@ namespace TestUnhandledExceptionTester
             }
             else
             {
-                expectedExitCode = unchecked((int)0xE0434352);
+                if (unhandledType.EndsWith("hardware"))
+                {
+                    // Null reference exception code
+                    expectedExitCode = unchecked((int)0xC0000005);
+                }
+                else
+                {
+                    expectedExitCode = unchecked((int)0xE0434352);
+                }
             }
 
             if (expectedExitCode != testProcess.ExitCode)
@@ -128,7 +136,9 @@ namespace TestUnhandledExceptionTester
         public static void TestEntryPoint()
         {
             RunExternalProcess("main", "unhandled.dll");
+            RunExternalProcess("mainhardware", "unhandled.dll");
             RunExternalProcess("secondary", "unhandled.dll");
+            RunExternalProcess("secondaryhardware", "unhandled.dll");
             RunExternalProcess("foreign", "unhandled.dll");
             File.Delete(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "dependencytodelete.dll"));
             RunExternalProcess("missingdependency", "unhandledmissingdependency.dll");
