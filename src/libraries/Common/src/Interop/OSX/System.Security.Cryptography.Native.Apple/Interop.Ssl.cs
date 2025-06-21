@@ -59,8 +59,27 @@ internal static partial class Interop
             Renegotiate,
         }
 
+        internal enum PAL_NwStatusUpdates
+        {
+            UnknownError = 0,
+            FramerStart = 1,
+            HandshakeFinished = 2,
+            HandshakeFailed = 3,
+            ConnectionReadFinished = 4,
+            ConnectionWriteFinished = 5,
+            ConnectionWriteFailed = 6,
+            ConnectionError = 7,
+            ConnectionCancelled = 8,
+        }
+
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslCreateContext")]
         internal static partial System.Net.SafeSslHandle SslCreateContext(int isServer);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCreateContext")]
+        internal static partial System.Net.SafeSslHandle NwCreateContext(int isServer);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwInit")]
+        internal static unsafe partial int NwInit(delegate* unmanaged<IntPtr, PAL_NwStatusUpdates, IntPtr, IntPtr, int> statusCallback, delegate* unmanaged<IntPtr, byte*, void**, int> readCallback, delegate* unmanaged<IntPtr, byte*, void**, int> writeCallback);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetConnection")]
         internal static partial int SslSetConnection(
@@ -136,6 +155,39 @@ internal static partial class Interop
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslHandshake")]
         internal static partial PAL_TlsHandshakeState SslHandshake(SafeSslHandle sslHandle);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwStartTlsHandshake")]
+        internal static partial int NwStartHandshake(SafeSslHandle sslHandle, IntPtr gcHandle);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCancelConnection")]
+        internal static partial int NwCancelConnection(SafeSslHandle sslHandle);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwSetTlsOptions", StringMarshalling = StringMarshalling.Utf8)]
+        private static unsafe partial int NwSetTlsOptions(SafeSslHandle sslHandle, nint gcHandle, string targetName, Span<byte> alpn, int alpnLength, SslProtocols minTlsVersion, SslProtocols maxTlsVersion);
+
+        internal static unsafe int NwSetTlsOptions(SafeSslHandle sslHandle, nint gcHandle, string targetName, List<SslApplicationProtocol>? applicationProtocols, SslProtocols minTlsVersion, SslProtocols maxTlsVersion)
+        {
+            int alpnLength = GetAlpnProtocolListSerializedLength(applicationProtocols);
+            Span<byte> alpn = alpnLength <= 256 ? stackalloc byte[256].Slice(0, alpnLength) : new byte[alpnLength];
+            SerializeAlpnProtocolList(applicationProtocols, alpn);
+
+            return NwSetTlsOptions(sslHandle, gcHandle, targetName, alpn, alpnLength, minTlsVersion, maxTlsVersion);
+        }
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwProcessInputData")]
+        internal static unsafe partial int NwProcessInputData(SafeSslHandle sslHandle, IntPtr framer, void* ptr, int length);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwSendToConnection")]
+        internal static unsafe partial int NwSendToConnection(SafeSslHandle sslHandle, nint gcHandle, void* ptr, int length);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwReadFromConnection")]
+        internal static unsafe partial int NwReadFromConnection(SafeSslHandle sslHandle, nint gcHandle);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwGetConnectionInfo")]
+        internal static unsafe partial int NwGetConnectionInfo(SafeSslHandle sslHandle, out SslProtocols protocol, out TlsCipherSuite cipherSuite, ref IntPtr negotiatedAlpn, ref int alpnLength);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCopyCertChain")]
+        internal static partial int NwCopyCertChain(SafeSslHandle sslHandle, out SafeCFArrayHandle certificiates, out int count);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SslSetAcceptClientCert(SafeSslHandle sslHandle);
@@ -494,6 +546,46 @@ internal static partial class Interop
                         NetEventSource.Error(null, $"AppleCryptoNative_SslIsHostnameMatch returned '{result}' for '{hostName}'");
                     Debug.Fail($"AppleCryptoNative_SslIsHostnameMatch returned {result}");
                     throw new SslException();
+            }
+        }
+
+
+        internal static int GetAlpnProtocolListSerializedLength(List<SslApplicationProtocol>? applicationProtocols)
+        {
+            int protocolSize = 0;
+
+            if (applicationProtocols != null)
+            {
+                foreach (SslApplicationProtocol protocol in applicationProtocols)
+                {
+                    if (protocol.Protocol.Length == 0 || protocol.Protocol.Length > byte.MaxValue)
+                    {
+                        throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(applicationProtocols));
+                    }
+
+                    protocolSize += protocol.Protocol.Length + 2;
+                }
+            }
+
+            return protocolSize;
+        }
+
+        private static void SerializeAlpnProtocolList(List<SslApplicationProtocol>? applicationProtocols, Span<byte> buffer)
+        {
+            if (applicationProtocols == null)
+            {
+                return;
+            }
+
+            Debug.Assert(GetAlpnProtocolListSerializedLength(applicationProtocols) == buffer.Length);
+
+            int offset = 0;
+            foreach (SslApplicationProtocol protocol in applicationProtocols)
+            {
+                buffer[offset++] = (byte)protocol.Protocol.Length;
+                protocol.Protocol.Span.CopyTo(buffer.Slice(offset));
+                offset += protocol.Protocol.Length;
+                buffer[offset++] = 0;
             }
         }
     }
