@@ -868,7 +868,7 @@ CDAC_GLOBAL_STRING(RID, RID_STRING)
 CDAC_GLOBAL(GCInfoVersion, uint32, GCINFO_VERSION)
 
 CDAC_GLOBAL_POINTER(AppDomain, &AppDomain::m_pTheAppDomain)
-CDAC_GLOBAL_POINTER(SystemDomain, cdac_data<SystemDomain>::SystemDomain)
+CDAC_GLOBAL_POINTER(SystemDomain, cdac_data<SystemDomain>::SystemDomainPtr)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
