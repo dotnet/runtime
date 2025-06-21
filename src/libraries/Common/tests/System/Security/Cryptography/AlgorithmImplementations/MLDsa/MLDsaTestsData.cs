@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma warning disable SYSLIB5006
+
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Test.Cryptography;
 
@@ -38,6 +41,7 @@ namespace System.Security.Cryptography.Tests
         public byte[] Pkcs8EncryptedPrivateKey_Both => Convert.FromBase64String(Pkcs8EncryptedPrivateKey_Both_Base64);
         public byte[] EncryptionPasswordBytes => Encoding.UTF8.GetBytes(EncryptionPassword); // Assuming UTF-8 encoding
         public byte[] Certificate => Convert.FromBase64String(CertificateBase64);
+#if !EXCLUDE_PEM_ENCODING_FROM_TEST_DATA
         public string EncryptedPem_Seed => PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", Pkcs8EncryptedPrivateKey_Seed);
         public string EncryptedPem_Expanded => PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", Pkcs8EncryptedPrivateKey_Expanded);
         public string EncryptedPem_Both => PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", Pkcs8EncryptedPrivateKey_Both);
@@ -46,6 +50,7 @@ namespace System.Security.Cryptography.Tests
         public string PrivateKeyPem_Both => PemEncoding.WriteString("PRIVATE KEY", Pkcs8PrivateKey_Both);
         public string PublicKeyPem => PemEncoding.WriteString("PUBLIC KEY", Pkcs8PublicKey);
         public string CertificatePem => PemEncoding.WriteString("CERTIFICATE", Certificate);
+#endif
         public byte[] Pfx_Seed => Convert.FromBase64String(Pfx_Seed_Base64);
         public byte[] Pfx_Expanded => Convert.FromBase64String(Pfx_Expanded_Base64);
         public byte[] Pfx_Both => Convert.FromBase64String(Pfx_Both_Base64);
@@ -57,15 +62,15 @@ namespace System.Security.Cryptography.Tests
     public class MLDsaNistTestCase
     {
         public int NistTestCaseId { get; init; }
-        public MLDsaAlgorithm Algorithm { get; init; }
-        public bool ShouldPass { get; init; }
+        public required MLDsaAlgorithm Algorithm { get; init; }
+        public required bool ShouldPass { get; init; }
 
-        public string PublicKeyHex { get; init; }
-        public string SecretKeyHex { get; init; }
+        public required string PublicKeyHex { get; init; }
+        public required string SecretKeyHex { get; init; }
 
-        public string MessageHex { get; init; }
-        public string ContextHex { get; init; }
-        public string SignatureHex { get; init; }
+        public required string MessageHex { get; init; }
+        public required string ContextHex { get; init; }
+        public required string SignatureHex { get; init; }
 
         public byte[] PublicKey => PublicKeyHex.HexToByteArray();
         public byte[] SecretKey => SecretKeyHex.HexToByteArray();
@@ -104,6 +109,11 @@ namespace System.Security.Cryptography.Tests
                 yield return [nistTestCase];
             }
         }
+
+        public static MLDsaNistTestCase GetPassingNistTestCase(MLDsaAlgorithm algorithm)
+            => s_nistTestCases
+                .Where(tc => tc.Algorithm == algorithm && tc.ShouldPass)
+                .Single();
 
         // one failing and one passing test case for each algorithm, each failing for different reason
         private static MLDsaNistTestCase[] s_nistTestCases =

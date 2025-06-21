@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Cose.Tests
         internal override Task<byte[]> SignDetachedAsync(Stream detachedContent, CoseSigner signer, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, byte[]? associatedData = null)
             => CoseMultiSignMessage.SignDetachedAsync(detachedContent, signer, protectedHeaders, unprotectedHeaders, associatedData);
 
-        internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
+        internal override bool Verify(CoseMessage msg, IDisposable key, byte[] content, byte[]? associatedData = null)
         {
             Assert.True(!OnlySupportsDetachedContent || msg.Content == null);
             CoseMultiSignMessage multiSignMsg = Assert.IsType<CoseMultiSignMessage>(msg);
@@ -43,7 +43,22 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.Equal(1, signatures.Count);
 
             using Stream stream = GetTestStream(content);
-            return signatures[0].VerifyDetachedAsync(key, stream, associatedData).GetAwaiter().GetResult();
+            if (key is AsymmetricAlgorithm keyAsymmetricAlgorithm)
+            {
+                return signatures[0].VerifyDetachedAsync(keyAsymmetricAlgorithm, stream, associatedData).GetAwaiter().GetResult();
+            }
+            else
+            {
+#pragma warning disable SYSLIB5006
+                CoseKey coseKey = key switch
+                {
+                    MLDsa mldsa => CoseKey.FromKey(mldsa),
+                    _ => throw new NotImplementedException($"Unhandled key type: {key.GetType()}")
+                };
+#pragma warning restore SYSLIB5006
+
+                return signatures[0].VerifyDetachedAsync(coseKey, stream, associatedData).GetAwaiter().GetResult();
+            }
         }
     }
 
@@ -72,7 +87,7 @@ namespace System.Security.Cryptography.Cose.Tests
         internal override byte[] SignDetached(Stream detachedContent, CoseSigner signer, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, byte[]? associatedData = null)
             => CoseMultiSignMessage.SignDetached(detachedContent, signer, protectedHeaders, unprotectedHeaders, associatedData);
 
-        internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
+        internal override bool Verify(CoseMessage msg, IDisposable key, byte[] content, byte[]? associatedData = null)
         {
             Assert.True(!OnlySupportsDetachedContent || msg.Content == null);
             CoseMultiSignMessage multiSignMsg = Assert.IsType<CoseMultiSignMessage>(msg);
@@ -81,7 +96,23 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.Equal(1, signatures.Count);
 
             using Stream stream = GetTestStream(content);
-            return signatures[0].VerifyDetached(key, stream, associatedData);
+
+            if (key is AsymmetricAlgorithm keyAsymmetricAlgorithm)
+            {
+                return signatures[0].VerifyDetached(keyAsymmetricAlgorithm, stream, associatedData);
+            }
+            else
+            {
+#pragma warning disable SYSLIB5006
+                CoseKey coseKey = key switch
+                {
+                    MLDsa mldsa => CoseKey.FromKey(mldsa),
+                    _ => throw new NotImplementedException($"Unhandled key type: {key.GetType()}")
+                };
+#pragma warning restore SYSLIB5006
+
+                return signatures[0].VerifyDetached(coseKey, stream, associatedData);
+            }
         }
     }
 }
