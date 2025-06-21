@@ -3297,6 +3297,10 @@ namespace System
                     {
                         _string = _syntax.SchemeName + SchemeDelimiter;
                     }
+
+                    _info.Offset.Scheme = 0;
+                    _info.Offset.User = (ushort)_string.Length;
+                    _info.Offset.Host = (ushort)_string.Length;
                 }
 
                 _info.Offset.Path = (ushort)_string.Length;
