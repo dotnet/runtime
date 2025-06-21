@@ -78,7 +78,7 @@ internal sealed class HttpHeadersFuzzer : IFuzzer
                 {
                     foreach (string headerValue in values)
                     {
-                        Assert.False(headerValue.ContainsAny('\r', '\n'));
+                        Assert.False(headerValue.ContainsAny('\r', '\n', '\0'));
                     }
                 }
 
@@ -86,7 +86,7 @@ internal sealed class HttpHeadersFuzzer : IFuzzer
                 {
                     foreach (string headerValue in values)
                     {
-                        Assert.False(headerValue.ContainsAny('\r', '\n'));
+                        Assert.False(headerValue.ContainsAny('\r', '\n', '\0'));
                     }
                 }
             }
