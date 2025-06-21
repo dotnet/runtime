@@ -26,17 +26,17 @@
     // See ValidateWriteBarriers on how the sizes of these should be calculated
         .align 4
     LEAF_ENTRY JIT_WriteBarrier, _TEXT
-    .space (0xA8)
+    .space (0xC8)
     LEAF_END_MARKED JIT_WriteBarrier, _TEXT
 
         .align 4
     LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
-    .space (0xC0)
+    .space (0xE0)
     LEAF_END_MARKED JIT_CheckedWriteBarrier, _TEXT
 
         .align 4
     LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
-    .space (0xC4)
+    .space (0xE4)
     LEAF_END_MARKED JIT_ByRefWriteBarrier , _TEXT
 
     LEAF_ENTRY JIT_PatchedWriteBarrierLast, _TEXT
