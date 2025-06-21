@@ -961,18 +961,18 @@ namespace Internal.Metadata.NativeFormat.Writer
             var values = new List<string>();
             if ((value & SignatureCallingConvention.HasThis) == SignatureCallingConvention.HasThis)
             {
-                value &= ~SignatureCallingConvention.HasThis;
                 values.Add(nameof(SignatureCallingConvention.HasThis));
+                value &= ~SignatureCallingConvention.HasThis;
             }
             if ((value & SignatureCallingConvention.ExplicitThis) == SignatureCallingConvention.ExplicitThis)
             {
-                value &= ~SignatureCallingConvention.ExplicitThis;
                 values.Add(nameof(SignatureCallingConvention.ExplicitThis));
+                value &= ~SignatureCallingConvention.ExplicitThis;
             }
             if ((value & SignatureCallingConvention.UnmanagedCallingConventionMask) != default)
             {
-                value &= ~SignatureCallingConvention.UnmanagedCallingConventionMask;
                 values.Add((value & SignatureCallingConvention.UnmanagedCallingConventionMask).ToString());
+                value &= ~SignatureCallingConvention.UnmanagedCallingConventionMask;
             }
             values.Add(value.ToString());
             return string.Join(" | ", values);
