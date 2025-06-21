@@ -106,9 +106,10 @@ void* PalGetModuleHandleFromPointer(void* pointer);
 
 #if defined(HOST_X86) && defined(HOST_WINDOWS)
 #define STRINGIFY(s) #s
+#define LINKER_COMMENT(comment) _Pragma(STRINGIFY(comment))
 #define MANAGED_RUNTIME_EXPORT_ALTNAME(_method) STRINGIFY(/alternatename:_##_method=_method)
 #define MANAGED_RUNTIME_EXPORT(_name) \
-    __pragma(comment (linker, MANAGED_RUNTIME_EXPORT_ALTNAME(_name))) \
+    LINKER_COMMENT(comment (linker, MANAGED_RUNTIME_EXPORT_ALTNAME(_name))) \
     extern "C" void __cdecl _name();
 #define MANAGED_RUNTIME_EXPORT_NAME(_name) _name
 #define CDECL __cdecl
@@ -125,8 +126,6 @@ MANAGED_RUNTIME_EXPORT(AppendExceptionStackFrame)
 MANAGED_RUNTIME_EXPORT(GetSystemArrayEEType)
 MANAGED_RUNTIME_EXPORT(OnFirstChanceException)
 MANAGED_RUNTIME_EXPORT(OnUnhandledException)
-MANAGED_RUNTIME_EXPORT(IDynamicCastableIsInterfaceImplemented)
-MANAGED_RUNTIME_EXPORT(IDynamicCastableGetInterfaceImplementation)
 #ifdef FEATURE_OBJCMARSHAL
 MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalTryGetTaggedMemory)
 MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetIsTrackedReferenceCallback)
@@ -145,8 +144,6 @@ static const pfn c_classlibFunctions[] = {
     &MANAGED_RUNTIME_EXPORT_NAME(GetSystemArrayEEType),
     &MANAGED_RUNTIME_EXPORT_NAME(OnFirstChanceException),
     &MANAGED_RUNTIME_EXPORT_NAME(OnUnhandledException),
-    &MANAGED_RUNTIME_EXPORT_NAME(IDynamicCastableIsInterfaceImplemented),
-    &MANAGED_RUNTIME_EXPORT_NAME(IDynamicCastableGetInterfaceImplementation),
 #ifdef FEATURE_OBJCMARSHAL
     &MANAGED_RUNTIME_EXPORT_NAME(ObjectiveCMarshalTryGetTaggedMemory),
     &MANAGED_RUNTIME_EXPORT_NAME(ObjectiveCMarshalGetIsTrackedReferenceCallback),

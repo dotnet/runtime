@@ -4,6 +4,7 @@
 using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime;
 
@@ -138,9 +139,7 @@ namespace System.Runtime
                 {
                     // Dispatch not resolved through normal dispatch map, try using the IDynamicInterfaceCastable
                     // This will either give us the appropriate result, or throw.
-                    var pfnGetInterfaceImplementation = (delegate*<object, MethodTable*, ushort, IntPtr>)
-                        pInstanceType->GetClasslibFunction(ClassLibFunctionId.IDynamicCastableGetInterfaceImplementation);
-                    pTargetCode = pfnGetInterfaceImplementation(pObject, cellInfo.InterfaceType, cellInfo.InterfaceSlot);
+                    pTargetCode = IDynamicInterfaceCastable.GetDynamicInterfaceImplementation((IDynamicInterfaceCastable)pObject, cellInfo.InterfaceType, cellInfo.InterfaceSlot);
                     Diagnostics.Debug.Assert(pTargetCode != IntPtr.Zero);
                 }
                 return pTargetCode;

@@ -50,6 +50,21 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
+        private IEETypeNode GetInterfaceTypeNode(NodeFactory factory)
+        {
+            // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
+            // If this dispatch cell is ever used with an object that implements IDynamicIntefaceCastable, user code will
+            // see a RuntimeTypeHandle representing this interface.
+            if (factory.DevirtualizationManager.CanHaveDynamicInterfaceImplementations(_targetMethod.OwningType))
+            {
+                return factory.ConstructedTypeSymbol(_targetMethod.OwningType);
+            }
+            else
+            {
+                return factory.NecessaryTypeSymbol(_targetMethod.OwningType);
+            }
+        }
+
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             DependencyList result = new DependencyList();
@@ -63,10 +78,7 @@ namespace ILCompiler.DependencyAnalysis
 
             result.Add(factory.InitialInterfaceDispatchStub, "Initial interface dispatch stub");
 
-            // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
-            // If this dispatch cell is ever used with an object that implements IDynamicIntefaceCastable, user code will
-            // see a RuntimeTypeHandle representing this interface.
-            result.Add(factory.ConstructedTypeSymbol(_targetMethod.OwningType), "Interface type");
+            result.Add(GetInterfaceTypeNode(factory), "Interface type");
 
             return result;
         }
@@ -75,10 +87,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             objData.EmitPointerReloc(factory.InitialInterfaceDispatchStub);
 
-            // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
-            // If this dispatch cell is ever used with an object that implements IDynamicIntefaceCastable, user code will
-            // see a RuntimeTypeHandle representing this interface.
-            IEETypeNode interfaceType = factory.ConstructedTypeSymbol(_targetMethod.OwningType);
+            IEETypeNode interfaceType = GetInterfaceTypeNode(factory);
             if (factory.Target.SupportsRelativePointers)
             {
                 if (interfaceType.RepresentsIndirectionCell)

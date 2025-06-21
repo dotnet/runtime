@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices
     /// Implementation of this interface on a value type will be ignored. Only non-value types are allowed
     /// to participate in a type cast failure through this interface.
     /// </remarks>
-    public interface IDynamicInterfaceCastable
+    public partial interface IDynamicInterfaceCastable
     {
         /// <summary>
         /// Called when an implementing class instance is cast to an interface type that
