@@ -919,21 +919,6 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             switch (tree->AsIntrinsic()->gtIntrinsicName)
             {
-                case NI_System_Math_Max:
-                case NI_System_Math_Min:
-                case NI_System_Math_MaxNumber:
-                case NI_System_Math_MinNumber:
-                {
-                    assert(varTypeIsFloating(tree->gtGetOp1()));
-                    assert(varTypeIsFloating(tree->gtGetOp2()));
-                    assert(tree->gtGetOp1()->TypeIs(tree->TypeGet()));
-
-                    srcCount = BuildBinaryUses(tree->AsOp());
-                    assert(dstCount == 1);
-                    BuildDef(tree);
-                    break;
-                }
-
                 case NI_System_Math_Abs:
                 case NI_System_Math_Ceiling:
                 case NI_System_Math_Floor:
