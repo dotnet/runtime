@@ -9,9 +9,9 @@ using Xunit;
 
 public delegate void MyCallback();
 
-public class PInvokeRevPInvokeUnhandled
+public class ForeignUnhandled
 {
-    [DllImport("ForeignThreadRevPInvokeUnhandled")]
+    [DllImport("ForeignUnhandledNative")]
     public static extern void InvokeCallbackOnNewThread(MyCallback callback);
 
     [ThreadStatic]
@@ -30,7 +30,7 @@ public class PInvokeRevPInvokeUnhandled
     }
 
     // test-wide setup
-    static PInvokeRevPInvokeUnhandled()
+    static ForeignUnhandled()
     {
         AppDomain.CurrentDomain.UnhandledException += (_, _) =>
         {

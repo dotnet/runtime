@@ -20,10 +20,7 @@ bool IsRuntimeProviderEnabled(uint8_t level, uint64_t keyword)
 
 void ETW::GCLog::FireGcStart(ETW_GC_INFO * pGcInfo) { }
 void ETW::LoaderLog::ModuleLoad(HANDLE pModule) { }
-
-#ifdef FEATURE_ETW
 BOOL ETW::GCLog::ShouldTrackMovementForEtw() { return FALSE; }
 void ETW::GCLog::BeginMovedReferences(size_t * pProfilingContext) { }
 void ETW::GCLog::EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiNotification) { }
 void ETW::GCLog::WalkHeap() { }
-#endif // FEATURE_ETW

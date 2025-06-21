@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Security.Cryptography
 {
     internal sealed partial class MLDsaImplementation
     {
+        [SupportedOSPlatform("windows")]
         internal CngKey CreateEphemeralCng()
         {
             string bcryptBlobType =
@@ -17,19 +20,20 @@ namespace System.Security.Cryptography
                 _hasSeed ? CngKeyBlobFormat.PQDsaPrivateSeedBlob :
                 CngKeyBlobFormat.PQDsaPublicBlob;
 
-            ArraySegment<byte> keyBlob = Interop.BCrypt.BCryptExportKey(_key, bcryptBlobType);
-            CngKey key;
+            CngKey key = Interop.BCrypt.BCryptExportKey(
+                _key,
+                bcryptBlobType,
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
+                (ReadOnlySpan<byte> keyMaterial) => CngKey.Import(keyMaterial, cngBlobFormat));
+#else
+                (byte[] keyMaterial) => CngKey.Import(keyMaterial, cngBlobFormat));
+#endif
 
-            try
-            {
-                key = CngKey.Import(keyBlob, cngBlobFormat);
-            }
-            finally
-            {
-                CryptoPool.Return(keyBlob);
-            }
-
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
             key.ExportPolicy = CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport;
+#else
+            key.SetExportPolicy(CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
+#endif
             return key;
         }
     }

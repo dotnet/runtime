@@ -51,7 +51,7 @@ internal class AMD64Unwinder(Target target)
         TargetPointer controlPC = context.InstructionPointer;
 
         TargetPointer imageBase = _eman.GetUnwindInfoBaseAddress(cbh);
-        Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh, controlPC.Value));
+        Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh));
         if (functionEntry.EndAddress is null)
             return false;
         if (GetUnwindInfoHeader(imageBase + functionEntry.UnwindData) is not UnwindInfoHeader unwindInfo)
@@ -861,11 +861,11 @@ internal class AMD64Unwinder(Target target)
                         // the register than was pushed.
                         //
                         case UnwindCode.OpCodes.UWOP_PUSH_NONVOL:
-                        {
-                            SetRegister(ref context, unwindOp.OpInfo, _target.ReadPointer(context.Rsp));
-                            context.Rsp += 8;
-                            break;
-                        }
+                            {
+                                SetRegister(ref context, unwindOp.OpInfo, _target.ReadPointer(context.Rsp));
+                                context.Rsp += 8;
+                                break;
+                            }
 
                         //
                         // Allocate a large sized area on the stack.
@@ -874,25 +874,25 @@ internal class AMD64Unwinder(Target target)
                         // 16- or 32-bits.
                         //
                         case UnwindCode.OpCodes.UWOP_ALLOC_LARGE:
-                        {
-                            index++;
-                            UnwindCode nextUnwindOp = GetUnwindCode(unwindInfo, index);
-                            uint frameOffset = nextUnwindOp.FrameOffset;
-                            if (unwindOp.OpInfo != 0)
                             {
                                 index++;
-                                nextUnwindOp = GetUnwindCode(unwindInfo, index);
-                                frameOffset += (uint)(nextUnwindOp.FrameOffset << 16);
-                            }
-                            else
-                            {
-                                // The 16-bit form is scaled.
-                                frameOffset *= 8;
-                            }
+                                UnwindCode nextUnwindOp = GetUnwindCode(unwindInfo, index);
+                                uint frameOffset = nextUnwindOp.FrameOffset;
+                                if (unwindOp.OpInfo != 0)
+                                {
+                                    index++;
+                                    nextUnwindOp = GetUnwindCode(unwindInfo, index);
+                                    frameOffset += (uint)(nextUnwindOp.FrameOffset << 16);
+                                }
+                                else
+                                {
+                                    // The 16-bit form is scaled.
+                                    frameOffset *= 8;
+                                }
 
-                            context.Rsp += frameOffset;
-                            break;
-                        }
+                                context.Rsp += frameOffset;
+                                break;
+                            }
 
                         //
                         // Allocate a small sized area on the stack.
@@ -901,10 +901,10 @@ internal class AMD64Unwinder(Target target)
                         // allocation size (8 is the scale factor) minus 8.
                         //
                         case UnwindCode.OpCodes.UWOP_ALLOC_SMALL:
-                        {
-                            context.Rsp += (unwindOp.OpInfo * 8u) + 8u;
-                            break;
-                        }
+                            {
+                                context.Rsp += (unwindOp.OpInfo * 8u) + 8u;
+                                break;
+                            }
 
                         //
                         // Establish the frame pointer register.
@@ -912,11 +912,11 @@ internal class AMD64Unwinder(Target target)
                         // The operation information is not used.
                         //
                         case UnwindCode.OpCodes.UWOP_SET_FPREG:
-                        {
-                            context.Rsp = GetRegister(context, unwindInfo.FrameRegister);
-                            context.Rsp -= unwindInfo.FrameOffset * 16u;
-                            break;
-                        }
+                            {
+                                context.Rsp = GetRegister(context, unwindInfo.FrameRegister);
+                                context.Rsp -= unwindInfo.FrameOffset * 16u;
+                                break;
+                            }
 
                         //
                         // Establish the frame pointer register using a large size displacement.
@@ -926,19 +926,19 @@ internal class AMD64Unwinder(Target target)
                         // Unix only.
                         //
                         case UnwindCode.OpCodes.UWOP_SET_FPREG_LARGE:
-                        {
-                            UnwinderAssert(_unix);
-                            UnwinderAssert(unwindInfo.FrameOffset == 15);
-                            uint frameOffset = GetUnwindCode(unwindInfo, index + 1).FrameOffset;
-                            frameOffset += (uint)(GetUnwindCode(unwindInfo, index + 2).FrameOffset << 16);
-                            UnwinderAssert((frameOffset & 0xF0000000) == 0);
+                            {
+                                UnwinderAssert(_unix);
+                                UnwinderAssert(unwindInfo.FrameOffset == 15);
+                                uint frameOffset = GetUnwindCode(unwindInfo, index + 1).FrameOffset;
+                                frameOffset += (uint)(GetUnwindCode(unwindInfo, index + 2).FrameOffset << 16);
+                                UnwinderAssert((frameOffset & 0xF0000000) == 0);
 
-                            context.Rsp = GetRegister(context, unwindInfo.FrameRegister);
-                            context.Rsp -= frameOffset * 16;
+                                context.Rsp = GetRegister(context, unwindInfo.FrameRegister);
+                                context.Rsp -= frameOffset * 16;
 
-                            index += 2;
-                            break;
-                        }
+                                index += 2;
+                                break;
+                            }
 
                         //
                         // Save nonvolatile integer register on the stack using a
@@ -947,12 +947,12 @@ internal class AMD64Unwinder(Target target)
                         // The operation information is the register number.
                         //
                         case UnwindCode.OpCodes.UWOP_SAVE_NONVOL:
-                        {
-                            uint frameOffset = GetUnwindCode(unwindInfo, index + 1).FrameOffset * 8u;
-                            SetRegister(ref context, unwindOp.OpInfo, _target.ReadPointer(frameBase + frameOffset));
-                            index += 1;
-                            break;
-                        }
+                            {
+                                uint frameOffset = GetUnwindCode(unwindInfo, index + 1).FrameOffset * 8u;
+                                SetRegister(ref context, unwindOp.OpInfo, _target.ReadPointer(frameBase + frameOffset));
+                                index += 1;
+                                break;
+                            }
 
                         //
                         // Function epilog marker (ignored for prologue unwind).
@@ -998,20 +998,20 @@ internal class AMD64Unwinder(Target target)
                         // machine frame contains an error code or not.
                         //
                         case UnwindCode.OpCodes.UWOP_PUSH_MACHFRAME:
-                        {
-                            machineFrame = false;
-                            TargetPointer returnAddressPtr = context.Rsp;
-                            TargetPointer stackAddressPtr = context.Rsp + (3 * 8);
-                            if (unwindOp.OpInfo != 0)
                             {
-                                returnAddressPtr += (uint)_target.PointerSize;
-                                stackAddressPtr += (uint)_target.PointerSize;
-                            }
+                                machineFrame = false;
+                                TargetPointer returnAddressPtr = context.Rsp;
+                                TargetPointer stackAddressPtr = context.Rsp + (3 * 8);
+                                if (unwindOp.OpInfo != 0)
+                                {
+                                    returnAddressPtr += (uint)_target.PointerSize;
+                                    stackAddressPtr += (uint)_target.PointerSize;
+                                }
 
-                            context.Rip = _target.ReadPointer(returnAddressPtr);
-                            context.Rsp = _target.ReadPointer(stackAddressPtr);
-                            break;
-                        }
+                                context.Rip = _target.ReadPointer(returnAddressPtr);
+                                context.Rsp = _target.ReadPointer(stackAddressPtr);
+                                break;
+                            }
 
                         default:
                             Debug.Fail("Unexpected unwind operation code.");
@@ -1224,7 +1224,7 @@ internal class AMD64Unwinder(Target target)
             return null;
 
         TargetPointer targetImageBase = _eman.GetUnwindInfoBaseAddress(cbh);
-        Data.RuntimeFunction targetFunctionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh, controlPC.Value));
+        Data.RuntimeFunction targetFunctionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh));
 
         targetFunctionEntry = LookupPrimaryFunctionEntry(targetFunctionEntry, targetImageBase);
 

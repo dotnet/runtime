@@ -138,6 +138,9 @@
   <data name="Cryptography_AlgorithmNotSupported" xml:space="preserve">
     <value>Algorithm '{0}' is not supported on this platform.</value>
   </data>
+  <data name="Cryptography_ArgMLDsaRequiresMLDsaKey" xml:space="preserve">
+    <value>Keys used with the MLDsaCng algorithm must have an algorithm group of MLDsa.</value>
+  </data>
   <data name="Cryptography_AuthTagMismatch" xml:space="preserve">
     <value>The computed authentication tag did not match the input authentication tag.</value>
   </data>
