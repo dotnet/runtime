@@ -28308,6 +28308,22 @@ bool GenTree::OperIsVectorConditionalSelect() const
 }
 
 //------------------------------------------------------------------------
+// OperIsVectorFusedMultiplyOp: Is this a vector FusedMultiplyOp hwintrinsic
+//
+// Return Value:
+//    true if the node is a vector FusedMultiplyOp hwintrinsic
+//    otherwise; false
+//
+bool GenTree::OperIsVectorFusedMultiplyOp() const
+{
+    if (OperIsHWIntrinsic())
+    {
+        return AsHWIntrinsic()->OperIsVectorFusedMultiplyOp();
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
 // OperIsMemoryLoad: Does this HWI node have memory load semantics?
 //
 // Arguments:
