@@ -1931,7 +1931,7 @@ public:
 template<>
 struct cdac_data<SystemDomain>
 {
-    static constexpr PTR_SystemDomain* SystemDomain = &SystemDomain::m_pSystemDomain;
+    static constexpr PTR_SystemDomain* SystemDomainPtr = &SystemDomain::m_pSystemDomain;
 };
 #endif // DACCESS_COMPILE
 
