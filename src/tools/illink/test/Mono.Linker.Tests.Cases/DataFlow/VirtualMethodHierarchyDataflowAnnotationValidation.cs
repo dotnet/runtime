@@ -1047,8 +1047,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[ExpectedWarning ("IL2026", nameof (DerivedTypeWithRequires_BaseMethodWithRequires))]
 			[ExpectedWarning ("IL2026", nameof (DerivedTypeWithRequires_BaseMethodWithRequires.MethodWithRequires))]
-			[ExpectedWarning ("IL3050", nameof (DerivedTypeWithRequires_BaseMethodWithRequires), Tool.NativeAot | Tool.Analyzer, "")]
-			[ExpectedWarning ("IL3050", nameof (DerivedTypeWithRequires_BaseMethodWithRequires.MethodWithRequires), Tool.NativeAot | Tool.Analyzer, "")]
+			[ExpectedWarning ("IL3050", nameof (DerivedTypeWithRequires_BaseMethodWithRequires), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+			[ExpectedWarning ("IL3050", nameof (DerivedTypeWithRequires_BaseMethodWithRequires.MethodWithRequires), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
 			static void Test_DerivedTypeWithRequires_BaseMethodWithRequires ()
 			{
 				new DerivedTypeWithRequires_BaseMethodWithRequires ().MethodWithRequires (typeof (int));

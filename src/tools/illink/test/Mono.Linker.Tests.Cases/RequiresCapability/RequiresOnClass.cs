@@ -822,7 +822,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			[ExpectedWarning ("IL2026", "--TestDAMOnTypeAccessInRUCScope--")]
 			[ExpectedWarning ("IL2026", "DAMAnnotatedClass.DAMAnnotatedClass()")]
-			[ExpectedWarning ("IL3050", "DAMAnnotatedClass.DAMAnnotatedClass()", Tool.NativeAot | Tool.Analyzer, "")]
+			[ExpectedWarning ("IL3050", "DAMAnnotatedClass.DAMAnnotatedClass()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
 			public static void Test ()
 			{
 				TestDAMAccess ();
@@ -1211,7 +1211,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "DAMAnnotatedClass.DAMAnnotatedClass()")]
-			[ExpectedWarning ("IL3050", "DAMAnnotatedClass.DAMAnnotatedClass()", Tool.NativeAot | Tool.Analyzer, "")]
+			[ExpectedWarning ("IL3050", "DAMAnnotatedClass.DAMAnnotatedClass()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
 			public static void Test ()
 			{
 				TestDAMAccess ();
@@ -1238,7 +1238,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		[AttributeWithRequires (PropertyOnAttribute = 42)]
 		[ExpectedWarning ("IL2026", "AttributeWithRequires.AttributeWithRequires()")]
-		[ExpectedWarning ("IL3050", "AttributeWithRequires.AttributeWithRequires()", Tool.Analyzer | Tool.NativeAot, "")]
+		[ExpectedWarning ("IL3050", "AttributeWithRequires.AttributeWithRequires()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
 		static void KeepFieldOnAttributeInner () { }
 
 		static void KeepFieldOnAttribute ()
@@ -1436,7 +1436,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--ConstClassWithRequires--", nameof (ConstClassWithRequires.Method))]
-			[ExpectedWarning ("IL3050", "--ConstClassWithRequires--", nameof (ConstClassWithRequires.Method), Tool.Analyzer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "--ConstClassWithRequires--", nameof (ConstClassWithRequires.Method), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
 			static void TestClassWithRequires ()
 			{
 				var a = ConstClassWithRequires.Message;
@@ -1455,7 +1455,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--ConstClassWithRequiresUsingField--", nameof (ConstClassWithRequiresUsingField.Method))]
-			[ExpectedWarning ("IL3050", "--ConstClassWithRequiresUsingField--", nameof (ConstClassWithRequiresUsingField.Method), Tool.Analyzer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "--ConstClassWithRequiresUsingField--", nameof (ConstClassWithRequiresUsingField.Method), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
 			static void TestClassUsingFieldInAttribute ()
 			{
 				ConstClassWithRequiresUsingField.Method ();
