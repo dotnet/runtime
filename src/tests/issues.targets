@@ -1074,13 +1074,6 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- NativeAOT Linux specific -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'linux'">
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/**">
-            <Issue>https://github.com/dotnet/runtime/issues/116686</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
     <!-- NativeAOT arm32 specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'arm'">
         <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/GetTotalAllocatedBytes/**">

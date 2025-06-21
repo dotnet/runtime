@@ -34,11 +34,12 @@ internal sealed class FrameIterator
 
         HijackFrame,
 
+        TailCallFrame,
+
         /* Other Frame Types not handled by the iterator */
         UnmanagedToManagedFrame,
         ComMethodFrame,
         ComPrestubMethodFrame,
-        TailCallFrame,
         ProtectValueClassFrame,
         DebuggerClassInitMarkFrame,
         DebuggerExitFrame,
@@ -123,6 +124,10 @@ internal sealed class FrameIterator
             case FrameType.HijackFrame:
                 Data.HijackFrame hijackFrame = target.ProcessedData.GetOrAdd<Data.HijackFrame>(CurrentFrame.Address);
                 GetFrameHandler(context).HandleHijackFrame(hijackFrame);
+                return;
+            case FrameType.TailCallFrame:
+                Data.TailCallFrame tailCallFrame = target.ProcessedData.GetOrAdd<Data.TailCallFrame>(CurrentFrame.Address);
+                GetFrameHandler(context).HandleTailCallFrame(tailCallFrame);
                 return;
             default:
                 // Unknown Frame type. This could either be a Frame that we don't know how to handle,
