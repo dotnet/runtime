@@ -144,9 +144,12 @@ mono_regstate_assign (MonoRegState *rs)
 	/* The regalloc may fail if fp and simd logical regbanks share the same physical reg bank and
 	 * if the values here are not the same.
 	 */
+/* s390x has unequal regbank masks for vector and floats*/
+#ifndef TARGET_S390X
 	g_assert(regbank_callee_regs [MONO_REG_SIMD] == regbank_callee_regs [MONO_REG_DOUBLE]);
-	g_assert(regbank_callee_saved_regs [MONO_REG_SIMD] == regbank_callee_saved_regs [MONO_REG_DOUBLE]);
 	g_assert(regbank_size [MONO_REG_SIMD] == regbank_size [MONO_REG_DOUBLE]);
+#endif
+	g_assert(regbank_callee_saved_regs [MONO_REG_SIMD] == regbank_callee_saved_regs [MONO_REG_DOUBLE]);
 #endif
 
 	if (rs->next_vreg > rs->vassign_size) {
@@ -221,8 +224,9 @@ mono_regstate_alloc_general (MonoRegState *rs, regmask_t allow, int bank)
 			if (mirrored_bank == -1)
 				return i;
 
-			rs->free_mask [mirrored_bank] = rs->free_mask [bank];
-			return i;
+			rs->free_mask [mirrored_bank] = (((MONO_ARCH_CALLEE_FREGS & MONO_ARCH_CALLEE_XREGS) & rs->free_mask [bank])
+                                |((MONO_ARCH_CALLEE_FREGS ^ MONO_ARCH_CALLEE_XREGS) & rs->free_mask [mirrored_bank]));
+            return i;
 		}
 	}
 	return -1;
@@ -240,7 +244,8 @@ mono_regstate_free_general (MonoRegState *rs, int reg, int bank)
 		mirrored_bank = get_mirrored_bank (bank);
 		if (mirrored_bank == -1)
 			return;
-		rs->free_mask [mirrored_bank] = rs->free_mask [bank];
+        rs->free_mask [mirrored_bank] = (((MONO_ARCH_CALLEE_FREGS & MONO_ARCH_CALLEE_XREGS) & rs->free_mask [bank])
+                                |((MONO_ARCH_CALLEE_FREGS ^ MONO_ARCH_CALLEE_XREGS) & rs->free_mask [mirrored_bank]));
 		rs->symbolic [mirrored_bank][reg] = 0;
 	}
 }
@@ -1081,8 +1086,8 @@ assign_reg (MonoCompile *cfg, MonoRegState *rs, int reg, int hreg, int bank)
 		/* Make sure the other logical reg bank that this bank shares
 		 * a single hard reg bank knows that this hard reg is not free.
 		 */
-		rs->free_mask [mirrored_bank] = rs->free_mask [bank];
-
+        rs->free_mask [mirrored_bank] = (((MONO_ARCH_CALLEE_FREGS & MONO_ARCH_CALLEE_XREGS) & rs->free_mask [bank])
+                                |((MONO_ARCH_CALLEE_FREGS ^ MONO_ARCH_CALLEE_XREGS) & rs->free_mask [mirrored_bank]));
 		/* Mark the other logical bank that the this bank shares
 		 * a single hard reg bank with as mirrored.
 		 */
