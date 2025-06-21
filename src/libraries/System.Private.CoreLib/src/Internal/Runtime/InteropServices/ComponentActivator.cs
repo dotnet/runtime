@@ -350,7 +350,9 @@ namespace Internal.Runtime.InteropServices
             {
                 Delegate d = Delegate.CreateDelegate(delegateType, type, methodName)!;
 
+#pragma warning disable CA1416 // This call site is reachable on all platforms.
                 functionPtr = Marshal.GetFunctionPointerForDelegate(d);
+#pragma warning restore CA1416
 
                 lock (s_delegates)
                 {
