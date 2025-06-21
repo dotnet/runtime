@@ -27,6 +27,22 @@ struct REGDISPLAY
     PTR_uintptr_t pR13;
     PTR_uintptr_t pR14;
     PTR_uintptr_t pR15;
+    PTR_uintptr_t pR16;
+    PTR_uintptr_t pR17;
+    PTR_uintptr_t pR18;
+    PTR_uintptr_t pR19;
+    PTR_uintptr_t pR20;
+    PTR_uintptr_t pR21;
+    PTR_uintptr_t pR22;
+    PTR_uintptr_t pR23;
+    PTR_uintptr_t pR24;
+    PTR_uintptr_t pR25;
+    PTR_uintptr_t pR26;
+    PTR_uintptr_t pR27;
+    PTR_uintptr_t pR28;
+    PTR_uintptr_t pR29;
+    PTR_uintptr_t pR30;
+    PTR_uintptr_t pR31;
 #endif // TARGET_AMD64
 
     uintptr_t   SP;

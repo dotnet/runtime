@@ -256,6 +256,29 @@ typedef struct DECLSPEC_ALIGN(16) {
     DWORD64 R14;
     DWORD64 R15;
 
+    //EGPRs for APX
+    union {
+        struct {
+            DWORD64 R16;
+            DWORD64 R17;
+            DWORD64 R18;
+            DWORD64 R19;
+            DWORD64 R20;
+            DWORD64 R21;
+            DWORD64 R22;
+            DWORD64 R23;
+            DWORD64 R24;
+            DWORD64 R25;
+            DWORD64 R26;
+            DWORD64 R27;
+            DWORD64 R28;
+            DWORD64 R29;
+            DWORD64 R30;
+            DWORD64 R31;
+        };
+        DWORD64 R[16];
+    };
+
     DWORD64 Rip;
 
     union {
