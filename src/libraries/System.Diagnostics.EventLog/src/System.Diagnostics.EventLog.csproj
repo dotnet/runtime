@@ -137,7 +137,7 @@ System.Diagnostics.EventLog</PackageDescription>
                       ReferenceOutputAssembly="false"
                       OutputItemType="TfmRuntimeSpecificPackageFile"
                       PrivateAssets="true" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
+    <ProjectReference Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '10.0'))" Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
   </ItemGroup>
 
 </Project>

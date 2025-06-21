@@ -71,4 +71,29 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
         _context.Context.Eip = evalContext.Context.Eip;
         _context.Context.Esp = evalContext.Context.Esp;
     }
+
+    public override void HandleFuncEvalFrame(FuncEvalFrame funcEvalFrame)
+    {
+        Data.DebuggerEval debuggerEval = _target.ProcessedData.GetOrAdd<Data.DebuggerEval>(funcEvalFrame.DebuggerEvalPtr);
+
+        // No context to update if we're doing a func eval from within exception processing.
+        if (debuggerEval.EvalDuringException)
+        {
+            return;
+        }
+
+        // Unlike other platforms, X86 doesn't copy the entire context
+        ContextHolder<X86Context> evalContext = new ContextHolder<X86Context>();
+        evalContext.ReadFromAddress(_target, debuggerEval.TargetContext);
+
+        _context.Context.Edi = evalContext.Context.Edi;
+        _context.Context.Esi = evalContext.Context.Esi;
+        _context.Context.Ebx = evalContext.Context.Ebx;
+        _context.Context.Edx = evalContext.Context.Edx;
+        _context.Context.Ecx = evalContext.Context.Ecx;
+        _context.Context.Eax = evalContext.Context.Eax;
+        _context.Context.Ebp = evalContext.Context.Ebp;
+        _context.Context.Eip = evalContext.Context.Eip;
+        _context.Context.Esp = evalContext.Context.Esp;
+    }
 }
