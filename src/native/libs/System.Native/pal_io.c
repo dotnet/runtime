@@ -1812,36 +1812,6 @@ int32_t SystemNative_CanGetHiddenFlag(void)
 #endif
 }
 
-int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus)
-{
-#ifdef __sun
-    char statusFilename[64];
-    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/psinfo", pid);
-
-    intptr_t fd;
-    while ((fd = open(statusFilename, O_RDONLY)) < 0 && errno == EINTR);
-    if (fd < 0)
-    {
-        return 0;
-    }
-
-    psinfo_t status;
-    int result = Common_Read(fd, &status, sizeof(psinfo_t));
-    close(fd);
-    if (result >= 0)
-    {
-        processStatus->ResidentSetSize = status.pr_rssize * 1024; // pr_rssize is in Kbytes
-        return 1;
-    }
-
-    return 0;
-#else
-    (void)pid, (void)processStatus;
-    errno = ENOTSUP;
-    return -1;
-#endif // __sun
-}
-
 int32_t SystemNative_PRead(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset)
 {
     assert(buffer != NULL);
