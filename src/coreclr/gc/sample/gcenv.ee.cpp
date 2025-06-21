@@ -164,6 +164,10 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     return false;
 }
 
+void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
+{
+}
+
 bool GCToEEInterface::IsPreemptiveGCDisabled()
 {
     Thread* pThread = ::GetThread();
