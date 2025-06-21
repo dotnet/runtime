@@ -56,7 +56,7 @@ This contract depends on the following descriptors:
 | `HijackFrame` | `HijackArgsPtr` | Pointer to the Frame's stored HijackArgs |
 | `HijackArgs` (amd64) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
 | `HijackArgs` (amd64 Windows) | `Rsp` | Saved stack pointer |
-| `HijackArgs` (arm64) | For each register `r` saved in HijackArgs, `r` | Register names associated with stored register values |
+| `HijackArgs` (arm64/x86) | For each register `r` saved in HijackArgs, `r` | Register names associated with stored register values |
 | `CalleeSavedRegisters` | For each callee saved register `r`, `r` | Register names associated with stored register values |
 | `TailCallFrame` (x86 Windows) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
 | `TailCallFrame` (x86 Windows) | `ReturnAddress` | Frame's stored instruction pointer |
