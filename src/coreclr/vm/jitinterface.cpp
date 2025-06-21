@@ -8598,6 +8598,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     }
 
     bool isArrayImplicitInterface = false;
+    bool isArrayInterface = false;
 
     if (pBaseMT->IsInterface())
     {
@@ -8623,6 +8624,8 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         //
         if (pObjMT->IsArray())
         {
+            bool isArrayInterface = true;
+
             // Does the array implicitly implement this interface?
             //
             isArrayImplicitInterface = pBaseMT->HasInstantiation() && IsImplicitInterfaceOfSZArray(pBaseMT);
@@ -8789,10 +8792,14 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // with default methods.
         _ASSERTE(!pDevirtMD->HasClassInstantiation());
     }
+    else if (!isArrayInterface)
+    {
+        pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
+    }
 
     // Success! Pass back the results.
     //
-    if (isArrayImplicitInterface)
+    if (isArrayInterface)
     {
         // Note if array devirtualization produced an instantiation stub
         // so jit can try and inline it.
@@ -8803,7 +8810,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     }
     else
     {
-        pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
         info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
         info->isInstantiatingStub = false;
         info->wasArrayInterfaceDevirt = false;
