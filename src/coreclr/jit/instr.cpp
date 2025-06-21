@@ -120,6 +120,13 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
 
     const emitter* emit = GetEmitter();
 
+    if (id->idIsApxPpxContextSet())
+    {
+        sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "%sp", insName);
+        retbuf = buf[curBuf];
+        return retbuf;
+    }
+
     if (emit->IsVexOrEvexEncodableInstruction(ins))
     {
         if (!emit->IsBMIInstruction(ins) && !emit->IsKInstruction(ins))
@@ -2709,6 +2716,21 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
 
     regSet.verifyRegUsed(reg);
 }
+
+#if defined(TARGET_AMD64)
+//------------------------------------------------------------------------
+// instGen_Push2Pop2Ppx: Generate push2/pop2 with ppx hint on.
+//
+// Arguments:
+//    ins - The instruction to generate (push or pop).
+//    reg1 - The first register to push/pop.
+//    reg2 - The second register to push/pop.
+//
+void CodeGen::instGen_Push2Pop2Ppx(instruction ins, regNumber reg1, regNumber reg2)
+{
+    GetEmitter()->emitIns_R_R(ins, EA_PTRSIZE, reg1, reg2, (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
+}
+#endif // defined(TARGET_AMD64)
 
 /*****************************************************************************/
 /*****************************************************************************/

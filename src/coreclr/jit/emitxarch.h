@@ -571,6 +571,22 @@ void SetEvexNfIfNeeded(instrDesc* id, insOpts instOptions)
 }
 
 //------------------------------------------------------------------------
+// SetApxPpxIfNeeded: set APX.ppx on instrDesc
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetApxPpxIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_APX_ppx_MASK) != 0)
+    {
+        assert(HasApxPpx(id->idIns()));
+        id->idSetApxPpxContext();
+    }
+}
+
+//------------------------------------------------------------------------
 // SetEvexDFVIfNeeded: set default flag values on an instrDesc
 //
 // Arguments:

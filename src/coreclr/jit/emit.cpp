@@ -3783,6 +3783,31 @@ const IS_INFO emitter::emitGetSchedInfo(insFormat insFmt)
     assert(!"Unsupported insFmt");
     return IS_NONE;
 }
+
+//------------------------------------------------------------------------
+// HasApxPpx: Check if the instruction has PPX feature support.
+// This helps differentiate between _idApxPpxContext and _idNoApxEvexXPromotion
+// since we use the same bit to indicate both features.
+//
+// Arguments:
+//    ins - instruction for which to check PPX support
+//
+// Return Value:
+//    true if the instruction has PPX support, false otherwise.
+//
+bool emitter::HasApxPpx(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_push:
+        case INS_pop:
+        case INS_push2:
+        case INS_pop2:
+            return true;
+        default:
+            return false;
+    }
+}
 #endif // TARGET_XARCH
 
 //------------------------------------------------------------------------
