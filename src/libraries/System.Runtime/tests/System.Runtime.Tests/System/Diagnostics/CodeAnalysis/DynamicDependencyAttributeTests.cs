@@ -3,6 +3,8 @@
 
 using Xunit;
 
+#pragma warning disable CS0618
+
 namespace System.Diagnostics.CodeAnalysis.Tests
 {
     public class DynamicDependencyAttributeTests
@@ -101,3 +103,4 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         }
     }
 }
+#pragma warning restore CS0618
