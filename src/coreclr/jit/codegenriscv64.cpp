@@ -1014,6 +1014,104 @@ void CodeGen::genCodeForIncSaturate(GenTree* tree)
     genProduceReg(tree);
 }
 
+// Generate code for multiplications by power of 2.
+void CodeGen::genCodeForMul(GenTreeOp* treeNode)
+{
+    assert(treeNode->OperIs(GT_MUL));
+
+    GenTree* op1 = treeNode->gtGetOp1();
+    GenTree* op2 = treeNode->gtGetOp2();
+
+    if (!op2->IsIntegralConst() || !op2->isContained())
+    {
+        genCodeForBinary(treeNode);
+        return;
+    }
+
+    GenTreeIntConCommon* intConst = op2->AsIntConCommon();
+
+    emitter*   emit        = GetEmitter();
+    emitAttr   attr        = emitActualTypeSize(treeNode);
+    const bool needCheckOv = treeNode->gtOverflowEx();
+    assert(intConst != nullptr);
+
+    ssize_t      imm        = intConst->IconValue();
+    unsigned     isUnsigned = (treeNode->gtFlags & GTF_UNSIGNED);
+    regNumber    tempReg    = needCheckOv ? internalRegisters.Extract(treeNode) : REG_NA;
+    regNumber    dstReg     = treeNode->GetRegNum();
+    regNumber    src1Reg    = op1->GetRegNum();
+
+    unsigned int shiftAmount = genLog2(static_cast<uint64_t>(static_cast<size_t>(imm)));
+
+    if (!needCheckOv && !(treeNode->gtFlags & GTF_UNSIGNED))
+    {
+        emit->emitIns_R_R_I(INS_slli, attr, dstReg, src1Reg, shiftAmount);
+    }
+    else
+    {
+        if (needCheckOv)
+        {
+            assert(tempReg != dstReg);
+            assert(tempReg != src1Reg);
+
+            assert(REG_RA != dstReg);
+            assert(REG_RA != src1Reg);
+            if (isUnsigned)
+            {
+                if (attr == EA_4BYTE)
+                {
+                    emit->emitIns_R_R_I(INS_srli, attr, tempReg, src1Reg, 32 - shiftAmount);
+                }
+                else
+                {
+                    emit->emitIns_R_R_I(INS_srli, attr, tempReg, src1Reg, 64 - shiftAmount);
+                }
+            }
+            else
+            {
+                if (attr == EA_4BYTE)
+                {
+                    emit->emitIns_R_R_I(INS_srai, attr, tempReg, src1Reg, 32 - shiftAmount);
+                }
+                else
+                {
+                    emit->emitIns_R_R_I(INS_srai, attr, tempReg, src1Reg, 64 - shiftAmount);
+                }
+            }
+        }
+
+        // n * n bytes will storoe n bytes result
+        emit->emitIns_R_R_I(INS_slli, attr, dstReg, src1Reg, shiftAmount);
+    
+        if (isUnsigned)
+        {
+            if (attr == EA_4BYTE)
+            {
+                emit->emitIns_R_R_I(INS_slli, EA_8BYTE, dstReg, dstReg, 32);
+                emit->emitIns_R_R_I(INS_srli, EA_8BYTE, dstReg, dstReg, 32);
+            }
+        }
+
+        if (needCheckOv)
+        {
+            if (isUnsigned)
+            {
+                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg);
+            }
+            else
+            {
+                regNumber tempReg2 = internalRegisters.Extract(treeNode);
+                assert(tempReg2 != dstReg);
+                assert(tempReg2 != src1Reg);
+                size_t imm = (EA_SIZE(attr) == EA_8BYTE) ? 63 : 31;
+                emit->emitIns_R_R_I(EA_SIZE(attr) == EA_8BYTE ? INS_srai : INS_sraiw, attr, tempReg2, dstReg,
+                        imm);
+                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, tempReg2);
+            }
+        }
+    }
+}
+
 // Generate code to get the high N bits of a N*N=2N bit multiplication result
 void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 {
@@ -4153,9 +4251,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_ADD:
         case GT_SUB:
-        case GT_MUL:
             genConsumeOperands(treeNode->AsOp());
             genCodeForBinary(treeNode->AsOp());
+            break;
+            
+        case GT_MUL:
+            genConsumeOperands(treeNode->AsOp());
+            genCodeForMul(treeNode->AsOp());
             break;
 
         case GT_LSH:
