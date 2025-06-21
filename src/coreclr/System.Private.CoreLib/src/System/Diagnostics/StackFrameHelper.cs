@@ -94,43 +94,6 @@ namespace System.Diagnostics
         internal void InitializeSourceInfo(bool fNeedFileInfo, Exception? exception)
         {
             StackTrace.GetStackFramesInternal(this, fNeedFileInfo, exception);
-
-            if (!fNeedFileInfo)
-                return;
-
-            // Check if this function is being reentered because of an exception in the code below
-            if (t_reentrancy > 0)
-                return;
-
-            t_reentrancy++;
-            try
-            {
-                if (s_stackTraceSymbolsCache == null)
-                {
-                    // We could race with another thread. It doesn't matter if we win or lose, the losing instance will be GC'ed and all threads including this one will
-                    // use the winning instance
-                    Interlocked.CompareExchange(ref s_stackTraceSymbolsCache, CreateStackTraceSymbols(), null);
-                }
-
-                for (int index = 0; index < iFrameCount; index++)
-                {
-                    // If there was some reason not to try get the symbols from the portable PDB reader like the module was
-                    // ENC or the source/line info was already retrieved, the method token is 0.
-                    if (rgiMethodToken![index] != 0)
-                    {
-                        GetSourceLineInfo(s_stackTraceSymbolsCache!, rgAssembly![index], rgAssemblyPath![index]!, rgLoadedPeAddress![index], rgiLoadedPeSize![index], rgiIsFileLayout![index],
-                            rgInMemoryPdbAddress![index], rgiInMemoryPdbSize![index], rgiMethodToken![index],
-                            rgiILOffset![index], out rgFilename![index], out rgiLineNumber![index], out rgiColumnNumber![index]);
-                    }
-                }
-            }
-            catch
-            {
-            }
-            finally
-            {
-                t_reentrancy--;
-            }
         }
 
         public MethodBase? GetMethodBase(int i)
@@ -150,11 +113,88 @@ namespace System.Diagnostics
             return RuntimeType.GetMethodBase(mhReal);
         }
 
+        private void InitializeFrameSourceInfo(int index)
+        {
+            // rgiMethodToken is null if file info wasn't requested when collecting the stack trace.
+            if (rgiMethodToken == null)
+                return;
+
+            // We use rgiMethodToken[i] to indicate whether we've initialized the info for this frame.
+            // If the native code set it to zero, then information is already initialized from the native
+            // symbol reader. If the native code set it to non-zero, then we're supposed to use the managed
+            // symbol reader to try to resolve debug information.
+            //
+            // This is the only purpose the field has, however, so we can assign it to zero AFTER resolving
+            // symbol information to indicate that it's already been resolved without causing any issues
+            // elsewhere.
+            if (Volatile.Read(ref rgiMethodToken[index]) == 0)
+                return;
+
+            // Check if this function is being reentered because of an exception in the code below
+            if (t_reentrancy > 0)
+                return;
+
+            t_reentrancy++;
+            try
+            {
+                if (s_stackTraceSymbolsCache == null)
+                {
+                    // We could race with another thread. It doesn't matter if we win or lose, the losing instance will be GC'ed and all threads including this one will
+                    // use the winning instance
+                    Interlocked.CompareExchange(ref s_stackTraceSymbolsCache, CreateStackTraceSymbols(), null);
+                }
+
+                GetSourceLineInfo(s_stackTraceSymbolsCache!, rgAssembly![index], rgAssemblyPath![index]!, rgLoadedPeAddress![index], rgiLoadedPeSize![index], rgiIsFileLayout![index],
+                    rgInMemoryPdbAddress![index], rgiInMemoryPdbSize![index], rgiMethodToken![index],
+                    rgiILOffset![index], out string? filename, out int lineNumber, out int columnNumber);
+
+                rgFilename![index] = filename;
+                rgiLineNumber![index] = lineNumber;
+                rgiColumnNumber![index] = columnNumber;
+
+                // Make sure we mark down that debug information for this frame was resolved
+                Volatile.Write(ref rgiMethodToken[index], 0);
+            }
+            catch
+            {
+            }
+            finally
+            {
+                t_reentrancy--;
+            }
+        }
+
         public int GetOffset(int i) { return rgiOffset![i]; }
         public int GetILOffset(int i) { return rgiILOffset![i]; }
-        public string? GetFilename(int i) { return rgFilename?[i]; }
-        public int GetLineNumber(int i) { return rgiLineNumber == null ? 0 : rgiLineNumber[i]; }
-        public int GetColumnNumber(int i) { return rgiColumnNumber == null ? 0 : rgiColumnNumber[i]; }
+        public string? GetFilename(int i)
+        {
+            InitializeFrameSourceInfo(i);
+            return rgFilename?[i];
+        }
+        public int GetLineNumber(int i)
+        {
+            if (rgiLineNumber == null)
+            {
+                return 0;
+            }
+            else
+            {
+                InitializeFrameSourceInfo(i);
+                return rgiLineNumber[i];
+            }
+        }
+        public int GetColumnNumber(int i)
+        {
+            if (rgiColumnNumber == null)
+            {
+                return 0;
+            }
+            else
+            {
+                InitializeFrameSourceInfo(i);
+                return rgiColumnNumber[i];
+            }
+        }
 
         public bool IsLastFrameFromForeignExceptionStackTrace(int i)
         {
