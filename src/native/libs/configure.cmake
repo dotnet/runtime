@@ -324,6 +324,12 @@ check_struct_has_member(
     "sys/mount.h"
     HAVE_STATVFS_FSTYPENAME)
 
+check_struct_has_member(
+    "struct statvfs"
+    f_basetype
+    "sys/statvfs.h"
+    HAVE_STATVFS_BASETYPE)
+
 set(CMAKE_EXTRA_INCLUDE_FILES dirent.h)
 
 # statfs: Find whether this struct exists
