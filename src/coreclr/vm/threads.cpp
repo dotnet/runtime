@@ -865,11 +865,8 @@ void DestroyThread(Thread *th)
         th->UnmarkThreadForAbort();
     }
 
-    if (g_fEEShutDown == 0)
-    {
-        th->SetThreadState(Thread::TS_ReportDead);
-        th->OnThreadTerminate(FALSE);
-    }
+    th->SetThreadState(Thread::TS_ReportDead);
+    th->OnThreadTerminate(FALSE);
 }
 
 //-------------------------------------------------------------------------
@@ -2812,7 +2809,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         CooperativeCleanup();
     }
 
-    if (g_fEEShutDown != 0)
+    if (g_fEEShutDown)
     {
         // We have started shutdown.  Not safe to touch CLR state.
         return;

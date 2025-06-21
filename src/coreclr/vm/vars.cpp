@@ -151,9 +151,6 @@ GVAL_IMPL_INIT(DWORD, g_externalMethodFixupTraceActiveCount, 0);
 #endif // DEBUGGING_SUPPORTED
 
 #if defined(PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPPORTED)
-// Profiling support
-HINSTANCE           g_pDebuggerDll = NULL;
-
 GVAL_IMPL(ProfControlBlock, g_profControlBlock);
 #endif // defined(PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPPORTED)
 
@@ -183,7 +180,11 @@ GVAL_IMPL(bool, g_fProcessDetach);
 GVAL_IMPL_INIT(bool, g_metadataUpdatesApplied, false);
 #endif
 
-GVAL_IMPL_INIT(DWORD, g_fEEShutDown, 0);
+#ifdef DACCESS_COMPILE
+GVAL_IMPL(DWORD, g_fEEShutDown);
+#else
+GVAL_IMPL(Volatile<DWORD>, g_fEEShutDown);
+#endif
 
 #ifndef TARGET_UNIX
 GVAL_IMPL(SIZE_T, g_runtimeLoadedBaseAddress);

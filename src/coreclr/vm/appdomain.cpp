@@ -3430,7 +3430,7 @@ void AppDomain::RaiseExitProcessEvent()
     STATIC_CONTRACT_GC_TRIGGERS;
 
     // Only finalizer thread during shutdown can call this function.
-    _ASSERTE ((g_fEEShutDown&ShutDown_Finalize1) && GetThread() == FinalizerThread::GetFinalizerThread());
+    _ASSERTE (g_fEEShutDown && (GetThread() == FinalizerThread::GetFinalizerThread()));
 
     _ASSERTE (GetThread()->PreemptiveGCDisabled());
 

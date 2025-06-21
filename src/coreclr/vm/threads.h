@@ -1395,9 +1395,8 @@ public:
         WRAPPER_NO_CONTRACT;
 #ifdef PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled()
-                 || CORProfilerPresent() ||    // This added to allow profiler to use GetILToNativeMapping
+                 || CORProfilerPresent());  // This added to allow profiler to use GetILToNativeMapping
                                             // while in preemptive GC mode
-                 (g_fEEShutDown & (ShutDown_Finalize2 | ShutDown_Profiler)) == ShutDown_Finalize2);
 #else // PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled());
 #endif // PROFILING_SUPPORTED
@@ -1408,10 +1407,9 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 #ifdef PROFILING_SUPPORTED
-        _ASSERTE(PreemptiveGCDisabled() ||
-                 CORProfilerPresent() ||    // This added to allow profiler to use GetILToNativeMapping
+        _ASSERTE(PreemptiveGCDisabled()
+                 || CORProfilerPresent());  // This added to allow profiler to use GetILToNativeMapping
                                             // while in preemptive GC mode
-                 (g_fEEShutDown & (ShutDown_Finalize2 | ShutDown_Profiler)) == ShutDown_Finalize2);
 #else // PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled());
 #endif // PROFILING_SUPPORTED
