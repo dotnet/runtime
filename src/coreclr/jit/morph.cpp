@@ -10938,6 +10938,20 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 //
 GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
+    // It is important that this follows the general flow of fgMorphSmpOp
+    // * Perform required preorder processing
+    // * Process the operands, in order, if any
+    // * Perform required postorder morphing
+    // * Perform optional postorder morphing if optimizing
+    //
+    // It is also important that similar checks be done where relevant, so
+    // if fgMorphSmpOp does a check for fgGlobalMorph or OptimizationEnabled
+    // so should this method.
+
+    // ------------------------------------------------------------------------
+    // First do any PRE-ORDER processing
+    //
+
     bool allArgsAreConst            = true;
     bool canBenefitFromConstantProp = false;
     bool hasImmediateOperand        = false;
@@ -10954,6 +10968,18 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
     {
         hasImmediateOperand = true;
     }
+
+#ifdef TARGET_XARCH
+    if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division)
+    {
+        fgAddCodeRef(compCurBB, SCK_DIV_BY_ZERO);
+        fgAddCodeRef(compCurBB, SCK_OVERFLOW);
+    }
+#endif // TARGET_XARCH
+
+    // ------------------------------------------------------------------------
+    // Process the operands, if any
+    //
 
     for (GenTree** use : tree->UseEdges())
     {
@@ -11004,102 +11030,142 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
         tree->AddAllEffectsFlags(operand);
     }
 
-#ifdef TARGET_XARCH
-    if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division)
+    // ------------------------------------------------------------------------
+    // Now do POST-ORDER processing
+    //
+
+    var_types   retType         = tree->TypeGet();
+    CorInfoType simdBaseJitType = tree->GetSimdBaseJitType();
+    var_types   simdBaseType    = tree->GetSimdBaseType();
+    unsigned    simdSize        = tree->GetSimdSize();
+
+    // Try to fold it, maybe we get lucky,
+    GenTree* morphedTree = gtFoldExpr(tree);
+
+    if ((morphedTree != tree) || !morphedTree->OperIsHWIntrinsic())
     {
-        fgAddCodeRef(compCurBB, SCK_DIV_BY_ZERO);
-        fgAddCodeRef(compCurBB, SCK_OVERFLOW);
+        morphedTree->SetMorphed(this);
     }
-#endif // TARGET_XARCH
-
-    if (opts.OptimizationEnabled())
+    else
     {
-        var_types   retType         = tree->TypeGet();
-        CorInfoType simdBaseJitType = tree->GetSimdBaseJitType();
-        var_types   simdBaseType    = tree->GetSimdBaseType();
-        unsigned    simdSize        = tree->GetSimdSize();
+        if (allArgsAreConst && tree->IsVectorCreate())
+        {
+            // Avoid unexpected CSE for constant arguments for Vector_.Create
+            // but only if all arguments are constants.
 
-        if (tree->isCommutativeHWIntrinsic())
+            for (GenTree* arg : tree->Operands())
+            {
+                arg->SetDoNotCSE();
+            }
+        }
+
+        // ------------------------------------------------------------------------
+        // Perform the required oper-specific postorder morphing
+        //
+
+        morphedTree = fgMorphHWIntrinsicRequired(tree);
+
+        // ------------------------------------------------------------------------
+        // Optional morphing is done if tree transformations is permitted
+        //
+
+        if ((opts.compFlags & CLFLG_TREETRANS) != 0)
+        {
+            morphedTree = fgMorphHWIntrinsicOptional(morphedTree->AsHWIntrinsic());
+        }
+    }
+
+    if (retType != morphedTree->TypeGet())
+    {
+        assert(varTypeIsMask(morphedTree));
+        morphedTree = gtNewSimdCvtMaskToVectorNode(retType, morphedTree, simdBaseJitType, simdSize);
+        morphedTree = gtFoldExpr(morphedTree);
+    }
+    return morphedTree;
+}
+
+//------------------------------------------------------------------------
+// fgMorphHWIntrinsicRequired: Perform required postorder morphing of a GenTreeHWIntrinsic tree.
+//
+// Arguments:
+//    tree - The tree to morph
+//
+// Return Value:
+//    The morphed tree.
+//
+GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
+{
+    var_types   retType         = tree->TypeGet();
+    CorInfoType simdBaseJitType = tree->GetSimdBaseJitType();
+    var_types   simdBaseType    = tree->GetSimdBaseType();
+    unsigned    simdSize        = tree->GetSimdSize();
+
+    if (tree->isCommutativeHWIntrinsic())
+    {
+        assert(tree->GetOperandCount() == 2);
+        GenTree*& op1 = tree->Op(1);
+
+        if (op1->OperIsConst())
+        {
+            // Move constants from op1 to op2 for commutative operations
+            std::swap(op1, tree->Op(2));
+        }
+    }
+    else
+    {
+        bool       isScalar = false;
+        genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
+
+        // We can't handle scalar operations since they can copy upper bits from op1
+        if (GenTree::OperIsCompare(oper) && !isScalar)
         {
             assert(tree->GetOperandCount() == 2);
-            GenTree*& op1 = tree->Op(1);
+
+            GenTree* op1 = tree->Op(1);
+            GenTree* op2 = tree->Op(2);
 
             if (op1->IsCnsVec())
             {
-                // Move constant vectors from op1 to op2 for commutative operations
-                std::swap(op1, tree->Op(2));
-            }
-        }
-        else
-        {
-            bool       isScalar = false;
-            genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
+                // Move constant vectors from op1 to op2 for comparison operations
 
-            // We can't handle scalar operations since they can copy upper bits from op1
-            if (GenTree::OperIsCompare(oper) && !isScalar)
-            {
-                assert(tree->GetOperandCount() == 2);
+                genTreeOps newOper = GenTree::SwapRelop(oper);
+                var_types  lookupType =
+                    GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, newOper, retType, simdBaseType, simdSize);
+                NamedIntrinsic newId = GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, retType, op2, op1,
+                                                                                    simdBaseType, simdSize, false);
 
-                GenTree* op1 = tree->Op(1);
-                GenTree* op2 = tree->Op(2);
-
-                if (op1->IsCnsVec())
+                if (newId != NI_Illegal)
                 {
-                    // Move constant vectors from op1 to op2 for comparison operations
+                    tree->ResetHWIntrinsicId(newId, op2, op1);
 
-                    genTreeOps newOper = GenTree::SwapRelop(oper);
-                    var_types  lookupType =
-                        GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, newOper, retType, simdBaseType, simdSize);
-                    NamedIntrinsic newId =
-                        GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, retType, op2, op1, simdBaseType,
-                                                                     simdSize, false);
-
-                    if (newId != NI_Illegal)
+                    if (lookupType != retType)
                     {
-                        tree->ResetHWIntrinsicId(newId, op2, op1);
-
-                        if (lookupType != retType)
-                        {
-                            assert(varTypeIsMask(lookupType));
-                            tree->gtType = lookupType;
-                        }
+                        assert(varTypeIsMask(lookupType));
+                        tree->gtType = lookupType;
                     }
                 }
             }
         }
-
-        // Try to fold it, maybe we get lucky,
-        GenTree* morphedTree = gtFoldExpr(tree);
-
-        if ((morphedTree != tree) || !morphedTree->OperIsHWIntrinsic())
-        {
-            morphedTree->SetMorphed(this);
-        }
-        else
-        {
-            if (allArgsAreConst && tree->IsVectorCreate())
-            {
-                // Avoid unexpected CSE for constant arguments for Vector_.Create
-                // but only if all arguments are constants.
-
-                for (GenTree* arg : tree->Operands())
-                {
-                    arg->SetDoNotCSE();
-                }
-            }
-
-            morphedTree = fgOptimizeHWIntrinsic(tree);
-        }
-
-        if (retType != morphedTree->TypeGet())
-        {
-            assert(varTypeIsMask(morphedTree));
-            morphedTree = gtNewSimdCvtMaskToVectorNode(retType, morphedTree, simdBaseJitType, simdSize);
-            morphedTree = gtFoldExpr(morphedTree);
-        }
-        return morphedTree;
     }
 
+    if (opts.OptimizationEnabled())
+    {
+        return fgOptimizeHWIntrinsic(tree);
+    }
+    return tree;
+}
+
+//------------------------------------------------------------------------
+// fgMorphHWIntrinsicOptional: Perform optional postorder morphing of a GenTreeHWIntrinsic tree.
+//
+// Arguments:
+//    tree                 - The tree to morph
+//
+// Return Value:
+//    The morphed tree.
+//
+GenTree* Compiler::fgMorphHWIntrinsicOptional(GenTreeHWIntrinsic* tree)
+{
     return tree;
 }
 #endif // FEATURE_HW_INTRINSICS
