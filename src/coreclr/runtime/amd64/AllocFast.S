@@ -234,7 +234,7 @@ LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
 
         // Delegate overflow handling to the generic helper conservatively
 
-        cmp         rsi, (0x40000000 / 8) // sizeof(void*)
+        cmp         rsi, 0x8000000 // (0x40000000 / sizeof(void*))
         jae         C_FUNC(RhpNewArrayFast)
 
         // In this case we know the element size is sizeof(void *), or 8 for x64
