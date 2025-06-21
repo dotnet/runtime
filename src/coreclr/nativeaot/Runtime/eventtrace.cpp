@@ -376,12 +376,11 @@ void ETW::LoaderLog::SendModuleEvent(HANDLE pModule, uint32_t dwEventOptions)
     wszModuleFileName = (const WCHAR *)&wszModuleFileNameUnicode[0];
 #endif
 
+    GUID managedGuid;
     GUID nativeGuid;
     uint32_t dwAge;
     WCHAR wszPath[1024];
-    PalGetPDBInfo(pModule, &nativeGuid, &dwAge, wszPath, ARRAY_SIZE(wszPath));
-
-    GUID zeroGuid = { 0 };
+    PalGetPDBInfo(pModule, &nativeGuid, &dwAge, wszPath, ARRAY_SIZE(wszPath), &managedGuid);
 
     if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad)
     {
@@ -393,7 +392,7 @@ void ETW::LoaderLog::SendModuleEvent(HANDLE pModule, uint32_t dwEventOptions)
             wszModuleILFileName,    // ModuleILPath, 
             wszModuleFileName,      // ModuleNativePath, 
             GetClrInstanceId(),
-            &zeroGuid,              // ManagedPdbSignature,
+            &managedGuid,           // ManagedPdbSignature,
             0,                      // ManagedPdbAge, 
             NULL,                   // ManagedPdbBuildPath, 
             &nativeGuid,            // NativePdbSignature,
@@ -411,7 +410,7 @@ void ETW::LoaderLog::SendModuleEvent(HANDLE pModule, uint32_t dwEventOptions)
             wszModuleILFileName,    // ModuleILPath, 
             wszModuleFileName,      // ModuleNativePath, 
             GetClrInstanceId(),
-            &zeroGuid,              // ManagedPdbSignature,
+            &managedGuid,           // ManagedPdbSignature,
             0,                      // ManagedPdbAge, 
             NULL,                   // ManagedPdbBuildPath, 
             &nativeGuid,            // NativePdbSignature,

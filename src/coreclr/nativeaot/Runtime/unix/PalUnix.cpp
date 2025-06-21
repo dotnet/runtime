@@ -44,6 +44,8 @@
 
 #ifdef TARGET_LINUX
 #include <sys/syscall.h>
+#include <link.h>
+#include <elf.h>
 #endif
 
 #if HAVE_PTHREAD_GETTHREADID_NP
@@ -95,13 +97,119 @@ void RhFailFast()
     abort();
 }
 
-void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) WCHAR * wszPath, int32_t cchPath)
+#if TARGET_LINUX
+
+struct PalGetPDBInfoPhdrCallbackData
+{
+    void* Base;
+    void* BuildID;
+    uint32_t BuildIDLength;
+};
+
+static int PalGetPDBInfoPhdrCallback(struct dl_phdr_info *info, size_t size, void* pData)
+{
+    struct PalGetPDBInfoPhdrCallbackData* pCallbackData = (struct PalGetPDBInfoPhdrCallbackData*)pData;
+
+    // Find the module of interest
+    void* loadAddress = NULL;
+    for (ElfW(Half) i = 0; i < info->dlpi_phnum; i++)
+    {
+        if (info->dlpi_phdr[i].p_type == PT_LOAD)
+        {
+            loadAddress = (void*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
+            if (loadAddress == pCallbackData->Base)
+                break;
+        }
+    }
+
+    if (loadAddress != pCallbackData->Base)
+    {
+        return 0;
+    }
+
+    // Got the module of interest. Now iterate program headers and try to find the GNU build ID note
+    for (ElfW(Half) i = 0; i < info->dlpi_phnum; i++)
+    {
+        // Must be a note section. We don't check the name because while there's a convention for the name,
+        // the convention is not mandatory.
+        if (info->dlpi_phdr[i].p_type != PT_NOTE)
+            continue;
+
+        // Got a note section, iterate over the contents and find the GNU build id one
+        ElfW(Nhdr) *note = (ElfW(Nhdr)*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
+        ElfW(Addr) align = info->dlpi_phdr[i].p_align;
+        ElfW(Addr) size = info->dlpi_phdr[i].p_memsz;
+        ElfW(Addr) start = (ElfW(Addr))note;
+
+        while ((ElfW(Addr)) (note + 1) - start < size)
+        {
+            if (note->n_namesz == 4
+                && note->n_type == NT_GNU_BUILD_ID
+                && memcmp(note + 1, "GNU", 4) == 0)
+            {
+                // Got the note, fill out the callback data and return.
+                pCallbackData->BuildID = (uint8_t*)note + sizeof(ElfW(Nhdr)) + ALIGN_UP(note->n_namesz, align);
+                pCallbackData->BuildIDLength = note->n_descsz;
+                return 1;
+            }
+
+            // Skip over the note. Size of the note is determined by the header and payload (aligned)
+            size_t offset = sizeof(ElfW(Nhdr))
+                + ALIGN_UP(note->n_namesz, align)
+                + ALIGN_UP(note->n_descsz, align);
+            note = (ElfW(Nhdr)*)((uint8_t*)note + offset);
+        }
+    }
+
+    return 0;
+}
+#endif
+
+void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) WCHAR * wszPath, int32_t cchPath, GUID * pManagedGuidSignature)
 {
     memset(pGuidSignature, 0, sizeof(*pGuidSignature));
+    memset(pManagedGuidSignature, 0, sizeof(*pManagedGuidSignature));
     *pdwAge = 0;
     if (cchPath <= 0)
         return;
     wszPath[0] = L'\0';
+
+#if TARGET_LINUX
+    // Since on Linux the debug information is not stored in PDBs and we don't have a PDB GUID,
+    // we'll use the GNU build-id instead if available.
+    // Since build-id doesn't have a predefined length but is typically 20 bytes, we need more bytes
+    // than what a GUID can store. We'll misuse the managedGuid signature to store the overflow.
+    // PDB age will store the actual number of bytes used. If the build-id is longer than what
+    // we can store in two GUIDs, we'll truncate. The consumer can decide what to do about it
+    // based on seeing dwAge > 2*sizeof(GUID).
+
+    Dl_info info;
+    if (!dladdr((void*)&PalGetPDBInfo, &info)
+        || !info.dli_fbase)
+    {
+        return;
+    }
+
+    struct PalGetPDBInfoPhdrCallbackData data;
+    data.Base = info.dli_fbase;
+
+    if (!dl_iterate_phdr(&PalGetPDBInfoPhdrCallback, &data))
+    {
+        return;
+    }
+
+    *pdwAge = data.BuildIDLength;
+
+    uint8_t* src = (uint8_t*)data.BuildID;
+    uint32_t count = data.BuildIDLength;
+    memcpy(pGuidSignature, src, count < sizeof(*pGuidSignature) ? count : sizeof(*pGuidSignature));
+    if (count > sizeof(*pGuidSignature))
+    {
+        count -= sizeof(*pGuidSignature);
+        src += sizeof(*pGuidSignature);
+        memcpy(pManagedGuidSignature, src, count < sizeof(*pManagedGuidSignature) ? count : sizeof(*pManagedGuidSignature));
+    }
+#endif
 }
 
 static void UnmaskActivationSignal()
