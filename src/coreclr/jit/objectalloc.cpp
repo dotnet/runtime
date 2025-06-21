@@ -1092,7 +1092,7 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
         *reason = "[runtime disallows]";
         return false;
     }
-    if (allocType == OAT_NEWARR)
+    if ((allocType == OAT_NEWARR) || (allocType == OAT_NEWARR_R2R))
     {
         if (!enableArrays)
         {
@@ -1186,10 +1186,22 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
         const bool isValueClass = comp->info.compCompHnd->isValueClass(clsHnd);
         bool const canBeOnStack = isValueClass || comp->info.compCompHnd->canAllocateOnStack(clsHnd);
         allocType               = canBeOnStack ? OAT_NEWOBJ : OAT_NEWOBJ_HEAP;
+
+        if (canBeOnStack)
+        {
+            JITDUMP("Checking if we can stack allocate object [%06u] (%s)\n", comp->dspTreeID(tree),
+                    comp->eeGetClassName(clsHnd));
+        }
+        else
+        {
+            JITDUMP("Object [%06u] must be allocated on the heap (%s)\n", comp->dspTreeID(tree),
+                    comp->eeGetClassName(clsHnd));
+        }
     }
-    else if (!m_isR2R && tree->IsHelperCall())
+    else if (tree->IsHelperCall())
     {
         GenTreeCall* const call = tree->AsCall();
+
         switch (call->GetHelperNum())
         {
             case CORINFO_HELP_NEWARR_1_VC:
@@ -1200,6 +1212,26 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
                 if ((call->gtArgs.CountUserArgs() == 2) && call->gtArgs.GetUserArgByIndex(1)->GetNode()->IsCnsIntOrI())
                 {
                     allocType = OAT_NEWARR;
+                    JITDUMP("Checking if we can stack allocate array [%06u]\n", comp->dspTreeID(call));
+                }
+                else
+                {
+                    JITDUMP("Can't handle unknown length newarr [%06u]\n", comp->dspTreeID(call));
+                }
+                break;
+            }
+
+            case CORINFO_HELP_READYTORUN_NEWARR_1:
+            {
+                assert(m_isR2R);
+                if ((call->gtArgs.CountUserArgs() == 1) && call->gtArgs.GetUserArgByIndex(0)->GetNode()->IsCnsIntOrI())
+                {
+                    allocType = OAT_NEWARR_R2R;
+                    JITDUMP("Checking if we can stack allocate array [%06u]\n", comp->dspTreeID(call));
+                }
+                else
+                {
+                    JITDUMP("Can't handle unknown length newarr [%06u]\n", comp->dspTreeID(call));
                 }
                 break;
             }
@@ -1370,6 +1402,7 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
     switch (candidate.m_allocType)
     {
         case OAT_NEWARR:
+        case OAT_NEWARR_R2R:
             return MorphAllocObjNodeHelperArr(candidate);
         case OAT_NEWOBJ:
             return MorphAllocObjNodeHelperObj(candidate);
@@ -1394,14 +1427,7 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
 bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
 {
     assert(candidate.m_block->HasFlag(BBF_HAS_NEWARR));
-
-    // R2R not yet supported
-    //
-    if (m_isR2R)
-    {
-        candidate.m_onHeapReason = "[R2R array not yet supported]";
-        return false;
-    }
+    assert((candidate.m_allocType == OAT_NEWARR) || (candidate.m_allocType == OAT_NEWARR_R2R));
 
     GenTree* const data = candidate.m_tree->AsLclVar()->Data();
 
@@ -1423,7 +1449,8 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
     bool                 isExact   = false;
     bool                 isNonNull = false;
     CORINFO_CLASS_HANDLE clsHnd    = comp->gtGetHelperCallClassHandle(data->AsCall(), &isExact, &isNonNull);
-    GenTree* const       len       = data->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
+    unsigned const       lengthArg = candidate.m_allocType == OAT_NEWARR_R2R ? 0 : 1;
+    GenTree* const       len       = data->AsCall()->gtArgs.GetUserArgByIndex(lengthArg)->GetNode();
 
     assert(len != nullptr);
 
@@ -1447,6 +1474,30 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
     {
         // reason set by the call
         return false;
+    }
+
+    // Under R2R, for array allocations that would require handle embedding, check if the embedding will succeed.
+    // We'd rather have an R2R method with a helper call than fail and end up jitting at Tier0 and allocating anyways.
+    //
+    if (m_isR2R && (data->AsCall()->GetHelperNum() == CORINFO_HELP_READYTORUN_NEWARR_1))
+    {
+        struct Param
+        {
+            Compiler*            comp;
+            CORINFO_CLASS_HANDLE clsHnd;
+        };
+
+        Param      param    = {comp, clsHnd};
+        bool const canEmbed = comp->eeRunWithErrorTrap<Param>(
+            [](Param* p) {
+            p->comp->info.compCompHnd->embedClassHandle(p->clsHnd);
+        },
+            &param);
+        if (!canEmbed)
+        {
+            candidate.m_onHeapReason = "[cannot embed class handle]";
+            return false;
+        }
     }
 
     JITDUMP("Allocating V%02u on the stack\n", candidate.m_lclNum);

@@ -113,6 +113,7 @@ public:
         , m_ConstArgFeedsIsKnownConst(false)
         , m_ArgFeedsIsKnownConst(false)
         , m_InsideThrowBlock(false)
+        , m_MayReturnSmallArray(false)
     {
         // empty
     }
@@ -189,6 +190,7 @@ protected:
     bool                    m_ConstArgFeedsIsKnownConst  : 1;
     bool                    m_ArgFeedsIsKnownConst       : 1;
     bool                    m_InsideThrowBlock           : 1;
+    bool                    m_MayReturnSmallArray        : 1;
 };
 
 // ExtendedDefaultPolicy is a slightly more aggressive variant of
@@ -226,7 +228,6 @@ public:
         , m_NonGenericCallsGeneric(false)
         , m_IsCallsiteInNoReturnRegion(false)
         , m_HasProfileWeights(false)
-        , m_MayReturnSmallArray(false)
     {
         // Empty
     }
@@ -282,7 +283,6 @@ protected:
     bool     m_NonGenericCallsGeneric     : 1;
     bool     m_IsCallsiteInNoReturnRegion : 1;
     bool     m_HasProfileWeights          : 1;
-    bool     m_MayReturnSmallArray        : 1;
 };
 
 // DiscretionaryPolicy is a variant of the default policy.  It
