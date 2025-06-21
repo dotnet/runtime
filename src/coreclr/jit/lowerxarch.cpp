@@ -1564,7 +1564,10 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
 
                 GenTree* argOp = hwArg->Op(1);
 
-                if (argOp->IsVectorNegativeZero(hwArg->GetSimdBaseType()))
+                // xor is bitwise and the actual xor node might not be floating-point
+                // so we check if its negative zero using the FMA base type since that's
+                // what the end negation will end up using
+                if (argOp->IsVectorNegativeZero(node->GetSimdBaseType()))
                 {
                     BlockRange().Remove(hwArg);
                     BlockRange().Remove(argOp);
