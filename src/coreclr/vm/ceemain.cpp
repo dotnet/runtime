@@ -1261,9 +1261,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
             {
                 g_pDebugInterface->LockDebuggerForShutdown();
             }
-
-            // This call will convert the ThreadStoreLock into "shutdown" mode, just like the debugger lock above.
-            g_fEEShutDown |= ShutDown_Finalize2;
         }
 
 #ifdef FEATURE_EVENT_TRACE
@@ -1306,8 +1303,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
                 (&g_profControlBlock)->Shutdown();
                 END_PROFILER_CALLBACK();
             }
-
-            g_fEEShutDown |= ShutDown_Profiler;
         }
 #endif // PROFILING_SUPPORTED
 
