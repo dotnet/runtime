@@ -25,7 +25,7 @@ namespace System.IO
             }
 
             // If we're already running, don't do anything.
-            if (!IsHandleInvalid(_directoryHandle))
+            if (!IsHandleClosed(_directoryHandle))
                 return;
 
             // Create handle to directory being monitored
@@ -36,7 +36,7 @@ namespace System.IO
                 dwCreationDisposition: FileMode.Open,
                 dwFlagsAndAttributes: Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS | Interop.Kernel32.FileOperations.FILE_FLAG_OVERLAPPED);
 
-            if (IsHandleInvalid(directoryHandle))
+            if (directoryHandle.IsInvalid)
             {
                 throw new FileNotFoundException(SR.Format(SR.FSW_IOError, _directory));
             }
@@ -99,7 +99,7 @@ namespace System.IO
                 return;
 
             // If we're not running, do nothing.
-            if (IsHandleInvalid(_directoryHandle))
+            if (IsHandleClosed(_directoryHandle))
                 return;
 
             // Start ignoring all events occurring after this.
@@ -127,7 +127,7 @@ namespace System.IO
             // We must explicitly dispose the handle to ensure it gets closed before this object is finalized.
             // Otherwise, it is possible that the GC will decide to finalize the handle after this,
             // leaving a window of time where our callback could be invoked on a non-existent object.
-            if (!IsHandleInvalid(_directoryHandle))
+            if (!IsHandleClosed(_directoryHandle))
                 _directoryHandle.Dispose();
         }
 
@@ -136,7 +136,6 @@ namespace System.IO
 
         // Unmanaged handle to monitored directory
         private SafeFileHandle? _directoryHandle;
-
 
         /// <summary>Allocates a buffer of the requested internal buffer size.</summary>
         /// <returns>The allocated buffer.</returns>
@@ -152,10 +151,8 @@ namespace System.IO
             }
         }
 
-        private static bool IsHandleInvalid([NotNullWhen(false)] SafeFileHandle? handle)
-        {
-            return handle == null || handle.IsInvalid || handle.IsClosed;
-        }
+        private static bool IsHandleClosed([NotNullWhen(false)] SafeFileHandle? handle) =>
+            handle is null || handle.IsClosed;
 
         /// <summary>
         /// Initiates the next asynchronous read operation if monitoring is still desired.
@@ -175,11 +172,12 @@ namespace System.IO
 
             NativeOverlapped* overlappedPointer = null;
             bool continueExecuting = false;
+            int win32Error = 0;
             try
             {
                 // If shutdown has been requested, exit.  The finally block will handle
                 // cleaning up the entire operation, as continueExecuting will remain false.
-                if (!_enabled || IsHandleInvalid(state.DirectoryHandle))
+                if (!_enabled || IsHandleClosed(state.DirectoryHandle))
                     return;
 
                 // Get the overlapped pointer to use for this iteration.
@@ -193,16 +191,15 @@ namespace System.IO
                     null,
                     overlappedPointer,
                     null);
+                if (!continueExecuting)
+                {
+                    win32Error = Marshal.GetLastWin32Error();
+                }
             }
             catch (ObjectDisposedException)
             {
                 // Ignore.  Disposing of the handle is the mechanism by which the FSW communicates
                 // to the asynchronous operation to stop processing.
-            }
-            catch (ArgumentNullException)
-            {
-                //Ignore.  The disposed handle could also manifest as an ArgumentNullException.
-                Debug.Assert(IsHandleInvalid(state.DirectoryHandle), "ArgumentNullException from something other than SafeHandle?");
             }
             finally
             {
@@ -219,16 +216,16 @@ namespace System.IO
 
                     // Check whether the directory handle is still valid _before_ we dispose of the state,
                     // which will invalidate the handle.
-                    bool wasValidDirectoryHandle = !IsHandleInvalid(state.DirectoryHandle);
+                    bool handleClosed = IsHandleClosed(state.DirectoryHandle);
 
                     // Clean up the state created for the whole operation.
                     state.Dispose();
 
                     // Finally, if the handle was for some reason changed or closed during this call,
                     // then don't throw an exception.  Otherwise, it's a valid error.
-                    if (wasValidDirectoryHandle)
+                    if (!handleClosed)
                     {
-                        OnError(new ErrorEventArgs(new Win32Exception()));
+                        OnError(new ErrorEventArgs(new Win32Exception(win32Error)));
                     }
                 }
             }
@@ -239,7 +236,7 @@ namespace System.IO
         {
             try
             {
-                if (IsHandleInvalid(state.DirectoryHandle))
+                if (IsHandleClosed(state.DirectoryHandle))
                     return;
 
                 if (errorCode != 0)
@@ -404,7 +401,7 @@ namespace System.IO
         /// State information used by the ReadDirectoryChangesW callback.  A single instance of this is used
         /// for an entire session, getting passed to each iterative call to ReadDirectoryChangesW.
         /// </summary>
-        private sealed class AsyncReadState : IDisposable
+        private sealed class AsyncReadState
         {
             internal AsyncReadState(int session, FileSystemWatcher parent, SafeFileHandle directoryHandle)
             {
@@ -429,6 +426,7 @@ namespace System.IO
                 unsafe
                 {
                     NativeMemory.Free(Buffer);
+                    Buffer = null;
                 }
 
                 PreAllocatedOverlapped?.Dispose();
