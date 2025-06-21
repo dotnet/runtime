@@ -7324,7 +7324,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
                                                     clsAttrs, likelyHood, dvInfo.wasArrayInterfaceDevirt,
-                                                    dvInfo.isInstantiatingStub, originalContext);
+                                                    dvInfo.isInstantiatingStub, baseMethod, originalContext);
             }
 
             if (call->GetInlineCandidatesCount() == numExactClasses)
@@ -7473,7 +7473,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         //
         addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyContext, likelyMethodAttribs,
                                             likelyClassAttribs, likelihood, arrayInterface, instantiatingStub,
-                                            originalContext);
+                                            baseMethod, originalContext);
     }
 }
 
@@ -7500,6 +7500,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 //    likelihood - odds that this class is the class seen at runtime
 //    arrayInterface - devirtualization of an array interface call
 //    instantiatingStub - devirtualized method in an instantiating stub
+//    originalMethodHandle - method handle of base method (before devirt)
 //    originalContextHandle - context for the original call
 //
 void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
@@ -7511,6 +7512,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
                                                    unsigned               likelihood,
                                                    bool                   arrayInterface,
                                                    bool                   instantiatingStub,
+                                                   CORINFO_METHOD_HANDLE  originalMethodHandle,
                                                    CORINFO_CONTEXT_HANDLE originalContextHandle)
 {
     // This transformation only makes sense for delegate and virtual calls
@@ -7583,6 +7585,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
     pInfo->guardedMethodUnboxedEntryHandle      = nullptr;
     pInfo->guardedMethodInstantiatedEntryHandle = nullptr;
     pInfo->guardedClassHandle                   = classHandle;
+    pInfo->originalMethodHandle                 = originalMethodHandle;
     pInfo->originalContextHandle                = originalContextHandle;
     pInfo->likelihood                           = likelihood;
     pInfo->exactContextHandle                   = contextHandle;
@@ -8528,6 +8531,15 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         if (instParam != nullptr)
         {
             assert(!"unexpected inst param in virtual/interface call");
+            return;
+        }
+
+        // If we don't know the array type exactly we may have the wrong interface type here.
+        // Bail out.
+        //
+        if (!isExact)
+        {
+            JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
             return;
         }
 
@@ -9503,6 +9515,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             pInfo->guardedMethodHandle                  = nullptr;
             pInfo->guardedMethodUnboxedEntryHandle      = nullptr;
             pInfo->guardedMethodInstantiatedEntryHandle = nullptr;
+            pInfo->originalMethodHandle                 = nullptr;
             pInfo->originalContextHandle                = nullptr;
             pInfo->likelihood                           = 0;
             pInfo->arrayInterface                       = false;
