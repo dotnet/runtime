@@ -974,8 +974,11 @@ namespace Internal.Metadata.NativeFormat.Writer
                 values.Add((value & SignatureCallingConvention.UnmanagedCallingConventionMask).ToString());
                 value &= ~SignatureCallingConvention.UnmanagedCallingConventionMask;
             }
-            values.Add(value.ToString());
-            return string.Join(" | ", values);
+            if (value != default)
+            {
+                values.Add(value.ToString());
+            }
+            return values.Count == 0 ? "" : "[" + string.Join(" | ", values) + "] ";
         }
     }
 
