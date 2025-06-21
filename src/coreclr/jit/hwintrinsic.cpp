@@ -2462,14 +2462,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseJitType, nodeRetType,
                                       simdSize, mustExpand);
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
-        if (retNode != nullptr)
-        {
-            // The special import may have switched the type of the node.
-            nodeRetType = retNode->gtType;
-        }
-#endif
     }
 
     if (setMethodHandle && (retNode != nullptr))
@@ -2542,10 +2534,18 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    if (nodeRetType == TYP_MASK)
+    if (retType != nodeRetType)
     {
         // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
-        retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+        assert(HWIntrinsicInfo::ReturnsPerElementMask(intrinsic));
+        assert(nodeRetType == TYP_MASK);
+
+        GenTreeHWIntrinsic* op = retNode->AsHWIntrinsic();
+
+        CorInfoType simdBaseJitType = op->GetSimdBaseJitType();
+        unsigned    simdSize        = op->GetSimdSize();
+
+        retNode = gtNewSimdCvtMaskToVectorNode(retType, op, simdBaseJitType, simdSize);
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
 
