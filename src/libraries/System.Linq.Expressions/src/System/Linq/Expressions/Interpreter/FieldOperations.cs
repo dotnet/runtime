@@ -50,10 +50,20 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            object? self = frame.Pop();
+            object? self = frame.PopRaw();
 
             NullCheck(self);
-            frame.Push(_field.GetValue(self));
+
+            object? frameData =
+                (self, _field.FieldType) switch
+                {
+                    (_, { IsPrimitive: false, IsValueType: true }) => new FieldData(self!, _field),
+                    (FieldData fieldData, _) => _field.GetValue(fieldData.ToObject()),
+                    (_, _) => _field.GetValue(self),
+                };
+
+            frame.Push(frameData);
+
             return 1;
         }
     }
@@ -72,10 +82,29 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             object? value = frame.Pop();
-            object? self = frame.Pop();
 
-            NullCheck(self);
-            _field.SetValue(self, value);
+            if (_field.DeclaringType is not { IsPrimitive: false, IsValueType: true })
+            {
+                object? self = frame.Pop();
+                NullCheck(self);
+
+                _field.SetValue(self, value);
+            }
+            else
+            {
+                object? self = frame.PopRaw();
+                NullCheck(self);
+
+                if (self is FieldData fieldData)
+                {
+                    fieldData.SetValueDirect(_field, value);
+                }
+                else
+                {
+                    FieldData.SetValueDirect(self!, _field, value);
+                }
+            }
+
             return 1;
         }
     }
