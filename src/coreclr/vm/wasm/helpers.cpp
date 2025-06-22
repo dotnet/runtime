@@ -450,8 +450,8 @@ int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 
 int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
-    // WASM-TODO: implement me
-    return 0;
+    // Nothing to do - wasm has static write barriers
+    return SWB_PASS;
 }
 
 void FlushWriteBarrierInstructionCache()
