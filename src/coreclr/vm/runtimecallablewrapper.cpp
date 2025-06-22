@@ -1670,7 +1670,7 @@ void RCW::MinorCleanup()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(GCHeapUtilities::IsGCInProgress() || ( (g_fEEShutDown & ShutDown_SyncBlock) && IsAtProcessExit() ));
+        PRECONDITION(GCHeapUtilities::IsGCInProgress());
     }
     CONTRACTL_END;
 

@@ -1001,7 +1001,8 @@ void emitIns_R_R_R_R(instruction ins,
 
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 
-void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
+void emitIns_S_R(
+    instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_R_S(
     instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions = INS_OPTS_NONE);

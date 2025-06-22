@@ -1420,16 +1420,24 @@ namespace System
             }
             else if (typeof(TOther) == typeof(uint))
             {
+#if MONO
                 uint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
                                     (value <= uint.MinValue) ? uint.MinValue : (uint)value;
+#else
+                uint actualResult = (uint)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
+#if MONO
                 ulong actualResult = (value >= ulong.MaxValue) ? ulong.MaxValue :
                                      (value <= ulong.MinValue) ? ulong.MinValue :
                                      IsNaN(value) ? 0 : (ulong)value;
+#else
+                ulong actualResult = (ulong)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1442,17 +1450,19 @@ namespace System
             }
             else if (typeof(TOther) == typeof(nuint))
             {
+#if MONO
 #if TARGET_64BIT
                 nuint actualResult = (value >= ulong.MaxValue) ? unchecked((nuint)ulong.MaxValue) :
                                      (value <= ulong.MinValue) ? unchecked((nuint)ulong.MinValue) : (nuint)value;
-                result = (TOther)(object)actualResult;
-                return true;
 #else
                 nuint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
                                      (value <= uint.MinValue) ? uint.MinValue : (nuint)value;
+#endif
+#else
+                nuint actualResult = (nuint)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
-#endif
             }
             else
             {
