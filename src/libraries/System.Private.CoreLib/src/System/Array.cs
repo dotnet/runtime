@@ -484,6 +484,44 @@ namespace System
             CopySlow(sourceArray, sourceIndex, destinationArray, destinationIndex, length, assignType);
         }
 
+        // Reliability-wise, this method will either possibly corrupt your
+        // instance & might fail when called from within a CER, or if the
+        // reliable flag is true, it will either always succeed or always
+        // throw an exception with no side effects.
+        private static void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, ArrayAssignType assignType)
+        {
+            Debug.Assert(sourceArray.Rank == destinationArray.Rank);
+
+            if (assignType == ArrayAssignType.WrongType)
+                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
+
+            if (length > 0)
+            {
+                switch (assignType)
+                {
+                    case ArrayAssignType.UnboxValueClass:
+                        CopyImplUnBoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                        break;
+
+                    case ArrayAssignType.BoxValueClassOrPrimitive:
+                        CopyImplBoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                        break;
+
+                    case ArrayAssignType.MustCast:
+                        CopyImplCastCheckEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                        break;
+
+                    case ArrayAssignType.PrimitiveWiden:
+                        CopyImplPrimitiveWiden(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                        break;
+
+                    default:
+                        Debug.Fail("Fell through switch in Array.Copy!");
+                        break;
+                }
+            }
+        }
+
         private enum ArrayAssignType
         {
             SimpleCopy,

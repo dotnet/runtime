@@ -417,18 +417,55 @@ namespace System
         }
 
         //
+        // Array.CopyImpl case: Gc-ref array to gc-ref array copy.
+        //
+        private static unsafe void CopyImplCastCheckEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            // For mismatched array types, the desktop Array.Copy has a policy that determines whether to throw an ArrayTypeMismatch without any attempt to copy
+            // or to throw an InvalidCastException in the middle of a copy. This code replicates that policy.
+            MethodTable* sourceElementEEType = sourceArray.ElementMethodTable;
+            MethodTable* destinationElementEEType = destinationArray.ElementMethodTable;
+
+            Debug.Assert(!sourceElementEEType->IsValueType && !sourceElementEEType->IsPointer && !sourceElementEEType->IsFunctionPointer);
+            Debug.Assert(!destinationElementEEType->IsValueType && !destinationElementEEType->IsPointer && !destinationElementEEType->IsFunctionPointer);
+
+            bool reverseCopy = ((object)sourceArray == (object)destinationArray) && (sourceIndex < destinationIndex);
+            ref object? refDestinationArray = ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(destinationArray));
+            ref object? refSourceArray = ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(sourceArray));
+            if (reverseCopy)
+            {
+                sourceIndex += length - 1;
+                destinationIndex += length - 1;
+                for (int i = 0; i < length; i++)
+                {
+                    object? value = Unsafe.Add(ref refSourceArray, sourceIndex - i);
+                    if (value != null && TypeCast.IsInstanceOfAny(destinationElementEEType, value) == null)
+                        throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
+                    Unsafe.Add(ref refDestinationArray, destinationIndex - i) = value;
+                }
+            }
+            else
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    object? value = Unsafe.Add(ref refSourceArray, sourceIndex + i);
+                    if (value != null && TypeCast.IsInstanceOfAny(destinationElementEEType, value) == null)
+                        throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
+                    Unsafe.Add(ref refDestinationArray, destinationIndex + i) = value;
+                }
+            }
+        }
+
+        //
         // Array.CopyImpl case: Value-type array to Object[] or interface array copy.
         //
-        private static unsafe void CopyImplValueTypeArrayToReferenceArray(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
+        private static unsafe void CopyImplBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
             Debug.Assert(sourceArray.ElementMethodTable->IsValueType);
             Debug.Assert(!destinationArray.ElementMethodTable->IsValueType && !destinationArray.ElementMethodTable->IsPointer && !destinationArray.ElementMethodTable->IsFunctionPointer);
 
             // Caller has already validated this.
             Debug.Assert(RuntimeImports.AreTypesAssignable(sourceArray.ElementMethodTable, destinationArray.ElementMethodTable));
-
-            if (reliable)
-                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
 
             MethodTable* sourceElementEEType = sourceArray.ElementMethodTable;
             nuint sourceElementSize = sourceArray.ElementSize;
@@ -449,13 +486,10 @@ namespace System
         //
         // Array.CopyImpl case: Object[] or interface array to value-type array copy.
         //
-        private static unsafe void CopyImplReferenceArrayToValueTypeArray(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
+        private static unsafe void CopyImplUnBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
             Debug.Assert(!sourceArray.ElementMethodTable->IsValueType && !sourceArray.ElementMethodTable->IsPointer && !sourceArray.ElementMethodTable->IsFunctionPointer);
             Debug.Assert(destinationArray.ElementMethodTable->IsValueType);
-
-            if (reliable)
-                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
 
             MethodTable* destinationElementEEType = destinationArray.ElementMethodTable;
             nuint destinationElementSize = destinationArray.ElementSize;
@@ -577,7 +611,7 @@ namespace System
         //
         // Array.CopyImpl case: Primitive types that have a widening conversion
         //
-        private static unsafe void CopyImplPrimitiveTypeWithWidening(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
+        private static unsafe void CopyImplPrimitiveWiden(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
             MethodTable* sourceElementEEType = sourceArray.ElementMethodTable;
             MethodTable* destinationElementEEType = destinationArray.ElementMethodTable;
@@ -589,16 +623,6 @@ namespace System
 
             nuint srcElementSize = sourceArray.ElementSize;
             nuint destElementSize = destinationArray.ElementSize;
-
-            if ((sourceElementEEType->IsEnum || destinationElementEEType->IsEnum) && sourceElementType != destElementType)
-                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-
-            if (reliable)
-            {
-                // ConstrainedCopy() cannot even widen - it can only copy same type or enum to its exact integral subtype.
-                if (sourceElementType != destElementType)
-                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
-            }
 
             ref byte srcData = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcElementSize);
             ref byte dstData = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destElementSize);
