@@ -103,10 +103,10 @@ namespace System
 
         public static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
-            Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, false);
+            CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, false);
         }
 
-        private static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
+        private static void CopyImpl(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
             ArgumentNullException.ThrowIfNull(sourceArray);
             ArgumentNullException.ThrowIfNull(destinationArray);
