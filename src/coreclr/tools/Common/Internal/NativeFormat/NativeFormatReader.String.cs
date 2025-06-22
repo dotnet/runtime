@@ -50,7 +50,7 @@ namespace Internal.NativeFormat
                 return new(_base + offset, (int)numBytes);
             }
 
-            return ReadOnlySpan<byte>.Empty;
+            return [];
         }
 
         public unsafe uint DecodeString(uint offset, out string value)

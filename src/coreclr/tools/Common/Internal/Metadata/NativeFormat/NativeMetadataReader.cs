@@ -225,7 +225,7 @@ namespace Internal.Metadata.NativeFormat
         {
             if (handle.IsNil)
             {
-                return ReadOnlySpan<byte>.Empty;
+                return [];
             }
 
             return _streamReader.ReadStringAsBytes((uint)handle.Offset);
