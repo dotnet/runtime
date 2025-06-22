@@ -6934,6 +6934,9 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
 // This function is used to check if Pointer Authentication (PAC) is enabled for this stack frame or not.
 bool IsPacPresent(EECodeInfo *pCodeInfo)
 {
+#if defined(HOST_WINDOWS)
+    return false;
+#else
     CONTRACTL
     {
         NOTHROW;
@@ -6948,8 +6951,7 @@ bool IsPacPresent(EECodeInfo *pCodeInfo)
 
     DWORD_PTR EstablisherFrame = 0;
     DWORD_PTR ImageBase = 0;
-    NTSTATUS Status;
-    PVOID HandlerData;
+    PVOID HandlerData = NULL;
 
     // Lookup the function entry for the IP
     PTR_RUNTIME_FUNCTION FunctionEntry = pCodeInfo->GetFunctionEntry();
@@ -6972,6 +6974,7 @@ bool IsPacPresent(EECodeInfo *pCodeInfo)
     NULL,
     NULL,
     0);
+#endif // HOST_WINDOWS
 }
 #endif // TARGET_ARM64
 

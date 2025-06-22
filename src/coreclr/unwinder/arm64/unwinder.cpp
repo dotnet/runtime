@@ -269,7 +269,9 @@ do {                                                                            
 
 #endif // !defined(DEBUGGER_UNWIND)
 
+//
 // Macros for stripping pointer authentication (PAC) bits.
+//
 #if !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
 
 #define STRIP_PAC(pointer)    RtlStripPacOnline(pointer)
@@ -2812,7 +2814,6 @@ RtlpUnwindFunctionCompact (
     return Status;
 }
 
-
 #if !defined(DEBUGGER_UNWIND)
 
 NTSTATUS
@@ -3034,6 +3035,7 @@ Return Value:
 }
 
 #endif // !defined(DEBUGGER_UNWIND)
+
 BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
 {
     DWORD64 ImageBase = 0;

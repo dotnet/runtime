@@ -370,9 +370,7 @@ RtlVirtualUnwind(
     );
 
 EXTERN_C
-NTSYSAPI
 BOOLEAN
-NTAPI
 RtlpUnwindIsPacPresent (
     IN ULONG_PTR ImageBase,
     IN ULONG_PTR ControlPc,
@@ -384,6 +382,7 @@ RtlpUnwindIsPacPresent (
     IN PULONG_PTR HighLimit,
     IN ULONG UnwindFlags
     );
+
 // Mirror the XSTATE_ARM64_SVE flags from winnt.h
 
 #ifndef XSTATE_ARM64_SVE

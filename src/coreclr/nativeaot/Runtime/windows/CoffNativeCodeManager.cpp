@@ -829,6 +829,60 @@ bool CoffNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
     return true;
 }
 
+#if defined(TARGET_ARM64)
+bool CoffNativeCodeManager::IsPacPresent(MethodInfo *    pMethodInfo,
+                                         REGDISPLAY *    pRegisterSet)
+{
+#if defined(HOST_WINDOWS)
+    return false;
+#else
+    CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
+
+    size_t unwindDataBlobSize;
+    SIZE_T  EstablisherFrame;
+    PVOID   HandlerData;
+    CONTEXT context;
+
+    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->runtimeFunction, &unwindDataBlobSize);
+
+    PTR_uint8_t p = dac_cast<PTR_uint8_t>(pUnwindDataBlob) + unwindDataBlobSize;
+
+    uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+        p += sizeof(int32_t);
+
+    context.Sp = pRegisterSet->GetSP();
+    context.Fp = pRegisterSet->GetFP();
+    context.Pc = pRegisterSet->GetIP();
+    context.Lr = *pRegisterSet->pLR;
+
+    KNONVOLATILE_CONTEXT_POINTERS contextPointers;
+#ifdef _DEBUG
+    memset(&contextPointers, 0xDD, sizeof(contextPointers));
+#endif
+    contextPointers.Lr = pRegisterSet->pLR;
+
+    EstablisherFrame = 0;
+    HandlerData = NULL;
+
+    return RtlpUnwindIsPacPresent (
+    dac_cast<TADDR>(m_moduleBase),
+    pRegisterSet->IP,
+    (PRUNTIME_FUNCTION)pNativeMethodInfo->runtimeFunction,
+    &HandlerData,
+    &contextPointers,
+    &EstablisherFrame,
+    NULL,
+    NULL,
+    0);
+#endif //HOST_WINDOWS
+}
+#endif //TARGET_ARM64
+
 bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                                 REGDISPLAY *    pRegisterSet,       // in
                                                 PTR_PTR_VOID *  ppvRetAddrLocation) // out

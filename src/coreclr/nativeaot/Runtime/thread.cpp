@@ -818,9 +818,9 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         ASSERT(pvRetAddr != NULL);
 
 #if defined(TARGET_ARM64)
-        ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
-#else
         ASSERT(StackFrameIterator::IsValidReturnAddress(PacStripPtr(pvRetAddr)));
+#else
+        ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
 #endif // TARGET_ARM64
 
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
@@ -831,15 +831,14 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
                                                                 frameIterator->GetRegisterSet()));
 #endif
 
-        void* pvHijacedkAddr = (void*)pfnHijackFunction;
+        void* pvHijackedAddr = (void*)pfnHijackFunction;
 #if defined(TARGET_ARM64)
-        uint64_t isJitPacEnabled;
-        if (g_pRhConfig->ReadConfigValue("JitPacEnabled", &isJitPacEnabled, true /* decimal */) && isJitPacEnabled != 0)
+        if (frameIterator->GetCodeManager()->IsPacPresent(frameIterator->GetMethodInfo(), frameIterator->GetRegisterSet()))
         {
-            pvHijacedkAddr = PacSignPtr(pvHijacedkAddr);
+            pvHijackedAddr = PacSignPtr(pvHijackedAddr);
         }
 #endif // TARGET_ARM64
-        *ppvRetAddrLocation = pvHijacedkAddr;
+        *ppvRetAddrLocation = pvHijackedAddr;
 
         STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
             GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
