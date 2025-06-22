@@ -172,7 +172,7 @@ namespace AppHost.Bundle.Tests
                 command.Process.Kill();
 
                 command
-                    .WaitForExit(true)
+                    .WaitForExit()
                     .Should().Fail()
                     .And.HaveStdErrContaining("Bundle header version compatibility check failed.")
                     .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(singleFile)}' - error code: 0x{expectedErrorCode}")

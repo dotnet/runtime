@@ -88,6 +88,7 @@ public enum DataType
     ProfControlBlock,
     ILCodeVersionNode,
     ReadyToRunInfo,
+    ReadyToRunHeader,
     ImageDataDirectory,
     RuntimeFunction,
     HashMap,
@@ -113,4 +114,5 @@ public enum DataType
     ResumableFrame,
     FaultingExceptionFrame,
     HijackFrame,
+    TailCallFrame,
 }

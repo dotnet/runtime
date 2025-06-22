@@ -16,6 +16,7 @@ using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
 
 using Debug = System.Diagnostics.Debug;
+using Internal.NativeFormat;
 
 namespace ILCompiler
 {
@@ -273,6 +274,11 @@ namespace ILCompiler
         public ReadOnlyFieldPolicy GetReadOnlyFieldPolicy()
         {
             return new ScannedReadOnlyPolicy(MarkedNodes);
+        }
+
+        public TypeMapManager GetTypeMapManager()
+        {
+            return new ScannedTypeMapManager(_factory);
         }
 
         private sealed class ScannedVTableProvider : VTableSliceProvider
@@ -982,6 +988,50 @@ namespace ILCompiler
 
                 return !_writtenFields.Contains(field);
             }
+        }
+
+        private sealed class ScannedTypeMapManager : TypeMapManager
+        {
+            private ImmutableArray<IExternalTypeMapNode> _externalTypeMapNodes;
+            private ImmutableArray<IProxyTypeMapNode> _proxyTypeMapNodes;
+
+            public ScannedTypeMapManager(NodeFactory factory)
+            {
+                ImmutableArray<IExternalTypeMapNode>.Builder externalTypeMapNodes = ImmutableArray.CreateBuilder<IExternalTypeMapNode>();
+                ImmutableArray<IProxyTypeMapNode>.Builder proxyTypeMapNodes = ImmutableArray.CreateBuilder<IProxyTypeMapNode>();
+                foreach (var externalTypeMapNode in factory.TypeMapManager.GetExternalTypeMaps())
+                {
+                    externalTypeMapNodes.Add(externalTypeMapNode.ToAnalysisBasedNode(factory));
+                }
+
+                foreach (var proxyTypeMapNode in factory.TypeMapManager.GetProxyTypeMaps())
+                {
+                    proxyTypeMapNodes.Add(proxyTypeMapNode.ToAnalysisBasedNode(factory));
+                }
+
+                _externalTypeMapNodes = externalTypeMapNodes.ToImmutable();
+                _proxyTypeMapNodes = proxyTypeMapNodes.ToImmutable();
+            }
+
+            protected override bool IsEmpty => _externalTypeMapNodes.Length == 0 && _proxyTypeMapNodes.Length == 0;
+
+            public override void AddCompilationRoots(IRootingServiceProvider rootProvider)
+            {
+                const string reason = "Used Type Map Group";
+
+                foreach (IExternalTypeMapNode externalTypeMap in _externalTypeMapNodes)
+                {
+                    rootProvider.AddCompilationRoot(externalTypeMap, reason);
+                }
+
+                foreach (IProxyTypeMapNode proxyTypeMap in _proxyTypeMapNodes)
+                {
+                    rootProvider.AddCompilationRoot(proxyTypeMap, reason);
+                }
+            }
+
+            internal override IEnumerable<IExternalTypeMapNode> GetExternalTypeMaps() => _externalTypeMapNodes;
+            internal override IEnumerable<IProxyTypeMapNode> GetProxyTypeMaps() => _proxyTypeMapNodes;
         }
     }
 }

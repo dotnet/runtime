@@ -390,9 +390,9 @@ unsafe class Program
         // Check("Avx512Bitalg.VL", ExpectedAvx512Bitalg, &Avx512BitalgVLIsSupported, Avx512Bitalg.VL.IsSupported, null);
         // Check("Avx512Bitalg.X64", ExpectedAvx512Bitalg, &Avx512BitalgX64IsSupported, Avx512Bitalg.X64.IsSupported, null);
 
-        // Check("Avx512Vbmi2", ExpectedAvx512Vbmi2, &Avx512Vbmi2IsSupported, Avx512Vbmi2.IsSupported, null);
-        // Check("Avx512Vbmi2.VL", ExpectedAvx512Vbmi2, &Avx512Vbmi2VLIsSupported, Avx512Vbmi2.VL.IsSupported, null);
-        // Check("Avx512Vbmi2.X64", ExpectedAvx512Vbmi2, &Avx512Vbmi2X64IsSupported, Avx512Vbmi2.X64.IsSupported, null);
+        Check("Avx512Vbmi2", ExpectedAvx512Vbmi2, &Avx512Vbmi2IsSupported, Avx512Vbmi2.IsSupported, null);
+        Check("Avx512Vbmi2.VL", ExpectedAvx512Vbmi2, &Avx512Vbmi2VLIsSupported, Avx512Vbmi2.VL.IsSupported, null);
+        Check("Avx512Vbmi2.X64", ExpectedAvx512Vbmi2, &Avx512Vbmi2X64IsSupported, Avx512Vbmi2.X64.IsSupported, null);
 
         // Check("Avx512Vpopcntdq", ExpectedAvx512Vpopcntdq, &Avx512VpopcntdqIsSupported, Avx512Vpopcntdq.IsSupported, null);
         // Check("Avx512Vpopcntdq.VL", ExpectedAvx512Vpopcntdq, &Avx512VpopcntdqVLIsSupported, Avx512Vpopcntdq.VL.IsSupported, null);
@@ -523,9 +523,9 @@ unsafe class Program
     // static bool Avx512BitalgVLIsSupported() => Avx512Bitalg.VL.IsSupported;
     // static bool Avx512BitalgX64IsSupported() => Avx512Bitalg.X64.IsSupported;
 
-    // static bool Avx512Vbmi2IsSupported() => Avx512Vbmi2.IsSupported;
-    // static bool Avx512Vbmi2VLIsSupported() => Avx512Vbmi2.VL.IsSupported;
-    // static bool Avx512Vbmi2X64IsSupported() => Avx512Vbmi2.X64.IsSupported;
+    static bool Avx512Vbmi2IsSupported() => Avx512Vbmi2.IsSupported;
+    static bool Avx512Vbmi2VLIsSupported() => Avx512Vbmi2.VL.IsSupported;
+    static bool Avx512Vbmi2X64IsSupported() => Avx512Vbmi2.X64.IsSupported;
 
     // static bool Avx512VpopcntdqIsSupported() => Avx512Vpopcntdq.IsSupported;
     // static bool Avx512VpopcntdqVLIsSupported() => Avx512Vpopcntdq.VL.IsSupported;

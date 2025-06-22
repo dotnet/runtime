@@ -20,6 +20,8 @@
 #define GCINFODECODER_NO_EE
 #include "gcinfodecoder.cpp"
 
+#include "eventtracebase.h"
+
 #ifdef TARGET_X86
 #define FEATURE_EH_FUNCLETS
 
@@ -1232,6 +1234,8 @@ bool RhRegisterOSModule(void * pModule,
     }
 
     pCoffNativeCodeManager.SuppressRelease();
+
+    ETW::LoaderLog::ModuleLoad(pModule);
 
     return true;
 }

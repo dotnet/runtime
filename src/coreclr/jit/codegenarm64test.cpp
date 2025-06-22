@@ -7267,29 +7267,29 @@ void CodeGen::genArm64EmitterUnitTestsSve()
 
     // IF_SVE_FR_2A
     theEmitter->emitIns_R_R_I(INS_sve_sshllb, EA_SCALABLE, REG_V0, REG_V1, 1,
-                              INS_OPTS_SCALABLE_B); // SSHLLB <Zd>.<T>, <Zn>.<Tb>, #<const>
-    theEmitter->emitIns_R_R_I(INS_sve_sshllt, EA_SCALABLE, REG_V2, REG_V3, 3,
-                              INS_OPTS_SCALABLE_B); // SSHLLT <Zd>.<T>, <Zn>.<Tb>, #<const>
-    theEmitter->emitIns_R_R_I(INS_sve_ushllb, EA_SCALABLE, REG_V4, REG_V5, 5,
-                              INS_OPTS_SCALABLE_B); // USHLLB <Zd>.<T>, <Zn>.<Tb>, #<const>
-    theEmitter->emitIns_R_R_I(INS_sve_ushllt, EA_SCALABLE, REG_V6, REG_V7, 7,
-                              INS_OPTS_SCALABLE_B); // USHLLT <Zd>.<T>, <Zn>.<Tb>, #<const>
-    theEmitter->emitIns_R_R_I(INS_sve_sshllb, EA_SCALABLE, REG_V8, REG_V9, 0,
                               INS_OPTS_SCALABLE_H); // SSHLLB <Zd>.<T>, <Zn>.<Tb>, #<const>
-    theEmitter->emitIns_R_R_I(INS_sve_sshllt, EA_SCALABLE, REG_V10, REG_V11, 5,
+    theEmitter->emitIns_R_R_I(INS_sve_sshllt, EA_SCALABLE, REG_V2, REG_V3, 3,
                               INS_OPTS_SCALABLE_H); // SSHLLT <Zd>.<T>, <Zn>.<Tb>, #<const>
-    theEmitter->emitIns_R_R_I(INS_sve_ushllb, EA_SCALABLE, REG_V12, REG_V13, 10,
+    theEmitter->emitIns_R_R_I(INS_sve_ushllb, EA_SCALABLE, REG_V4, REG_V5, 5,
                               INS_OPTS_SCALABLE_H); // USHLLB <Zd>.<T>, <Zn>.<Tb>, #<const>
-    theEmitter->emitIns_R_R_I(INS_sve_ushllt, EA_SCALABLE, REG_V14, REG_V15, 15,
+    theEmitter->emitIns_R_R_I(INS_sve_ushllt, EA_SCALABLE, REG_V6, REG_V7, 7,
                               INS_OPTS_SCALABLE_H); // USHLLT <Zd>.<T>, <Zn>.<Tb>, #<const>
-    theEmitter->emitIns_R_R_I(INS_sve_sshllb, EA_SCALABLE, REG_V16, REG_V17, 8,
+    theEmitter->emitIns_R_R_I(INS_sve_sshllb, EA_SCALABLE, REG_V8, REG_V9, 0,
                               INS_OPTS_SCALABLE_S); // SSHLLB <Zd>.<T>, <Zn>.<Tb>, #<const>
-    theEmitter->emitIns_R_R_I(INS_sve_sshllt, EA_SCALABLE, REG_V18, REG_V19, 16,
+    theEmitter->emitIns_R_R_I(INS_sve_sshllt, EA_SCALABLE, REG_V10, REG_V11, 5,
                               INS_OPTS_SCALABLE_S); // SSHLLT <Zd>.<T>, <Zn>.<Tb>, #<const>
-    theEmitter->emitIns_R_R_I(INS_sve_ushllb, EA_SCALABLE, REG_V20, REG_V21, 24,
+    theEmitter->emitIns_R_R_I(INS_sve_ushllb, EA_SCALABLE, REG_V12, REG_V13, 10,
                               INS_OPTS_SCALABLE_S); // USHLLB <Zd>.<T>, <Zn>.<Tb>, #<const>
-    theEmitter->emitIns_R_R_I(INS_sve_ushllt, EA_SCALABLE, REG_V22, REG_V23, 31,
+    theEmitter->emitIns_R_R_I(INS_sve_ushllt, EA_SCALABLE, REG_V14, REG_V15, 15,
                               INS_OPTS_SCALABLE_S); // USHLLT <Zd>.<T>, <Zn>.<Tb>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_sshllb, EA_SCALABLE, REG_V16, REG_V17, 8,
+                              INS_OPTS_SCALABLE_D); // SSHLLB <Zd>.<T>, <Zn>.<Tb>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_sshllt, EA_SCALABLE, REG_V18, REG_V19, 16,
+                              INS_OPTS_SCALABLE_D); // SSHLLT <Zd>.<T>, <Zn>.<Tb>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_ushllb, EA_SCALABLE, REG_V20, REG_V21, 24,
+                              INS_OPTS_SCALABLE_D); // USHLLB <Zd>.<T>, <Zn>.<Tb>, #<const>
+    theEmitter->emitIns_R_R_I(INS_sve_ushllt, EA_SCALABLE, REG_V22, REG_V23, 31,
+                              INS_OPTS_SCALABLE_D); // USHLLT <Zd>.<T>, <Zn>.<Tb>, #<const>
 
     // IF_SVE_FV_2A
     theEmitter->emitIns_R_R_I(INS_sve_cadd, EA_SCALABLE, REG_V0, REG_V1, 90,

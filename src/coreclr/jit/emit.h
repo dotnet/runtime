@@ -2670,12 +2670,13 @@ private:
 
 #if defined(TARGET_XARCH)
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src, regNumber targetReg = REG_NA);
+    void emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem, insOpts instOptions = INS_OPTS_NONE);
 #else
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
+    void      emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem);
 #endif
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
     void      emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
-    void      emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem);
     void      emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommon* varNode);
     insFormat emitMapFmtForIns(insFormat fmt, instruction ins);
     insFormat emitMapFmtAtoM(insFormat fmt);

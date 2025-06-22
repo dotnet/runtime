@@ -1994,7 +1994,7 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
     {
         fOk = FALSE;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     return fOk;
 }
 
@@ -3624,7 +3624,7 @@ VOID DebuggerController::PatchTargetVisitor(TADDR pVirtualTraceCallTarget, VOID*
     {
         // not much we can do here
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 //
@@ -4473,19 +4473,7 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
         ThisFunctionMayHaveTriggerAGC();
     }
 #endif
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-    if (pCurThread->m_State & Thread::TS_SSToExitApcCall)
-    {
-        if (!CheckActivationSafePoint(GetIP(pContext)))
-        {
-            return FALSE;
-        }
-        pCurThread->SetThreadState(Thread::TS_SSToExitApcCallDone);
-        pCurThread->ResetThreadState(Thread::TS_SSToExitApcCall);
-        DebuggerController::UnapplyTraceFlag(pCurThread);
-        pCurThread->MarkForSuspensionAndWait(Thread::TS_DebugSuspendPending);
-    }
-#endif
+
 
 
     // Must restore the filter context. After the filter context is gone, we're
@@ -5160,7 +5148,6 @@ DebuggerStepper::DebuggerStepper(Thread *thread,
     m_rgfMappingStop(rgfMappingStop),
     m_range(NULL),
     m_rangeCount(0),
-    m_realRangeCount(0),
     m_fp(LEAF_MOST_FRAME),
 #if defined(FEATURE_EH_FUNCLETS)
     m_fpParentMethod(LEAF_MOST_FRAME),
@@ -6998,7 +6985,6 @@ bool DebuggerStepper::SetRangesFromIL(DebuggerJitInfo *dji, COR_DEBUG_STEP_RANGE
 
 
     m_rangeCount = rangeCount;
-    m_realRangeCount = rangeCount;
 
     return true;
 }
@@ -7072,7 +7058,6 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
         DeleteInteropSafe(m_range);
         m_range = NULL;
         m_rangeCount = 0;
-        m_realRangeCount = 0;
     }
 
     if (rangeCount > 0)
@@ -7097,11 +7082,10 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
             }
 
             memcpy(m_range, ranges, sizeof(COR_DEBUG_STEP_RANGE) * rangeCount);
-            m_realRangeCount  = m_rangeCount = rangeCount;
+            m_rangeCount = rangeCount;
         }
         _ASSERTE(m_range != NULL);
         _ASSERTE(m_rangeCount > 0);
-        _ASSERTE(m_realRangeCount > 0);
     }
     else
     {
