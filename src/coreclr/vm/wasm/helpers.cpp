@@ -439,7 +439,7 @@ EXTERN_C void STDMETHODCALLTYPE ProfileTailcallNaked(UINT_PTR clientData)
 
 void InitJITWriteBarrierHelpers()
 {
-    // WASM-TODO: implement me
+    // Nothing to do - wasm has static write barriers
 }
 
 int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
