@@ -361,65 +361,6 @@ namespace System
             }
         }
 
-        public static unsafe void Clear(Array array)
-        {
-            if (array == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-
-            MethodTable* mt = array.GetMethodTable();
-            nuint totalByteLength = mt->ComponentSize * array.NativeLength;
-            ref byte pStart = ref MemoryMarshal.GetArrayDataReference(array);
-
-            if (!mt->ContainsGCPointers)
-            {
-                SpanHelpers.ClearWithoutReferences(ref pStart, totalByteLength);
-            }
-            else
-            {
-                Debug.Assert(totalByteLength % (nuint)sizeof(IntPtr) == 0);
-                SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref pStart), totalByteLength / (nuint)sizeof(IntPtr));
-            }
-        }
-
-        public static unsafe void Clear(Array array, int index, int length)
-        {
-            if (array == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-
-            ref byte p = ref Unsafe.As<RawArrayData>(array).Data;
-            int lowerBound = 0;
-
-            MethodTable* mt = array.GetMethodTable();
-            if (!mt->IsSzArray)
-            {
-                int rank = mt->ArrayRank;
-                lowerBound = Unsafe.Add(ref Unsafe.As<byte, int>(ref p), rank);
-                p = ref Unsafe.Add(ref p, 2 * sizeof(int) * rank); // skip the bounds
-            }
-
-            int offset = index - lowerBound;
-
-            if (index < lowerBound || offset < 0 || length < 0 || (uint)(offset + length) > array.NativeLength)
-                ThrowHelper.ThrowIndexOutOfRangeException();
-
-            nuint elementSize = mt->ComponentSize;
-
-            ref byte ptr = ref Unsafe.AddByteOffset(ref p, (uint)offset * elementSize);
-            nuint byteLength = (uint)length * elementSize;
-
-            if (mt->ContainsGCPointers)
-            {
-                Debug.Assert(byteLength % (nuint)sizeof(IntPtr) == 0);
-                SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref ptr), byteLength / (uint)sizeof(IntPtr));
-            }
-            else
-            {
-                SpanHelpers.ClearWithoutReferences(ref ptr, byteLength);
-            }
-
-            // GC.KeepAlive(array) not required. pMT kept alive via `ptr`
-        }
-
         [Intrinsic]
         public int GetLength(int dimension)
         {

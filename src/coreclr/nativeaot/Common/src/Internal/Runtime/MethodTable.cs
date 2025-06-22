@@ -419,6 +419,20 @@ namespace Internal.Runtime
             }
         }
 
+        internal int MultiDimensionalArrayRank
+        {
+            get
+            {
+                Debug.Assert(this.IsArray);
+
+                int boundsSize = (int)this.ParameterizedTypeShape - SZARRAY_BASE_SIZE;
+                Debug.Assert(boundsSize > 0);
+                // Multidim array case: Base size includes space for two Int32s
+                // (upper and lower bound) per each dimension of the array.
+                return boundsSize / (2 * sizeof(int));
+            }
+        }
+
         internal bool IsSzArray
         {
             get
