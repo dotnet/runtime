@@ -595,6 +595,51 @@ namespace System
 
             // GC.KeepAlive(array) not required. pMT kept alive via `ptr`
         }
+
+        private unsafe nint GetFlattenedIndex(int rawIndex)
+        {
+            // Checked by the caller
+            Debug.Assert(Rank == 1);
+
+            if (!RuntimeHelpers.GetMethodTable(this)->IsSzArray)
+            {
+                ref int bounds = ref this.GetMultiDimensionalArrayBounds();
+                rawIndex -= Unsafe.Add(ref bounds, 1);
+            }
+
+            if ((uint)rawIndex >= NativeLength)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+            return rawIndex;
+        }
+
+        internal unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
+        {
+            // Checked by the caller
+            Debug.Assert(indices.Length == Rank);
+
+            if (!RuntimeHelpers.GetMethodTable(this)->IsSzArray)
+            {
+                ref int bounds = ref this.GetMultiDimensionalArrayBounds();
+                nint flattenedIndex = 0;
+                for (int i = 0; i < indices.Length; i++)
+                {
+                    int index = indices[i] - Unsafe.Add(ref bounds, indices.Length + i);
+                    int length = Unsafe.Add(ref bounds, i);
+                    if ((uint)index >= (uint)length)
+                        ThrowHelper.ThrowIndexOutOfRangeException();
+                    flattenedIndex = (length * flattenedIndex) + index;
+                }
+                Debug.Assert((nuint)flattenedIndex < NativeLength);
+                return flattenedIndex;
+            }
+            else
+            {
+                int index = indices[0];
+                if ((uint)index >= NativeLength)
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+                return index;
+            }
+        }
 #endif
 
         // The various Get values...

@@ -414,7 +414,7 @@ namespace System.Runtime.CompilerServices
 
         // Returns pointer to the multi-dimensional array bounds.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ref int GetMultiDimensionalArrayBounds(Array array)
+        internal static ref int GetMultiDimensionalArrayBounds(this Array array)
         {
             Debug.Assert(GetMultiDimensionalArrayRank(array) > 0);
             // See comment on RawArrayData for details

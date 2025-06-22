@@ -242,51 +242,6 @@ namespace System
             }
         }
 
-        private unsafe nint GetFlattenedIndex(int rawIndex)
-        {
-            // Checked by the caller
-            Debug.Assert(Rank == 1);
-
-            if (RuntimeHelpers.GetMethodTable(this)->IsMultiDimensionalArray)
-            {
-                ref int bounds = ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this);
-                rawIndex -= Unsafe.Add(ref bounds, 1);
-            }
-
-            if ((uint)rawIndex >= (uint)LongLength)
-                ThrowHelper.ThrowIndexOutOfRangeException();
-            return rawIndex;
-        }
-
-        private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
-        {
-            // Checked by the caller
-            Debug.Assert(indices.Length == Rank);
-
-            if (RuntimeHelpers.GetMethodTable(this)->IsMultiDimensionalArray)
-            {
-                ref int bounds = ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this);
-                nint flattenedIndex = 0;
-                for (int i = 0; i < indices.Length; i++)
-                {
-                    int index = indices[i] - Unsafe.Add(ref bounds, indices.Length + i);
-                    int length = Unsafe.Add(ref bounds, i);
-                    if ((uint)index >= (uint)length)
-                        ThrowHelper.ThrowIndexOutOfRangeException();
-                    flattenedIndex = (length * flattenedIndex) + index;
-                }
-                Debug.Assert((nuint)flattenedIndex < (nuint)LongLength);
-                return flattenedIndex;
-            }
-            else
-            {
-                int index = indices[0];
-                if ((uint)index >= (uint)LongLength)
-                    ThrowHelper.ThrowIndexOutOfRangeException();
-                return index;
-            }
-        }
-
         internal unsafe object? InternalGetValue(nint flattenedIndex)
         {
             MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(this);

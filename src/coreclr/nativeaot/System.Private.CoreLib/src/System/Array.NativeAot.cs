@@ -157,7 +157,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ref int GetRawMultiDimArrayBounds()
+        private ref int GetMultiDimensionalArrayBounds()
         {
             Debug.Assert(!IsSzArray);
             return ref Unsafe.As<byte, int>(ref Unsafe.As<RawArrayData>(this).Data);
@@ -413,7 +413,7 @@ namespace System
             Debug.Assert(eeType->NumVtableSlots != 0, "Compiler enforces we never have unconstructed MTs for multi-dim arrays since those can be template-constructed anytime");
             Array ret = RuntimeImports.RhNewVariableSizeObject(eeType, (int)totalLength);
 
-            ref int bounds = ref ret.GetRawMultiDimArrayBounds();
+            ref int bounds = ref ret.GetMultiDimensionalArrayBounds();
             for (int i = 0; i < rank; i++)
             {
                 Unsafe.Add(ref bounds, i) = pLengths[i];
@@ -431,7 +431,7 @@ namespace System
                 if ((uint)dimension >= rank)
                     throw new IndexOutOfRangeException();
 
-                return Unsafe.Add(ref GetRawMultiDimArrayBounds(), rank + dimension);
+                return Unsafe.Add(ref GetMultiDimensionalArrayBounds(), rank + dimension);
             }
 
             if (dimension != 0)
@@ -448,7 +448,7 @@ namespace System
                 if ((uint)dimension >= rank)
                     throw new IndexOutOfRangeException();
 
-                ref int bounds = ref GetRawMultiDimArrayBounds();
+                ref int bounds = ref GetMultiDimensionalArrayBounds();
 
                 int length = Unsafe.Add(ref bounds, dimension);
                 int lowerBound = Unsafe.Add(ref bounds, rank + dimension);
@@ -458,51 +458,6 @@ namespace System
             if (dimension != 0)
                 throw new IndexOutOfRangeException();
             return Length - 1;
-        }
-
-        private unsafe nint GetFlattenedIndex(int rawIndex)
-        {
-            // Checked by the caller
-            Debug.Assert(Rank == 1);
-
-            if (!IsSzArray)
-            {
-                ref int bounds = ref GetRawMultiDimArrayBounds();
-                rawIndex -= Unsafe.Add(ref bounds, 1);
-            }
-
-            if ((uint)rawIndex >= NativeLength)
-                ThrowHelper.ThrowIndexOutOfRangeException();
-            return rawIndex;
-        }
-
-        internal unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
-        {
-            // Checked by the caller
-            Debug.Assert(indices.Length == Rank);
-
-            if (!IsSzArray)
-            {
-                ref int bounds = ref GetRawMultiDimArrayBounds();
-                nint flattenedIndex = 0;
-                for (int i = 0; i < indices.Length; i++)
-                {
-                    int index = indices[i] - Unsafe.Add(ref bounds, indices.Length + i);
-                    int length = Unsafe.Add(ref bounds, i);
-                    if ((uint)index >= (uint)length)
-                        ThrowHelper.ThrowIndexOutOfRangeException();
-                    flattenedIndex = (length * flattenedIndex) + index;
-                }
-                Debug.Assert((nuint)flattenedIndex < NativeLength);
-                return flattenedIndex;
-            }
-            else
-            {
-                int index = indices[0];
-                if ((uint)index >= NativeLength)
-                    ThrowHelper.ThrowIndexOutOfRangeException();
-                return index;
-            }
         }
 
         internal unsafe object? InternalGetValue(nint flattenedIndex)
