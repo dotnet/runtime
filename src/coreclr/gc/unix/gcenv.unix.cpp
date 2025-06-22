@@ -222,7 +222,7 @@ bool GCToOSInterface::Initialize()
     //
     // support for FlusProcessWriteBuffers
     //
-
+#ifndef TARGET_WASM
     assert(s_flushUsingMemBarrier == 0);
 
     if (CanFlushUsingMembarrier())
@@ -244,7 +244,6 @@ bool GCToOSInterface::Initialize()
         // Verify that the s_helperPage is really aligned to the g_SystemInfo.dwPageSize
         assert((((size_t)g_helperPage) & (OS_PAGE_SIZE - 1)) == 0);
 
-#ifndef TARGET_BROWSER
         // Locking the page ensures that it stays in memory during the two mprotect
         // calls in the FlushProcessWriteBuffers below. If the page was unmapped between
         // those calls, they would not have the expected effect of generating IPI.
@@ -254,9 +253,6 @@ bool GCToOSInterface::Initialize()
         {
             return false;
         }
-#else
-        int status;
-#endif // !TARGET_BROWSER
 
         status = pthread_mutex_init(&g_flushProcessWriteBuffersMutex, NULL);
         if (status != 0)
@@ -266,6 +262,7 @@ bool GCToOSInterface::Initialize()
         }
     }
 #endif // !TARGET_APPLE
+#endif // !TARGET_WASM
 
     InitializeCGroup();
 
