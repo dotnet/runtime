@@ -362,12 +362,16 @@ namespace System
         }
 
         [Intrinsic]
-        public int GetLength(int dimension)
+        public unsafe int GetLength(int dimension)
         {
-            int length = GetUpperBound(dimension) + 1;
-            // We don't support non-zero lower bounds so don't incur the cost of obtaining it.
-            Debug.Assert(GetLowerBound(dimension) == 0);
-            return length;
+            int rank = this.GetMethodTable()->MultiDimensionalArrayRank;
+            if (rank == 0 && dimension == 0)
+                return Length;
+
+            if ((uint)dimension >= (uint)rank)
+                throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayRankIndex);
+
+            return Unsafe.Add(ref GetMultiDimensionalArrayBounds(), dimension);
         }
 
         public unsafe int Rank
@@ -423,41 +427,25 @@ namespace System
         }
 
         [Intrinsic]
-        public int GetLowerBound(int dimension)
+        public unsafe int GetLowerBound(int dimension)
         {
-            if (!IsSzArray)
-            {
-                int rank = Rank;
-                if ((uint)dimension >= rank)
-                    throw new IndexOutOfRangeException();
+            if (dimension == 0)
+                return 0;
 
-                return Unsafe.Add(ref GetMultiDimensionalArrayBounds(), rank + dimension);
-            }
-
-            if (dimension != 0)
+            // We don't support non-zero lower bounds so don't incur the cost of obtaining it.
+            if ((uint)dimension >= (uint)this.GetMethodTable()->MultiDimensionalArrayRank)
                 throw new IndexOutOfRangeException();
+
+            Debug.Assert(IsSzArray || Unsafe.Add(ref GetMultiDimensionalArrayBounds(), Rank + dimension) == 0);
             return 0;
         }
 
         [Intrinsic]
         public int GetUpperBound(int dimension)
         {
-            if (!IsSzArray)
-            {
-                int rank = Rank;
-                if ((uint)dimension >= rank)
-                    throw new IndexOutOfRangeException();
-
-                ref int bounds = ref GetMultiDimensionalArrayBounds();
-
-                int length = Unsafe.Add(ref bounds, dimension);
-                int lowerBound = Unsafe.Add(ref bounds, rank + dimension);
-                return length + lowerBound - 1;
-            }
-
-            if (dimension != 0)
-                throw new IndexOutOfRangeException();
-            return Length - 1;
+            // We don't support non-zero lower bounds so don't incur the cost of obtaining it.
+            Debug.Assert(GetLowerBound(dimension) == 0);
+            return GetLength(dimension) - 1;
         }
 
         internal unsafe object? InternalGetValue(nint flattenedIndex)
