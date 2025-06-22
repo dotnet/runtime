@@ -13633,12 +13633,6 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
             // special operator that can use only one constant
             // to fold - e.g. booleans
 
-            if (opts.OptimizationDisabled())
-            {
-                // Too heavy for tier0
-                return tree;
-            }
-
             return gtFoldExprSpecial(tree);
         }
         else if (tree->OperIsCompare())
