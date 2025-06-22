@@ -1005,8 +1005,12 @@ namespace System
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
+#if MONO
                 result = (actualValue == Half.PositiveInfinity) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue == Half.NegativeInfinity) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1090,8 +1094,12 @@ namespace System
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
+#if MONO
                 result = (actualValue == Half.PositiveInfinity) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue == Half.NegativeInfinity) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
