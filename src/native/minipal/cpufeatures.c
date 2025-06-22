@@ -385,12 +385,10 @@ int minipal_getcpufeatures(void)
                 result |= XArchIntrinsicConstants_AvxVnni;
             }
 
-            if ((cpuidInfo[CPUID_EDX] & (1 << 4)) != 0)                                                        // AVX-VNNI-INT8
+            if (((cpuidInfo[CPUID_EDX] & (1 << 4)) != 0) &&                                                    // AVX-VNNI-INT8
+                ((cpuidInfo[CPUID_EDX] & (1 << 10)) != 0))                                                     // AVX-VNNI-INT16
             {
-                if ((cpuidInfo[CPUID_EDX] & (1 << 10)) != 0)
-                {
-                    result |= XArchIntrinsicConstants_AvxVnniInt;                                              // AVX-VNNI-INT16
-                }
+                result |= XArchIntrinsicConstants_AvxVnniInt;
             }
 
             if ((cpuidInfo[CPUID_EAX] & (1 << 23)) != 0)                                                        // AVX-IFMA
