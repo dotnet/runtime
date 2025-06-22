@@ -606,5 +606,288 @@ namespace System.Linq.Expressions.Tests
             var pro = Expression.Property(Expression.Constant(new PS {II = 42}), nameof(PS.II));
             Assert.NotSame(pro, pro.Update(Expression.Constant(new PS {II = 42})));
         }
+
+        class Class<T>
+            where T : new()
+        {
+            public Class(T value) => Item = value;
+            public Class() : this(new T()) {}
+
+            public T Item;
+        }
+
+        struct Struct<T>
+            where T : new()
+        {
+            public static ConstructorInfo GetConstructorInfo() => typeof(Struct<T>).GetConstructor([typeof(T)])!;
+
+            public Struct(T value) => Item = value;
+            public Struct() : this(new T()) {}
+
+            public T Item;
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void AssignToNestedValueTypesClassStructIntTest(bool useInterpreter)
+        {
+            var outer =
+                Expression.Parameter(typeof(Class<Struct<int>>));
+
+            Expression<Action<Class<Struct<int>>>> e =
+                Expression.Lambda<Action<Class<Struct<int>>>>(
+                    Expression.Assign(
+                        Expression.Field(
+                            Expression.Field(
+                                outer,
+                                "Item"
+                            ),
+                            "Item"
+                        ),
+                        Expression.Constant(42)
+                    ),
+                    [outer]
+                );
+
+            Action<Class<Struct<int>>> f = e.Compile(useInterpreter);
+
+            Class<Struct<int>> src = new Class<Struct<int>>();
+
+            Assert.Equal(0, src.Item.Item);
+
+            f(src);
+
+            Assert.Equal(42, src.Item.Item);
+        }
+
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void AssignToNestedValueTypesClassStructTest(bool useInterpreter)
+        {
+            var outer =
+                Expression.Parameter(typeof(Class<Struct<int>>));
+
+            Expression<Action<Class<Struct<int>>>> e =
+                Expression.Lambda<Action<Class<Struct<int>>>>(
+                    Expression.Assign(
+                        Expression.Field(
+                            outer,
+                            "Item"
+                        ),
+                        Expression.New(
+                            Struct<int>.GetConstructorInfo(),
+                            Expression.Constant(42)
+                        )
+                    ),
+                    [outer]
+                );
+
+            Action<Class<Struct<int>>> f = e.Compile(useInterpreter);
+
+            Class<Struct<int>> src = new Class<Struct<int>>();
+
+            Assert.Equal(0, src.Item.Item);
+
+            f(src);
+
+            Assert.Equal(42, src.Item.Item);
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void AssignToNestedValueTypesClassStructStructStructIntTest(bool useInterpreter)
+        {
+            var outer =
+                Expression.Parameter(typeof(Class<Struct<Struct<Struct<int>>>>));
+
+            Expression<Action<Class<Struct<Struct<Struct<int>>>>>> e =
+                Expression.Lambda<Action<Class<Struct<Struct<Struct<int>>>>>>(
+                    Expression.Assign(
+                        Expression.Field(
+                            Expression.Field(
+                                Expression.Field(
+                                    Expression.Field(
+                                        outer,
+                                        "Item"
+                                    ),
+                                    "Item"
+                                ),
+                                "Item"
+                            ),
+                            "Item"
+                        ),
+                        Expression.Constant(42)
+                    ),
+                    [outer]
+                );
+
+            Action<Class<Struct<Struct<Struct<int>>>>> f = e.Compile(useInterpreter);
+
+            Class<Struct<Struct<Struct<int>>>> src = new Class<Struct<Struct<Struct<int>>>>();
+
+            Assert.Equal(0, src.Item.Item.Item.Item);
+
+            f(src);
+
+            Assert.Equal(42, src.Item.Item.Item.Item);
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void AssignToNestedValueTypesClassStructStructStructTest(bool useInterpreter)
+        {
+            var outer =
+                Expression.Parameter(typeof(Class<Struct<Struct<Struct<int>>>>));
+
+            Expression<Action<Class<Struct<Struct<Struct<int>>>>>> e =
+                Expression.Lambda<Action<Class<Struct<Struct<Struct<int>>>>>>(
+                    Expression.Assign(
+                        Expression.Field(
+                            Expression.Field(
+                                Expression.Field(
+                                    outer,
+                                    "Item"
+                                ),
+                                "Item"
+                            ),
+                            "Item"
+                        ),
+                        Expression.New(
+                            Struct<int>.GetConstructorInfo(),
+                            Expression.Constant(42)
+                        )
+                    ),
+                    [outer]
+                );
+
+            Action<Class<Struct<Struct<Struct<int>>>>> f = e.Compile(useInterpreter);
+
+            Class<Struct<Struct<Struct<int>>>> src = new Class<Struct<Struct<Struct<int>>>>();
+
+            Assert.Equal(0, src.Item.Item.Item.Item);
+
+            f(src);
+
+            Assert.Equal(42, src.Item.Item.Item.Item);
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void AssignToNestedValueTypesClassStructStructClassIntTest(bool useInterpreter)
+        {
+            var outer =
+                Expression.Parameter(typeof(Class<Struct<Struct<Class<int>>>>));
+
+            Expression<Action<Class<Struct<Struct<Class<int>>>>>> e =
+                Expression.Lambda<Action<Class<Struct<Struct<Class<int>>>>>>(
+                    Expression.Assign(
+                        Expression.Field(
+                            Expression.Field(
+                                Expression.Field(
+                                    Expression.Field(
+                                        outer,
+                                        "Item"
+                                    ),
+                                    "Item"
+                                ),
+                                "Item"
+                            ),
+                            "Item"
+                        ),
+                        Expression.Constant(42)
+                    ),
+                    [outer]
+                );
+
+            Action<Class<Struct<Struct<Class<int>>>>> f = e.Compile(useInterpreter);
+
+            Class<Struct<Struct<Class<int>>>> src = new Class<Struct<Struct<Class<int>>>>();
+
+            Assert.Equal(0, src.Item.Item.Item.Item);
+
+            f(src);
+
+            Assert.Equal(42, src.Item.Item.Item.Item);
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void AssignToNestedValueTypesClassStructClassStructIntTest(bool useInterpreter)
+        {
+            var outer =
+                Expression.Parameter(typeof(Class<Struct<Class<Struct<int>>>>));
+
+            Expression<Action<Class<Struct<Class<Struct<int>>>>>> e =
+                Expression.Lambda<Action<Class<Struct<Class<Struct<int>>>>>>(
+                    Expression.Assign(
+                        Expression.Field(
+                            Expression.Field(
+                                Expression.Field(
+                                    Expression.Field(
+                                        outer,
+                                        "Item"
+                                    ),
+                                    "Item"
+                                ),
+                                "Item"
+                            ),
+                            "Item"
+                        ),
+                        Expression.Constant(42)
+                    ),
+                    [outer]
+                );
+
+            Action<Class<Struct<Class<Struct<int>>>>> f = e.Compile(useInterpreter);
+
+            Class<Struct<Class<Struct<int>>>> src = new Class<Struct<Class<Struct<int>>>>();
+
+            Assert.Equal(0, src.Item.Item.Item.Item);
+
+            f(src);
+
+            Assert.Equal(42, src.Item.Item.Item.Item);
+        }
+
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void AssignToNestedValueTypesClassClassStructStructIntTest(bool useInterpreter)
+        {
+            var outer =
+                Expression.Parameter(typeof(Class<Class<Struct<Struct<int>>>>));
+
+            Expression<Action<Class<Class<Struct<Struct<int>>>>>> e =
+                Expression.Lambda<Action<Class<Class<Struct<Struct<int>>>>>>(
+                    Expression.Assign(
+                        Expression.Field(
+                            Expression.Field(
+                                Expression.Field(
+                                    Expression.Field(
+                                        outer,
+                                        "Item"
+                                    ),
+                                    "Item"
+                                ),
+                                "Item"
+                            ),
+                            "Item"
+                        ),
+                        Expression.Constant(42)
+                    ),
+                    [outer]
+                );
+
+            Action<Class<Class<Struct<Struct<int>>>>> f = e.Compile(useInterpreter);
+
+            Class<Class<Struct<Struct<int>>>> src = new Class<Class<Struct<Struct<int>>>>();
+
+            Assert.Equal(0, src.Item.Item.Item.Item);
+
+            f(src);
+
+            Assert.Equal(42, src.Item.Item.Item.Item);
+        }
     }
 }

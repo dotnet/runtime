@@ -3,4 +3,6 @@
 
 using Xunit;
 
-[assembly: SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/12927", ~RuntimeConfiguration.Release)]
+// TODO: Return to uncommented (temporarily restore tests running whilst resolving bug)
+// 
+// [assembly: SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/12927", ~RuntimeConfiguration.Release)]
