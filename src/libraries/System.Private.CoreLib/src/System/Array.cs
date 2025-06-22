@@ -351,6 +351,16 @@ namespace System
             Copy(sourceArray, isourceIndex, destinationArray, idestinationIndex, ilength);
         }
 
+        // Provides a strong exception guarantee - either it succeeds, or
+        // it throws an exception with no side effects.  The arrays must be
+        // compatible array types based on the array element type - this
+        // method does not support casting, boxing, or primitive widening.
+        // It will up-cast, assuming the array types are correct.
+        public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
+        }
+
 #if !MONO // implementation details of MethodTable
 
         // Copies length elements from sourceArray, starting at index 0, to
@@ -415,16 +425,6 @@ namespace System
 
             // Less common
             CopyImpl(sourceArray!, sourceIndex, destinationArray!, destinationIndex, length, reliable: false);
-        }
-
-        // Provides a strong exception guarantee - either it succeeds, or
-        // it throws an exception with no side effects.  The arrays must be
-        // compatible array types based on the array element type - this
-        // method does not support casting, boxing, or primitive widening.
-        // It will up-cast, assuming the array types are correct.
-        public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
-        {
-            CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
         }
 
         private static unsafe void CopyImpl(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)

@@ -92,11 +92,6 @@ namespace System
                 SpanHelpers.ClearWithoutReferences(ref ptr, byteLength);
         }
 
-        public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
-        {
-            Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, true);
-        }
-
         public static void Copy(Array sourceArray, Array destinationArray, int length)
         {
             ArgumentNullException.ThrowIfNull(sourceArray);
