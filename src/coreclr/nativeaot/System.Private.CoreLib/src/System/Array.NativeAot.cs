@@ -254,31 +254,16 @@ namespace System
 
             Debug.Assert(!sourceElementEEType->IsValueType && !sourceElementEEType->IsPointer && !sourceElementEEType->IsFunctionPointer);
             Debug.Assert(!destinationElementEEType->IsValueType && !destinationElementEEType->IsPointer && !destinationElementEEType->IsFunctionPointer);
+            Debug.Assert(sourceElementEEType != destinationElementEEType);
 
-            bool reverseCopy = ((object)sourceArray == (object)destinationArray) && (sourceIndex < destinationIndex);
             ref object? refDestinationArray = ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(destinationArray));
             ref object? refSourceArray = ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(sourceArray));
-            if (reverseCopy)
+            for (int i = 0; i < length; i++)
             {
-                sourceIndex += length - 1;
-                destinationIndex += length - 1;
-                for (int i = 0; i < length; i++)
-                {
-                    object? value = Unsafe.Add(ref refSourceArray, sourceIndex - i);
-                    if (value != null && TypeCast.IsInstanceOfAny(destinationElementEEType, value) == null)
-                        throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
-                    Unsafe.Add(ref refDestinationArray, destinationIndex - i) = value;
-                }
-            }
-            else
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    object? value = Unsafe.Add(ref refSourceArray, sourceIndex + i);
-                    if (value != null && TypeCast.IsInstanceOfAny(destinationElementEEType, value) == null)
-                        throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
-                    Unsafe.Add(ref refDestinationArray, destinationIndex + i) = value;
-                }
+                object? value = Unsafe.Add(ref refSourceArray, sourceIndex + i);
+                if (value != null && TypeCast.IsInstanceOfAny(destinationElementEEType, value) == null)
+                    throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
+                Unsafe.Add(ref refDestinationArray, destinationIndex + i) = value;
             }
         }
 
@@ -363,16 +348,10 @@ namespace System
 
             nuint srcElementSize = sourceArray.ElementSize;
             nuint destElementSize = destinationArray.ElementSize;
+            Debug.Assert(srcElementSize != destElementSize);
 
             ref byte srcData = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcElementSize);
             ref byte dstData = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destElementSize);
-
-            if (sourceElementType == destElementType)
-            {
-                // Multidim arrays and enum->int copies can still reach this path.
-                SpanHelpers.Memmove(ref dstData, ref srcData, (nuint)length * srcElementSize);
-                return;
-            }
 
             for (int i = 0; i < length; i++)
             {
