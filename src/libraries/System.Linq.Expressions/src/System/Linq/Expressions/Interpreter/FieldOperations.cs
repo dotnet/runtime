@@ -58,7 +58,7 @@ namespace System.Linq.Expressions.Interpreter
                 (self, _field.FieldType) switch
                 {
                     (_, { IsPrimitive: false, IsValueType: true }) => new FieldData(self!, _field),
-                    (FieldData fieldData, _) => _field.GetValue(fieldData.ToObject()),
+                    (FieldData fieldData, _) => fieldData.GetValueDirect(_field),
                     (_, _) => _field.GetValue(self),
                 };
 
