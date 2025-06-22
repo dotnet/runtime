@@ -416,6 +416,83 @@ namespace System
             // Less common
             CopyImpl(sourceArray!, sourceIndex, destinationArray!, destinationIndex, length, reliable: false);
         }
+
+        // Provides a strong exception guarantee - either it succeeds, or
+        // it throws an exception with no side effects.  The arrays must be
+        // compatible array types based on the array element type - this
+        // method does not support casting, boxing, or primitive widening.
+        // It will up-cast, assuming the array types are correct.
+        public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
+        }
+
+        private static unsafe void CopyImpl(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
+        {
+            if (sourceArray == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.sourceArray);
+            if (destinationArray == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destinationArray);
+
+            if (sourceArray.GetType() != destinationArray.GetType() && sourceArray.Rank != destinationArray.Rank)
+                throw new RankException(SR.Rank_MustMatch);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+
+            int srcLB = sourceArray.GetLowerBound(0);
+            ArgumentOutOfRangeException.ThrowIfLessThan(sourceIndex, srcLB);
+            ArgumentOutOfRangeException.ThrowIfNegative(sourceIndex - srcLB, nameof(sourceIndex));
+            sourceIndex -= srcLB;
+
+            int dstLB = destinationArray.GetLowerBound(0);
+            ArgumentOutOfRangeException.ThrowIfLessThan(destinationIndex, dstLB);
+            ArgumentOutOfRangeException.ThrowIfNegative(destinationIndex - dstLB, nameof(destinationIndex));
+            destinationIndex -= dstLB;
+
+            if ((uint)(sourceIndex + length) > sourceArray.NativeLength)
+                throw new ArgumentException(SR.Arg_LongerThanSrcArray, nameof(sourceArray));
+            if ((uint)(destinationIndex + length) > destinationArray.NativeLength)
+                throw new ArgumentException(SR.Arg_LongerThanDestArray, nameof(destinationArray));
+
+            ArrayAssignType assignType = ArrayAssignType.WrongType;
+
+            if (sourceArray.GetType() == destinationArray.GetType()
+                || (assignType = CanAssignArrayType(sourceArray, destinationArray)) == ArrayAssignType.SimpleCopy)
+            {
+                MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
+
+                nuint elementSize = (nuint)pMT->ComponentSize;
+                nuint byteCount = (uint)length * elementSize;
+                ref byte src = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (uint)sourceIndex * elementSize);
+                ref byte dst = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (uint)destinationIndex * elementSize);
+
+                if (pMT->ContainsGCPointers)
+                    Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+                else
+                    SpanHelpers.Memmove(ref dst, ref src, byteCount);
+
+                // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
+                return;
+            }
+
+            // If we were called from Array.ConstrainedCopy, ensure that the array copy
+            // is guaranteed to succeed.
+            if (reliable)
+                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
+
+            // Rare
+            CopySlow(sourceArray, sourceIndex, destinationArray, destinationIndex, length, assignType);
+        }
+
+        private enum ArrayAssignType
+        {
+            SimpleCopy,
+            WrongType,
+            MustCast,
+            BoxValueClassOrPrimitive,
+            UnboxValueClass,
+            PrimitiveWiden,
+        }
 #endif
 
         // The various Get values...

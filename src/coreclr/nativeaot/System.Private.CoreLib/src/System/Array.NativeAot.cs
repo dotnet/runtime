@@ -163,16 +163,84 @@ namespace System
             return ref Unsafe.As<byte, int>(ref Unsafe.As<RawArrayData>(this).Data);
         }
 
-        // Provides a strong exception guarantee - either it succeeds, or
-        // it throws an exception with no side effects.  The arrays must be
-        // compatible array types based on the array element type - this
-        // method does not support casting, boxing, or primitive widening.
-        // It will up-cast, assuming the array types are correct.
-        public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        private static unsafe ArrayAssignType CanAssignArrayType(Array sourceArray, Array destinationArray)
         {
-            CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
+            MethodTable* sourceElementEEType = sourceArray.ElementMethodTable;
+            MethodTable* destinationElementEEType = destinationArray.ElementMethodTable;
+
+            if (sourceElementEEType == destinationElementEEType) // This check kicks for different array kind or dimensions
+                return ArrayAssignType.SimpleCopy;
+
+            // Value class boxing
+            if (sourceElementEEType->IsValueType && !destinationElementEEType->IsValueType)
+            {
+                if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
+                    return ArrayAssignType.BoxValueClassOrPrimitive;
+                else
+                    return ArrayAssignType.WrongType;
+            }
+
+            // Value class unboxing.
+            if (!sourceElementEEType->IsValueType && destinationElementEEType->IsValueType)
+            {
+                if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
+                    return ArrayAssignType.UnboxValueClass;
+                else if (RuntimeImports.AreTypesAssignable(destinationElementEEType, sourceElementEEType))   // V extends IV. Copying from IV to V, or Object to V.
+                    return ArrayAssignType.UnboxValueClass;
+                else
+                    return ArrayAssignType.WrongType;
+            }
+
+            // Copying primitives from one type to another
+            if (sourceElementEEType->IsPrimitive && destinationElementEEType->IsPrimitive)
+            {
+                EETypeElementType sourceElementType = sourceElementEEType->ElementType;
+                EETypeElementType destElementType = destinationElementEEType->ElementType;
+
+                if (GetNormalizedIntegralArrayElementType(sourceElementType) == GetNormalizedIntegralArrayElementType(destElementType))
+                    return ArrayAssignType.SimpleCopy;
+                else if (InvokeUtils.CanPrimitiveWiden(sourceElementType, destElementType))
+                    return ArrayAssignType.PrimitiveWiden;
+                else
+                    return ArrayAssignType.WrongType;
+            }
+
+            // src Object extends dest
+            if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
+                return ArrayAssignType.SimpleCopy;
+
+            // dest Object extends src
+            if (RuntimeImports.AreTypesAssignable(destinationElementEEType, sourceElementEEType))
+                return ArrayAssignType.MustCast;
+
+            // class X extends/implements src and implements dest.
+            if (destinationElementEEType->IsInterface)
+                return ArrayAssignType.MustCast;
+
+            // class X implements src and extends/implements dest
+            if (sourceElementEEType->IsInterface)
+                return ArrayAssignType.MustCast;
+
+            // Compatible pointers
+            if (sourceElementEEType->IsPointer && destinationElementEEType->IsPointer
+                && RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
+                return ArrayAssignType.SimpleCopy;
+
+            return ArrayAssignType.WrongType;
         }
 
+        private static EETypeElementType GetNormalizedIntegralArrayElementType(EETypeElementType elementType)
+        {
+            Debug.Assert(elementType >= EETypeElementType.Boolean && elementType <= EETypeElementType.Double);
+
+            // Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
+            // Enums with interchangeable underlying types are interchangeable
+            // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
+
+            // U1/U2/U4/U8/U
+            int shift = (0b0010_1010_1010_0000 >> (int)elementType) & 1;
+            return (EETypeElementType)((int)elementType - shift);
+        }
 
         //
         // Funnel for all the Array.Copy() overloads. The "reliable" parameter indicates whether the caller for ConstrainedCopy()
