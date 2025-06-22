@@ -2597,7 +2597,7 @@ InitializeFlushProcessWriteBuffers()
     }
 #endif
 
-#ifdef TARGET_APPLE
+#if defined(TARGET_APPLE) || defined(TARGET_WASM)
     return TRUE;
 #else
     s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
@@ -2610,7 +2610,6 @@ InitializeFlushProcessWriteBuffers()
     // Verify that the s_helperPage is really aligned to the GetVirtualPageSize()
     _ASSERTE((((SIZE_T)s_helperPage) & (GetVirtualPageSize() - 1)) == 0);
 
-#ifndef TARGET_BROWSER
     // Locking the page ensures that it stays in memory during the two mprotect
     // calls in the FlushProcessWriteBuffers below. If the page was unmapped between
     // those calls, they would not have the expected effect of generating IPI.
@@ -2620,9 +2619,6 @@ InitializeFlushProcessWriteBuffers()
     {
         return FALSE;
     }
-#else
-    int status;
-#endif // !TARGET_BROWSER
 
     status = pthread_mutex_init(&flushProcessWriteBuffersMutex, NULL);
     if (status != 0)
@@ -2631,7 +2627,7 @@ InitializeFlushProcessWriteBuffers()
     }
 
     return status == 0;
-#endif // TARGET_APPLE
+#endif // TARGET_APPLE || TARGET_WASM
 }
 
 #define FATAL_ASSERT(e, msg) \
