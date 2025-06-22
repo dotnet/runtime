@@ -211,7 +211,7 @@ void UnwindInfoTable::Register()
             iRangeStart, iRangeEnd);
         _ASSERTE(!"Failed to publish UnwindInfo (ignorable)");
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 /*****************************************************************************/
@@ -505,7 +505,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
         STRESS_LOG1(LF_JIT, LL_ERROR, "Exception happened when doing unwind Info rundown. EIP of last AV = %p\n", g_LastAccessViolationEIP);
         _ASSERTE(!"Exception thrown while publishing 'catchup' ETW unwind information");
         s_publishingActive = false;     // Try to minimize damage.
-    } EX_END_CATCH(SwallowAllExceptions);
+    } EX_END_CATCH
 }
 
 #endif // defined(TARGET_AMD64) && !defined(DACCESS_COMPILE)
@@ -1808,7 +1808,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
         {
             LogJITInitializationError("LoadAndInitializeJIT: LoadAndInitializeJIT: caught an exception trying to initialize %s", utf8JitName);
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
     else
     {
@@ -1833,7 +1833,7 @@ static ICorJitCompiler* InitializeStaticJIT()
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return newJitCompiler;
 }
@@ -2667,7 +2667,7 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
         pHp = NULL;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (pHp == NULL)
     {
@@ -2870,13 +2870,6 @@ void EECodeGenManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     TCodeHeader * pCodeHdrRW = NULL;
 
     CodeHeapRequestInfo requestInfo(pMD);
-#if defined(FEATURE_JIT_PITCHING)
-    if (pMD && pMD->IsPitchable() && CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchMethodSizeThreshold) < blockSize)
-    {
-        requestInfo.SetDynamicDomain();
-    }
-#endif
-
     SIZE_T realHeaderSize;
 #ifdef FEATURE_INTERPRETER
     if (std::is_same<TCodeHeader, InterpreterCodeHeader>::value)

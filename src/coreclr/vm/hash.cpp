@@ -1033,7 +1033,7 @@ void HashMap::Compact()
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     //compact deleted slots, mark them as EMPTY
