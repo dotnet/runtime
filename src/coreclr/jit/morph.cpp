@@ -10041,10 +10041,6 @@ GenTree* Compiler::fgOptimizeCommutativeArithmetic(GenTreeOp* tree)
     {
         optimizedTree = fgOptimizeMultiply(tree);
     }
-    else if (tree->OperIs(GT_AND))
-    {
-        optimizedTree = fgOptimizeBitwiseAnd(tree);
-    }
     else if (tree->OperIs(GT_XOR))
     {
         optimizedTree = fgOptimizeBitwiseXor(tree);
@@ -10094,22 +10090,6 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         addTwo->gtOp1 = constOne;
         add->gtOp2    = gtFoldExprConst(add->gtOp2);
         op2           = add->gtGetOp2();
-    }
-
-    // Fold (x + 0) - given it won't change the tree type.
-    if (op2->IsIntegralConst(0) && (genActualType(add) == genActualType(op1)))
-    {
-        // Keep the offset nodes with annotations for value numbering purposes.
-        if (!op2->IsCnsIntOrI() || (op2->AsIntCon()->gtFieldSeq == nullptr))
-        {
-            DEBUG_DESTROY_NODE(op2);
-            DEBUG_DESTROY_NODE(add);
-
-            return op1;
-        }
-
-        // Communicate to CSE that this addition is a no-op.
-        add->SetDoNotCSE();
     }
 
     if (opts.OptimizationEnabled())
@@ -10249,23 +10229,6 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
 
         ssize_t mult = op2->AsIntConCommon()->IconValue();
 
-        if (mult == 0)
-        {
-            // We may be able to throw away op1 (unless it has side-effects)
-
-            if ((op1->gtFlags & GTF_SIDE_EFFECT) == 0)
-            {
-                DEBUG_DESTROY_NODE(op1);
-                DEBUG_DESTROY_NODE(mul);
-
-                return op2; // Just return the "0" node
-            }
-
-            // We need to keep op1 for the side-effects. Hang it off a GT_COMMA node.
-            mul->ChangeOper(GT_COMMA, GenTree::PRESERVE_VN);
-            return mul;
-        }
-
 #ifdef TARGET_XARCH
         // Should we try to replace integer multiplication with lea/add/shift sequences?
         bool mulShiftOpt = compCodeOpt() != SMALL_CODE;
@@ -10333,35 +10296,6 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
 
             return mul;
         }
-    }
-
-    return nullptr;
-}
-
-//------------------------------------------------------------------------
-// fgOptimizeBitwiseAnd: optimizes the "and" operation.
-//
-// Arguments:
-//   andOp - the GT_AND tree to optimize.
-//
-// Return Value:
-//   The optimized tree, currently always a relop, in case any transformations
-//   were performed. Otherwise, "nullptr", guaranteeing no state change.
-//
-GenTree* Compiler::fgOptimizeBitwiseAnd(GenTreeOp* andOp)
-{
-    assert(andOp->OperIs(GT_AND));
-
-    GenTree* op1 = andOp->gtGetOp1();
-    GenTree* op2 = andOp->gtGetOp2();
-
-    // Fold "cmp & 1" to just "cmp".
-    if (andOp->TypeIs(TYP_INT) && op1->OperIsCompare() && op2->IsIntegralConst(1))
-    {
-        DEBUG_DESTROY_NODE(op2);
-        DEBUG_DESTROY_NODE(andOp);
-
-        return op1;
     }
 
     return nullptr;
@@ -10516,13 +10450,7 @@ GenTree* Compiler::fgOptimizeBitwiseXor(GenTreeOp* xorOp)
     GenTree* op1 = xorOp->gtGetOp1();
     GenTree* op2 = xorOp->gtGetOp2();
 
-    if (op2->IsIntegralConst(0))
-    {
-        /* "x ^ 0" is "x" */
-        DEBUG_DESTROY_NODE(xorOp, op2);
-        return op1;
-    }
-    else if (op2->IsIntegralConst(-1))
+    if (op2->IsIntegralConst(-1))
     {
         /* "x ^ -1" is "~x" */
         xorOp->ChangeOper(GT_NOT);
@@ -10863,17 +10791,6 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                 }
             }
 
-            break;
-
-        case GT_DIV:
-
-            /* For "val / 1", just return "val" */
-
-            if (op2->IsIntegralConst(1))
-            {
-                DEBUG_DESTROY_NODE(tree);
-                return op1;
-            }
             break;
 
         case GT_UDIV:

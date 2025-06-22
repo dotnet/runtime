@@ -14544,7 +14544,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         case GT_DIV:
         case GT_UDIV:
         {
-            if ((op2 == cons) && (val == 1) && !op1->OperIsConst())
+            if ((op2 == cons) && (val == 1))
             {
                 goto DONE_FOLD;
             }
@@ -14568,6 +14568,14 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 op = gtWrapWithSideEffects(cons, op, GTF_ALL_EFFECT);
                 goto DONE_FOLD;
             }
+            else if (val == 1)
+            {
+                // Fold "cmp & 1" to just "cmp"
+                if (op->OperIsCompare())
+                {
+                    goto DONE_FOLD;
+                }
+            }
             else if (val == 0xFF)
             {
                 op = NewZeroExtendNode(tree->TypeGet(), op, TYP_UBYTE);
@@ -14587,6 +14595,15 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         }
 
         case GT_OR:
+        {
+            if (val == 0)
+            {
+                goto DONE_FOLD;
+            }
+            break;
+        }
+
+        case GT_XOR:
         {
             if (val == 0)
             {
