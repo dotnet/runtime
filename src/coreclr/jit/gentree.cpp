@@ -29080,9 +29080,60 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
 // GetOperForHWIntrinsicId: Returns oper based on the intrinsic ID and base type
 //
 // Arguments:
-//    id           - The intrinsic ID for which to get the oper
-//    simdBaseType - The base type on which id is executed
-//    isScalar     - On return, contains true if the oper is over scalar data; otherwise false
+//    isScalar       - On return, contains true if the oper is over scalar data; otherwise false
+//    getEffectiveOp - true to check for certain special patterns and return the effective operation
+//
+// Returns:
+//    The oper based on the intrinsic ID and base type
+//
+genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(bool* isScalar, bool getEffectiveOp) const
+{
+    var_types  simdBaseType = GetSimdBaseType();
+    genTreeOps oper         = GetOperForHWIntrinsicId(GetHWIntrinsicId(), simdBaseType, isScalar);
+
+    if (getEffectiveOp)
+    {
+        if (oper == GT_SUB)
+        {
+            GenTree* op1 = Op(1);
+
+            if (varTypeIsIntegral(simdBaseType))
+            {
+                if (op1->IsVectorZero())
+                {
+                    oper = GT_NEG;
+                }
+                else if (isScalar && op1->IsCnsVec() && op1->AsVecCon()->IsScalarZero(simdBaseType))
+                {
+                    oper = GT_NEG;
+                }
+            }
+        }
+        else if (oper == GT_XOR)
+        {
+            GenTree* op2 = Op(2);
+
+            if (op2->IsVectorAllBitsSet())
+            {
+                oper = GT_NOT;
+            }
+            else if (varTypeIsFloating(simdBaseType) && op2->IsVectorNegativeZero(simdBaseType))
+            {
+                oper = GT_NEG;
+            }
+        }
+    }
+
+    return oper;
+}
+
+//------------------------------------------------------------------------------
+// GetOperForHWIntrinsicId: Returns oper based on the intrinsic ID and base type
+//
+// Arguments:
+//    id             - The intrinsic ID for which to get the oper
+//    simdBaseType   - The base type on which id is executed
+//    isScalar       - On return, contains true if the oper is over scalar data; otherwise false
 //
 // Returns:
 //    The oper based on the intrinsic ID and base type
