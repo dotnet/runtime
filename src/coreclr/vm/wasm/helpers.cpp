@@ -456,7 +456,7 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 
 void FlushWriteBarrierInstructionCache()
 {
-    PORTABILITY_ASSERT("FlushWriteBarrierInstructionCache is not implemented on wasm");
+    // Nothing to do - wasm has static write barriers
 }
 
 EXTERN_C Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
