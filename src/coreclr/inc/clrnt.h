@@ -522,7 +522,7 @@ RtlVirtualUnwind (
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     )
 {
-    _ASSERTE("The function RtlVirtualUnwind is not implemented on wasm");
+    PORTABILITY_ASSERT("The function RtlVirtualUnwind is not implemented on wasm");
     return nullptr;
 }
 
@@ -533,7 +533,7 @@ RtlpGetFunctionEndAddress (
     _In_ TADDR ImageBase
     )
 {
-    _ASSERTE("The function RtlpGetFunctionEndAddress is not implemented on wasm");
+    PORTABILITY_ASSERT("The function RtlpGetFunctionEndAddress is not implemented on wasm");
     return 0;
 }
 
