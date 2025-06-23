@@ -570,6 +570,10 @@ MAIN_LOOP:
                     LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], float);
                     ip += 3;
                     break;
+                case INTOP_CONV_U8_U4:
+                    LOCAL_VAR(ip[1], uint64_t) = LOCAL_VAR(ip[2], uint32_t);
+                    ip += 3;
+                    break;
                 case INTOP_CONV_U8_R4:
                     ConvFpHelper<uint64_t, float>(stack, ip);
                     ip += 3;

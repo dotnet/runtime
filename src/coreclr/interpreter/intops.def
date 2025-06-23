@@ -169,6 +169,7 @@ OPDEF(INTOP_CONV_R8_I4, "conv.r8.i4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_R8_I8, "conv.r8.i8", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_R8_R4, "conv.r8.r4", 3, 1, 1, InterpOpNoArgs)
 
+OPDEF(INTOP_CONV_U8_U4, "conv.u8.u4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_U8_R4, "conv.u8.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_U8_R8, "conv.u8.r8", 3, 1, 1, InterpOpNoArgs)
 
