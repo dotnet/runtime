@@ -12786,6 +12786,15 @@ void emitter::emitDispIns(
             else
             {
             PRINT_CONSTANT:
+                if ((ins == INS_cmppd) || (ins == INS_cmpps) || (ins == INS_cmpsd) || (ins == INS_cmpss) ||
+                    (ins == INS_pclmulqdq) || (ins == INS_vpcmpb) || (ins == INS_vpcmpd) || (ins == INS_vpcmpq) ||
+                    (ins == INS_vpcmpw) || (ins == INS_vpcmpub) || (ins == INS_vpcmpud) || (ins == INS_vpcmpuq) ||
+                    (ins == INS_vpcmpuw))
+                {
+                    // These instructions have pseudo-names for each possible immediate value
+                    break;
+                }
+
                 ssize_t srcVal = val;
                 // Munge any pointers if we want diff-able disassembly
                 if (emitComp->opts.disDiffable)
