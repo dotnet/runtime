@@ -41,7 +41,8 @@ namespace ILCompiler.DependencyAnalysis
             ImportedNodeProvider importedNodeProvider,
             PreinitializationManager preinitializationManager,
             DevirtualizationManager devirtualizationManager,
-            ObjectDataInterner dataInterner)
+            ObjectDataInterner dataInterner,
+            TypeMapManager typeMapManager)
         {
             _target = context.Target;
 
@@ -61,6 +62,7 @@ namespace ILCompiler.DependencyAnalysis
             PreinitializationManager = preinitializationManager;
             DevirtualizationManager = devirtualizationManager;
             ObjectInterner = dataInterner;
+            TypeMapManager = typeMapManager;
         }
 
         public void SetMarkingComplete()
@@ -126,6 +128,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         internal ObjectDataInterner ObjectInterner
+        {
+            get;
+        }
+
+        public TypeMapManager TypeMapManager
         {
             get;
         }
@@ -579,6 +586,16 @@ namespace ILCompiler.DependencyAnalysis
             _stringAllocators = new NodeCache<MethodDesc, IMethodNode>(constructor =>
             {
                 return new StringAllocatorMethodNode(constructor);
+            });
+
+            _externalTypeMapRequests = new NodeCache<TypeDesc, ExternalTypeMapRequestNode>(type =>
+            {
+                return new ExternalTypeMapRequestNode(type);
+            });
+
+            _proxyTypeMapRequests = new NodeCache<TypeDesc, ProxyTypeMapRequestNode>(type =>
+            {
+                return new ProxyTypeMapRequestNode(type);
             });
 
             NativeLayout = new NativeLayoutHelper(this);
@@ -1464,6 +1481,20 @@ namespace ILCompiler.DependencyAnalysis
             return _structMarshalingDataNodes.GetOrAdd(type);
         }
 
+        private NodeCache<TypeDesc, ExternalTypeMapRequestNode> _externalTypeMapRequests;
+
+        public ExternalTypeMapRequestNode ExternalTypeMapRequest(TypeDesc type)
+        {
+            return _externalTypeMapRequests.GetOrAdd(type);
+        }
+
+        private NodeCache<TypeDesc, ProxyTypeMapRequestNode> _proxyTypeMapRequests;
+
+        public ProxyTypeMapRequestNode ProxyTypeMapRequest(TypeDesc type)
+        {
+            return _proxyTypeMapRequests.GetOrAdd(type);
+        }
+
         /// <summary>
         /// Returns alternative symbol name that object writer should produce for given symbols
         /// in addition to the regular one.
@@ -1536,8 +1567,10 @@ namespace ILCompiler.DependencyAnalysis
 
             var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", this);
             InteropStubManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
+            TypeMapManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
             MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
             MetadataManager.AttachToDependencyGraph(graph);
+            TypeMapManager.AttachToDependencyGraph(graph);
             ReadyToRunHeader.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode);
         }
 

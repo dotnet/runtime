@@ -352,5 +352,13 @@ namespace ILLink.Shared.TrimAnalysis
 		/// <see cref="System.Delegate.Method"/>
 		/// </summary>
 		Delegate_get_Method,
+		/// <summary>
+		/// <see cref="System.Runtime.InteropServices.TypeMapping.GetOrCreateExternalTypeMapping"/>.
+		/// </summary>
+		TypeMapping_GetOrCreateExternalTypeMapping,
+		/// <summary>
+		/// <see cref="System.Runtime.InteropServices.TypeMapping.GetOrCreateProxyTypeMapping"/>.
+		/// </summary>
+		TypeMapping_GetOrCreateProxyTypeMapping,
 	}
 }

@@ -2293,6 +2293,79 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int AddPairwiseWideningAndAdd(int[] op1, short[] op2, int i) => (int)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
 
+        public static uint AddCarryWideningEven(uint[] op1, uint[] op2, uint[] op3, int i)
+        {
+            uint lsb;
+            ulong res;
+
+            if ((i < 0) || (i >= op1.Length) || (i >= op2.Length) || (i >= op3.Length))
+            {
+                throw new ArgumentOutOfRangeException(nameof(i), "Index i is out of range");
+            }
+
+            if (i % 2 == 0)
+            {
+                if (i + 1 >= op2.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range.");
+                }
+
+                lsb = op2[i + 1] & 1u;
+                res = (ulong)op1[i] + op3[i] + lsb;
+                return (uint)res;
+            }
+            else
+            {
+                if (((i - 1) < 0) || ((i - 1) >= op1.Length) || ((i - 1) >= op3.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
+                }
+
+                lsb = op2[i] & 1u;
+                res = (ulong)op1[i - 1] + op3[i - 1] + lsb;
+
+                // Shift result to get the carry bit
+                return (uint)(res >> 32);
+            }
+        }
+
+        public static uint AddCarryWideningOdd(uint[] op1, uint[] op2, uint[] op3, int i)
+        {
+            uint lsb;
+            ulong res;
+
+            if ((i < 0) || (i >= op1.Length) || (i >= op2.Length) || (i >= op3.Length))
+            {
+                throw new ArgumentOutOfRangeException(nameof(i), "Index i is out of range");
+            }
+
+            if (i % 2 == 0)
+            {
+                if (((i + 1) >= op1.Length) || ((i + 1) >= op2.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range.");
+                }
+
+                lsb = op2[i + 1] & 1u;
+                res = (ulong)op1[i + 1] + op3[i] + lsb;
+                return (uint)res;
+            }
+            else
+            {
+                if (((i - 1) < 0) || ((i - 1) >= op3.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
+                }
+
+                lsb = op2[i] & 1u;
+                res = (ulong)op1[i] + op3[i - 1] + lsb;
+
+                // Shift result to get the carry bit
+                return (uint)(res >> 32);
+            }
+        }
+
+
         private static short HighNarrowing(int op1, bool round)
         {
             uint roundConst = 0;
@@ -2414,6 +2487,88 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long AddPairwiseWidening(int[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
         public static long AddPairwiseWideningAndAdd(long[] op1, int[] op2, int i) => (long)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        public static ulong AddCarryWideningEven(ulong[] op1, ulong[] op2, ulong[] op3, int i)
+        {
+            ulong lsb;
+            ulong res;
+
+            if ((i < 0) || (i >= op1.Length) || (i >= op2.Length) || (i >= op3.Length))
+            {
+                throw new ArgumentOutOfRangeException(nameof(i), "Index i is out of range");
+            }
+
+            if (i % 2 == 0)
+            {
+                if ((i + 1) >= op2.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range for op3.");
+                }
+
+                lsb = op2[i + 1] & 1UL;
+                res = op1[i] + op3[i] + lsb;
+                return res;
+            }
+            else
+            {
+                if (((i - 1) < 0) || ((i - 1) >= op1.Length) || ((i - 1) >= op3.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
+                }
+
+                lsb = op2[i] & 1UL;
+
+                // Look for an overflow in the addition to get the carry bit
+                ulong sum1 = op1[i - 1] + op3[i - 1];
+                bool overflow1 = sum1 < op1[i - 1];
+
+                ulong sum2 = sum1 + lsb;
+                bool overflow2 = sum2 < sum1;
+
+                return (overflow1 || overflow2) ? 1UL : 0UL;
+            }
+        }
+
+        public static ulong AddCarryWideningOdd(ulong[] op1, ulong[] op2, ulong[] op3, int i)
+        {
+            ulong lsb;
+            ulong res;
+
+            if ((i < 0) || (i >= op1.Length) || (i >= op2.Length) || (i >= op3.Length))
+            {
+                throw new ArgumentOutOfRangeException(nameof(i), "Index i is out of range");
+            }
+
+            if (i % 2 == 0)
+            {
+                if (((i + 1) >= op1.Length) || ((i + 1) >= op2.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range.");
+                }
+
+                lsb = op2[i + 1] & 1UL;
+                res = op1[i + 1] + op3[i] + lsb;
+                return res;
+            }
+            else
+            {
+                if (((i - 1) < 0) || ((i - 1) >= op3.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
+                }
+
+                lsb = op2[i] & 1UL;
+
+                // Look for an overflow in the addition to get the carry bit
+                ulong sum1 = op1[i] + op3[i - 1];
+                bool overflow1 = sum1 < op1[i];
+
+                ulong sum2 = sum1 + lsb;
+                bool overflow2 = sum2 < sum1;
+
+                return (overflow1 || overflow2) ? 1UL : 0UL;
+            }
+        }
 
         private static int HighNarrowing(long op1, bool round)
         {
