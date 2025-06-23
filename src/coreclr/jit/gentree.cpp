@@ -7209,15 +7209,16 @@ bool GenTree::NodeOrContainedOperandsMayThrow(Compiler* comp)
         return true;
     }
 
-    // Check all contained children
-    for (GenTree* operand : Operands())
-    {
+    auto visit = [=](GenTree* operand) {
         if (operand->isContained() && operand->NodeOrContainedOperandsMayThrow(comp))
         {
-            return true;
+            return GenTree::VisitResult::Abort;
         }
-    }
-    return false;
+
+        return GenTree::VisitResult::Continue;
+    };
+
+    return VisitOperands(visit) == GenTree::VisitResult::Abort;
 }
 
 //------------------------------------------------------------------------------
