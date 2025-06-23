@@ -267,6 +267,27 @@ namespace System.Net.Http.Functional.Tests
 
                 handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
                 {
+                    if (chain != null)
+                    {
+                        for (int i = 0; i < chain.ChainElements.Count; i++)
+                        {
+                            var element = chain.ChainElements[i];
+                            _output.WriteLine($"Certificate {i}:");
+                            _output.WriteLine(element.Certificate.ToString(true));
+                            foreach (var status in element.ChainElementStatus)
+                            {
+                                _output.WriteLine($"  Status: {status.Status}");
+                                if (status.StatusInformation.Length > 0)
+                                {
+                                    _output.WriteLine($"  Status Information: {status.StatusInformation}");
+                                }
+                            }
+                            _output.WriteLine("");
+                        }
+                    }
+
+                    _output.WriteLine($"SSL Policy Errors: {errors}");
+
                     callbackCalled = true;
                     Assert.NotNull(request);
                     Assert.NotNull(cert);
