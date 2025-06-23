@@ -3,13 +3,17 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[ExpectedNoWarnings]
+	// Necessary to allow trimming unused EventInfo methods,
+	// making the test behavior more consistent with ILC.
+	[SetupLinkerTrimMode ("link")]
 	public class EventHanderTypeGetInvokeMethod
 	{
-		public static void Main()
+		public static void Main ()
 		{
 			EventDelegate.Test ();
 			NonDelegate.Test ();
@@ -23,10 +27,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[KeptEventRemoveMethod]
 			public static event EventHandler MyEvent;
 
+			[Kept]
 			public static void Test ()
 			{
-				var eventInfo = typeof(EventHanderTypeGetInvokeMethod).GetEvent(nameof(MyEvent));
-				var invoke = eventInfo.EventHandlerType.GetMethod("Invoke");
+				var eventInfo = typeof (EventDelegate).GetEvent (nameof (MyEvent));
+				var invoke = eventInfo.EventHandlerType.GetMethod ("Invoke");
 			}
 		}
 
@@ -43,38 +48,34 @@ namespace Mono.Linker.Tests.Cases.Reflection
 					get => typeof (NonDelegate);
 				}
 
-				[Kept]
+				// ILLink keeps more methods on MemberInfo due for stack trace support,
+				// but differences in this class are not important for this testcase.
+
+				[Kept (By = Tool.Trimmer)]
 				public override bool IsDefined (Type type, bool inherit) => throw null;
-				[Kept]
 				public override object[] GetCustomAttributes (bool inherit) => throw null;
-				[Kept]
+				[Kept (By = Tool.Trimmer)]
 				public override object[] GetCustomAttributes (Type attributeType, bool inherit) => throw null;
-				[Kept]
+				[Kept (By = Tool.Trimmer)]
 				public override string Name {
-					[Kept]
+					[Kept (By = Tool.Trimmer)]
 					get => throw null;
 				}
-				[Kept]
+				[Kept (By = Tool.Trimmer)]
 				public override Type ReflectedType {
-					[Kept]
+					[Kept (By = Tool.Trimmer)]
 					get => throw null;
 				}
-				[Kept]
+				[Kept (By = Tool.Trimmer)]
 				public override Type DeclaringType {
-					[Kept]
+					[Kept (By = Tool.Trimmer)]
 					get => throw null;
 				}
-				[Kept]
+				[Kept (By = Tool.Trimmer)]
 				public override MethodInfo GetAddMethod (bool nonPublic) => throw null;
-				[Kept]
 				public override MethodInfo GetRemoveMethod (bool nonPublic) => throw null;
-				[Kept]
 				public override MethodInfo GetRaiseMethod (bool nonPublic) => throw null;
-				[Kept]
-				public override EventAttributes Attributes {
-					[Kept]
-					get => throw null;
-				}
+				public override EventAttributes Attributes => throw null;
 			}
 
 			// Strictly speaking this should be kept, but trimmer doesn't see through the custom event info.
