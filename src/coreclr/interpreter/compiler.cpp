@@ -3752,7 +3752,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U4_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_I4);
                     break;
                 case StackTypeI8:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_I8);
