@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Converters
     internal sealed class HalfConverter : JsonPrimitiveConverter<Half>
     {
         private const int MaxFormatLength = 20;
-        private const int MaxUnescapedFormatLength = MaxFormatLength * JsonConstants.MaxExpansionFactorWhileEscaping;
+        private const int MaxUnescapedFormatLength = JsonConstants.MaximumFloatingPointConstantLength * JsonConstants.MaxExpansionFactorWhileEscaping;
 
         public HalfConverter()
         {
@@ -138,6 +138,8 @@ namespace System.Text.Json.Serialization.Converters
 
         private static bool TryGetFloatingPointConstant(ref Utf8JsonReader reader, out Half value)
         {
+            scoped Span<byte> buffer;
+
             // Only checking for length 10 or less for constants
             if (reader.ValueIsEscaped)
             {
@@ -146,18 +148,27 @@ namespace System.Text.Json.Serialization.Converters
                     value = default;
                     return false;
                 }
+
+                buffer = stackalloc byte[MaxUnescapedFormatLength];
             }
             else
             {
-                if (reader.ValueLength > 10)
+                if (reader.ValueLength > JsonConstants.MaximumFloatingPointConstantLength)
                 {
                     value = default;
                     return false;
                 }
+
+                buffer = stackalloc byte[JsonConstants.MaximumFloatingPointConstantLength];
             }
 
-            Span<byte> buffer = stackalloc byte[MaxUnescapedFormatLength];
             int written = reader.CopyValue(buffer);
+
+            if (written > JsonConstants.MaximumFloatingPointConstantLength)
+            {
+                value = default;
+                return false;
+            }
 
             return JsonReaderHelper.TryGetFloatingPointConstant(buffer.Slice(0, written), out value);
         }
