@@ -388,12 +388,12 @@
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.108">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>dee5fc1b0b639c6161a91d1397f01258098df14b</Sha>
+      <Sha>3be95ba0307605c46a7ea35ee6579557e5405169</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.sdk" Version="9.0.108-servicing.25313.39">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.sdk" Version="9.0.108-servicing.25317.14">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>dee5fc1b0b639c6161a91d1397f01258098df14b</Sha>
+      <Sha>3be95ba0307605c46a7ea35ee6579557e5405169</Sha>
       <SourceBuild RepoName="sdk" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.24462.2">
