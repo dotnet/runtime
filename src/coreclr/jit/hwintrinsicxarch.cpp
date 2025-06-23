@@ -1288,6 +1288,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     emptyEntryPoint.accessType = IAT_VALUE;
 #endif // FEATURE_READYTORUN
 
+    bool isMinMaxIntrinsic = false;
+    bool isMax             = false;
+    bool isMagnitude       = false;
+    bool isNative          = false;
+    bool isNumber          = false;
+
     switch (intrinsic)
     {
         case NI_Vector128_Abs:
@@ -2434,18 +2440,21 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_ExtractMostSignificantBits:
         case NI_Vector256_ExtractMostSignificantBits:
         case NI_Vector512_ExtractMostSignificantBits:
+        case NI_AVX512_MoveMask:
         {
             assert(sig->numArgs == 1);
 
             if ((simdSize == 64) || (varTypeIsShort(simdBaseType) && canUseEvexEncoding()))
             {
+                intrinsic = NI_AVX512_MoveMask;
+            }
+
+            if (intrinsic == NI_AVX512_MoveMask)
+            {
                 op1 = impSIMDPopStack();
 
-                if (!varTypeIsMask(op1))
-                {
-                    op1 = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
-                }
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_AVX512_MoveMask, simdBaseJitType, simdSize);
+                op1     = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
                 break;
             }
 
@@ -3147,16 +3156,29 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_Max:
         case NI_Vector512_Max:
         {
-            assert(sig->numArgs == 2);
+            isMinMaxIntrinsic = true;
+            isMax             = true;
+            break;
+        }
 
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
-                compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
+        case NI_Vector128_MaxMagnitude:
+        case NI_Vector256_MaxMagnitude:
+        case NI_Vector512_MaxMagnitude:
+        {
+            isMinMaxIntrinsic = true;
+            isMax             = true;
+            isMagnitude       = true;
+            break;
+        }
 
-                retNode = gtNewSimdMaxNode(retType, op1, op2, simdBaseJitType, simdSize);
-            }
+        case NI_Vector128_MaxMagnitudeNumber:
+        case NI_Vector256_MaxMagnitudeNumber:
+        case NI_Vector512_MaxMagnitudeNumber:
+        {
+            isMinMaxIntrinsic = true;
+            isMax             = true;
+            isMagnitude       = true;
+            isNumber          = true;
             break;
         }
 
@@ -3164,21 +3186,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_MaxNative:
         case NI_Vector512_MaxNative:
         {
-            assert(sig->numArgs == 2);
+            isMinMaxIntrinsic = true;
+            isMax             = true;
+            isNative          = true;
+            break;
+        }
 
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
-
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
-                compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
-
-                retNode = gtNewSimdMaxNativeNode(retType, op1, op2, simdBaseJitType, simdSize);
-            }
+        case NI_Vector128_MaxNumber:
+        case NI_Vector256_MaxNumber:
+        case NI_Vector512_MaxNumber:
+        {
+            isMinMaxIntrinsic = true;
+            isMax             = true;
+            isNumber          = true;
             break;
         }
 
@@ -3186,16 +3206,26 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_Min:
         case NI_Vector512_Min:
         {
-            assert(sig->numArgs == 2);
+            isMinMaxIntrinsic = true;
+            break;
+        }
 
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
-                compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
+        case NI_Vector128_MinMagnitude:
+        case NI_Vector256_MinMagnitude:
+        case NI_Vector512_MinMagnitude:
+        {
+            isMinMaxIntrinsic = true;
+            isMagnitude       = true;
+            break;
+        }
 
-                retNode = gtNewSimdMinNode(retType, op1, op2, simdBaseJitType, simdSize);
-            }
+        case NI_Vector128_MinMagnitudeNumber:
+        case NI_Vector256_MinMagnitudeNumber:
+        case NI_Vector512_MinMagnitudeNumber:
+        {
+            isMinMaxIntrinsic = true;
+            isMagnitude       = true;
+            isNumber          = true;
             break;
         }
 
@@ -3203,21 +3233,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_MinNative:
         case NI_Vector512_MinNative:
         {
-            assert(sig->numArgs == 2);
+            isMinMaxIntrinsic = true;
+            isNative          = true;
+            break;
+        }
 
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
-
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
-                compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
-
-                retNode = gtNewSimdMinNativeNode(retType, op1, op2, simdBaseJitType, simdSize);
-            }
+        case NI_Vector128_MinNumber:
+        case NI_Vector256_MinNumber:
+        case NI_Vector512_MinNumber:
+        {
+            isMinMaxIntrinsic = true;
+            isNumber          = true;
             break;
         }
 
@@ -3498,14 +3524,23 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         }
                     }
 
+                    // This does a clamp which is defined as: Min(Max(value, min), max)
+                    // which means that we do a max computation if a minimum constant is specified
+                    // There will be none specified for unsigned to unsigned narrowing since
+                    // they share a lower bound (0) and will already be correct.
+
                     if (minCns != nullptr)
                     {
-                        op1 = gtNewSimdMaxNode(retType, op1, minCns, simdBaseJitType, simdSize);
-                        op2 = gtNewSimdMaxNode(retType, op2, gtCloneExpr(minCns), simdBaseJitType, simdSize);
+                        op1 = gtNewSimdMinMaxNode(retType, op1, minCns, simdBaseJitType, simdSize, /* isMax */ true,
+                                                  /* isMagnitude */ false, /* isNumber */ false);
+                        op2 = gtNewSimdMinMaxNode(retType, op2, gtCloneExpr(minCns), simdBaseJitType, simdSize,
+                                                  /* isMax */ true, /* isMagnitude */ false, /* isNumber */ false);
                     }
 
-                    op1 = gtNewSimdMinNode(retType, op1, maxCns, simdBaseJitType, simdSize);
-                    op2 = gtNewSimdMinNode(retType, op2, gtCloneExpr(maxCns), simdBaseJitType, simdSize);
+                    op1 = gtNewSimdMinMaxNode(retType, op1, maxCns, simdBaseJitType, simdSize, /* isMax */ false,
+                                              /* isMagnitude */ false, /* isNumber */ false);
+                    op2 = gtNewSimdMinMaxNode(retType, op2, gtCloneExpr(maxCns), simdBaseJitType, simdSize,
+                                              /* isMax */ false, /* isMagnitude */ false, /* isNumber */ false);
 
                     retNode = gtNewSimdNarrowNode(retType, op1, op2, narrowSimdBaseJitType, simdSize);
                 }
@@ -4982,12 +5017,31 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            if (!varTypeIsMask(op3))
-            {
-                op3 = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op3, simdBaseJitType, simdSize);
-            }
+            op3     = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op3, simdBaseJitType, simdSize);
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, NI_AVX512_BlendVariableMask, simdBaseJitType,
                                                simdSize);
+            break;
+        }
+
+        case NI_AVX512_Classify:
+        case NI_AVX512_ClassifyScalar:
+        {
+            assert(sig->numArgs == 2);
+
+            if (intrinsic == NI_AVX512_Classify)
+            {
+                intrinsic = NI_AVX512_ClassifyMask;
+            }
+            else
+            {
+                intrinsic = NI_AVX512_ClassifyScalarMask;
+            }
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack();
+
+            retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, intrinsic, simdBaseJitType, simdSize);
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -5197,6 +5251,120 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AVX512_Compress:
+        case NI_AVX512v3_Compress:
+        {
+            assert(sig->numArgs == 3);
+
+            op3 = impSIMDPopStack();
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            intrinsic = NI_AVX512_CompressMask;
+            op2       = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
+            retNode   = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_AVX512_CompressStore:
+        case NI_AVX512v3_CompressStore:
+        {
+            assert(sig->numArgs == 3);
+
+            op3 = impSIMDPopStack();
+            op2 = impSIMDPopStack();
+            op1 = impPopStack().val;
+
+            if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op1 = op1->gtGetOp1();
+            }
+
+            intrinsic = NI_AVX512_CompressStoreMask;
+            op2       = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
+            retNode   = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_AVX512_Expand:
+        case NI_AVX512v3_Expand:
+        {
+            assert(sig->numArgs == 3);
+
+            op3 = impSIMDPopStack();
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            intrinsic = NI_AVX512_ExpandMask;
+            op2       = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
+            retNode   = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_AVX512_ExpandLoad:
+        case NI_AVX512v3_ExpandLoad:
+        {
+            assert(sig->numArgs == 3);
+
+            op3 = impSIMDPopStack();
+            op2 = impSIMDPopStack();
+            op1 = impPopStack().val;
+
+            if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op1 = op1->gtGetOp1();
+            }
+
+            intrinsic = NI_AVX512_ExpandLoadMask;
+            op2       = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
+            retNode   = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_AVX512_MaskLoad:
+        case NI_AVX512_MaskLoadAligned:
+        {
+            assert(sig->numArgs == 3);
+
+            op3 = impSIMDPopStack();
+            op2 = impSIMDPopStack();
+            op1 = impPopStack().val;
+
+            if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op1 = op1->gtGetOp1();
+            }
+
+            intrinsic = (intrinsic == NI_AVX512_MaskLoad) ? NI_AVX512_MaskLoadMask : NI_AVX512_MaskLoadAlignedMask;
+            op2       = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
+            retNode   = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_AVX512_MaskStore:
+        case NI_AVX512_MaskStoreAligned:
+        {
+            assert(sig->numArgs == 3);
+
+            op3 = impSIMDPopStack();
+            op2 = impSIMDPopStack();
+            op1 = impPopStack().val;
+
+            if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op1 = op1->gtGetOp1();
+            }
+
+            intrinsic = (intrinsic == NI_AVX512_MaskStore) ? NI_AVX512_MaskStoreMask : NI_AVX512_MaskStoreAlignedMask;
+            op2       = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
+            retNode   = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_AVX2_GatherMaskVector128:
         case NI_AVX2_GatherMaskVector256:
         {
@@ -5276,6 +5444,31 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         default:
         {
             return nullptr;
+        }
+    }
+
+    if (isMinMaxIntrinsic)
+    {
+        assert(sig->numArgs == 2);
+        assert(retNode == nullptr);
+
+        if (isNative && BlockNonDeterministicIntrinsics(mustExpand))
+        {
+            return nullptr;
+        }
+
+        op2 = impSIMDPopStack();
+        op1 = impSIMDPopStack();
+
+        if (isNative)
+        {
+            assert(!isMagnitude && !isNumber);
+            retNode = gtNewSimdMinMaxNativeNode(retType, op1, op2, simdBaseJitType, simdSize, isMax);
+        }
+        else if ((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
+                 compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            retNode = gtNewSimdMinMaxNode(retType, op1, op2, simdBaseJitType, simdSize, isMax, isMagnitude, isNumber);
         }
     }
 
