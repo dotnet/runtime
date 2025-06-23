@@ -221,7 +221,6 @@ namespace System.Text.Json.Serialization.Tests
         public static void UInt128_AsDictionaryKey_SerializesCorrectly()
         {
             // Regression test for https://github.com/dotnet/runtime/issues/116855
-            // UInt128Converter.WriteAsPropertyNameCore was passing unsliced buffer to WritePropertyName
             var dict = new Dictionary<UInt128, string>
             {
                 [0] = "Zero", 
