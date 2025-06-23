@@ -885,6 +885,12 @@ public class InterpreterTest
         if (!TestStaticVirtualGeneric_CodePointerCase())
             Environment.FailFast(null);
 
+	Console.WriteLine("Empty string length: {0}", string.Empty.Length);
+
+	Console.WriteLine("BitConverter.IsLittleEndian: {0}", BitConverter.IsLittleEndian);
+
+	Console.WriteLine("IntPtr.Zero: {0}, UIntPtr.Zero: {1}", IntPtr.Zero, UIntPtr.Zero);
+
         System.GC.Collect();
 
         Console.WriteLine("All tests passed successfully!");
