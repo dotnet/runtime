@@ -2000,8 +2000,13 @@ SveMaskPattern EvaluateSimdVectorToPattern(TSimd arg0)
     uint32_t count    = sizeof(TSimd) / sizeof(TBase);
     uint32_t finalOne = count;
 
+    TBase significantBit = 1;
+
     // A mask pattern starts with zero or more 1s and then the rest of the mask is filled with 0s.
     // This pattern is extracted using the least significant bits of the vector elements.
+
+    // For Arm64 we have count total bits to read, but they are sizeof(TBase) bits apart. We set
+    // depending on if the corresponding input element has its least significant bit set
 
     // Find an unbroken sequence of 1s.
     for (uint32_t i = 0; i < count; i++)
@@ -2009,13 +2014,7 @@ SveMaskPattern EvaluateSimdVectorToPattern(TSimd arg0)
         TBase input0;
         memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
 
-        // For Arm64 we have count total bits to read, but
-        // they are sizeof(TBase) bits apart. We set
-        // depending on if the corresponding input element
-        // has its least significant bit set
-
-        bool isSet = static_cast<uint64_t>(1) << (i * sizeof(TBase));
-        if (!isSet)
+        if ((input0 & significantBit) != 0)
         {
             finalOne = i;
             break;
@@ -2025,13 +2024,10 @@ SveMaskPattern EvaluateSimdVectorToPattern(TSimd arg0)
     // Find an unbroken sequence of 0s.
     for (uint32_t i = finalOne; i < count; i++)
     {
-        // For Arm64 we have count total bits to read, but
-        // they are sizeof(TBase) bits apart. We set
-        // depending on if the corresponding input element
-        // has its least significant bit set
+        TBase input0;
+        memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
 
-        bool isSet = static_cast<uint64_t>(1) << (i * sizeof(TBase));
-        if (isSet)
+        if ((input0 & significantBit) != 0)
         {
             // Invalid sequence
             return SveMaskPatternNone;
