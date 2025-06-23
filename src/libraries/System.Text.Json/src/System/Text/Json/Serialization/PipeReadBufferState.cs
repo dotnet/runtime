@@ -29,14 +29,14 @@ namespace System.Text.Json.Serialization
 
         public readonly ReadOnlySequence<byte> Bytes => _sequence;
 
-        public void Advance(int bytesConsumed)
+        public void Advance(long bytesConsumed)
         {
             _unsuccessfulReadBytes = 0;
             if (bytesConsumed == 0)
             {
                 long leftOver = _sequence.Length;
                 // Cap at int.MaxValue as PipeReader.ReadAtLeastAsync uses an int as the minimum size argument.
-                _unsuccessfulReadBytes = (int)Math.Min((long)int.MaxValue, leftOver * 2);
+                _unsuccessfulReadBytes = (int)Math.Min(int.MaxValue, leftOver * 2);
             }
             _utf8Json.AdvanceTo(_sequence.Slice(bytesConsumed).Start, _sequence.End);
             _sequence = ReadOnlySequence<byte>.Empty;
@@ -85,6 +85,7 @@ namespace System.Text.Json.Serialization
                     }
                     else
                     {
+                        // BOM spans multiple segments
                         SequencePosition pos = _sequence.Start;
                         int matched = 0;
                         while (matched < JsonConstants.Utf8Bom.Length && _sequence.TryGet(ref pos, out ReadOnlyMemory<byte> mem, advance: true))
