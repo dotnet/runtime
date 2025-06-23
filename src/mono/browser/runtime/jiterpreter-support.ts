@@ -2136,29 +2136,41 @@ function updateOptions () {
 }
 
 function jiterpreter_allocate_table (type: JiterpreterTable, base: number, size: number, fillValue: Function) {
+
     const wasmTable = getWasmFunctionTable();
-    const firstIndex = base, lastIndex = firstIndex + size - 1;
+    const firstIndex = base;
+    const isWasm64 = typeof wasmTable.length === "bigint";
+    const lastIndex = isWasm64
+        ? BigInt(firstIndex) + BigInt(size - 1)
+        : firstIndex + (size - 1);
+    const firstIndexWasm = isWasm64 ? BigInt(firstIndex) : firstIndex;
     mono_assert(lastIndex < wasmTable.length, () => `Last index out of range: ${lastIndex} >= ${wasmTable.length}`);
     // HACK: Always populate the first slot
-    wasmTable.set(firstIndex, fillValue);
+    try {
+        // wasm64 requires bigint, but types expect number
+        (wasmTable.set as any)(firstIndexWasm, fillValue);
+    } catch (e) {
+        wasmTable.set(firstIndex, fillValue);
+    }
     // In threaded builds we need to populate all the reserved slots with safe placeholder functions
     // This operation is expensive in v8, so avoid doing it in single-threaded builds (which SHOULD
     //  be safe, since it was previously not necessary)
     if (WasmEnableThreads) {
         // HACK: If possible, we want to copy any backing state associated with the first placeholder item,
         //  so that additional work doesn't have to be done by the runtime for the following table sets
-        const preparedValue = wasmTable.get(firstIndex);
-        for (let i = firstIndex + 1; i <= lastIndex; i++)
-            wasmTable.set(i, preparedValue);
+        const preparedValue = (wasmTable.get as any)(firstIndexWasm);
+        for (let i = firstIndex + 1; i <= lastIndex; i++) {
+            const idx = isWasm64 ? BigInt(i) : i;
+            (wasmTable.set as any)(idx, preparedValue);
+        }
     }
-    cwraps.mono_jiterp_initialize_table(type, firstIndex, lastIndex);
-    return base + size;
+    cwraps.mono_jiterp_initialize_table(type, Number(firstIndex), Number(lastIndex));
+    return Number(isWasm64 ? (BigInt(base) + BigInt(size)) : Number(base) + Number(size));
 }
 
 // a single js worker might end up hosting multiple managed threads over its lifetime.
 // we need to ensure we only ever initialize tables once on each js worker.
 let jiterpreter_tables_allocated = false;
-
 export function jiterpreter_allocate_tables () {
     if (jiterpreter_tables_allocated)
         return;
@@ -2177,7 +2189,11 @@ export function jiterpreter_allocate_tables () {
         wasmTable = getWasmFunctionTable();
     let base = wasmTable.length;
     const beforeGrow = performance.now();
-    wasmTable.grow(totalSize);
+    try {
+        (wasmTable.grow as any)(BigInt(totalSize));
+    } catch (e) {
+        wasmTable.grow(totalSize);
+    }
     const afterGrow = performance.now();
     if (options.enableStats)
         mono_log_info(`Allocated ${totalSize} function table entries for jiterpreter, bringing total table size to ${wasmTable.length}`);
