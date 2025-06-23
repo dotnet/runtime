@@ -380,7 +380,8 @@ void Compiler::fgRedirectEdge(FlowEdge*& edge, BasicBlock* newTarget)
     assert(edge != nullptr);
     assert(newTarget != nullptr);
 
-    BasicBlock* const block = edge->getSourceBlock();
+    BasicBlock* const block    = edge->getSourceBlock();
+    const unsigned    dupCount = edge->getDupCount();
     fgRemoveAllRefPreds(edge->getDestinationBlock(), block);
 
     FlowEdge** predListPtr = fgGetPredInsertPoint(block, newTarget);
@@ -389,7 +390,7 @@ void Compiler::fgRedirectEdge(FlowEdge*& edge, BasicBlock* newTarget)
     if ((predEdge != nullptr) && (predEdge->getSourceBlock() == block))
     {
         edge = predEdge;
-        edge->incrementDupCount();
+        edge->incrementDupCount(dupCount);
     }
     else
     {
@@ -398,7 +399,7 @@ void Compiler::fgRedirectEdge(FlowEdge*& edge, BasicBlock* newTarget)
         edge->setDestinationBlock(newTarget);
     }
 
-    newTarget->bbRefs++;
+    newTarget->bbRefs += dupCount;
 
     // Pred list of target should still be ordered
     assert(newTarget->checkPredListOrder());
