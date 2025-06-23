@@ -101,6 +101,23 @@ namespace HostActivation.Tests
         }
 
         [Fact]
+        public void RelativePathToNonManagedFile_ShowsSpecificError()
+        {
+            // Test relative path with directory separator
+            Directory.CreateDirectory(Path.Combine(sharedTestState.BaseDirectory.Location, "subdir"));
+            string testFile = Path.Combine(sharedTestState.BaseDirectory.Location, "subdir", "test.json");
+            File.WriteAllText(testFile, "{}");
+
+            TestContext.BuiltDotNet.Exec("./subdir/test.json")
+                .WorkingDirectory(sharedTestState.BaseDirectory.Location)
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdErrContaining("does not exist or is not a managed .dll or .exe.");
+        }
+
+        [Fact]
         public void InvalidFileOrCommand_NoSDK_ListsPossibleIssues()
         {
             string fileName = "NonExistent";
