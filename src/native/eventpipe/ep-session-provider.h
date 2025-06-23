@@ -65,10 +65,10 @@ struct user_unreg {
 } __attribute__((__packed__));
 
 /* Request to register a user_event */
-#define DIAG_IOCSREG 3221760512
+#define DIAG_IOCSREG 0xC0082A00
 
 /* Requests to unregister a user_event */
-#define DIAG_IOCSUNREG 1074276866
+#define DIAG_IOCSUNREG 0x40082A02
 
 #endif // HAVE_LINUX_USER_EVENTS_H
 
