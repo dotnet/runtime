@@ -276,7 +276,7 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
     }
     else
     {
-        // Growing conversions with the same signedness shouldn't use an ovf opcode
+        // Growing conversions with the same signedness shouldn't use an ovf opcode.
         static_assert(
             shrinking || (std::numeric_limits<TResult>::is_signed != std::numeric_limits<TSource>::is_signed),
             "ConvOvfHelper only does growing conversions with sign changes"
@@ -284,12 +284,20 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
 
         if (std::numeric_limits<TResult>::is_signed)
         {
-            // unsigned -> signed conv. check to make sure the source value isn't too big
-            inRange = src <= (TSource)std::numeric_limits<TResult>::max();
+            if (sizeof(TSource) == sizeof(TResult))
+            {
+                // unsigned -> signed conv with same size. check to make sure the source value isn't too big.
+                inRange = src <= (TSource)std::numeric_limits<TResult>::max();
+            }
+            else
+            {
+                // growing unsigned -> signed conversion. this can never fail.
+                inRange = true;
+            }
         }
         else
         {
-            // signed -> unsigned conv. check to make sure the source value isn't negative
+            // signed -> unsigned conv. check to make sure the source value isn't negative.
             inRange = src >= 0;
         }
     }
