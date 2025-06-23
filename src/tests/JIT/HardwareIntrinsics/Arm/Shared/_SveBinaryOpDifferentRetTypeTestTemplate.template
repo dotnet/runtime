@@ -443,7 +443,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             {RetBaseType}[] mask = new {RetBaseType}[RetElementCount];
             {Op1BaseType}[] left = new {Op1BaseType}[Op1ElementCount];
-            {Op2BaseType}[] right = new {Op2BaseType}[Op1ElementCount];
+            {Op2BaseType}[] right = new {Op2BaseType}[Op2ElementCount];
             {RetBaseType}[] falseVal = new {RetBaseType}[RetElementCount];
             {RetBaseType}[] result = new {RetBaseType}[RetElementCount];
 
@@ -475,7 +475,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             {RetBaseType}[] mask = new {RetBaseType}[RetElementCount];
             {Op1BaseType}[] left = new {Op1BaseType}[Op1ElementCount];
-            {Op1BaseType}[] right = new {Op2BaseType}[Op2ElementCount];
+            {Op2BaseType}[] right = new {Op2BaseType}[Op2ElementCount];
             {RetBaseType}[] trueVal = new {RetBaseType}[RetElementCount];
             {RetBaseType}[] result = new {RetBaseType}[RetElementCount];
 
