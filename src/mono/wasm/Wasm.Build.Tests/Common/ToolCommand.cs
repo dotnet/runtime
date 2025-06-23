@@ -110,7 +110,7 @@ namespace Wasm.Build.Tests
         }
 
         protected virtual string GetFullArgs(params string[] args) => string.Join(" ", args);
-
+        
         private async Task<CommandResult> ExecuteAsyncInternal(string executable, string args)
         {
             var output = new List<string>();
@@ -127,7 +127,16 @@ namespace Wasm.Build.Tests
 
                     string msg = $"[{_label}] {e.Data}";
                     output.Add(msg);
-                    _testOutput.WriteLine(msg);
+                    try
+                    {
+                        _testOutput.WriteLine(msg);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        // Test context may have expired, continue without logging to test output
+                        // Add a marker to the output buffer so we know this happened
+                        output.Add($"[{_label}] [WARNING: Test context expired, subsequent output may be incomplete]");
+                    }
                     ErrorDataReceived?.Invoke(s, e);
                 }
             };
@@ -141,7 +150,16 @@ namespace Wasm.Build.Tests
 
                     string msg = $"[{_label}] {e.Data}";
                     output.Add(msg);
-                    _testOutput.WriteLine(msg);
+                    try
+                    {
+                        _testOutput.WriteLine(msg);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        // Test context may have expired, continue without logging to test output
+                        // Add a marker to the output buffer so we know this happened
+                        output.Add($"[{_label}] [WARNING: Test context expired, subsequent output may be incomplete]");
+                    }
                     OutputDataReceived?.Invoke(s, e);
                 }
             };

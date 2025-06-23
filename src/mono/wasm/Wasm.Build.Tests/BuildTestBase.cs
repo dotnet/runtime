@@ -474,7 +474,7 @@ namespace Wasm.Build.Tests
             t.Wait();
             return t.Result;
         }
-
+        
         public static async Task<(int exitCode, string buildOutput)> RunProcessAsync(string path,
                                          ITestOutputHelper _testOutput,
                                          string args = "",
@@ -487,6 +487,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"WorkingDirectory: {workingDir}");
             StringBuilder outputBuilder = new();
             object syncObj = new();
+            bool isDisposed = false;
 
             var processStartInfo = new ProcessStartInfo
             {
@@ -560,6 +561,12 @@ namespace Wasm.Build.Tests
                 // https://learn.microsoft.com/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
                 process.WaitForExit();
 
+                // Mark as disposed before detaching handlers to prevent further TestOutput access
+                lock (syncObj)
+                {
+                    isDisposed = true;
+                }
+
                 process.ErrorDataReceived -= logStdErr;
                 process.OutputDataReceived -= logStdOut;
                 process.CancelErrorRead();
@@ -573,7 +580,21 @@ namespace Wasm.Build.Tests
             }
             catch (Exception ex)
             {
-                _testOutput.WriteLine($"-- exception -- {ex}");
+                // Mark as disposed before writing to avoid potential race condition
+                lock (syncObj)
+                {
+                    isDisposed = true;
+                }
+                try
+                {
+                    _testOutput.WriteLine($"-- exception -- {ex}");
+                }
+                catch (InvalidOperationException)
+                {
+                    // Test context has expired, but we still want to capture output in buffer
+                    // for potential debugging purposes
+                    outputBuilder.AppendLine($"[WARNING: Test context expired, subsequent output may be incomplete]");
+                }
                 throw;
             }
 
@@ -581,9 +602,20 @@ namespace Wasm.Build.Tests
             {
                 lock (syncObj)
                 {
+                    if (isDisposed)
+                        return;
                     if (message != null)
                     {
-                        _testOutput.WriteLine($"{label} {message}");
+                        try
+                        {
+                            _testOutput.WriteLine($"{label} {message}");
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            // Test context has expired, but we still want to capture output in buffer
+                            // for potential debugging purposes
+                            outputBuilder.AppendLine($"{label} [WARNING: Test context expired, subsequent output may be incomplete]");
+                        }
                     }
                     outputBuilder.AppendLine($"{label} {message}");
                 }
