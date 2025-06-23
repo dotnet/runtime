@@ -12,7 +12,13 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <fnmatch.h>
-#endif
+#ifndef DT_UNKNOWN
+#define DT_UNKNOWN 0
+#define DT_DIR 4
+#define DT_REG 8
+#define DT_LNK 10
+#endif // !DT_UNKNOWN
+#endif // TARGET_UNIX
 
 #include <utility>
 
@@ -188,9 +194,9 @@ bool verbMerge::DirectoryFilterDirectories(FilterArgType* findData)
 #else // TARGET_WINDOWS
     if (findData->d_type == DT_DIR)
     {
-        if (strcmp(findData->d_name, ".") == 0)
+        if (u16_strcmp(findData->cFileName, W(".")) == 0)
             return false;
-        if (strcmp(findData->d_name, "..") == 0)
+        if (u16_strcmp(findData->cFileName, W("..")) == 0)
             return false;
 
         return true;
@@ -282,12 +288,47 @@ int verbMerge::FilterDirectory(LPCWSTR                      dir,
         dirent *pEntry = readdir(pDir);
         while (pEntry != nullptr)
         {
-            if ((fnmatch(searchPatternUtf8.c_str(), pEntry->d_name, 0) == 0) && filter(pEntry))
+            int dirEntryType;
+
+#if HAVE_DIRENT_D_TYPE
+            dirEntryType = pEntry->d_type;
+#else
+            struct stat sb;
+
+            if (fstatat(dirfd(pDir), pEntry->d_name, &sb, 0) == -1)
             {
-                FindData findData(pEntry->d_type, ConvertMultiByteToWideChar(pEntry->d_name));
-                first = new findDataList(&findData, first);
-                ++elemCount;
+                continue;
             }
+
+            if (S_ISDIR(sb.st_mode)) {
+                dirEntryType = DT_DIR;
+            } else if (S_ISREG(sb.st_mode)) {
+                dirEntryType = DT_REG;
+            } else if (S_ISLNK(sb.st_mode)) {
+                dirEntryType = DT_LNK;
+            } else {
+                dirEntryType = DT_UNKNOWN;
+            }
+#endif
+            if (dirEntryType == DT_UNKNOWN)
+            {
+                continue;
+            }
+
+            if (fnmatch(searchPatternUtf8.c_str(), pEntry->d_name, 0) != 0)
+            {
+                continue;
+            }
+
+            FindData findData(dirEntryType, ConvertMultiByteToWideChar(pEntry->d_name));
+            if (!filter(&findData))
+            {
+                continue;
+            }
+
+            first = new findDataList(&findData, first);
+            ++elemCount;
+
             errno = 0;
             pEntry = readdir(pDir);
         }
