@@ -311,11 +311,20 @@ enum_type:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		return MINT_TYPE_I4;
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		return MINT_TYPE_I4; // should still be I4 on 64 bit platforms.
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+		return MINT_TYPE_I; // will be I8 on 64-bit platforms, I4 otherwise
+#else
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 		return MINT_TYPE_I;
+#endif
 	case MONO_TYPE_R4:
 		return MINT_TYPE_R4;
 	case MONO_TYPE_I8:

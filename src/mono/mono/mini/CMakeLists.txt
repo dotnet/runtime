@@ -241,6 +241,8 @@ set(interp_sources
     interp/interp-intrins.c
     interp/interp-icalls.h
     interp/interp-icalls.c
+    interp/interp-pinvoke.h
+    interp/interp-pinvoke.c
     interp/mintops.h
     interp/mintops.c
     interp/transform.c

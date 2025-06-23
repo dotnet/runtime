@@ -1202,6 +1202,27 @@ void log_mono_type_enum(MonoTypeEnum type_enum) {
     MH_LOG("MonoTypeEnum: %s (0x%x)", type_str, (int)type_enum);
 }
 
+static void log_mint_type(int value)
+{
+	const char* type_str = NULL;
+	switch (value)
+	{
+case MINT_TYPE_I1: type_str = "MINT_TYPE_I1";break;
+case MINT_TYPE_U1: type_str = "MINT_TYPE_U1";break;
+case MINT_TYPE_I2: type_str = "MINT_TYPE_I2";break;
+case MINT_TYPE_U2: type_str = "MINT_TYPE_U2";break;
+case MINT_TYPE_I4: type_str = "MINT_TYPE_I4";break;
+case MINT_TYPE_I8: type_str = "MINT_TYPE_I8";break;
+case MINT_TYPE_R4: type_str = "MINT_TYPE_R4";break;
+case MINT_TYPE_R8: type_str = "MINT_TYPE_R8";break;
+case MINT_TYPE_O : type_str = "MINT_TYPE_O";break;
+case MINT_TYPE_VT: type_str = "MINT_TYPE_VT";break;
+case MINT_TYPE_VOID: type_str = "MINT_TYPE_VOID"; break;
+	default:
+		type_str = "UNKNOWN";
+	}
+	MH_LOG("MintType: %s (%d)", type_str, value);
+}
 static guint32*
 initialize_arg_offsets (InterpMethod *imethod, MonoMethodSignature *csig)
 {
@@ -1227,7 +1248,7 @@ initialize_arg_offsets (InterpMethod *imethod, MonoMethodSignature *csig)
 		MonoType *type = sig->params [i];
 		int size, align;
 		log_mono_type(type);
-		log_mono_type_enum(mono_mint_type (type));
+		log_mint_type(mono_mint_type (type));
 		MH_LOG_INDENT();
 		size = mono_interp_type_size (type, mono_mint_type (type), &align);
 		MH_LOG("calculated size: %d - note includes alignment of %d", size, align);

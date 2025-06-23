@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdio.h>
-#pragma message("Defining MH_LOG")
 
 static int MH_LOG_indent_level = 0;
 

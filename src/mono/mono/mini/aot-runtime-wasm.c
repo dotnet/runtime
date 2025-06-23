@@ -11,7 +11,7 @@
 #include <mono/jit/mono-private-unstable.h>
 #include "interp/interp.h"
 #include "aot-runtime.h"
-
+#include <mono/metadata/mh_log.h>
 #ifdef HOST_WASM
 
 static char
@@ -25,7 +25,7 @@ type_to_c (MonoType *t, gboolean *is_byref_return)
 		return 'I';
 
 handle_enum:
-	switch (t->type) {
+	switch (t->type) {		
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I1:
@@ -34,6 +34,7 @@ handle_enum:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
+#if SIZEOF_VOID_P == 4
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
@@ -41,14 +42,28 @@ handle_enum:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
+#else
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 		return 'I';
 	case MONO_TYPE_R4:
 		return 'F';
 	case MONO_TYPE_R8:
 		return 'D';
 		break;
+#if SIZEOF_VOID_P == 4
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
+#else 
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_STRING:
+#endif
 		return 'L';
 	case MONO_TYPE_VOID:
 		return 'V';
@@ -68,8 +83,11 @@ handle_enum:
 
 		if (is_byref_return)
 			*is_byref_return = 1;
-
+		#if SIZEOF_VOID_P == 4
 		return 'I';
+		#else
+		return 'L';
+		#endif
 	}
 	case MONO_TYPE_GENERICINST: {
 		// This previously erroneously used m_type_data_get_klass which isn't legal for genericinst, we have to use class_from_mono_type_internal
@@ -122,7 +140,12 @@ mono_wasm_install_interp_to_native_callback (MonoWasmNativeToInterpCallback cb)
 int
 mono_wasm_interp_method_args_get_iarg (InterpMethodArguments *margs, int i)
 {
-	return (int)(gssize)margs->iargs[i];
+	MH_LOG_INDENT();
+	MH_LOG("Looking for iarg[%d]", i);
+	int retval = (int)(gssize)margs->iargs[i];
+	MH_LOG("Got %d", retval);
+	MH_LOG_UNINDENT();
+	return retval;	
 }
 
 gint64
@@ -154,7 +177,10 @@ compare_icall_tramp (const void *key, const void *elem)
 {
 	return strcmp (key, *(void**)elem);
 }
-
+static void 
+logCookie (int c_count, const char *cookie) {
+	MH_LOG("WASM ICALL COOKIE: %s\n", cookie);
+}
 gpointer
 mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig)
 {
@@ -182,7 +208,7 @@ mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig)
 	for (int i = 0; i < sig->param_count; ++i) {
 		cookie [offset + i] = type_to_c (sig->params [i], NULL);
 	}
-
+	logCookie(c_count, cookie);
 	void *p = mono_wasm_interp_to_native_callback (cookie);
 	if (!p)
 		g_error ("CANNOT HANDLE INTERP ICALL SIG %s\n", cookie);
