@@ -15,11 +15,7 @@ internal class ARM64FrameHandler(Target target, ContextHolder<ARM64Context> cont
 
     void IPlatformFrameHandler.HandleFaultingExceptionFrame(FaultingExceptionFrame frame)
     {
-        if (frame.TargetContext is not TargetPointer targetContext)
-        {
-            throw new InvalidOperationException("Unexpected null context pointer on FaultingExceptionFrame");
-        }
-        _holder.ReadFromAddress(_target, targetContext);
+        _holder.ReadFromAddress(_target, frame.TargetContext);
 
         // Clear the CONTEXT_XSTATE, since the ARM64Context contains just plain CONTEXT structure
         // that does not support holding any extended state.
@@ -32,7 +28,7 @@ internal class ARM64FrameHandler(Target target, ContextHolder<ARM64Context> cont
 
         _holder.InstructionPointer = frame.ReturnAddress;
 
-        // The stack pointer is the address immediately following HijacksArgs
+        // The stack pointer is the address immediately following HijackArgs
         uint hijackArgsSize = _target.GetTypeInfo(DataType.HijackArgs).Size ?? throw new InvalidOperationException("HijackArgs size is not set");
         Debug.Assert(hijackArgsSize % 8 == 0, "HijackArgs contains register values and should be a multiple of 8");
         // The stack must be multiple of 16. So if hijackArgsSize is not multiple of 16 then there must be padding of 8 bytes

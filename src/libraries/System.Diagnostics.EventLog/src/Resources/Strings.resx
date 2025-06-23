@@ -222,10 +222,10 @@
     <value>'retentionDays' must be between 1 and 365 days.</value>
   </data>
   <data name="SomeLogsInaccessible" xml:space="preserve">
-    <value>The source was not found, but some or all event logs could not be searched.  Inaccessible logs: {0}.</value>
+    <value>The source {0} was not found on computer {1}, but some or all event logs could not be searched.  Inaccessible logs: {2}.</value>
   </data>
   <data name="SomeLogsInaccessibleToCreate" xml:space="preserve">
-    <value>The source was not found, but some or all event logs could not be searched.  To create the source, you need permission to read all event logs to make sure that the new source name is unique.  Inaccessible logs: {0}.</value>
+    <value>The source {0} was not found on computer {1}, but some or all event logs could not be searched.  To create the source, you need permission to read all event logs to make sure that the new source name is unique.  Inaccessible logs: {2}.</value>
   </data>
   <data name="SourceAlreadyExists" xml:space="preserve">
     <value>Source {0} already exists on the computer '{1}'.</value>

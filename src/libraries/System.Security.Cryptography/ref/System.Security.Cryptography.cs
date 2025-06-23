@@ -1858,7 +1858,7 @@ namespace System.Security.Cryptography
         protected abstract bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.ReadOnlySpan<byte> signature);
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
-    public sealed partial class MLDsaAlgorithm
+    public sealed partial class MLDsaAlgorithm : System.IEquatable<System.Security.Cryptography.MLDsaAlgorithm>
     {
         internal MLDsaAlgorithm() { }
         public static System.Security.Cryptography.MLDsaAlgorithm MLDsa44 { get { throw null; } }
@@ -1869,6 +1869,12 @@ namespace System.Security.Cryptography
         public int PublicKeySizeInBytes { get { throw null; } }
         public int SecretKeySizeInBytes { get { throw null; } }
         public int SignatureSizeInBytes { get { throw null; } }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.MLDsaAlgorithm? other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Security.Cryptography.MLDsaAlgorithm? left, System.Security.Cryptography.MLDsaAlgorithm? right) { throw null; }
+        public static bool operator !=(System.Security.Cryptography.MLDsaAlgorithm? left, System.Security.Cryptography.MLDsaAlgorithm? right) { throw null; }
+        public override string ToString() { throw null; }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class MLDsaCng : System.Security.Cryptography.MLDsa

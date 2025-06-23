@@ -2169,6 +2169,7 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         // which may swallow managed exceptions.  The debugger needs this in order to send a
         // CatchHandlerFound (CHF) notification.
         DebuggerU2MCatchHandlerFrame catchFrame(true /* catchesAllExceptions */);
+
         EX_TRY
         {
             InvokeMemberDebuggerWrapper(pDispMemberInfo,

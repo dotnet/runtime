@@ -42,7 +42,17 @@ enum EtwTypeFlags
     kEtwTypeFlagsFinalizable =                      0x2,
     kEtwTypeFlagsExternallyImplementedCOMObject =   0x4,
     kEtwTypeFlagsArray =                            0x8,
-    kEtwTypeFlagsModuleBaseAddress =                0x10,
+    kEtwTypeFlagsModuleBaseAddress =               0x10,
+    kEtwTypeFlagsArrayRankBit0 =                  0x100,
+    kEtwTypeFlagsArrayRankBit1 =                  0x200,
+    kEtwTypeFlagsArrayRankBit2 =                  0x400,
+    kEtwTypeFlagsArrayRankBit3 =                  0x800,
+    kEtwTypeFlagsArrayRankBit4 =                 0x1000,
+    kEtwTypeFlagsArrayRankBit5 =                 0x2000,
+
+    kEtwTypeFlagsArrayRankMask =                 0x3F00,
+    kEtwTypeFlagsArrayRankShift =                     8,
+    kEtwTypeFlagsArrayRankMax = kEtwTypeFlagsArrayRankMask >> kEtwTypeFlagsArrayRankShift
 };
 
 enum EtwThreadFlags
