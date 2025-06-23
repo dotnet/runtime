@@ -34,3 +34,7 @@ endif()
 
 add_subdirectory(Bootstrap)
 add_subdirectory(Runtime)
+
+if (NOT "${ASAN_RUNTIME}" STREQUAL "")
+    install(FILES ${ASAN_RUNTIME} DESTINATION . COMPONENT nativeaot)
+endif()
