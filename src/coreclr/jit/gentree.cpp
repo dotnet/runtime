@@ -18608,6 +18608,7 @@ void GenTreeVecCon::EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_type
     }
 }
 
+#if defined(TARGET_ARM64)
 //------------------------------------------------------------------------
 // GenTreeVecCon::EvaluateUnaryInPlace: Evaluates this constant using the given operation, when the other
 //                                      operand is a constant mask
@@ -18620,71 +18621,16 @@ void GenTreeVecCon::EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_type
 //
 void GenTreeVecCon::EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_types baseType, GenTreeMskCon* other)
 {
-    switch (gtType)
-    {
-        case TYP_SIMD8:
-        {
-            simd8_t otherSimdVal;
-            EvaluateSimdCvtMaskToVector<simd8_t>(baseType, &otherSimdVal, other->gtSimdMaskVal);
+    assert(gtType == TYP_SIMD16);
 
-            simd8_t result = {};
-            EvaluateBinarySimd<simd8_t>(oper, scalar, baseType, &result, gtSimd8Val, otherSimdVal);
-            gtSimd8Val = result;
-            break;
-        }
+    simd16_t otherSimdVal;
+    EvaluateSimdCvtMaskToVector<simd16_t>(baseType, &otherSimdVal, other->gtSimdMaskVal);
 
-        case TYP_SIMD12:
-        {
-            simd12_t otherSimdVal;
-            EvaluateSimdCvtMaskToVector<simd12_t>(baseType, &otherSimdVal, other->gtSimdMaskVal);
-
-            simd12_t result = {};
-            EvaluateBinarySimd<simd12_t>(oper, scalar, baseType, &result, gtSimd12Val, otherSimdVal);
-            gtSimd12Val = result;
-            break;
-        }
-
-        case TYP_SIMD16:
-        {
-            simd16_t otherSimdVal;
-            EvaluateSimdCvtMaskToVector<simd16_t>(baseType, &otherSimdVal, other->gtSimdMaskVal);
-
-            simd16_t result = {};
-            EvaluateBinarySimd<simd16_t>(oper, scalar, baseType, &result, gtSimd16Val, otherSimdVal);
-            gtSimd16Val = result;
-            break;
-        }
-
-#if defined(TARGET_XARCH)
-        case TYP_SIMD32:
-        {
-            simd32_t otherSimdVal;
-            EvaluateSimdCvtMaskToVector<simd32_t>(baseType, &otherSimdVal, other->gtSimdMaskVal);
-
-            simd32_t result = {};
-            EvaluateBinarySimd<simd32_t>(oper, scalar, baseType, &result, gtSimd32Val, otherSimdVal);
-            gtSimd32Val = result;
-            break;
-        }
-
-        case TYP_SIMD64:
-        {
-            simd64_t otherSimdVal;
-            EvaluateSimdCvtMaskToVector<simd64_t>(baseType, &otherSimdVal, other->gtSimdMaskVal);
-
-            simd64_t result = {};
-            EvaluateBinarySimd<simd64_t>(oper, scalar, baseType, &result, gtSimd64Val, otherSimdVal);
-            gtSimd64Val = result;
-            break;
-        }
-#endif // TARGET_XARCH
-
-        default:
-        {
-            unreached();
-        }
-    }
+    simd16_t result = {};
+    EvaluateBinarySimd<simd16_t>(oper, scalar, baseType, &result, gtSimd16Val, otherSimdVal);
+    gtSimd16Val = result;
 }
+#endif // TARGET_ARM64
 
 //------------------------------------------------------------------------
 // GenTreeVecCon::EvaluateBroadcastInPlace: Evaluates this constant using a broadcast
