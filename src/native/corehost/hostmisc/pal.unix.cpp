@@ -192,7 +192,7 @@ bool pal::get_loaded_library(
 {
     pal::string_t library_name_local;
 #if defined(TARGET_OSX)
-    if (!pal::is_path_rooted(library_name))
+    if (!pal::is_path_fully_qualified(library_name))
         library_name_local.append("@rpath/");
 #endif
     library_name_local.append(library_name);
@@ -200,7 +200,7 @@ bool pal::get_loaded_library(
     dll_t dll_maybe = dlopen(library_name_local.c_str(), RTLD_LAZY | RTLD_NOLOAD);
     if (dll_maybe == nullptr)
     {
-        if (pal::is_path_rooted(library_name))
+        if (pal::is_path_fully_qualified(library_name))
             return false;
 
         // dlopen on some systems only finds loaded libraries when given the full path
@@ -263,6 +263,11 @@ int pal::xtoi(const char_t* input)
 bool pal::is_path_rooted(const pal::string_t& path)
 {
     return path.front() == '/';
+}
+
+bool pal::is_path_fully_qualified(const pal::string_t& path)
+{
+    return is_path_rooted(path);
 }
 
 bool pal::get_default_breadcrumb_store(string_t* recv)
@@ -557,20 +562,20 @@ namespace
 
 bool pal::get_default_installation_dir(pal::string_t* recv)
 {
-    //  ***Used only for testing***
-    pal::string_t environmentOverride;
-    if (test_only_getenv(_X("_DOTNET_TEST_DEFAULT_INSTALL_PATH"), &environmentOverride))
-    {
-        recv->assign(environmentOverride);
-        return true;
-    }
-    //  ***************************
-
     return get_default_installation_dir_for_arch(get_current_arch(), recv);
 }
 
 bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
 {
+    //  ***Used only for testing***
+    pal::string_t environment_override;
+    if (test_only_getenv(_X("_DOTNET_TEST_DEFAULT_INSTALL_PATH"), &environment_override))
+    {
+        recv->assign(environment_override);
+        return true;
+    }
+    //  ***************************
+
     bool is_current_arch = arch == get_current_arch();
 
     // Bail out early for unsupported requests for different architectures

@@ -291,13 +291,13 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
     }
 
     // No point in trying to further deconstruct a TYP_I_IMPL address.
-    if (tgtAddr->TypeGet() == TYP_I_IMPL)
+    if (tgtAddr->TypeIs(TYP_I_IMPL))
     {
         return GCInfo::WBF_BarrierUnknown;
     }
 
     // Otherwise...
-    assert(tgtAddr->TypeGet() == TYP_BYREF);
+    assert(tgtAddr->TypeIs(TYP_BYREF));
     bool simplifiedExpr = true;
     while (simplifiedExpr)
     {
@@ -309,7 +309,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
         // source.
         while (tgtAddr->OperIs(GT_ADD, GT_LEA))
         {
-            if (tgtAddr->OperGet() == GT_ADD)
+            if (tgtAddr->OperIs(GT_ADD))
             {
                 GenTree*  addOp1     = tgtAddr->AsOp()->gtGetOp1();
                 GenTree*  addOp2     = tgtAddr->AsOp()->gtGetOp2();
@@ -318,7 +318,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
 
                 if (addOp1Type == TYP_BYREF || addOp1Type == TYP_REF)
                 {
-                    assert(((addOp2Type != TYP_BYREF) || (addOp2->OperIs(GT_CNS_INT))) && (addOp2Type != TYP_REF));
+                    assert(((addOp2Type != TYP_BYREF) || addOp2->OperIs(GT_CNS_INT)) && (addOp2Type != TYP_REF));
                     tgtAddr        = addOp1;
                     simplifiedExpr = true;
                 }
@@ -339,9 +339,9 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
             else
             {
                 // Must be an LEA (i.e., an AddrMode)
-                assert(tgtAddr->OperGet() == GT_LEA);
+                assert(tgtAddr->OperIs(GT_LEA));
                 tgtAddr = tgtAddr->AsAddrMode()->Base();
-                if (tgtAddr->TypeGet() == TYP_BYREF || tgtAddr->TypeGet() == TYP_REF)
+                if (tgtAddr->TypeIs(TYP_BYREF, TYP_REF))
                 {
                     simplifiedExpr = true;
                 }
@@ -354,7 +354,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
         }
     }
 
-    if (tgtAddr->TypeGet() == TYP_REF)
+    if (tgtAddr->TypeIs(TYP_REF))
     {
         return GCInfo::WBF_BarrierUnchecked;
     }
@@ -419,12 +419,33 @@ GCInfo::regPtrDsc* GCInfo::gcRegPtrAllocDsc()
 
 #ifdef JIT32_GCENCODER
 
+// Small helper class to handle the No-GC-Interrupt callbacks
+// when reporting interruptible ranges.
+struct NoGCRegionCounter
+{
+    unsigned noGCRegionCount;
+
+    NoGCRegionCounter()
+        : noGCRegionCount(0)
+    {
+    }
+
+    // This callback is called for each insGroup marked with IGF_NOGCINTERRUPT.
+    bool operator()(unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInProlog)
+    {
+        noGCRegionCount++;
+        return true;
+    }
+};
+
 /*****************************************************************************
  *
  *  Compute the various counts that get stored in the info block header.
  */
 
-void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED unsigned int* pVarPtrTableSize)
+void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
+                              UNALIGNED unsigned int* pVarPtrTableSize,
+                              UNALIGNED unsigned int* pNoGCRegionCount)
 {
     unsigned   varNum;
     LclVarDsc* varDsc;
@@ -473,7 +494,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED
 
             untrackedCount++;
         }
-        else if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->lvOnFrame)
+        else if (varDsc->TypeIs(TYP_STRUCT) && varDsc->lvOnFrame)
         {
             untrackedCount += varDsc->GetLayout()->GetGCPtrCount();
         }
@@ -556,6 +577,19 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED
 #endif
 
     *pVarPtrTableSize = varPtrTableSize;
+
+    // Count the number of no GC regions
+
+    unsigned int noGCRegionCount = 0;
+
+    if (compiler->codeGen->GetInterruptible())
+    {
+        NoGCRegionCounter counter;
+        compiler->GetEmitter()->emitGenNoGCLst(counter, /* skipMainPrologsAndEpilogs = */ true);
+        noGCRegionCount = counter.noGCRegionCount;
+    }
+
+    *pNoGCRegionCount = noGCRegionCount;
 }
 
 //------------------------------------------------------------------------

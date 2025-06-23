@@ -9,12 +9,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#ifdef _MSC_VER
-#define INTERP_API
-#else
-#define INTERP_API __attribute__ ((visibility ("default")))
-#endif // _MSC_VER
-
 /*****************************************************************************/
 ICorJitHost* g_interpHost        = nullptr;
 bool         g_interpInitialized = false;
@@ -66,10 +60,13 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
     else
     {
         const char *methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, nullptr, nullptr, nullptr, 0);
+#ifdef TARGET_WASM
+        // interpret everything on wasm
+        doInterpret = true;
+#else
+        doInterpret = (InterpConfig.Interpreter().contains(compHnd, methodInfo->ftn, compHnd->getMethodClass(methodInfo->ftn), &methodInfo->args));
+#endif
 
-        // TODO: replace this by something like the JIT does to support multiple methods being specified
-        const char *methodToInterpret = InterpConfig.Interpreter();
-        doInterpret = (methodName != NULL && strcmp(methodName, methodToInterpret) == 0);
         if (doInterpret)
             g_interpModule = methodInfo->scope;
     }
@@ -79,35 +76,39 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
         return CORJIT_SKIPPED;
     }
 
-    InterpCompiler compiler(compHnd, methodInfo);
-    InterpMethod *pMethod = compiler.CompileMethod();
+    try
+    {
+        InterpCompiler compiler(compHnd, methodInfo);
+        InterpMethod *pMethod = compiler.CompileMethod();
+        int32_t IRCodeSize = 0;
+        int32_t *pIRCode = compiler.GetCode(&IRCodeSize);
 
-    int32_t IRCodeSize;
-    int32_t *pIRCode = compiler.GetCode(&IRCodeSize);
+        uint32_t sizeOfCode = sizeof(InterpMethod*) + IRCodeSize * sizeof(int32_t);
+        uint8_t unwindInfo[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-    // FIXME this shouldn't be here
-    compHnd->setMethodAttribs(methodInfo->ftn, CORINFO_FLG_INTERPRETER);
+        AllocMemArgs args {};
+        args.hotCodeSize = sizeOfCode;
+        args.coldCodeSize = 0;
+        args.roDataSize = 0;
+        args.xcptnsCount = 0;
+        args.flag = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
+        compHnd->allocMem(&args);
 
-    uint32_t sizeOfCode = sizeof(InterpMethod*) + IRCodeSize * sizeof(int32_t);
-    uint8_t unwindInfo[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+        // We store first the InterpMethod pointer as the code header, followed by the actual code
+        *(InterpMethod**)args.hotCodeBlockRW = pMethod;
+        memcpy ((uint8_t*)args.hotCodeBlockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
 
-    AllocMemArgs args {};
-    args.hotCodeSize = sizeOfCode;
-    args.coldCodeSize = 0;
-    args.roDataSize = 0;
-    args.xcptnsCount = 0;
-    args.flag = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
-    compHnd->allocMem(&args);
+        *entryAddress = (uint8_t*)args.hotCodeBlock;
+        *nativeSizeOfCode = sizeOfCode;
 
-    // We store first the InterpMethod pointer as the code header, followed by the actual code
-    *(InterpMethod**)args.hotCodeBlockRW = pMethod;
-    memcpy ((uint8_t*)args.hotCodeBlockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
-
-    *entryAddress = (uint8_t*)args.hotCodeBlock;
-    *nativeSizeOfCode = sizeOfCode;
-
-    // We can't do this until we've called allocMem
-    compiler.BuildGCInfo(pMethod);
+        // We can't do this until we've called allocMem
+        compiler.BuildGCInfo(pMethod);
+        compiler.BuildEHInfo();
+    }
+    catch(const InterpException& e)
+    {
+        return e.m_result;
+    }
 
     return CORJIT_OK;
 }
@@ -125,4 +126,19 @@ void CILInterp::getVersionIdentifier(GUID* versionIdentifier)
 
 void CILInterp::setTargetOS(CORINFO_OS os)
 {
+}
+
+INTERPRETER_NORETURN void NO_WAY(const char* message)
+{
+    throw InterpException(message, CORJIT_INTERNALERROR);
+}
+
+INTERPRETER_NORETURN void BADCODE(const char* message)
+{
+    throw InterpException(message, CORJIT_BADCODE);
+}
+
+INTERPRETER_NORETURN void NOMEM()
+{
+    throw InterpException(NULL, CORJIT_OUTOFMEM);
 }

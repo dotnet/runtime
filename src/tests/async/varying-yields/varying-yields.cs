@@ -22,6 +22,7 @@ public class Async2VaryingYields
         Task.Run(AsyncEntry).Wait();
     }
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     public static async Task AsyncEntry()
     {
         if (!GCSettings.IsServerGC)
@@ -76,13 +77,14 @@ public class Async2VaryingYields
 
         public Benchmark(double yieldProbability) => _yieldProbability = yieldProbability;
 
-public
 #if ASYNC1_TASK
-        async Task<long>
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
+        public async Task<long>
 #elif ASYNC1_VALUETASK
-        async ValueTask<long>
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
+        public async ValueTask<long>
 #else
-        async2 Task<long>
+        public async Task<long>
 #endif
         Run(int depth)
         {
@@ -98,13 +100,14 @@ public
             return result;
         }
 
-private
 #if ASYNC1_TASK
-        async Task<long>
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
+        private async Task<long>
 #elif ASYNC1_VALUETASK
-        async ValueTask<long>
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
+        private async ValueTask<long>
 #else
-        async2 Task<long>
+        private async Task<long>
 #endif
         Loop()
         {
@@ -124,13 +127,14 @@ private
             return numIters;
         }
 
-private
 #if ASYNC1_TASK
-        async Task<int>
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
+        private async Task<int>
 #elif ASYNC1_VALUETASK
-        async ValueTask<int>
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
+        private async ValueTask<int>
 #else
-        async2 Task<int>
+        private async Task<int>
 #endif
         DoYields()
         {

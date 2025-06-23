@@ -7,6 +7,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 {
     public static partial class PrivateKeyAssociationTests
     {
+        private static partial Func<X509Certificate2, MLKem, X509Certificate2> CopyWithPrivateKey_MLKem =>
+            X509CertificateKeyAccessors.CopyWithPrivateKey;
+
+        private static partial Func<X509Certificate2, MLKem> GetMLKemPublicKey =>
+            X509CertificateKeyAccessors.GetMLKemPublicKey;
+
+        private static partial Func<X509Certificate2, MLKem> GetMLKemPrivateKey =>
+            X509CertificateKeyAccessors.GetMLKemPrivateKey;
+
         private static partial Func<X509Certificate2, SlhDsa, X509Certificate2> CopyWithPrivateKey_SlhDsa =>
             X509CertificateKeyAccessors.CopyWithPrivateKey;
 

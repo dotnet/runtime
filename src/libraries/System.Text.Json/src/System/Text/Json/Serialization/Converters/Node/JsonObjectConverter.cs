@@ -31,7 +31,20 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(value == null || value is JsonNode);
             JsonNode? jNodeValue = value;
 
-            jObject[propertyName] = jNodeValue;
+            if (options.AllowDuplicateProperties)
+            {
+                jObject[propertyName] = jNodeValue;
+            }
+            else
+            {
+                // TODO: Use TryAdd once https://github.com/dotnet/runtime/issues/110244 is resolved.
+                if (jObject.ContainsKey(propertyName))
+                {
+                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyName);
+                }
+
+                jObject.Add(propertyName, jNodeValue);
+            }
         }
 
         public override void Write(Utf8JsonWriter writer, JsonObject? value, JsonSerializerOptions options)
@@ -50,20 +63,54 @@ namespace System.Text.Json.Serialization.Converters
             switch (reader.TokenType)
             {
                 case JsonTokenType.StartObject:
-                    return ReadObject(ref reader, options.GetNodeOptions());
+                    return options.AllowDuplicateProperties
+                        ? ReadAsJsonElement(ref reader, options.GetNodeOptions())
+                        : ReadAsJsonNode(ref reader, options.GetNodeOptions());
                 case JsonTokenType.Null:
                     return null;
                 default:
-                    Debug.Assert(false);
                     throw ThrowHelper.GetInvalidOperationException_ExpectedObject(reader.TokenType);
             }
         }
 
-        public static JsonObject ReadObject(ref Utf8JsonReader reader, JsonNodeOptions? options)
+        internal static JsonObject ReadAsJsonElement(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
             JsonElement jElement = JsonElement.ParseValue(ref reader);
-            JsonObject jObject = new JsonObject(jElement, options);
-            return jObject;
+            return new JsonObject(jElement, options);
+        }
+
+        internal static JsonObject ReadAsJsonNode(ref Utf8JsonReader reader, JsonNodeOptions options)
+        {
+            Debug.Assert(reader.TokenType == JsonTokenType.StartObject);
+
+            JsonObject jObject = new JsonObject(options);
+
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.EndObject)
+                {
+                    return jObject;
+                }
+
+                if (reader.TokenType != JsonTokenType.PropertyName)
+                {
+                    // JSON is invalid so reader would have already thrown.
+                    Debug.Fail("Property name expected.");
+                    ThrowHelper.ThrowJsonException();
+                }
+
+                string propertyName = reader.GetString()!;
+                reader.Read(); // Move to the value token.
+                JsonNode? value = JsonNodeConverter.ReadAsJsonNode(ref reader, options);
+
+                // To have parity with the lazy JsonObject, we throw on duplicates.
+                jObject.Add(propertyName, value);
+            }
+
+            // JSON is invalid so reader would have already thrown.
+            Debug.Fail("End object token not found.");
+            ThrowHelper.ThrowJsonException();
+            return null;
         }
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Object };

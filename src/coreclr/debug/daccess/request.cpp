@@ -60,7 +60,7 @@
             EX_RETHROW; \
         }               \
     }                   \
-    EX_END_CATCH(SwallowAllExceptions) \
+    EX_END_CATCH \
     DAC_LEAVE();
 
 // Use this when you don't want to instantiate an Object * in the host.
@@ -131,7 +131,7 @@ BOOL DacValidateEEClass(PTR_EEClass pEEClass)
     {
         retval = FALSE; // Something is wrong
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     return retval;
 
 }
@@ -179,7 +179,7 @@ BadMethodTable: ;
     {
         retval = FALSE; // Something is wrong
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     return retval;
 
 }
@@ -251,7 +251,7 @@ BOOL DacValidateMD(PTR_MethodDesc pMD)
     {
         retval = FALSE; // Something is wrong
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     return retval;
 }
 
@@ -471,7 +471,7 @@ HRESULT DacMethodTableSlotEnumerator::Init(PTR_MethodTable mTable)
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (pMD != nullptr)
         {
@@ -888,11 +888,11 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
 #ifdef FEATURE_EH_FUNCLETS
     if (thread->m_ExceptionState.m_pCurrentTracker)
     {
-        threadData->firstNestedException = PTR_HOST_TO_TADDR(
+        threadData->firstNestedException = HOST_CDADDR(
             thread->m_ExceptionState.m_pCurrentTracker->m_pPrevNestedInfo);
     }
 #else
-    threadData->firstNestedException = PTR_HOST_TO_TADDR(
+    threadData->firstNestedException = HOST_CDADDR(
         thread->m_ExceptionState.m_currentExInfo.m_pPrevNestedInfo);
 #endif // FEATURE_EH_FUNCLETS
 
@@ -1135,7 +1135,7 @@ HRESULT ClrDataAccess::GetMethodDescData(
             if (pcNeededRevertedRejitData != NULL)
                 *pcNeededRevertedRejitData = 0;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
         hr = S_OK; // Failure to get rejitids is not fatal
 
 #endif // FEATURE_REJIT
@@ -1298,7 +1298,7 @@ HRESULT ClrDataAccess::GetTieredVersions(
     {
         hr = E_FAIL;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
 cleanup:
     ;
@@ -1506,7 +1506,7 @@ ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count,
 #endif
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (SUCCEEDED(hr))
     {
@@ -1798,7 +1798,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     SOSDacLeave();
     return hr;
@@ -1923,7 +1923,7 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, _Inout
                     EX_RETHROW;
                 }
             }
-            EX_END_CATCH(SwallowAllExceptions)
+            EX_END_CATCH
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
             if (s.IsEmpty())
@@ -1983,7 +1983,7 @@ ClrDataAccess::GetFieldDescData(CLRDATA_ADDRESS addr, struct DacpFieldDescData *
     {
         FieldDescData->MTOfType = (CLRDATA_ADDRESS)NULL;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     // TODO: This is not currently useful, I need to get the module of the
     // type definition not that of the field description.
@@ -3958,7 +3958,7 @@ ClrDataAccess::Request(IN ULONG32 reqCode,
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -5076,7 +5076,7 @@ namespace
 TADDR ClrDataAccess::GetIdentityForManagedObjectWrapper(TADDR mow)
 {
     PTR_ManagedObjectWrapper pMOW = dac_cast<PTR_ManagedObjectWrapper>(mow);
-    // Replicate the logic for ManagedObjectWrapper.As(IID_IUnknown)
+    // Replicate the logic for _wrapper.As(IID_IUnknown)
     if ((pMOW->GetFlags() & InteropLib::Com::CreateComInterfaceFlagsEx::CallerDefinedIUnknown) == InteropLib::Com::CreateComInterfaceFlagsEx::None)
     {
         // We have the standard IUnknown implementation, so grab it from its known location.
@@ -5173,7 +5173,7 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
                 for (unsigned int i = 0; i < count; i++)
                 {
                     MOWHOLDERREF pMOWRef = (MOWHOLDERREF)pListItems->GetAt(i);
-                    PTR_ManagedObjectWrapper pMOW = PTR_ManagedObjectWrapper(dac_cast<TADDR>(pMOWRef->ManagedObjectWrapper));
+                    PTR_ManagedObjectWrapper pMOW = PTR_ManagedObjectWrapper(dac_cast<TADDR>(pMOWRef->_wrapper));
 
                     // Now that we have the managed object wrapper, we need to figure out the COM identity of it.
                     TADDR pComIdentity = GetIdentityForManagedObjectWrapper(dac_cast<TADDR>(pMOW));

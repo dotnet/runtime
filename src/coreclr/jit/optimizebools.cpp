@@ -206,11 +206,11 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     if (m_sameTarget)
     {
-        if (m_c1->gtOper == GT_LCL_VAR && m_c2->gtOper == GT_LCL_VAR &&
+        if (m_c1->OperIs(GT_LCL_VAR) && m_c2->OperIs(GT_LCL_VAR) &&
             m_c1->AsLclVarCommon()->GetLclNum() == m_c2->AsLclVarCommon()->GetLclNum())
         {
-            if ((m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_EQ) ||
-                (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_LT))
+            if ((m_testInfo1.compTree->OperIs(GT_LT) && m_testInfo2.compTree->OperIs(GT_EQ)) ||
+                (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_LT)))
             {
                 // Case: t1:c1<0 t2:c1==0
                 // So we will branch to BX if c1<=0
@@ -219,8 +219,8 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
                 // So we will branch to BX if c1<=0
                 cmpOp = GT_LE;
             }
-            else if ((m_testInfo1.compTree->gtOper == GT_GT && m_testInfo2.compTree->gtOper == GT_EQ) ||
-                     (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_GT))
+            else if ((m_testInfo1.compTree->OperIs(GT_GT) && m_testInfo2.compTree->OperIs(GT_EQ)) ||
+                     (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_GT)))
             {
                 // Case: t1:c1>0 t2:c1==0
                 // So we will branch to BX if c1>=0
@@ -236,7 +236,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
             foldOp = GT_NONE;
         }
-        else if (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_EQ)
+        else if (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_EQ))
         {
             // t1:c1==0 t2:c2==0 ==> Branch to BX if either value is 0
             // So we will branch to BX if (c1&c2)==0
@@ -244,7 +244,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
             foldOp = GT_AND;
             cmpOp  = GT_EQ;
         }
-        else if (m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_LT &&
+        else if (m_testInfo1.compTree->OperIs(GT_LT) && m_testInfo2.compTree->OperIs(GT_LT) &&
                  (!m_testInfo1.GetTestOp()->IsUnsigned() && !m_testInfo2.GetTestOp()->IsUnsigned()))
         {
             // t1:c1<0 t2:c2<0 ==> Branch to BX if either value < 0
@@ -253,7 +253,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
             foldOp = GT_OR;
             cmpOp  = GT_LT;
         }
-        else if (m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_NE)
+        else if (m_testInfo1.compTree->OperIs(GT_NE) && m_testInfo2.compTree->OperIs(GT_NE))
         {
             // t1:c1!=0 t2:c2!=0 ==> Branch to BX if either value is non-0
             // So we will branch to BX if (c1|c2)!=0
@@ -268,11 +268,11 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
     }
     else
     {
-        if (m_c1->gtOper == GT_LCL_VAR && m_c2->gtOper == GT_LCL_VAR &&
+        if (m_c1->OperIs(GT_LCL_VAR) && m_c2->OperIs(GT_LCL_VAR) &&
             m_c1->AsLclVarCommon()->GetLclNum() == m_c2->AsLclVarCommon()->GetLclNum())
         {
-            if ((m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_NE) ||
-                (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_GE))
+            if ((m_testInfo1.compTree->OperIs(GT_LT) && m_testInfo2.compTree->OperIs(GT_NE)) ||
+                (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_GE)))
             {
                 // Case: t1:c1<0 t2:c1!=0
                 // So we will branch to BX if c1>0
@@ -281,8 +281,8 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
                 // So we will branch to BX if c1>0
                 cmpOp = GT_GT;
             }
-            else if ((m_testInfo1.compTree->gtOper == GT_GT && m_testInfo2.compTree->gtOper == GT_NE) ||
-                     (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_LE))
+            else if ((m_testInfo1.compTree->OperIs(GT_GT) && m_testInfo2.compTree->OperIs(GT_NE)) ||
+                     (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_LE)))
             {
                 // Case: t1:c1>0 t2:c1!=0
                 // So we will branch to BX if c1<0
@@ -298,7 +298,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
             foldOp = GT_NONE;
         }
-        else if (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_NE)
+        else if (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_NE))
         {
             // t1:c1==0 t2:c2!=0 ==> Branch to BX if both values are non-0
             // So we will branch to BX if (c1&c2)!=0
@@ -306,7 +306,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
             foldOp = GT_AND;
             cmpOp  = GT_NE;
         }
-        else if (m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_GE &&
+        else if (m_testInfo1.compTree->OperIs(GT_LT) && m_testInfo2.compTree->OperIs(GT_GE) &&
                  (!m_testInfo1.GetTestOp()->IsUnsigned() && !m_testInfo2.GetTestOp()->IsUnsigned()))
         {
             // t1:c1<0 t2:c2>=0 ==> Branch to BX if both values >= 0
@@ -315,7 +315,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
             foldOp = GT_OR;
             cmpOp  = GT_GE;
         }
-        else if (m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_EQ)
+        else if (m_testInfo1.compTree->OperIs(GT_NE) && m_testInfo2.compTree->OperIs(GT_EQ))
         {
             // t1:c1!=0 t2:c2==0 ==> Branch to BX if both values are 0
             // So we will branch to BX if (c1|c2)==0
@@ -824,6 +824,9 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     FlowEdge* const newEdge      = m_comp->fgAddRefPred(inRangeBb, m_b1);
     FlowEdge* const oldFalseEdge = m_b1->GetFalseEdge();
     FlowEdge* const oldTrueEdge  = m_b1->GetTrueEdge();
+    newEdge->setHeuristicBased(oldTrueEdge->isHeuristicBased());
+    newEdge->setLikelihood(inRangeLikelihood);
+    oldTrueEdge->setLikelihood(1.0 - inRangeLikelihood);
 
     if (!cmp2IsReversed)
     {
@@ -831,18 +834,12 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         m_b1->SetTrueEdge(newEdge);
         assert(m_b1->TrueTargetIs(inRangeBb));
         assert(m_b1->FalseTargetIs(notInRangeBb));
-
-        newEdge->setLikelihood(inRangeLikelihood);
-        oldTrueEdge->setLikelihood(1.0 - inRangeLikelihood);
     }
     else
     {
         m_b1->SetFalseEdge(newEdge);
         assert(m_b1->TrueTargetIs(notInRangeBb));
         assert(m_b1->FalseTargetIs(inRangeBb));
-
-        oldTrueEdge->setLikelihood(inRangeLikelihood);
-        newEdge->setLikelihood(1.0 - inRangeLikelihood);
     }
 
     // Remove the 2nd condition block as we no longer need it
@@ -1243,6 +1240,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
             // Modify flow for true side of B1
             //
             m_comp->fgRedirectTrueEdge(m_b1, m_b2->GetTrueTarget());
+            origB1TrueEdge->setHeuristicBased(origB2TrueEdge->isHeuristicBased());
 
             newB1TrueLikelihood =
                 (1.0 - origB1TrueLikelihood) + origB1TrueLikelihood * origB2FalseEdge->getLikelihood();
@@ -1267,6 +1265,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         // Fix B1 false edge likelihood
         //
         newB1FalseEdge->setLikelihood(1.0 - newB1TrueLikelihood);
+        newB1FalseEdge->setHeuristicBased(origB1TrueEdge->isHeuristicBased());
 
         // Update profile
         if (m_b1->hasProfileWeight())
@@ -1314,7 +1313,7 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
     Statement* const stmt = m_b1->lastStmt();
     GenTree* const   cond = stmt->GetRootNode();
 
-    assert(cond->gtOper == GT_JTRUE);
+    assert(cond->OperIs(GT_JTRUE));
 
     OptTestInfo test;
     test.testStmt = stmt;
@@ -1342,7 +1341,7 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
 
     // Comparand type is already checked, and we have const int, there is no harm
     // morphing it into a TYP_I_IMPL.
-    noway_assert(relop->AsOp()->gtOp2->gtOper == GT_CNS_INT);
+    noway_assert(relop->AsOp()->gtOp2->OperIs(GT_CNS_INT));
     relop->AsOp()->gtOp2->gtType = TYP_I_IMPL;
 
     // Recost/rethread the tree if necessary
@@ -1399,7 +1398,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     GenTree* opr1 = cond->AsOp()->gtOp1;
     GenTree* opr2 = cond->AsOp()->gtOp2;
 
-    if (opr2->gtOper != GT_CNS_INT)
+    if (!opr2->OperIs(GT_CNS_INT))
     {
         return nullptr;
     }
@@ -1414,7 +1413,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     // Is the value a boolean?
     // We can either have a boolean expression (marked GTF_BOOLEAN) or a constant 0/1.
 
-    if ((opr1->gtOper == GT_CNS_INT) && (opr1->IsIntegralConst(0) || opr1->IsIntegralConst(1)))
+    if (opr1->OperIs(GT_CNS_INT) && (opr1->IsIntegralConst(0) || opr1->IsIntegralConst(1)))
     {
         pOptTest->isBool = true;
     }

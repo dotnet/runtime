@@ -15,23 +15,16 @@ namespace System.Tests
         [DllImport("libc", SetLastError = true)]
         private static extern int kill(int pid, int sig);
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(null)]
-        [InlineData(0)]
-        [InlineData(42)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // SIGTERM signal.
-        public void SigTermExitCode(int? exitCodeOnSigterm)
+        public void SigTermExitCode()
         {
-            Action<string> action = (string sigTermExitCode) =>
+            Action action = () =>
             {
-                if (!string.IsNullOrEmpty(sigTermExitCode))
+                AppDomain.CurrentDomain.ProcessExit += (sender, args) =>
                 {
-                    AppDomain.CurrentDomain.ProcessExit += (sender, args) =>
-                    {
-                        Assert.Same(AppDomain.CurrentDomain, sender);
-                        Environment.ExitCode = int.Parse(sigTermExitCode);
-                    };
-                }
+                    Assert.Fail("AppDomain.ProcessExit is not expected to be called when the process is killed by SIGTERM");
+                };
 
                 Console.WriteLine("Application started");
 
@@ -42,7 +35,7 @@ namespace System.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.RedirectStandardOutput = true;
             options.CheckExitCode = false;
-            using (RemoteInvokeHandle remoteExecution = RemoteExecutor.Invoke(action, exitCodeOnSigterm?.ToString() ?? string.Empty, options))
+            using (RemoteInvokeHandle remoteExecution = RemoteExecutor.Invoke(action, options))
             {
                 Process process = remoteExecution.Process;
 
@@ -58,8 +51,8 @@ namespace System.Tests
                 bool exited = process.WaitForExit(RemoteExecutor.FailWaitTimeoutMilliseconds);
                 Assert.True(exited);
 
-                // Check exit code
-                Assert.Equal(exitCodeOnSigterm ?? 128 + SIGTERM, process.ExitCode);
+                // Check that the exit code is 143 (128 + SIGTERM).
+                Assert.Equal(143, process.ExitCode);
             }
         }
     }

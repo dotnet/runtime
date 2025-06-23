@@ -21,12 +21,22 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 
+#include <minipal/utf8.h>
+
 EVENTPIPE_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context = { W("Microsoft-Windows-DotNETRuntime"), 0, false, 0 };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = {
 #ifdef FEATURE_ETW
     &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
 #endif
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context
+};
+
+EVENTPIPE_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context = { W("Microsoft-Windows-DotNETRuntimeRundown"), 0, false, 0 };
+DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context = {
+#ifdef FEATURE_ETW
+    &MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_Context,
+#endif
+    MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context
 };
 
 EVENTPIPE_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context = { W("Microsoft-Windows-DotNETRuntimePrivate"), 0, false, 0 };
@@ -40,6 +50,11 @@ DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Con
 bool IsRuntimeProviderEnabled(uint8_t level, uint64_t keyword)
 {
     return RUNTIME_PROVIDER_CATEGORY_ENABLED(level, keyword);
+}
+
+bool IsRuntimeRundownProviderEnabled(uint8_t level, uint64_t keyword)
+{
+    return RUNTIME_RUNDOWN_PROVIDER_CATEGORY_ENABLED(level, keyword);
 }
 
 volatile LONGLONG ETW::GCLog::s_l64LastClientSequenceNumber = 0;
@@ -67,7 +82,7 @@ void ETW::GCLog::FireGcStart(ETW_GC_INFO* pGcInfo)
             (pGcInfo->GCStart.Depth == GCHeapUtilities::GetGCHeap()->GetMaxGeneration()) &&
             (pGcInfo->GCStart.Reason == ETW_GC_INFO::GC_INDUCED))
         {
-            // No InterlockedExchange64 on Redhawk (presumably b/c there is no compiler
+            // No InterlockedExchange64 on NativeAOT (presumably b/c there is no compiler
             // intrinsic for this on x86, even though there is one for InterlockedCompareExchange64)
             l64ClientSequenceNumberToLog = PalInterlockedCompareExchange64(&s_l64LastClientSequenceNumber, 0, s_l64LastClientSequenceNumber);
         }
@@ -81,13 +96,16 @@ void EventTracing_Initialize()
 #ifdef FEATURE_ETW
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context.IsEnabled = FALSE;
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.IsEnabled = FALSE;
+    MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_Context.IsEnabled = FALSE;
 
     // Register the ETW providers with the system.
     EventRegisterMicrosoft_Windows_DotNETRuntimePrivate();
     EventRegisterMicrosoft_Windows_DotNETRuntime();
+    EventRegisterMicrosoft_Windows_DotNETRuntimeRundown();
 
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimePrivateHandle;
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimeHandle;
+    MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimeRundownHandle;
 #endif // FEATURE_ETW
 }
 
@@ -187,9 +205,13 @@ void EtwCallbackCommon(
     case DotNETRuntime:
         ctxToUpdate = &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
         break;
+    case DotNETRuntimeRundown:
+        ctxToUpdate = &MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context;
+        break;
     case DotNETRuntimePrivate:
         ctxToUpdate = &MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context;
         break;
+
     default:
         _ASSERTE(!"EtwCallbackCommon was called with invalid context");
         return;
@@ -228,8 +250,6 @@ void EtwCallbackCommon(
         GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
     }
 
-// NativeAOT currently only supports forcing a GC with ManagedHeapCollectKeyword via ETW
-#ifdef FEATURE_ETW
     // Special check for a profiler requested GC.
     // A full GC will be forced if:
     // 1. The GC Heap is initialized.
@@ -251,17 +271,18 @@ void EtwCallbackCommon(
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.
         LONGLONG l64ClientSequenceNumber = 0;
+#if !defined(HOST_UNIX)
         ParseFilterDataClientSequenceNumber((EVENT_FILTER_DESCRIPTOR*)pFilterData, &l64ClientSequenceNumber);
+#endif // !defined(HOST_UNIX)
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
-#endif
 }
 
 #ifdef FEATURE_ETW
 
 void EtwCallback(
     const GUID * /*SourceId*/,
-    uint32_t IsEnabled,
+    uint32_t ControlCode,
     uint8_t Level,
     uint64_t MatchAnyKeyword,
     uint64_t MatchAllKeyword,
@@ -272,16 +293,27 @@ void EtwCallback(
     if (context == NULL)
         return;
 
+    // A manifest based provider can be enabled to multiple event tracing sessions
+    // As long as there is atleast 1 enabled session, IsEnabled will be TRUE
+    // Since classic providers can be enabled to only a single session,
+    // IsEnabled will be TRUE when it is enabled and FALSE when disabled
+    BOOL bEnabled =
+        ((ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER) ||
+            (ControlCode == EVENT_CONTROL_CODE_CAPTURE_STATE));
+
     context->Level = Level;
     context->MatchAnyKeyword = MatchAnyKeyword;
     context->MatchAllKeyword = MatchAllKeyword;
-    context->IsEnabled = IsEnabled;
+    context->IsEnabled = bEnabled;
 
     CallbackProviderIndex providerIndex = DotNETRuntime;
     DOTNET_TRACE_CONTEXT providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
     if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimeHandle) {
         providerIndex = DotNETRuntime;
         providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
+    } else if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimeRundownHandle) {
+        providerIndex = DotNETRuntimeRundown;
+        providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context;
     } else if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle) {
         providerIndex = DotNETRuntimePrivate;
         providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context;
@@ -290,19 +322,127 @@ void EtwCallback(
         return;
     }
 
-    EtwCallbackCommon(providerIndex, IsEnabled, Level, MatchAnyKeyword, FilterData, EtwSessionChangeUnknown);
+    EtwCallbackCommon(providerIndex, ControlCode, Level, MatchAnyKeyword, FilterData, EtwSessionChangeUnknown);
 
-    if (IsEnabled &&
-        (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle) &&
-        GCHeapUtilities::IsGCHeapInitialized())
+    if (bEnabled)
     {
-        FireEtwGCSettings_V1(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
-                          GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(TRUE),
-                          GCHeapUtilities::IsServerHeap(), GetClrInstanceId());
-        GCHeapUtilities::GetGCHeap()->DiagTraceGCSegments();
+        if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle &&
+            GCHeapUtilities::IsGCHeapInitialized())
+        {
+            FireEtwGCSettings_V1(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
+                              GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(TRUE),
+                              GCHeapUtilities::IsServerHeap(), GetClrInstanceId());
+            GCHeapUtilities::GetGCHeap()->DiagTraceGCSegments();
+        }
+
+        if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimeRundownHandle)
+        {
+            if (IsRuntimeRundownProviderEnabled(TRACE_LEVEL_INFORMATION, CLR_RUNDOWNEND_KEYWORD))
+                ETW::EnumerationLog::EndRundown();
+        }
     }
 }
+
 #endif // FEATURE_ETW
+
+void ETW::LoaderLog::ModuleLoad(HANDLE pModule)
+{
+    if (IsRuntimeProviderEnabled(TRACE_LEVEL_INFORMATION, KEYWORDZERO))
+    {
+        SendModuleEvent(pModule, ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad);
+    }
+}
+
+//---------------------------------------------------------------------------------------
+//
+// send a module load/unload or rundown event and domainmodule load and rundown event
+//
+// Arguments:
+//      * pModule - Module loading or unloading
+//      * dwEventOptions - Bitmask of which events to fire
+//
+void ETW::LoaderLog::SendModuleEvent(HANDLE pModule, uint32_t dwEventOptions)
+{
+    const WCHAR * wszModuleFileName = NULL;
+    const WCHAR * wszModuleILFileName = W("");
+
+#if TARGET_WINDOWS
+    PalGetModuleFileName(&wszModuleFileName, pModule);
+#else
+    const char * wszModuleFileNameUtf8 = NULL;
+    uint32_t moduleFileNameCharCount = PalGetModuleFileName(&wszModuleFileNameUtf8, pModule);
+    CHAR16_T wszModuleFileNameUnicode[1024];
+    minipal_convert_utf8_to_utf16(wszModuleFileNameUtf8, moduleFileNameCharCount, &wszModuleFileNameUnicode[0], ARRAY_SIZE(wszModuleFileNameUnicode), MINIPAL_MB_NO_REPLACE_INVALID_CHARS);
+    wszModuleFileName = (const WCHAR *)&wszModuleFileNameUnicode[0];
+#endif
+
+    GUID nativeGuid;
+    uint32_t dwAge;
+    WCHAR wszPath[1024];
+    PalGetPDBInfo(pModule, &nativeGuid, &dwAge, wszPath, ARRAY_SIZE(wszPath));
+
+    GUID zeroGuid = { 0 };
+
+    if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad)
+    {
+        FireEtwModuleLoad_V2(
+            ULONGLONG(pModule),
+            0,                      // AssemblyID
+            ETW::LoaderLog::LoaderStructs::NativeModule, // Module Flags
+            0,                      // Reserved1, 
+            wszModuleILFileName,    // ModuleILPath, 
+            wszModuleFileName,      // ModuleNativePath, 
+            GetClrInstanceId(),
+            &zeroGuid,              // ManagedPdbSignature,
+            0,                      // ManagedPdbAge, 
+            NULL,                   // ManagedPdbBuildPath, 
+            &nativeGuid,            // NativePdbSignature,
+            dwAge,                  // NativePdbAge, 
+            wszPath                 // NativePdbBuildPath, 
+            );
+    }
+    else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd)
+    {
+        FireEtwModuleDCEnd_V2(
+            ULONGLONG(pModule),
+            0,                      // AssemblyID
+            ETW::LoaderLog::LoaderStructs::NativeModule, // Module Flags
+            0,                      // Reserved1, 
+            wszModuleILFileName,    // ModuleILPath, 
+            wszModuleFileName,      // ModuleNativePath, 
+            GetClrInstanceId(),
+            &zeroGuid,              // ManagedPdbSignature,
+            0,                      // ManagedPdbAge, 
+            NULL,                   // ManagedPdbBuildPath, 
+            &nativeGuid,            // NativePdbSignature,
+            dwAge,                  // NativePdbAge, 
+            wszPath                 // NativePdbBuildPath, 
+            );
+    }
+    else
+    {
+        ASSERT(0);
+    }
+}
+
+/**************************************************************************************/
+/* Called when ETW is turned OFF on an existing process .Will be used by the controller for end rundown*/
+/**************************************************************************************/
+void ETW::EnumerationLog::EndRundown()
+{
+    if (IsRuntimeRundownProviderEnabled(TRACE_LEVEL_INFORMATION, CLR_RUNDOWNLOADER_KEYWORD))
+    {
+        // begin marker event will go to the rundown provider
+        FireEtwDCEndInit_V1(GetClrInstanceId());
+
+        HANDLE pModule = PalGetModuleHandleFromPointer((void*)&EndRundown);
+
+        LoaderLog::SendModuleEvent(pModule, EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd);
+
+        // end marker event will go to the rundown provider
+        FireEtwDCEndComplete_V1(GetClrInstanceId());
+    }
+}
 
 void EventPipeEtwCallbackDotNETRuntime(
     _In_ GUID * SourceId,
@@ -316,6 +456,20 @@ void EventPipeEtwCallbackDotNETRuntime(
     SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
 
     EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, change);
+}
+
+void EventPipeEtwCallbackDotNETRuntimeRundown(
+    _In_ GUID * SourceId,
+    _In_ ULONG ControlCode,
+    _In_ unsigned char Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ EventFilterDescriptor* FilterData,
+    _Inout_opt_ PVOID CallbackContext)
+{
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntimeRundown, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 void EventPipeEtwCallbackDotNETRuntimePrivate(

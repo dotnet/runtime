@@ -24,6 +24,7 @@ public class Async2EHMicrobench
         return 100;
     }
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     public static async Task AsyncEntry()
     {
         if (!GCSettings.IsServerGC)
@@ -68,6 +69,7 @@ public class Async2EHMicrobench
         await RunBench(yieldFrequency, depth, finallyRate, throwOrReturn, "ValueTask");
     }
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     private static async Task RunBench(int yieldCount, int depth, int finallyRate, bool throwOrReturn, string type)
     {
 
@@ -104,7 +106,7 @@ public class Async2EHMicrobench
             _throwOrReturn = throwOrReturn;
         }
 
-        public async2 Task<long> Run(string type)
+        public async Task<long> Run(string type)
         {
             if (type == "Async2")
                 return await RunAsync2(_depth);
@@ -117,6 +119,7 @@ public class Async2EHMicrobench
             return 0;
         }
 
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
         public async Task<long> RunTask(int depth)
         {
             int liveState1 = depth * 3 + _yieldCount;
@@ -182,6 +185,7 @@ public class Async2EHMicrobench
             return result;
         }
 
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
         public async ValueTask<long> RunValueTask(int depth)
         {
             int liveState1 = depth * 3 + _yieldCount;
@@ -267,7 +271,7 @@ public class Async2EHMicrobench
         // This case is used to test the impact of save/restore of the sync and execution context on performance
         // The intent here is to measure what the performance impact of maintaining the current async semantics with
         // the new implementation.
-        public async2 Task<long> RunAsync2WithContextSaveRestore(int depth)
+        public async Task<long> RunAsync2WithContextSaveRestore(int depth)
         {
             FakeThread thread = CurrentThread;
             if (thread == null)
@@ -361,7 +365,7 @@ public class Async2EHMicrobench
             }
         }
 
-        public async2 Task<long> RunAsync2(int depth)
+        public async Task<long> RunAsync2(int depth)
         {
             int liveState1 = depth * 3 + _yieldCount;
             int liveState2 = depth;

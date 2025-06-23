@@ -418,10 +418,6 @@ GVAL_DECL(DWORD, g_externalMethodFixupTraceActiveCount);
 
 #endif // DEBUGGING_SUPPORTED
 
-#ifdef PROFILING_SUPPORTED
-EXTERN HINSTANCE            g_pDebuggerDll;
-#endif
-
 // Global default for Concurrent GC. The default is on (value 1)
 EXTERN int g_IGCconcurrent;
 extern int g_IGCHoardVM;
@@ -450,7 +446,11 @@ EXTERN BOOL g_fComStarted;
 //
 // Global state variables indicating which stage of shutdown we are in
 //
+#ifdef DACCESS_COMPILE
 GVAL_DECL(DWORD, g_fEEShutDown);
+#else
+GVAL_DECL(Volatile<DWORD>, g_fEEShutDown);
+#endif
 EXTERN DWORD g_fFastExitProcess;
 EXTERN BOOL g_fFatalErrorOccurredOnGCThread;
 GVAL_DECL(bool, g_fProcessDetach);
@@ -499,12 +499,6 @@ EXTERN const char g_psBaseLibrarySatelliteAssemblyName[];
 // Do we own the lifetime of the process, ie. is it an EXE?
 //
 EXTERN bool g_fWeControlLifetime;
-
-#ifdef _DEBUG
-// The following should only be used for assertions.  (Famous last words).
-EXTERN bool dbg_fDrasticShutdown;
-#endif
-EXTERN bool g_fInControlC;
 
 // There is a global table of prime numbers that's available for e.g. hashing
 extern const DWORD g_rgPrimes[71];
