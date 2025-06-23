@@ -682,6 +682,15 @@ MAIN_LOOP:
                     ip += 3;
                     break;
 
+                case INTOP_CONV_OVF_U8_I4:
+                {
+                    int32_t src = LOCAL_VAR(ip[2], int32_t);
+                    if (src < 0)
+                        COMPlusThrow(kOverflowException);
+                    LOCAL_VAR(ip[1], uint64_t) = src;
+                    ip += 3;
+                    break;
+                }
                 case INTOP_CONV_OVF_U8_R4:
                     ConvOvfFpHelperU64<float>(stack, ip);
                     ip += 3;

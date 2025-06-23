@@ -203,6 +203,7 @@ OPDEF(INTOP_CONV_OVF_U4_R8, "conv.ovf.u4.r8", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_I8_R4, "conv.ovf.i8.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_I8_R8, "conv.ovf.i8.r8", 3, 1, 1, InterpOpNoArgs)
 
+OPDEF(INTOP_CONV_OVF_U8_I4, "conv.ovf.u8.i4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_U8_R4, "conv.ovf.u8.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_U8_R8, "conv.ovf.u8.r8", 3, 1, 1, InterpOpNoArgs)
 
