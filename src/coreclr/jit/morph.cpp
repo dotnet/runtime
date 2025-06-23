@@ -11648,8 +11648,9 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 
                     tree->ChangeHWIntrinsicId(addIntrinsic, op2, op1);
 
-                    fgMorphHWIntrinsicRequired(op2->AsHWIntrinsic());
+                    op2 = fgMorphHWIntrinsicRequired(op2->AsHWIntrinsic());
                     op2->SetMorphed(this);
+                    tree->Op(1) = op2;
 
                     return fgMorphHWIntrinsicRequired(tree);
                 }
