@@ -170,55 +170,59 @@ namespace System
             if (sourceElementEEType == destinationElementEEType) // This check kicks for different array kind or dimensions
                 return ArrayAssignType.SimpleCopy;
 
-            // Value class boxing
-            if (sourceElementEEType->IsValueType && !destinationElementEEType->IsValueType)
+            if (!sourceElementEEType->IsPointer && !sourceElementEEType->IsFunctionPointer
+                && !destinationElementEEType->IsPointer && !destinationElementEEType->IsFunctionPointer)
             {
+                // Value class boxing
+                if (sourceElementEEType->IsValueType && !destinationElementEEType->IsValueType)
+                {
+                    if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
+                        return ArrayAssignType.BoxValueClassOrPrimitive;
+                    else
+                        return ArrayAssignType.WrongType;
+                }
+
+                // Value class unboxing.
+                if (!sourceElementEEType->IsValueType && destinationElementEEType->IsValueType)
+                {
+                    if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
+                        return ArrayAssignType.UnboxValueClass;
+                    else if (RuntimeImports.AreTypesAssignable(destinationElementEEType, sourceElementEEType))   // V extends IV. Copying from IV to V, or Object to V.
+                        return ArrayAssignType.UnboxValueClass;
+                    else
+                        return ArrayAssignType.WrongType;
+                }
+
+                // Copying primitives from one type to another
+                if (sourceElementEEType->IsPrimitive && destinationElementEEType->IsPrimitive)
+                {
+                    EETypeElementType sourceElementType = sourceElementEEType->ElementType;
+                    EETypeElementType destElementType = destinationElementEEType->ElementType;
+
+                    if (GetNormalizedIntegralArrayElementType(sourceElementType) == GetNormalizedIntegralArrayElementType(destElementType))
+                        return ArrayAssignType.SimpleCopy;
+                    else if (InvokeUtils.CanPrimitiveWiden(destElementType, sourceElementType))
+                        return ArrayAssignType.PrimitiveWiden;
+                    else
+                        return ArrayAssignType.WrongType;
+                }
+
+                // src Object extends dest
                 if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
-                    return ArrayAssignType.BoxValueClassOrPrimitive;
-                else
-                    return ArrayAssignType.WrongType;
-            }
-
-            // Value class unboxing.
-            if (!sourceElementEEType->IsValueType && destinationElementEEType->IsValueType)
-            {
-                if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
-                    return ArrayAssignType.UnboxValueClass;
-                else if (RuntimeImports.AreTypesAssignable(destinationElementEEType, sourceElementEEType))   // V extends IV. Copying from IV to V, or Object to V.
-                    return ArrayAssignType.UnboxValueClass;
-                else
-                    return ArrayAssignType.WrongType;
-            }
-
-            // Copying primitives from one type to another
-            if (sourceElementEEType->IsPrimitive && destinationElementEEType->IsPrimitive)
-            {
-                EETypeElementType sourceElementType = sourceElementEEType->ElementType;
-                EETypeElementType destElementType = destinationElementEEType->ElementType;
-
-                if (GetNormalizedIntegralArrayElementType(sourceElementType) == GetNormalizedIntegralArrayElementType(destElementType))
                     return ArrayAssignType.SimpleCopy;
-                else if (InvokeUtils.CanPrimitiveWiden(destElementType, sourceElementType))
-                    return ArrayAssignType.PrimitiveWiden;
-                else
-                    return ArrayAssignType.WrongType;
+
+                // dest Object extends src
+                if (RuntimeImports.AreTypesAssignable(destinationElementEEType, sourceElementEEType))
+                    return ArrayAssignType.MustCast;
+
+                // class X extends/implements src and implements dest.
+                if (destinationElementEEType->IsInterface)
+                    return ArrayAssignType.MustCast;
+
+                // class X implements src and extends/implements dest
+                if (sourceElementEEType->IsInterface)
+                    return ArrayAssignType.MustCast;
             }
-
-            // src Object extends dest
-            if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
-                return ArrayAssignType.SimpleCopy;
-
-            // dest Object extends src
-            if (RuntimeImports.AreTypesAssignable(destinationElementEEType, sourceElementEEType))
-                return ArrayAssignType.MustCast;
-
-            // class X extends/implements src and implements dest.
-            if (destinationElementEEType->IsInterface)
-                return ArrayAssignType.MustCast;
-
-            // class X implements src and extends/implements dest
-            if (sourceElementEEType->IsInterface)
-                return ArrayAssignType.MustCast;
 
             // Compatible pointers
             if (sourceElementEEType->IsPointer && destinationElementEEType->IsPointer
@@ -347,7 +351,6 @@ namespace System
 
             nuint srcElementSize = sourceArray.ElementSize;
             nuint destElementSize = destinationArray.ElementSize;
-            Debug.Assert(srcElementSize != destElementSize);
 
             ref byte srcData = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcElementSize);
             ref byte dstData = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destElementSize);
