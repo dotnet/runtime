@@ -199,7 +199,7 @@ namespace System
 
                 if (GetNormalizedIntegralArrayElementType(sourceElementType) == GetNormalizedIntegralArrayElementType(destElementType))
                     return ArrayAssignType.SimpleCopy;
-                else if (InvokeUtils.CanPrimitiveWiden(sourceElementType, destElementType))
+                else if (InvokeUtils.CanPrimitiveWiden(destElementType, sourceElementType))
                     return ArrayAssignType.PrimitiveWiden;
                 else
                     return ArrayAssignType.WrongType;
