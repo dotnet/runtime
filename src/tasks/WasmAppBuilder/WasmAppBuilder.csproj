@@ -13,6 +13,7 @@
 
   <PropertyGroup Condition="'$(WasmEnableMemory64)' == 'true'">
     <DefineConstants>$(DefineConstants);SignatureMappingWasm64</DefineConstants>
+    <DefineConstants>$(DefineConstants);Interp2NativeWasm64</DefineConstants>
   </PropertyGroup>
   
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

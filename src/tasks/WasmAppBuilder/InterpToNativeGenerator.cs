@@ -149,7 +149,11 @@ internal sealed class InterpToNativeGenerator
                     break;
                 case 'L':
                     argIndex = iarg;
+#if Interp2NativeWasm64
+                    iarg += 1;
+#else
                     iarg += 2;
+#endif
                     break;
                 case 'F':
                 case 'D':
