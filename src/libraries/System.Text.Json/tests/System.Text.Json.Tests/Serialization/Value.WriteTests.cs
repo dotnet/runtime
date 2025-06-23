@@ -192,7 +192,6 @@ namespace System.Text.Json.Serialization.Tests
         public static void Int128_AsDictionaryKey_SerializesCorrectly()
         {
             // Regression test for https://github.com/dotnet/runtime/issues/116855
-            // Int128Converter.WriteAsPropertyNameCore was passing unsliced buffer to WritePropertyName
             var dict = new Dictionary<Int128, string>
             {
                 [0] = "Zero",
@@ -203,6 +202,14 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(dict);
+            
+            // Validate JSON content contains expected keys and no junk data
+            Assert.Contains("\"0\"", json);
+            Assert.Contains("\"1\"", json);
+            Assert.Contains("\"-1\"", json);
+            Assert.Contains("\"170141183460469231731687303715884105727\"", json); // Int128.MaxValue
+            Assert.Contains("\"-170141183460469231731687303715884105728\"", json); // Int128.MinValue
+            Assert.DoesNotContain('\0', json); // No null characters (junk data)
             
             // E2E validation: should roundtrip correctly without any junk data
             var deserialized = JsonSerializer.Deserialize<Dictionary<Int128, string>>(json);
