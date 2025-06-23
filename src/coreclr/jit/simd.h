@@ -2014,7 +2014,8 @@ SveMaskPattern EvaluateSimdVectorToPattern(TSimd arg0)
         TBase input0;
         memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
 
-        if ((input0 & significantBit) != 0)
+        bool isSet = (input0 & significantBit) != 0;
+        if (!isSet)
         {
             finalOne = i;
             break;
@@ -2027,7 +2028,8 @@ SveMaskPattern EvaluateSimdVectorToPattern(TSimd arg0)
         TBase input0;
         memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
 
-        if ((input0 & significantBit) != 0)
+        bool isSet = (input0 & significantBit) != 0;
+        if (isSet)
         {
             // Invalid sequence
             return SveMaskPatternNone;
