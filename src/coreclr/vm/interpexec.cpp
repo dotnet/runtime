@@ -704,6 +704,52 @@ MAIN_LOOP:
                     ip += 3;
                     break;
 
+                case INTOP_CONV_OVF_I1_U4:
+                    ConvOvfHelper<int8_t, uint32_t>(stack, ip);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_OVF_I1_U8:
+                    ConvOvfHelper<int8_t, uint64_t>(stack, ip);
+                    ip += 3;
+                    break;
+
+                case INTOP_CONV_OVF_U1_U4:
+                    ConvOvfHelper<uint8_t, uint32_t>(stack, ip);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_OVF_U1_U8:
+                    ConvOvfHelper<uint8_t, uint64_t>(stack, ip);
+                    ip += 3;
+                    break;
+
+                case INTOP_CONV_OVF_I2_U4:
+                    ConvOvfHelper<int16_t, uint32_t>(stack, ip);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_OVF_I2_U8:
+                    ConvOvfHelper<int16_t, uint64_t>(stack, ip);
+                    ip += 3;
+                    break;
+
+                case INTOP_CONV_OVF_U2_U4:
+                    ConvOvfHelper<uint16_t, uint32_t>(stack, ip);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_OVF_U2_U8:
+                    ConvOvfHelper<uint16_t, uint64_t>(stack, ip);
+                    ip += 3;
+                    break;
+
+                case INTOP_CONV_OVF_I4_U8:
+                    ConvOvfHelper<int32_t, uint64_t>(stack, ip);
+                    ip += 3;
+                    break;
+
+                case INTOP_CONV_OVF_U4_U8:
+                    ConvOvfHelper<uint32_t, uint64_t>(stack, ip);
+                    ip += 3;
+                    break;
+
                 case INTOP_SWITCH:
                 {
                     uint32_t val = LOCAL_VAR(ip[1], uint32_t);

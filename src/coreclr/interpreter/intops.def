@@ -208,6 +208,22 @@ OPDEF(INTOP_CONV_OVF_U8_I4, "conv.ovf.u8.i4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_U8_R4, "conv.ovf.u8.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_U8_R8, "conv.ovf.u8.r8", 3, 1, 1, InterpOpNoArgs)
 
+OPDEF(INTOP_CONV_OVF_I1_U4, "conv.ovf.i1.u4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_I1_U8, "conv.ovf.i1.u8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_OVF_U1_U4, "conv.ovf.u1.u4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_U1_U8, "conv.ovf.u1.u8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_OVF_I2_U4, "conv.ovf.i2.u4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_I2_U8, "conv.ovf.i2.u8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_OVF_U2_U4, "conv.ovf.u2.u4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_U2_U8, "conv.ovf.u2.u8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_OVF_I4_U8, "conv.ovf.i4.u8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_OVF_U4_U8, "conv.ovf.u4.u8", 3, 1, 1, InterpOpNoArgs)
+
 OPDEF(INTOP_BOX, "box", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
 OPDEF(INTOP_BOX_PTR, "box.ptr", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
 OPDEF(INTOP_UNBOX, "unbox", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
