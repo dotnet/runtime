@@ -726,6 +726,9 @@ CDAC_TYPE_BEGIN(TransitionBlock)
 CDAC_TYPE_SIZE(sizeof(TransitionBlock))
 CDAC_TYPE_FIELD(TransitionBlock, /*pointer*/, ReturnAddress, offsetof(TransitionBlock, m_ReturnAddress))
 CDAC_TYPE_FIELD(TransitionBlock, /*CalleeSavedRegisters*/, CalleeSavedRegisters, offsetof(TransitionBlock, m_calleeSavedRegisters))
+#ifdef TARGET_ARM
+CDAC_TYPE_FIELD(TransitionBlock, /*ArgumentRegisters*/, ArgumentRegisters, offsetof(TransitionBlock, m_argumentRegisters))
+#endif // TARGET_ARM
 CDAC_TYPE_END(TransitionBlock)
 
 #ifdef DEBUGGING_SUPPORTED
@@ -790,6 +793,19 @@ CDAC_TYPE_SIZE(sizeof(FaultingExceptionFrame))
 CDAC_TYPE_FIELD(FaultingExceptionFrame, /*T_CONTEXT*/, TargetContext, cdac_data<FaultingExceptionFrame>::TargetContext)
 #endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(FaultingExceptionFrame)
+
+// ArgumentRegisters struct is different on each platform
+CDAC_TYPE_BEGIN(ArgumentRegisters)
+CDAC_TYPE_SIZE(sizeof(ArgumentRegisters))
+#if defined(TARGET_ARM)
+
+CDAC_TYPE_FIELD(ArgumentRegisters, /*nuint*/, R0, offsetof(ArgumentRegisters, r[0]))
+CDAC_TYPE_FIELD(ArgumentRegisters, /*nuint*/, R1, offsetof(ArgumentRegisters, r[1]))
+CDAC_TYPE_FIELD(ArgumentRegisters, /*nuint*/, R2, offsetof(ArgumentRegisters, r[2]))
+CDAC_TYPE_FIELD(ArgumentRegisters, /*nuint*/, R3, offsetof(ArgumentRegisters, r[3]))
+
+#endif // TARGET_ARM
+CDAC_TYPE_END(ArgumentRegisters)
 
 // CalleeSavedRegisters struct is different on each platform
 CDAC_TYPE_BEGIN(CalleeSavedRegisters)
