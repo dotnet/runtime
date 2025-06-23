@@ -6062,9 +6062,7 @@ public:
         return m_switchDescMap;
     }
 
-    // Invalidate the map of unique switch block successors. For example, since the hash key of the map
-    // depends on block numbers, we must invalidate the map when the blocks are renumbered, to ensure that
-    // we don't accidentally look up and return the wrong switch data.
+    // Invalidate the map of unique switch block successors.
     void InvalidateUniqueSwitchSuccMap()
     {
         m_switchDescMap = nullptr;
@@ -6073,6 +6071,10 @@ public:
     // Requires "switchBlock" to be a block that ends in a switch.  Returns
     // the corresponding SwitchUniqueSuccSet.
     SwitchUniqueSuccSet GetDescriptorForSwitch(BasicBlock* switchBlk);
+
+    bool GetDescriptorForSwitchIfAvailable(BasicBlock* switchBlk, SwitchUniqueSuccSet* res);
+
+    void fgRemoveSuccFromSwitchDescMapEntry(BasicBlock* switchBlk, FlowEdge* edge);
 
     // Remove the "SwitchUniqueSuccSet" of "switchBlk" in the BlockToSwitchDescMap.
     void fgInvalidateSwitchDescMapEntry(BasicBlock* switchBlk);

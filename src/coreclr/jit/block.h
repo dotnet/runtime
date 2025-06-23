@@ -684,15 +684,15 @@ public:
         return m_dupCount;
     }
 
-    void incrementDupCount()
+    void incrementDupCount(unsigned dupCount = 1)
     {
-        m_dupCount++;
+        m_dupCount += dupCount;
     }
 
-    void decrementDupCount()
+    void decrementDupCount(unsigned dupCount = 1)
     {
-        assert(m_dupCount >= 1);
-        m_dupCount--;
+        assert(m_dupCount >= dupCount);
+        m_dupCount -= dupCount;
     }
 
     bool visited() const

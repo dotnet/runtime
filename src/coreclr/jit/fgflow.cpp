@@ -380,7 +380,8 @@ void Compiler::fgRedirectEdge(FlowEdge*& edge, BasicBlock* newTarget)
     assert(edge != nullptr);
     assert(newTarget != nullptr);
 
-    BasicBlock* const block = edge->getSourceBlock();
+    BasicBlock* const block    = edge->getSourceBlock();
+    const unsigned    dupCount = edge->getDupCount();
     fgRemoveAllRefPreds(edge->getDestinationBlock(), block);
 
     FlowEdge** predListPtr = fgGetPredInsertPoint(block, newTarget);
@@ -389,7 +390,7 @@ void Compiler::fgRedirectEdge(FlowEdge*& edge, BasicBlock* newTarget)
     if ((predEdge != nullptr) && (predEdge->getSourceBlock() == block))
     {
         edge = predEdge;
-        edge->incrementDupCount();
+        edge->incrementDupCount(dupCount);
     }
     else
     {
@@ -398,7 +399,7 @@ void Compiler::fgRedirectEdge(FlowEdge*& edge, BasicBlock* newTarget)
         edge->setDestinationBlock(newTarget);
     }
 
-    newTarget->bbRefs++;
+    newTarget->bbRefs += dupCount;
 
     // Pred list of target should still be ordered
     assert(newTarget->checkPredListOrder());
@@ -454,6 +455,47 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
         switchMap->Set(switchBlk, res);
         return res;
     }
+}
+
+bool Compiler::GetDescriptorForSwitchIfAvailable(BasicBlock* switchBlk, SwitchUniqueSuccSet* res)
+{
+    assert(switchBlk->KindIs(BBJ_SWITCH));
+    return (m_switchDescMap != nullptr) && m_switchDescMap->Lookup(switchBlk, res);
+}
+
+void Compiler::fgRemoveSuccFromSwitchDescMapEntry(BasicBlock* switchBlk, FlowEdge* edge)
+{
+    assert(switchBlk->KindIs(BBJ_SWITCH));
+
+    SwitchUniqueSuccSet uniqueSuccSet;
+    if (!GetDescriptorForSwitchIfAvailable(switchBlk, &uniqueSuccSet))
+    {
+        return;
+    }
+
+    const unsigned   succCount = uniqueSuccSet.numDistinctSuccs;
+    FlowEdge** const succTab   = uniqueSuccSet.nonDuplicates;
+    bool             found     = false;
+    assert(succCount > 0);
+    assert(succTab != nullptr);
+
+    for (unsigned i = 0; !found && (i < succCount); i++)
+    {
+        if (succTab[i] == edge)
+        {
+            if ((i + 1) < succCount)
+            {
+                memmove_s(&succTab[i], (succCount - i) * sizeof(FlowEdge*), &succTab[i + 1],
+                          (succCount - i - 1) * sizeof(FlowEdge*));
+            }
+
+            found = true;
+        }
+    }
+
+    assert(found);
+    uniqueSuccSet.numDistinctSuccs--;
+    m_switchDescMap->Set(switchBlk, uniqueSuccSet, BlockToSwitchDescMap::SetKind::Overwrite);
 }
 
 /*****************************************************************************
