@@ -8,6 +8,27 @@
 #include "datastructs.h"
 #include "enum_class_flags.h"
 
+struct InterpException
+{
+    InterpException(const char* message, CorJitResult result)
+        : m_message(message), m_result(result)
+    {
+        assert(result != CORJIT_OK);
+    }
+    const char* const m_message;
+    const CorJitResult m_result;
+};
+
+#if defined(__GNUC__) || defined(__clang__)
+#define INTERPRETER_NORETURN    __attribute__((noreturn))
+#else
+#define INTERPRETER_NORETURN    __declspec(noreturn)
+#endif
+
+INTERPRETER_NORETURN void NO_WAY(const char* message);
+INTERPRETER_NORETURN void BADCODE(const char* message);
+INTERPRETER_NORETURN void NOMEM();
+
 TArray<char> PrintMethodName(COMP_HANDLE comp,
                              CORINFO_CLASS_HANDLE  clsHnd,
                              CORINFO_METHOD_HANDLE methHnd,
@@ -356,7 +377,7 @@ private:
     int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
     int32_t GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn);
 
-    int GenerateCode(CORINFO_METHOD_INFO* methodInfo);
+    void GenerateCode(CORINFO_METHOD_INFO* methodInfo);
     InterpBasicBlock* GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
     void PatchInitLocals(CORINFO_METHOD_INFO* methodInfo);
 
@@ -389,6 +410,7 @@ private:
 
     // Emit a generic dictionary lookup and push the result onto the interpreter stack
     void EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup);
+    void EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
     void* AllocMethodData(size_t numBytes);
 public:
@@ -470,9 +492,8 @@ private:
     // Stack
     StackInfo *m_pStackPointer, *m_pStackBase;
     int32_t m_stackCapacity;
-    bool m_hasInvalidCode = false;
 
-    bool CheckStackHelper(int n);
+    void CheckStackHelper(int n);
     void EnsureStack(int additional);
     void PushTypeExplicit(StackType stackType, CORINFO_CLASS_HANDLE clsHnd, int size);
     void PushStackType(StackType stackType, CORINFO_CLASS_HANDLE clsHnd);
@@ -524,8 +545,8 @@ private:
     int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*> *relocs);
     void PatchRelocations(TArray<Reloc*> *relocs);
     InterpMethod* CreateInterpMethod();
-    bool CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);
-    bool InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo);
+    void CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);
+    void InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo);
     void CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB);
     void GetNativeRangeForClause(uint32_t startILOffset, uint32_t endILOffset, int32_t *nativeStartOffset, int32_t* nativeEndOffset);
 

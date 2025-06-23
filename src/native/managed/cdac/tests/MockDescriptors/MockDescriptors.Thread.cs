@@ -10,7 +10,6 @@ internal partial class MockDescriptors
 {
     public class Thread
     {
-        const bool UseFunclets = false;
         private const ulong DefaultAllocationRangeStart = 0x0003_0000;
         private const ulong DefaultAllocationRangeEnd = 0x0004_0000;
 
@@ -68,7 +67,6 @@ internal partial class MockDescriptors
                 (nameof(Constants.Globals.ThreadStore), threadStoreGlobal.Address),
                 (nameof(Constants.Globals.FinalizerThread), finalizerThreadGlobal.Address),
                 (nameof(Constants.Globals.GCThread), gcThreadGlobal.Address),
-                (nameof(Constants.Globals.FeatureEHFunclets), UseFunclets ? 1 : 0),
             ];
         }
 
@@ -108,28 +106,24 @@ internal partial class MockDescriptors
         internal TargetPointer AddThread(uint id, TargetNUInt osId)
         {
             TargetTestHelpers helpers = Builder.TargetTestHelpers;
-            Target.TypeInfo typeInfo = Types[DataType.Thread];
-            if (UseFunclets)
-                throw new NotImplementedException("todo for funclets: allocate the ExceptionInfo separately");
-            ulong allocSize = typeInfo.Size.Value + (UseFunclets ? 0 : Types[DataType.ExceptionInfo].Size.Value);
-            MockMemorySpace.HeapFragment thread = _allocator.Allocate(allocSize, UseFunclets ? "Thread" : "Thread and ExceptionInfo");
+            Target.TypeInfo threadType = Types[DataType.Thread];
+            Target.TypeInfo exceptionInfoType = Types[DataType.ExceptionInfo];
+            MockMemorySpace.HeapFragment exceptionInfo = _allocator.Allocate(exceptionInfoType.Size.Value, "ExceptionInfo");
+            MockMemorySpace.HeapFragment thread = _allocator.Allocate(threadType.Size.Value, "Thread");
             Span<byte> data = thread.Data.AsSpan();
             helpers.Write(
-                data.Slice(typeInfo.Fields[nameof(Data.Thread.Id)].Offset),
+                data.Slice(threadType.Fields[nameof(Data.Thread.Id)].Offset),
                 id);
             helpers.WriteNUInt(
-                data.Slice(typeInfo.Fields[nameof(Data.Thread.OSId)].Offset),
+                data.Slice(threadType.Fields[nameof(Data.Thread.OSId)].Offset),
                 osId);
-            Builder.AddHeapFragment(thread);
-
-            // Add exception info for the thread
-            // TODO: [cdac] Handle when UseFunclets is true - see NotImplementedException thrown above
-            TargetPointer exceptionInfoAddress = thread.Address + Types[DataType.ExceptionInfo].Size.Value;
             helpers.WritePointer(
-                data.Slice(typeInfo.Fields[nameof(Data.Thread.ExceptionTracker)].Offset),
-                exceptionInfoAddress);
+                data.Slice(threadType.Fields[nameof(Data.Thread.ExceptionTracker)].Offset),
+                exceptionInfo.Address);
+            Builder.AddHeapFragment(thread);
+            Builder.AddHeapFragment(exceptionInfo);
 
-            ulong threadLinkOffset = (ulong)typeInfo.Fields[nameof(Data.Thread.LinkNext)].Offset;
+            ulong threadLinkOffset = (ulong)threadType.Fields[nameof(Data.Thread.LinkNext)].Offset;
             if (_previousThread != TargetPointer.Null)
             {
                 // Set the next link for the previously added thread to the newly added one

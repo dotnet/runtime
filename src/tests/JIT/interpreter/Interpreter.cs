@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 public interface ITest
 {
     public int VirtualMethod();
+    public Type GenericVirtualMethod<T>(out bool isBase);
 }
 
 public class BaseClass : ITest
@@ -21,6 +22,12 @@ public class BaseClass : ITest
     {
         return 0xbebe;
     }
+
+    public virtual Type GenericVirtualMethod<T>(out bool isBase)
+    {
+        isBase = true;
+        return typeof(T);
+    }
 }
 
 public class DerivedClass : BaseClass
@@ -30,6 +37,11 @@ public class DerivedClass : BaseClass
         return 0xdede;
     }
 
+    public override Type GenericVirtualMethod<T>(out bool isBase)
+    {
+        isBase = false;
+        return typeof(T);
+    }
 }
 
 public struct MyStruct
@@ -869,6 +881,10 @@ public class InterpreterTest
         if (!TestCalli())
             Environment.FailFast(null);
 
+        Console.WriteLine("TestStaticVirtualGeneric_CodePointerCase");
+        if (!TestStaticVirtualGeneric_CodePointerCase())
+            Environment.FailFast(null);
+
         System.GC.Collect();
 
         Console.WriteLine("All tests passed successfully!");
@@ -1510,31 +1526,42 @@ public class InterpreterTest
             if (d != i8)
                 return false;
 
-            try {
+            try
+            {
                 a = (byte)nan;
                 return false;
-            } catch (OverflowException) {
+            }
+            catch (OverflowException)
+            {
             }
 
-            try {
+            try
+            {
                 b = (byte)hugeInt;
                 return false;
-            } catch (OverflowException) {
+            }
+            catch (OverflowException)
+            {
             }
 
-            try {
+            try
+            {
                 c = (byte)negativeInt;
                 return false;
-            } catch (OverflowException) {
+            }
+            catch (OverflowException)
+            {
             }
         }
 
         return true;
     }
 
-    public static bool TestConvBoundaries (double inRangeShort, double outOfRangeShort, double inRangeInt, double outOfRangeInt) {
+    public static bool TestConvBoundaries(double inRangeShort, double outOfRangeShort, double inRangeInt, double outOfRangeInt)
+    {
         // In unchecked mode, the interpreter saturates on float->int conversions if the value is out of range
-        unchecked {
+        unchecked
+        {
             short a = (short)inRangeShort,
                 b = (short)outOfRangeShort;
             int c = (int)inRangeInt,
@@ -1546,19 +1573,26 @@ public class InterpreterTest
                 return false;
         }
 
-        checked {
+        checked
+        {
             short tempA = (short)inRangeShort;
-            try {
+            try
+            {
                 tempA = (short)outOfRangeShort;
                 return false;
-            } catch (OverflowException) {
+            }
+            catch (OverflowException)
+            {
             }
 
             int tempB = (int)inRangeInt;
-            try {
+            try
+            {
                 tempB = (int)outOfRangeInt;
                 return false;
-            } catch (OverflowException) {
+            }
+            catch (OverflowException)
+            {
             }
         }
 
@@ -1775,9 +1809,29 @@ public class InterpreterTest
         Console.WriteLine("bc.VirtualMethod");
         if (bc.VirtualMethod() != 0xdede)
             return false;
+        Console.WriteLine("bc.GenericVirtualMethod");
+        bool isBase = false;
+        Type retType;
+        Console.WriteLine("bc.GenericVirtualMethod<int>");
+        retType = bc.GenericVirtualMethod<int>(out isBase);
+        if (retType != typeof(int) || isBase)
+            return false;
+        Console.WriteLine("bc.GenericVirtualMethod<string>");
+        retType = bc.GenericVirtualMethod<string>(out isBase);
+        if (retType != typeof(string) || isBase)
+            return false;
         Console.WriteLine("itest.VirtualMethod");
         if (itest.VirtualMethod() != 0xdede)
             return false;
+        Console.WriteLine("itest.GenericVirtualMethod<int>");
+        retType = itest.GenericVirtualMethod<int>(out isBase);
+        if (retType != typeof(int) || isBase)
+            return false;
+        Console.WriteLine("itest.GenericVirtualMethod<string>");
+        retType = itest.GenericVirtualMethod<string>(out isBase);
+        if (retType != typeof(string) || isBase)
+            return false;
+
         bc = new BaseClass();
         itest = bc;
         Console.WriteLine("bc.NonVirtualMethod");
@@ -1786,8 +1840,24 @@ public class InterpreterTest
         Console.WriteLine("bc.VirtualMethod");
         if (bc.VirtualMethod() != 0xbebe)
             return false;
+        Console.WriteLine("bc.GenericVirtualMethod<int>");
+        retType = bc.GenericVirtualMethod<int>(out isBase);
+        if (retType != typeof(int) || !isBase)
+            return false;
+        Console.WriteLine("bc.GenericVirtualMethod<string>");
+        retType = bc.GenericVirtualMethod<string>(out isBase);
+        if (retType != typeof(string) || !isBase)
+            return false;
         Console.WriteLine("itest.VirtualMethod");
         if (itest.VirtualMethod() != 0xbebe)
+            return false;
+        Console.WriteLine("itest.GenericVirtualMethod<int>");
+        retType = itest.GenericVirtualMethod<int>(out isBase);
+        if (retType != typeof(int) || !isBase)
+            return false;
+        Console.WriteLine("itest.GenericVirtualMethod<string>");
+        retType = itest.GenericVirtualMethod<string>(out isBase);
+        if (retType != typeof(string) || !isBase)
             return false;
         return true;
     }
@@ -2286,6 +2356,11 @@ public class InterpreterTest
         _typeFromFill = typeof(T);
     }
 
+    private static Func<int> GetDelegateFromBaseClass(BaseClass bc)
+    {
+        return bc.VirtualMethod;
+    }
+
     public static bool TestDelegate()
     {
         _fieldA = 3;
@@ -2312,6 +2387,18 @@ public class InterpreterTest
         if (_fieldResult != 9)
         {
             Console.WriteLine("Delegate test failed: expected 9, got " + _fieldResult);
+            return false;
+        }
+
+        if (GetDelegateFromBaseClass(new BaseClass())() != 0xbebe)
+        {
+            Console.WriteLine("Delegate test failed: expected 0xbebe, got " + GetDelegateFromBaseClass(new BaseClass())());
+            return false;
+        }
+
+        if (GetDelegateFromBaseClass(new DerivedClass())() != 0xdede)
+        {
+            Console.WriteLine("Delegate test failed: expected 0xdede, got " + GetDelegateFromBaseClass(new DerivedClass())());
             return false;
         }
         return true;
@@ -2374,5 +2461,37 @@ public class InterpreterTest
     private static unsafe delegate*<void> GetCalliGeneric<T>()
     {
         return &Fill<T>;
+    }
+
+    interface IStaticVirtualGeneric<T>
+    {
+        abstract static int StaticVirtualGeneric();
+    }
+
+    struct MyGenericStruct<T> : IStaticVirtualGeneric<string>, IStaticVirtualGeneric<object>
+    {
+        static int IStaticVirtualGeneric<string>.StaticVirtualGeneric()
+        {
+            return 1;
+        }
+        static int IStaticVirtualGeneric<object>.StaticVirtualGeneric()
+        {
+            return 2;
+        }
+    }
+
+    private static int StaticVirtualGeneric<T, U>() where T : IStaticVirtualGeneric<U>
+    {
+        return T.StaticVirtualGeneric();
+    }
+
+    public static bool TestStaticVirtualGeneric_CodePointerCase()
+    {
+        if (StaticVirtualGeneric<MyGenericStruct<BaseClass>, string>() != 1)
+            return false;
+        if (StaticVirtualGeneric<MyGenericStruct<BaseClass>, object>() != 2)
+            return false;
+
+        return true;
     }
 }

@@ -14,11 +14,7 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
 
     public void HandleFaultingExceptionFrame(FaultingExceptionFrame frame)
     {
-        if (frame.TargetContext is not TargetPointer targetContext)
-        {
-            throw new InvalidOperationException("Unexpected null context pointer on FaultingExceptionFrame");
-        }
-        _context.ReadFromAddress(_target, targetContext);
+        _context.ReadFromAddress(_target, frame.TargetContext);
 
         // Clear the CONTEXT_XSTATE, since the X86Context contains just plain CONTEXT structure
         // that does not support holding any extended state.
@@ -27,8 +23,28 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
 
     public void HandleHijackFrame(HijackFrame frame)
     {
-        // TODO(cdacX86): Implement handling for HijackFrame
-        throw new NotImplementedException();
+        HijackArgsX86 args = _target.ProcessedData.GetOrAdd<HijackArgsX86>(frame.HijackArgsPtr);
+
+        // The stack pointer is the address immediately following HijackArgs
+        uint hijackArgsSize = _target.GetTypeInfo(DataType.HijackArgs).Size ?? throw new InvalidOperationException("HijackArgs size is not set");
+        _context.Context.Esp = (uint)frame.HijackArgsPtr + hijackArgsSize;
+
+        UpdateFromRegisterDict(args.Registers);
+    }
+
+    public override void HandleTailCallFrame(TailCallFrame frame)
+    {
+        _context.Context.Eip = (uint)frame.ReturnAddress;
+
+        // The stack pointer is set to the address immediately after the TailCallFrame structure.
+        if (_target.GetTypeInfo(DataType.TailCallFrame).Size is not uint tailCallFrameSize)
+        {
+            throw new InvalidOperationException("TailCallFrame missing size information");
+        }
+        _context.Context.Esp = (uint)(frame.Address + tailCallFrameSize);
+
+        CalleeSavedRegisters calleeSavedRegisters = _target.ProcessedData.GetOrAdd<Data.CalleeSavedRegisters>(frame.CalleeSavedRegisters);
+        UpdateFromRegisterDict(calleeSavedRegisters.Registers);
     }
 
     public override void HandleFuncEvalFrame(FuncEvalFrame funcEvalFrame)
