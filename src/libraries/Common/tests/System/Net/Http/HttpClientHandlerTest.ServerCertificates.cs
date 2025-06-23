@@ -256,6 +256,7 @@ namespace System.Net.Http.Functional.Tests
         {
             new object[] { Configuration.Http.ExpiredCertRemoteServer, SslPolicyErrors.RemoteCertificateChainErrors },
             new object[] { Configuration.Http.WrongHostNameCertRemoteServer , SslPolicyErrors.RemoteCertificateNameMismatch},
+            new object[] { "https://smartermail.emclient.com/", SslPolicyErrors.None},
         };
 
         private async Task UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(string url, string useHttp2String, SslPolicyErrors expectedErrors)
