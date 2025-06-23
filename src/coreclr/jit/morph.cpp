@@ -9869,12 +9869,15 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 GenTree* cmpOp1 = op1Intrin->Op(1);
                 GenTree* cmpOp2 = op1Intrin->Op(2);
 
-                genTreeOps newOper = GenTree::ReverseRelop(op1Oper);
-                var_types  lookupType =
-                    GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, newOper, op1RetType, op1SimdBaseType, op1SimdSize);
+                const bool reverseCond = true;
+
+                var_types lookupType =
+                    GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, op1Oper, op1RetType, op1SimdBaseType, op1SimdSize,
+                                                              reverseCond);
                 NamedIntrinsic newId =
-                    GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, lookupType, cmpOp1, cmpOp2,
-                                                                 op1SimdBaseType, op1SimdSize, op1IsScalar);
+                    GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, op1Oper, lookupType, cmpOp1, cmpOp2,
+                                                                 op1SimdBaseType, op1SimdSize, op1IsScalar,
+                                                                 reverseCond);
 
                 if (newId != NI_Illegal)
                 {
@@ -11558,7 +11561,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
             var_types  lookupType =
                 GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, newOper, retType, simdBaseType, simdSize);
             NamedIntrinsic newId = GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, lookupType, op2, op1,
-                                                                                simdBaseType, simdSize, false);
+                                                                                simdBaseType, simdSize, isScalar);
 
             if (newId != NI_Illegal)
             {

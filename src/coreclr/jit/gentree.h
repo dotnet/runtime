@@ -6594,10 +6594,15 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                                                    GenTree*   op2,
                                                    var_types  simdBaseType,
                                                    unsigned   simdSize,
-                                                   bool       isScalar);
+                                                   bool       isScalar,
+                                                   bool       reverseCond = false);
 
-    static var_types GetLookupTypeForCmpOp(
-        Compiler* comp, genTreeOps oper, var_types type, var_types simdBaseType, unsigned simdSize);
+    static var_types GetLookupTypeForCmpOp(Compiler*  comp,
+                                           genTreeOps oper,
+                                           var_types  type,
+                                           var_types  simdBaseType,
+                                           unsigned   simdSize,
+                                           bool       reverseCond = false);
 
     static genTreeOps GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
 
