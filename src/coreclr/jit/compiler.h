@@ -6111,11 +6111,7 @@ private:
     FlowEdge** fgGetPredInsertPoint(BasicBlock* blockPred, BasicBlock* newTarget);
 
 public:
-    void fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget);
-
-    void fgRedirectTrueEdge(BasicBlock* block, BasicBlock* newTarget);
-
-    void fgRedirectFalseEdge(BasicBlock* block, BasicBlock* newTarget);
+    void fgRedirectEdge(FlowEdge*& edgeRef, BasicBlock* newTarget);
 
     void fgFindBasicBlocks();
 

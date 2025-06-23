@@ -1851,7 +1851,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         // Insert inlinee's blocks into inliner's block list.
         assert(topBlock->KindIs(BBJ_ALWAYS));
         assert(topBlock->TargetIs(bottomBlock));
-        fgRedirectTargetEdge(topBlock, InlineeCompiler->fgFirstBB);
+        fgRedirectEdge(topBlock->GetTargetEdgeRef(), InlineeCompiler->fgFirstBB);
 
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
         InlineeCompiler->fgLastBB->SetNext(bottomBlock);

@@ -720,7 +720,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                 if (entryJumpTarget != osrEntry)
                 {
-                    fgRedirectTargetEdge(fgFirstBB, entryJumpTarget);
+                    fgRedirectEdge(fgFirstBB->GetTargetEdgeRef(), entryJumpTarget);
 
                     JITDUMP("OSR: redirecting flow from method entry " FMT_BB " to OSR entry " FMT_BB
                             " via step blocks.\n",
@@ -1355,7 +1355,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
             case BBJ_CALLFINALLYRET:
             {
                 removedWeight = block->bbWeight;
-                fgRedirectTargetEdge(block, bDest->GetTarget());
+                fgRedirectEdge(block->GetTargetEdgeRef(), bDest->GetTarget());
                 break;
             }
 
@@ -1364,13 +1364,13 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 {
                     assert(!block->FalseTargetIs(bDest));
                     removedWeight = block->GetTrueEdge()->getLikelyWeight();
-                    fgRedirectTrueEdge(block, bDest->GetTarget());
+                    fgRedirectEdge(block->GetTrueEdgeRef(), bDest->GetTarget());
                 }
                 else
                 {
                     assert(block->FalseTargetIs(bDest));
                     removedWeight = block->GetFalseEdge()->getLikelyWeight();
-                    fgRedirectFalseEdge(block, bDest->GetTarget());
+                    fgRedirectEdge(block->GetFalseEdgeRef(), bDest->GetTarget());
                 }
                 break;
 
@@ -2256,7 +2256,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // Fix up block's flow.
     // Assume edge likelihoods transfer over.
     //
-    fgRedirectTargetEdge(block, target->GetTrueTarget());
+    fgRedirectEdge(block->GetTargetEdgeRef(), target->GetTrueTarget());
     block->GetTargetEdge()->setLikelihood(target->GetTrueEdge()->getLikelihood());
     block->GetTargetEdge()->setHeuristicBased(target->GetTrueEdge()->isHeuristicBased());
 
@@ -2751,7 +2751,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     FlowEdge* const falseEdge = bDest->GetFalseEdge();
     FlowEdge* const trueEdge  = bDest->GetTrueEdge();
 
-    fgRedirectTargetEdge(bJump, falseTarget);
+    fgRedirectEdge(bJump->GetTargetEdgeRef(), falseTarget);
     bJump->GetTargetEdge()->setLikelihood(falseEdge->getLikelihood());
     bJump->GetTargetEdge()->setHeuristicBased(falseEdge->isHeuristicBased());
 
@@ -4599,21 +4599,14 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                             gtReverseCond(test);
                         }
 
-                        // Optimize the Conditional JUMP to go to the new target
+                        // Rewire flow from block
                         //
-                        FlowEdge* const oldFalseEdge = block->GetFalseEdge();
-                        FlowEdge* const oldTrueEdge  = block->GetTrueEdge();
-                        FlowEdge* const oldNextEdge  = bNext->GetTargetEdge();
+                        std::swap(block->GetTrueEdgeRef(), block->GetFalseEdgeRef());
+                        fgRedirectEdge(block->GetTrueEdgeRef(), bNext->GetTarget());
 
                         // bNext no longer flows to target
                         //
-                        fgRemoveRefPred(oldNextEdge);
-
-                        // Rewire flow from block
-                        //
-                        block->SetFalseEdge(oldTrueEdge);
-                        block->SetTrueEdge(oldFalseEdge);
-                        fgRedirectTrueEdge(block, bNext->GetTarget());
+                        fgRemoveRefPred(bNext->GetTargetEdge());
 
                         /*
                           Unlink bNext from the BasicBlock list; note that we can
@@ -5317,7 +5310,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 if (commSucc != nullptr)
                 {
                     assert(predBlock->KindIs(BBJ_ALWAYS));
-                    fgRedirectTargetEdge(predBlock, crossJumpTarget);
+                    fgRedirectEdge(predBlock->GetTargetEdgeRef(), crossJumpTarget);
                 }
                 else
                 {
