@@ -3731,6 +3731,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_R8);
                     break;
                 case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_4);
                     break;
                 case StackTypeI8:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_I8);
@@ -3751,6 +3752,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R8);
                     break;
                 case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U4_I4);
                     break;
                 case StackTypeI8:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_I8);
@@ -3774,6 +3776,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
                     break;
                 case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_8);
                     break;
                 default:
                     assert(0);
@@ -3794,6 +3797,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_I4);
                     break;
                 case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_I8);
                     break;
                 default:
                     assert(0);
@@ -3857,15 +3861,14 @@ retry_emit:
                     break;
                 case StackTypeI4:
 #ifdef TARGET_64BIT
-                    // FIXME: Is this the right conv opcode?
                     EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_I4);
 #else
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_I4);
 #endif
                     break;
                 case StackTypeI8:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_I8);
 #else
                     EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_I8);
 #endif
@@ -3960,6 +3963,7 @@ retry_emit:
                     assert(!"Floating point unsigned conversions");
                     break;
                 case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_U4);
                     break;
                 case StackTypeI8:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_U8);
@@ -3978,6 +3982,7 @@ retry_emit:
                     assert(!"Floating point unsigned conversions");
                     break;
                 case StackTypeI4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_4);
                     break;
                 case StackTypeI8:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_U8);
@@ -3999,6 +4004,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
                     break;
                 case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_U8);
                     break;
                 default:
                     assert(0);
@@ -4017,6 +4023,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_U8_U4);
                     break;
                 case StackTypeI8:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_MOV_8);
                     break;
                 default:
                     assert(0);
@@ -4035,12 +4042,12 @@ retry_emit:
 #ifdef TARGET_64BIT
                     EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I8_U4);
 #else
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_U4);
 #endif
                     break;
                 case StackTypeI8:
 #ifdef TARGET_64BIT
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I8_U8);
 #else
                     EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_U8);
 #endif
@@ -4060,8 +4067,7 @@ retry_emit:
                     break;
                 case StackTypeI4:
 #ifdef TARGET_64BIT
-                    // FIXME: Is this the right conv opcode?
-                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_I8_U4);
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_U8_U4);
 #else
                     EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_4);
 #endif

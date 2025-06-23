@@ -193,18 +193,22 @@ OPDEF(INTOP_CONV_OVF_U2_I8, "conv.ovf.u2.i8", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_U2_R4, "conv.ovf.u2.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_U2_R8, "conv.ovf.u2.r8", 3, 1, 1, InterpOpNoArgs)
 
+OPDEF(INTOP_CONV_OVF_I4_U4, "conv.ovf.i4.u4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_I4_I8, "conv.ovf.i4.i8", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_I4_R4, "conv.ovf.i4.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_I4_R8, "conv.ovf.i4.r8", 3, 1, 1, InterpOpNoArgs)
 
+OPDEF(INTOP_CONV_OVF_U4_I4, "conv.ovf.u4.i4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_U4_I8, "conv.ovf.u4.i8", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_U4_R4, "conv.ovf.u4.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_U4_R8, "conv.ovf.u4.r8", 3, 1, 1, InterpOpNoArgs)
 
+OPDEF(INTOP_CONV_OVF_I8_U8, "conv.ovf.i8.u8", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_I8_R4, "conv.ovf.i8.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_I8_R8, "conv.ovf.i8.r8", 3, 1, 1, InterpOpNoArgs)
 
 OPDEF(INTOP_CONV_OVF_U8_I4, "conv.ovf.u8.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_OVF_U8_I8, "conv.ovf.u8.i8", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_U8_R4, "conv.ovf.u8.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_U8_R8, "conv.ovf.u8.r8", 3, 1, 1, InterpOpNoArgs)
 
