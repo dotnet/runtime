@@ -60,7 +60,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An ML-DSA algorithm identifier for the ML-DSA-44 and 2048-bit RSASSA-PKCS1-v1_5 with SHA256 algorithm.
         /// </value>
-        public static CompositeMLDsaAlgorithm MLDsa44WithRSA2048Pkcs15 =        new("MLDSA44-RSA2048-PSS-SHA256",
+        public static CompositeMLDsaAlgorithm MLDsa44WithRSA2048Pkcs15 =        new("MLDSA44-RSA2048-PKCS15-SHA256",
                                                                                     MLDsaAlgorithm.MLDsa44,
                                                                                     2048 / 8,
                                                                                     Oids.MLDsa44WithRSA2048Pkcs15PreHashSha256);
