@@ -4,10 +4,6 @@ if(FEATURE_JIT)
   add_compile_definitions(FEATURE_JIT)
 endif(FEATURE_JIT)
 
-if(FEATURE_PEIMAGE_FLAT_LAYOUT)
-  add_compile_definitions(FEATURE_PEIMAGE_FLAT_LAYOUT)
-endif(FEATURE_PEIMAGE_FLAT_LAYOUT)
-
 add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>:DACCESS_COMPILE>)
 
 if (CLR_CMAKE_TARGET_UNIX)

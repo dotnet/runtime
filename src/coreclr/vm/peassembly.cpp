@@ -69,7 +69,7 @@ void PEAssembly::EnsureLoaded()
 
     // Ensure that loaded layout is available.
     PEImageLayout* pLayout = GetPEImage()->GetOrCreateLayout(
-#ifdef FEATURE_PEIMAGE_FLAT_LAYOUT
+#ifdef PEIMAGE_FLAT_LAYOUT_ONLY
         PEImageLayout::LAYOUT_FLAT
 #else
         PEImageLayout::LAYOUT_LOADED
@@ -266,7 +266,7 @@ TADDR PEAssembly::GetIL(RVA il)
     CONTRACT_END;
 
     PEImageLayout *image = NULL;
-#ifdef FEATURE_PEIMAGE_FLAT_LAYOUT
+#ifdef PEIMAGE_FLAT_LAYOUT_ONLY
     image = GetFlatLayout();
 #else
     image = GetLoadedLayout();
