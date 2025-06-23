@@ -163,6 +163,13 @@ namespace System
             return ref Unsafe.As<byte, int>(ref Unsafe.As<RawArrayData>(this).Data);
         }
 
+        private unsafe int GetMultiDimensionalArrayRank()
+        {
+            return this.GetMethodTable()->MultiDimensionalArrayRank;
+        }
+
+        private static bool SupportsNonZeroLowerBound => false;
+
         private static unsafe ArrayAssignType CanAssignArrayType(Array sourceArray, Array destinationArray)
         {
             MethodTable* sourceElementEEType = sourceArray.ElementMethodTable;
@@ -361,19 +368,6 @@ namespace System
             }
         }
 
-        [Intrinsic]
-        public unsafe int GetLength(int dimension)
-        {
-            int rank = this.GetMethodTable()->MultiDimensionalArrayRank;
-            if (rank == 0 && dimension == 0)
-                return Length;
-
-            if ((uint)dimension >= (uint)rank)
-                throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayRankIndex);
-
-            return Unsafe.Add(ref GetMultiDimensionalArrayBounds(), dimension);
-        }
-
         public unsafe int Rank
         {
             get
@@ -424,28 +418,6 @@ namespace System
             }
 
             return ret;
-        }
-
-        [Intrinsic]
-        public unsafe int GetLowerBound(int dimension)
-        {
-            if (dimension == 0)
-                return 0;
-
-            // We don't support non-zero lower bounds so don't incur the cost of obtaining it.
-            if ((uint)dimension >= (uint)this.GetMethodTable()->MultiDimensionalArrayRank)
-                throw new IndexOutOfRangeException();
-
-            Debug.Assert(IsSzArray || Unsafe.Add(ref GetMultiDimensionalArrayBounds(), Rank + dimension) == 0);
-            return 0;
-        }
-
-        [Intrinsic]
-        public int GetUpperBound(int dimension)
-        {
-            // We don't support non-zero lower bounds so don't incur the cost of obtaining it.
-            Debug.Assert(GetLowerBound(dimension) == 0);
-            return GetLength(dimension) - 1;
         }
 
         internal unsafe object? InternalGetValue(nint flattenedIndex)

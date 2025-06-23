@@ -640,6 +640,51 @@ namespace System
                 return index;
             }
         }
+
+        [Intrinsic]
+        public int GetLength(int dimension)
+        {
+            int rank = this.GetMultiDimensionalArrayRank();
+            if (rank == 0 && dimension == 0)
+                return Length;
+
+            if ((uint)dimension >= (uint)rank)
+                throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayRankIndex);
+
+            return Unsafe.Add(ref this.GetMultiDimensionalArrayBounds(), dimension);
+        }
+
+        [Intrinsic]
+        public int GetUpperBound(int dimension)
+        {
+            int rank = this.GetMultiDimensionalArrayRank();
+            if (rank == 0 && dimension == 0)
+                return Length - 1;
+
+            if ((uint)dimension >= (uint)rank)
+                throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayRankIndex);
+
+            ref int bounds = ref this.GetMultiDimensionalArrayBounds();
+            return Unsafe.Add(ref bounds, dimension)
+                + (SupportsNonZeroLowerBound ? Unsafe.Add(ref bounds, rank + dimension) : 0)
+                - 1;
+        }
+
+        [Intrinsic]
+        public int GetLowerBound(int dimension)
+        {
+            int rank = this.GetMultiDimensionalArrayRank();
+            if (rank == 0 && dimension == 0)
+                return 0;
+
+            if ((uint)dimension >= (uint)rank)
+                throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayRankIndex);
+
+            if (SupportsNonZeroLowerBound)
+                return Unsafe.Add(ref this.GetMultiDimensionalArrayBounds(), rank + dimension);
+            else
+                return 0;
+        }
 #endif
 
         // The various Get values...

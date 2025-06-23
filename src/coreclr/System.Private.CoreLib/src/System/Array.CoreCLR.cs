@@ -49,6 +49,8 @@ namespace System
             return arr!;
         }
 
+        private static bool SupportsNonZeroLowerBound => true;
+
         private static CorElementType GetNormalizedIntegralArrayElementType(CorElementType elementType)
         {
             Debug.Assert(elementType.IsPrimitiveType());
@@ -402,46 +404,6 @@ namespace System
                 int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
                 return (rank != 0) ? rank : 1;
             }
-        }
-
-        [Intrinsic]
-        public int GetLength(int dimension)
-        {
-            int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
-            if (rank == 0 && dimension == 0)
-                return Length;
-
-            if ((uint)dimension >= (uint)rank)
-                throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayRankIndex);
-
-            return Unsafe.Add(ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this), dimension);
-        }
-
-        [Intrinsic]
-        public int GetUpperBound(int dimension)
-        {
-            int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
-            if (rank == 0 && dimension == 0)
-                return Length - 1;
-
-            if ((uint)dimension >= (uint)rank)
-                throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayRankIndex);
-
-            ref int bounds = ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this);
-            return Unsafe.Add(ref bounds, dimension) + Unsafe.Add(ref bounds, rank + dimension) - 1;
-        }
-
-        [Intrinsic]
-        public int GetLowerBound(int dimension)
-        {
-            int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
-            if (rank == 0 && dimension == 0)
-                return 0;
-
-            if ((uint)dimension >= (uint)rank)
-                throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayRankIndex);
-
-            return Unsafe.Add(ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this), rank + dimension);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

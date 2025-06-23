@@ -422,7 +422,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe int GetMultiDimensionalArrayRank(Array array)
+        internal static unsafe int GetMultiDimensionalArrayRank(this Array array)
         {
             int rank = GetMethodTable(array)->MultiDimensionalArrayRank;
             GC.KeepAlive(array); // Keep MethodTable alive
