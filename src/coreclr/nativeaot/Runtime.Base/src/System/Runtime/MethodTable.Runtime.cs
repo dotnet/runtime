@@ -42,7 +42,7 @@ namespace Internal.Runtime
         // This is recognized by the fact that System.Object and interfaces are the only ones without a base type
         internal static unsafe bool IsSystemObject(MethodTable* pEEType)
         {
-            if (pEEType->IsArray)
+            if (!pEEType->IsCanonical)
                 return false;
             return (pEEType->NonArrayBaseType == null) && !pEEType->IsInterface;
         }
