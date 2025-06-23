@@ -9736,26 +9736,26 @@ GenTreeHWIntrinsic* Compiler::fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* n
 
 #ifdef TARGET_ARM64
 
-// Conversion of mask to vector is one instruction.
+// Conversion of mask to vector is one instruction (a mov)
 static constexpr const weight_t costOfConvertMaskToVector = 1.0;
 
-// Conversion of vector to mask is two instructions.
+// Conversion of vector to mask is two instructions (a compare and a ptrue)
 static constexpr const weight_t costOfConvertVectorToMask = 2.0;
 
 //------------------------------------------------------------------------
-// costMorphVectorOperandToMask: Calculate the cost of the converting a node
-//                               to a mask and the current cost.
+// costMorphVectorOperandToMask: Calculate the cost of using the vector
+//                               and mask variants
 //
 // Arguments:
-//    node        - The node to convert to a mask
-//    parent      - The parent of the node
-//    currentCost - (IN/OUT) incremented by the current cost of the node
-//    switchCost  - (IN/OUT) incremented by the cost of switching the node to a mask
+//    node              - The node to convert to a mask
+//    parent            - The parent of the node
+//    vectorVariantCost - (IN/OUT) incremented by the cost of using the vector variant
+//    maskVariantCost   - (IN/OUT) incremented by the cost of using the mask variant
 //
 void Compiler::costMorphVectorOperandToMask(GenTree*            node,
                                             GenTreeHWIntrinsic* parent,
-                                            weight_t*           currentCost,
-                                            weight_t*           switchCost)
+                                            weight_t*           vectorVariantCost,
+                                            weight_t*           maskVariantCost)
 {
     if (varTypeIsMask(node))
     {
@@ -9766,7 +9766,7 @@ void Compiler::costMorphVectorOperandToMask(GenTree*            node,
     if (node->OperIsConvertMaskToVector())
     {
         // Currently there is the cost of the convert
-        *currentCost += costOfConvertMaskToVector;
+        *vectorVariantCost += costOfConvertMaskToVector;
         return;
     }
 
@@ -9783,8 +9783,8 @@ void Compiler::costMorphVectorOperandToMask(GenTree*            node,
         }
     }
 
-    // Switching will require wrapping in a convert vector to mask
-    *switchCost += costOfConvertVectorToMask;
+    // mask variant will require wrapping in a convert vector to mask
+    *maskVariantCost += costOfConvertVectorToMask;
 }
 
 //------------------------------------------------------------------------
@@ -9884,23 +9884,23 @@ GenTreeHWIntrinsic* Compiler::fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* no
         return nullptr;
     }
 
-    weight_t currentCost = 0.0;
-    weight_t switchCost  = 0.0;
+    weight_t vectorVariantCost = 0.0;
+    weight_t maskVariantCost  = 0.0;
 
     // Take into account the cost of the conversion of the result
-    currentCost += costOfConvertVectorToMask;
+    vectorVariantCost += costOfConvertVectorToMask;
 
     // Take into account the cost of the children
     for (size_t i = 1; i <= convertedNode->GetOperandCount(); i++)
     {
-        costMorphVectorOperandToMask(convertedNode->Op(i), convertedNode, &currentCost, &switchCost);
+        costMorphVectorOperandToMask(convertedNode->Op(i), convertedNode, &vectorVariantCost, &maskVariantCost);
     }
 
-    JITDUMP("Attempting Mask variant morph for [%06u]. Current cost: %.2f, Conversion cost: %.2f. Will %smorph.\n",
-            dspTreeID(convertedNode), currentCost, switchCost, (switchCost > currentCost) ? "not " : "");
+    JITDUMP("Attempting Mask variant morph for [%06u]. Vector cost: %.2f, Mask cost: %.2f. Will %smorph.\n",
+            dspTreeID(convertedNode), vectorVariantCost, maskVariantCost, (maskVariantCost > vectorVariantCost) ? "not " : "");
 
     // If the costs are identical, then prefer morphed as it matches the output type.
-    if (switchCost > currentCost)
+    if (maskVariantCost > vectorVariantCost)
     {
         return nullptr;
     }
