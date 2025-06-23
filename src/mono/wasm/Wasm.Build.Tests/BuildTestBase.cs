@@ -474,7 +474,7 @@ namespace Wasm.Build.Tests
             t.Wait();
             return t.Result;
         }
-        
+
         public static async Task<(int exitCode, string buildOutput)> RunProcessAsync(string path,
                                          ITestOutputHelper _testOutput,
                                          string args = "",
@@ -585,16 +585,7 @@ namespace Wasm.Build.Tests
                 {
                     isDisposed = true;
                 }
-                try
-                {
-                    _testOutput.WriteLine($"-- exception -- {ex}");
-                }
-                catch (InvalidOperationException)
-                {
-                    // Test context has expired, but we still want to capture output in buffer
-                    // for potential debugging purposes
-                    outputBuilder.AppendLine($"[WARNING: Test context expired, subsequent output may be incomplete]");
-                }
+                TryWriteToTestOutput($"-- exception -- {ex}", outputBuilder);
                 throw;
             }
 
@@ -606,16 +597,7 @@ namespace Wasm.Build.Tests
                         return;
                     if (message != null)
                     {
-                        try
-                        {
-                            _testOutput.WriteLine($"{label} {message}");
-                        }
-                        catch (InvalidOperationException)
-                        {
-                            // Test context has expired, but we still want to capture output in buffer
-                            // for potential debugging purposes
-                            outputBuilder.AppendLine($"{label} [WARNING: Test context expired, subsequent output may be incomplete]");
-                        }
+                        TryWriteToTestOutput($"{label} {message}", outputBuilder, label);
                     }
                     outputBuilder.AppendLine($"{label} {message}");
                 }
@@ -657,6 +639,24 @@ namespace Wasm.Build.Tests
             doc.Save(projectFile);
 
             return projectFile;
+        }
+
+        private void TryWriteToTestOutput(string message, StringBuilder? outputBuffer = null, string? warningPrefix = null)
+        {
+            try
+            {
+                _testOutput.WriteLine(message);
+            }
+            catch (InvalidOperationException)
+            {
+                // Test context has expired, but we still want to capture output in buffer
+                // for potential debugging purposes
+                if (outputBuffer != null)
+                {
+                    string prefix = warningPrefix ?? "";
+                    outputBuffer.AppendLine($"{prefix}[WARNING: Test context expired, subsequent output may be incomplete]");
+                }
+            }
         }
 
         public void Dispose()
