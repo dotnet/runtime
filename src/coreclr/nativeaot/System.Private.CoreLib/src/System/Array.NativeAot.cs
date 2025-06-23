@@ -41,14 +41,6 @@ namespace System
 
         public long LongLength => (long)NativeLength;
 
-        internal unsafe bool IsSzArray
-        {
-            get
-            {
-                return this.GetMethodTable()->IsSzArray;
-            }
-        }
-
         // This is the classlib-provided "get array MethodTable" function that will be invoked whenever the runtime
         // needs to know the base type of an array.
         [RuntimeExport("GetSystemArrayEEType")]
@@ -157,9 +149,9 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ref int GetMultiDimensionalArrayBounds()
+        private unsafe ref int GetMultiDimensionalArrayBounds()
         {
-            Debug.Assert(!IsSzArray);
+            Debug.Assert(!this.GetMethodTable()->IsSzArray);
             return ref Unsafe.As<byte, int>(ref Unsafe.As<RawArrayData>(this).Data);
         }
 
