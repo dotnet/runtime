@@ -702,6 +702,7 @@ And the following enumeration definitions
         HasNonVtableSlot = 0x0008,
         HasMethodImpl = 0x0010,
         HasNativeCodeSlot = 0x0020,
+        HasAsyncMethodData = 0x0040,
         // Mask for the above flags
         MethodDescAdditionalPointersMask = 0x0038,
         #endredion Additional pointers
@@ -891,7 +892,8 @@ And the various apis are implemented with the following algorithms
             MethodDescFlags.ClassificationMask |
             MethodDescFlags.HasNonVtableSlot |
             MethodDescFlags.HasMethodImpl |
-            MethodDescFlags.HasNativeCodeSlot));
+            MethodDescFlags.HasNativeCodeSlot |
+            MethodDescFlags.HasAsyncMethodData));
         return target.Read<byte>(methodDescSizeTable + arrayOffset);
     }
 
