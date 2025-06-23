@@ -4,6 +4,7 @@
     <Nullable>enable</Nullable>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
     <DefineConstants>$(DefineConstants);EXCLUDE_PEM_ENCODING_FROM_TEST_DATA</DefineConstants>
+    <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,15 +25,6 @@
     </Compile>
     <Compile Include="$(CommonPath)System\Experimentals.cs">
       <Link>Common\Experimentals.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs">
-      <Link>Common\System\Runtime\CompilerServices\IsExternalInit.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs">
-      <Link>Common\System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\RequiredMemberAttribute.cs">
-      <Link>Common\System\Runtime\CompilerServices\RequiredMemberAttribute.cs</Link>
     </Compile>
 
     <Compile Include="CoseHeaderValueTests.cs" />
@@ -57,10 +49,6 @@
     <Compile Include="CoseSign1MessageTests.Verify.cs" />
     <Compile Include="CoseSignerTests.cs" />
     <Compile Include="CoseTestHelpers.cs" />
-    <Compile Include="CoseTestKey.cs" />
-    <Compile Include="CoseTestKeyManager.cs" />
-    <Compile Include="CoseTestMultiSign.cs" />
-    <Compile Include="CoseTestSign1.cs" />
     <Compile Include="CoseKeyTests.SignVerify.cs" />
   </ItemGroup>
 

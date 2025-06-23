@@ -26,24 +26,7 @@ namespace System.Security.Cryptography.Cose.Tests
         internal const string NullCborHex = "F6";
         internal const string SampleContentByteStringCborHex = "54546869732069732074686520636F6E74656E742E";
 
-        public enum ECDsaAlgorithm
-        {
-            ES256 = -7,
-            ES384 = -35,
-            ES512 = -36
-        }
-
-        public enum RSAAlgorithm
-        {
-            PS256 = -37,
-            PS384 = -38,
-            PS512 = -39,
-            RS256 = -257,
-            RS384 = -258,
-            RS512 = -259
-        }
-
-        internal enum CoseAlgorithm
+        public enum CoseAlgorithm
         {
             ES256 = -7,
             ES384 = -35,
@@ -91,14 +74,19 @@ namespace System.Security.Cryptography.Cose.Tests
             }
         }
 
-        internal static HashAlgorithmName GetHashAlgorithmNameFromCoseAlgorithm(int algorithm)
-            => algorithm switch
+        internal static CoseAlgorithm ParseAlgorithmStringValue(string value)
+        {
+            if (Enum.TryParse(value, out CoseAlgorithm alg))
+                return alg;
+
+            return value switch
             {
-                (int)ECDsaAlgorithm.ES256 or (int)RSAAlgorithm.PS256 => HashAlgorithmName.SHA256,
-                (int)ECDsaAlgorithm.ES384 or (int)RSAAlgorithm.PS384 => HashAlgorithmName.SHA384,
-                (int)ECDsaAlgorithm.ES512 or (int)RSAAlgorithm.PS512 => HashAlgorithmName.SHA512,
-                _ => throw new InvalidOperationException()
+                "ML-DSA-44" => CoseAlgorithm.MLDsa44,
+                "ML-DSA-65" => CoseAlgorithm.MLDsa65,
+                "ML-DSA-87" => CoseAlgorithm.MLDsa87,
+                _ => throw new NotImplementedException($"Unhandled algorithm: {value}")
             };
+        }
 
         internal static CoseHeaderMap GetHeaderMapWithAlgorithm(CoseAlgorithm algorithm = CoseAlgorithm.ES256)
         {
@@ -197,24 +185,15 @@ namespace System.Security.Cryptography.Cose.Tests
                     Assert.True(msg.VerifyEmbedded(signingKeyAsymmetricAlgorithm), "msg.Verify(AsymmetricAlgorithm)");
                 }
             }
+
+            CoseKey coseKey = CoseKeyFromAlgorithmAndKey(algorithm, signingKey);
+            if (expectedDetachedContent)
+            {
+                Assert.True(msg.VerifyDetached(coseKey, expectedContent), "msg.Verify(CoseKey, content)");
+            }
             else
             {
-#pragma warning disable SYSLIB5006
-                CoseKey coseKey = signingKey switch
-                {
-                    MLDsa mldsa => CoseKey.FromKey(mldsa),
-                    _ => throw new NotImplementedException($"Unhandled key type: {signingKey.GetType()}")
-                };
-#pragma warning restore SYSLIB5006
-
-                if (expectedDetachedContent)
-                {
-                    Assert.True(msg.VerifyDetached(coseKey, expectedContent), "msg.Verify(CoseKey, content)");
-                }
-                else
-                {
-                    Assert.True(msg.VerifyEmbedded(coseKey), "msg.Verify(CoseKey)");
-                }
+                Assert.True(msg.VerifyEmbedded(coseKey), "msg.Verify(CoseKey)");
             }
 
             // Raw Protected Headers
@@ -312,24 +291,15 @@ namespace System.Security.Cryptography.Cose.Tests
                     Assert.True(signature.VerifyEmbedded(signingKeyAsymmetricAlgorithm), "msg.Verify(AsymmetricAlgorithm)");
                 }
             }
+
+            CoseKey coseKey = CoseKeyFromAlgorithmAndKey(algorithm, signingKey);
+            if (expectedDetachedContent)
+            {
+                Assert.True(signature.VerifyDetached(coseKey, expectedContent), "msg.Verify(CoseKey, content)");
+            }
             else
             {
-#pragma warning disable SYSLIB5006
-                CoseKey coseKey = signingKey switch
-                {
-                    MLDsa mldsa => CoseKey.FromKey(mldsa),
-                    _ => throw new NotImplementedException($"Unhandled key type: {signingKey.GetType()}")
-                };
-#pragma warning restore SYSLIB5006
-
-                if (expectedDetachedContent)
-                {
-                    Assert.True(signature.VerifyDetached(coseKey, expectedContent), "msg.Verify(CoseKey, content)");
-                }
-                else
-                {
-                    Assert.True(signature.VerifyEmbedded(coseKey), "msg.Verify(CoseKey)");
-                }
+                Assert.True(signature.VerifyEmbedded(coseKey), "msg.Verify(CoseKey)");
             }
 
             // Raw Body Protected Headers
@@ -353,15 +323,12 @@ namespace System.Security.Cryptography.Cose.Tests
 
         internal static int GetSignatureSize(IDisposable key)
         {
-#pragma warning disable SYSLIB5006
             if (key is MLDsa mldsa)
             {
                 return mldsa.Algorithm.SignatureSizeInBytes;
             }
-#pragma warning restore SYSLIB5006
 
-            AsymmetricAlgorithm? asymmetricKey = key as AsymmetricAlgorithm;
-            Assert.NotNull(asymmetricKey);
+            AsymmetricAlgorithm asymmetricKey = (AsymmetricAlgorithm)key;
 
             int size = (asymmetricKey.KeySize + 7) / 8;
 
@@ -371,6 +338,87 @@ namespace System.Security.Cryptography.Cose.Tests
             }
 
             return size;
+        }
+
+        internal static CoseAlgorithm GetCoseAlgorithmFromCoseMessage(CoseMessage coseMessage)
+        {
+            if (coseMessage is CoseSign1Message sign1CoseMessage)
+            {
+                return GetCoseAlgorithmFromProtectedHeaders(sign1CoseMessage.ProtectedHeaders);
+            }
+            else
+            {
+                CoseMultiSignMessage multiSignCoseMessage = Assert.IsType<CoseMultiSignMessage>(coseMessage);
+                AssertExtensions.TrueExpression(multiSignCoseMessage.Signatures.Count > 0, "MultiSignMessage should have at least one signature.");
+                return GetCoseAlgorithmFromProtectedHeaders(multiSignCoseMessage.Signatures[0].ProtectedHeaders);
+            }
+        }
+
+        internal static CoseAlgorithm GetCoseAlgorithmFromProtectedHeaders(CoseHeaderMap protectedHeaders)
+        {
+            if (protectedHeaders.TryGetValue(CoseHeaderLabel.Algorithm, out CoseHeaderValue value))
+            {
+                var reader = new CborReader(value.EncodedValue);
+                CborReaderState state = reader.PeekState();
+
+                if (state == CborReaderState.NegativeInteger)
+                {
+                    int algorithmValue = reader.ReadInt32();
+                    AssertExtensions.TrueExpression(Enum.IsDefined(typeof(CoseAlgorithm), algorithmValue));
+                    return (CoseAlgorithm)algorithmValue;
+                }
+                else if (state == CborReaderState.TextString)
+                {
+                    string algorithmString = reader.ReadTextString();
+                    return ParseAlgorithmStringValue(algorithmString);
+                }
+            }
+
+            throw new InvalidOperationException("Protected headers do not contain an algorithm header.");
+        }
+
+        internal static CoseKey CoseKeyFromAlgorithmAndKey(CoseAlgorithm algorithm, IDisposable key)
+        {
+            if (key is ECDsa ecdsaKey)
+            {
+                return algorithm switch
+                {
+                    CoseAlgorithm.ES256 => CoseKey.FromKey(ecdsaKey, HashAlgorithmName.SHA256),
+                    CoseAlgorithm.ES384 => CoseKey.FromKey(ecdsaKey, HashAlgorithmName.SHA384),
+                    CoseAlgorithm.ES512 => CoseKey.FromKey(ecdsaKey, HashAlgorithmName.SHA512),
+                    _ => throw new Exception($"Unknown algorithm {algorithm} for {key.GetType().Name}")
+                };
+            }
+            else if (key is RSA rsaKey)
+            {
+                return algorithm switch
+                {
+                    CoseAlgorithm.RS256 => CoseKey.FromKey(rsaKey, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA256),
+                    CoseAlgorithm.RS384 => CoseKey.FromKey(rsaKey, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA384),
+                    CoseAlgorithm.RS512 => CoseKey.FromKey(rsaKey, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA512),
+                    CoseAlgorithm.PS256 => CoseKey.FromKey(rsaKey, RSASignaturePadding.Pss, HashAlgorithmName.SHA256),
+                    CoseAlgorithm.PS384 => CoseKey.FromKey(rsaKey, RSASignaturePadding.Pss, HashAlgorithmName.SHA384),
+                    CoseAlgorithm.PS512 => CoseKey.FromKey(rsaKey, RSASignaturePadding.Pss, HashAlgorithmName.SHA512),
+                    _ => throw new Exception($"Unknown algorithm {algorithm} for {key.GetType().Name}")
+                };
+            }
+            else if (key is MLDsa mldsaKey)
+            {
+                return algorithm switch
+                {
+                    CoseAlgorithm.MLDsa44 => FromKeyWithExpectedAlgorithm(MLDsaAlgorithm.MLDsa44, mldsaKey),
+                    CoseAlgorithm.MLDsa65 => FromKeyWithExpectedAlgorithm(MLDsaAlgorithm.MLDsa65, mldsaKey),
+                    CoseAlgorithm.MLDsa87 => FromKeyWithExpectedAlgorithm(MLDsaAlgorithm.MLDsa87, mldsaKey),
+                    _ => throw new Exception($"Unknown algorithm {algorithm} for {key.GetType().Name}")
+                };
+
+                CoseKey FromKeyWithExpectedAlgorithm(MLDsaAlgorithm expected, MLDsa key)
+                    => key.Algorithm.Name == expected.Name ? CoseKey.FromKey(key) : throw new Exception($"Unknown algorithm {algorithm} for {key.GetType().Name}");
+            }
+            else
+            {
+                throw new Exception($"Unknown algorithm {algorithm} for {key.GetType().Name}");
+            }
         }
 
         private static void AssertProtectedHeaders(byte[] protectedHeadersBytes, List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedProtectedHeaders)
@@ -427,9 +475,9 @@ namespace System.Security.Cryptography.Cose.Tests
         [ThreadStatic]
         private static ECDsa? t_es512;
 
-        private static ECDsa ES256 => t_es256 ??= CreateECDsa(_ec256Parameters, true);
-        private static ECDsa ES384 => t_es384 ??= CreateECDsa(_ec384Parameters, true);
-        private static ECDsa ES512 => t_es512 ??= CreateECDsa(_ec512Parameters, true);
+        internal static ECDsa ES256 => t_es256 ??= CreateECDsa(_ec256Parameters, true);
+        internal static ECDsa ES384 => t_es384 ??= CreateECDsa(_ec384Parameters, true);
+        internal static ECDsa ES512 => t_es512 ??= CreateECDsa(_ec512Parameters, true);
 
         [ThreadStatic]
         private static ECDsa? t_es256WithoutPrivateKey;
@@ -443,7 +491,7 @@ namespace System.Security.Cryptography.Cose.Tests
         private static ECDsa ES512WithoutPrivateKey => t_es512WithoutPrivateKey ??= CreateECDsa(_ec512Parameters, false);
 
         internal static ECDsa DefaultKey => ES256;
-        internal static HashAlgorithmName DefaultHash { get; } = GetHashAlgorithmNameFromCoseAlgorithm((int)ECDsaAlgorithm.ES256);
+        internal static HashAlgorithmName DefaultHash { get; } = HashAlgorithmName.SHA256;
 
         [ThreadStatic]
         internal static RSA? t_rsaKey;
@@ -453,19 +501,18 @@ namespace System.Security.Cryptography.Cose.Tests
         internal static RSA RSAKey => t_rsaKey ??= CreateRSA(true);
         internal static RSA RSAKeyWithoutPrivateKey => t_rsaKeyWithoutPrivateKey ??= CreateRSA(false);
 
-#pragma warning disable SYSLIB5006
         [ThreadStatic]
-        internal static MLDsa? t_mldsa44Key;
+        private static MLDsa? t_mldsa44Key;
         [ThreadStatic]
-        internal static MLDsa? t_mldsa44KeyWithoutPrivateKey;
+        private static MLDsa? t_mldsa44KeyWithoutPrivateKey;
         [ThreadStatic]
-        internal static MLDsa? t_mldsa65Key;
+        private static MLDsa? t_mldsa65Key;
         [ThreadStatic]
-        internal static MLDsa? t_mldsa65KeyWithoutPrivateKey;
+        private static MLDsa? t_mldsa65KeyWithoutPrivateKey;
         [ThreadStatic]
-        internal static MLDsa? t_mldsa87Key;
+        private static MLDsa? t_mldsa87Key;
         [ThreadStatic]
-        internal static MLDsa? t_mldsa87KeyWithoutPrivateKey;
+        private static MLDsa? t_mldsa87KeyWithoutPrivateKey;
 
         internal static MLDsa MLDsa44Key => t_mldsa44Key ??= CreateMLDsa(MLDsaAlgorithm.MLDsa44, true);
         internal static MLDsa MLDsa44KeyWithoutPrivateKey => t_mldsa44KeyWithoutPrivateKey ??= CreateMLDsa(MLDsaAlgorithm.MLDsa44, false);
@@ -473,7 +520,6 @@ namespace System.Security.Cryptography.Cose.Tests
         internal static MLDsa MLDsa65KeyWithoutPrivateKey => t_mldsa65KeyWithoutPrivateKey ??= CreateMLDsa(MLDsaAlgorithm.MLDsa65, false);
         internal static MLDsa MLDsa87Key => t_mldsa87Key ??= CreateMLDsa(MLDsaAlgorithm.MLDsa87, true);
         internal static MLDsa MLDsa87KeyWithoutPrivateKey => t_mldsa87KeyWithoutPrivateKey ??= CreateMLDsa(MLDsaAlgorithm.MLDsa87, false);
-#pragma warning restore SYSLIB5006
 
         private static ECParameters CreateECParameters(string curveFriendlyName, string base64UrlQx, string base64UrlQy, string base64UrlPrivateKey)
         {
@@ -522,7 +568,6 @@ namespace System.Security.Cryptography.Cose.Tests
             return RSA.Create(rsaParameters);
         }
 
-#pragma warning disable SYSLIB5006
         private static MLDsa CreateMLDsa(MLDsaAlgorithm algorithm, bool includePrivateKey)
         {
             MLDsaNistTestCase nistKey = MLDsaTestsData.GetPassingNistTestCase(algorithm);
@@ -536,7 +581,6 @@ namespace System.Security.Cryptography.Cose.Tests
                 return MLDsa.ImportMLDsaPublicKey(algorithm, nistKey.PublicKey);
             }
         }
-#pragma warning restore SYSLIB5006
 
         internal static bool AlgorithmNeedsHashAlgorithm(CoseAlgorithm algorithm)
             => algorithm is
@@ -546,7 +590,6 @@ namespace System.Security.Cryptography.Cose.Tests
 
         internal static bool AlgorithmIsSupported(CoseAlgorithm algorithm)
         {
-#pragma warning disable SYSLIB5006
             switch (algorithm)
             {
                 case CoseAlgorithm.MLDsa44:
@@ -555,7 +598,6 @@ namespace System.Security.Cryptography.Cose.Tests
                     return MLDsa.IsSupported;
                 default: return true;
             }
-#pragma warning restore SYSLIB5006
         }
 
         internal static (T Key, HashAlgorithmName? Hash, RSASignaturePadding? Padding) GetKeyHashPaddingTriplet<T>(CoseAlgorithm algorithm, bool useNonPrivateKey = false)
@@ -608,26 +650,24 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             if (key is RSA rsa)
             {
-                Assert.NotNull(hash);
-                return new CoseSigner(rsa, padding ?? RSASignaturePadding.Pss, hash.Value, protectedHeaders, unprotectedHeaders);
+                AssertExtensions.TrueExpression(hash.HasValue);
+                return new CoseSigner(rsa, padding ?? RSASignaturePadding.Pss, hash!.Value, protectedHeaders, unprotectedHeaders);
             }
 
-            Assert.Null(padding);
+            AssertExtensions.TrueExpression(padding == null);
 
             if (key is ECDsa ecdsa)
             {
-                Assert.NotNull(hash);
-                return new CoseSigner(ecdsa, hash.Value, protectedHeaders, unprotectedHeaders);
+                AssertExtensions.TrueExpression(hash.HasValue);
+                return new CoseSigner(ecdsa, hash!.Value, protectedHeaders, unprotectedHeaders);
             }
 
-#pragma warning disable SYSLIB5006
             if (key is MLDsa mldsa)
             {
-                Assert.Null(hash);
+                AssertExtensions.FalseExpression(hash.HasValue);
                 CoseKey mldsaKey = CoseKey.FromKey(mldsa);
                 return new CoseSigner(mldsaKey, protectedHeaders, unprotectedHeaders);
             }
-#pragma warning restore SYSLIB5006
 
             throw new NotImplementedException($"Unhandled key type: {key.GetType()}");
         }
@@ -636,22 +676,17 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             CoseSign1Message sign1Msg = Assert.IsType<CoseSign1Message>(msg);
 
+            CoseAlgorithm algorithm = GetCoseAlgorithmFromCoseMessage(sign1Msg);
+            CoseKey coseKey = CoseKeyFromAlgorithmAndKey(algorithm, key);
+
+            bool result = sign1Msg.Content.HasValue ? sign1Msg.VerifyEmbedded(coseKey, associatedData) : sign1Msg.VerifyDetached(coseKey, content, associatedData);
+
             if (key is AsymmetricAlgorithm keyAsymmetricAlgorithm)
             {
-                return sign1Msg.Content.HasValue ? sign1Msg.VerifyEmbedded(keyAsymmetricAlgorithm, associatedData) : sign1Msg.VerifyDetached(keyAsymmetricAlgorithm, content, associatedData);
+                AssertExtensions.TrueExpression(result == (sign1Msg.Content.HasValue ? sign1Msg.VerifyEmbedded(keyAsymmetricAlgorithm, associatedData) : sign1Msg.VerifyDetached(keyAsymmetricAlgorithm, content, associatedData)));
             }
-            else
-            {
-#pragma warning disable SYSLIB5006
-                CoseKey coseKey = key switch
-                {
-                    MLDsa mldsa => CoseKey.FromKey(mldsa),
-                    _ => throw new NotImplementedException($"Unhandled key type: {key.GetType()}")
-                };
-#pragma warning restore SYSLIB5006
 
-                return sign1Msg.Content.HasValue ? sign1Msg.VerifyEmbedded(coseKey, associatedData) : sign1Msg.VerifyDetached(coseKey, content, associatedData);
-            }
+            return result;
         }
 
         internal static bool MultiSignVerify(CoseMessage msg, IDisposable key, byte[] content, int expectedSignatures, byte[]? associatedData = null)
@@ -662,6 +697,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
             bool isDetached = !multiSignMsg.Content.HasValue;
             bool result = false;
+            CoseAlgorithm algorithm = GetCoseAlgorithmFromCoseMessage(multiSignMsg);
 
             foreach (CoseSignature s in signatures)
             {
@@ -675,25 +711,21 @@ namespace System.Security.Cryptography.Cose.Tests
                     {
                         result = s.VerifyEmbedded(keyAsymmetricAlgorithm, associatedData);
                     }
+
+                    if (!result)
+                    {
+                        break;
+                    }
+                }
+
+                CoseKey coseKey = CoseKeyFromAlgorithmAndKey(algorithm, key);
+                if (isDetached)
+                {
+                    result = s.VerifyDetached(coseKey, content, associatedData);
                 }
                 else
                 {
-#pragma warning disable SYSLIB5006
-                    CoseKey coseKey = key switch
-                    {
-                        MLDsa mldsa => CoseKey.FromKey(mldsa),
-                        _ => throw new NotImplementedException($"Unhandled key type: {key.GetType()}")
-                    };
-#pragma warning restore SYSLIB5006
-
-                    if (isDetached)
-                    {
-                        result = s.VerifyDetached(coseKey, content, associatedData);
-                    }
-                    else
-                    {
-                        result = s.VerifyEmbedded(coseKey, associatedData);
-                    }
+                    result = s.VerifyEmbedded(coseKey, associatedData);
                 }
 
                 if (!result)
@@ -925,7 +957,6 @@ namespace System.Security.Cryptography.Cose.Tests
                 Assert.NotNull(hash);
                 return rsa.SignData(toBeSigned, hash.Value, RSASignaturePadding.Pss);
             }
-#pragma warning disable SYSLIB5006
             else if (key is MLDsa mldsa)
             {
                 Assert.Null(hash);
@@ -933,7 +964,6 @@ namespace System.Security.Cryptography.Cose.Tests
                 Assert.Equal(sig.Length, mldsa.SignData(toBeSigned, sig));
                 return sig;
             }
-#pragma warning restore SYSLIB5006
 
             throw new NotImplementedException($"Unhandled key type: {key.GetType()}");
         }
@@ -950,13 +980,11 @@ namespace System.Security.Cryptography.Cose.Tests
                 Assert.NotNull(hash);
                 return rsa.VerifyData(toBeSigned, signature, hash.Value, RSASignaturePadding.Pss);
             }
-#pragma warning disable SYSLIB5006
             else if (key is MLDsa mldsa)
             {
                 Assert.Null(hash);
                 return mldsa.VerifyData(toBeSigned, signature);
             }
-#pragma warning restore SYSLIB5006
 
             throw new NotImplementedException($"Unhandled key type: {key.GetType()}");
         }

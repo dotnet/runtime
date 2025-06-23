@@ -43,22 +43,19 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.Equal(1, signatures.Count);
 
             using Stream stream = GetTestStream(content);
+
+            CoseAlgorithm algorithm = GetCoseAlgorithmFromCoseMessage(msg);
+            CoseKey coseKey = CoseKeyFromAlgorithmAndKey(algorithm, key);
+
+            bool result = signatures[0].VerifyDetachedAsync(coseKey, stream, associatedData).GetAwaiter().GetResult();
+
             if (key is AsymmetricAlgorithm keyAsymmetricAlgorithm)
             {
-                return signatures[0].VerifyDetachedAsync(keyAsymmetricAlgorithm, stream, associatedData).GetAwaiter().GetResult();
+                stream.Position = 0;
+                Assert.Equal(result, signatures[0].VerifyDetachedAsync(keyAsymmetricAlgorithm, stream, associatedData).GetAwaiter().GetResult());
             }
-            else
-            {
-#pragma warning disable SYSLIB5006
-                CoseKey coseKey = key switch
-                {
-                    MLDsa mldsa => CoseKey.FromKey(mldsa),
-                    _ => throw new NotImplementedException($"Unhandled key type: {key.GetType()}")
-                };
-#pragma warning restore SYSLIB5006
 
-                return signatures[0].VerifyDetachedAsync(coseKey, stream, associatedData).GetAwaiter().GetResult();
-            }
+            return result;
         }
     }
 
@@ -97,22 +94,18 @@ namespace System.Security.Cryptography.Cose.Tests
 
             using Stream stream = GetTestStream(content);
 
+            CoseAlgorithm algorithm = GetCoseAlgorithmFromCoseMessage(msg);
+            CoseKey coseKey = CoseKeyFromAlgorithmAndKey(algorithm, key);
+
+            bool result = signatures[0].VerifyDetached(coseKey, stream, associatedData);
+
             if (key is AsymmetricAlgorithm keyAsymmetricAlgorithm)
             {
-                return signatures[0].VerifyDetached(keyAsymmetricAlgorithm, stream, associatedData);
+                stream.Position = 0;
+                Assert.Equal(result, signatures[0].VerifyDetached(keyAsymmetricAlgorithm, stream, associatedData));
             }
-            else
-            {
-#pragma warning disable SYSLIB5006
-                CoseKey coseKey = key switch
-                {
-                    MLDsa mldsa => CoseKey.FromKey(mldsa),
-                    _ => throw new NotImplementedException($"Unhandled key type: {key.GetType()}")
-                };
-#pragma warning restore SYSLIB5006
 
-                return signatures[0].VerifyDetached(coseKey, stream, associatedData);
-            }
+            return result;
         }
     }
 }

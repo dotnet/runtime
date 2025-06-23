@@ -47,7 +47,6 @@ namespace System.Security.Cryptography.Cose.Tests
         }
     }
 
-#pragma warning disable SYSLIB5006
     [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
     public class CoseSign1MessageTests_Sign_MLDsa : CoseSign1MessageTests_Sign<MLDsa>
     {
@@ -64,5 +63,4 @@ namespace System.Security.Cryptography.Cose.Tests
                 CoseSign1Message.SignEmbedded(content, signer, associatedData);
         }
     }
-#pragma warning restore SYSLIB5006
 }
