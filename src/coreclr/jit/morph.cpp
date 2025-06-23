@@ -9743,8 +9743,8 @@ static constexpr const weight_t costOfConvertMaskToVector = 1.0;
 static constexpr const weight_t costOfConvertVectorToMask = 2.0;
 
 //------------------------------------------------------------------------
-// costMorphVectorOperandToMask: Calculate the cost of using the vector
-//                               and mask variants
+// getVectorMaskVariantWeights: Calculate the cost of using the vector
+//                              and mask variants
 //
 // Arguments:
 //    node              - The node to convert to a mask
@@ -9752,10 +9752,10 @@ static constexpr const weight_t costOfConvertVectorToMask = 2.0;
 //    vectorVariantCost - (IN/OUT) incremented by the cost of using the vector variant
 //    maskVariantCost   - (IN/OUT) incremented by the cost of using the mask variant
 //
-void Compiler::costMorphVectorOperandToMask(GenTree*            node,
-                                            GenTreeHWIntrinsic* parent,
-                                            weight_t*           vectorVariantCost,
-                                            weight_t*           maskVariantCost)
+void Compiler::getVectorMaskVariantWeights(GenTree*            node,
+                                           GenTreeHWIntrinsic* parent,
+                                           weight_t*           vectorVariantCost,
+                                           weight_t*           maskVariantCost)
 {
     if (varTypeIsMask(node))
     {
@@ -9772,14 +9772,15 @@ void Compiler::costMorphVectorOperandToMask(GenTree*            node,
 
     if (node->IsCnsVec())
     {
-        // Check if the constant vector can be converted to a pattern during codegen
+        // If the constant vector can be converted to a mask pattern during codegen, then the morph is free.
+        // Otherwise it will cost one vector-to-mask conversion.
+
         assert(node->TypeGet() == TYP_SIMD16);
         var_types simdBaseType = parent->GetSimdBaseType();
 
         if (node->IsVectorZero() ||
             SveMaskPatternNone != EvaluateSimdVectorToPattern<simd16_t>(simdBaseType, node->AsVecCon()->gtSimd16Val))
         {
-            // Assume a constant vector is the same cost as a constant mask
             return;
         }
     }
@@ -9851,8 +9852,8 @@ GenTree* Compiler::doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic*
 //                              decide if the variant is preferred.
 //
 // Notes:
-//    It is not safe to convert to a mask and then back to vector again as infromation will be lost.
-//    Therefore only consider NamedIntrinsics that are used as masks.
+//    It is not safe to convert to a mask and then back to vector again as information will be lost.
+//    Therefore only consider NamedIntrinsics that operate on masks.
 //
 // Arguments:
 //    node - The conversion to mask of the HWIntrinsic to try and optimize.
@@ -9868,7 +9869,7 @@ GenTreeHWIntrinsic* Compiler::fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* no
         return nullptr;
     }
 
-    // Check the converted node. Is there a masked variant.
+    // Check the converted node. Is there a masked variant?
 
     if (!node->Op(2)->OperIsHWIntrinsic())
     {
@@ -9881,6 +9882,7 @@ GenTreeHWIntrinsic* Compiler::fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* no
     {
         return nullptr;
     }
+
     NamedIntrinsic maskVariant = HWIntrinsicInfo::GetMaskVariant(convertedNode->GetHWIntrinsicId());
 
     // As some intrinsics have many variants, check that the count of operands on the node
@@ -9902,7 +9904,7 @@ GenTreeHWIntrinsic* Compiler::fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* no
     // Take into account the cost of the children
     for (size_t i = 1; i <= convertedNode->GetOperandCount(); i++)
     {
-        costMorphVectorOperandToMask(convertedNode->Op(i), convertedNode, &vectorVariantCost, &maskVariantCost);
+        getVectorMaskVariantWeights(convertedNode->Op(i), convertedNode, &vectorVariantCost, &maskVariantCost);
     }
 
     JITDUMP("Attempting Mask variant morph for [%06u]. Vector cost: %.2f, Mask cost: %.2f. Will %smorph.\n",

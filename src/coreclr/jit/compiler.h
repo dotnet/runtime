@@ -6713,7 +6713,7 @@ private:
     GenTreeHWIntrinsic* fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* node);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #ifdef TARGET_ARM64
-    void costMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic* parent, weight_t *currentCost, weight_t *switchCost);
+    void getVectorMaskVariantWeights(GenTree* node, GenTreeHWIntrinsic* parent, weight_t *currentCost, weight_t *switchCost);
     GenTree* doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic* parent);
     GenTreeHWIntrinsic* fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node);
 #endif // TARGET_ARM64
