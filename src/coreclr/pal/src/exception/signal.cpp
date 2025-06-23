@@ -31,6 +31,8 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 #include "pal/palinternal.h"
 
+#include "retaddr.h"
+
 #include <clrconfignocache.h>
 
 #include <errno.h>
@@ -878,7 +880,7 @@ Parameters :
 __attribute__((noinline))
 static void InvokeActivationHandler(CONTEXT *pWinContext)
 {
-    g_InvokeActivationHandlerReturnAddress = __builtin_return_address(0);
+    g_InvokeActivationHandlerReturnAddress = _ReturnAddress();
     g_activationFunction(pWinContext);
 }
 

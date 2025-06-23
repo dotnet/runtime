@@ -27,6 +27,8 @@ Abstract:
 #include "pal/signal.hpp"
 #include "pal/virtual.h"
 
+#include "retaddr.h"
+
 #if HAVE_MACH_EXCEPTIONS
 #include "machexception.h"
 #else
@@ -248,7 +250,7 @@ Return value:
 BOOL
 SEHProcessException(PAL_SEHException* exception)
 {
-    g_SEHProcessExceptionReturnAddress = __builtin_return_address(0);
+    g_SEHProcessExceptionReturnAddress = _ReturnAddress();
 
     CONTEXT* contextRecord = exception->GetContextRecord();
     EXCEPTION_RECORD* exceptionRecord = exception->GetExceptionRecord();

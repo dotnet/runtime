@@ -37,6 +37,7 @@ endif(CORECLR_SET_RPATH)
 # Include directories
 
 include_directories(include)
+include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
 
 # Compile options
 
