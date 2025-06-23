@@ -6068,15 +6068,12 @@ public:
         m_switchDescMap = nullptr;
     }
 
-    // Requires "switchBlock" to be a block that ends in a switch.  Returns
-    // the corresponding SwitchUniqueSuccSet.
     SwitchUniqueSuccSet GetDescriptorForSwitch(BasicBlock* switchBlk);
 
     bool GetDescriptorForSwitchIfAvailable(BasicBlock* switchBlk, SwitchUniqueSuccSet* res);
 
     void fgRemoveSuccFromSwitchDescMapEntry(BasicBlock* switchBlk, FlowEdge* edge);
 
-    // Remove the "SwitchUniqueSuccSet" of "switchBlk" in the BlockToSwitchDescMap.
     void fgInvalidateSwitchDescMapEntry(BasicBlock* switchBlk);
 
     BasicBlock* fgFirstBlockOfHandler(BasicBlock* block);

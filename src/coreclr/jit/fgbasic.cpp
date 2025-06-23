@@ -365,7 +365,7 @@ void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, const unsigned succIndex)
 
     fgRemoveRefPred(succEdge);
 
-    // If succEdge not the last entry, move everything after in the table down one slot.
+    // If succEdge is not the last entry, move everything after in the table down one slot.
     if ((succIndex + 1) < succCount)
     {
         memmove_s(&succTab[succIndex], (succCount - succIndex) * sizeof(FlowEdge*), &succTab[succIndex + 1],
@@ -527,27 +527,26 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
 
             for (unsigned i = 0; i < jumpCnt; i++)
             {
-                // if (jumpTab[i]->getDestinationBlock() == newTarget)
-                // {
-                //     // The new target already has an edge from this switch statement.
-                //     // We'll need to add the likelihood from the edge we're redirecting
-                //     // to the existing edge. Note that if there is no existing edge,
-                //     // then we'll copy the likelihood from the existing edge we pass to
-                //     // `fgAddRefPred`. Note also that we can visit the same edge multiple
-                //     // times if there are multiple switch cases with the same target. The
-                //     // edge has a dup count and a single likelihood for all the possible
-                //     // paths to the target, so we only want to add the likelihood once
-                //     // despite visiting the duplicated edges in the `jumpTab` array
-                //     // multiple times.
-                //     existingEdge = true;
-                // }
+                // If the new target already has an edge from this switch statement,
+                // we will need to add the likelihood from the edge we're redirecting
+                // to the existing edge, so save the old and new targets' edges.
+                // Note that we can visit the same edge multiple times
+                // if there are multiple switch cases with the same target.
+                // The edge has a dup count and a single likelihood for all the possible
+                // paths to the target, so we only want to add the likelihood once
+                // despite visiting the duplicated edges in the `jumpTab` array
+                // multiple times.
 
+                // If there are duplicate edges to 'oldTarget',
+                // and there is already an edge to 'newTarget',
+                // overwrite the duplicate edges with 'newEdge'.
                 if (jumpTab[i] == oldEdge)
                 {
                     assert(oldEdge != nullptr);
                     assert(newEdge != nullptr);
                     jumpTab[i] = newEdge;
                 }
+                // Else, we have found the edge we need to redirect to 'newTarget'.
                 else if (jumpTab[i]->getDestinationBlock() == oldTarget)
                 {
                     assert(oldEdge == nullptr);
@@ -570,11 +569,14 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
                 assert(newEdge != nullptr);
                 assert(newEdge->getSourceBlock() == block);
                 assert(newEdge->getDestinationBlock() == newTarget);
-
                 newEdge->addLikelihood(oldEdge->getLikelihood());
+
+                // Remove 'oldEdge' from the switch map entry, if it exists.
                 fgRemoveSuccFromSwitchDescMapEntry(block, oldEdge);
             }
 
+            // If we simply redirected 'oldEdge' to 'newTarget', we don't need to update the switch map entry,
+            // because we did not remove any edges.
             assert(changed);
             break;
         }
