@@ -316,7 +316,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
 
             if (pcode == TargetCodePointer.Null)
             {
-                // I think this is equivalent to get any native code version
+                // TODO(cdac): Fix this to check for any native code version
                 NativeCodeVersionHandle nativeCodeVersion = cv.GetActiveNativeCodeVersion(mdHandle.Address);
                 if (nativeCodeVersion.Valid)
                 {
