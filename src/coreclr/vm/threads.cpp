@@ -6049,7 +6049,7 @@ BOOL Thread::SetStackLimits(SetStackLimitScope scope)
     {
         m_CacheStackBase  = GetStackUpperBound();
         m_CacheStackLimit = GetStackLowerBound();
-#ifndef __wasm__ // stack can start at address 0 on wasm/emscripten and usually does
+#ifndef TARGET_WASM // stack can start at address 0 on wasm/emscripten and usually does
         if (m_CacheStackLimit == NULL)
         {
             _ASSERTE(!"Failed to set stack limits");

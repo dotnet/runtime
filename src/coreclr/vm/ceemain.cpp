@@ -842,7 +842,7 @@ void EEStartupHelper()
         // Initialize the debugging services. This must be done before any
         // EE thread objects are created, and before any classes or
         // modules are loaded.
-#ifndef __wasm__
+#ifndef TARGET_WASM
         InitializeDebugger(); // throws on error
 #endif
 #endif // DEBUGGING_SUPPORTED
@@ -924,7 +924,7 @@ void EEStartupHelper()
 
         // on wasm we need to run finalizers on main thread as we are single threaded
         // active issue: https://github.com/dotnet/runtime/issues/114096
-#if !defined(TARGET_WINDOWS) && !defined(__wasm__)
+#if !defined(TARGET_WINDOWS) && !defined(TARGET_WASM)
         // This isn't done as part of InitializeGarbageCollector() above because
         // debugger must be initialized before creating EE thread objects
         FinalizerThread::FinalizerThreadCreate();

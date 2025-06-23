@@ -334,12 +334,12 @@ private:
 #ifdef DEBUG
     CORINFO_CLASS_HANDLE m_classHnd;
     TArray<char> m_methodName;
-#ifdef __wasm__
+#ifdef TARGET_WASM
     // enable verbose output on wasm temporarily
     bool m_verbose = true;
 #else
     bool m_verbose = false;
-#endif // __wasm__
+#endif // TARGET_WASM
 #endif // DEBUG
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
