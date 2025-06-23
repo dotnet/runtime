@@ -794,6 +794,21 @@ CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Eax, offsetof(HijackArgs, Eax))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Ebp, offsetof(HijackArgs, Ebp))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Eip, offsetof(HijackArgs, Eip))
 
+#elif defined(TARGET_ARM)
+
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R0, offsetof(HijackArgs, R0))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R1, offsetof(HijackArgs, R1))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R2, offsetof(HijackArgs, R2))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R4, offsetof(HijackArgs, R4))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R5, offsetof(HijackArgs, R5))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R6, offsetof(HijackArgs, R6))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R7, offsetof(HijackArgs, R7))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R8, offsetof(HijackArgs, R8))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R9, offsetof(HijackArgs, R9))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R10, offsetof(HijackArgs, R10))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R11, offsetof(HijackArgs, R11))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Lr, offsetof(HijackArgs, Lr))
+
 #endif // Platform switch
 CDAC_TYPE_END(HijackArgs)
 #endif // FEATURE_HIJACK

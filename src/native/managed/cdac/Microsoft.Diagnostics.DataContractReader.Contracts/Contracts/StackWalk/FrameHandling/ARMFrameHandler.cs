@@ -15,8 +15,18 @@ internal class ARMFrameHandler(Target target, ContextHolder<ARMContext> contextH
 
     public void HandleHijackFrame(HijackFrame frame)
     {
-        // TODO(cdacarm)
-        throw new NotImplementedException();
+        HijackArgs args = _target.ProcessedData.GetOrAdd<Data.HijackArgs>(frame.HijackArgsPtr);
+
+        _holder.InstructionPointer = frame.ReturnAddress;
+
+        // The stack pointer is the address immediately following HijackArgs
+        uint hijackArgsSize = _target.GetTypeInfo(DataType.HijackArgs).Size ?? throw new InvalidOperationException("HijackArgs size is not set");
+        Debug.Assert(hijackArgsSize % 4 == 0, "HijackArgs contains register values and should be a multiple of the pointer size (4 bytes for ARM)");
+        // The stack must be multiple of 8. So if hijackArgsSize is not multiple of 8 then there must be padding of 4 bytes
+        hijackArgsSize += hijackArgsSize % 8;
+        _holder.StackPointer = frame.HijackArgsPtr + hijackArgsSize;
+
+        UpdateFromRegisterDict(args.Registers);
     }
 
     public override void HandleInlinedCallFrame(InlinedCallFrame inlinedCallFrame)
