@@ -6062,12 +6062,6 @@ public:
         return m_switchDescMap;
     }
 
-    // Invalidate the map of unique switch block successors.
-    void InvalidateUniqueSwitchSuccMap()
-    {
-        m_switchDescMap = nullptr;
-    }
-
     SwitchUniqueSuccSet GetDescriptorForSwitch(BasicBlock* switchBlk);
 
     bool GetDescriptorForSwitchIfAvailable(BasicBlock* switchBlk, SwitchUniqueSuccSet* res);
