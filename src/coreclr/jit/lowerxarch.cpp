@@ -1387,7 +1387,6 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
 {
     assert(node->GetOperandCount() == 3);
 
-    bool isAvx512 = false;
     bool negated  = false;
     bool subtract = false;
     bool isScalar = false;
@@ -1397,23 +1396,27 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
     switch (intrinsic)
     {
         case NI_AVX2_MultiplyAdd:
+        case NI_AVX512_FusedMultiplyAdd:
         {
             break;
         }
 
         case NI_AVX2_MultiplyAddScalar:
+        case NI_AVX512_FusedMultiplyAddScalar:
         {
             isScalar = true;
             break;
         }
 
         case NI_AVX2_MultiplyAddNegated:
+        case NI_AVX512_FusedMultiplyAddNegated:
         {
             negated = true;
             break;
         }
 
         case NI_AVX2_MultiplyAddNegatedScalar:
+        case NI_AVX512_FusedMultiplyAddNegatedScalar:
         {
             negated  = true;
             isScalar = true;
@@ -1421,12 +1424,14 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
         }
 
         case NI_AVX2_MultiplySubtract:
+        case NI_AVX512_FusedMultiplySubtract:
         {
             subtract = true;
             break;
         }
 
         case NI_AVX2_MultiplySubtractScalar:
+        case NI_AVX512_FusedMultiplySubtractScalar:
         {
             subtract = true;
             isScalar = true;
@@ -1434,6 +1439,7 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
         }
 
         case NI_AVX2_MultiplySubtractNegated:
+        case NI_AVX512_FusedMultiplySubtractNegated:
         {
             subtract = true;
             negated  = true;
@@ -1441,67 +1447,8 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
         }
 
         case NI_AVX2_MultiplySubtractNegatedScalar:
-        {
-            subtract = true;
-            negated  = true;
-            isScalar = true;
-            break;
-        }
-
-        case NI_AVX512_FusedMultiplyAdd:
-        {
-            isAvx512 = true;
-            break;
-        }
-
-        case NI_AVX512_FusedMultiplyAddScalar:
-        {
-            isAvx512 = true;
-            isScalar = true;
-            break;
-        }
-
-        case NI_AVX512_FusedMultiplyAddNegated:
-        {
-            isAvx512 = true;
-            negated  = true;
-            break;
-        }
-
-        case NI_AVX512_FusedMultiplyAddNegatedScalar:
-        {
-            isAvx512 = true;
-            negated  = true;
-            isScalar = true;
-            break;
-        }
-
-        case NI_AVX512_FusedMultiplySubtract:
-        {
-            isAvx512 = true;
-            subtract = true;
-            break;
-        }
-
-        case NI_AVX512_FusedMultiplySubtractScalar:
-        {
-            isAvx512 = true;
-            subtract = true;
-            isScalar = true;
-            break;
-        }
-
-        case NI_AVX512_FusedMultiplySubtractNegated:
-        {
-            isAvx512 = true;
-            subtract = true;
-            negated  = true;
-            break;
-        }
-
         case NI_AVX512_FusedMultiplySubtractNegatedScalar:
         {
-            isAvx512 = true;
             subtract = true;
             negated  = true;
             isScalar = true;
@@ -1543,10 +1490,7 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
                     argOp->ClearContained();
                     ContainCheckHWIntrinsic(arg->AsHWIntrinsic());
 
-                    // We want to toggle the tracking and then check it again,
-                    // which is the simplest way to handle cases like -CreateScalarUnsafe(-x)
                     negatedArgs[i - 1] ^= true;
-                    i -= 1;
                 }
 
                 break;
@@ -1562,11 +1506,18 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
                     break;
                 }
 
-                GenTree* argOp = hwArg->Op(1);
+                GenTree* argOp = hwArg->Op(2);
 
-                // xor is bitwise and the actual xor node might not be floating-point
-                // so we check if its negative zero using the FMA base type since that's
-                // what the end negation will end up using
+                if (!argOp->isContained())
+                {
+                    // A constant should have already been contained
+                    break;
+                }
+
+                // xor is bitwise and the actual xor node might be a different base type
+                // from the FMA node, so we check if its negative zero using the FMA base
+                // type since that's what the end negation would end up using
+
                 if (argOp->IsVectorNegativeZero(node->GetSimdBaseType()))
                 {
                     BlockRange().Remove(hwArg);
@@ -1576,11 +1527,9 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
                     argOp->ClearContained();
                     node->Op(i) = argOp;
 
-                    // We want to toggle the tracking and then check it again,
-                    // which is the simplest way to handle cases like -CreateScalarUnsafe(-x)
                     negatedArgs[i - 1] ^= true;
-                    i -= 1;
                 }
+
                 break;
             }
         }
@@ -1590,7 +1539,7 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
     negated ^= negatedArgs[1];
     subtract ^= negatedArgs[2];
 
-    if (isAvx512)
+    if (intrinsic >= FIRST_NI_AVX512)
     {
         if (negated)
         {
@@ -9928,7 +9877,28 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (containedOperand != nullptr)
                     {
-                        if (containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic(comp))
+                        bool isEmbeddedBroadcastCompatible =
+                            containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic(comp);
+
+                        bool       isScalarArg = false;
+                        genTreeOps oper        = node->GetOperForHWIntrinsicId(&isScalarArg);
+
+                        // We want to skip trying to make this an embedded broadcast in certain scenarios
+                        // because it will prevent other transforms that will be better for codegen.
+
+                        LIR::Use use;
+
+                        if ((oper == GT_XOR) && BlockRange().TryGetUse(node, &use) &&
+                            use.User()->OperIsVectorFusedMultiplyOp())
+                        {
+                            // xor is bitwise and the actual xor node might be a different base type
+                            // from the FMA node, so we check if its negative zero using the FMA base
+                            // type since that's what the end negation would end up using
+                            var_types fmaSimdBaseType     = use.User()->AsHWIntrinsic()->GetSimdBaseType();
+                            isEmbeddedBroadcastCompatible = !containedOperand->IsVectorNegativeZero(fmaSimdBaseType);
+                        }
+
+                        if (isEmbeddedBroadcastCompatible)
                         {
                             TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());
                         }

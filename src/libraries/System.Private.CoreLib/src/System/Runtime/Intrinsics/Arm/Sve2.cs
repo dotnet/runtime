@@ -264,49 +264,49 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint8_t svbcax[_u8](svuint8_t op1, svuint8_t op2, svuint8_t op3)
         ///   BCAX Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<byte> BitwiseClearXor(Vector<byte> xor, Vector<byte> value, Vector<byte> mask) => BitwiseClearXor(xor, value, mask);
+        public static Vector<byte> BitwiseClearXor(Vector<byte> xor, Vector<byte> value, Vector<byte> mask) => BitwiseClearXor(xor, value, mask);
 
         /// <summary>
         /// svint16_t svbcax[_s16](svint16_t op1, svint16_t op2, svint16_t op3)
         ///   BCAX Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<short> BitwiseClearXor(Vector<short> xor, Vector<short> value, Vector<short> mask) => BitwiseClearXor(xor, value, mask);
+        public static Vector<short> BitwiseClearXor(Vector<short> xor, Vector<short> value, Vector<short> mask) => BitwiseClearXor(xor, value, mask);
 
         /// <summary>
         /// svint32_t svbcax[_s32](svint32_t op1, svint32_t op2, svint32_t op3)
         ///   BCAX Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<int> BitwiseClearXor(Vector<int> xor, Vector<int> value, Vector<int> mask) => BitwiseClearXor(xor, value, mask);
+        public static Vector<int> BitwiseClearXor(Vector<int> xor, Vector<int> value, Vector<int> mask) => BitwiseClearXor(xor, value, mask);
 
         /// <summary>
         /// svint64_t svbcax[_s64](svint64_t op1, svint64_t op2, svint64_t op3)
         ///   BCAX Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<long> BitwiseClearXor(Vector<long> xor, Vector<long> value, Vector<long> mask) => BitwiseClearXor(xor, value, mask);
+        public static Vector<long> BitwiseClearXor(Vector<long> xor, Vector<long> value, Vector<long> mask) => BitwiseClearXor(xor, value, mask);
 
         /// <summary>
         /// svint8_t svbcax[_s8](svint8_t op1, svint8_t op2, svint8_t op3)
         ///   BCAX Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<sbyte> BitwiseClearXor(Vector<sbyte> xor, Vector<sbyte> value, Vector<sbyte> mask) => BitwiseClearXor(xor, value, mask);
+        public static Vector<sbyte> BitwiseClearXor(Vector<sbyte> xor, Vector<sbyte> value, Vector<sbyte> mask) => BitwiseClearXor(xor, value, mask);
 
         /// <summary>
         /// svuint16_t svbcax[_u16](svuint16_t op1, svuint16_t op2, svuint16_t op3)
         ///   BCAX Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<ushort> BitwiseClearXor(Vector<ushort> xor, Vector<ushort> value, Vector<ushort> mask) => BitwiseClearXor(xor, value, mask);
+        public static Vector<ushort> BitwiseClearXor(Vector<ushort> xor, Vector<ushort> value, Vector<ushort> mask) => BitwiseClearXor(xor, value, mask);
 
         /// <summary>
         /// svuint32_t svbcax[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
         ///   BCAX Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<uint> BitwiseClearXor(Vector<uint> xor, Vector<uint> value, Vector<uint> mask) => BitwiseClearXor(xor, value, mask);
+        public static Vector<uint> BitwiseClearXor(Vector<uint> xor, Vector<uint> value, Vector<uint> mask) => BitwiseClearXor(xor, value, mask);
 
         /// <summary>
         /// svuint64_t svbcax[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
         ///   BCAX Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<ulong> BitwiseClearXor(Vector<ulong> xor, Vector<ulong> value, Vector<ulong> mask) => BitwiseClearXor(xor, value, mask);
+        public static Vector<ulong> BitwiseClearXor(Vector<ulong> xor, Vector<ulong> value, Vector<ulong> mask) => BitwiseClearXor(xor, value, mask);
 
 
         // Bitwise select
@@ -315,49 +315,49 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint8_t svbsl[_u8](svuint8_t op1, svuint8_t op2, svuint8_t op3)
         ///   BSL Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<byte> BitwiseSelect(Vector<byte> select, Vector<byte> left, Vector<byte> right) => BitwiseSelect(select, left, right);
+        public static Vector<byte> BitwiseSelect(Vector<byte> select, Vector<byte> left, Vector<byte> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
         /// svint16_t svbsl[_s16](svint16_t op1, svint16_t op2, svint16_t op3)
         ///   BSL Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<short> BitwiseSelect(Vector<short> select, Vector<short> left, Vector<short> right) => BitwiseSelect(select, left, right);
+        public static Vector<short> BitwiseSelect(Vector<short> select, Vector<short> left, Vector<short> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
         /// svint32_t svbsl[_s32](svint32_t op1, svint32_t op2, svint32_t op3)
         ///   BSL Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<int> BitwiseSelect(Vector<int> select, Vector<int> left, Vector<int> right) => BitwiseSelect(select, left, right);
+        public static Vector<int> BitwiseSelect(Vector<int> select, Vector<int> left, Vector<int> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
         /// svint64_t svbsl[_s64](svint64_t op1, svint64_t op2, svint64_t op3)
         ///   BSL Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<long> BitwiseSelect(Vector<long> select, Vector<long> left, Vector<long> right) => BitwiseSelect(select, left, right);
+        public static Vector<long> BitwiseSelect(Vector<long> select, Vector<long> left, Vector<long> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
         /// svint8_t svbsl[_s8](svint8_t op1, svint8_t op2, svint8_t op3)
         ///   BSL Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<sbyte> BitwiseSelect(Vector<sbyte> select, Vector<sbyte> left, Vector<sbyte> right) => BitwiseSelect(select, left, right);
+        public static Vector<sbyte> BitwiseSelect(Vector<sbyte> select, Vector<sbyte> left, Vector<sbyte> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
         /// svuint16_t svbsl[_u16](svuint16_t op1, svuint16_t op2, svuint16_t op3)
         ///   BSL Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<ushort> BitwiseSelect(Vector<ushort> select, Vector<ushort> left, Vector<ushort> right) => BitwiseSelect(select, left, right);
+        public static Vector<ushort> BitwiseSelect(Vector<ushort> select, Vector<ushort> left, Vector<ushort> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
         /// svuint32_t svbsl[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
         ///   BSL Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<uint> BitwiseSelect(Vector<uint> select, Vector<uint> left, Vector<uint> right) => BitwiseSelect(select, left, right);
+        public static Vector<uint> BitwiseSelect(Vector<uint> select, Vector<uint> left, Vector<uint> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
         /// svuint64_t svbsl[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
         ///   BSL Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<ulong> BitwiseSelect(Vector<ulong> select, Vector<ulong> left, Vector<ulong> right) => BitwiseSelect(select, left, right);
+        public static Vector<ulong> BitwiseSelect(Vector<ulong> select, Vector<ulong> left, Vector<ulong> right) => BitwiseSelect(select, left, right);
 
 
         // Bitwise select with first input inverted
@@ -366,49 +366,49 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint8_t svbsl1n[_u8](svuint8_t op1, svuint8_t op2, svuint8_t op3)
         ///   BSL1N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<byte> BitwiseSelectLeftInverted(Vector<byte> select, Vector<byte> left, Vector<byte> right) => BitwiseSelectLeftInverted(select, left, right);
+        public static Vector<byte> BitwiseSelectLeftInverted(Vector<byte> select, Vector<byte> left, Vector<byte> right) => BitwiseSelectLeftInverted(select, left, right);
 
         /// <summary>
         /// svint16_t svbsl1n[_s16](svint16_t op1, svint16_t op2, svint16_t op3)
         ///   BSL1N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<short> BitwiseSelectLeftInverted(Vector<short> select, Vector<short> left, Vector<short> right) => BitwiseSelectLeftInverted(select, left, right);
+        public static Vector<short> BitwiseSelectLeftInverted(Vector<short> select, Vector<short> left, Vector<short> right) => BitwiseSelectLeftInverted(select, left, right);
 
         /// <summary>
         /// svint32_t svbsl1n[_s32](svint32_t op1, svint32_t op2, svint32_t op3)
         ///   BSL1N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<int> BitwiseSelectLeftInverted(Vector<int> select, Vector<int> left, Vector<int> right) => BitwiseSelectLeftInverted(select, left, right);
+        public static Vector<int> BitwiseSelectLeftInverted(Vector<int> select, Vector<int> left, Vector<int> right) => BitwiseSelectLeftInverted(select, left, right);
 
         /// <summary>
         /// svint64_t svbsl1n[_s64](svint64_t op1, svint64_t op2, svint64_t op3)
         ///   BSL1N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<long> BitwiseSelectLeftInverted(Vector<long> select, Vector<long> left, Vector<long> right) => BitwiseSelectLeftInverted(select, left, right);
+        public static Vector<long> BitwiseSelectLeftInverted(Vector<long> select, Vector<long> left, Vector<long> right) => BitwiseSelectLeftInverted(select, left, right);
 
         /// <summary>
         /// svint8_t svbsl1n[_s8](svint8_t op1, svint8_t op2, svint8_t op3)
         ///   BSL1N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<sbyte> BitwiseSelectLeftInverted(Vector<sbyte> select, Vector<sbyte> left, Vector<sbyte> right) => BitwiseSelectLeftInverted(select, left, right);
+        public static Vector<sbyte> BitwiseSelectLeftInverted(Vector<sbyte> select, Vector<sbyte> left, Vector<sbyte> right) => BitwiseSelectLeftInverted(select, left, right);
 
         /// <summary>
         /// svuint16_t svbsl1n[_u16](svuint16_t op1, svuint16_t op2, svuint16_t op3)
         ///   BSL1N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<ushort> BitwiseSelectLeftInverted(Vector<ushort> select, Vector<ushort> left, Vector<ushort> right) => BitwiseSelectLeftInverted(select, left, right);
+        public static Vector<ushort> BitwiseSelectLeftInverted(Vector<ushort> select, Vector<ushort> left, Vector<ushort> right) => BitwiseSelectLeftInverted(select, left, right);
 
         /// <summary>
         /// svuint32_t svbsl1n[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
         ///   BSL1N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<uint> BitwiseSelectLeftInverted(Vector<uint> select, Vector<uint> left, Vector<uint> right) => BitwiseSelectLeftInverted(select, left, right);
+        public static Vector<uint> BitwiseSelectLeftInverted(Vector<uint> select, Vector<uint> left, Vector<uint> right) => BitwiseSelectLeftInverted(select, left, right);
 
         /// <summary>
         /// svuint64_t svbsl1n[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
         ///   BSL1N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<ulong> BitwiseSelectLeftInverted(Vector<ulong> select, Vector<ulong> left, Vector<ulong> right) => BitwiseSelectLeftInverted(select, left, right);
+        public static Vector<ulong> BitwiseSelectLeftInverted(Vector<ulong> select, Vector<ulong> left, Vector<ulong> right) => BitwiseSelectLeftInverted(select, left, right);
 
 
         // Bitwise select with second input inverted
@@ -417,49 +417,49 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint8_t svbsl2n[_u8](svuint8_t op1, svuint8_t op2, svuint8_t op3)
         ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<byte> BitwiseSelectRightInverted(Vector<byte> select, Vector<byte> left, Vector<byte> right) => BitwiseSelectRightInverted(select, left, right);
+        public static Vector<byte> BitwiseSelectRightInverted(Vector<byte> select, Vector<byte> left, Vector<byte> right) => BitwiseSelectRightInverted(select, left, right);
 
         /// <summary>
         /// svint16_t svbsl2n[_s16](svint16_t op1, svint16_t op2, svint16_t op3)
         ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<short> BitwiseSelectRightInverted(Vector<short> select, Vector<short> left, Vector<short> right) => BitwiseSelectRightInverted(select, left, right);
+        public static Vector<short> BitwiseSelectRightInverted(Vector<short> select, Vector<short> left, Vector<short> right) => BitwiseSelectRightInverted(select, left, right);
 
         /// <summary>
         /// svint32_t svbsl2n[_s32](svint32_t op1, svint32_t op2, svint32_t op3)
         ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<int> BitwiseSelectRightInverted(Vector<int> select, Vector<int> left, Vector<int> right) => BitwiseSelectRightInverted(select, left, right);
+        public static Vector<int> BitwiseSelectRightInverted(Vector<int> select, Vector<int> left, Vector<int> right) => BitwiseSelectRightInverted(select, left, right);
 
         /// <summary>
         /// svint64_t svbsl2n[_s64](svint64_t op1, svint64_t op2, svint64_t op3)
         ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<long> BitwiseSelectRightInverted(Vector<long> select, Vector<long> left, Vector<long> right) => BitwiseSelectRightInverted(select, left, right);
+        public static Vector<long> BitwiseSelectRightInverted(Vector<long> select, Vector<long> left, Vector<long> right) => BitwiseSelectRightInverted(select, left, right);
 
         /// <summary>
         /// svint8_t svbsl2n[_s8](svint8_t op1, svint8_t op2, svint8_t op3)
         ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<sbyte> BitwiseSelectRightInverted(Vector<sbyte> select, Vector<sbyte> left, Vector<sbyte> right) => BitwiseSelectRightInverted(select, left, right);
+        public static Vector<sbyte> BitwiseSelectRightInverted(Vector<sbyte> select, Vector<sbyte> left, Vector<sbyte> right) => BitwiseSelectRightInverted(select, left, right);
 
         /// <summary>
         /// svuint16_t svbsl2n[_u16](svuint16_t op1, svuint16_t op2, svuint16_t op3)
         ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<ushort> BitwiseSelectRightInverted(Vector<ushort> select, Vector<ushort> left, Vector<ushort> right) => BitwiseSelectRightInverted(select, left, right);
+        public static Vector<ushort> BitwiseSelectRightInverted(Vector<ushort> select, Vector<ushort> left, Vector<ushort> right) => BitwiseSelectRightInverted(select, left, right);
 
         /// <summary>
         /// svuint32_t svbsl2n[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
         ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<uint> BitwiseSelectRightInverted(Vector<uint> select, Vector<uint> left, Vector<uint> right) => BitwiseSelectRightInverted(select, left, right);
+        public static Vector<uint> BitwiseSelectRightInverted(Vector<uint> select, Vector<uint> left, Vector<uint> right) => BitwiseSelectRightInverted(select, left, right);
 
         /// <summary>
         /// svuint64_t svbsl2n[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
         ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<ulong> BitwiseSelectRightInverted(Vector<ulong> select, Vector<ulong> left, Vector<ulong> right) => BitwiseSelectRightInverted(select, left, right);
+        public static Vector<ulong> BitwiseSelectRightInverted(Vector<ulong> select, Vector<ulong> left, Vector<ulong> right) => BitwiseSelectRightInverted(select, left, right);
 
         /// Interleaving Xor
 
@@ -566,25 +566,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svrshl[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
         ///   SRSHL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// </summary>
-        public static unsafe Vector<short> ShiftArithmeticRounded(Vector<short> value, Vector<short> count) => ShiftArithmeticRounded(value, count);
+        public static Vector<short> ShiftArithmeticRounded(Vector<short> value, Vector<short> count) => ShiftArithmeticRounded(value, count);
 
         /// <summary>
         /// svint32_t svrshl[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
         ///   SRSHL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
-        public static unsafe Vector<int> ShiftArithmeticRounded(Vector<int> value, Vector<int> count) => ShiftArithmeticRounded(value, count);
+        public static Vector<int> ShiftArithmeticRounded(Vector<int> value, Vector<int> count) => ShiftArithmeticRounded(value, count);
 
         /// <summary>
         /// svint64_t svrshl[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
         ///   SRSHL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
-        public static unsafe Vector<long> ShiftArithmeticRounded(Vector<long> value, Vector<long> count) => ShiftArithmeticRounded(value, count);
+        public static Vector<long> ShiftArithmeticRounded(Vector<long> value, Vector<long> count) => ShiftArithmeticRounded(value, count);
 
         /// <summary>
         /// svint8_t svrshl[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
         ///   SRSHL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// </summary>
-        public static unsafe Vector<sbyte> ShiftArithmeticRounded(Vector<sbyte> value, Vector<sbyte> count) => ShiftArithmeticRounded(value, count);
+        public static Vector<sbyte> ShiftArithmeticRounded(Vector<sbyte> value, Vector<sbyte> count) => ShiftArithmeticRounded(value, count);
 
 
         // Saturating rounding shift left
@@ -593,25 +593,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svqrshl[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
         ///   SQRSHL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// </summary>
-        public static unsafe Vector<short> ShiftArithmeticRoundedSaturate(Vector<short> value, Vector<short> count) => ShiftArithmeticRoundedSaturate(value, count);
+        public static Vector<short> ShiftArithmeticRoundedSaturate(Vector<short> value, Vector<short> count) => ShiftArithmeticRoundedSaturate(value, count);
 
         /// <summary>
         /// svint32_t svqrshl[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
         ///   SQRSHL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
-        public static unsafe Vector<int> ShiftArithmeticRoundedSaturate(Vector<int> value, Vector<int> count) => ShiftArithmeticRoundedSaturate(value, count);
+        public static Vector<int> ShiftArithmeticRoundedSaturate(Vector<int> value, Vector<int> count) => ShiftArithmeticRoundedSaturate(value, count);
 
         /// <summary>
         /// svint64_t svqrshl[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
         ///   SQRSHL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
-        public static unsafe Vector<long> ShiftArithmeticRoundedSaturate(Vector<long> value, Vector<long> count) => ShiftArithmeticRoundedSaturate(value, count);
+        public static Vector<long> ShiftArithmeticRoundedSaturate(Vector<long> value, Vector<long> count) => ShiftArithmeticRoundedSaturate(value, count);
 
         /// <summary>
         /// svint8_t svqrshl[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
         ///   SQRSHL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// </summary>
-        public static unsafe Vector<sbyte> ShiftArithmeticRoundedSaturate(Vector<sbyte> value, Vector<sbyte> count) => ShiftArithmeticRoundedSaturate(value, count);
+        public static Vector<sbyte> ShiftArithmeticRoundedSaturate(Vector<sbyte> value, Vector<sbyte> count) => ShiftArithmeticRoundedSaturate(value, count);
 
 
         // Saturating shift left
@@ -620,25 +620,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svqshl[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
         ///   SQSHL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// </summary>
-        public static unsafe Vector<short> ShiftArithmeticSaturate(Vector<short> value, Vector<short> count) => ShiftArithmeticSaturate(value, count);
+        public static Vector<short> ShiftArithmeticSaturate(Vector<short> value, Vector<short> count) => ShiftArithmeticSaturate(value, count);
 
         /// <summary>
         /// svint32_t svqshl[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
         ///   SQSHL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
-        public static unsafe Vector<int> ShiftArithmeticSaturate(Vector<int> value, Vector<int> count) => ShiftArithmeticSaturate(value, count);
+        public static Vector<int> ShiftArithmeticSaturate(Vector<int> value, Vector<int> count) => ShiftArithmeticSaturate(value, count);
 
         /// <summary>
         /// svint64_t svqshl[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
         ///   SQSHL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
-        public static unsafe Vector<long> ShiftArithmeticSaturate(Vector<long> value, Vector<long> count) => ShiftArithmeticSaturate(value, count);
+        public static Vector<long> ShiftArithmeticSaturate(Vector<long> value, Vector<long> count) => ShiftArithmeticSaturate(value, count);
 
         /// <summary>
         /// svint8_t svqshl[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
         ///   SQSHL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// </summary>
-        public static unsafe Vector<sbyte> ShiftArithmeticSaturate(Vector<sbyte> value, Vector<sbyte> count) => ShiftArithmeticSaturate(value, count);
+        public static Vector<sbyte> ShiftArithmeticSaturate(Vector<sbyte> value, Vector<sbyte> count) => ShiftArithmeticSaturate(value, count);
 
 
         // Shift left and insert

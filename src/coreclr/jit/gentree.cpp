@@ -7209,15 +7209,16 @@ bool GenTree::NodeOrContainedOperandsMayThrow(Compiler* comp)
         return true;
     }
 
-    // Check all contained children
-    for (GenTree* operand : Operands())
-    {
+    auto visit = [=](GenTree* operand) {
         if (operand->isContained() && operand->NodeOrContainedOperandsMayThrow(comp))
         {
-            return true;
+            return GenTree::VisitResult::Abort;
         }
-    }
-    return false;
+
+        return GenTree::VisitResult::Continue;
+    };
+
+    return VisitOperands(visit) == GenTree::VisitResult::Abort;
 }
 
 //------------------------------------------------------------------------------
@@ -28303,6 +28304,22 @@ bool GenTree::OperIsVectorConditionalSelect() const
     if (OperIsHWIntrinsic())
     {
         return AsHWIntrinsic()->OperIsVectorConditionalSelect();
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// OperIsVectorFusedMultiplyOp: Is this a vector FusedMultiplyOp hwintrinsic
+//
+// Return Value:
+//    true if the node is a vector FusedMultiplyOp hwintrinsic
+//    otherwise; false
+//
+bool GenTree::OperIsVectorFusedMultiplyOp() const
+{
+    if (OperIsHWIntrinsic())
+    {
+        return AsHWIntrinsic()->OperIsVectorFusedMultiplyOp();
     }
     return false;
 }

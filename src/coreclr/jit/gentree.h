@@ -1682,6 +1682,7 @@ public:
     bool OperIsConvertMaskToVector() const;
     bool OperIsConvertVectorToMask() const;
     bool OperIsVectorConditionalSelect() const;
+    bool OperIsVectorFusedMultiplyOp() const;
 
     // This is here for cleaner GT_LONG #ifdefs.
     static bool OperIsLong(genTreeOps gtOper)
@@ -2359,11 +2360,7 @@ public:
     // Note that this function does not respect `GTF_REVERSE_OPS`. This is always safe in LIR, but may be dangerous
     // in HIR if for some reason you need to visit operands in the order in which they will execute.
     template <typename TVisitor>
-    void VisitOperands(TVisitor visitor);
-
-private:
-    template <typename TVisitor>
-    void VisitBinOpOperands(TVisitor visitor);
+    VisitResult VisitOperands(TVisitor visitor);
 
 public:
     bool Precedes(GenTree* other);
@@ -6472,14 +6469,63 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     bool OperIsVectorConditionalSelect() const
     {
+        switch (GetHWIntrinsicId())
+        {
 #if defined(TARGET_XARCH)
-        return OperIsHWIntrinsic(NI_Vector128_ConditionalSelect) || OperIsHWIntrinsic(NI_Vector256_ConditionalSelect) ||
-               OperIsHWIntrinsic(NI_Vector512_ConditionalSelect);
-#elif defined(TARGET_ARM64)
-        return OperIsHWIntrinsic(NI_AdvSimd_BitwiseSelect) || OperIsHWIntrinsic(NI_Sve_ConditionalSelect);
-#else
-        return false;
-#endif
+            case NI_Vector128_ConditionalSelect:
+            case NI_Vector256_ConditionalSelect:
+            case NI_Vector512_ConditionalSelect:
+            {
+                return true;
+            }
+#endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+            case NI_AdvSimd_BitwiseSelect:
+            case NI_Sve_ConditionalSelect:
+            {
+                return true;
+            }
+#endif // TARGET_ARM64
+
+            default:
+            {
+                return false;
+            }
+        }
+    }
+
+    bool OperIsVectorFusedMultiplyOp() const
+    {
+        switch (GetHWIntrinsicId())
+        {
+#if defined(TARGET_XARCH)
+            case NI_AVX2_MultiplyAdd:
+            case NI_AVX2_MultiplyAddNegated:
+            case NI_AVX2_MultiplyAddNegatedScalar:
+            case NI_AVX2_MultiplyAddScalar:
+            case NI_AVX2_MultiplySubtract:
+            case NI_AVX2_MultiplySubtractNegated:
+            case NI_AVX2_MultiplySubtractNegatedScalar:
+            case NI_AVX2_MultiplySubtractScalar:
+            case NI_AVX512_FusedMultiplyAdd:
+            case NI_AVX512_FusedMultiplyAddNegated:
+            case NI_AVX512_FusedMultiplyAddNegatedScalar:
+            case NI_AVX512_FusedMultiplyAddScalar:
+            case NI_AVX512_FusedMultiplySubtract:
+            case NI_AVX512_FusedMultiplySubtractNegated:
+            case NI_AVX512_FusedMultiplySubtractNegatedScalar:
+            case NI_AVX512_FusedMultiplySubtractScalar:
+            {
+                return true;
+            }
+#endif // TARGET_XARCH
+
+            default:
+            {
+                return false;
+            }
+        }
     }
 
     bool OperRequiresAsgFlag() const;
