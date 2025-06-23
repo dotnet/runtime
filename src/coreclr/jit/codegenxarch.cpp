@@ -9404,8 +9404,6 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_R_R(INS_pext, EA_4BYTE, REG_R16, REG_R18, REG_R17);
     theEmitter->emitIns_R_R_R(INS_pext, EA_8BYTE, REG_R16, REG_R18, REG_R17);
 
-    theEmitter->emitIns_R_R(INS_push2, EA_PTRSIZE, REG_R16, REG_R17, INS_OPTS_EVEX_nd);
-    theEmitter->emitIns_R_R(INS_pop2, EA_PTRSIZE, REG_R16, REG_R17, INS_OPTS_EVEX_nd);
     theEmitter->emitIns_R_R(INS_push2, EA_PTRSIZE, REG_R17, REG_R18, (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
     theEmitter->emitIns_R_R(INS_pop2, EA_PTRSIZE, REG_R17, REG_R18, (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
     theEmitter->emitIns_R(INS_push, EA_PTRSIZE, REG_R11, INS_OPTS_APX_ppx);
@@ -10395,8 +10393,7 @@ void CodeGen::genPushCalleeSavedRegistersFromMaskAPX(regMaskTP rsPushRegs)
         regNumber reg1 = regStack.Pop();
         regNumber reg2 = regStack.Pop();
 
-        GetEmitter()->emitIns_R_R(INS_push2, EA_PTRSIZE, reg1, reg2,
-                                    (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
+        GetEmitter()->emitIns_R_R(INS_push2, EA_PTRSIZE, reg1, reg2, (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
         compiler->unwindPush2(reg1, reg2);
     }
 

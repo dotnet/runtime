@@ -16853,10 +16853,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         // Setting EVEX.W = 1 bit indicates a push-pop acceleration (PPX) hint
         // The current recommendation is to use PUSH2/POP2 only with PPX hint
         // So, it is used only in Epilog/Prolog code generation
-        if (id->idIsApxPpxContextSet())
-        {
-            code = AddRexWPrefix(id, code);
-        }
+        assert(id->idIsApxPpxContextSet());
+        code = AddRexWPrefix(id, code);
     }
 #endif // TARGET_AMD64
     else
