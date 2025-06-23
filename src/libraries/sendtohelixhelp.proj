@@ -223,12 +223,12 @@
       <!-- on windows `dotnet dev-certs https shows a dialog, so instead install the certificate with powershell and add it to trusted root -->
       <_PSDebugStart>Write-Host '=== PowerShell Version ==='; $PSVersionTable; Write-Host '=== TEMP Directory ==='; Write-Host $env:TEMP; if (-not (Test-Path $env:TEMP)) { Write-Error 'TEMP directory does not exist!'; }; Write-Host '=== Current User ==='; whoami;</_PSDebugStart>
       <_PSListCertsBefore>Write-Host '=== Certs in CurrentUser\My (before) ==='; Get-ChildItem -Path Cert:\CurrentUser\My | Format-List Subject,Thumbprint,FriendlyName,NotAfter; Write-Host '=== Certs in CurrentUser\Root (before) ==='; Get-ChildItem -Path Cert:\CurrentUser\Root | Format-List Subject,Thumbprint,FriendlyName,NotAfter;</_PSListCertsBefore>
-      <_PSDevCertCheck>Write-Host '=== .NET Dev Certs Check (before) ==='; dotnet dev-certs https --check;</_PSDevCertCheck>
+      <_PSDevCertCheck>Write-Host '=== .NET Dev Certs Check (before) ==='; dotnet dev-certs https --check --verbose;</_PSDevCertCheck>
       <_PSCreateCert>$cert = New-SelfSignedCertificate -FriendlyName &#39;ASP.NET Core HTTPS development certificate&#39; -DnsName @(&#39;localhost&#39;) -Subject &#39;CN = localhost&#39; -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm sha256 -CertStoreLocation &#39;Cert:\CurrentUser\My&#39; -TextExtension @(&#39;2.5.29.37={text}1.3.6.1.5.5.7.3.1&#39;,&#39;1.3.6.1.4.1.311.84.1.1={hex}02&#39;,&#39;2.5.29.19={text}&#39;) -KeyUsage DigitalSignature,KeyEncipherment;</_PSCreateCert>
       <_PSExportImportCert>$pwd = ConvertTo-SecureString -String &#39;password&#39; -Force -AsPlainText; Export-PfxCertificate -Cert $cert -FilePath $env:TEMP\aspnetcore.pfx -Password $pwd; Import-PfxCertificate -FilePath $env:TEMP\aspnetcore.pfx -CertStoreLocation &#39;Cert:\CurrentUser\Root&#39; -Password $pwd;</_PSExportImportCert>
       <_PSListCertsAfter>Write-Host '=== Certs in CurrentUser\My (after) ==='; Get-ChildItem -Path Cert:\CurrentUser\My | Format-List Subject,Thumbprint,FriendlyName,NotAfter; Write-Host '=== Certs in CurrentUser\Root (after) ==='; Get-ChildItem -Path Cert:\CurrentUser\Root | Format-List Subject,Thumbprint,FriendlyName,NotAfter;</_PSListCertsAfter>
-      <_PSDevCertCheckAfter>Write-Host '=== .NET Dev Certs Check (after) ==='; dotnet dev-certs https --check</_PSDevCertCheckAfter>
-      
+      <_PSDevCertCheckAfter>Write-Host '=== .NET Dev Certs Check (after) ==='; dotnet dev-certs https --check --verbose</_PSDevCertCheckAfter>
+
       <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(WindowsShell)' == 'true'">$(HelixCommand) powershell -command &quot;$(_PSDebugStart) $(_PSListCertsBefore) $(_PSDevCertCheck) $(_PSCreateCert) $(_PSExportImportCert) $(_PSListCertsAfter) $(_PSDevCertCheckAfter)&quot; &amp;&amp; </HelixCommand>
 
       <!--
