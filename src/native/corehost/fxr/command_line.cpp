@@ -164,6 +164,18 @@ namespace
                 trace::verbose(_X("Application '%s' is not a managed executable."), app_candidate.c_str());
                 if (!exec_mode)
                 {
+                    // Check if this is a non-managed file with directory separator that exists
+                    // This should show a specific error instead of routing to CLI
+                    bool has_dir_separator = strchr(app_candidate.c_str(), DIR_SEPARATOR) != nullptr;
+                    if (has_dir_separator)
+                    {
+                        pal::string_t app_candidate_fullpath = app_candidate;
+                        bool file_exists = pal::fullpath(&app_candidate_fullpath);
+                        if (file_exists)
+                        {
+                            return StatusCode::AppArgNotManagedFailure;
+                        }
+                    }
                     // Route to CLI.
                     return StatusCode::AppArgNotRunnable;
                 }

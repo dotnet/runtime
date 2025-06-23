@@ -69,6 +69,38 @@ namespace HostActivation.Tests
         }
 
         [Fact]
+        public void NonManagedFileWithDirectorySeparator_ShowsSpecificError()
+        {
+            // Create a non-.dll/.exe file with directory separator in path
+            string testFile = Path.Combine(sharedTestState.BaseDirectory.Location, "test.txt");
+            File.WriteAllText(testFile, "test content");
+
+            TestContext.BuiltDotNet.Exec(testFile)
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdErrContaining($"The application '{testFile}' does not exist or is not a managed .dll or .exe.");
+        }
+
+        [Fact]
+        public void CommandNameWithoutDirectorySeparator_RoutesToSDK()
+        {
+            // Create a file named "build" in the current directory to simulate a potential command file
+            string buildFile = Path.Combine(sharedTestState.BaseDirectory.Location, "build");
+            File.WriteAllText(buildFile, "#!/bin/bash\necho 'fake build'");
+
+            // Test that "dotnet build" still routes to SDK, not to the file
+            TestContext.BuiltDotNet.Exec("build")
+                .WorkingDirectory(sharedTestState.BaseDirectory.Location)
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdErrContaining("The command could not be loaded, possibly because:"); // This should be the SDK resolver error, not our specific error
+        }
+
+        [Fact]
         public void InvalidFileOrCommand_NoSDK_ListsPossibleIssues()
         {
             string fileName = "NonExistent";
