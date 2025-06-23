@@ -3716,7 +3716,7 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #ifdef FEATURE_CODE_VERSIONING
     // Make sure the active IL and native code version are in triage dumps.
     if (IsIL())
-    {    
+    {
         CodeVersionManager* pCodeVersionManager = GetCodeVersionManager();
         ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(dac_cast<PTR_MethodDesc>(this));
         if (!ilVersion.IsNull())
@@ -3961,10 +3961,7 @@ void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
     {
         WalkValueTypeParameters(this->GetMethodTable(), NULL, NULL);
     }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_SWALLOW_NONTERMINAL
     _ASSERTE(HaveValueTypeParametersBeenWalked());
 }
 

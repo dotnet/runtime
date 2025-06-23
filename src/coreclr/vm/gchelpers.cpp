@@ -347,7 +347,7 @@ void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samplingBud
         }
     }
     EX_CATCH{}
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     // end of duplication
 
     if (typeId != nullptr)

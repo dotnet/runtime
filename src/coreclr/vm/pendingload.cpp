@@ -165,7 +165,7 @@ void PendingTypeLoadTable::Entry::SetException(Exception *pException)
     {
         m_pException=NULL;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 void PendingTypeLoadTable::Entry::SetResult(TypeHandle typeHnd)
