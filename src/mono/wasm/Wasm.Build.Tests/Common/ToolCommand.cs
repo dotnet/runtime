@@ -110,7 +110,7 @@ namespace Wasm.Build.Tests
         }
 
         protected virtual string GetFullArgs(params string[] args) => string.Join(" ", args);
-          private async Task<CommandResult> ExecuteAsyncInternal(string executable, string args)
+        private async Task<CommandResult> ExecuteAsyncInternal(string executable, string args)
         {
             var output = new List<string>();
             CurrentProcess = CreateProcess(executable, args);
