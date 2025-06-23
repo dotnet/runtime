@@ -9428,14 +9428,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
         default:
         {
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-            GenTreeHWIntrinsic* maskedIntrinsic = fgOptimizeForMaskedIntrinsic(node);
-            if (maskedIntrinsic != nullptr)
-            {
-                node = maskedIntrinsic;
-                node->SetMorphed(this);
-            }
-#endif // FEATURE_MASKED_HW_INTRINSICS
             break;
         }
     }
@@ -9826,6 +9818,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
         // Transforms:
         // 1. ~(~v1) to v1
+        // 2. ~(v1 cmp v2) to v1 cmp* v2
         case GT_NOT:
         {
             GenTree* op1 = ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ false);
@@ -9834,21 +9827,78 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 break;
             }
+
             GenTreeHWIntrinsic* op1Intrin = op1->AsHWIntrinsic();
+            GenTreeHWIntrinsic* cvtIntrin = nullptr;
 
-            bool       op1IsScalar = false;
-            genTreeOps op1Oper     = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar, /* getEffectiveOp */ true);
-
-            if ((op1Oper != GT_NOT) || op1IsScalar)
+            if (op1Intrin->OperIsConvertMaskToVector())
             {
-                // scalar operations zero or copy the upper bits
-                break;
+                // If we have a ConvertMaskToVector, then we
+                // need to get its op1 to check for a compare
+
+                cvtIntrin = op1Intrin;
+                op1       = op1Intrin->Op(1);
+
+                if (!op1->OperIsHWIntrinsic())
+                {
+                    break;
+                }
+
+                op1Intrin = op1->AsHWIntrinsic();
             }
 
-            // The simdBaseTypes can differ for GT_NOT since its a bitwise operation
-            GenTree* result = ExtractEffectiveOp(GT_NOT, op1Intrin, /* destroyNodes */ true);
-            ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ true);
-            return result;
+            bool        op1IsScalar = false;
+            genTreeOps  op1Oper     = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar, /* getEffectiveOp */ true);
+            var_types   op1RetType  = op1Intrin->TypeGet();
+            CorInfoType op1SimdBaseJitType = op1Intrin->GetSimdBaseJitType();
+            var_types   op1SimdBaseType    = op1Intrin->GetSimdBaseType();
+            unsigned    op1SimdSize        = op1Intrin->GetSimdSize();
+
+            if (op1Oper == GT_NOT)
+            {
+                // The simdBaseTypes can differ for GT_NOT since its a bitwise operation
+                GenTree* result = ExtractEffectiveOp(GT_NOT, op1Intrin, /* destroyNodes */ true);
+                ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ true);
+                return result;
+            }
+
+            if (GenTree::OperIsCompare(op1Oper))
+            {
+                assert(op1Intrin->GetOperandCount() == 2);
+
+                GenTree* cmpOp1 = op1Intrin->Op(1);
+                GenTree* cmpOp2 = op1Intrin->Op(2);
+
+                genTreeOps newOper = GenTree::ReverseRelop(op1Oper);
+                var_types  lookupType =
+                    GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, newOper, op1RetType, op1SimdBaseType, op1SimdSize);
+                NamedIntrinsic newId =
+                    GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, lookupType, cmpOp1, cmpOp2,
+                                                                 op1SimdBaseType, op1SimdSize, op1IsScalar);
+
+                if (newId != NI_Illegal)
+                {
+                    op1Intrin->ResetHWIntrinsicId(newId, cmpOp1, cmpOp2);
+                    ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ true);
+
+                    if (lookupType != op1RetType)
+                    {
+                        assert(varTypeIsSIMD(op1RetType));
+                        assert(varTypeIsMask(lookupType));
+
+                        op1Intrin->gtType = lookupType;
+                        op1Intrin = gtNewSimdCvtMaskToVectorNode(retType, op1Intrin, op1SimdBaseJitType, op1SimdSize)
+                                        ->AsHWIntrinsic();
+                    }
+
+                    if (cvtIntrin != nullptr)
+                    {
+                        DEBUG_DESTROY_NODE(cvtIntrin);
+                    }
+                    return fgMorphHWIntrinsicRequired(op1Intrin);
+                }
+            }
+            break;
         }
 
         // Transforms:
@@ -9922,6 +9972,16 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
     }
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    GenTreeHWIntrinsic* maskedIntrinsic = fgOptimizeForMaskedIntrinsic(node);
+
+    if (maskedIntrinsic != nullptr)
+    {
+        node = maskedIntrinsic;
+        node->SetMorphed(this);
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     return node;
 }
@@ -11497,7 +11557,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
             genTreeOps newOper = GenTree::SwapRelop(oper);
             var_types  lookupType =
                 GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, newOper, retType, simdBaseType, simdSize);
-            NamedIntrinsic newId = GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, retType, op2, op1,
+            NamedIntrinsic newId = GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, lookupType, op2, op1,
                                                                                 simdBaseType, simdSize, false);
 
             if (newId != NI_Illegal)
@@ -11506,8 +11566,12 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 
                 if (lookupType != retType)
                 {
+                    assert(varTypeIsSIMD(retType));
                     assert(varTypeIsMask(lookupType));
+
                     tree->gtType = lookupType;
+                    tree = gtNewSimdCvtMaskToVectorNode(retType, tree, simdBaseJitType, simdSize)->AsHWIntrinsic();
+                    return fgMorphHWIntrinsicRequired(tree);
                 }
             }
         }
