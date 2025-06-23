@@ -204,7 +204,7 @@ namespace System.Text.Json.Serialization.Tests
             string json = JsonSerializer.Serialize(dict);
             
             // Verify the exact JSON output - should be clean without junk data
-            Assert.Equal("{\"0\":\"Zero\",\"1\":\"One\",\"-1\":\"MinusOne\",\"170141183460469231731687303715884105727\":\"Max\",\"-170141183460469231731687303715884105728\":\"Min\"}", json);
+            Assert.Equal("""{"0":"Zero","1":"One","-1":"MinusOne","170141183460469231731687303715884105727":"Max","-170141183460469231731687303715884105728":"Min"}""", json);
             
             // E2E validation: should roundtrip correctly
             var deserialized = JsonSerializer.Deserialize<Dictionary<Int128, string>>(json);
@@ -225,7 +225,7 @@ namespace System.Text.Json.Serialization.Tests
             string json = JsonSerializer.Serialize(dict);
             
             // Verify the exact JSON output - should be clean without junk data
-            Assert.Equal("{\"0\":\"Zero\",\"1\":\"One\",\"340282366920938463463374607431768211455\":\"Max\"}", json);
+            Assert.Equal("""{"0":"Zero","1":"One","340282366920938463463374607431768211455":"Max"}""", json);
             
             // E2E validation: should roundtrip correctly
             var deserialized = JsonSerializer.Deserialize<Dictionary<UInt128, string>>(json);
