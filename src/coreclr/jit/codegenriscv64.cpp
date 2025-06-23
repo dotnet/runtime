@@ -1045,7 +1045,14 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
 
     if (!needCheckOv && !(treeNode->gtFlags & GTF_UNSIGNED))
     {
-        emit->emitIns_R_R_I(INS_slli, attr, dstReg, src1Reg, shiftAmount);
+        if (attr == EA_4BYTE) 
+        {
+            emit->emitIns_R_R_I(INS_slliw, attr, dstReg, src1Reg, shiftAmount);
+        }
+        else
+        {
+            emit->emitIns_R_R_I(INS_slli, attr, dstReg, src1Reg, shiftAmount);
+        }
     }
     else
     {
@@ -1060,7 +1067,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
             {
                 if (attr == EA_4BYTE)
                 {
-                    emit->emitIns_R_R_I(INS_srli, attr, tempReg, src1Reg, 32 - shiftAmount);
+                    emit->emitIns_R_R_I(INS_srliw, attr, tempReg, src1Reg, 32 - shiftAmount);
                 }
                 else
                 {
@@ -1080,7 +1087,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
             }
         }
 
-        // n * n bytes will storoe n bytes result
+        // n * n bytes will store n bytes result
         emit->emitIns_R_R_I(INS_slli, attr, dstReg, src1Reg, shiftAmount);
     
         if (isUnsigned)
