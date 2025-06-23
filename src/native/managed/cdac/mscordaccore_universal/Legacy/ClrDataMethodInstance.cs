@@ -49,18 +49,19 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
             }
             if (mod is not null)
             {
-                void* legacyModPtr = null;
+                IXCLRDataModule? legacyMod = null;
                 if (_legacyImpl is not null)
                 {
+                    void* legacyModPtr = null;
                     int hrLegacy = _legacyImpl.GetTokenAndScope(token, &legacyModPtr);
                     if (hrLegacy < 0)
                         return hrLegacy;
-                }
-
-                object obj = cw.GetOrCreateObjectForComInstance((nint)legacyModPtr, CreateObjectFlags.None);
-                if (obj is not IXCLRDataModule legacyMod)
-                {
-                    throw new ArgumentException("Invalid module object", nameof(mod));
+                    object obj = cw.GetOrCreateObjectForComInstance((nint)legacyModPtr, CreateObjectFlags.None);
+                    if (obj is not IXCLRDataModule)
+                    {
+                        throw new ArgumentException("Invalid module object", nameof(mod));
+                    }
+                    legacyMod = obj as IXCLRDataModule;
                 }
 
                 TargetPointer mtAddr = rts.GetMethodTable(_methodDesc);
@@ -81,14 +82,21 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            uint tokenLocal;
+            bool validateToken = token is not null;
+            bool validateMod = mod is not null;
+
+            uint tokenLocal = 0;
             void* legacyModPtr = null;
-            int hrLocal = _legacyImpl.GetTokenAndScope(&tokenLocal, &legacyModPtr);
+            int hrLocal = _legacyImpl.GetTokenAndScope(validateToken ? &tokenLocal : null, validateMod ? &legacyModPtr : null);
 
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-            Debug.Assert(tokenLocal == *token, $"cDAC: {*token:x}, DAC: {tokenLocal:x}");
 
-            if (hr == HResults.S_OK)
+            if (validateToken)
+            {
+                Debug.Assert(tokenLocal == *token, $"cDAC: {*token:x}, DAC: {tokenLocal:x}");
+            }
+
+            if (validateMod && hr == HResults.S_OK)
             {
                 Marshal.Release((nint)legacyModPtr); // release the legacy module
             }
@@ -116,7 +124,7 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
     int IXCLRDataMethodInstance.GetTypeArgumentByIndex(uint index, void** typeArg)
         => _legacyImpl is not null ? _legacyImpl.GetTypeArgumentByIndex(index, typeArg) : HResults.E_NOTIMPL;
 
-    int IXCLRDataMethodInstance.GetILOffsetsByAddress(ulong address, uint offsetsLen, uint* offsetsNeeded, uint* ilOffsets)
+    int IXCLRDataMethodInstance.GetILOffsetsByAddress(ClrDataAddress address, uint offsetsLen, uint* offsetsNeeded, uint* ilOffsets)
         => _legacyImpl is not null ? _legacyImpl.GetILOffsetsByAddress(address, offsetsLen, offsetsNeeded, ilOffsets) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetAddressRangesByILOffset(uint ilOffset, uint rangesLen, uint* rangesNeeded, void* addressRanges)
@@ -137,7 +145,7 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
     int IXCLRDataMethodInstance.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
         => _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
 
-    int IXCLRDataMethodInstance.GetRepresentativeEntryAddress(ulong* addr)
+    int IXCLRDataMethodInstance.GetRepresentativeEntryAddress(ClrDataAddress* addr)
     {
         int hr = HResults.S_OK;
 
@@ -164,7 +172,7 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            ulong addrLocal;
+            ClrDataAddress addrLocal;
             int hrLocal = _legacyImpl.GetRepresentativeEntryAddress(&addrLocal);
 
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");

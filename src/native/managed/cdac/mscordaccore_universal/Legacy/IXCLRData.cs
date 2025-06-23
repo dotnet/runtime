@@ -450,7 +450,7 @@ internal unsafe partial interface IXCLRDataMethodInstance
 
     [PreserveSig]
     int GetILOffsetsByAddress(
-        ulong address,
+        ClrDataAddress address,
         uint offsetsLen,
         uint* offsetsNeeded,
         uint* ilOffsets);
@@ -486,5 +486,5 @@ internal unsafe partial interface IXCLRDataMethodInstance
         byte* outBuffer);
 
     [PreserveSig]
-    int GetRepresentativeEntryAddress(ulong* addr);
+    int GetRepresentativeEntryAddress(ClrDataAddress* addr);
 }
