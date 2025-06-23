@@ -2877,7 +2877,7 @@ namespace System.Net.Sockets
         public bool ConnectAsync(SocketAsyncEventArgs e) =>
             ConnectAsync(e, userSocket: true, saeaCancelable: true);
 
-        internal bool ConnectAsync(SocketAsyncEventArgs e, bool userSocket, bool saeaCancelable)
+        internal bool ConnectAsync(SocketAsyncEventArgs e, bool userSocket, bool saeaCancelable, CancellationToken cancellationToken = default)
         {
             bool pending;
 
@@ -2914,7 +2914,7 @@ namespace System.Net.Sockets
                 e.StartOperationConnect(saeaCancelable, userSocket);
                 try
                 {
-                    pending = e.DnsConnectAsync(dnsEP, default, default);
+                    pending = e.DnsConnectAsync(dnsEP, default, default, cancellationToken);
                 }
                 catch
                 {
@@ -2957,8 +2957,8 @@ namespace System.Net.Sockets
                     // ConnectEx supports connection-oriented sockets but not UDS. The socket must be bound before calling ConnectEx.
                     bool canUseConnectEx = _socketType == SocketType.Stream && endPointSnapshot.AddressFamily != AddressFamily.Unix;
                     SocketError socketError = canUseConnectEx ?
-                        e.DoOperationConnectEx(this, _handle) :
-                        e.DoOperationConnect(_handle); // For connectionless protocols, Connect is not an I/O call.
+                        e.DoOperationConnectEx(this, _handle, cancellationToken) :
+                        e.DoOperationConnect(_handle, cancellationToken); // For connectionless protocols, Connect is not an I/O call.
                     pending = socketError == SocketError.IOPending;
                 }
                 catch (Exception ex)
@@ -3001,7 +3001,7 @@ namespace System.Net.Sockets
                 e.StartOperationConnect(saeaMultiConnectCancelable: true, userSocket: false);
                 try
                 {
-                    pending = e.DnsConnectAsync(dnsEP, socketType, protocolType);
+                    pending = e.DnsConnectAsync(dnsEP, socketType, protocolType, cancellationToken: default);
                 }
                 catch
                 {
