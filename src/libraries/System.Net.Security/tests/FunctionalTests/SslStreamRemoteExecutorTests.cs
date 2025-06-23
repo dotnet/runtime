@@ -84,7 +84,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void DefaultRevocationMode_OfflineRevocationByDefault_True_UsesNoCheck(bool useEnvVar)

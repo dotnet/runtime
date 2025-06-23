@@ -777,6 +777,17 @@ CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X28, offsetof(HijackArgs, X28))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Fp, offsetof(HijackArgs, X29))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Lr, offsetof(HijackArgs, Lr))
 
+#elif defined(TARGET_X86)
+
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Edi, offsetof(HijackArgs, Edi))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Esi, offsetof(HijackArgs, Esi))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Ebx, offsetof(HijackArgs, Ebx))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Edx, offsetof(HijackArgs, Edx))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Ecx, offsetof(HijackArgs, Ecx))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Eax, offsetof(HijackArgs, Eax))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Ebp, offsetof(HijackArgs, Ebp))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Eip, offsetof(HijackArgs, Eip))
+
 #endif // Platform switch
 CDAC_TYPE_END(HijackArgs)
 #endif // FEATURE_HIJACK
@@ -787,6 +798,14 @@ CDAC_TYPE_SIZE(sizeof(FaultingExceptionFrame))
 CDAC_TYPE_FIELD(FaultingExceptionFrame, /*T_CONTEXT*/, TargetContext, cdac_data<FaultingExceptionFrame>::TargetContext)
 #endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(FaultingExceptionFrame)
+
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+CDAC_TYPE_BEGIN(TailCallFrame)
+CDAC_TYPE_SIZE(sizeof(TailCallFrame))
+CDAC_TYPE_FIELD(TailCallFrame, /*CalleeSavedRegisters*/, CalleeSavedRegisters, cdac_data<TailCallFrame>::CalleeSavedRegisters)
+CDAC_TYPE_FIELD(TailCallFrame, /*pointer*/, ReturnAddress, cdac_data<TailCallFrame>::ReturnAddress)
+CDAC_TYPE_END(TailCallFrame)
+#endif // TARGET_X86 && !UNIX_X86_ABI
 
 // CalleeSavedRegisters struct is different on each platform
 CDAC_TYPE_BEGIN(CalleeSavedRegisters)
@@ -862,11 +881,6 @@ CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
 #undef FRAME_TYPE_NAME
 
 CDAC_GLOBAL(MethodDescTokenRemainderBitCount, uint8, METHOD_TOKEN_REMAINDER_BIT_COUNT)
-#if FEATURE_EH_FUNCLETS
-CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
-#else
-CDAC_GLOBAL(FeatureEHFunclets, uint8, 0)
-#endif
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
 #else
