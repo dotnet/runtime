@@ -566,25 +566,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svrshl[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
         ///   SRSHL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// </summary>
-        public static unsafe Vector<short> ShiftArithmeticRounded(Vector<short> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> ShiftArithmeticRounded(Vector<short> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svrshl[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
         ///   SRSHL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
-        public static unsafe Vector<int> ShiftArithmeticRounded(Vector<int> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> ShiftArithmeticRounded(Vector<int> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t svrshl[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
         ///   SRSHL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
-        public static unsafe Vector<long> ShiftArithmeticRounded(Vector<long> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> ShiftArithmeticRounded(Vector<long> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint8_t svrshl[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
         ///   SRSHL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// </summary>
-        public static unsafe Vector<sbyte> ShiftArithmeticRounded(Vector<sbyte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> ShiftArithmeticRounded(Vector<sbyte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
 
 
         // Saturating rounding shift left
@@ -593,25 +593,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svqrshl[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
         ///   SQRSHL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// </summary>
-        public static unsafe Vector<short> ShiftArithmeticRoundedSaturate(Vector<short> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> ShiftArithmeticRoundedSaturate(Vector<short> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svqrshl[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
         ///   SQRSHL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
-        public static unsafe Vector<int> ShiftArithmeticRoundedSaturate(Vector<int> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> ShiftArithmeticRoundedSaturate(Vector<int> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t svqrshl[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
         ///   SQRSHL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
-        public static unsafe Vector<long> ShiftArithmeticRoundedSaturate(Vector<long> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> ShiftArithmeticRoundedSaturate(Vector<long> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint8_t svqrshl[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
         ///   SQRSHL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// </summary>
-        public static unsafe Vector<sbyte> ShiftArithmeticRoundedSaturate(Vector<sbyte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> ShiftArithmeticRoundedSaturate(Vector<sbyte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
 
 
         // Saturating shift left
@@ -620,25 +620,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svqshl[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
         ///   SQSHL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// </summary>
-        public static unsafe Vector<short> ShiftArithmeticSaturate(Vector<short> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> ShiftArithmeticSaturate(Vector<short> value, Vector<short> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svqshl[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
         ///   SQSHL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
-        public static unsafe Vector<int> ShiftArithmeticSaturate(Vector<int> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> ShiftArithmeticSaturate(Vector<int> value, Vector<int> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t svqshl[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
         ///   SQSHL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
-        public static unsafe Vector<long> ShiftArithmeticSaturate(Vector<long> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> ShiftArithmeticSaturate(Vector<long> value, Vector<long> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint8_t svqshl[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
         ///   SQSHL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// </summary>
-        public static unsafe Vector<sbyte> ShiftArithmeticSaturate(Vector<sbyte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> ShiftArithmeticSaturate(Vector<sbyte> value, Vector<sbyte> count) { throw new PlatformNotSupportedException(); }
 
 
         // Shift left and insert
