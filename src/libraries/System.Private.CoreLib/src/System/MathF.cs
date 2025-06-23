@@ -210,7 +210,7 @@ namespace System
                 }
 
                 Debug.Assert(float.IsSubnormal(x));
-                return float.MinExponent - (BitOperations.TrailingZeroCount(x.TrailingSignificand) - float.BiasedExponentLength);
+                return float.MinExponent - (BitOperations.LeadingZeroCount(x.TrailingSignificand) - float.BiasedExponentLength);
             }
 
             return x.Exponent;
