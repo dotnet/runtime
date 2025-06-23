@@ -9776,7 +9776,8 @@ void Compiler::costMorphVectorOperandToMask(GenTree*            node,
         assert(node->TypeGet() == TYP_SIMD16);
         var_types simdBaseType = parent->GetSimdBaseType();
 
-        if (SveMaskPatternNone != EvaluateSimdVectorToPattern<simd16_t>(simdBaseType, node->AsVecCon()->gtSimd16Val))
+        if (node->IsVectorZero() ||
+            SveMaskPatternNone != EvaluateSimdVectorToPattern<simd16_t>(simdBaseType, node->AsVecCon()->gtSimd16Val))
         {
             // Assume a constant vector is the same cost as a constant mask
             return;
@@ -9817,7 +9818,15 @@ GenTree* Compiler::doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic*
         assert(node->TypeGet() == TYP_SIMD16);
         var_types simdBaseType = parent->GetSimdBaseType();
 
-        if (SveMaskPatternNone != EvaluateSimdVectorToPattern<simd16_t>(simdBaseType, node->AsVecCon()->gtSimd16Val))
+        if (node->IsVectorZero())
+        {
+            GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
+            mskCon->gtSimdMaskVal = simdmask_t::Zero();
+            mskCon->SetMorphed(this);
+            return mskCon;
+        }
+        else if (SveMaskPatternNone !=
+                 EvaluateSimdVectorToPattern<simd16_t>(simdBaseType, node->AsVecCon()->gtSimd16Val))
         {
             GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
             EvaluateSimdCvtVectorToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, node->AsVecCon()->gtSimd16Val);
@@ -9885,7 +9894,7 @@ GenTreeHWIntrinsic* Compiler::fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* no
     }
 
     weight_t vectorVariantCost = 0.0;
-    weight_t maskVariantCost  = 0.0;
+    weight_t maskVariantCost   = 0.0;
 
     // Take into account the cost of the conversion of the result
     vectorVariantCost += costOfConvertVectorToMask;
@@ -9897,7 +9906,8 @@ GenTreeHWIntrinsic* Compiler::fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* no
     }
 
     JITDUMP("Attempting Mask variant morph for [%06u]. Vector cost: %.2f, Mask cost: %.2f. Will %smorph.\n",
-            dspTreeID(convertedNode), vectorVariantCost, maskVariantCost, (maskVariantCost > vectorVariantCost) ? "not " : "");
+            dspTreeID(convertedNode), vectorVariantCost, maskVariantCost,
+            (maskVariantCost > vectorVariantCost) ? "not " : "");
 
     // If the costs are identical, then prefer morphed as it matches the output type.
     if (maskVariantCost > vectorVariantCost)
