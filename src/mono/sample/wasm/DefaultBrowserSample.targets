@@ -12,8 +12,16 @@
     <TestArchiveTestsRoot>$(TestArchiveRoot)chromeonly/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <EmccFlags>$(EmccFlags) -sUSE_CLOSURE_COMPILER=1 -sMEMORY64</EmccFlags>
-    <WasmEnableMemory64>true</WasmEnableMemory64>
+    <WasmEnableMemory64>true</WasmEnableMemory64>  
+    <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <WasmNativeStrip>false</WasmNativeStrip>
+    <_WasmDevel>true</_WasmDevel>
+    <_EmccOptimizationFlagDefault>-O0</_EmccOptimizationFlagDefault>
+  </PropertyGroup>
+
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
