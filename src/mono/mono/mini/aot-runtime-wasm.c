@@ -101,8 +101,11 @@ handle_enum:
 
 			return 'S';
 		}
-
+		#if SIZEOF_VOID_P == 4
 		return 'I';
+		#else
+		return 'L';
+		#endif
 	}
 	default:
 		g_warning ("CANT TRANSLATE %s", mono_type_full_name (t));
@@ -123,10 +126,21 @@ typedef union {
 static gint64
 get_long_arg (InterpMethodArguments *margs, int idx)
 {
+	#if SIZEOF_VOID_P == 4
 	interp_pair p;
+	MH_LOG_INDENT();
+	MH_LOG("Getting long arg [%d]", idx);
 	p.pair.lo = (gint32)(gssize)margs->iargs [idx];
 	p.pair.hi = (gint32)(gssize)margs->iargs [idx + 1];
+	MH_LOG("Got pair %d %d", p.pair.lo, p.pair.hi);
+	MH_LOG_UNINDENT();
 	return p.l;
+	#else
+	MH_LOG_INDENT();
+	MH_LOG("Getting long arg [%d]: %ld", idx, (gint64)(gssize)margs->iargs [idx]);
+	MH_LOG_UNINDENT();
+	return (gint64)(gssize)margs->iargs [idx];
+	#endif
 }
 
 static MonoWasmNativeToInterpCallback mono_wasm_interp_to_native_callback;
