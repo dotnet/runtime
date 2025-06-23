@@ -11,6 +11,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(WasmEnableMemory64)' == 'true'">
+    <DefineConstants>$(DefineConstants);SignatureMappingWasm64</DefineConstants>
+  </PropertyGroup>
+  
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="..\Common\IsExternalInit.cs" />
     <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/NullableAttributes.cs" />
