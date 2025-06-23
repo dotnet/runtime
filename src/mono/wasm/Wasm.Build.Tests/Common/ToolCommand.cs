@@ -110,12 +110,12 @@ namespace Wasm.Build.Tests
         }
 
         protected virtual string GetFullArgs(params string[] args) => string.Join(" ", args);
-        
-        private async Task<CommandResult> ExecuteAsyncInternal(string executable, string args)
+          private async Task<CommandResult> ExecuteAsyncInternal(string executable, string args)
         {
             var output = new List<string>();
             CurrentProcess = CreateProcess(executable, args);
-            DataReceivedEventHandler errorHandler = (s, e) =>
+            
+            void HandleDataReceived(DataReceivedEventArgs e, DataReceivedEventHandler? additionalHandler)
             {
                 if (e.Data == null || isDisposed)
                     return;
@@ -127,42 +127,13 @@ namespace Wasm.Build.Tests
 
                     string msg = $"[{_label}] {e.Data}";
                     output.Add(msg);
-                    try
-                    {
-                        _testOutput.WriteLine(msg);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        // Test context may have expired, continue without logging to test output
-                        // Add a marker to the output buffer so we know this happened
-                        output.Add($"[{_label}] [WARNING: Test context expired, subsequent output may be incomplete]");
-                    }
-                    ErrorDataReceived?.Invoke(s, e);
+                    TryWriteToTestOutput(msg, output);
+                    additionalHandler?.Invoke(this, e);
                 }
-            };
+            }
 
-            DataReceivedEventHandler outputHandler = (s, e) =>
-            {
-                lock (_lock)
-                {
-                    if (e.Data == null || isDisposed)
-                        return;
-
-                    string msg = $"[{_label}] {e.Data}";
-                    output.Add(msg);
-                    try
-                    {
-                        _testOutput.WriteLine(msg);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        // Test context may have expired, continue without logging to test output
-                        // Add a marker to the output buffer so we know this happened
-                        output.Add($"[{_label}] [WARNING: Test context expired, subsequent output may be incomplete]");
-                    }
-                    OutputDataReceived?.Invoke(s, e);
-                }
-            };
+            DataReceivedEventHandler errorHandler = (s, e) => HandleDataReceived(e, ErrorDataReceived);
+            DataReceivedEventHandler outputHandler = (s, e) => HandleDataReceived(e, OutputDataReceived);
 
             CurrentProcess.ErrorDataReceived += errorHandler;
             CurrentProcess.OutputDataReceived += outputHandler;
@@ -181,6 +152,20 @@ namespace Wasm.Build.Tests
                 CurrentProcess.StartInfo,
                 CurrentProcess.ExitCode,
                 string.Join(System.Environment.NewLine, output));
+        }
+
+        private void TryWriteToTestOutput(string message, List<string> output)
+        {
+            try
+            {
+                _testOutput.WriteLine(message);
+            }
+            catch (InvalidOperationException)
+            {
+                // Test context may have expired, continue without logging to test output
+                // Add a marker to the output buffer so we know this happened
+                output.Add($"[{_label}] [WARNING: Test context expired, subsequent output may be incomplete]");
+            }
         }
 
         private Process CreateProcess(string executable, string args)
