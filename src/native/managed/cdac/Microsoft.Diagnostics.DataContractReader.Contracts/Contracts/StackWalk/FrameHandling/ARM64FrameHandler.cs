@@ -13,16 +13,7 @@ internal class ARM64FrameHandler(Target target, ContextHolder<ARM64Context> cont
 {
     private readonly ContextHolder<ARM64Context> _holder = contextHolder;
 
-    void IPlatformFrameHandler.HandleFaultingExceptionFrame(FaultingExceptionFrame frame)
-    {
-        _holder.ReadFromAddress(_target, frame.TargetContext);
-
-        // Clear the CONTEXT_XSTATE, since the ARM64Context contains just plain CONTEXT structure
-        // that does not support holding any extended state.
-        _holder.Context.ContextFlags &= ~(uint)(ContextFlagsValues.CONTEXT_XSTATE & ContextFlagsValues.CONTEXT_AREA_MASK);
-    }
-
-    void IPlatformFrameHandler.HandleHijackFrame(HijackFrame frame)
+    public void HandleHijackFrame(HijackFrame frame)
     {
         HijackArgsARM64 args = _target.ProcessedData.GetOrAdd<Data.HijackArgsARM64>(frame.HijackArgsPtr);
 
@@ -36,5 +27,14 @@ internal class ARM64FrameHandler(Target target, ContextHolder<ARM64Context> cont
         _holder.StackPointer = frame.HijackArgsPtr + hijackArgsSize;
 
         UpdateFromRegisterDict(args.Registers);
+    }
+
+    public override void HandleFaultingExceptionFrame(FaultingExceptionFrame frame)
+    {
+        base.HandleFaultingExceptionFrame(frame);
+
+        // Clear the CONTEXT_XSTATE, since the ARM64Context contains just plain CONTEXT structure
+        // that does not support holding any extended state.
+        _holder.Context.ContextFlags &= ~(uint)(ContextFlagsValues.CONTEXT_XSTATE & ContextFlagsValues.CONTEXT_AREA_MASK);
     }
 }
