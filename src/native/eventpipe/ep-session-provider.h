@@ -41,7 +41,7 @@ struct user_reg {
 
 	/* Output: Index of the event to use when writing data */
 	uint32_t write_index;
-} __attribute__((__packed__));
+};
 
 /*
  * Describes an event unregister, callers must set the size, address and bit.
@@ -55,14 +55,14 @@ struct user_unreg {
 	uint8_t disable_bit;
 
 	/* Input: Reserved, set to 0 */
-	uint8_t __reserved;
+	uint8_t _reserved;
 
 	/* Input: Reserved, set to 0 */
-	uint16_t __reserved2;
+	uint16_t _reserved2;
 
 	/* Input: Address to unregister */
 	uint64_t disable_addr;
-} __attribute__((__packed__));
+};
 
 /* Request to register a user_event */
 #define DIAG_IOCSREG 0xC0082A00
