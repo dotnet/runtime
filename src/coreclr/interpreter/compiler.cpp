@@ -3776,7 +3776,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_8);
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_MOV_8);
                     break;
                 default:
                     assert(0);
