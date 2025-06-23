@@ -120,12 +120,14 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Advances the buffer in anticipation of a subsequent read operation.
         /// </summary>
-        public void Advance(int bytesConsumed)
+        public void Advance(long bytesConsumed)
         {
             Debug.Assert(bytesConsumed <= _count);
 
-            _unsuccessfulReadCount = bytesConsumed == 0 ? _unsuccessfulReadCount + 1 : 0;
-            _count -= bytesConsumed;
+            int bytesConsumedInt = (int)bytesConsumed;
+
+            _unsuccessfulReadCount = bytesConsumedInt == 0 ? _unsuccessfulReadCount + 1 : 0;
+            _count -= bytesConsumedInt;
 
             if (!_isFinalBlock)
             {
@@ -138,7 +140,7 @@ namespace System.Text.Json.Serialization
                     byte[] newBuffer = ArrayPool<byte>.Shared.Rent((_buffer.Length < (int.MaxValue / 2)) ? _buffer.Length * 2 : int.MaxValue);
 
                     // Copy the unprocessed data to the new buffer while shifting the processed bytes.
-                    Buffer.BlockCopy(oldBuffer, _offset + bytesConsumed, newBuffer, 0, _count);
+                    Buffer.BlockCopy(oldBuffer, _offset + bytesConsumedInt, newBuffer, 0, _count);
                     _buffer = newBuffer;
                     _maxCount = _count;
 
@@ -149,7 +151,7 @@ namespace System.Text.Json.Serialization
                 else if (_count != 0)
                 {
                     // Shift the processed bytes to the beginning of buffer to make more room.
-                    Buffer.BlockCopy(_buffer, _offset + bytesConsumed, _buffer, 0, _count);
+                    Buffer.BlockCopy(_buffer, _offset + bytesConsumedInt, _buffer, 0, _count);
                 }
             }
 
@@ -180,7 +182,7 @@ namespace System.Text.Json.Serialization
         public void Dispose()
         {
             // Clear only what we used and return the buffer to the pool
-            //new Span<byte>(_buffer, 0, _maxCount).Clear();
+            new Span<byte>(_buffer, 0, _maxCount).Clear();
 
             byte[] toReturn = _buffer;
             _buffer = null!;

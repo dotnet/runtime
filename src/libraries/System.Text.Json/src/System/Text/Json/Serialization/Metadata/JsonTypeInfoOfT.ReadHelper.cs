@@ -158,7 +158,7 @@ namespace System.Text.Json.Serialization.Metadata
             if (bufferState.Bytes.IsSingleSegment)
             {
                 reader = new Utf8JsonReader(
-#if NETCOREAPP
+#if NET
                     bufferState.Bytes.FirstSpan,
 #else
                     bufferState.Bytes.First.Span,
@@ -177,13 +177,12 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(!bufferState.IsFinalBlock || reader.AllowMultipleValues || reader.BytesConsumed == bufferState.Bytes.Length,
                     "The reader should have thrown if we have remaining bytes.");
 
-                //bufferState.Advance((int)reader.BytesConsumed);
                 jsonReaderState = reader.CurrentState;
                 return success;
             }
             finally
             {
-                bufferState.Advance((int)reader.BytesConsumed);
+                bufferState.Advance(reader.BytesConsumed);
             }
         }
     }

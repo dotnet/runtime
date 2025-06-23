@@ -19,6 +19,6 @@ namespace System.Text.Json.Serialization
 
         public abstract void Read();
 
-        public abstract void Advance(int bytesConsumed);
+        public abstract void Advance(long bytesConsumed);
     }
 }
