@@ -44,7 +44,7 @@
                              LatestRuntimeFrameworkVersion="$(ProductVersion)"
                              RuntimeFrameworkName="$(LocalFrameworkOverrideName)"
                              RuntimePackNamePatterns="$(LocalFrameworkOverrideName).Runtime.**RID**"
-                             RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;maccatalyst-x64;maccatalyst-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;freebsd-x64;freebsd-arm64;linux-ppc64le;linux-riscv64;linux-musl-riscv64;linux-loongarch64;linux-musl-loongarch64"
+                             RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;maccatalyst-x64;maccatalyst-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;freebsd-x64;freebsd-arm64;illumos-x64;solaris-x64;linux-ppc64le;linux-riscv64;linux-musl-riscv64;linux-loongarch64;linux-musl-loongarch64"
                              TargetFramework="$(NetCoreAppCurrent)"
                              TargetingPackName="$(LocalFrameworkOverrideName).Ref"
                              TargetingPackVersion="$(ProductVersion)"
