@@ -59,8 +59,7 @@ public:
     : m_deadlock(description),
         m_pList(pList),
         m_data(data),
-        m_Crst(CrstListLock,
-        (CrstFlags)(CRST_REENTRANCY | (pList->IsHostBreakable() ? CRST_HOST_BREAKABLE : 0))),
+        m_Crst(CrstListLock, CRST_REENTRANCY),
         m_pszDescription(description),
         m_pNext(NULL),
         m_dwRefCount(1),
@@ -78,7 +77,6 @@ public:
     DEBUG_NOINLINE void Enter()
     {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
 
         m_deadlock.BeginEnterLock();
         DeadlockAwareLock::BlockingLockHolder dlLock;
@@ -96,7 +94,6 @@ public:
     DEBUG_NOINLINE BOOL DeadlockAwareEnter()
     {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
 
         if (!m_deadlock.TryBeginEnterLock())
             return FALSE;
@@ -111,7 +108,6 @@ public:
     DEBUG_NOINLINE void Leave()
     {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
 
         m_deadlock.LeaveLock();
         m_Crst.Leave();
@@ -190,20 +186,17 @@ public:
     DEBUG_NOINLINE static void LockHolderEnter(Entry_t *pThis)
     {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         pThis->Enter();
     }
 
     DEBUG_NOINLINE static void LockHolderLeave(Entry_t *pThis)
     {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         pThis->Leave();
     }
 
     DEBUG_NOINLINE void FinishDeadlockAwareEnter()
     {
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         DeadlockAwareLock::BlockingLockHolder dlLock;
         m_Crst.Enter();
         m_deadlock.EndEnterLock();
@@ -248,7 +241,6 @@ class ListLockBase
  protected:
     CrstStatic          m_Crst;
     BOOL                m_fInited;
-    BOOL                m_fHostBreakable;        // Lock can be broken by a host for deadlock detection
     Entry_t *           m_pHead;
 
  public:
@@ -265,13 +257,12 @@ class ListLockBase
     }
 
     // DO NOT MAKE A CONSTRUCTOR FOR THIS CLASS - There are global instances
-    void Init(CrstType crstType, CrstFlags flags, BOOL fHostBreakable = FALSE)
+    void Init(CrstType crstType, CrstFlags flags)
     {
 	 WRAPPER_NO_CONTRACT;
         PreInit();
         m_Crst.Init(crstType, flags);
         m_fInited = TRUE;
-        m_fHostBreakable = fHostBreakable;
     }
 
     void Destroy()
@@ -287,12 +278,6 @@ class ListLockBase
         }
     }
 
-    BOOL IsHostBreakable () const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_fHostBreakable;
-    }
-
     void AddElement(Entry_t* pElement)
     {
         WRAPPER_NO_CONTRACT;
@@ -304,7 +289,7 @@ class ListLockBase
     DEBUG_NOINLINE void Enter()
     {
         CANNOT_HAVE_CONTRACT; // See below
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
+
 #if 0 // The cleanup logic contract will cause any forbid GC state from the Crst to
       // get deleted.  This causes asserts from Leave.  We probably should make the contract
       // implementation tolerant of this pattern, or else ensure that the state the contract
@@ -325,7 +310,6 @@ class ListLockBase
     DEBUG_NOINLINE void Leave()
     {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         m_Crst.Leave();
     }
 
@@ -425,14 +409,12 @@ class ListLockBase
     DEBUG_NOINLINE static void HolderEnter(List_t *pThis)
     {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         pThis->Enter();
     }
 
     DEBUG_NOINLINE static void HolderLeave(List_t *pThis)
     {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         pThis->Leave();
     }
 

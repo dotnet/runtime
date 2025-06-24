@@ -371,21 +371,6 @@ check_c_source_compiles(
 
 check_c_source_compiles(
     "
-    #include <dirent.h>
-    #include <stddef.h>
-    int main(void)
-    {
-        DIR* dir = NULL;
-        struct dirent* entry = NULL;
-        struct dirent* result;
-        readdir_r(dir, entry, &result);
-        return 0;
-    }
-    "
-    HAVE_READDIR_R)
-
-check_c_source_compiles(
-    "
     #include <sys/types.h>
     #include <sys/event.h>
     int main(void)

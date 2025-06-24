@@ -209,9 +209,7 @@ namespace System.Security.Cryptography
         ///   This instance has been disposed.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <para>The instance represents only a public key.</para>
-        ///   <para>-or-</para>
-        ///   <para>An error occurred while signing the data.</para>
+        ///   <para>An error occurred while verifying the data.</para>
         /// </exception>
         public bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, ReadOnlySpan<byte> context = default)
         {
@@ -259,9 +257,7 @@ namespace System.Security.Cryptography
         ///   This instance has been disposed.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <para>The instance represents only a public key.</para>
-        ///   <para>-or-</para>
-        ///   <para>An error occurred while signing the data.</para>
+        ///   <para>An error occurred while verifying the data.</para>
         /// </exception>
         /// <remarks>
         ///   A <see langword="null" /> context is treated as empty.
@@ -272,6 +268,224 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(signature);
 
             return VerifyData(new ReadOnlySpan<byte>(data), new ReadOnlySpan<byte>(signature), new ReadOnlySpan<byte>(context));
+        }
+
+        /// <summary>
+        ///   Signs the specified hash using the FIPS 205 pre-hash signing algorithm, writing the signature into the provided buffer.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash to sign.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the signature. Its length must be exactly
+        ///   <see cref="SlhDsaAlgorithm.SignatureSizeInBytes"/>.
+        /// </param>
+        /// <param name="hashAlgorithmOid">
+        ///   The OID of the hash algorithm used to create the hash.
+        /// </param>
+        /// <param name="context">
+        ///   An optional context-specific value to limit the scope of the signature.
+        ///   The default value is an empty buffer.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hashAlgorithmOid"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The buffer in <paramref name="destination"/> is the incorrect length to receive the signature.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
+        ///   255 bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para><paramref name="hashAlgorithmOid"/> is not a well-formed OID.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="hashAlgorithmOid"/> is a well-known algorithm and <paramref name="hash"/> does not have the expected length.</para>
+        ///   <para>-or-</para>
+        ///   <para>The instance represents only a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while signing the hash.</para>
+        /// </exception>
+        public void SignPreHash(ReadOnlySpan<byte> hash, Span<byte> destination, string hashAlgorithmOid, ReadOnlySpan<byte> context = default)
+        {
+            ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
+
+            if (destination.Length != Algorithm.SignatureSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, Algorithm.SignatureSizeInBytes),
+                    nameof(destination));
+            }
+
+            if (context.Length > MaxContextLength)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(context),
+                    context.Length,
+                    SR.Argument_SignatureContextTooLong255);
+            }
+
+            ValidateHashAlgorithm(hash, hashAlgorithmOid);
+            ThrowIfDisposed();
+
+            SignPreHashCore(hash, context, hashAlgorithmOid, destination);
+        }
+
+        /// <summary>
+        ///   Signs the specified hash using the FIPS 205 pre-hash signing algorithm.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash to sign.
+        /// </param>
+        /// <param name="hashAlgorithmOid">
+        ///   The OID of the hash algorithm used to create the hash.
+        /// </param>
+        /// <param name="context">
+        ///   An optional context-specific value to limit the scope of the signature.
+        ///   The default value is <see langword="null" />.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hash"/> or <paramref name="hashAlgorithmOid"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="context"/> has a length in excess of 255 bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para><paramref name="hashAlgorithmOid"/> is not a well-formed OID.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="hashAlgorithmOid"/> is a well-known algorithm and <paramref name="hash"/> does not have the expected length.</para>
+        ///   <para>-or-</para>
+        ///   <para>The instance represents only a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while signing the hash.</para>
+        /// </exception>
+        /// <remarks>
+        ///   A <see langword="null" /> context is treated as empty.
+        /// </remarks>
+        public byte[] SignPreHash(byte[] hash, string hashAlgorithmOid, byte[]? context = default)
+        {
+            ArgumentNullException.ThrowIfNull(hash);
+            ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
+
+            byte[] destination = new byte[Algorithm.SignatureSizeInBytes];
+            SignPreHash(new ReadOnlySpan<byte>(hash), destination.AsSpan(), hashAlgorithmOid, new ReadOnlySpan<byte>(context));
+            return destination;
+        }
+
+        /// <summary>
+        ///   Verifies that the specified FIPS 205 pre-hash signature is valid for this key and the provided hash.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash to verify.
+        /// </param>
+        /// <param name="signature">
+        ///   The signature to verify.
+        /// </param>
+        /// <param name="hashAlgorithmOid">
+        ///   The OID of the hash algorithm used to create the hash.
+        /// </param>
+        /// <param name="context">
+        ///   The context value which was provided during signing.
+        ///   The default value is an empty buffer.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if the signature validates the hash; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hashAlgorithmOid"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
+        ///   255 bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para><paramref name="hashAlgorithmOid"/> is not a well-formed OID.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="hashAlgorithmOid"/> is a well-known algorithm and <paramref name="hash"/> does not have the expected length.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while verifying the hash.</para>
+        /// </exception>
+        public bool VerifyPreHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, string hashAlgorithmOid, ReadOnlySpan<byte> context = default)
+        {
+            ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
+
+            if (context.Length > MaxContextLength)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(context),
+                    context.Length,
+                    SR.Argument_SignatureContextTooLong255);
+            }
+
+            ValidateHashAlgorithm(hash, hashAlgorithmOid);
+            ThrowIfDisposed();
+
+            if (signature.Length != Algorithm.SignatureSizeInBytes)
+            {
+                return false;
+            }
+
+            return VerifyPreHashCore(hash, context, hashAlgorithmOid, signature);
+        }
+
+        /// <summary>
+        ///   Verifies that the specified FIPS 205 pre-hash signature is valid for this key and the provided hash.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash to verify.
+        /// </param>
+        /// <param name="signature">
+        ///   The signature to verify.
+        /// </param>
+        /// <param name="hashAlgorithmOid">
+        ///   The OID of the hash algorithm used to create the hash.
+        /// </param>
+        /// <param name="context">
+        ///   The context value which was provided during signing.
+        ///   The default value is <see langword="null" />.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if the signature validates the hash; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hash"/> or <paramref name="signature"/> or <paramref name="hashAlgorithmOid"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="context"/> has a length in excess of 255 bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para><paramref name="hashAlgorithmOid"/> is not a well-formed OID.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="hashAlgorithmOid"/> is a well-known algorithm and <paramref name="hash"/> does not have the expected length.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while verifying the hash.</para>
+        /// </exception>
+        /// <remarks>
+        ///   A <see langword="null" /> context is treated as empty.
+        /// </remarks>
+        public bool VerifyPreHash(byte[] hash, byte[] signature, string hashAlgorithmOid, byte[]? context = null)
+        {
+            ArgumentNullException.ThrowIfNull(hash);
+            ArgumentNullException.ThrowIfNull(signature);
+            ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
+
+            return VerifyPreHash(
+                new ReadOnlySpan<byte>(hash),
+                new ReadOnlySpan<byte>(signature),
+                hashAlgorithmOid,
+                new ReadOnlySpan<byte>(context));
         }
 
         /// <summary>
@@ -355,7 +569,11 @@ namespace System.Security.Cryptography
         ///   This instance has been disposed.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   An error occurred while exporting the key.
+        ///   <para>This instance only represents a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>The private key is not exportable.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         public byte[] ExportPkcs8PrivateKey()
         {
@@ -389,7 +607,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            // A private key export with no attributes has at least 8 bytes overhead so a buffer smaller than that cannot hold a
+            // A private key export with no attributes has at least 12 bytes overhead so a buffer smaller than that cannot hold a
             // PKCS#8 encoded key. If we happen to get a buffer smaller than that, it won't export.
             int MinimumPossiblePkcs8SlhDsaKey =
                 2 + // PrivateKeyInfo Sequence
@@ -839,7 +1057,7 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="destination">
         ///   The buffer to receive the public key. Its length must be exactly
-        ///   <see cref="SlhDsaAlgorithm.SecretKeySizeInBytes"/>.
+        ///   <see cref="SlhDsaAlgorithm.PublicKeySizeInBytes"/>.
         /// </param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="destination"/> is the incorrect length to receive the public key.
@@ -943,6 +1161,9 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Generates a new SLH-DSA key for the specified algorithm.
         /// </summary>
+        /// <param name="algorithm">
+        ///   An algorithm identifying what kind of SLH-DSA key to generate.
+        /// </param>
         /// <returns>
         ///   The generated object.
         /// </returns>
@@ -999,26 +1220,20 @@ namespace System.Security.Cryptography
             ThrowIfInvalidLength(source);
             ThrowIfNotSupported();
 
-            unsafe
+            KeyFormatHelper.ReadSubjectPublicKeyInfo(s_knownOids, source, SubjectPublicKeyReader, out int read, out SlhDsa slhDsa);
+            Debug.Assert(read == source.Length);
+            return slhDsa;
+
+            static void SubjectPublicKeyReader(ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn identifier, out SlhDsa slhDsa)
             {
-                fixed (byte* pointer = source)
+                SlhDsaAlgorithm algorithm = GetAlgorithmIdentifier(in identifier);
+
+                if (key.Length != algorithm.PublicKeySizeInBytes)
                 {
-                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
-                    {
-                        AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
-                        SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
-
-                        SlhDsaAlgorithm algorithm = GetAlgorithmIdentifier(ref spki.Algorithm);
-                        ReadOnlySpan<byte> publicKey = spki.SubjectPublicKey.Span;
-
-                        if (publicKey.Length != algorithm.PublicKeySizeInBytes)
-                        {
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                        }
-
-                        return ImportSlhDsaPublicKey(algorithm, spki.SubjectPublicKey.Span);
-                    }
+                    throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
                 }
+
+                slhDsa = SlhDsaImplementation.ImportPublicKey(algorithm, key.Span);
             }
         }
 
@@ -1582,9 +1797,53 @@ namespace System.Security.Cryptography
         ///   <see langword="true"/> if the signature validates the data; otherwise, <see langword="false"/>.
         /// </returns>
         /// <exception cref="CryptographicException">
-        ///   An error occurred while signing the data.
+        ///   An error occurred while verifying the data.
         /// </exception>
         protected abstract bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature);
+
+        /// <summary>
+        ///   When overridden in a derived class, computes the pre-hash signature of the specified hash and context,
+        ///   writing it into the provided buffer.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash to sign.
+        /// </param>
+        /// <param name="context">
+        ///   The signature context.
+        /// </param>
+        /// <param name="hashAlgorithmOid">
+        ///   The OID of the hash algorithm used to create the hash.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the signature, which will always be the exactly correct size for the algorithm.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while signing the hash.
+        /// </exception>
+        protected abstract void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination);
+
+        /// <summary>
+        ///   When overridden in a derived class, verifies the pre-hash signature of the specified hash and context.
+        /// </summary>
+        /// <param name="hash">
+        ///   The data to verify.
+        /// </param>
+        /// <param name="context">
+        ///   The signature context.
+        /// </param>
+        /// <param name="hashAlgorithmOid">
+        ///  The OID of the hash algorithm used to create the hash.
+        /// </param>
+        /// <param name="signature">
+        ///   The signature to verify.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if the signature validates the hash; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while verifying the hash.
+        /// </exception>
+        protected abstract bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature);
 
         /// <summary>
         ///   When overridden in a derived class, exports the FIPS 205 public key to the specified buffer.
@@ -1723,9 +1982,8 @@ namespace System.Security.Cryptography
 
         private static SlhDsaAlgorithm GetAlgorithmIdentifier(ref readonly AlgorithmIdentifierAsn identifier)
         {
-            SlhDsaAlgorithm algorithm = SlhDsaAlgorithm.GetAlgorithmFromOid(identifier.Algorithm) ??
-                throw new CryptographicException(
-                    SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, identifier.Algorithm));
+            SlhDsaAlgorithm? algorithm = SlhDsaAlgorithm.GetAlgorithmFromOid(identifier.Algorithm);
+            Debug.Assert(algorithm is not null, "Algorithm identifier should have been pre-validated by KeyFormatHelper.");
 
             if (identifier.Parameters.HasValue)
             {
@@ -1735,6 +1993,48 @@ namespace System.Security.Cryptography
             }
 
             return algorithm;
+        }
+
+        private static void ValidateHashAlgorithm(ReadOnlySpan<byte> hash, ReadOnlySpan<char> hashAlgorithmOid)
+        {
+            int? outputSize = hashAlgorithmOid switch
+            {
+                Oids.Md5 => 128 / 8,
+                Oids.Sha1 => 160 / 8,
+                Oids.Sha256 => 256 / 8,
+                Oids.Sha384 => 384 / 8,
+                Oids.Sha512 => 512 / 8,
+                Oids.Sha3_256 => 256 / 8,
+                Oids.Sha3_384 => 384 / 8,
+                Oids.Sha3_512 => 512 / 8,
+                Oids.Shake128 => 256 / 8,
+                Oids.Shake256 => 512 / 8,
+                _ => null,
+            };
+
+            if (outputSize is not null)
+            {
+                if (hash.Length != outputSize)
+                {
+                    throw new CryptographicException(SR.Cryptography_HashLengthMismatch);
+                }
+            }
+            else
+            {
+                // The OIDs for the algorithms above have max length 11. We'll just round up for a conservative initial estimate.
+                const int MaxEncodedOidLengthForCommonHashAlgorithms = 16;
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, MaxEncodedOidLengthForCommonHashAlgorithms);
+
+                try
+                {
+                    // Only the format of the OID is validated here. The derived classes can decide to do more if they want to.
+                    writer.WriteObjectIdentifier(hashAlgorithmOid);
+                }
+                catch (ArgumentException ae)
+                {
+                    throw new CryptographicException(SR.Cryptography_HashLengthMismatch, ae);
+                }
+            }
         }
 
         private static void ThrowIfNotSupported()

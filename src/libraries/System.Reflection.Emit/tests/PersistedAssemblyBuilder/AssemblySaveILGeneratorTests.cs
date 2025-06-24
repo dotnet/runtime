@@ -20,6 +20,27 @@ namespace System.Reflection.Emit.Tests
             {
                 PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 MethodBuilder methodBuilder = type.DefineMethod("EmptyMethod", MethodAttributes.Public, typeof(void), [typeof(Version)]);
+                type.CreateType();
+                ab.Save(file.Path);
+
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodInfo method = typeFromDisk.GetMethod("EmptyMethod");
+                    MethodBody? body = method.GetMethodBody();
+                    Assert.Null(body);
+                }
+            }
+        }
+
+        [Fact]
+        public void MethodWithMinimalBody()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                MethodBuilder methodBuilder = type.DefineMethod("MinimalMethod", MethodAttributes.Public, typeof(void), [typeof(Version)]);
                 ILGenerator il = methodBuilder.GetILGenerator();
                 il.Emit(OpCodes.Ret);
                 type.CreateType();
@@ -29,7 +50,7 @@ namespace System.Reflection.Emit.Tests
                 {
                     Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
                     Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                    MethodInfo method = typeFromDisk.GetMethod("EmptyMethod");
+                    MethodInfo method = typeFromDisk.GetMethod("MinimalMethod");
                     MethodBody body = method.GetMethodBody();
                     Assert.Empty(body.LocalVariables);
                     Assert.Empty(body.ExceptionHandlingClauses);
