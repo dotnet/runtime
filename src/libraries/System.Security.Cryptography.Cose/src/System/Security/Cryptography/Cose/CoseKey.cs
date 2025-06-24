@@ -107,8 +107,8 @@ namespace System.Security.Cryptography.Cose
                     _ => throw new CryptographicException(SR.Format(SR.Sign1UnknownCoseAlgorithm, untrustedAlgorithm))
                 };
 
-                static CoseKey FromKeyWithExpectedAlgorithm(MLDsaAlgorithm expected, MLDsa key)
-                    => key.Algorithm.Name == expected.Name ? FromKey(key) : CoseKey.FromKey(key);
+                CoseKey FromKeyWithExpectedAlgorithm(MLDsaAlgorithm expected, MLDsa key)
+                    => key.Algorithm.Name == expected.Name ? FromKey(key) : throw new CryptographicException(SR.Format(SR.Sign1UnknownCoseAlgorithm, untrustedAlgorithm));
             }
 #pragma warning restore SYSLIB5006
             else
@@ -133,18 +133,18 @@ namespace System.Security.Cryptography.Cose
         private static void ThrowIfCoseAlgorithmNotSupported(CoseAlgorithm alg)
         {
 #pragma warning disable SYSLIB5006
-            if (alg != CoseAlgorithm.ES256 &&
-                alg != CoseAlgorithm.ES384 &&
-                alg != CoseAlgorithm.ES512 &&
-                alg != CoseAlgorithm.PS256 &&
-                alg != CoseAlgorithm.PS384 &&
-                alg != CoseAlgorithm.PS512 &&
-                alg != CoseAlgorithm.RS256 &&
-                alg != CoseAlgorithm.RS384 &&
-                alg != CoseAlgorithm.RS512 &&
-                alg != CoseAlgorithm.MLDsa44 &&
-                alg != CoseAlgorithm.MLDsa65 &&
-                alg != CoseAlgorithm.MLDsa87)
+            if (alg is not CoseAlgorithm.ES256 and
+                not CoseAlgorithm.ES384 and
+                not CoseAlgorithm.ES512 and
+                not CoseAlgorithm.PS256 and
+                not CoseAlgorithm.PS384 and
+                not CoseAlgorithm.PS512 and
+                not CoseAlgorithm.RS256 and
+                not CoseAlgorithm.RS384 and
+                not CoseAlgorithm.RS512 and
+                not CoseAlgorithm.MLDsa44 and
+                not CoseAlgorithm.MLDsa65 and
+                not CoseAlgorithm.MLDsa87)
             {
                 throw new CryptographicException(SR.Format(SR.Sign1UnknownCoseAlgorithm, alg));
             }

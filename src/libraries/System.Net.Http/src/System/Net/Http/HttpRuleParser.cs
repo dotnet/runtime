@@ -86,8 +86,10 @@ namespace System.Net.Http
             return input.Length - startIndex;
         }
 
-        internal static bool ContainsNewLine(string value, int startIndex = 0) =>
-            value.AsSpan(startIndex).ContainsAny('\r', '\n');
+        // See https://www.rfc-editor.org/rfc/rfc9110.html#section-5.5-5:
+        // "Field values containing CR, LF, or NUL characters are invalid and dangerous"
+        internal static bool ContainsNewLineOrNull(string value, int startIndex = 0) =>
+            value.AsSpan(startIndex).ContainsAny('\r', '\n', '\0');
 
         internal static int GetNumberLength(string input, int startIndex, bool allowDecimal)
         {
@@ -198,7 +200,7 @@ namespace System.Net.Http
 
             // Quoted-char has 2 characters. Check whether there are 2 chars left ('\' + char)
             // If so, check whether the character is in the range 0-127 and not a new line. Otherwise, it's an invalid value.
-            if ((startIndex + 2 > input.Length) || (input[startIndex + 1] is > (char)127 or '\r' or '\n'))
+            if ((startIndex + 2 > input.Length) || (input[startIndex + 1] is > (char)127 or '\r' or '\n' or '\0'))
             {
                 return HttpParseResult.InvalidFormat;
             }
@@ -250,7 +252,7 @@ namespace System.Net.Http
 
                 char c = input[current];
 
-                if (c == '\r' || c == '\n')
+                if (c == '\r' || c == '\n' || c == '\0')
                 {
                     return HttpParseResult.InvalidFormat;
                 }
@@ -318,7 +320,7 @@ namespace System.Net.Http
                 return false;
             }
 
-            Debug.Assert(!ContainsNewLine(host.ToString()));
+            Debug.Assert(!ContainsNewLineOrNull(host.ToString()));
             return true;
         }
     }

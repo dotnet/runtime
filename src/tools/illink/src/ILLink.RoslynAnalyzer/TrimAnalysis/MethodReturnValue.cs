@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.RoslynAnalyzer;
 using ILLink.Shared.DataFlow;
+using ILLink.Shared.TypeSystemProxy;
 using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TrimAnalysis
@@ -21,6 +22,7 @@ namespace ILLink.Shared.TrimAnalysis
 		{
 			Debug.Assert (!isNewObj || methodSymbol.MethodKind == MethodKind.Constructor, "isNewObj can only be true for constructors");
 			MethodSymbol = methodSymbol;
+			Method = new MethodProxy (methodSymbol);
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 			StaticType = new (isNewObj ? methodSymbol.ContainingType : methodSymbol.ReturnType);
 		}

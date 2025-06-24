@@ -27,7 +27,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 internal sealed unsafe partial class SOSDacImpl
     : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface3, ISOSDacInterface4, ISOSDacInterface5,
       ISOSDacInterface6, ISOSDacInterface7, ISOSDacInterface8, ISOSDacInterface9, ISOSDacInterface10,
-      ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15
+      ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15,
+      ISOSDacInterface16
 {
     private readonly Target _target;
 
@@ -52,6 +53,7 @@ internal sealed unsafe partial class SOSDacImpl
     private readonly ISOSDacInterface13? _legacyImpl13;
     private readonly ISOSDacInterface14? _legacyImpl14;
     private readonly ISOSDacInterface15? _legacyImpl15;
+    private readonly ISOSDacInterface16? _legacyImpl16;
     private readonly IXCLRDataProcess? _legacyProcess;
     private readonly IXCLRDataProcess2? _legacyProcess2;
     private readonly ICLRDataEnumMemoryRegions? _legacyEnumMemory;
@@ -83,6 +85,7 @@ internal sealed unsafe partial class SOSDacImpl
             _legacyImpl13 = legacyObj as ISOSDacInterface13;
             _legacyImpl14 = legacyObj as ISOSDacInterface14;
             _legacyImpl15 = legacyObj as ISOSDacInterface15;
+            _legacyImpl16 = legacyObj as ISOSDacInterface16;
 
             _legacyProcess = legacyObj as IXCLRDataProcess;
             _legacyProcess2 = legacyObj as IXCLRDataProcess2;
@@ -1863,4 +1866,9 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface15.GetMethodTableSlotEnumerator(ClrDataAddress mt, /*ISOSMethodEnum*/void** enumerator)
         => _legacyImpl15 is not null ? _legacyImpl15.GetMethodTableSlotEnumerator(mt, enumerator) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface15
+
+    #region ISOSDacInterface16
+    int ISOSDacInterface16.GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode)
+        => _legacyImpl16 is not null ? _legacyImpl16.GetGCDynamicAdaptationMode(pDynamicAdaptationMode) : HResults.E_NOTIMPL;
+    #endregion ISOSDacInterface16
 }
