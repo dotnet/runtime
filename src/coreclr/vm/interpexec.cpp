@@ -11,7 +11,7 @@
 // for numeric_limits
 #include <limits>
 
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
+void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE overrideTarget = NULL)
 {
     CONTRACTL
     {
@@ -45,6 +45,7 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
     }
 
     if (overrideTarget)
+        // Interpreter-FIXME: Is this a race condition?
         pHeader->SetTarget(overrideTarget);
     else
         pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY)); // The method to call
