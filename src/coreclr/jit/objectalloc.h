@@ -204,6 +204,8 @@ public:
                                   const char**         reason,
                                   bool                 preliminaryCheck = false);
 
+    static GenTree* IsGuard(BasicBlock* block, GuardInfo* info);
+
 protected:
     virtual PhaseStatus DoPhase() override;
 
@@ -260,7 +262,6 @@ private:
     bool     CheckForGuardedUse(BasicBlock* block, GenTree* tree, unsigned lclNum);
     bool     CheckForEnumeratorUse(unsigned lclNum, unsigned dstLclNum);
     bool     IsGuarded(BasicBlock* block, GenTree* tree, GuardInfo* info, bool testOutcome);
-    GenTree* IsGuard(BasicBlock* block, GuardInfo* info);
     unsigned NewPseudoIndex();
 
     bool CanHavePseudos()

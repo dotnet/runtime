@@ -5794,3 +5794,68 @@ bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt,
 
     return true;
 }
+
+//-------------------------------------------------------------
+// fgResolveGDVs: Try and resolve GDV checks
+//
+// Returns:
+//    Suitable phase status.
+//
+PhaseStatus Compiler::fgResolveGDVs()
+{
+    if (!opts.OptimizationEnabled())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (!doesMethodHaveGuardedDevirtualization())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (!hasUpdatedTypeLocals)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    bool madeChanges = false;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        if (!block->KindIs(BBJ_COND))
+        {
+            continue;
+        }
+
+        GuardInfo info;
+        if (ObjectAllocator::IsGuard(block, &info))
+        {
+            LclVarDsc* const lclDsc = lvaGetDesc(info.m_local);
+
+            if (lclDsc->lvClassIsExact && lclDsc->lvSingleDef && (lclDsc->lvClassHnd == info.m_type))
+            {
+                JITDUMP("GDV in " FMT_BB " can be resolved; type is now known exactly\n", block->bbNum);
+
+                Statement* const stmt     = block->lastStmt();
+                GenTree* const   jumpTree = stmt->GetRootNode();
+                assert(jumpTree->OperIs(GT_JTRUE));
+                GenTree* const tree = jumpTree->gtGetOp1();
+                assert(tree->OperIs(GT_EQ, GT_NE));
+                bool const      isCondTrue   = tree->OperIs(GT_EQ);
+                FlowEdge* const retainedEdge = isCondTrue ? block->GetTrueEdge() : block->GetFalseEdge();
+                FlowEdge* const removedEdge  = isCondTrue ? block->GetFalseEdge() : block->GetTrueEdge();
+
+                JITDUMP("The conditional jump becomes an unconditional jump to " FMT_BB "\n",
+                        retainedEdge->getDestinationBlock()->bbNum);
+
+                fgRemoveRefPred(removedEdge);
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+                fgRepairProfileCondToUncond(block, retainedEdge, removedEdge);
+                stmt->SetRootNode(tree);
+                madeChanges = true;
+            }
+        }
+    }
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
