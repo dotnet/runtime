@@ -189,10 +189,18 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
             // TODO: make it more flexible and support cases like "x != cns1 && x != cns2 && ..."
             return false;
         }
-        if (testingForConversion && firstBlock->HasFlag(BBF_SWITCH_CONVERSION_LIKELY))
+        if (testingForConversion)
         {
-            return true;
+            if (BitVecOps::IsMember(ccmp_traits, ccmp_vec, firstBlock->bbNum))
+            {
+                return true;
+            }
+            else
+            {
+                ccmp_vec = BitVecOps::MakeEmpty(ccmp_traits);
+            }
         }
+        
 
         // No more than SWITCH_MAX_TABLE_SIZE blocks are allowed (arbitrary limit in this context)
         int     testValueIndex                  = 0;
@@ -395,7 +403,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock,
         BasicBlock* iterBlock = firstBlock;
         for (int i = 0; i < testsCount; i++)
         {
-            iterBlock->SetFlags(BBF_SWITCH_CONVERSION_LIKELY);
+            BitVecOps::AddElemD(ccmp_traits, ccmp_vec, iterBlock->bbNum);
             iterBlock = iterBlock->GetFalseTarget();
         }
         return true;
