@@ -6647,20 +6647,21 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                                                    GenTree*      op2,
                                                    var_types     simdBaseType,
                                                    unsigned      simdSize,
-                                                   bool isScalar ARM64_ARG(bool isScalable));
+                                                   bool isScalar,
+                                                   bool       reverseCond = false
+                                                    ARM64_ARG(bool isScalable));
 
     static var_types GetLookupTypeForCmpOp(Compiler*         comp,
                                            genTreeOps        oper,
                                            var_types         type,
                                            var_types         simdBaseType,
-                                           unsigned simdSize ARM64_ARG(bool isScalable));
+                                           unsigned simdSize,
+                                           bool       reverseCond = false
+                                            ARM64_ARG(bool isScalable));
 
     static genTreeOps GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
 
-    genTreeOps GetOperForHWIntrinsicId(bool* isScalar) const
-    {
-        return GetOperForHWIntrinsicId(GetHWIntrinsicId(), GetSimdBaseType(), isScalar);
-    }
+    genTreeOps GetOperForHWIntrinsicId(bool* isScalar, bool getEffectiveOp = false) const;
 
     bool ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon);
 
