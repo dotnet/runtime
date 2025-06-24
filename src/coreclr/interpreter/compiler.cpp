@@ -5196,7 +5196,10 @@ DO_LDFTN:
                 m_pLastNewIns->data[1] = GetDataItemIndex(resolvedToken.hClass);
                 m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
                 m_pStackPointer--;
-                PushInterpType(InterpTypeI, NULL);
+                if (isCastClass)
+                    PushInterpType(InterpTypeO, resolvedToken.hClass);
+                else
+                    PushInterpType(InterpTypeI, NULL);
                 m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 m_ip += 5;
                 break;
