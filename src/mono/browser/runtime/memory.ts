@@ -271,7 +271,16 @@ export function getI16_local (localView: Int16Array, offset: MemOffset): number 
 
 export function getI32 (offset: MemOffset): number {
     receiveWorkerHeapViews();
-    return Module.HEAP32[<any>offset >>> 2];
+    let n: number;
+    if (typeof offset === "bigint") {
+        if (offset > BigInt(Number.MAX_SAFE_INTEGER)) {
+            throw new Error("Offset too large for JS typed arrays");
+        }
+        n = Number(offset);
+    } else {
+        n = offset as number;
+    }
+    return new DataView(Module.HEAPU8.buffer).getInt32(n, true);
 }
 
 // does not check for growable heap

@@ -115,7 +115,17 @@ export function set_args_context (args: JSMarshalerArguments): void {
     set_arg_proxy_context(exc);
     set_arg_proxy_context(res);
 }
-
+function add_offset (ptr: JSFunctionSignature | number | bigint | JSMarshalerType, offset: number): number {
+    if (typeof ptr === "bigint") {
+        const result = ptr + BigInt(offset);
+        if (result > BigInt(Number.MAX_SAFE_INTEGER)) {
+            throw new Error("Offset too large for JavaScript typed arrays/DataView");
+        }
+        return Number(result);
+    } else {
+        return (ptr as number) + offset;
+    }
+}
 export function get_sig (signature: JSFunctionSignature, index: number): JSMarshalerType {
     mono_assert(signature, "Null signatures");
     return <any>signature + (index * JSMarshalerTypeSize) + JSMarshalerSignatureHeaderSize;
@@ -133,7 +143,7 @@ export function get_signature_res_type (sig: JSMarshalerType): MarshalerType {
 
 export function get_signature_arg1_type (sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU8(<any>sig + JSBindingTypeOffsets.Arg1MarshalerType);
+    return <any>getU8(add_offset(sig, JSBindingTypeOffsets.Arg1MarshalerType));
 }
 
 export function get_signature_arg2_type (sig: JSMarshalerType): MarshalerType {
@@ -153,7 +163,16 @@ export function get_signature_argument_count (signature: JSFunctionSignature): n
 
 export function get_signature_version (signature: JSFunctionSignature): number {
     mono_assert(signature, "Null signatures");
-    return <any>getI32(<any>signature + JSBindingHeaderOffsets.Version);
+    if (typeof signature === "bigint") {
+        const offset = signature + BigInt(JSBindingHeaderOffsets.Version);
+        if (offset > BigInt(Number.MAX_SAFE_INTEGER)) {
+            throw new Error("Offset too large for JavaScript typed arrays/DataView");
+        }
+        return new DataView(Module.HEAPU8.buffer).getInt32(Number(offset), true);
+    } else {
+        const offset = <any>signature + JSBindingHeaderOffsets.Version;
+        return getI32(offset);
+    }
 }
 
 export function get_signature_handle (signature: JSFunctionSignature): number {
@@ -163,11 +182,12 @@ export function get_signature_handle (signature: JSFunctionSignature): number {
 
 export function get_signature_function_name (signature: JSFunctionSignature): string | null {
     mono_assert(signature, "Null signatures");
-    const functionNameOffset = <any>getI32(<any>signature + JSBindingHeaderOffsets.FunctionNameOffset);
+    const functionNameOffset = <any>getI32(add_offset(signature, JSBindingHeaderOffsets.FunctionNameOffset));
     if (functionNameOffset === 0) return null;
-    const functionNameLength = <any>getI32(<any>signature + JSBindingHeaderOffsets.FunctionNameLength);
+    const functionNameLength = <any>getI32(add_offset(signature, JSBindingHeaderOffsets.FunctionNameLength));
     mono_assert(functionNameOffset, "Null name");
-    return utf16ToString(<any>signature + functionNameOffset, <any>signature + functionNameOffset + functionNameLength);
+    return utf16ToString(add_offset(signature, functionNameOffset),
+        add_offset(signature, functionNameOffset + functionNameLength));
 }
 
 export function get_signature_module_name (signature: JSFunctionSignature): string | null {
