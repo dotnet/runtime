@@ -1396,7 +1396,6 @@ namespace System.Net.Http
             HttpConnectionSettings settings = _connection.Pool.Settings;
             TimeSpan drainTime = settings._maxResponseDrainTime;
             int remaining = settings._maxResponseDrainSize - bytesRead;
-            Debug.Assert(remaining >= 0);
             if (drainTime == TimeSpan.Zero || remaining <= 0)
             {
                 return;
