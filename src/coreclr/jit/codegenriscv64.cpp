@@ -1344,7 +1344,15 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
         }
         else
         {
-            GetEmitter()->emitIns_R_R_I(attr == EA_4BYTE ? INS_addiw : INS_addi, attr, retReg, op1->GetRegNum(), 0);
+            if (attr == EA_4BYTE)
+            {
+                GetEmitter()->emitIns_R_R_I(INS_addiw, attr, retReg, op1->GetRegNum(), 0);
+            }
+            else
+            {
+                GetEmitter()->emitIns_R_R(INS_mov, attr, retReg, op1->GetRegNum());
+            }
+            
         }
     }
 }
@@ -1418,7 +1426,6 @@ void CodeGen::genLclHeap(GenTree* tree)
             regCnt = internalRegisters.Extract(tree);
             if (regCnt != targetReg)
             {
-                // emit->emitIns_R_R_I(INS_ori, easz, regCnt, targetReg, 0);
                 emit->emitIns_R_R(INS_mov, easz, regCnt, targetReg);
             }
         }
@@ -1593,7 +1600,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         // Overflow, set regCnt to lowest possible value
         emit->emitIns_R_R_I(INS_beq, EA_PTRSIZE, tempReg, REG_R0, 2 << 2);
-        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regCnt, REG_R0, 0);
+        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, regCnt, REG_R0);
 
         regNumber rPageSize = internalRegisters.GetSingle(tree);
 
@@ -1601,7 +1608,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         emit->emitIns_R_I(INS_lui, EA_PTRSIZE, rPageSize, pageSize >> 12);
         regSet.verifyRegUsed(rPageSize);
-        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, REG_SPBASE, 0);
+        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, tempReg, REG_SPBASE);
 
         // tickle the page - this triggers a page fault when on the guard page
         emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, tempReg, 0);
@@ -1612,7 +1619,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // lastTouchDelta is dynamic, and can be up to a page. So if we have outgoing arg space,
         // we're going to assume the worst and probe.
         // Move the final value to SP
-        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, regCnt, 0);
+        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, regCnt);
     }
 
 ALLOC_DONE:
@@ -1640,7 +1647,6 @@ ALLOC_DONE:
     else // stackAdjustment == 0
     {
         // Move the final value of SP to targetReg
-        // emit->emitIns_R_R_I(INS_ori, EA_PTRSIZE, targetReg, REG_SPBASE, 0);
         emit->emitIns_R_R(INS_mov, EA_PTRSIZE, targetReg, REG_SPBASE);
     }
 
@@ -6084,7 +6090,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                 }
                 else
                 {
-                    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstReg, srcReg, 0);
+                    emit->emitIns_R_R(INS_mov, EA_PTRSIZE, dstReg, srcReg);
                 }
                 break;
         }
@@ -6329,7 +6335,6 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             {
                 if (lea->GetRegNum() != memBase->GetRegNum())
                 {
-                    // emit->emitIns_R_R_I(INS_ori, size, lea->GetRegNum(), memBase->GetRegNum(), 0);
                     emit->emitIns_R_R(INS_mov, size, lea->GetRegNum(), memBase->GetRegNum());
                 }
             }
