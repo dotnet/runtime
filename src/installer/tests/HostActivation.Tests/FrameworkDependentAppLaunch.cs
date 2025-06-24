@@ -56,7 +56,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             TestContext.BuiltDotNet.Exec(appOtherExt)
                 .CaptureStdErr()
-                .Execute(expectedToFail: true)
+                .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining($"The application '{appOtherExt}' does not exist or is not a managed .dll or .exe");
         }
@@ -143,7 +143,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             TestContext.BuiltDotNet.Exec(appExe)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(expectedToFail: true)
+                .DisableDumps() // Expected to throw an exception
+                .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining("BadImageFormatException");
         }
@@ -429,7 +430,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .EnableTracingAndCaptureOutputs()
                     .DotNetRoot(invalidDotNet.Location)
                     .MultilevelLookup(false)
-                    .Execute(expectedToFail: true);
+                    .Execute();
 
                 result.Should().Fail()
                     .And.HaveStdErrContaining($"https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")

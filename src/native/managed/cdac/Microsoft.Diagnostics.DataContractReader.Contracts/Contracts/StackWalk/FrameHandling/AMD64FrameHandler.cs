@@ -13,11 +13,7 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
 
     void IPlatformFrameHandler.HandleFaultingExceptionFrame(FaultingExceptionFrame frame)
     {
-        if (frame.TargetContext is not TargetPointer targetContext)
-        {
-            throw new InvalidOperationException("Unexpected null context pointer on FaultingExceptionFrame");
-        }
-        _holder.ReadFromAddress(_target, targetContext);
+        _holder.ReadFromAddress(_target, frame.TargetContext);
 
         // Clear the CONTEXT_XSTATE, since the AMD64Context contains just plain CONTEXT structure
         // that does not support holding any extended state.

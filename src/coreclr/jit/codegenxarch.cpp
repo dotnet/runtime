@@ -822,38 +822,75 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     // to get the high bits of the multiply, we are constrained to using the
     // 1-op form:  RDX:RAX = RAX * rm
     // The 3-op form (Rx=Ry*Rz) does not support it.
-
+    // When BMI2 is available, we can use the MULX instruction to get the high bits
     genConsumeOperands(treeNode->AsOp());
 
     GenTree* regOp = op1;
     GenTree* rmOp  = op2;
 
-    // Set rmOp to the memory operand (if any)
-    if (op1->isUsedFromMemory() || (op2->isUsedFromReg() && (op2->GetRegNum() == REG_RAX)))
+    if (op1->isUsedFromMemory())
     {
         regOp = op2;
         rmOp  = op1;
     }
     assert(regOp->isUsedFromReg());
 
-    // Setup targetReg when neither of the source operands was a matching register
-    inst_Mov(targetType, REG_RAX, regOp->GetRegNum(), /* canSkip */ true);
+    if (treeNode->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+    {
+        if (rmOp->isUsedFromReg() && (rmOp->GetRegNum() == REG_RDX))
+        {
+            std::swap(regOp, rmOp);
+        }
 
-    instruction ins;
-    if ((treeNode->gtFlags & GTF_UNSIGNED) == 0)
-    {
-        ins = INS_imulEAX;
-    }
-    else
-    {
-        ins = INS_mulEAX;
-    }
-    emit->emitInsBinary(ins, size, treeNode, rmOp);
+        // Setup targetReg when neither of the source operands was a matching register
+        inst_Mov(targetType, REG_RDX, regOp->GetRegNum(), /* canSkip */ true);
 
-    // Move the result to the desired register, if necessary
-    if (treeNode->OperIs(GT_MULHI))
+        if (treeNode->OperIs(GT_MULHI))
+        {
+            // emit MULX instruction, use targetReg twice to only store high result
+            inst_RV_RV_TT(INS_mulx, size, targetReg, targetReg, rmOp, /* isRMW */ false, INS_OPTS_NONE);
+        }
+        else
+        {
+#if TARGET_64BIT
+            assert(false);
+#else
+            assert(treeNode->OperIs(GT_MUL_LONG));
+
+            // emit MULX instruction
+            regNumber hiReg = treeNode->AsMultiRegOp()->GetRegByIndex(1);
+            inst_RV_RV_TT(INS_mulx, size, hiReg, targetReg, rmOp, /* isRMW */ false, INS_OPTS_NONE);
+#endif
+        }
+    }
+    else // Generate MUL or IMUL instruction
     {
-        inst_Mov(targetType, targetReg, REG_RDX, /* canSkip */ true);
+        // If op2 is already present in RAX use that as implicit operand
+        if (rmOp->isUsedFromReg() && (rmOp->GetRegNum() == REG_RAX))
+        {
+            std::swap(regOp, rmOp);
+        }
+
+        // Setup targetReg when neither of the source operands was a matching register
+        inst_Mov(targetType, REG_RAX, regOp->GetRegNum(), /* canSkip */ true);
+
+        instruction ins;
+        if (!treeNode->IsUnsigned())
+        {
+            ins = INS_imulEAX;
+        }
+        else
+        {
+            ins = INS_mulEAX;
+        }
+        emit->emitInsBinary(ins, size, treeNode, rmOp);
+
+        // Move the result to the desired register, if necessary
+        if (treeNode->OperIs(GT_MULHI))
+        {
+            assert(targetReg == REG_RDX);
+            inst_Mov(targetType, targetReg, REG_RDX, /* canSkip */ true);
+        }
     }
 
     genProduceReg(treeNode);
@@ -9404,6 +9441,13 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_R_R(INS_pext, EA_4BYTE, REG_R16, REG_R18, REG_R17);
     theEmitter->emitIns_R_R_R(INS_pext, EA_8BYTE, REG_R16, REG_R18, REG_R17);
 
+    theEmitter->emitIns_R_R(INS_push2, EA_PTRSIZE, REG_R17, REG_R18, (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
+    theEmitter->emitIns_R_R(INS_pop2, EA_PTRSIZE, REG_R17, REG_R18, (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
+    theEmitter->emitIns_R(INS_push, EA_PTRSIZE, REG_R11, INS_OPTS_APX_ppx);
+    theEmitter->emitIns_R(INS_pop, EA_PTRSIZE, REG_R11, INS_OPTS_APX_ppx);
+    theEmitter->emitIns_R(INS_push, EA_PTRSIZE, REG_R17, INS_OPTS_APX_ppx);
+    theEmitter->emitIns_R(INS_pop, EA_PTRSIZE, REG_R17, INS_OPTS_APX_ppx);
+
     theEmitter->emitIns_Mov(INS_movd32, EA_4BYTE, REG_R16, REG_XMM0, false);
     theEmitter->emitIns_Mov(INS_movd32, EA_4BYTE, REG_R16, REG_XMM16, false);
 }
@@ -10257,7 +10301,6 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
         osrAdditionalIntCalleeSaves &= ~regBit;
     }
 }
-
 #endif // TARGET_AMD64
 
 //------------------------------------------------------------------------
@@ -10307,6 +10350,14 @@ void CodeGen::genPushCalleeSavedRegisters()
     }
 #endif // DEBUG
 
+#ifdef TARGET_AMD64
+    if (compiler->canUseApxEncoding() && compiler->canUseEvexEncoding() && JitConfig.EnableApxPPX())
+    {
+        genPushCalleeSavedRegistersFromMaskAPX(rsPushRegs);
+        return;
+    }
+#endif // TARGET_AMD64
+
     // Push backwards so we match the order we will pop them in the epilog
     // and all the other code that expects it to be in this order.
     for (regNumber reg = get_REG_INT_LAST(); rsPushRegs != RBM_NONE; reg = REG_PREV(reg))
@@ -10321,6 +10372,77 @@ void CodeGen::genPushCalleeSavedRegisters()
         }
     }
 }
+
+#if defined(TARGET_AMD64)
+//------------------------------------------------------------------------
+// genPushCalleeSavedRegistersFromMaskAPX: push specified set of callee saves
+//   in the "standard" order using Push2 when possible
+//
+// Arguments:
+//     rsPushRegs        - register mask of registers to push
+//
+// Return Value:
+//     The number of registers popped.
+//
+void CodeGen::genPushCalleeSavedRegistersFromMaskAPX(regMaskTP rsPushRegs)
+{
+    // This is not a funclet or an On-Stack Replacement.
+    assert((compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT) && !compiler->opts.IsOSR());
+    // PUSH2 doesn't work for ESP.
+    assert((rsPushRegs & RBM_SPBASE) == 0);
+    // We need to align the stack to 16 bytes to use push2/pop2.
+    // The ABI requirement is that the stack must be 16B aligned at the point of a function call.
+    // As soon as the CALL is executed, the stack is no longer 16B aligned.
+    // To use PP2, the stack needs to be pre-aligned
+    // If isFramePointerUsed() is true, we have already pushed the frame pointer and stack is aligned.
+    // Else, We need to issue a single push to align the stack.
+    if (!isFramePointerUsed() && (rsPushRegs != RBM_NONE))
+    {
+        if ((rsPushRegs & RBM_FPBASE) != 0)
+        {
+            GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, REG_EBP, INS_OPTS_APX_ppx);
+            compiler->unwindPush(REG_EBP);
+            rsPushRegs &= ~RBM_FPBASE;
+        }
+        else
+        {
+            regNumber alignReg = genFirstRegNumFromMaskAndToggle(rsPushRegs);
+            GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, alignReg, INS_OPTS_APX_ppx);
+            compiler->unwindPush(alignReg);
+        }
+    }
+
+    // Push backwards so we match the order we will pop them in the epilog
+    // and all the other code that expects it to be in this order.
+    // All registers to be saved as pushed to an ArrayStack
+    ArrayStack<regNumber> regStack(compiler->getAllocator(CMK_Codegen));
+    while (rsPushRegs != RBM_NONE)
+    {
+        regNumber reg = genFirstRegNumFromMaskAndToggle(rsPushRegs);
+        regStack.Push(reg);
+    }
+
+    // We need to push the registers in pairs.
+    // In cases where we have an odd number of registers, we need to push the last one
+    // separately at the end to maintain alignment for push2.
+    while (regStack.Height() > 1)
+    {
+        regNumber reg1 = regStack.Pop();
+        regNumber reg2 = regStack.Pop();
+
+        GetEmitter()->emitIns_R_R(INS_push2, EA_PTRSIZE, reg1, reg2, (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
+        compiler->unwindPush2(reg1, reg2);
+    }
+
+    if (regStack.Height() == 1)
+    {
+        regNumber reg = regStack.Pop();
+        GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, reg, INS_OPTS_APX_ppx);
+        compiler->unwindPush(reg);
+    }
+    assert(regStack.Height() == 0);
+}
+#endif // TARGET_AMD64
 
 void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
@@ -10352,6 +10474,14 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         // Tier0 frame pointer will be restored separately.
         //
         genPopCalleeSavedRegistersFromMask(tier0CalleeSaves & ~RBM_FPBASE);
+        return;
+    }
+
+    if (compiler->canUseApxEncoding() && compiler->canUseEvexEncoding() && JitConfig.EnableApxPPX())
+    {
+        regMaskTP      rsPopRegs = regSet.rsGetModifiedIntCalleeSavedRegsMask();
+        const unsigned popCount  = genPopCalleeSavedRegistersFromMaskAPX(rsPopRegs);
+        noway_assert(compiler->compCalleeRegsPushed == popCount);
         return;
     }
 
@@ -10429,6 +10559,78 @@ unsigned CodeGen::genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs)
 
     return popCount;
 }
+
+#if defined(TARGET_AMD64)
+//------------------------------------------------------------------------
+// genPopCalleeSavedRegistersFromMaskAPX: pop specified set of callee saves
+//   in the "standard" order using Pop2 when possible
+//
+// Arguments:
+//     rsPopRegs        - register mask of registers to pop
+//
+// Return Value:
+//     The number of registers popped.
+//
+unsigned CodeGen::genPopCalleeSavedRegistersFromMaskAPX(regMaskTP rsPopRegs)
+{
+    // This is not a funclet or an On-Stack Replacement.
+    assert((compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT) && !compiler->opts.IsOSR());
+    unsigned popCount = 0;
+    // POP2 doesn't work for ESP.
+    assert((rsPopRegs & RBM_SPBASE) == 0);
+    regNumber alignReg = REG_NA;
+    // We need to align the stack to 16 bytes to use push2/pop2.
+    // If isFramePointerUsed() is true, we will pop the frame pointer and stack will be aligned.
+    // Else, We need to issue a single pop after the last pop2 to align the stack.
+    if (!isFramePointerUsed() && (rsPopRegs != RBM_NONE))
+    {
+        if ((rsPopRegs & RBM_FPBASE) != 0)
+        {
+            alignReg = REG_EBP;
+            rsPopRegs &= ~RBM_FPBASE;
+        }
+        else
+        {
+            alignReg = genFirstRegNumFromMaskAndToggle(rsPopRegs);
+        }
+    }
+
+    // All registers to be restored as pushed to an ArrayStack
+    ArrayStack<regNumber> regStack(compiler->getAllocator(CMK_Codegen));
+    while (rsPopRegs != RBM_NONE)
+    {
+        regNumber reg = genFirstRegNumFromMaskAndToggle(rsPopRegs);
+        regStack.Push(reg);
+    }
+
+    int index = 0;
+    if (regStack.Height() % 2 == 1)
+    {
+        // We have an odd number of registers to pop, so we need to pop the last one
+        // separately..
+        regNumber reg = regStack.Bottom(index++);
+        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, reg, INS_OPTS_APX_ppx);
+        popCount++;
+    }
+
+    while (index < (regStack.Height() - 1))
+    {
+        regNumber reg1 = regStack.Bottom(index++);
+        regNumber reg2 = regStack.Bottom(index++);
+        GetEmitter()->emitIns_R_R(INS_pop2, EA_PTRSIZE, reg1, reg2, (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
+        popCount += 2;
+    }
+    assert(regStack.Height() == index);
+
+    if (alignReg != REG_NA)
+    {
+        GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, alignReg, INS_OPTS_APX_ppx);
+        popCount++;
+    }
+
+    return popCount;
+}
+#endif // defined(TARGET_AMD64)
 
 /*****************************************************************************
  *
