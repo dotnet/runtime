@@ -65,12 +65,20 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(typeof(Class_WithIgnoredInitOnlyProperty_WithDefaultValue))]
-        [InlineData(typeof(Record_WithIgnoredPropertyInCtor_WithDefaultValue))]
-        public async Task InitOnlySetter_With_JsonIgnoreAlways_AndWith_DefaultValue(Type type)
+        [InlineData(typeof(Class_WithIgnoredInitOnlyProperty))]
+        [InlineData(typeof(Record_WithIgnoredPropertyInCtor))]
+        public async Task InitOnlySetter_With_JsonIgnoreAlways(Type type)
         {
-            object obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
-            Assert.Equal(42, (int)type.GetProperty("MyInt").GetValue(obj));
+            object obj = await Serializer.DeserializeWrapper(@"{""MyInt"":42}", type);
+            Assert.Equal(0, (int)type.GetProperty("MyInt").GetValue(obj));
+        }
+
+        [Theory]
+        [InlineData(typeof(Class_WithIgnoredRequiredProperty))]
+        public async Task RequiredSetter_With_JsonIgnoreAlways_ThrowsInvalidOperationException(Type type)
+        {
+            JsonSerializerOptions options = Serializer.CreateOptions(opts => opts.RespectRequiredConstructorParameters = true);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.DeserializeWrapper(@"{""MyInt"":42}", type, options));
         }
 
         [Fact]
@@ -156,14 +164,20 @@ namespace System.Text.Json.Serialization.Tests
             public int MyInt { get; protected init; }
         }
 
-        public class Class_WithIgnoredInitOnlyProperty_WithDefaultValue
+        public class Class_WithIgnoredInitOnlyProperty
         {
             [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-            public int MyInt { get; init; } = 42;
+            public int MyInt { get; init; }
         }
+        
+        public record Record_WithIgnoredPropertyInCtor(
+            [property: JsonIgnore] int MyInt = 0);
 
-        public record Record_WithIgnoredPropertyInCtor_WithDefaultValue(
-            [property: JsonIgnore] int MyInt = 42);
+        public class Class_WithIgnoredRequiredProperty
+        {
+            [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+            public required int MyInt { get; set; }
+        }
 
         public record RecordWithIgnoredNestedInitOnlyProperty(
             [property: JsonIgnore] RecordWithIgnoredNestedInitOnlyProperty.InnerRecord Other)
