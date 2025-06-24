@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable SYSLIB5006
-
 using System;
 using System.Collections.Generic;
 using System.Formats.Cbor;
@@ -23,12 +21,10 @@ namespace System.Security.Cryptography.Cose.Tests
             AssertExtensions.Throws<ArgumentNullException>("key", static () => CoseKey.FromKey((ECDsa)null!, HashAlgorithmName.SHA256));
             AssertExtensions.Throws<ArgumentNullException>("key", static () => CoseKey.FromKey((RSA)null!, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA256));
 
-            RSA rsaKey = (RSA)KeyManager.GetKey(CoseTestKeyManager.RSAPkcs1Identifier).Key;
-            AssertExtensions.Throws<ArgumentNullException>("signaturePadding", () => CoseKey.FromKey(rsaKey, null!, HashAlgorithmName.SHA256));
-            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm.Name", () => CoseKey.FromKey(rsaKey, RSASignaturePadding.Pkcs1, default));
+            AssertExtensions.Throws<ArgumentNullException>("signaturePadding", () => CoseKey.FromKey(CoseTestHelpers.RSAKey, null!, HashAlgorithmName.SHA256));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm.Name", () => CoseKey.FromKey(CoseTestHelpers.RSAKey, RSASignaturePadding.Pkcs1, default));
 
-            ECDsa ecdsaKey = (ECDsa)KeyManager.GetKey(CoseTestKeyManager.ECDsaIdentifier).Key;
-            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm.Name", () => CoseKey.FromKey(ecdsaKey, default));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm.Name", () => CoseKey.FromKey(CoseTestHelpers.ES256, default));
         }
 
         [Fact]
@@ -40,11 +36,12 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void VerifySingleSignerWithNullCoseKey_Throws()
         {
-            CoseTestKey key = KeyManager.GetKey(CoseTestKeyManager.ECDsaIdentifier);
+            CoseKey key = CoseKey.FromKey(CoseTestHelpers.ES256, HashAlgorithmName.SHA256);
+            CoseSigner signer = new CoseSigner(key);
             byte[] payload = Encoding.UTF8.GetBytes(nameof(VerifySingleSignerWithNullCoseKey_Throws));
             MemoryStream payloadStream = new(payload);
-            byte[] embeddedMessageBytes = CoseSign1Message.SignEmbedded(payload, key.Signer, Array.Empty<byte>());
-            byte[] detatchedMessageBytes = CoseSign1Message.SignDetached(payload, key.Signer, Array.Empty<byte>());
+            byte[] embeddedMessageBytes = CoseSign1Message.SignEmbedded(payload, signer, Array.Empty<byte>());
+            byte[] detatchedMessageBytes = CoseSign1Message.SignDetached(payload, signer, Array.Empty<byte>());
 
             CoseSign1Message embeddedMessage = CoseSign1Message.DecodeSign1(embeddedMessageBytes);
             CoseSign1Message detachedMessage = CoseSign1Message.DecodeSign1(detatchedMessageBytes);
@@ -58,11 +55,12 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void VerifyMultiSignerWithNullCoseKey_Throws()
         {
-            CoseTestKey key = KeyManager.GetKey(CoseTestKeyManager.ECDsaIdentifier);
+            CoseKey key = CoseKey.FromKey(CoseTestHelpers.ES256, HashAlgorithmName.SHA256);
+            CoseSigner signer = new CoseSigner(key);
             byte[] payload = Encoding.UTF8.GetBytes(nameof(VerifySingleSignerWithNullCoseKey_Throws));
             MemoryStream payloadStream = new(payload);
-            byte[] embeddedMessageBytes = CoseMultiSignMessage.SignEmbedded(payload, key.Signer);
-            byte[] detatchedMessageBytes = CoseMultiSignMessage.SignDetached(payload, key.Signer);
+            byte[] embeddedMessageBytes = CoseMultiSignMessage.SignEmbedded(payload, signer);
+            byte[] detatchedMessageBytes = CoseMultiSignMessage.SignDetached(payload, signer);
 
             CoseMultiSignMessage embeddedMessage = CoseMultiSignMessage.DecodeMultiSign(embeddedMessageBytes);
             CoseMultiSignMessage detachedMessage = CoseMultiSignMessage.DecodeMultiSign(detatchedMessageBytes);

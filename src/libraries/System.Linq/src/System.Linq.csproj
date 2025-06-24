@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
@@ -33,6 +33,7 @@
     <Compile Include="System\Linq\Grouping.SpeedOpt.cs" />
     <Compile Include="System\Linq\GroupJoin.cs" />
     <Compile Include="System\Linq\Index.cs" />
+    <Compile Include="System\Linq\InfiniteSequence.cs" />
     <Compile Include="System\Linq\Intersect.cs" />
     <Compile Include="System\Linq\Iterator.cs" />
     <Compile Include="System\Linq\Iterator.SpeedOpt.cs" />
@@ -64,6 +65,7 @@
     <Compile Include="System\Linq\Select.SpeedOpt.cs" />
     <Compile Include="System\Linq\SelectMany.cs" />
     <Compile Include="System\Linq\SelectMany.SpeedOpt.cs" />
+    <Compile Include="System\Linq\Sequence.cs" />
     <Compile Include="System\Linq\SequenceEqual.cs" />
     <Compile Include="System\Linq\Single.cs" />
     <Compile Include="System\Linq\SingleLinkedNode.cs" />
