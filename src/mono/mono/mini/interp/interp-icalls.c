@@ -44,8 +44,10 @@ interp_type_as_ptr8 (MonoType *tp)
 	if ((tp)->type == MONO_TYPE_I8 || (tp)->type == MONO_TYPE_U8)
 		return TRUE;		
 	if ((tp)->type == MONO_TYPE_R8)
-		return TRUE;		
-	 
+		return TRUE;	
+	// return true for value types that are NOT enums
+	if ((tp)->type == MONO_TYPE_VALUETYPE && !m_class_is_enumtype (m_type_data_get_klass_unchecked (tp)))
+		return TRUE;
 	return FALSE;
 }
 
