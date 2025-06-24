@@ -16,6 +16,7 @@ namespace Internal.Runtime.InteropServices
     ///</summary>
     [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("maccatalyst")]
     [UnsupportedOSPlatform("tvos")]
