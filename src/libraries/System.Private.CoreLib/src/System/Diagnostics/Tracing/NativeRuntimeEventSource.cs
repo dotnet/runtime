@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.ObjectModel;
-
+using System.Runtime.InteropServices;
 namespace System.Diagnostics.Tracing
 {
     /// <summary>
@@ -51,13 +51,13 @@ namespace System.Diagnostics.Tracing
             }
 
             // Make sure the eventID is valid.
-            if (eventID >= m_eventData!.Length)
+            if (eventID >= m_eventData!.Count)
             {
                 return;
             }
 
             // Decode the payload.
-            object[] decodedPayloadFields = EventPipePayloadDecoder.DecodePayload(ref m_eventData[eventID], payload);
+            object[] decodedPayloadFields = EventPipePayloadDecoder.DecodePayload(ref CollectionsMarshal.GetValueRefOrNullRef(m_eventData, (int) eventID), payload);
 
             var eventCallbackArgs = new EventWrittenEventArgs(this, (int)eventID, &activityId, &childActivityId)
             {
