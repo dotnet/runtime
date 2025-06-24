@@ -173,7 +173,8 @@ namespace
                         bool file_exists = pal::fullpath(&app_candidate_fullpath);
                         if (file_exists)
                         {
-                            return StatusCode::AppArgNotManagedFailure;
+                            trace::error(_X("The application '%s' is not a managed .dll or .exe."), app_candidate.c_str());
+                            return StatusCode::InvalidArgFailure;
                         }
                     }
                     // Route to CLI.

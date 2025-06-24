@@ -28,7 +28,7 @@ enum StatusCode
     // unused                           = 0x8000808d,
     LibHostInitFailure                  = 0x8000808e,   // Initialization of the `hostpolicy` library failed
     // unused                           = 0x8000808f,
-    AppArgNotManagedFailure             = 0x80008090,   // [internal usage only] File exists but is not a managed .dll or .exe
+    // unused                           = 0x80008090,
     // unused                           = 0x80008091,
     LibHostInvalidArgs                  = 0x80008092,   // Arguments to `hostpolicy` are invalid
     InvalidConfigFile                   = 0x80008093,   // The `.runtimeconfig.json` file is invalid
