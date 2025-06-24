@@ -3071,15 +3071,21 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             break;
         }
-        case CORINFO_FIELD_INTRINSIC_EMPTY_STRING:
+        case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
         {
-            void *emptyString;
-            InfoAccessType iat = m_compHnd->emptyStringLiteral(&emptyString);
-            assert(iat == IAT_VALUE);
-            AddIns(INTOP_LDPTR);
-            PushInterpType(InterpTypeO, NULL);
+            AddIns(INTOP_CALL_HELPER_PP);
+            m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(pFieldInfo->helper);
+            m_pLastNewIns->data[1] = GetDataItemIndex(pResolvedToken->tokenContext);
+            PushInterpType(InterpTypeByRef, NULL);
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-            m_pLastNewIns->data[0] = GetDataItemIndex(emptyString);
+
+            // Add field offset
+            m_pStackPointer--;
+            AddIns(INTOP_ADD_P_IMM);
+            m_pLastNewIns->data[0] = (int32_t)pFieldInfo->offset;
+            m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+            PushInterpType(InterpTypeByRef, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             break;
         }
         default:
@@ -3110,11 +3116,43 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
 
 void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad)
 {
-    EmitStaticFieldAddress(pFieldInfo, pResolvedToken);
-    if (isLoad)
-        EmitLdind(interpFieldType, pFieldInfo->structType, 0);
-    else
-        EmitStind(interpFieldType, pFieldInfo->structType, 0, true);
+    switch (pFieldInfo->fieldAccessor)
+    {
+        case CORINFO_FIELD_INTRINSIC_ZERO:
+            AddIns(INTOP_LDNULL);
+            PushInterpType(InterpTypeI, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            break;
+        case CORINFO_FIELD_INTRINSIC_EMPTY_STRING:
+        {
+            void *emptyString;
+            InfoAccessType iat = m_compHnd->emptyStringLiteral(&emptyString);
+            assert(iat == IAT_VALUE);
+            AddIns(INTOP_LDPTR);
+            PushInterpType(InterpTypeO, m_compHnd->getBuiltinClass(CLASSID_STRING));
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            m_pLastNewIns->data[0] = GetDataItemIndex(emptyString);
+            break;
+        }
+        case CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN:
+            // This is a field that is used to determine the endianness of the system
+            AddIns(INTOP_LDC_I4);
+#if BIGENDIAN
+            m_pLastNewIns->data[0] = 0;
+#else
+            m_pLastNewIns->data[0] = 1;
+#endif
+            PushInterpType(InterpTypeI4, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            break;
+        default:
+            EmitStaticFieldAddress(pFieldInfo, pResolvedToken);
+            if (isLoad)
+                EmitLdind(interpFieldType, pFieldInfo->structType, 0);
+            else
+                EmitStind(interpFieldType, pFieldInfo->structType, 0, true);
+            break;
+    }
 }
 
 void InterpCompiler::EmitLdLocA(int32_t var)
@@ -4815,7 +4853,7 @@ retry_emit:
                         {
                             goto DO_LDFTN;
                         }
-                        
+
                         EmitPushLdvirtftn(thisVar, &resolvedToken, &callInfo);
                         m_ip += 5;
                         break;
@@ -4826,7 +4864,7 @@ retry_emit:
                             CORINFO_RESOLVED_TOKEN resolvedToken;
                             uint32_t token = getU4LittleEndian(m_ip + 1);
                             ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
-                            
+
                             memset(&callInfo, 0, sizeof(callInfo));
                             m_compHnd->getCallInfo(&resolvedToken, pConstrainedToken, m_methodInfo->ftn, (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS| CORINFO_CALLINFO_LDFTN), &callInfo);
                         }
@@ -5408,38 +5446,20 @@ DO_LDFTN:
             }
 
             case CEE_ISINST:
-            {
-                CHECK_STACK(1);
-                CORINFO_RESOLVED_TOKEN resolvedToken;
-                ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Casting, &resolvedToken);
-
-                CorInfoHelpFunc castingHelper = m_compHnd->getCastingHelper(&resolvedToken, false /* throwing */);
-
-                CORINFO_GENERICHANDLE_RESULT embedInfo;
-                InterpEmbedGenericResult result;
-                m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
-                m_pStackPointer--;
-                DeclarePointerIsClass((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
-                EmitPushHelperCall_2(castingHelper, embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[InterpTypeI], NULL);
-                m_ip += 5;
-                break;
-            }
-
             case CEE_CASTCLASS:
             {
                 CHECK_STACK(1);
                 CORINFO_RESOLVED_TOKEN resolvedToken;
                 ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Casting, &resolvedToken);
 
-                CorInfoHelpFunc castingHelper = m_compHnd->getCastingHelper(&resolvedToken, true /* throwing */);
+                CorInfoHelpFunc castingHelper = m_compHnd->getCastingHelper(&resolvedToken, *m_ip == CEE_CASTCLASS /* throwing */);
 
                 CORINFO_GENERICHANDLE_RESULT embedInfo;
                 InterpEmbedGenericResult result;
                 m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
-
-                DeclarePointerIsClass((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
                 m_pStackPointer--;
-                EmitPushHelperCall_2(castingHelper, embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[InterpTypeO], NULL);
+                DeclarePointerIsClass((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
+                EmitPushHelperCall_2(castingHelper, embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[*m_ip == CEE_CASTCLASS ? InterpTypeO : InterpTypeI], NULL);
                 m_ip += 5;
                 break;
             }
