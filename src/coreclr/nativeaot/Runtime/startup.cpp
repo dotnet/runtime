@@ -131,8 +131,8 @@ static bool InitDLL(HANDLE hPalInstance)
 #endif // !USE_PORTABLE_HELPERS
 
 #ifdef STRESS_LOG
-    uint32_t dwTotalStressLogSize = (uint32_t)g_pRhConfig->GetTotalStressLogSize();
-    uint32_t dwStressLogLevel = (uint32_t)g_pRhConfig->GetStressLogLevel();
+    uint32_t dwTotalStressLogSize = 0x1000000; // (uint32_t)g_pRhConfig->GetTotalStressLogSize();
+    uint32_t dwStressLogLevel = 9; // (uint32_t)g_pRhConfig->GetStressLogLevel();
 
     unsigned facility = (unsigned)LF_ALL;
     unsigned dwPerThreadChunks = (dwTotalStressLogSize / 24) / STRESSLOG_CHUNK_SIZE;
