@@ -256,8 +256,7 @@ namespace System.Net.WebSockets.Client.Tests
                     cws.Options.HttpVersion = HttpVersion.Version11;
                     cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
 
-                    Uri wsUrl = new Uri(url.ToString().Replace("http://", "ws://"));
-                    Task connectTask = cws.ConnectAsync(wsUrl, GetInvoker(), cts.Token);
+                    Task connectTask = cws.ConnectAsync(url, GetInvoker(), cts.Token);
 
                     await server.AcceptConnectionAsync(async connection =>
                     {
@@ -267,7 +266,7 @@ namespace System.Net.WebSockets.Client.Tests
                     await connectTask;
                     Assert.Equal(WebSocketState.Open, cws.State);
                 }
-            });
+            }, new LoopbackServer.Options { UseSsl = true, WebSocketEndpoint = true });
         }
     }
 }
