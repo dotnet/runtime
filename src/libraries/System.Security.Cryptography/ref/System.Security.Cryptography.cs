@@ -1819,11 +1819,14 @@ namespace System.Security.Cryptography
         public string ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
         public string ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
         public string ExportEncryptedPkcs8PrivateKeyPem(string password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
-        public int ExportMLDsaPrivateSeed(System.Span<byte> destination) { throw null; }
+        public byte[] ExportMLDsaPrivateSeed() { throw null; }
+        public void ExportMLDsaPrivateSeed(System.Span<byte> destination) { }
         protected abstract void ExportMLDsaPrivateSeedCore(System.Span<byte> destination);
-        public int ExportMLDsaPublicKey(System.Span<byte> destination) { throw null; }
+        public byte[] ExportMLDsaPublicKey() { throw null; }
+        public void ExportMLDsaPublicKey(System.Span<byte> destination) { }
         protected abstract void ExportMLDsaPublicKeyCore(System.Span<byte> destination);
-        public int ExportMLDsaSecretKey(System.Span<byte> destination) { throw null; }
+        public byte[] ExportMLDsaSecretKey() { throw null; }
+        public void ExportMLDsaSecretKey(System.Span<byte> destination) { }
         protected abstract void ExportMLDsaSecretKeyCore(System.Span<byte> destination);
         public byte[] ExportPkcs8PrivateKey() { throw null; }
         public string ExportPkcs8PrivateKeyPem() { throw null; }

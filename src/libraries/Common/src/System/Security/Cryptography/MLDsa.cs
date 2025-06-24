@@ -701,79 +701,151 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Exports the public-key portion of the current key in the FIPS 204 public key format.
         /// </summary>
-        /// <param name="destination">
-        ///   The buffer to receive the public key.
-        /// </param>
         /// <returns>
-        ///   The number of bytes written to <paramref name="destination"/>.
+        ///   The FIPS 204 public key.
         /// </returns>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="destination"/> is too small to hold the public key.
+        /// <exception cref="CryptographicException">
+        ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
-        public int ExportMLDsaPublicKey(Span<byte> destination)
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] ExportMLDsaPublicKey()
         {
-            if (destination.Length < Algorithm.PublicKeySizeInBytes)
+            ThrowIfDisposed();
+
+            byte[] destination = new byte[Algorithm.PublicKeySizeInBytes];
+            ExportMLDsaPublicKeyCore(destination);
+            return destination;
+        }
+
+        /// <summary>
+        ///   Exports the public-key portion of the current key in the FIPS 204 public key format.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the public key. Its length must be exactly
+        ///   <see cref="MLDsaAlgorithm.PublicKeySizeInBytes"/>.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="destination"/> is the incorrect length to receive the public key.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>An error occurred while exporting the key.</para>
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <remarks>
+        ///   <paramref name="destination"/> is required to be exactly
+        ///   <see cref="MLDsaAlgorithm.PublicKeySizeInBytes"/> in length.
+        /// </remarks>
+        public void ExportMLDsaPublicKey(Span<byte> destination)
+        {
+            int publicKeySizeInBytes = Algorithm.PublicKeySizeInBytes;
+
+            if (destination.Length != publicKeySizeInBytes)
             {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, publicKeySizeInBytes),
+                    nameof(destination));
             }
 
             ThrowIfDisposed();
-            ExportMLDsaPublicKeyCore(destination.Slice(0, Algorithm.PublicKeySizeInBytes));
-            return Algorithm.PublicKeySizeInBytes;
+
+            ExportMLDsaPublicKeyCore(destination);
+        }
+
+        /// <summary>
+        ///   Exports the current key in the FIPS 204 secret key format.
+        /// </summary>
+        /// <returns>
+        ///   The FIPS 204 secret key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>The current instance cannot export a secret key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] ExportMLDsaSecretKey()
+        {
+            ThrowIfDisposed();
+
+            byte[] destination = new byte[Algorithm.SecretKeySizeInBytes];
+            ExportMLDsaSecretKeyCore(destination);
+            return destination;
         }
 
         /// <summary>
         ///   Exports the current key in the FIPS 204 secret key format.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the secret key.
+        ///   The buffer to receive the secret key. Its length must be exactly
+        ///   <see cref="MLDsaAlgorithm.SecretKeySizeInBytes"/>.
         /// </param>
-        /// <returns>
-        ///   The number of bytes written to <paramref name="destination"/>.
-        /// </returns>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="destination"/> is too small to hold the secret key.
+        ///   <paramref name="destination"/> is the incorrect length to receive the secret key.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        public int ExportMLDsaSecretKey(Span<byte> destination)
+        public void ExportMLDsaSecretKey(Span<byte> destination)
         {
-            if (destination.Length < Algorithm.SecretKeySizeInBytes)
+            int secretKeySizeInBytes = Algorithm.SecretKeySizeInBytes;
+
+            if (destination.Length != secretKeySizeInBytes)
             {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, secretKeySizeInBytes),
+                    nameof(destination));
             }
 
             ThrowIfDisposed();
-            ExportMLDsaSecretKeyCore(destination.Slice(0, Algorithm.SecretKeySizeInBytes));
-            return Algorithm.SecretKeySizeInBytes;
+
+            ExportMLDsaSecretKeyCore(destination);
+        }
+
+        /// <summary>
+        ///   Exports the private seed in the FIPS 204 private seed format.
+        /// </summary>
+        /// <returns>
+        ///   The FIPS 204 private seed.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>An error occurred while exporting the key.</para>
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] ExportMLDsaPrivateSeed()
+        {
+            ThrowIfDisposed();
+
+            byte[] destination = new byte[Algorithm.PrivateSeedSizeInBytes];
+            ExportMLDsaPrivateSeedCore(destination);
+            return destination;
         }
 
         /// <summary>
         ///   Exports the private seed of the current key.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the private seed.
+        ///   The buffer to receive the private seed. Its length must be exactly
+        ///   <see cref="MLDsaAlgorithm.PrivateSeedSizeInBytes"/>.
         /// </param>
-        /// <returns>
-        ///   The number of bytes written to <paramref name="destination"/>.
-        /// </returns>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="destination"/> is too small to hold the private seed.
+        ///   <paramref name="destination"/> is the incorrect length to receive the private seed.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the private seed.
         /// </exception>
-        public int ExportMLDsaPrivateSeed(Span<byte> destination)
+        public void ExportMLDsaPrivateSeed(Span<byte> destination)
         {
-            if (destination.Length < Algorithm.PrivateSeedSizeInBytes)
+            int privateSeedSizeInBytes = Algorithm.PrivateSeedSizeInBytes;
+            if (destination.Length != privateSeedSizeInBytes)
             {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, privateSeedSizeInBytes),
+                    nameof(destination));
             }
 
             ThrowIfDisposed();
-            ExportMLDsaPrivateSeedCore(destination.Slice(0, Algorithm.PrivateSeedSizeInBytes));
-            return Algorithm.PrivateSeedSizeInBytes;
+
+            ExportMLDsaPrivateSeedCore(destination);
         }
 
         /// <summary>

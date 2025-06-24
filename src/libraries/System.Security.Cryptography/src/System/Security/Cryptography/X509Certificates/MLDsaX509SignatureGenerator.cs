@@ -52,9 +52,7 @@ namespace System.Security.Cryptography.X509Certificates
         protected override PublicKey BuildPublicKey()
         {
             Oid oid = new Oid(_key.Algorithm.Oid, null);
-            byte[] pkBytes = new byte[_key.Algorithm.PublicKeySizeInBytes];
-            int written = _key.ExportMLDsaPublicKey(pkBytes);
-            Debug.Assert(written == pkBytes.Length);
+            byte[] pkBytes = _key.ExportMLDsaPublicKey();
 
             return new PublicKey(
                 oid,

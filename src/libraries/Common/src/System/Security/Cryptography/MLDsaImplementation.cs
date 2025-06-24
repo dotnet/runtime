@@ -29,21 +29,20 @@ namespace System.Security.Cryptography
 
             MLDsaAlgorithm alg = key.Algorithm;
             byte[] rented = CryptoPool.Rent(alg.SecretKeySizeInBytes);
-            int written = 0;
 
             try
             {
-                written = key.ExportMLDsaPrivateSeed(rented);
-                return ImportSeed(alg, new ReadOnlySpan<byte>(rented, 0, written));
+                key.ExportMLDsaPrivateSeed(rented);
+                return ImportSeed(alg, rented);
             }
             catch (CryptographicException)
             {
-                written = key.ExportMLDsaSecretKey(rented);
-                return ImportSecretKey(alg, new ReadOnlySpan<byte>(rented, 0, written));
+                key.ExportMLDsaSecretKey(rented);
+                return ImportSecretKey(alg, rented);
             }
             finally
             {
-                CryptoPool.Return(rented, written);
+                CryptoPool.Return(rented);
             }
         }
     }

@@ -715,8 +715,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             using (MLDsa? certKey = GetMLDsaPublicKey(cert))
             {
                 Assert.NotNull(certKey);
-                byte[] publicKey = new byte[certKey.Algorithm.PublicKeySizeInBytes];
-                Assert.Equal(publicKey.Length, certKey.ExportMLDsaPublicKey(publicKey));
+                byte[] publicKey = certKey.ExportMLDsaPublicKey();
                 AssertExtensions.SequenceEqual(MLDsaTestsData.IetfMLDsa44.PublicKey, publicKey);
 
                 // Verify the key is not actually private
@@ -729,8 +728,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             using (MLDsa? certKey = GetMLDsaPublicKey(cert))
             {
                 Assert.NotNull(certKey);
-                byte[] publicKey = new byte[certKey.Algorithm.PublicKeySizeInBytes];
-                Assert.Equal(publicKey.Length, certKey.ExportMLDsaPublicKey(publicKey));
+                byte[] publicKey = certKey.ExportMLDsaPublicKey();
                 AssertExtensions.SequenceEqual(MLDsaTestsData.IetfMLDsa44.PublicKey, publicKey);
 
                 // Verify the key is not actually private
@@ -759,8 +757,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     Assert.NotNull(certKey);
 
                     // Verify the key is actually private
-                    byte[] privateSeed = new byte[certKey.Algorithm.PrivateSeedSizeInBytes];
-                    Assert.Equal(privateSeed.Length, certKey.ExportMLDsaPrivateSeed(privateSeed));
+                    byte[] privateSeed = certKey.ExportMLDsaPrivateSeed();
                     AssertExtensions.SequenceEqual(
                         MLDsaTestsData.IetfMLDsa44.PrivateSeed,
                         privateSeed);
@@ -857,8 +854,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                     using (MLDsa certPrivateMLDsa = GetMLDsaPrivateKey(privCert))
                     {
-                        byte[] secretKey = new byte[certPrivateMLDsa.Algorithm.SecretKeySizeInBytes];
-                        Assert.Equal(secretKey.Length, certPrivateMLDsa.ExportMLDsaSecretKey(secretKey));
+                        byte[] secretKey = certPrivateMLDsa.ExportMLDsaSecretKey();
                         AssertExtensions.SequenceEqual(
                             MLDsaTestsData.IetfMLDsa44.SecretKey,
                             secretKey);
@@ -870,7 +866,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         privateMLDsa.TryExportPkcs8PrivateKeyHook = (_, out w) => { Assert.Fail(); w = 0; return false; };
 
                         // Ensure the key is actual a clone
-                        Assert.Equal(secretKey.Length, certPrivateMLDsa.ExportMLDsaSecretKey(secretKey));
+                        secretKey = certPrivateMLDsa.ExportMLDsaSecretKey();
                         AssertExtensions.SequenceEqual(
                             MLDsaTestsData.IetfMLDsa44.SecretKey,
                             secretKey);
@@ -921,8 +917,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                     using (MLDsa certPrivateMLDsa = GetMLDsaPrivateKey(privCert))
                     {
-                        byte[] secretKey = new byte[certPrivateMLDsa.Algorithm.PrivateSeedSizeInBytes];
-                        Assert.Equal(secretKey.Length, certPrivateMLDsa.ExportMLDsaPrivateSeed(secretKey));
+                        byte[] secretKey = certPrivateMLDsa.ExportMLDsaPrivateSeed();
                         AssertExtensions.SequenceEqual(
                             MLDsaTestsData.IetfMLDsa44.PrivateSeed,
                             secretKey);
@@ -933,7 +928,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         privateMLDsa.TryExportPkcs8PrivateKeyHook = (_, out w) => { Assert.Fail(); w = 0; return false; };
 
                         // Ensure the key is actual a clone
-                        Assert.Equal(secretKey.Length, certPrivateMLDsa.ExportMLDsaPrivateSeed(secretKey));
+                        secretKey = certPrivateMLDsa.ExportMLDsaPrivateSeed();
                         AssertExtensions.SequenceEqual(
                             MLDsaTestsData.IetfMLDsa44.PrivateSeed,
                             secretKey);
