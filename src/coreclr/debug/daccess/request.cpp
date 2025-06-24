@@ -1488,7 +1488,16 @@ ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count,
                     nChars > 0 && nChars <= ARRAY_SIZE(path))
                 {
                     WCHAR* pFile = path + nChars - 1;
-                    while ((pFile >= path) && (*pFile != DIRECTORY_SEPARATOR_CHAR_W))
+
+                    // PAL DIRECTORY_SEPARATOR_CHAR_W defines are based on the host platform.
+                    // Here, the directory separator depends on the target platform, not the host platform
+                    // in order to accommodate cross dac scenarios.
+#ifdef TARGET_WINDOWS
+                    WCHAR directorySeparatorChar = W('\\');
+#else
+                    WCHAR directorySeparatorChar = W('/');
+#endif // TARGET_WINDOWS
+                    while ((pFile >= path) && (*pFile != directorySeparatorChar))
                     {
                         pFile--;
                     }
