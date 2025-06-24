@@ -22065,10 +22065,11 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps        op,
 #if defined(TARGET_ARM64)
         if (isScalable)
         {
+            assert(varTypeIsMask(lookupType));
+
             if (wrapInCmtv)
             {
                 // cndsel(result, 0xFF, 0)
-                assert(varTypeIsMask(lookupType));
                 GenTree* retNode = gtNewSimdHWIntrinsicNode(lookupType, op1, op2, intrinsic, simdBaseJitType, simdSize);
                 GenTree* allOnes = gtNewAllBitsSetConNode(type);
                 GenTree* allZeros = gtNewZeroConNode(Compiler::getSIMDTypeForSize(simdSize));
@@ -22078,7 +22079,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps        op,
             else
             {
                 // will be wrapped by GetActiveElementCount
-                return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
+                return gtNewSimdHWIntrinsicNode(lookupType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             }
         }
         else
