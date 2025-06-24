@@ -1891,6 +1891,39 @@ public class InterpreterTest
         }
     }
 
+    public static bool TestSharedGenerics_IsInst<T>(object o)
+    {
+        return o is T;
+    }
+
+    public static T[] TestSharedGenerics_CastClass<T>(object o)
+    {
+        return (T[])o;
+    }
+
+    public static T TestSharedGenerics_UnboxAny<T>(object o)
+    {
+        Console.WriteLine("UnboxAny to " + typeof(T).ToString());
+        T result = (T)o;
+        Console.WriteLine("UnboxAny to " + typeof(T).ToString() + " Completed");
+        return result;
+    }
+
+    public static T[] TestNewArr<T>(int len)
+    {
+        return new T[len];
+    }
+
+    public static object Box<T>(T value)
+    {
+        return value;
+    }
+
+    struct GenericStruct<T>
+    {
+        public T Value;
+    }
+
     public static bool TestSharedGenerics()
     {
         if (!TestSharedGenerics_CallsTo())
@@ -1902,6 +1935,110 @@ public class InterpreterTest
         Console.WriteLine("Test calls to shared generics from generic code (shared generics)");
         if (!TestGenerics_CallsFrom<string>())
             return false;
+
+        Console.WriteLine("Test isinst with shared generics (string)");
+        if (!TestSharedGenerics_IsInst<string>("hello"))
+            return false;
+
+        if (TestSharedGenerics_IsInst<string>(new object()))
+            return false;
+
+        Console.WriteLine("Test castclass with shared generics (string)");
+        if (TestSharedGenerics_CastClass<string>(new string[] { "hello" }).GetType() != typeof(string[]))
+            return false;
+
+        try
+        {
+            TestSharedGenerics_CastClass<string>(new object());
+            Console.WriteLine("Did not throw from casting object to string[]");
+            return false;
+        }
+        catch (InvalidCastException)
+        {
+            Console.WriteLine("Expected InvalidCastException from casting object to string[]");
+        }
+
+        Console.WriteLine("Test unbox.any with shared generics");
+        if (TestSharedGenerics_UnboxAny<string>("hello") != "hello")
+            return false;
+        try
+        {
+            TestSharedGenerics_UnboxAny<string>(new object());
+            Console.WriteLine("Did not throw from casting object to string");
+            return false;
+        }
+        catch (InvalidCastException)
+        {
+            Console.WriteLine("Expected InvalidCastException from casting object to string");
+        }
+
+        GenericStruct<string> gs = new GenericStruct<string>();
+        gs.Value = "hello";
+
+        if (TestSharedGenerics_UnboxAny<GenericStruct<string>>(gs).Value != "hello")
+        {
+            return false;
+        }
+
+        if (TestSharedGenerics_UnboxAny<GenericStruct<string>?>(gs).Value.Value != "hello")
+        {
+            return false;
+        }
+
+        if (TestSharedGenerics_UnboxAny<GenericStruct<string>?>(null).HasValue)
+        {
+            return false;
+        }
+        Console.WriteLine("Test box with shared generics");
+
+        object objOriginal = new object();
+        if (Box<object>(objOriginal) != objOriginal)
+        {
+            return false;
+        }
+
+        if (((int)Box<int>(42)) != 42)
+        {
+            return false;
+        }
+
+        if (((int)Box<int?>(42)) != 42)
+        {
+            return false;
+        }
+
+        if ((Box<int?>(null)) != null)
+        {
+            return false;
+        }
+
+        GenericStruct<object> gsObj = new GenericStruct<object>();
+        gsObj.Value = objOriginal;
+        if (((GenericStruct<object>)Box<GenericStruct<object>>(gsObj)).Value != objOriginal)
+        {
+            return false;
+        }
+
+        if (((GenericStruct<object>)Box<GenericStruct<object>?>(gsObj)).Value != objOriginal)
+        {
+            return false;
+        }
+
+        if (Box<GenericStruct<object>?>(null) != null)
+        {
+            return false;
+        }
+
+        Console.WriteLine("Test newarr");
+        if (TestNewArr<string>(5).GetType() != typeof(string[]))
+        {
+            return false;
+        }
+
+        if (TestNewArr<int>(5).GetType() != typeof(int[]))
+        {
+            return false;
+        }
 
         return true;
     }

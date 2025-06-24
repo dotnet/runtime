@@ -348,10 +348,75 @@ private:
     CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
     CORINFO_METHOD_INFO* m_methodInfo;
+
+    void DeclarePointerIsClass(CORINFO_CLASS_HANDLE clsHnd)
+    {
+#ifdef DEBUG
+        void *ptr = (void*)clsHnd;
+        if (!PointerInNameMap(ptr))
+        {
+            AddPointerToNameMap(ptr, PointerIsClassHandle);
+        }
+#endif DEBUG
+    }
+
+    void DeclarePointerIsMethod(CORINFO_METHOD_HANDLE methodHnd)
+    {
+#ifdef DEBUG
+        void *ptr = (void*)methodHnd;
+        if (!PointerInNameMap(ptr))
+        {
+            AddPointerToNameMap(ptr, PointerIsMethodHandle);
+        }
+#endif DEBUG
+    }
+
+    void DeclarePointerIsString(void* stringLiteral)
+    {
+#ifdef DEBUG
+        void *ptr = (void*)stringLiteral;
+        if (!PointerInNameMap(ptr))
+        {
+            AddPointerToNameMap(ptr, PointerIsStringLiteral);
+        }
+#endif DEBUG
+    }
+
 #ifdef DEBUG
     CORINFO_CLASS_HANDLE m_classHnd;
     TArray<char> m_methodName;
     bool m_verbose = false;
+
+    const char* PointerIsClassHandle = (const char*)0x1;
+    const char* PointerIsMethodHandle = (const char*)0x2;
+    const char* PointerIsStringLiteral = (const char*)0x3;
+    struct PointerToName
+    {
+        void* ptr;
+        const char* name;
+    };
+
+    TArray<PointerToName> m_pointerToNameMap;
+    bool PointerInNameMap(void* ptr)
+    {
+        for (int32_t i = 0; i < m_pointerToNameMap.GetSize(); i++)
+        {
+            if (m_pointerToNameMap.Get(i).ptr == ptr)
+                return true;
+        }
+        return false;
+    }
+    void AddPointerToNameMap(void* ptr, const char* name)
+    {
+        if (!PointerInNameMap(ptr))
+        {
+            PointerToName ptn;
+            ptn.ptr = ptr;
+            ptn.name = name;
+            m_pointerToNameMap.Add(ptn);
+        }
+    }
+    void PrintNameInPointerMap(void* ptr);
 #endif
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
@@ -403,6 +468,35 @@ private:
         VarOnly = 1,
         EmbedParent = 2,
     };
+
+    enum class HelperArgType
+    {
+        GenericResolution,
+        Value
+    };
+
+    struct TokenArg
+    {
+        CORINFO_RESOLVED_TOKEN* token;
+        InterpCompiler::GenericHandleEmbedOptions options;
+    };
+
+    struct GenericHandleData
+    {
+        GenericHandleData(int genericVar, int dataItemIndex)
+            : argType(HelperArgType::GenericResolution), genericVar(genericVar), dataItemIndex(dataItemIndex) {}
+
+        GenericHandleData(int dataItemIndex)
+            : argType(HelperArgType::Value), genericVar(-1), dataItemIndex(dataItemIndex) {}
+
+        GenericHandleData() = default;
+
+        HelperArgType argType = HelperArgType::Value;
+        int genericVar = -1; // Set to a meaningful value if HelperArgType is GenericResolution
+        int dataItemIndex = 0;
+    };
+
+    GenericHandleData GenericHandleToGenericHandleData(const CORINFO_GENERICHANDLE_RESULT& embedInfo);
     InterpEmbedGenericResult EmitGenericHandle(CORINFO_RESOLVED_TOKEN* resolvedToken, GenericHandleEmbedOptions options);
 
     // Do a generic handle lookup and acquire the result as either a var or a data item.
@@ -411,6 +505,11 @@ private:
     // Emit a generic dictionary lookup and push the result onto the interpreter stack
     void EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup);
     void EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
+    void EmitPushHelperCall_2(const CorInfoHelpFunc ftn, const CORINFO_GENERICHANDLE_RESULT& arg1, int arg2, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack);
+    void EmitPushHelperCall_Addr2(const CorInfoHelpFunc ftn, const CORINFO_GENERICHANDLE_RESULT& arg1, int arg2, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack);
+    void EmitPushHelperCall(const CorInfoHelpFunc ftn, const CORINFO_GENERICHANDLE_RESULT& arg1, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack);
+    void EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, int arg2, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack);
+    void EmitPushUnboxAnyNullable(const CORINFO_GENERICHANDLE_RESULT& arg1, int arg2, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack);
 
     void* AllocMethodData(size_t numBytes);
 public:
@@ -517,7 +616,7 @@ private:
     void    EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken);
     void    EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad);
     void    EmitLdLocA(int32_t var);
-    void    EmitBox(StackInfo* pStackInfo, CORINFO_CLASS_HANDLE clsHnd, bool argByRef);
+    void    EmitBox(StackInfo* pStackInfo, const CORINFO_GENERICHANDLE_RESULT &boxType, bool argByRef);
 
     // Var Offset allocator
     TArray<InterpInst*> *m_pActiveCalls;
@@ -556,6 +655,8 @@ private:
     void PrintCode();
     void PrintBBCode(InterpBasicBlock *pBB);
     void PrintIns(InterpInst *ins);
+    void PrintPointer(void* pointer);
+    void PrintHelperFtn(void* helperAddr);
     void PrintInsData(InterpInst *ins, int32_t offset, const int32_t *pData, int32_t opcode);
     void PrintCompiledCode();
     void PrintCompiledIns(const int32_t *ip, const int32_t *start);

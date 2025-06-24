@@ -23,6 +23,7 @@ typedef enum
     InterpOpMethodHandle,
     InterpOpClassHandle,
     InterpOpGenericLookup,
+    InterpOpGenericHelperFtn,
     InterpOpLdPtr,
     InterpOpHelperFtn,
 } InterpOpArgType;

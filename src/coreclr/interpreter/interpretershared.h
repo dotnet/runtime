@@ -120,4 +120,33 @@ const CORINFO_CLASS_HANDLE  NO_CLASS_HANDLE  = nullptr;
 const CORINFO_FIELD_HANDLE  NO_FIELD_HANDLE  = nullptr;
 const CORINFO_METHOD_HANDLE NO_METHOD_HANDLE = nullptr;
 
+enum class InterpGenericLookupType
+{
+    This,
+    Method,
+    Class
+};
+
+const int InterpGenericLookup_MaxIndirections = 4;
+
+struct InterpGenericLookup
+{
+    // This is signature you must pass back to the runtime lookup helper
+    void*                   signature;
+
+    // Here is the helper you must call. It is one of CORINFO_HELP_RUNTIMEHANDLE_* helpers.
+    
+    InterpGenericLookupType lookupType;
+
+    // Number of indirections to get there
+    // CORINFO_USEHELPER = don't know how to get it, so use helper function at run-time instead
+    // CORINFO_USENULL = the context should be null because the callee doesn't actually use it
+    // 0 = use the this pointer itself (e.g. token is C<!0> inside code in sealed class C)
+    //     or method desc itself (e.g. token is method void M::mymeth<!!0>() inside code in M::mymeth)
+    // Otherwise, follow each byte-offset stored in the "offsets[]" array (may be negative)
+    uint16_t                indirections;
+    uint16_t                sizeOffset;
+    size_t                  offsets[InterpGenericLookup_MaxIndirections];
+};
+
 #endif
