@@ -29,9 +29,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [Theory]
         // MLL was enabled by default before 7.0
         // Global hive with better match (higher patch)
-        [InlineData("6.0.0", "net6.0", true, "6.1.4")]
-        [InlineData("6.0.0", "net6.0", null, "6.1.4")] // MLL is on by default, so same as true
-        [InlineData("6.0.0", "net6.0", false, "6.1.3")] // No global hive, so the main hive version is picked
+        [InlineData("6.0.0", "netcoreapp3.1", true, "6.1.4")]
+        [InlineData("6.0.0", "netcoreapp3.1", null, "6.1.4")] // MLL is on by default, so same as true
+        [InlineData("6.0.0", "netcoreapp3.1", false, "6.1.3")] // No global hive, so the main hive version is picked
         // Main hive with better match (higher patch)
         [InlineData("6.2.0", "net6.0", true, "6.2.1")]
         [InlineData("6.2.0", "net6.0", null, "6.2.1")]
