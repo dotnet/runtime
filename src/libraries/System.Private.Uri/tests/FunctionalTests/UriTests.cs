@@ -800,19 +800,6 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        public static void Uri_AbsoluteImplicitFileWithUnicodeAndLeadingWhitespace()
-        {
-            string uriString = PlatformDetection.IsWindows ? "\tC:\\\u005C" : "\t/\u005C";
-            string toString = PlatformDetection.IsWindows ? "file:///C:/\u005C" : "file:///\u005C";
-
-            Uri uriFromCtor = new Uri(uriString, UriKind.Absolute);
-            Assert.True(Uri.TryCreate(uriString, UriKind.Absolute, out var uriFromTryCreate));
-
-            Assert.Equal(toString, uriFromCtor.ToString());
-            Assert.Equal(toString, uriFromTryCreate.ToString());
-        }
-
-        [Fact]
         public static void UriWithUnicodeAndEmptyAuthority_ParsedCorrectly()
         {
             const string UriString = "custom:///\u00FC";
@@ -826,9 +813,10 @@ namespace System.PrivateUri.Tests
                 // Unix absolute file path
                 yield return new object[] { "/\u00FCri/", "file:///\u00FCri/", "/%C3%BCri/", "file:///%C3%BCri/", "/\u00FCri/" };
                 yield return new object[] { "/a/b\uD83D\uDE1F/Foo.cs", "file:///a/b\uD83D\uDE1F/Foo.cs", "/a/b%F0%9F%98%9F/Foo.cs", "file:///a/b%F0%9F%98%9F/Foo.cs", "/a/b\uD83D\uDE1F/Foo.cs" };
+                yield return new object[] { "\t/\u00FCri/", "file:///\u00FCri/", "/%C3%BCri/", "file:///%C3%BCri/", "/\u00FCri/" };
             }
 
-            // Absolute fie path
+            // Absolute file path
             yield return new object[] { "file:///\u00FCri/", "file:///\u00FCri/", "/%C3%BCri/", "file:///%C3%BCri/", "/\u00FCri/" };
             yield return new object[] { "file:///a/b\uD83D\uDE1F/Foo.cs", "file:///a/b\uD83D\uDE1F/Foo.cs", "/a/b%F0%9F%98%9F/Foo.cs", "file:///a/b%F0%9F%98%9F/Foo.cs", "/a/b\uD83D\uDE1F/Foo.cs" };
 
@@ -836,6 +824,7 @@ namespace System.PrivateUri.Tests
             yield return new object[] { "file://C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
             yield return new object[] { "file:///C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
             yield return new object[] { "C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
+            yield return new object[] { "\tC:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
 
             // UNC
             yield return new object[] { "\\\\\u00FCri/", "file://\u00FCri/", "/", "file://\u00FCri/", "\\\\\u00FCri\\" };
