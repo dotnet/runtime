@@ -207,6 +207,7 @@ OPDEF(INTOP_CONV_OVF_U8_R4, "conv.ovf.u8.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_OVF_U8_R8, "conv.ovf.u8.r8", 3, 1, 1, InterpOpNoArgs)
 
 OPDEF(INTOP_BOX, "box", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
+OPDEF(INTOP_BOX_PTR, "box.ptr", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
 OPDEF(INTOP_UNBOX, "unbox", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
 OPDEF(INTOP_UNBOX_ANY, "unbox.any", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
 // Unary operations end
@@ -221,10 +222,22 @@ OPDEF(INTOP_ADD_I8, "add.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_ADD_R4, "add.r4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_ADD_R8, "add.r8", 4, 1, 2, InterpOpNoArgs)
 
+OPDEF(INTOP_ADD_OVF_I4, "add.ovf.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_ADD_OVF_I8, "add.ovf.i8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_ADD_OVF_UN_I4, "add.ovf.un.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_ADD_OVF_UN_I8, "add.ovf.un.i8", 4, 1, 2, InterpOpNoArgs)
+
 OPDEF(INTOP_SUB_I4, "sub.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SUB_I8, "sub.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SUB_R4, "sub.r4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SUB_R8, "sub.r8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_SUB_OVF_I4, "sub.ovf.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_SUB_OVF_I8, "sub.ovf.i8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_SUB_OVF_UN_I4, "sub.ovf.un.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_SUB_OVF_UN_I8, "sub.ovf.un.i8", 4, 1, 2, InterpOpNoArgs)
 
 OPDEF(INTOP_MUL_I4, "mul.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_MUL_I8, "mul.i8", 4, 1, 2, InterpOpNoArgs)
@@ -323,7 +336,7 @@ OPDEF(INTOP_LDFLDA, "ldflda", 4, 1, 1, InterpOpInt)
 
 // Calls
 OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodHandle)
-OPDEF(INTOP_CALLI, "call", 5, 1, 2, InterpOpLdPtr)
+OPDEF(INTOP_CALLI, "calli", 5, 1, 2, InterpOpLdPtr)
 OPDEF(INTOP_CALLVIRT, "callvirt", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_NEWOBJ_VAR, "newobj.var", 5, 1, 2, InterpOpMethodHandle)

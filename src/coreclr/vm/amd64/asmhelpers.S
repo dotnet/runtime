@@ -474,42 +474,42 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 NESTED_END InterpreterStub, _TEXT
 
 NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
-        push_register   rax // stack alignment
+        push_register   rcx // stack alignment
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
         mov             rsi, rbx // the IR bytecode pointer
         xor             rdx, rdx
         call            C_FUNC(ExecuteInterpretedMethod)
-        pop_register    rax
+        pop_register    rcx
         ret
 NESTED_END InterpreterStubRetVoid, _TEXT
 
 NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
-        push_register   rax // stack alignment
+        push_register   rcx // stack alignment
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
         mov             rsi, rbx // the IR bytecode pointer
         xor             rdx, rdx
         call            C_FUNC(ExecuteInterpretedMethod)
         mov             rax, qword ptr [rax]
-        pop_register    rax
+        pop_register    rcx
         ret
 NESTED_END InterpreterStubRetI8, _TEXT
 
 NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
-        push_register   rax // stack alignment
+        push_register   rcx // stack alignment
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
         mov             rsi, rbx // the IR bytecode pointer
         xor             rdx, rdx
         call            C_FUNC(ExecuteInterpretedMethod)
         movsd           xmm0, real8 ptr [rax]
-        pop_register    rax
+        pop_register    rcx
         ret
 NESTED_END InterpreterStubRetDouble, _TEXT
 
 NESTED_ENTRY InterpreterStubRetI8I8, _TEXT, NoHandler
-        push_register   rax // stack alignment
+        push_register   rcx // stack alignment
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
         mov             rsi, rbx // the IR bytecode pointer
@@ -517,12 +517,12 @@ END_PROLOGUE
         call            C_FUNC(ExecuteInterpretedMethod)
         mov             rdx, qword ptr [rax + 8]
         mov             rax, qword ptr [rax]
-        pop_register    rax
+        pop_register    rcx
         ret
 NESTED_END InterpreterStubRetI8I8, _TEXT
 
 NESTED_ENTRY InterpreterStubRetDoubleDouble, _TEXT, NoHandler
-        push_register   rax // stack alignment
+        push_register   rcx // stack alignment
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
         mov             rsi, rbx // the IR bytecode pointer
@@ -530,12 +530,12 @@ END_PROLOGUE
         call            C_FUNC(ExecuteInterpretedMethod)
         movsd           xmm0, real8 ptr [rax]
         movsd           xmm1, real8 ptr [rax + 8]
-        pop_register    rax
+        pop_register    rcx
         ret
 NESTED_END InterpreterStubRetDoubleDouble, _TEXT
 
 NESTED_ENTRY InterpreterStubRetI8Double, _TEXT, NoHandler
-        push_register   rax // stack alignment
+        push_register   rcx // stack alignment
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
         mov             rsi, rbx // the IR bytecode pointer
@@ -543,12 +543,12 @@ END_PROLOGUE
         call            C_FUNC(ExecuteInterpretedMethod)
         movsd           xmm0, real8 ptr [rax + 8]
         mov             rax, qword ptr [rax]
-        pop_register    rax
+        pop_register    rcx
         ret
 NESTED_END InterpreterStubRetI8Double, _TEXT
 
 NESTED_ENTRY InterpreterStubRetDoubleI8, _TEXT, NoHandler
-        push_register   rax // stack alignment
+        push_register   rcx // stack alignment
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
         mov             rsi, rbx // the IR bytecode pointer
@@ -556,7 +556,7 @@ END_PROLOGUE
         call            C_FUNC(ExecuteInterpretedMethod)
         movsd           xmm0, real8 ptr [rax]
         mov             rax, qword ptr [rax + 8]
-        pop_register    rax
+        pop_register    rcx
         ret
 NESTED_END InterpreterStubRetDoubleI8, _TEXT
 
@@ -569,7 +569,8 @@ END_PROLOGUE
         // The 8 + 8 is for the push and the return address slot
         mov             rdx, qword ptr [rsp + 8 + 8 + __InterpreterStubArgumentRegistersOffset]
         call            C_FUNC(ExecuteInterpretedMethod)
-        pop_register    rax
+        mov             rax, qword ptr [rsp + 8 + 8 + __InterpreterStubArgumentRegistersOffset]
+        pop_register    rcx
         ret
 NESTED_END InterpreterStubRetBuff, _TEXT
 
