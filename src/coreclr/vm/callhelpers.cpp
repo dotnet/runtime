@@ -224,6 +224,10 @@ void * DispatchCallSimple(
     callDescrData.fpReturnSize = 0;
     callDescrData.pTarget = pTargetAddress;
 
+#ifdef TARGET_WASM
+    PORTABILITY_ASSERT("wasm need to fill call description data");
+#endif
+
     if ((dwDispatchCallSimpleFlags & DispatchCallSimple_CatchHandlerFoundNotification) != 0)
     {
         DispatchCallDebuggerWrapper(
