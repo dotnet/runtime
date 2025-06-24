@@ -46,6 +46,13 @@ public class ConditionalSelectConstants
             {
                 fail = true;
             }
+
+            var r5 = ConditionalSelectConsts();
+            Console.WriteLine(r5);
+            if (r5 != 5)
+            {
+                fail = true;
+            }
         }
 
         if (fail)
@@ -95,5 +102,12 @@ public class ConditionalSelectConstants
         );
     }
 
-
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static sbyte ConditionalSelectConsts()
+    {
+        var vec = Sve.ConditionalSelect(Vector128.CreateScalar((sbyte)49).AsVector(),
+                                        Vector128.CreateScalar((sbyte)0).AsVector(),
+                                        Vector.Create<sbyte>(107));
+        return Sve.ConditionalExtractLastActiveElement(Vector128.CreateScalar((sbyte)0).AsVector(), 5, vec);
+    }
 }
