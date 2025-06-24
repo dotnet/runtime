@@ -585,7 +585,7 @@ namespace Wasm.Build.Tests
                 {
                     isDisposed = true;
                 }
-                TryWriteToTestOutput($"-- exception -- {ex}", outputBuilder);
+                TryWriteToTestOutput(_testOutput, $"-- exception -- {ex}", outputBuilder);
                 throw;
             }
 
@@ -597,7 +597,7 @@ namespace Wasm.Build.Tests
                         return;
                     if (message != null)
                     {
-                        TryWriteToTestOutput($"{label} {message}", outputBuilder, label);
+                        TryWriteToTestOutput(_testOutput, $"{label} {message}", outputBuilder, label);
                     }
                     outputBuilder.AppendLine($"{label} {message}");
                 }
@@ -641,11 +641,11 @@ namespace Wasm.Build.Tests
             return projectFile;
         }
 
-        private void TryWriteToTestOutput(string message, StringBuilder? outputBuffer = null, string? warningPrefix = null)
+        private static void TryWriteToTestOutput(ITestOutputHelper testOutput, string message, StringBuilder? outputBuffer = null, string? warningPrefix = null)
         {
             try
             {
-                _testOutput.WriteLine(message);
+                testOutput.WriteLine(message);
             }
             catch (InvalidOperationException)
             {
