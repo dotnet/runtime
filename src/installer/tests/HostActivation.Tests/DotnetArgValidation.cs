@@ -68,36 +68,25 @@ namespace HostActivation.Tests
                 .And.HaveStdErrContaining($"Failed to parse supported options or their values:");
         }
 
-        [Fact]
-        public void NonManagedFileWithDirectorySeparator_ShowsSpecificError()
-        {
-            // Create a non-.dll/.exe file with directory separator in path
-            string testFile = Path.Combine(sharedTestState.BaseDirectory.Location, "test.txt");
-            File.WriteAllText(testFile, "test content");
 
-            TestContext.BuiltDotNet.Exec(testFile)
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should().Fail()
-                .And.HaveStdErrContaining($"The application '{testFile}' is not a managed .dll or .exe.");
-        }
 
         [Fact]
-        public void CommandNameWithoutDirectorySeparator_RoutesToSDK()
+        public void File_ExistsNoDirectorySeparator_RoutesToSDK()
         {
-            // Create a file named "build" in the current directory to simulate a potential command file
+            // Create a file named "build" in the current directory to simulate a file that happens to match the name of a command
             string buildFile = Path.Combine(sharedTestState.BaseDirectory.Location, "build");
-            File.WriteAllText(buildFile, "#!/bin/bash\necho 'fake build'");
+            File.WriteAllText(buildFile, string.Empty);
 
             // Test that "dotnet build" still routes to SDK, not to the file
             TestContext.BuiltDotNet.Exec("build")
                 .WorkingDirectory(sharedTestState.BaseDirectory.Location)
+                .EnableHostTracing()
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
                 .Should().Fail()
-                .And.HaveStdErrContaining("The command could not be loaded, possibly because:"); // This should be the SDK resolver error, not our specific error
+                .And.HaveStdErrContaining("The command could not be loaded, possibly because:") // This is a generic error for when we can't tell what exactly the user intended to do
+                .And.HaveStdErrContaining("Resolving SDKs");
         }
 
         [Fact]
@@ -114,7 +103,7 @@ namespace HostActivation.Tests
                 .CaptureStdErr()
                 .Execute()
                 .Should().Fail()
-                .And.HaveStdErrContaining("is not a managed .dll or .exe.");
+                .And.HaveStdErrContaining("The application './subdir/test.json' is not a managed .dll or .exe.");
         }
 
         [Fact]
