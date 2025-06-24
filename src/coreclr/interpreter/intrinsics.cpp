@@ -29,12 +29,6 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
             else if (!strcmp(methodName, "MultiplyAddEstimate"))
                 return NI_System_Math_MultiplyAddEstimate;
         }
-        else if (!strcmp(className, "Debugger"))
-        {
-            // Interpreter-FIXME: No NI_ enum value for this?
-            if (!strcmp(methodName, "Break"))
-                return NI_Illegal;
-        }
         else if (!strcmp(className, "Math") || !strcmp(className, "MathF"))
         {
             if (!strcmp(methodName, "ReciprocalEstimate"))
