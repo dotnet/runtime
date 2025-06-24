@@ -103,7 +103,7 @@ internal sealed class CodeDirectoryBlob : IBlob
     public CodeDirectoryVersion Version => _cdHeader.Version;
     public IReadOnlyList<IReadOnlyList<byte>> SpecialSlotHashes => _specialSlotHashes;
 
-    // Fields for test assertions only
+    // Properties for test assertions only
     internal IReadOnlyList<IReadOnlyList<byte>> CodeHashes => _codeHashes;
     internal ulong ExecutableSegmentBase => _cdHeader.ExecSegmentBase;
     internal ulong ExecutableSegmentLimit => _cdHeader.ExecSegmentLimit;
