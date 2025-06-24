@@ -2767,9 +2767,24 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             }
             else if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && newObj)
             {
-                AddIns(INTOP_NEWMDARR);
-                m_pLastNewIns->data[0] = GetDataItemIndex(resolvedCallToken.hClass);
-                m_pLastNewIns->data[1] = callInfo.sig.numArgs;
+                CORINFO_GENERICHANDLE_RESULT newObjGenericHandleEmbedInfo;
+                m_compHnd->embedGenericHandle(&resolvedCallToken, true, m_methodInfo->ftn, &newObjGenericHandleEmbedInfo); 
+                newObjData = GenericHandleToGenericHandleData(newObjGenericHandleEmbedInfo);
+                
+                if (newObjData.argType == HelperArgType::GenericResolution)
+                {
+                    AddIns(INTOP_NEWMDARR_GENERIC);
+                    m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, newObjData.genericVar);
+                    m_pLastNewIns->data[0] = newObjData.dataItemIndex;
+                    m_pLastNewIns->data[1] = callInfo.sig.numArgs;
+                }
+                else
+                {
+                    AddIns(INTOP_NEWMDARR);
+                    DeclarePointerIsClass(resolvedCallToken.hClass);
+                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedCallToken.hClass);
+                    m_pLastNewIns->data[1] = callInfo.sig.numArgs;
+                }
             }
             else if (isCalli)
             {
@@ -5586,6 +5601,10 @@ void InterpCompiler::PrintIns(InterpInst *ins)
                         callArgs++;
                     }
                 }
+                if (i + 1 < g_interpOpSVars[opcode])
+                {
+                    printf(":");
+                }
             }
             else
             {
@@ -5828,6 +5847,26 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
             PrintHelperFtn((void*)GetDataItemAtIndex(pData[0]));
             printf(", ");
             PrintPointer((void*)GetDataItemAtIndex(pData[1]));
+            break;
+        }
+        case InterpOpPointerHelperFtn:
+        {
+            PrintPointer((void*)GetDataItemAtIndex(pData[0]));
+            printf(", ");
+            PrintHelperFtn((void*)GetDataItemAtIndex(pData[1]));
+            break;
+        }
+        case InterpOpPointerInt:
+        {
+            PrintPointer((void*)GetDataItemAtIndex(pData[0]));
+            printf(", %d", pData[1]);
+            break;
+        }
+        case InterpOpGenericLookupInt:
+        {
+            InterpGenericLookup *pGenericLookup = (InterpGenericLookup*)GetDataItemAtIndex(pData[0]);
+            PrintInterpGenericLookup(pGenericLookup);
+            printf(", %d", pData[1]);
             break;
         }
         default:

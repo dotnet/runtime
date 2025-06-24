@@ -1914,6 +1914,11 @@ public class InterpreterTest
         return new T[len];
     }
 
+    public static T[,,] TestNewMDArr<T>(int len)
+    {
+        return new T[len,len-1,len-2];
+    }
+
     public static object Box<T>(T value)
     {
         return value;
@@ -2040,6 +2045,26 @@ public class InterpreterTest
             return false;
         }
 
+        Console.WriteLine("Test new MD arr");
+        if (TestNewMDArr<string>(5).GetType() != typeof(string[,,]))
+        {
+            return false;
+        }
+        string[,,] mdStringArr = TestNewMDArr<string>(5);
+        if (mdStringArr.GetLength(0) != 5 || mdStringArr.GetLength(1) != 4 || mdStringArr.GetLength(2) != 3)
+        {
+            return false;
+        }
+
+        if (TestNewMDArr<int>(5).GetType() != typeof(int[,,]))
+        {
+            return false;
+        }
+        int[,,] mdIntArr = TestNewMDArr<int>(5);
+        if (mdIntArr.GetLength(0) != 5 || mdIntArr.GetLength(1) != 4 || mdIntArr.GetLength(2) != 3)
+        {
+            return false;
+        }
         return true;
     }
 

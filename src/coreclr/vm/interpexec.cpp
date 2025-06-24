@@ -1800,6 +1800,14 @@ CALL_INTERP_METHOD:
                     ip += 5;
                     break;
                 }
+                case INTOP_NEWMDARR_GENERIC:
+                {
+                    DO_GENERIC_LOOKUP(ip[3], 4);
+                    MethodTable *pMTArray = (MethodTable*)result; // result comes from the generic lookup
+                    LOCAL_VAR(ip[1], OBJECTREF) = CreateMultiDimArray(pMTArray, stack, ip[2], ip[5]);
+                    ip += 6;
+                    break;
+                }
                 case INTOP_NEWOBJ_VT:
                 {
                     returnOffset = ip[1];

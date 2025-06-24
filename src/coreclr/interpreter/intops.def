@@ -23,9 +23,10 @@ OPDEF(INTOP_LDC_R8, "ldc.r8", 4, 1, 0, InterpOpDouble)
 
 OPDEF(INTOP_LDPTR, "ldptr", 3, 1, 0, InterpOpLdPtr)
 OPDEF(INTOP_LDPTR_DEREF, "ldptr.deref", 3, 1, 0, InterpOpLdPtr)
-OPDEF(INTOP_NEWARR, "newarr", 5, 1, 1, InterpOpInt)
+OPDEF(INTOP_NEWARR, "newarr", 5, 1, 1, InterpOpPointerHelperFtn)
 OPDEF(INTOP_NEWARR_GENERIC, "newarr.generic", 6, 1, 2, InterpOpGenericHelperFtn)
-OPDEF(INTOP_NEWMDARR, "newmdarr", 5, 1, 1, InterpOpTwoInts)
+OPDEF(INTOP_NEWMDARR, "newmdarr", 5, 1, 1, InterpOpPointerInt)
+OPDEF(INTOP_NEWMDARR_GENERIC, "newmdarr.generic", 6, 1, 2, InterpOpGenericLookupInt)
 
 OPDEF(INTOP_LDELEM_I1, "ldelem.i1", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_LDELEM_U1, "ldelem.u1", 4, 1, 2, InterpOpNoArgs)
