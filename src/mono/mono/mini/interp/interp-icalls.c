@@ -187,7 +187,7 @@ static char * log_sig(MonoMethodSignature* sig)
 	for (int i = 0; i < sig->param_count; ++i) {
 		MonoType* tp = sig->params[i];
 		if(tp)
-			offset += sprintf(buffer + offset, "%d", interp_type_as_ptr4(tp) ? 4 : interp_type_as_ptr8(tp) ? 8 : 0);
+			offset += sprintf(buffer + offset, "%d", interp_type_as_ptr8(tp) ? 8 : interp_type_as_ptr4(tp) ? 4 : 0);
 		else
 			offset += sprintf(buffer + offset, "E");
 	}
