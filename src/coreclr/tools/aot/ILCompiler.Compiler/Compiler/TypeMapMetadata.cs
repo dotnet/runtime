@@ -171,7 +171,7 @@ namespace ILCompiler
                         // If the type doesn't resolve, it can't be a type map attribute
                         continue;
                     }
-                    
+
                     TypeMapAttributeKind attrKind = LookupTypeMapType(type);
 
                     if (attrKind == TypeMapAttributeKind.None)
