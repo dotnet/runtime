@@ -3849,8 +3849,8 @@ inline emitter::insFormat emitter::emitInsModeFormat(instruction ins, insFormat 
     if (useNDD)
     {
         assert(IsApxNDDEncodableInstruction(ins));
-        if (ins == INS_rcl_N || ins == INS_rcr_N || ins == INS_rol_N || ins == INS_ror_N || 
-            ins == INS_shl_N || ins == INS_shr_N || ins == INS_sar_N)
+        if (ins == INS_rcl_N || ins == INS_rcr_N || ins == INS_rol_N || ins == INS_ror_N || ins == INS_shl_N ||
+            ins == INS_shr_N || ins == INS_sar_N)
         {
             // shift instructions has its own instruction format.
             return IF_RWR_RRD_SHF;
@@ -3863,7 +3863,7 @@ inline emitter::insFormat emitter::emitInsModeFormat(instruction ins, insFormat 
         {
             case IF_RRD_RRD_RRD:
                 return IF_RWR_RRD_RRD;
-            
+
             case IF_RRD_RRD_ARD:
                 return IF_RWR_RRD_ARD;
 
@@ -3882,7 +3882,7 @@ inline emitter::insFormat emitter::emitInsModeFormat(instruction ins, insFormat 
                 unreached();
         }
     }
-    else 
+    else
     {
         return (insFormat)(base + emitInsUpdateMode(ins));
     }
@@ -6532,7 +6532,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                         {
                             // NDD allow instructions have different register on dst and src1.
                             insFormat base = useNDD ? IF_RRD_RRD_ARD : IF_RRD_ARD;
-                            fmt = emitInsModeFormat(ins, base, useNDD);
+                            fmt            = emitInsModeFormat(ins, base, useNDD);
                         }
                     }
                     else
