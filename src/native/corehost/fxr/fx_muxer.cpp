@@ -574,7 +574,7 @@ int fx_muxer_t::execute(
     }
     else if (static_cast<StatusCode>(result) == AppArgNotManagedFailure)
     {
-        trace::error(_X("The application '%s' does not exist or is not a managed .dll or .exe."), app_candidate.c_str());
+        trace::error(_X("The application '%s' is not a managed .dll or .exe."), app_candidate.c_str());
         return result;
     }
 

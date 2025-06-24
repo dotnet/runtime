@@ -80,7 +80,7 @@ namespace HostActivation.Tests
                 .CaptureStdErr()
                 .Execute()
                 .Should().Fail()
-                .And.HaveStdErrContaining($"The application '{testFile}' does not exist or is not a managed .dll or .exe.");
+                .And.HaveStdErrContaining($"The application '{testFile}' is not a managed .dll or .exe.");
         }
 
         [Fact]
@@ -114,7 +114,7 @@ namespace HostActivation.Tests
                 .CaptureStdErr()
                 .Execute()
                 .Should().Fail()
-                .And.HaveStdErrContaining("does not exist or is not a managed .dll or .exe.");
+                .And.HaveStdErrContaining("is not a managed .dll or .exe.");
         }
 
         [Fact]
