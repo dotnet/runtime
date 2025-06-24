@@ -42,7 +42,7 @@ This contract depends on the following descriptors:
 | `InlinedCallFrame` | `CallSiteSP` | SP saved in Frame |
 | `InlinedCallFrame` | `CallerReturnAddress` | Return address saved in Frame |
 | `InlinedCallFrame` | `CalleeSavedFP` | FP saved in Frame |
-| `InlinedCallFrame` (arm32) | `SPAfterProlog` | Value of the SP after prolog. Used on ARM to maintain additional JIT invariant |
+| `InlinedCallFrame` (arm) | `SPAfterProlog` | Value of the SP after prolog. Used on ARM to maintain additional JIT invariant |
 | `SoftwareExceptionFrame` | `TargetContext` | Context object saved in Frame |
 | `SoftwareExceptionFrame` | `ReturnAddress` | Return address saved in Frame |
 | `FramedMethodFrame` | `TransitionBlockPtr` | Pointer to Frame's TransitionBlock |
