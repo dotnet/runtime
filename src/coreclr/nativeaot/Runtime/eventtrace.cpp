@@ -391,7 +391,7 @@ void ETW::LoaderLog::SendModuleEvent(HANDLE pModule, uint32_t dwEventOptions)
     {
         if (written + 3 <= ARRAY_SIZE(wszBuildId)) { // 2 hex digits + 1 null terminator
             // Convert each byte to hex and append to the output string
-            written += swprintf_s(wszBuildId + written, ARRAY_SIZE(wszBuildId) - written, L"%02X", ((uint8_t*)pBuildId)[i]);
+            written += vswprintf(wszBuildId + written, ARRAY_SIZE(wszBuildId) - written, L"%02X", ((uint8_t*)pBuildId)[i]);
         } else {
             // If buffer not enough to fit, truncate 
             break;
