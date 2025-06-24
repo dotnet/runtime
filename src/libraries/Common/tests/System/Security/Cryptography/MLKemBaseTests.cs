@@ -48,8 +48,8 @@ namespace System.Security.Cryptography.Tests
         {
             using MLKem kem = ImportDecapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512DecapsulationKey);
 
-            Assert.ThrowsAny<CryptographicException>(() => kem.ExportPrivateSeed());
-            Assert.ThrowsAny<CryptographicException>(() => kem.ExportPrivateSeed(
+            Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed());
+            Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed(
                 new byte[MLKemAlgorithm.MLKem512.PrivateSeedSizeInBytes]));
         }
 
@@ -58,8 +58,8 @@ namespace System.Security.Cryptography.Tests
         {
             using MLKem kem = ImportEncapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512EncapsulationKey);
 
-            Assert.ThrowsAny<CryptographicException>(() => kem.ExportPrivateSeed());
-            Assert.ThrowsAny<CryptographicException>(() => kem.ExportPrivateSeed(
+            Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed());
+            Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed(
                 new byte[MLKemAlgorithm.MLKem512.PrivateSeedSizeInBytes]));
         }
 
@@ -68,8 +68,8 @@ namespace System.Security.Cryptography.Tests
         {
             using MLKem kem = ImportEncapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512EncapsulationKey);
 
-            Assert.ThrowsAny<CryptographicException>(() => kem.ExportDecapsulationKey());
-            Assert.ThrowsAny<CryptographicException>(() => kem.ExportDecapsulationKey(
+            Assert.Throws<CryptographicException>(() => kem.ExportDecapsulationKey());
+            Assert.Throws<CryptographicException>(() => kem.ExportDecapsulationKey(
                 new byte[MLKemAlgorithm.MLKem512.DecapsulationKeySizeInBytes]));
         }
 
@@ -344,7 +344,7 @@ namespace System.Security.Cryptography.Tests
                 using MLKem imported = MLKem.ImportPkcs8PrivateKey(pkcs8);
                 Assert.Equal(MLKemAlgorithm.MLKem512, imported.Algorithm);
 
-                Assert.ThrowsAny<CryptographicException>(() => kem.ExportPrivateSeed());
+                Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed());
                 AssertExtensions.SequenceEqual(MLKemTestData.MLKem512DecapsulationKey, kem.ExportDecapsulationKey());
             });
         }
@@ -370,7 +370,7 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.SequenceEqual(
                     MLKemTestData.MLKem512DecapsulationKey,
                     imported.ExportDecapsulationKey());
-                Assert.ThrowsAny<CryptographicException>(() => imported.ExportPrivateSeed());
+                Assert.Throws<CryptographicException>(() => imported.ExportPrivateSeed());
             });
         }
 

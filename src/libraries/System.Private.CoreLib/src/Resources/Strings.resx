@@ -214,6 +214,9 @@
   <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
     <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
   </data>
+  <data name="Arg_BitArrayTypeUnsupported" xml:space="preserve">
+    <value>Only supported array types for CopyTo on BitArrays are Boolean[], Int32[] and Byte[].</value>
+  </data>
   <data name="Arg_ByteArrayTooSmallForValue" xml:space="preserve">
     <value>The array starting from the specified index is not long enough to read a value of the specified type.</value>
   </data>
@@ -878,6 +881,9 @@
   </data>
   <data name="Argument_ArrayParsingError" xml:space="preserve">
     <value>Error parsing array spec.</value>
+  </data>
+  <data name="Argument_ArrayTooLarge" xml:space="preserve">
+    <value>The input array length must not exceed Int32.MaxValue / {0}. Otherwise BitArray.Length would exceed Int32.MaxValue.</value>
   </data>
   <data name="Argument_AttributeNamesMustBeUnique" xml:space="preserve">
     <value>Attribute names must be unique.</value>

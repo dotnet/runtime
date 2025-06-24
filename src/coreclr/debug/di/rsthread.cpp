@@ -3376,7 +3376,7 @@ bool CordbUnmanagedThread::IsCantStop()
     {
         _ASSERTE(!"IsCantStop: Failed updating debugger control block");
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     // Helper's canary thread is always can't-stop.
     if (this->m_id == GetProcess()->GetDCB()->m_CanaryThreadId)
