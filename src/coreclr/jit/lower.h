@@ -443,7 +443,7 @@ private:
     GenTree* LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
-    void     LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
+    void     LowerFusedMultiplyOp(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node);
@@ -498,6 +498,13 @@ public:
             }
 
 #endif // TARGET_XARCH
+
+#if TARGET_X86
+            if (parentNode->OperIs(GT_MUL_LONG))
+            {
+                return genTypeSize(childNode->TypeGet()) == operatorSize / 2;
+            }
+#endif // TARGET_X86
 
             return genTypeSize(childNode->TypeGet()) == operatorSize;
         }
