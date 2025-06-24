@@ -27,7 +27,7 @@ namespace System.Numerics.Tensors
         public static void TanPi<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, TanPiOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, TanPiOperator<float>>(x, destination))
             {
                 return;
             }

@@ -23,7 +23,7 @@ namespace System.Numerics.Tensors
         public static void CopySign<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> sign, Span<T> destination)
             where T : INumber<T>
         {
-            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsShort<T, CopySignOperator<float>>(x, sign, destination))
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, CopySignOperator<float>>(x, sign, destination))
             {
                 return;
             }
@@ -45,7 +45,7 @@ namespace System.Numerics.Tensors
         public static void CopySign<T>(ReadOnlySpan<T> x, T sign, Span<T> destination)
             where T : INumber<T>
         {
-            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsShort<T, CopySignOperator<float>>(x, sign, destination))
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, CopySignOperator<float>>(x, sign, destination))
             {
                 return;
             }

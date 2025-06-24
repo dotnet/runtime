@@ -32,7 +32,7 @@ namespace System.Numerics.Tensors
         public static void Clamp<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> min, ReadOnlySpan<T> max, Span<T> destination)
             where T : INumber<T>
         {
-            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsShort<T, ClampOperatorXMinMax<float>>(x, min, max, destination))
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, ClampOperatorXMinMax<float>>(x, min, max, destination))
             {
                 return;
             }
@@ -61,7 +61,7 @@ namespace System.Numerics.Tensors
         public static void Clamp<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> min, T max, Span<T> destination)
             where T : INumber<T>
         {
-            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsShort<T, ClampOperatorXMinMax<float>>(x, min, max, destination))
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, ClampOperatorXMinMax<float>>(x, min, max, destination))
             {
                 return;
             }
@@ -90,7 +90,7 @@ namespace System.Numerics.Tensors
         public static void Clamp<T>(ReadOnlySpan<T> x, T min, ReadOnlySpan<T> max, Span<T> destination)
             where T : INumber<T>
         {
-            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsShort<T, ClampOperatorXMinMax<float>>(x, min, max, destination))
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, ClampOperatorXMinMax<float>>(x, min, max, destination))
             {
                 return;
             }
@@ -119,7 +119,7 @@ namespace System.Numerics.Tensors
         public static void Clamp<T>(T x, ReadOnlySpan<T> min, ReadOnlySpan<T> max, Span<T> destination)
             where T : INumber<T>
         {
-            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsShort<T, ClampOperatorMinMaxX<float>>(min, max, x, destination))
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, ClampOperatorMinMaxX<float>>(min, max, x, destination))
             {
                 return;
             }
@@ -151,7 +151,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_MinGreaterThanMax();
             }
 
-            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsShort<T, ClampOperatorXMinMax<float>>(x, min, max, destination))
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, ClampOperatorXMinMax<float>>(x, min, max, destination))
             {
                 return;
             }
@@ -178,7 +178,7 @@ namespace System.Numerics.Tensors
         public static void Clamp<T>(T x, ReadOnlySpan<T> min, T max, Span<T> destination)
             where T : INumber<T>
         {
-            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsShort<T, ClampOperatorMinMaxX<float>>(min, max, x, destination))
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, ClampOperatorMinMaxX<float>>(min, max, x, destination))
             {
                 return;
             }
@@ -205,7 +205,7 @@ namespace System.Numerics.Tensors
         public static void Clamp<T>(T x, T min, ReadOnlySpan<T> max, Span<T> destination)
             where T : INumber<T>
         {
-            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsShort<T, ClampOperatorMaxXMin<float>>(max, x, min, destination))
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, ClampOperatorMaxXMin<float>>(max, x, min, destination))
             {
                 return;
             }

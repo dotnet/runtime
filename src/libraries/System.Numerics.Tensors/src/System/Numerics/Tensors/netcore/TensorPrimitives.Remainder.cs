@@ -26,7 +26,7 @@ namespace System.Numerics.Tensors
         public static void Remainder<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
             where T : IModulusOperators<T, T, T>
         {
-            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsShort<T, RemainderOperator<float>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, RemainderOperator<float>>(x, y, destination))
             {
                 return;
             }
@@ -52,7 +52,7 @@ namespace System.Numerics.Tensors
         public static void Remainder<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
             where T : IModulusOperators<T, T, T>
         {
-            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsShort<T, RemainderOperator<float>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, RemainderOperator<float>>(x, y, destination))
             {
                 return;
             }
@@ -78,7 +78,7 @@ namespace System.Numerics.Tensors
         public static void Remainder<T>(T x, ReadOnlySpan<T> y, Span<T> destination)
             where T : IModulusOperators<T, T, T>
         {
-            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsShort<T, RemainderOperator<float>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, RemainderOperator<float>>(x, y, destination))
             {
                 return;
             }

@@ -26,7 +26,7 @@ namespace System.Numerics.Tensors
         public static void Multiply<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
             where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsShort<T, MultiplyOperator<float>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MultiplyOperator<float>>(x, y, destination))
             {
                 return;
             }
@@ -52,7 +52,7 @@ namespace System.Numerics.Tensors
         public static void Multiply<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
             where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsShort<T, MultiplyOperator<float>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MultiplyOperator<float>>(x, y, destination))
             {
                 return;
             }

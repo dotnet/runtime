@@ -26,7 +26,7 @@ namespace System.Numerics.Tensors
         public static void Add<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsShort<T, AddOperator<float>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, AddOperator<float>>(x, y, destination))
             {
                 return;
             }
@@ -51,7 +51,7 @@ namespace System.Numerics.Tensors
         public static void Add<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsShort<T, AddOperator<float>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, AddOperator<float>>(x, y, destination))
             {
                 return;
             }

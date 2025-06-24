@@ -24,7 +24,7 @@ namespace System.Numerics.Tensors
         public static void Round<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : IFloatingPoint<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, RoundToEvenOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, RoundToEvenOperator<float>>(x, destination))
             {
                 return;
             }
@@ -53,7 +53,7 @@ namespace System.Numerics.Tensors
                     return;
 
                 case MidpointRounding.AwayFromZero:
-                    if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, RoundAwayFromZeroOperator<float>>(x, destination))
+                    if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, RoundAwayFromZeroOperator<float>>(x, destination))
                     {
                         return;
                     }

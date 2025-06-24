@@ -28,7 +28,7 @@ namespace System.Numerics.Tensors
         public static void AddMultiply<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, ReadOnlySpan<T> multiplier, Span<T> destination)
             where T : IAdditionOperators<T, T, T>, IMultiplyOperators<T, T, T>
         {
-            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsShort<T, AddMultiplyOperator<float>>(x, y, multiplier, destination))
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, AddMultiplyOperator<float>>(x, y, multiplier, destination))
             {
                 return;
             }
@@ -56,7 +56,7 @@ namespace System.Numerics.Tensors
         public static void AddMultiply<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, T multiplier, Span<T> destination)
             where T : IAdditionOperators<T, T, T>, IMultiplyOperators<T, T, T>
         {
-            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsShort<T, AddMultiplyOperator<float>>(x, y, multiplier, destination))
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, AddMultiplyOperator<float>>(x, y, multiplier, destination))
             {
                 return;
             }
@@ -84,7 +84,7 @@ namespace System.Numerics.Tensors
         public static void AddMultiply<T>(ReadOnlySpan<T> x, T y, ReadOnlySpan<T> multiplier, Span<T> destination)
             where T : IAdditionOperators<T, T, T>, IMultiplyOperators<T, T, T>
         {
-            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsShort<T, AddMultiplyOperator<float>>(x, y, multiplier, destination))
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, AddMultiplyOperator<float>>(x, y, multiplier, destination))
             {
                 return;
             }

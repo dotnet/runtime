@@ -31,7 +31,7 @@ namespace System.Numerics.Tensors
         public static void Log<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, LogOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, LogOperator<float>>(x, destination))
             {
                 return;
             }
@@ -59,7 +59,7 @@ namespace System.Numerics.Tensors
         public static void Log<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsShort<T, LogBaseOperator<float>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, LogBaseOperator<float>>(x, y, destination))
             {
                 return;
             }
@@ -85,7 +85,7 @@ namespace System.Numerics.Tensors
         public static void Log<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsShort<T, LogBaseOperator<float>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, LogBaseOperator<float>>(x, y, destination))
             {
                 return;
             }

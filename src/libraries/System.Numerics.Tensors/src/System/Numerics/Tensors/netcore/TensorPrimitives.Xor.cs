@@ -23,7 +23,7 @@ namespace System.Numerics.Tensors
         public static void Xor<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
             where T : IBitwiseOperators<T, T, T>
         {
-            if (typeof(T) == typeof(Half) && TryBinaryBitwiseInvokeHalfAsShort<T, XorOperator<short>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryBinaryBitwiseInvokeHalfAsInt16<T, XorOperator<short>>(x, y, destination))
             {
                 return;
             }
@@ -45,7 +45,7 @@ namespace System.Numerics.Tensors
         public static void Xor<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
             where T : IBitwiseOperators<T, T, T>
         {
-            if (typeof(T) == typeof(Half) && TryBinaryBitwiseInvokeHalfAsShort<T, XorOperator<short>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryBinaryBitwiseInvokeHalfAsInt16<T, XorOperator<short>>(x, y, destination))
             {
                 return;
             }

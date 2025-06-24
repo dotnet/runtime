@@ -20,7 +20,7 @@ namespace System.Numerics.Tensors
         public static void OnesComplement<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : IBitwiseOperators<T, T, T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryBitwiseInvokeHalfAsShort<T, OnesComplementOperator<short>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryBitwiseInvokeHalfAsInt16<T, OnesComplementOperator<short>>(x, destination))
             {
                 return;
             }

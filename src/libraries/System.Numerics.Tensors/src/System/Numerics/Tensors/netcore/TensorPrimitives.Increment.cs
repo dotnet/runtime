@@ -20,7 +20,7 @@ namespace System.Numerics.Tensors
         public static void Increment<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : IIncrementOperators<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, IncrementOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, IncrementOperator<float>>(x, destination))
             {
                 return;
             }

@@ -21,7 +21,7 @@ namespace System.Numerics.Tensors
         public static void DegreesToRadians<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, DegreesToRadiansOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, DegreesToRadiansOperator<float>>(x, destination))
             {
                 return;
             }

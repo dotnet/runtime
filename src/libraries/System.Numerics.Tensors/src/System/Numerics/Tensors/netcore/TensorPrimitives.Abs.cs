@@ -29,7 +29,7 @@ namespace System.Numerics.Tensors
         public static void Abs<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : INumberBase<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, AbsoluteOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, AbsoluteOperator<float>>(x, destination))
             {
                 return;
             }

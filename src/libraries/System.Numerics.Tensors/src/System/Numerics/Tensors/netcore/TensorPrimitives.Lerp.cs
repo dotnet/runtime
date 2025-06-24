@@ -29,7 +29,7 @@ namespace System.Numerics.Tensors
         public static void Lerp<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, ReadOnlySpan<T> amount, Span<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsShort<T, LerpOperator<float>>(x, y, amount, destination))
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, LerpOperator<float>>(x, y, amount, destination))
             {
                 return;
             }
@@ -57,7 +57,7 @@ namespace System.Numerics.Tensors
         public static void Lerp<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, T amount, Span<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsShort<T, LerpOperator<float>>(x, y, amount, destination))
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, LerpOperator<float>>(x, y, amount, destination))
             {
                 return;
             }
@@ -85,7 +85,7 @@ namespace System.Numerics.Tensors
         public static void Lerp<T>(ReadOnlySpan<T> x, T y, ReadOnlySpan<T> amount, Span<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsShort<T, LerpOperator<float>>(x, y, amount, destination))
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, LerpOperator<float>>(x, y, amount, destination))
             {
                 return;
             }

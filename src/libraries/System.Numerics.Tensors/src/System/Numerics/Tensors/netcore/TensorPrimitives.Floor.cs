@@ -21,7 +21,7 @@ namespace System.Numerics.Tensors
         public static void Floor<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : IFloatingPoint<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, FloorOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, FloorOperator<float>>(x, destination))
             {
                 return;
             }

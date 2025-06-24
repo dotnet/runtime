@@ -32,7 +32,7 @@ namespace System.Numerics.Tensors
         public static void Cosh<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : IHyperbolicFunctions<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, CoshOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, CoshOperator<float>>(x, destination))
             {
                 return;
             }

@@ -23,7 +23,7 @@ namespace System.Numerics.Tensors
         public static void Reciprocal<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : IFloatingPoint<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, ReciprocalOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, ReciprocalOperator<float>>(x, destination))
             {
                 return;
             }
@@ -45,7 +45,7 @@ namespace System.Numerics.Tensors
         public static void ReciprocalEstimate<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, ReciprocalEstimateOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, ReciprocalEstimateOperator<float>>(x, destination))
             {
                 return;
             }
@@ -67,7 +67,7 @@ namespace System.Numerics.Tensors
         public static void ReciprocalSqrt<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, ReciprocalSqrtOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, ReciprocalSqrtOperator<float>>(x, destination))
             {
                 return;
             }
@@ -89,7 +89,7 @@ namespace System.Numerics.Tensors
         public static void ReciprocalSqrtEstimate<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, ReciprocalSqrtEstimateOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, ReciprocalSqrtEstimateOperator<float>>(x, destination))
             {
                 return;
             }

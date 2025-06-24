@@ -30,7 +30,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, SigmoidOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, SigmoidOperator<float>>(x, destination))
             {
                 return;
             }

@@ -46,14 +46,14 @@ namespace System.Numerics.Tensors
             ConvertTruncating(source, destination);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryUnaryInvokeHalfAsShort<T, TOp>(ReadOnlySpan<T> x, Span<T> destination)
+        private static bool TryUnaryInvokeHalfAsInt16<T, TOp>(ReadOnlySpan<T> x, Span<T> destination)
             where TOp : struct, IUnaryOperator<float, float>
         {
             Debug.Assert(typeof(T) == typeof(Half));
 
             if (TOp.Vectorizable && IsVectorizable(Rename<T, Half>(x)))
             {
-                InvokeSpanIntoSpan<short, HalfAsShortUnaryOperator<TOp>>(
+                InvokeSpanIntoSpan<short, HalfAsInt16UnaryOperator<TOp>>(
                     Rename<T, short>(x),
                     Rename<T, short>(destination));
                 return true;
@@ -63,7 +63,7 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryUnaryBitwiseInvokeHalfAsShort<T, TOp>(ReadOnlySpan<T> x, Span<T> destination)
+        private static bool TryUnaryBitwiseInvokeHalfAsInt16<T, TOp>(ReadOnlySpan<T> x, Span<T> destination)
             where TOp : struct, IUnaryOperator<short, short>
         {
             Debug.Assert(typeof(T) == typeof(Half));
@@ -80,14 +80,14 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryBinaryInvokeHalfAsShort<T, TOp>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
+        private static bool TryBinaryInvokeHalfAsInt16<T, TOp>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
             where TOp : struct, IBinaryOperator<float>
         {
             Debug.Assert(typeof(T) == typeof(Half));
 
             if (TOp.Vectorizable && IsVectorizable(Rename<T, Half>(x)))
             {
-                InvokeSpanSpanIntoSpan<short, HalfAsShortBinaryOperator<TOp>>(
+                InvokeSpanSpanIntoSpan<short, HalfAsInt16BinaryOperator<TOp>>(
                     Rename<T, short>(x),
                     Rename<T, short>(y),
                     Rename<T, short>(destination));
@@ -98,14 +98,14 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryBinaryInvokeHalfAsShort<T, TOp>(ReadOnlySpan<T> x, T y, Span<T> destination)
+        private static bool TryBinaryInvokeHalfAsInt16<T, TOp>(ReadOnlySpan<T> x, T y, Span<T> destination)
             where TOp : struct, IBinaryOperator<float>
         {
             Debug.Assert(typeof(T) == typeof(Half));
 
             if (TOp.Vectorizable && IsVectorizable(Rename<T, Half>(x)))
             {
-                InvokeSpanScalarIntoSpan<short, HalfAsShortBinaryOperator<TOp>>(
+                InvokeSpanScalarIntoSpan<short, HalfAsInt16BinaryOperator<TOp>>(
                     Rename<T, short>(x),
                     BitConverter.HalfToInt16Bits((Half)(object)y!),
                     Rename<T, short>(destination));
@@ -116,14 +116,14 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryBinaryInvokeHalfAsShort<T, TOp>(T x, ReadOnlySpan<T> y, Span<T> destination)
+        private static bool TryBinaryInvokeHalfAsInt16<T, TOp>(T x, ReadOnlySpan<T> y, Span<T> destination)
             where TOp : struct, IBinaryOperator<float>
         {
             Debug.Assert(typeof(T) == typeof(Half));
 
             if (TOp.Vectorizable && IsVectorizable(Rename<T, Half>(y)))
             {
-                InvokeScalarSpanIntoSpan<short, HalfAsShortBinaryOperator<TOp>>(
+                InvokeScalarSpanIntoSpan<short, HalfAsInt16BinaryOperator<TOp>>(
                     BitConverter.HalfToInt16Bits((Half)(object)x!),
                     Rename<T, short>(y),
                     Rename<T, short>(destination));
@@ -134,7 +134,7 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryBinaryBitwiseInvokeHalfAsShort<T, TOp>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
+        private static bool TryBinaryBitwiseInvokeHalfAsInt16<T, TOp>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
             where TOp : struct, IBinaryOperator<short>
         {
             Debug.Assert(typeof(T) == typeof(Half));
@@ -152,7 +152,7 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryBinaryBitwiseInvokeHalfAsShort<T, TOp>(ReadOnlySpan<T> x, T y, Span<T> destination)
+        private static bool TryBinaryBitwiseInvokeHalfAsInt16<T, TOp>(ReadOnlySpan<T> x, T y, Span<T> destination)
             where TOp : struct, IBinaryOperator<short>
         {
             Debug.Assert(typeof(T) == typeof(Half));
@@ -170,14 +170,14 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryAggregateInvokeHalfAsShort<T, TOp>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
+        private static bool TryAggregateInvokeHalfAsInt16<T, TOp>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
             where TOp : struct, IAggregationOperator<float>
         {
             Debug.Assert(typeof(T) == typeof(Half));
 
             if (TOp.Vectorizable && IsVectorizable(Rename<T, Half>(x)))
             {
-                InvokeSpanSpanIntoSpan<short, HalfAsShortAggregationOperator<TOp>>(
+                InvokeSpanSpanIntoSpan<short, HalfAsInt16AggregationOperator<TOp>>(
                     Rename<T, short>(x),
                     Rename<T, short>(y),
                     Rename<T, short>(destination));
@@ -188,14 +188,14 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryAggregateInvokeHalfAsShort<T, TOp>(ReadOnlySpan<T> x, T y, Span<T> destination)
+        private static bool TryAggregateInvokeHalfAsInt16<T, TOp>(ReadOnlySpan<T> x, T y, Span<T> destination)
             where TOp : struct, IAggregationOperator<float>
         {
             Debug.Assert(typeof(T) == typeof(Half));
 
             if (TOp.Vectorizable && IsVectorizable(Rename<T, Half>(x)))
             {
-                InvokeSpanScalarIntoSpan<short, HalfAsShortAggregationOperator<TOp>>(
+                InvokeSpanScalarIntoSpan<short, HalfAsInt16AggregationOperator<TOp>>(
                     Rename<T, short>(x),
                     BitConverter.HalfToInt16Bits((Half)(object)y!),
                     Rename<T, short>(destination));
@@ -206,13 +206,13 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryMinMaxHalfAsShort<T, TOp>(ReadOnlySpan<T> x, out T result)
+        private static bool TryMinMaxHalfAsInt16<T, TOp>(ReadOnlySpan<T> x, out T result)
             where TOp : struct, IAggregationOperator<float>
         {
             if (typeof(T) == typeof(Half) && IsVectorizable(Rename<T, Half>(x)))
             {
                 result = (T)(object)BitConverter.Int16BitsToHalf(
-                    MinMaxCore<short, HalfAsShortAggregationOperator<TOp>>(
+                    MinMaxCore<short, HalfAsInt16AggregationOperator<TOp>>(
                         Rename<T, short>(x)));
                 return true;
             }
@@ -222,14 +222,14 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryTernaryInvokeHalfAsShort<T, TOp>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, ReadOnlySpan<T> z, Span<T> destination)
+        private static bool TryTernaryInvokeHalfAsInt16<T, TOp>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, ReadOnlySpan<T> z, Span<T> destination)
             where TOp : struct, ITernaryOperator<float>
         {
             Debug.Assert(typeof(T) == typeof(Half));
 
             if (TOp.Vectorizable && IsVectorizable(Rename<T, Half>(x)))
             {
-                InvokeSpanSpanSpanIntoSpan<short, HalfAsShortTernaryOperator<TOp>>(
+                InvokeSpanSpanSpanIntoSpan<short, HalfAsInt16TernaryOperator<TOp>>(
                     Rename<T, short>(x),
                     Rename<T, short>(y),
                     Rename<T, short>(z),
@@ -241,14 +241,14 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryTernaryInvokeHalfAsShort<T, TOp>(ReadOnlySpan<T> x, T y, ReadOnlySpan<T> z, Span<T> destination)
+        private static bool TryTernaryInvokeHalfAsInt16<T, TOp>(ReadOnlySpan<T> x, T y, ReadOnlySpan<T> z, Span<T> destination)
             where TOp : struct, ITernaryOperator<float>
         {
             Debug.Assert(typeof(T) == typeof(Half));
 
             if (TOp.Vectorizable && IsVectorizable(Rename<T, Half>(x)))
             {
-                InvokeSpanScalarSpanIntoSpan<short, HalfAsShortTernaryOperator<TOp>>(
+                InvokeSpanScalarSpanIntoSpan<short, HalfAsInt16TernaryOperator<TOp>>(
                     Rename<T, short>(x),
                     BitConverter.HalfToInt16Bits((Half)(object)y!),
                     Rename<T, short>(z),
@@ -260,14 +260,14 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryTernaryInvokeHalfAsShort<T, TOp>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, T z, Span<T> destination)
+        private static bool TryTernaryInvokeHalfAsInt16<T, TOp>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, T z, Span<T> destination)
             where TOp : struct, ITernaryOperator<float>
         {
             Debug.Assert(typeof(T) == typeof(Half));
 
             if (TOp.Vectorizable && IsVectorizable(Rename<T, Half>(x)))
             {
-                InvokeSpanSpanScalarIntoSpan<short, HalfAsShortTernaryOperator<TOp>>(
+                InvokeSpanSpanScalarIntoSpan<short, HalfAsInt16TernaryOperator<TOp>>(
                     Rename<T, short>(x),
                     Rename<T, short>(y),
                     BitConverter.HalfToInt16Bits((Half)(object)z!),
@@ -279,14 +279,14 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryTernaryInvokeHalfAsShort<T, TOp>(ReadOnlySpan<T> x, T y, T z, Span<T> destination)
+        private static bool TryTernaryInvokeHalfAsInt16<T, TOp>(ReadOnlySpan<T> x, T y, T z, Span<T> destination)
             where TOp : struct, ITernaryOperator<float>
         {
             Debug.Assert(typeof(T) == typeof(Half));
 
             if (TOp.Vectorizable && IsVectorizable(Rename<T, Half>(x)))
             {
-                InvokeSpanScalarScalarIntoSpan<short, HalfAsShortTernaryOperator<TOp>>(
+                InvokeSpanScalarScalarIntoSpan<short, HalfAsInt16TernaryOperator<TOp>>(
                     Rename<T, short>(x),
                     BitConverter.HalfToInt16Bits((Half)(object)y!),
                     BitConverter.HalfToInt16Bits((Half)(object)z!),
@@ -307,7 +307,7 @@ namespace System.Numerics.Tensors
             source.Length >= Vector128<short>.Count;
 
         /// <summary><see cref="IUnaryOperator{T, T}"/> wrapper for working with <see cref="Half"/> reinterpreted as <see cref="short"/> in order to enable vectorization.</summary>
-        private readonly struct HalfAsShortUnaryOperator<TUnary> : IUnaryOperator<short, short>
+        private readonly struct HalfAsInt16UnaryOperator<TUnary> : IUnaryOperator<short, short>
             where TUnary : struct, IUnaryOperator<float, float>
         {
             public static bool Vectorizable => TUnary.Vectorizable;
@@ -342,7 +342,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary><see cref="IBinaryOperator{T}"/> wrapper for working with <see cref="Half"/> reinterpreted as <see cref="short"/> in order to enable vectorization.</summary>
-        private readonly struct HalfAsShortBinaryOperator<TBinary> : IBinaryOperator<short>
+        private readonly struct HalfAsInt16BinaryOperator<TBinary> : IBinaryOperator<short>
             where TBinary : struct, IBinaryOperator<float>
         {
             public static bool Vectorizable => TBinary.Vectorizable;
@@ -381,7 +381,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary><see cref="IAggregationOperator{T}"/> wrapper for working with <see cref="Half"/> reinterpreted as <see cref="short"/> in order to enable vectorization.</summary>
-        private readonly struct HalfAsShortAggregationOperator<TAggregate> : IAggregationOperator<short>
+        private readonly struct HalfAsInt16AggregationOperator<TAggregate> : IAggregationOperator<short>
             where TAggregate : struct, IAggregationOperator<float>
         {
             public static bool Vectorizable => TAggregate.Vectorizable;
@@ -446,7 +446,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary><see cref="ITernaryOperator{T}"/> wrapper for working with <see cref="Half"/> reinterpreted as <see cref="short"/> in order to enable vectorization.</summary>
-        private readonly struct HalfAsShortTernaryOperator<TTernary> : ITernaryOperator<short>
+        private readonly struct HalfAsInt16TernaryOperator<TTernary> : ITernaryOperator<short>
             where TTernary : struct, ITernaryOperator<float>
         {
             public static bool Vectorizable => TTernary.Vectorizable;

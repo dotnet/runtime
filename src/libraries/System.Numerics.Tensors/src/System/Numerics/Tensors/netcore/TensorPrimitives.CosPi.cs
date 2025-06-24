@@ -28,7 +28,7 @@ namespace System.Numerics.Tensors
         public static void CosPi<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, CosPiOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, CosPiOperator<float>>(x, destination))
             {
                 return;
             }

@@ -26,7 +26,7 @@ namespace System.Numerics.Tensors
         public static void Subtract<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
             where T : ISubtractionOperators<T, T, T>
         {
-            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsShort<T, SubtractOperator<float>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, SubtractOperator<float>>(x, y, destination))
             {
                 return;
             }
@@ -51,7 +51,7 @@ namespace System.Numerics.Tensors
         public static void Subtract<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
             where T : ISubtractionOperators<T, T, T>
         {
-            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsShort<T, SubtractOperator<float>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, SubtractOperator<float>>(x, y, destination))
             {
                 return;
             }
@@ -76,7 +76,7 @@ namespace System.Numerics.Tensors
         public static void Subtract<T>(T x, ReadOnlySpan<T> y, Span<T> destination)
             where T : ISubtractionOperators<T, T, T>
         {
-            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsShort<T, SubtractOperator<float>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, SubtractOperator<float>>(x, y, destination))
             {
                 return;
             }

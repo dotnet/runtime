@@ -30,7 +30,7 @@ namespace System.Numerics.Tensors
         public static void Log10P1<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, Log10P1Operator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, Log10P1Operator<float>>(x, destination))
             {
                 return;
             }

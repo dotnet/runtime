@@ -28,7 +28,7 @@ namespace System.Numerics.Tensors
         public static void Sin<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, SinOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, SinOperator<float>>(x, destination))
             {
                 return;
             }

@@ -28,7 +28,7 @@ namespace System.Numerics.Tensors
         public static T Max<T>(ReadOnlySpan<T> x)
             where T : INumber<T>
         {
-            if (typeof(T) == typeof(Half) && TryMinMaxHalfAsShort<T, MaxOperator<float>>(x, out T result))
+            if (typeof(T) == typeof(Half) && TryMinMaxHalfAsInt16<T, MaxOperator<float>>(x, out T result))
             {
                 return result;
             }
@@ -60,7 +60,7 @@ namespace System.Numerics.Tensors
         public static void Max<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
             where T : INumber<T>
         {
-            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsShort<T, MaxOperator<float>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MaxOperator<float>>(x, y, destination))
             {
                 return;
             }
@@ -90,7 +90,7 @@ namespace System.Numerics.Tensors
         public static void Max<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
             where T : INumber<T>
         {
-            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsShort<T, MaxOperator<float>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MaxOperator<float>>(x, y, destination))
             {
                 return;
             }

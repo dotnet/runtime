@@ -24,7 +24,7 @@ namespace System.Numerics.Tensors
         public static void Hypot<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
             where T : IRootFunctions<T>
         {
-            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsShort<T, HypotOperator<float>>(x, y, destination))
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, HypotOperator<float>>(x, y, destination))
             {
                 return;
             }

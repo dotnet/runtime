@@ -24,7 +24,7 @@ namespace System.Numerics.Tensors
         public static void Exp10M1<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : IExponentialFunctions<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, Exp10M1Operator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, Exp10M1Operator<float>>(x, destination))
             {
                 return;
             }

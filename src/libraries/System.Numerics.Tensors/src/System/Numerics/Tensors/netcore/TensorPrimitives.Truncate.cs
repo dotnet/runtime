@@ -23,7 +23,7 @@ namespace System.Numerics.Tensors
         public static void Truncate<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : IFloatingPoint<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, TruncateOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, TruncateOperator<float>>(x, destination))
             {
                 return;
             }

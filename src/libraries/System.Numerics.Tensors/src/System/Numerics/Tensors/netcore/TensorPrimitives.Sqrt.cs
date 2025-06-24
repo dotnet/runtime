@@ -20,7 +20,7 @@ namespace System.Numerics.Tensors
         public static void Sqrt<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : IRootFunctions<T>
         {
-            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsShort<T, SqrtOperator<float>>(x, destination))
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, SqrtOperator<float>>(x, destination))
             {
                 return;
             }
