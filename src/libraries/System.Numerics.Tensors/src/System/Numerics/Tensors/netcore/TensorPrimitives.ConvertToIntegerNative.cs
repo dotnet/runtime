@@ -38,14 +38,16 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(TFrom) == typeof(float))
                 {
-                    if (IsInt32Like<TTo>()) return Vector128.ConvertToInt32Native(x.AsSingle()).As<int, TTo>();
-                    if (IsUInt32Like<TTo>()) return Vector128.ConvertToUInt32Native(x.AsSingle()).As<uint, TTo>();
+                    return Vector128.IsNegative(Vector128<TTo>.AllBitsSet) != Vector128<TTo>.Zero ?
+                        Vector128.ConvertToInt32Native(x.AsSingle()).As<int, TTo>() :
+                        Vector128.ConvertToUInt32Native(x.AsSingle()).As<uint, TTo>();
                 }
 
                 if (typeof(TFrom) == typeof(double))
                 {
-                    if (IsInt64Like<TTo>()) return Vector128.ConvertToInt64Native(x.AsDouble()).As<long, TTo>();
-                    if (IsUInt64Like<TTo>()) return Vector128.ConvertToUInt64Native(x.AsDouble()).As<ulong, TTo>();
+                    return Vector128.IsNegative(Vector128<TTo>.AllBitsSet) != Vector128<TTo>.Zero ?
+                        Vector128.ConvertToInt64Native(x.AsDouble()).As<long, TTo>() :
+                        Vector128.ConvertToUInt64Native(x.AsDouble()).As<ulong, TTo>();
                 }
 
                 throw new NotSupportedException();
@@ -55,14 +57,16 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(TFrom) == typeof(float))
                 {
-                    if (IsInt32Like<TTo>()) return Vector256.ConvertToInt32Native(x.AsSingle()).As<int, TTo>();
-                    if (IsUInt32Like<TTo>()) return Vector256.ConvertToUInt32Native(x.AsSingle()).As<uint, TTo>();
+                    return Vector256.IsNegative(Vector256<TTo>.AllBitsSet) != Vector256<TTo>.Zero ?
+                        Vector256.ConvertToInt32Native(x.AsSingle()).As<int, TTo>() :
+                        Vector256.ConvertToUInt32Native(x.AsSingle()).As<uint, TTo>();
                 }
 
                 if (typeof(TFrom) == typeof(double))
                 {
-                    if (IsInt64Like<TTo>()) return Vector256.ConvertToInt64Native(x.AsDouble()).As<long, TTo>();
-                    if (IsUInt64Like<TTo>()) return Vector256.ConvertToUInt64Native(x.AsDouble()).As<ulong, TTo>();
+                    return Vector256.IsNegative(Vector256<TTo>.AllBitsSet) != Vector256<TTo>.Zero ?
+                        Vector256.ConvertToInt64Native(x.AsDouble()).As<long, TTo>() :
+                        Vector256.ConvertToUInt64Native(x.AsDouble()).As<ulong, TTo>();
                 }
 
                 throw new NotSupportedException();
@@ -72,14 +76,16 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(TFrom) == typeof(float))
                 {
-                    if (IsInt32Like<TTo>()) return Vector512.ConvertToInt32Native(x.AsSingle()).As<int, TTo>();
-                    if (IsUInt32Like<TTo>()) return Vector512.ConvertToUInt32Native(x.AsSingle()).As<uint, TTo>();
+                    return Vector512.IsNegative(Vector512<TTo>.AllBitsSet) != Vector512<TTo>.Zero ?
+                        Vector512.ConvertToInt32Native(x.AsSingle()).As<int, TTo>() :
+                        Vector512.ConvertToUInt32Native(x.AsSingle()).As<uint, TTo>();
                 }
 
                 if (typeof(TFrom) == typeof(double))
                 {
-                    if (IsInt64Like<TTo>()) return Vector512.ConvertToInt64Native(x.AsDouble()).As<long, TTo>();
-                    if (IsUInt64Like<TTo>()) return Vector512.ConvertToUInt64Native(x.AsDouble()).As<ulong, TTo>();
+                    return Vector512.IsNegative(Vector512<TTo>.AllBitsSet) != Vector512<TTo>.Zero ?
+                        Vector512.ConvertToInt64Native(x.AsDouble()).As<long, TTo>() :
+                        Vector512.ConvertToUInt64Native(x.AsDouble()).As<ulong, TTo>();
                 }
 
                 throw new NotSupportedException();
