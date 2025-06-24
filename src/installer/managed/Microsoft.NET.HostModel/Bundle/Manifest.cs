@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -132,8 +133,9 @@ namespace Microsoft.NET.HostModel.Bundle
             byte[] manifestHash = bundleHash.Hash;
             bundleHash.Dispose();
             bundleHash = null;
-
-            return Convert.ToBase64String(manifestHash).Substring(0, BundleIdLength).Replace('/', '_');
+            string id = Convert.ToBase64String(manifestHash).Substring(0, BundleIdLength).Replace('/', '_');
+            Debug.Assert(id.Length == BundleIdLength);
+            return id;
         }
 
         public long Write(BinaryWriter writer)
