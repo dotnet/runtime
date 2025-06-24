@@ -51,29 +51,37 @@ jobs:
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
-      - ${{ if and(eq(parameters.jobParameters.interpreter, ''), ne(parameters.jobParameters.isSingleFile, true)) }}:
-        - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
-          # mono outerloop
-          - Ubuntu.2204.Amd64.Open
-        - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
-          - ${{ if eq(parameters.jobParameters.isExtraPlatformsBuild, true) }}:
-            # extra-platforms CoreCLR
-            - (Debian.13.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64
-            - (Fedora.42.Amd64.Open)AzureLinux.3.Amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-42-helix-amd64
-            - (openSUSE.15.6.Amd64.Open)AzureLinux.3.Amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-15.6-helix-amd64
-            - (Ubuntu.2510.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-25.10-helix-amd64
-          - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
-            # outerloop only CoreCLR
-            - AzureLinux.3.0.Amd64.Open
-          - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-            # inner and outer loop CoreCLR
-            - Ubuntu.2204.Amd64.Open
-            - (AzureLinux.3.0.Amd64.Open)AzureLinux.3.Amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64
-            - (Centos.10.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-helix-amd64
       - ${{ if or(eq(parameters.jobParameters.interpreter, 'true'), eq(parameters.jobParameters.isSingleFile, true)) }}:
         # Limiting interp runs as we don't need as much coverage.
         - (Debian.13.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64
 
+      - ${{ else }}:
+        - ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
+          # Mono path
+          - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
+              # mono outerloop
+              - Ubuntu.2204.Amd64.Open
+          # Do we need a branch for inner loop mono?
+
+        - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
+        # CoreCLR path
+          - ${{ if and(eq(parameters.jobParameters.isExtraPlatformsBuild, true), ne(parameters.jobParameters.testScope, 'outerloop'))}}:
+            # extra-platforms CoreCLR (inner loop only)
+            - (Debian.13.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64
+            - (Fedora.42.Amd64.Open)AzureLinux.3.Amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-42-helix-amd64
+            - (openSUSE.15.6.Amd64.Open)AzureLinux.3.Amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-15.6-helix-amd64
+            - (Ubuntu.2510.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-25.10-helix-amd64
+
+          - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
+              # outerloop only CoreCLR
+              - AzureLinux.3.0.Amd64.Open
+
+          - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true))}}:
+              # inner and outer loop CoreCLR (general set)
+              - Ubuntu.2204.Amd64.Open
+              - (AzureLinux.3.0.Amd64.Open)AzureLinux.3.Amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64
+              - (Centos.10.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-helix-amd64
+    
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
       - osx.13.arm64.open
