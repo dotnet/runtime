@@ -220,8 +220,7 @@ namespace System.Net.Security
                 // whereas ALPN is supported from version 1.0.2.
                 SafeSslHandle sslContext = (SafeSslHandle)context;
                 if (errorCode == SecurityStatusPalErrorCode.OK && sslAuthenticationOptions.IsServer
-                    && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0
-                    && sslContext.AlpnHandle.IsAllocated && sslContext.AlpnHandle.Target == null)
+                    && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
                 {
                     token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, Interop.OpenSsl.CreateSslException(SR.net_alpn_failed));
                     return token;

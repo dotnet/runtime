@@ -65,17 +65,6 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetCertVerifyCallback")]
         internal static unsafe partial void SslCtxSetCertVerifyCallback(SafeSslContextHandle ctx, delegate* unmanaged<IntPtr, IntPtr, int> callback);
-
-        [UnmanagedCallersOnly]
-        internal static int CertVerifyCallback(IntPtr ssl, IntPtr store)
-        {
-            System.Console.WriteLine($"CertVerifyCallback called with store: {store:x8}, ssl: {ssl:x8}");
-            IntPtr data = Ssl.SslGetData(ssl);
-            System.Console.WriteLine($"SSL data: {data:x8}");
-            GCHandle gch = GCHandle.FromIntPtr(data);
-            System.Console.WriteLine($"SSL data handle: {gch.Target}");
-            return 0;
-        }
     }
 }
 
@@ -266,11 +255,6 @@ namespace Microsoft.Win32.SafeHandles
             {
                 return false;
             }
-
-            // even if we don't have matching session, we can get new one and we need
-            // way how to link SSL back to `this`.
-            Debug.Assert(Interop.Ssl.SslGetData(sslHandle) == IntPtr.Zero);
-            Interop.Ssl.SslSetData(sslHandle, (IntPtr)_gch);
 
             lock (_sslSessions)
             {

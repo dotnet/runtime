@@ -430,6 +430,11 @@ Shims SSL_CTX_get_ex_data to retrieve application context.
 PALEXPORT void* CryptoNative_SslCtxGetData(SSL_CTX* ctx);
 
 /*
+Shims SSL_get_SSL_CTX to retrieve the SSL_CTX from the SSL.
+*/
+PALEXPORT SSL_CTX* CryptoNative_SslGetSslCtx(SSL* ssl);
+
+/*
 
 Sets the specified encryption policy on the SSL_CTX.
 */

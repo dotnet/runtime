@@ -228,6 +228,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionSetData")]
         internal static partial void SslSessionSetData(IntPtr session, IntPtr val);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetSslCtx")]
+        internal static partial IntPtr SslGetSslCtx(IntPtr ssl);
+
         internal static class Capabilities
         {
             // needs separate type (separate static cctor) to be sure OpenSSL is initialized.
@@ -382,7 +385,7 @@ namespace Microsoft.Win32.SafeHandles
         private bool _isServer;
         private bool _handshakeCompleted;
 
-        public GCHandle AlpnHandle;
+        public GCHandle AuthOptionsHandle;
         // Reference to the parent SSL_CTX handle in the SSL_CTX is being cached. Only used for
         // refcount management.
         public SafeSslContextHandle? SslContextHandle;
@@ -480,10 +483,10 @@ namespace Microsoft.Win32.SafeHandles
 
             SslContextHandle?.Dispose();
 
-            if (AlpnHandle.IsAllocated)
+            if (AuthOptionsHandle.IsAllocated)
             {
                 Interop.Ssl.SslSetData(handle, IntPtr.Zero);
-                AlpnHandle.Free();
+                AuthOptionsHandle.Free();
             }
 
             IntPtr h = handle;

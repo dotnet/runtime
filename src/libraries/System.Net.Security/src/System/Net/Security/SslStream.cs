@@ -221,6 +221,10 @@ namespace System.Net.Security
             _sslAuthenticationOptions.SslStreamProxy = new SslStream.JavaProxy(sslStream: this);
 #endif
 
+#if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
+            _sslAuthenticationOptions.SslStream = this;
+#endif
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SslStreamCtor(this, innerStream);
         }
 

@@ -214,7 +214,6 @@ SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
         // The other .NET platforms are server-preference, and the common consensus seems
         // to be to use server preference (as of June 2020), so just always assert that.
         SSL_CTX_set_options(ctx, SSL_OP_NO_COMPRESSION | SSL_OP_CIPHER_SERVER_PREFERENCE);
-        SSL_CTX_set_mode(ctx, SSL_MODE_ASYNC);
 
 #ifdef NEED_OPENSSL_3_0
         if (CryptoNative_OpenSslVersionNumber() >= OPENSSL_VERSION_3_0_RTM)
@@ -1485,4 +1484,13 @@ Shims the SSL_get_verify_result method.
 int64_t CryptoNative_SslGetVerifyResult(SSL* ssl)
 {
     return SSL_get_verify_result(ssl);
+}
+
+/*
+Shims SSL_get_SSL_CTX to retrieve the SSL_CTX from the SSL.
+*/
+PALEXPORT SSL_CTX* CryptoNative_SslGetSslCtx(SSL* ssl)
+{
+    // No error queue impact.
+    return SSL_get_SSL_CTX(ssl);
 }

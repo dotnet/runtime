@@ -373,6 +373,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslGetClientCAList)
     DllImportEntry(CryptoNative_SslGetCurrentCipherId)
     DllImportEntry(CryptoNative_SslGetData)
+    DllImportEntry(CryptoNative_SslGetSslCtx)
     DllImportEntry(CryptoNative_SslGetError)
     DllImportEntry(CryptoNative_SslGetFinished)
     DllImportEntry(CryptoNative_SslGetPeerCertChain)
