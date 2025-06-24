@@ -16,7 +16,7 @@ internal class TransitionBlock : IData<TransitionBlock>
 
         if (type.Fields.ContainsKey(nameof(ArgumentRegisters)))
         {
-            ArgumentRegisters = target.ReadPointer(address + (ulong)type.Fields[nameof(ArgumentRegisters)].Offset);
+            ArgumentRegisters = address + (ulong)type.Fields[nameof(ArgumentRegisters)].Offset;
         }
     }
 
