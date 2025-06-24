@@ -860,7 +860,7 @@ internal static partial class Interop
         }
 
         [UnmanagedCallersOnly]
-        internal static int CertVerifyCallback(IntPtr ssl, IntPtr store)
+        internal static Interop.Crypto.X509VerifyStatusCodeUniversal CertVerifyCallback(IntPtr ssl, IntPtr store)
         {
             IntPtr data = Ssl.SslGetData(ssl);
             Debug.Assert(data != IntPtr.Zero, "Expected non-null data pointer from SslGetData");
@@ -898,57 +898,47 @@ internal static partial class Interop
             Debug.Assert(certificate != null, "Certificate should not be null here.");
 
             SslCertificateTrust? trust = options.CertificateContext?.Trust;
-            SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
 
-            if (options.CertificateChainPolicy != null)
+            ProtocolToken alertToken = default;
+
+            if (options.SslStream!.VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
             {
-                chain.ChainPolicy = options.CertificateChainPolicy;
+                // success
+                return Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_OK;
             }
-            else
-            {
-                chain.ChainPolicy.RevocationMode = options.CertificateRevocationCheckMode;
-                chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-
-                if (trust != null)
-                {
-                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                    if (trust._store != null)
-                    {
-                        chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
-                    }
-                    if (trust._trustList != null)
-                    {
-                        chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
-                    }
-                }
-            }
-
-            // set ApplicationPolicy unless already provided.
-            if (chain.ChainPolicy.ApplicationPolicy.Count == 0)
-            {
-                // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
-                chain.ChainPolicy.ApplicationPolicy.Add(options.IsServer ? SslStream.s_clientAuthOid : SslStream.s_serverAuthOid);
-            }
-
-            sslPolicyErrors |= CertificateValidation.BuildChainAndVerifyProperties(
-                chain,
-                certificate,
-                options.CheckCertName,
-                options.IsServer,
-                TargetHostNameHelper.NormalizeHostName(options.TargetHost));
-
-            bool success = sslPolicyErrors == SslPolicyErrors.None;
 
             if (options.CertValidationDelegate != null)
             {
-                success = options.CertValidationDelegate(
-                    options.SslStream!,
-                    certificate,
-                    chain,
-                    sslPolicyErrors);
+                // rejected by user validation callback
+                return Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_APPLICATION_VERIFICATION;
             }
 
-            return success ? 0 : 27 /* BAD_CERT */;
+            TlsAlertMessage alert;
+            if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != SslPolicyErrors.None)
+            {
+                alert = SslStream.GetAlertMessageFromChain(chain);
+            }
+            else if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != SslPolicyErrors.None)
+            {
+                alert = TlsAlertMessage.BadCertificate;
+            }
+            else
+            {
+                alert = TlsAlertMessage.CertificateUnknown;
+            }
+
+            // since we can't set the alert directly, we pick one of the error verify statuses
+            // which will result in the same alert being sent
+
+            return alert switch
+            {
+                TlsAlertMessage.BadCertificate => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_REJECTED,
+                TlsAlertMessage.UnknownCA => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT,
+                TlsAlertMessage.CertificateRevoked => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_REVOKED,
+                TlsAlertMessage.CertificateExpired => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_HAS_EXPIRED,
+                TlsAlertMessage.UnsupportedCert => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_INVALID_PURPOSE,
+                _ => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_REJECTED,
+            };
         }
 
         [UnmanagedCallersOnly]

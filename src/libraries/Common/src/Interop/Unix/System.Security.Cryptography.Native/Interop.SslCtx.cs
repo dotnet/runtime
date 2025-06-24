@@ -64,7 +64,7 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetCertVerifyCallback")]
-        internal static unsafe partial void SslCtxSetCertVerifyCallback(SafeSslContextHandle ctx, delegate* unmanaged<IntPtr, IntPtr, int> callback);
+        internal static unsafe partial void SslCtxSetCertVerifyCallback(SafeSslContextHandle ctx, delegate* unmanaged<IntPtr, IntPtr, Interop.Crypto.X509VerifyStatusCodeUniversal> callback);
     }
 }
 
