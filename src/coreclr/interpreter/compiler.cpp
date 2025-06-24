@@ -5191,32 +5191,13 @@ DO_LDFTN:
 
                 CorInfoHelpFunc castingHelper = m_compHnd->getCastingHelper(&resolvedToken, isCastClass);
 
-                if (!isCastClass)
-                {
-                    AddIns(INTOP_CALL_HELPER_PP_2);
-                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(castingHelper);
-                    m_pLastNewIns->data[1] = GetDataItemIndex(resolvedToken.hClass);
-                    m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
-                    m_pStackPointer--;
-                    PushInterpType(InterpTypeI, NULL);
-                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-                }
-                else
-                {
-                    CORINFO_GENERICHANDLE_RESULT embedInfo;
-                    m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodHnd, &embedInfo);
-                    int typeVar = EmitGenericHandleAsVar(embedInfo);
-
-                    AddIns(INTOP_CALL);
-                    m_pLastNewIns->SetSVar(typeVar);
-                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-                    m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(castingHelper);
-
-                    m_pStackPointer--;
-
-                    PushInterpType(InterpTypeO, NULL);
-                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-                }
+                AddIns(INTOP_CALL_HELPER_PP_2);
+                m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(castingHelper);
+                m_pLastNewIns->data[1] = GetDataItemIndex(resolvedToken.hClass);
+                m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
+                m_pStackPointer--;
+                PushInterpType(InterpTypeI, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 m_ip += 5;
                 break;
             }
