@@ -363,25 +363,24 @@ extends:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
                   name: MonoRuntimePacks
-
-      # disabled: https://github.com/dotnet/runtime/issues/116492
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     buildConfig: release
-      #     runtimeFlavor: mono
-      #     platforms:
-      #     - browser_wasm
-      #     jobParameters:
-      #       templatePath: 'templates-official'
-      #       buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      #       nameSuffix: Mono_multithread
-      #       isOfficialBuild: ${{ variables.isOfficialBuild }}
-      #       runtimeVariant: multithread
-      #       postBuildSteps:
-      #         - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-      #           parameters:
-      #             name: MonoRuntimePacks
+      # don't publish for workloads, https://github.com/dotnet/runtime/issues/116492
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          runtimeFlavor: mono
+          platforms:
+          - browser_wasm
+          jobParameters:
+            templatePath: 'templates-official'
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+            nameSuffix: Mono_multithread
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            runtimeVariant: multithread
+            # postBuildSteps:
+            #   - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            #     parameters:
+            #       name: MonoRuntimePacks
 
 
       # Build Mono AOT offset headers once, for consumption elsewhere

@@ -241,7 +241,7 @@ jobs:
       nameSuffix: MultiThreaded
       extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       condition: ne(variables['wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline'], true)
-      publishArtifactsForWorkload: true
+      publishArtifactsForWorkload: false
       publishWBT: false
 
   # Browser Wasm.Build.Tests
