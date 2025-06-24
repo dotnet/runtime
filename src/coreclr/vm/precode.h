@@ -836,8 +836,10 @@ static_assert_no_msg(sizeof(Precode) <= sizeof(NDirectImportPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
 
+#ifdef FEATURE_INTERPRETER
 // check that the InterpreterPrecodeData fits into the StubPrecode
 static_assert_no_msg(sizeof(InterpreterPrecodeData) <= sizeof(StubPrecode));
+#endif // FEATURE_INTERPRETER
 
 #ifndef DACCESS_COMPILE
 // A summary of the precode layout for diagnostic purposes
