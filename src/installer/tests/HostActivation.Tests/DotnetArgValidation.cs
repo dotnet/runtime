@@ -68,8 +68,6 @@ namespace HostActivation.Tests
                 .And.HaveStdErrContaining($"Failed to parse supported options or their values:");
         }
 
-
-
         [Fact]
         public void File_ExistsNoDirectorySeparator_RoutesToSDK()
         {
@@ -80,9 +78,7 @@ namespace HostActivation.Tests
             // Test that "dotnet build" still routes to SDK, not to the file
             TestContext.BuiltDotNet.Exec("build")
                 .WorkingDirectory(sharedTestState.BaseDirectory.Location)
-                .EnableHostTracing()
-                .CaptureStdOut()
-                .CaptureStdErr()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining("The command could not be loaded, possibly because:") // This is a generic error for when we can't tell what exactly the user intended to do

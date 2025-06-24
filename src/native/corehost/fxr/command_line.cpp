@@ -169,9 +169,7 @@ namespace
                     bool has_dir_separator = app_candidate.find(DIR_SEPARATOR) != pal::string_t::npos;
                     if (has_dir_separator)
                     {
-                        pal::string_t app_candidate_fullpath = app_candidate;
-                        bool file_exists = pal::fullpath(&app_candidate_fullpath);
-                        if (file_exists)
+                        if (pal::file_exists(app_candidate))
                         {
                             trace::error(_X("The application '%s' is not a managed .dll or .exe."), app_candidate.c_str());
                             return StatusCode::InvalidArgFailure;
