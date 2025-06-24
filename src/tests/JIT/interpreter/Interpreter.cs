@@ -1909,9 +1909,7 @@ public class InterpreterTest
 
     public static T TestSharedGenerics_UnboxAny<T>(object o)
     {
-        Console.WriteLine("UnboxAny to " + typeof(T).ToString());
         T result = (T)o;
-        Console.WriteLine("UnboxAny to " + typeof(T).ToString() + " Completed");
         return result;
     }
 
@@ -1933,6 +1931,18 @@ public class InterpreterTest
     struct GenericStruct<T>
     {
         public T Value;
+    }
+
+    class MyClass<T>
+    {
+        public Type GetTypeOf()
+        {
+            return typeof(MyClass<T>);
+        }
+        public static Type GetTypeOfStatic()
+        {
+            return typeof(MyClass<T>);
+        }
     }
 
     public static bool TestSharedGenerics()
@@ -2068,6 +2078,16 @@ public class InterpreterTest
         }
         int[,,] mdIntArr = TestNewMDArr<int>(5);
         if (mdIntArr.GetLength(0) != 5 || mdIntArr.GetLength(1) != 4 || mdIntArr.GetLength(2) != 3)
+        {
+            return false;
+        }
+
+        MyClass<string > mcString = new MyClass<string>();
+        if (mcString.GetTypeOf() != typeof(MyClass<string>))
+        {
+            return false;
+        }
+        if (MyClass<object>.GetTypeOfStatic() != typeof(MyClass<object>))
         {
             return false;
         }

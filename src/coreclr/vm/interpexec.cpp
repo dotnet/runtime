@@ -318,32 +318,40 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
                     }                                                                                       \
                     void* result = 0;                                                                       \
                                                                                                             \
-                    lookup = *(uint8_t**)(lookup + pLookup->offsets[0]);                                    \
-                    if (pLookup->indirections >= 3)                                                         \
-                        lookup = *(uint8_t**)(lookup + pLookup->offsets[1]);                                \
-                    if (pLookup->indirections >= 4)                                                         \
-                        lookup = *(uint8_t**)(lookup + pLookup->offsets[2]);                                \
-                    do {                                                                                    \
-                        size_t lastOffset = pLookup->offsets[pLookup->indirections - 1];                    \
-                        if (pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)                                   \
-                        {                                                                                   \
-                            /* Last indirection is the size*/                                               \
-                            size_t size = *(size_t*)(lookup + pLookup->sizeOffset);                         \
-                            if (size <= lastOffset)                                                         \
+                    if (pLookup->indirections != 0)                                                         \
+                    {                                                                                       \
+                        lookup = *(uint8_t**)(lookup + pLookup->offsets[0]);                                \
+                        if (pLookup->indirections >= 3)                                                     \
+                            lookup = *(uint8_t**)(lookup + pLookup->offsets[1]);                            \
+                        if (pLookup->indirections >= 4)                                                     \
+                            lookup = *(uint8_t**)(lookup + pLookup->offsets[2]);                            \
+                        do {                                                                                \
+                            size_t lastOffset = pLookup->offsets[pLookup->indirections - 1];                \
+                            if (pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)                               \
+                            {                                                                               \
+                                /* Last indirection is the size*/                                           \
+                                size_t size = *(size_t*)(lookup + pLookup->sizeOffset);                     \
+                                if (size <= lastOffset)                                                     \
+                                {                                                                           \
+                                    result = GenericHandleCommon(pMD, pMT, pLookup->signature);             \
+                                    break;                                                                  \
+                                }                                                                           \
+                            }                                                                               \
+                            lookup = *(uint8_t**)(lookup + lastOffset);                                     \
+                                                                                                            \
+                            if (lookup == NULL)                                                             \
                             {                                                                               \
                                 result = GenericHandleCommon(pMD, pMT, pLookup->signature);                 \
                                 break;                                                                      \
                             }                                                                               \
-                        }                                                                                   \
-                        lookup = *(uint8_t**)(lookup + lastOffset);                                         \
-                                                                                                            \
-                        if (lookup == NULL)                                                                 \
-                        {                                                                                   \
-                            result = GenericHandleCommon(pMD, pMT, pLookup->signature);                     \
-                            break;                                                                          \
-                        }                                                                                   \
+                            result = lookup;                                                                \
+                        } while (0);                                                                        \
+                    }                                                                                       \
+                    else                                                                                    \
+                    {                                                                                       \
                         result = lookup;                                                                    \
-                    } while (0)                                                                             \
+                    }                                                                                       \
+                    do { } while (0)
 
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
