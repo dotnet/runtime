@@ -95,7 +95,7 @@ namespace Mono.Linker
                 StringBuilder sb = new StringBuilder("using System.Diagnostics.CodeAnalysis;").AppendLine().AppendLine();
                 foreach (var warning in GetListOfWarnings(assemblyName))
                 {
-                    sb.Append("[assembly: UnconditionalSuppressMessage (\"")
+                    sb.Append("[assembly: UnconditionalSuppressMessage(\"")
                         .Append(Constants.ILLink)
                         .Append("\", \"IL").Append(warning.Code)
                         .Append("\", Scope = \"").Append(GetWarningSuppressionScopeString(warning.MemberDocumentationSignature))
