@@ -343,6 +343,8 @@ if ($env:BUILD_SOURCESDIRECTORY) {
     Add-MpPreference -ExclusionPath $env:BUILD_SOURCESDIRECTORY
     Add-MpPreference -ExclusionPath $env:TMP
     Add-MpPreference -ExclusionPath $env:TEMP
+    Write-Host "Disable defender temporarily"
+    Set-MpPreference -DisableRealtimeMonitoring $true
     Write-Host "Check the exclusions"
     Get-MpPreference | Select-Object -ExpandProperty ExclusionPath
   } catch {
@@ -385,6 +387,9 @@ foreach ($config in $configuration) {
     }
   }
 }
+
+Write-Host "Enable defender again"
+Set-MpPreference -DisableRealtimeMonitoring $false
 
 if ($failedBuilds.Count -ne 0) {
     Write-Host "Some builds failed:"
