@@ -1418,7 +1418,8 @@ void CodeGen::genLclHeap(GenTree* tree)
             regCnt = internalRegisters.Extract(tree);
             if (regCnt != targetReg)
             {
-                emit->emitIns_R_R_I(INS_ori, easz, regCnt, targetReg, 0);
+                // emit->emitIns_R_R_I(INS_ori, easz, regCnt, targetReg, 0);
+                emit->emitIns_R_R(INS_mov, easz, regCnt, targetReg);
             }
         }
 
@@ -1639,7 +1640,8 @@ ALLOC_DONE:
     else // stackAdjustment == 0
     {
         // Move the final value of SP to targetReg
-        emit->emitIns_R_R_I(INS_ori, EA_PTRSIZE, targetReg, REG_SPBASE, 0);
+        // emit->emitIns_R_R_I(INS_ori, EA_PTRSIZE, targetReg, REG_SPBASE, 0);
+        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, targetReg, REG_SPBASE);
     }
 
 BAILOUT:
@@ -6327,7 +6329,8 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             {
                 if (lea->GetRegNum() != memBase->GetRegNum())
                 {
-                    emit->emitIns_R_R_I(INS_ori, size, lea->GetRegNum(), memBase->GetRegNum(), 0);
+                    // emit->emitIns_R_R_I(INS_ori, size, lea->GetRegNum(), memBase->GetRegNum(), 0);
+                    emit->emitIns_R_R(INS_mov, size, lea->GetRegNum(), memBase->GetRegNum());
                 }
             }
         }
