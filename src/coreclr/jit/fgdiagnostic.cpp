@@ -2058,7 +2058,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                     const bool isDominant = jumpSwt->bbsHasDominantCase && (i == jumpSwt->bbsDominantCase);
                     if (isDominant)
                     {
-                        printf("[dom(" FMT_WT ")]", jumpSwt->bbsDominantFraction);
+                        printf("[dom]");
                         printedBlockWidth += 10;
                     }
                 }
