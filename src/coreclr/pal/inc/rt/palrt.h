@@ -1006,13 +1006,9 @@ typedef struct _DISPATCHER_CONTEXT {
 #elif defined(HOST_WASM)
 
 typedef struct _DISPATCHER_CONTEXT {
-    // WASM does not build the VM or JIT at this point,
-    // so we only provide a dummy definition.
+    // WASM does not build the JIT at this point,
+    // so we only add necessary fields.
     UINT32 ControlPc;
-    UINT32 ImageBase;
-    PRUNTIME_FUNCTION FunctionEntry;
-    UINT32 EstablisherFrame;
-    PCONTEXT ContextRecord;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 
 #else

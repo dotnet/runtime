@@ -1225,6 +1225,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         m_idxFPReg = 0;
 #elif defined(TARGET_WASM)
         // we put everything on the stack, we don't have registers
+        // WASM_TODO find out whether we can use implicit stack here
         m_ofsStack = 0;
 #else
         PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");
