@@ -250,8 +250,6 @@ void EtwCallbackCommon(
         GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
     }
 
-// NativeAOT currently only supports forcing a GC with ManagedHeapCollectKeyword via ETW
-#ifdef FEATURE_ETW
     // Special check for a profiler requested GC.
     // A full GC will be forced if:
     // 1. The GC Heap is initialized.
@@ -273,10 +271,11 @@ void EtwCallbackCommon(
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.
         LONGLONG l64ClientSequenceNumber = 0;
+#if !defined(HOST_UNIX)
         ParseFilterDataClientSequenceNumber((EVENT_FILTER_DESCRIPTOR*)pFilterData, &l64ClientSequenceNumber);
+#endif // !defined(HOST_UNIX)
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
-#endif
 }
 
 #ifdef FEATURE_ETW

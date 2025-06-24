@@ -4,6 +4,8 @@
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
 using BCRYPT_PQDSA_PADDING_INFO = Interop.BCrypt.BCRYPT_PQDSA_PADDING_INFO;
@@ -35,9 +37,11 @@ namespace System.Security.Cryptography
             _key = key;
         }
 
+        [SupportedOSPlatform("windows")]
         private static partial MLDsaAlgorithm AlgorithmFromHandle(CngKey key, out CngKey duplicateKey)
         {
             ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNotSupported();
 
             if (key.AlgorithmGroup != CngAlgorithmGroup.MLDsa)
             {
@@ -45,7 +49,13 @@ namespace System.Security.Cryptography
             }
 
             MLDsaAlgorithm algorithm = AlgorithmFromHandleImpl(key);
-            duplicateKey = CngAlgorithmCore.Duplicate(key);
+
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
+            duplicateKey = CngHelpers.Duplicate(key.HandleNoDuplicate, key.IsEphemeral);
+#else
+            duplicateKey = key.Duplicate();
+#endif
+
             return algorithm;
         }
 
@@ -64,7 +74,11 @@ namespace System.Security.Cryptography
         private static MLDsaAlgorithm AlgorithmFromHandleImpl(CngKey key)
         {
             string? parameterSet =
-                key.Handle.GetPropertyAsString(KeyPropertyName.ParameterSetName, CngPropertyOptions.None);
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
+                key.HandleNoDuplicate.GetPropertyAsString(KeyPropertyName.ParameterSetName, CngPropertyOptions.None);
+#else
+                key.GetPropertyAsString(KeyPropertyName.ParameterSetName, CngPropertyOptions.None);
+#endif
 
             return parameterSet switch
             {
@@ -91,9 +105,11 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <inheritdoc/>
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
             ExportKey(CngKeyBlobFormat.PQDsaPublicBlob, Algorithm.PublicKeySizeInBytes, destination);
 
+        /// <inheritdoc/>
         protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination)
         {
             bool encryptedOnlyExport = CngPkcs8.AllowsOnlyEncryptedExport(_key);
@@ -127,6 +143,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <inheritdoc/>
         protected override void ExportMLDsaSecretKeyCore(Span<byte> destination)
         {
             bool encryptedOnlyExport = CngPkcs8.AllowsOnlyEncryptedExport(_key);
@@ -176,6 +193,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <inheritdoc/>
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
             bool encryptedOnlyExport = CngPkcs8.AllowsOnlyEncryptedExport(_key);
@@ -208,6 +226,7 @@ namespace System.Security.Cryptography
                 out bytesWritten);
         }
 
+        /// <inheritdoc/>
         protected override unsafe void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination)
         {
             using (SafeNCryptKeyHandle duplicatedHandle = _key.Handle)
@@ -227,6 +246,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <inheritdoc/>
         protected override unsafe bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature)
         {
             using (SafeNCryptKeyHandle duplicatedHandle = _key.Handle)
@@ -246,7 +266,8 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static MLDsaCng ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
+        [SupportedOSPlatform("windows")]
+        internal static MLDsaCng ImportPkcs8PrivateKey(byte[] source, out int bytesRead)
         {
             int len;
 
@@ -265,32 +286,77 @@ namespace System.Security.Cryptography
             }
 
             bytesRead = len;
-            ReadOnlySpan<byte> pkcs8Source = source.Slice(0, len);
             CngKey key;
 
-            try
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
+            ReadOnlySpan<byte> pkcs8Source = source.AsSpan(0, len);
+#else
+            using (TrimAndTrack(source, bytesRead, out byte[] pkcs8Source))
+#endif
             {
-                key = CngKey.Import(pkcs8Source, CngKeyBlobFormat.Pkcs8PrivateBlob);
-            }
-            catch (CryptographicException)
-            {
-                // TODO: Once Windows moves to new PKCS#8 format, we can remove this conversion.
-                byte[] newPkcs8Source = MLDsaPkcs8.ConvertToOldChoicelessFormat(pkcs8Source);
-
-                using (PinAndClear.Track(newPkcs8Source))
+                try
                 {
-                    key = CngKey.Import(newPkcs8Source, CngKeyBlobFormat.Pkcs8PrivateBlob);
+                    key = CngKey.Import(pkcs8Source, CngKeyBlobFormat.Pkcs8PrivateBlob);
+                }
+                catch (CryptographicException)
+                {
+                    // TODO: Once Windows moves to new PKCS#8 format, we can remove this conversion.
+                    byte[] newPkcs8Source = MLDsaPkcs8.ConvertToOldChoicelessFormat(pkcs8Source);
+
+                    using (PinAndClear.Track(newPkcs8Source))
+                    {
+                        key = CngKey.Import(newPkcs8Source, CngKeyBlobFormat.Pkcs8PrivateBlob);
+                    }
+                }
+                catch (AsnContentException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
                 }
             }
-            catch (AsnContentException e)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
-            }
 
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
             key.ExportPolicy = CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport;
+#else
+            CngKeyExtensions.SetExportPolicy(key, CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
+#endif
             return new MLDsaCng(key, transferOwnership: true);
+
+#if !SYSTEM_SECURITY_CRYPTOGRAPHY
+            // Pinning and clearing keyMaterial must be done by the caller.
+            // The returned PinAndClear only applies to arrays that this method creates.
+            static PinAndClear? TrimAndTrack(byte[] keyMaterial, int length, out byte[] trimmed)
+            {
+                int keyMaterialLength = keyMaterial.Length;
+
+                if (keyMaterialLength == length)
+                {
+                    trimmed = keyMaterial;
+                    return null; // Tracking original array is up to the caller
+                }
+
+                // AsSpan will validate length so we won't need to
+                ReadOnlySpan<byte> bytesToCopy = keyMaterial.AsSpan(0, length);
+                byte[] trimmedKeyMaterial = new byte[length];
+                PinAndClear ret = PinAndClear.Track(trimmedKeyMaterial);
+
+                try
+                {
+                    bytesToCopy.CopyTo(trimmedKeyMaterial);
+                    trimmed = trimmedKeyMaterial;
+                    return ret;
+                }
+                catch
+                {
+                    // This should never happen, but let's be safe and clean up the GC Handle if it does
+                    ret.Dispose();
+                    Debug.Fail("Copy failed.");
+                    throw;
+                }
+            }
+#endif
         }
 
+        /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
             _key.Dispose();
@@ -316,7 +382,7 @@ namespace System.Security.Cryptography
                 {
                     Debug.Fail(
                         $"{nameof(blobType)}: {blobType}, " +
-                        $"{nameof(parameterSet)}: {parameterSet}, " +
+                        $"{nameof(parameterSet)}: {parameterSet.ToString()}, " +
                         $"{nameof(keyBytes)}.Length: {keyBytes.Length} / {expectedKeySize}");
 
                     throw new CryptographicException();
@@ -361,11 +427,7 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                if (newPkcs8 is not null)
-                {
-                    Array.Clear(newPkcs8);
-                }
-
+                CryptographicOperations.ZeroMemory(newPkcs8);
                 CryptoPool.Return(pkcs8);
             }
         }

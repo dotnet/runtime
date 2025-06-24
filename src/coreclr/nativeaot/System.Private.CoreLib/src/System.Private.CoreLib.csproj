@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
@@ -168,7 +168,6 @@
     <Compile Include="System\Collections\Generic\ArraySortHelper.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\Comparer.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\EqualityComparer.NativeAot.cs" />
-    <Compile Include="System\Collections\Generic\EqualOnlyComparer.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\FileLoadException.NativeAot.cs" />
     <Compile Include="System\IO\Stream.NativeAot.cs" />
@@ -196,6 +195,7 @@
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
     <Compile Include="System\Runtime\GCSettings.NativeAot.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeMapLazyDictionary.NativeAot.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\ThunkPool.cs" />
     <Compile Include="System\Runtime\InteropServices\ComEventsHelper.NativeAot.cs" Condition="'$(FeatureCominterop)' == 'true'" />
@@ -321,6 +321,9 @@
     </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\LockFreeReaderHashtableOfPointers.cs">
       <Link>Utilities\LockFreeReaderHashtableOfPointers.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeHashingAlgorithms.cs">
+      <Link>Utilities\TypeHashingAlgorithms.cs</Link>
     </Compile>
     <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelList.cs">
       <Link>System\Collections\Generic\LowLevelList.cs</Link>

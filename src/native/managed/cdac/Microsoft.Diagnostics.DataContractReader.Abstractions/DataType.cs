@@ -114,4 +114,5 @@ public enum DataType
     ResumableFrame,
     FaultingExceptionFrame,
     HijackFrame,
+    TailCallFrame,
 }

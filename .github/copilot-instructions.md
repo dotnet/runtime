@@ -16,6 +16,10 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - Trust the C# null annotations and don't add null checks when the type system says a value cannot be null.
 - Prefer `?.` if applicable (e.g. `scope?.Dispose()`).
 - Use `ObjectDisposedException.ThrowIf` where applicable.
+- When adding new unit tests, strongly prefer to add them to existing test code files rather than creating new code files.
+- If you add new code files, ensure they are listed in the csproj file (if other files in that folder are listed there) so they build.
+- When running tests, if possible use filters and check test run counts, or look at test logs, to ensure they actually ran.
+- Do not finish work with any tests commented out or disabled that were not previously commented out or disabled.
 - When writing tests, do not emit "Act", "Arrange" or "Assert" comments.
 
 ---

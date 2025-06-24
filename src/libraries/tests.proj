@@ -347,6 +347,8 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Options.ConfigurationExtensions\tests\SourceGenerationTests\Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Options/tests/SourceGenerationTests/Microsoft.Extensions.Options.SourceGeneration.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Options/tests/SourceGeneration.Unit.Tests/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.csproj" />
+    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/116558 -->
+    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Device/LibraryMode/iOS.Device.LibraryMode.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' != 'true'">
