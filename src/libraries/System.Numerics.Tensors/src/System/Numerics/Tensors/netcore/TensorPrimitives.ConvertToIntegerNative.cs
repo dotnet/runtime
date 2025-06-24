@@ -31,11 +31,8 @@ namespace System.Numerics.Tensors
         {
             public static TTo Invoke(TFrom x) => TFrom.ConvertToIntegerNative<TTo>(x);
 
-            public static bool Vectorizable =>
-                (typeof(TFrom) == typeof(float) && IsInt32Like<TTo>()) ||
-                (typeof(TFrom) == typeof(float) && IsUInt32Like<TTo>()) ||
-                (typeof(TFrom) == typeof(double) && IsInt64Like<TTo>()) ||
-                (typeof(TFrom) == typeof(double) && IsUInt64Like<TTo>());
+            public static unsafe bool Vectorizable =>
+                sizeof(TFrom) == sizeof(TTo);
 
             public static Vector128<TTo> Invoke(Vector128<TFrom> x)
             {

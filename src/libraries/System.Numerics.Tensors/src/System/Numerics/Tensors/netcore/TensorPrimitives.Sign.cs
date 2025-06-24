@@ -29,8 +29,9 @@ namespace System.Numerics.Tensors
             where T : INumber<T>
         {
             public static unsafe bool Vectorizable =>
-                // TODO: Extend vectorization to handle primitives whose size is not the same as int
-                IsInt32Like<T>() || IsUInt32Like<T>() || typeof(T) == typeof(float);
+                // TODO: Extend vectorization to handle primitives whose size is not the same as int and thus
+                // that have a different number of elements in the input vector from the output vector.
+                sizeof(T) == sizeof(int);
 
             public static int Invoke(T x) => T.Sign(x);
 
