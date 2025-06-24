@@ -5,6 +5,163 @@
 #include "hwintrinsic.h"
 
 #ifdef FEATURE_HW_INTRINSICS
+
+//------------------------------------------------------------------------
+// Arm64VersionOfIsa: Gets the corresponding 64-bit only InstructionSet for a given InstructionSet
+//
+// Arguments:
+//    isa -- The InstructionSet ID
+//
+// Return Value:
+//    The 64-bit only InstructionSet associated with isa
+static CORINFO_InstructionSet Arm64VersionOfIsa(CORINFO_InstructionSet isa)
+{
+    switch (isa)
+    {
+        case InstructionSet_AdvSimd:
+            return InstructionSet_AdvSimd_Arm64;
+        case InstructionSet_Aes:
+            return InstructionSet_Aes_Arm64;
+        case InstructionSet_ArmBase:
+            return InstructionSet_ArmBase_Arm64;
+        case InstructionSet_Crc32:
+            return InstructionSet_Crc32_Arm64;
+        case InstructionSet_Dp:
+            return InstructionSet_Dp_Arm64;
+        case InstructionSet_Sha1:
+            return InstructionSet_Sha1_Arm64;
+        case InstructionSet_Sha256:
+            return InstructionSet_Sha256_Arm64;
+        case InstructionSet_Rdm:
+            return InstructionSet_Rdm_Arm64;
+        case InstructionSet_Sve:
+            return InstructionSet_Sve_Arm64;
+        case InstructionSet_Sve2:
+            return InstructionSet_Sve2_Arm64;
+        default:
+            return InstructionSet_NONE;
+    }
+}
+
+//------------------------------------------------------------------------
+// lookupInstructionSet: Gets the InstructionSet for a given class name
+//
+// Arguments:
+//    className -- The name of the class associated with the InstructionSet to lookup
+//
+// Return Value:
+//    The InstructionSet associated with className
+CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
+{
+    assert(className != nullptr);
+
+    if (className[0] == 'A')
+    {
+        if (strcmp(className, "AdvSimd") == 0)
+        {
+            return InstructionSet_AdvSimd;
+        }
+        if (strcmp(className, "Aes") == 0)
+        {
+            return InstructionSet_Aes;
+        }
+        if (strcmp(className, "ArmBase") == 0)
+        {
+            return InstructionSet_ArmBase;
+        }
+    }
+    else if (className[0] == 'C')
+    {
+        if (strcmp(className, "Crc32") == 0)
+        {
+            return InstructionSet_Crc32;
+        }
+    }
+    else if (className[0] == 'D')
+    {
+        if (strcmp(className, "Dp") == 0)
+        {
+            return InstructionSet_Dp;
+        }
+    }
+    else if (className[0] == 'R')
+    {
+        if (strcmp(className, "Rdm") == 0)
+        {
+            return InstructionSet_Rdm;
+        }
+    }
+    else if (className[0] == 'S')
+    {
+        if (strcmp(className, "Sha1") == 0)
+        {
+            return InstructionSet_Sha1;
+        }
+        if (strcmp(className, "Sha256") == 0)
+        {
+            return InstructionSet_Sha256;
+        }
+        if (strcmp(className, "Sve2") == 0)
+        {
+            return InstructionSet_Sve2;
+        }
+        if (strcmp(className, "Sve") == 0)
+        {
+            return InstructionSet_Sve;
+        }
+    }
+    else if (className[0] == 'V')
+    {
+        if (strncmp(className, "Vector64", 8) == 0)
+        {
+            return InstructionSet_Vector64;
+        }
+        else if (strncmp(className, "Vector128", 9) == 0)
+        {
+            return InstructionSet_Vector128;
+        }
+    }
+
+    return InstructionSet_ILLEGAL;
+}
+
+//------------------------------------------------------------------------
+// lookupIsa: Gets the InstructionSet for a given class name and enclsoing class name
+//
+// Arguments:
+//    className -- The name of the class associated with the InstructionSet to lookup
+//    innerEnclosingClassName -- The name of the inner enclosing class or nullptr if one doesn't exist
+//    outerEnclosingClassName -- The name of the outer enclosing class or nullptr if one doesn't exist
+//
+// Return Value:
+//    The InstructionSet associated with className and enclosingClassName
+//
+CORINFO_InstructionSet Compiler::lookupIsa(const char* className,
+                                           const char* innerEnclosingClassName,
+                                           const char* outerEnclosingClassName)
+{
+    assert(className != nullptr);
+
+    if (innerEnclosingClassName == nullptr)
+    {
+        // No nested class is the most common, so fast path it
+        return lookupInstructionSet(className);
+    }
+
+    // Since lookupId is only called for the xplat intrinsics
+    // or intrinsics in the platform specific namespace, we assume
+    // that it will be one we can handle and don't try to early out.
+
+    CORINFO_InstructionSet enclosingIsa = lookupIsa(innerEnclosingClassName, outerEnclosingClassName, nullptr);
+
+    if (strcmp(className, "Arm64") == 0)
+    {
+        return Arm64VersionOfIsa(enclosingIsa);
+    }
+
+    return InstructionSet_ILLEGAL;
+}
+
 //------------------------------------------------------------------------
 // lookupIval: Gets a the implicit immediate value for the given intrinsic
 //

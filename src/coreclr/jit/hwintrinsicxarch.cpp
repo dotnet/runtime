@@ -5,6 +5,468 @@
 #include "hwintrinsic.h"
 
 #ifdef FEATURE_HW_INTRINSICS
+
+//------------------------------------------------------------------------
+// X64VersionOfIsa: Gets the corresponding 64-bit only InstructionSet for a given InstructionSet
+//
+// Arguments:
+//    isa -- The InstructionSet ID
+//
+// Return Value:
+//    The 64-bit only InstructionSet associated with isa
+static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
+{
+    switch (isa)
+    {
+        case InstructionSet_X86Base:
+            return InstructionSet_X86Base_X64;
+        case InstructionSet_SSE42:
+            return InstructionSet_SSE42_X64;
+        case InstructionSet_AVX:
+            return InstructionSet_AVX_X64;
+        case InstructionSet_AVX2:
+            return InstructionSet_AVX2_X64;
+        case InstructionSet_AVX512:
+            return InstructionSet_AVX512_X64;
+        case InstructionSet_AVX512v2:
+            return InstructionSet_AVX512v2_X64;
+        case InstructionSet_AVX512v3:
+            return InstructionSet_AVX512v3_X64;
+        case InstructionSet_AVX10v1:
+            return InstructionSet_AVX10v1_X64;
+        case InstructionSet_AVX10v2:
+            return InstructionSet_AVX10v2_X64;
+        case InstructionSet_AES:
+            return InstructionSet_AES_X64;
+        case InstructionSet_AVX512VP2INTERSECT:
+            return InstructionSet_AVX512VP2INTERSECT_X64;
+        case InstructionSet_AVXIFMA:
+            return InstructionSet_AVXIFMA_X64;
+        case InstructionSet_AVXVNNI:
+            return InstructionSet_AVXVNNI_X64;
+        case InstructionSet_AVXVNNIINT:
+            return InstructionSet_AVXVNNIINT;
+        case InstructionSet_AVXVNNIINT_V512:
+            return InstructionSet_AVXVNNIINT_V512;
+        case InstructionSet_GFNI:
+            return InstructionSet_GFNI_X64;
+        case InstructionSet_SHA:
+            return InstructionSet_SHA_X64;
+        case InstructionSet_WAITPKG:
+            return InstructionSet_WAITPKG_X64;
+        case InstructionSet_X86Serialize:
+            return InstructionSet_X86Serialize_X64;
+        default:
+            return InstructionSet_NONE;
+    }
+}
+
+//------------------------------------------------------------------------
+// VLVersionOfIsa: Gets the corresponding AVX512VL only InstructionSet for a given InstructionSet
+//
+// Arguments:
+//    isa -- The InstructionSet ID
+//
+// Return Value:
+//    The AVX512VL only InstructionSet associated with isa
+static CORINFO_InstructionSet VLVersionOfIsa(CORINFO_InstructionSet isa)
+{
+    switch (isa)
+    {
+        case InstructionSet_AVX512:
+        case InstructionSet_AVX512v2:
+        case InstructionSet_AVX512v3:
+        case InstructionSet_AVX10v1:
+        {
+            // These nested ISAs aren't tracked by the JIT support
+            return isa;
+        }
+
+        default:
+        {
+            return InstructionSet_NONE;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// V256VersionOfIsa: Gets the corresponding V256 only InstructionSet for a given InstructionSet
+//
+// Arguments:
+//    isa -- The InstructionSet ID
+//
+// Return Value:
+//    The V256 only InstructionSet associated with isa
+static CORINFO_InstructionSet V256VersionOfIsa(CORINFO_InstructionSet isa)
+{
+    switch (isa)
+    {
+        case InstructionSet_AES:
+        {
+            return InstructionSet_AES_V256;
+        }
+
+        case InstructionSet_GFNI:
+        {
+            return InstructionSet_GFNI_V256;
+        }
+
+        default:
+        {
+            return InstructionSet_NONE;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// V512VersionOfIsa: Gets the corresponding V512 only InstructionSet for a given InstructionSet
+//
+// Arguments:
+//    isa -- The InstructionSet ID
+//
+// Return Value:
+//    The V512 only InstructionSet associated with isa
+static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
+{
+    switch (isa)
+    {
+        case InstructionSet_AVX10v1:
+        case InstructionSet_AVX10v1_X64:
+        case InstructionSet_AVX10v2:
+        case InstructionSet_AVX10v2_X64:
+        {
+            // These nested ISAs aren't tracked by the JIT support
+            return isa;
+        }
+
+        case InstructionSet_AES:
+        {
+            return InstructionSet_AES_V512;
+        }
+
+        case InstructionSet_GFNI:
+        {
+            return InstructionSet_GFNI_V512;
+        }
+
+        case InstructionSet_AVXVNNIINT:
+        case InstructionSet_AVXVNNIINT_V512:
+        {
+            return InstructionSet_AVXVNNIINT_V512;
+        }
+
+        default:
+        {
+            return InstructionSet_NONE;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// lookupInstructionSet: Gets the InstructionSet for a given class name
+//
+// Arguments:
+//    className -- The name of the class associated with the InstructionSet to lookup
+//
+// Return Value:
+//    The InstructionSet associated with className
+CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
+{
+    assert(className != nullptr);
+
+    if (className[0] == 'A')
+    {
+        if (strcmp(className + 1, "es") == 0)
+        {
+            return InstructionSet_AES;
+        }
+        else if (strncmp(className + 1, "vx", 2) == 0)
+        {
+            if (className[3] == '\0')
+            {
+                return InstructionSet_AVX;
+            }
+            else if (strncmp(className + 3, "10v", 3) == 0)
+            {
+                if (strcmp(className + 6, "1") == 0)
+                {
+                    return InstructionSet_AVX10v1;
+                }
+                else if (strcmp(className + 6, "2") == 0)
+                {
+                    return InstructionSet_AVX10v2;
+                }
+            }
+            else if (strcmp(className + 3, "2") == 0)
+            {
+                return InstructionSet_AVX2;
+            }
+            else if (strncmp(className + 3, "512", 3) == 0)
+            {
+                if (className[6] == 'B')
+                {
+                    if (strcmp(className + 7, "italg") == 0)
+                    {
+                        return InstructionSet_AVX512v3;
+                    }
+                    else if (strcmp(className + 7, "f16") == 0)
+                    {
+                        return InstructionSet_AVX10v1;
+                    }
+                    else if (strcmp(className + 7, "W") == 0)
+                    {
+                        return InstructionSet_AVX512;
+                    }
+                }
+                else if ((strcmp(className + 6, "CD") == 0) || (strcmp(className + 6, "DQ") == 0))
+                {
+                    return InstructionSet_AVX512;
+                }
+                else if (className[6] == 'F')
+                {
+                    if (className[7] == '\0')
+                    {
+                        return InstructionSet_AVX512;
+                    }
+                    else if (strcmp(className + 7, "p16") == 0)
+                    {
+                        return InstructionSet_AVX10v1;
+                    }
+                }
+                else if (className[6] == 'V')
+                {
+                    if (strncmp(className + 7, "bmi", 3) == 0)
+                    {
+                        if (className[10] == '\0')
+                        {
+                            return InstructionSet_AVX512v2;
+                        }
+                        else if (strcmp(className + 10, "2") == 0)
+                        {
+                            return InstructionSet_AVX512v3;
+                        }
+                    }
+                    else if (className[7] == 'p')
+                    {
+                        if (strcmp(className + 8, "p2intersect") == 0)
+                        {
+                            return InstructionSet_AVX512VP2INTERSECT;
+                        }
+                        else if (strcmp(className + 8, "opcntdq") == 0)
+                        {
+                            return InstructionSet_AVX512v3;
+                        }
+                    }
+                }
+            }
+            else if (strcmp(className + 3, "Ifma") == 0)
+            {
+                return InstructionSet_AVXIFMA;
+            }
+            else if (strncmp(className + 3, "Vnni", 4) == 0)
+            {
+                if (className[7] == '\0')
+                {
+                    return InstructionSet_AVXVNNI;
+                }
+                else if (strncmp(className + 7, "Int", 3) == 0)
+                {
+                    if ((strcmp(className + 10, "8") == 0) || (strcmp(className + 10, "16") == 0))
+                    {
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVXVNNIINT))
+                        {
+                            return InstructionSet_AVXVNNIINT;
+                        }
+                        else
+                        {
+                            return InstructionSet_AVXVNNIINT_V512;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else if (className[0] == 'B')
+    {
+        if (strncmp(className + 1, "mi", 2) == 0)
+        {
+            if (strcmp(className + 3, "1") == 0)
+            {
+                return InstructionSet_AVX2;
+            }
+            else if (strcmp(className + 3, "2") == 0)
+            {
+                return InstructionSet_AVX2;
+            }
+        }
+    }
+    else if (className[0] == 'F')
+    {
+        if (strcmp(className + 1, "ma") == 0)
+        {
+            return InstructionSet_AVX2;
+        }
+        else if (strcmp(className + 1, "16c") == 0)
+        {
+            return InstructionSet_AVX2;
+        }
+    }
+    else if (className[0] == 'G')
+    {
+        if (strcmp(className + 1, "fni") == 0)
+        {
+            return InstructionSet_GFNI;
+        }
+    }
+    else if (className[0] == 'L')
+    {
+        if (strcmp(className + 1, "zcnt") == 0)
+        {
+            return InstructionSet_AVX2;
+        }
+    }
+    else if (className[0] == 'P')
+    {
+        if (strcmp(className + 1, "clmulqdq") == 0)
+        {
+            return InstructionSet_AES;
+        }
+        else if (strcmp(className + 1, "opcnt") == 0)
+        {
+            return InstructionSet_SSE42;
+        }
+    }
+    else if (className[0] == 'S')
+    {
+        if (strcmp(className + 1, "ha") == 0)
+        {
+            return InstructionSet_SHA;
+        }
+        else if (strncmp(className + 1, "se", 2) == 0)
+        {
+            if ((className[3] == '\0') || (strcmp(className + 3, "2") == 0))
+            {
+                return InstructionSet_X86Base;
+            }
+            else if (strcmp(className + 3, "3") == 0)
+            {
+                return InstructionSet_SSE42;
+            }
+            else if (strcmp(className + 3, "41") == 0)
+            {
+                return InstructionSet_SSE42;
+            }
+            else if (strcmp(className + 3, "42") == 0)
+            {
+                return InstructionSet_SSE42;
+            }
+        }
+        else if (strcmp(className + 1, "sse3") == 0)
+        {
+            return InstructionSet_SSE42;
+        }
+    }
+    else if (className[0] == 'V')
+    {
+        if (strncmp(className + 1, "ector", 5) == 0)
+        {
+            if (strncmp(className + 6, "128", 3) == 0)
+            {
+                if ((className[9] == '\0') || (strcmp(className + 9, "`1") == 0))
+                {
+                    return InstructionSet_Vector128;
+                }
+            }
+            else if (strncmp(className + 6, "256", 3) == 0)
+            {
+                if ((className[9] == '\0') || (strcmp(className + 9, "`1") == 0))
+                {
+                    return InstructionSet_Vector256;
+                }
+            }
+            else if (strncmp(className + 6, "512", 3) == 0)
+            {
+                if ((className[9] == '\0') || (strcmp(className + 9, "`1") == 0))
+                {
+                    return InstructionSet_Vector512;
+                }
+            }
+        }
+        else if (strcmp(className + 1, "L") == 0)
+        {
+            assert(!"VL.X64 support doesn't exist in the managed libraries and so is not yet implemented");
+            return InstructionSet_ILLEGAL;
+        }
+    }
+    else if (strcmp(className, "WaitPkg") == 0)
+    {
+        return InstructionSet_WAITPKG;
+    }
+    else if (strncmp(className, "X86", 3) == 0)
+    {
+        if (strcmp(className + 3, "Base") == 0)
+        {
+            return InstructionSet_X86Base;
+        }
+        else if (strcmp(className + 3, "Serialize") == 0)
+        {
+            return InstructionSet_X86Serialize;
+        }
+    }
+    return InstructionSet_ILLEGAL;
+}
+
+//------------------------------------------------------------------------
+// lookupIsa: Gets the InstructionSet for a given class name and enclosing class name
+//
+// Arguments:
+//    className -- The name of the class associated with the InstructionSet to lookup
+//    innerEnclosingClassName -- The name of the inner enclosing class of X64 classes
+//    outerEnclosingClassName -- The name of the outer enclosing class of X64 classes
+//
+// Return Value:
+//    The InstructionSet associated with className and enclosingClassName
+CORINFO_InstructionSet Compiler::lookupIsa(const char* className,
+                                           const char* innerEnclosingClassName,
+                                           const char* outerEnclosingClassName)
+{
+    assert(className != nullptr);
+
+    if (innerEnclosingClassName == nullptr)
+    {
+        // No nested class is the most common, so fast path it
+        return lookupInstructionSet(className);
+    }
+
+    // Since lookupId is only called for the xplat intrinsics
+    // or intrinsics in the platform specific namespace, we assume
+    // that it will be one we can handle and don't try to early out.
+
+    CORINFO_InstructionSet enclosingIsa = lookupIsa(innerEnclosingClassName, outerEnclosingClassName, nullptr);
+
+    if (className[0] == 'V')
+    {
+        if (strcmp(className, "V256") == 0)
+        {
+            return V256VersionOfIsa(enclosingIsa);
+        }
+        else if (strcmp(className, "V512") == 0)
+        {
+            return V512VersionOfIsa(enclosingIsa);
+        }
+        else if (strcmp(className, "VL") == 0)
+        {
+            return VLVersionOfIsa(enclosingIsa);
+        }
+    }
+    else if (strcmp(className, "X64") == 0)
+    {
+        return X64VersionOfIsa(enclosingIsa);
+    }
+
+    return InstructionSet_ILLEGAL;
+}
+
 //------------------------------------------------------------------------
 // lookupImmUpperBound: Gets the upper bound for the imm-value of a given NamedIntrinsic
 //

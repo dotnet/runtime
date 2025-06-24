@@ -881,17 +881,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
-                        case NI_AVXVNNI_MultiplyWideningAndAdd:
-                        case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
-                        {
-                            assert(targetReg != REG_NA);
-                            assert(op1Reg != REG_NA);
-                            assert(op2Reg != REG_NA);
-
-                            genHWIntrinsic_R_R_R_RM(ins, simdSize, targetReg, op1Reg, op2Reg, op3, instOptions);
-                            break;
-                        }
-
                         case NI_AVX512_CompressMask:
                         case NI_AVX512_ExpandMask:
                         {
@@ -911,6 +900,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             instOptions = AddEmbMaskingMode(instOptions, op2Reg, mergeWithZero);
                             emit->emitIns_R_R(ins, attr, targetReg, op3Reg, instOptions);
+                            break;
+                        }
+
+                        case NI_AVXVNNI_MultiplyWideningAndAdd:
+                        case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+                        {
+                            assert(targetReg != REG_NA);
+                            assert(op1Reg != REG_NA);
+                            assert(op2Reg != REG_NA);
+
+                            genHWIntrinsic_R_R_R_RM(ins, simdSize, targetReg, op1Reg, op2Reg, op3, instOptions);
                             break;
                         }
 

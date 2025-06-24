@@ -295,7 +295,6 @@ unsafe class Program
         bool? ExpectedAvx512Vpopcntdq = null;
         bool? ExpectedAvx512Bf16 = null;
         bool? ExpectedAvx512Fp16 = null;
-        bool? ExpectedAvxVnniInt = null;
         bool? ExpectedAvx10v1 = null;
         bool? ExpectedAvx10v1V512 = null;
         bool? ExpectedAes = null;
@@ -315,6 +314,7 @@ unsafe class Program
         bool? ExpectedX86Serialize = null;
 
         bool? ExpectedAvxVnniIntV512 = false;
+        bool? ExpectedAvxVnniInt = false;
         bool? ExpectedAvx10v2 = false;
 #elif AVX10v2_INTRINSICS
         bool? ExpectedSse3 = true;
@@ -430,10 +430,8 @@ unsafe class Program
         Check("Lzcnt.X64", ExpectedLzcnt, &LzcntX64IsSupported, Lzcnt.X64.IsSupported, () => Lzcnt.X64.LeadingZeroCount(0) == 64);
 
         Check("AvxVnniInt", ExpectedAvxVnniInt, &AvxVnniIntIsSupported, AvxVnniInt8.IsSupported, () => AvxVnniInt8.MultiplyWideningAndAdd(Vector128<int>.Zero, Vector128<sbyte>.Zero, Vector128<sbyte>.Zero).Equals(Vector128<int>.Zero));
-        // Check("AvxVnniInt.X64", ExpectedAvxVnniInt, &AvxVnniIntX64IsSupported, AvxVnniInt8.X64.IsSupported, null);
 
         Check("AvxVnniIntV512", ExpectedAvxVnniIntV512, &AvxVnniIntV512IsSupported, AvxVnniInt16.V512.IsSupported, () => AvxVnniInt16.V512.MultiplyWideningAndAdd(Vector512<int>.Zero, Vector512<short>.Zero, Vector512<ushort>.Zero).Equals(Vector512<int>.Zero));
-        // Check("AvxVnniIntV512.X64", ExpectedAvxVnniIntV512, &AvxVnniIntV512X64IsSupported, AvxVnniInt16.V512.X64.IsSupported, null);
 
         Check("Avx10v2", ExpectedAvx10v2, &Avx10v2IsSupported, Avx10v2.IsSupported, () => Avx10v2.MinMax(Vector128<double>.Zero, Vector128<double>.Zero, 0x00).Equals(Vector128<double>.Zero));
         Check("Avx10v2.X64", ExpectedAvx10v2, &Avx10v2X64IsSupported, Avx10v2.X64.IsSupported, null);
@@ -634,9 +632,7 @@ unsafe class Program
     static bool AvxVnniIsSupported() => AvxVnni.IsSupported;
     static bool AvxVnniX64IsSupported() => AvxVnni.X64.IsSupported;
     static bool AvxVnniIntIsSupported() => AvxVnniInt8.IsSupported;
-    // static bool AvxVnniInt8X64IsSupported() => AvxVnniInt8.X64.IsSupported;
     static bool AvxVnniIntV512IsSupported() => AvxVnniInt16.V512.IsSupported;
-    // static bool AvxVnniInt16X64IsSupported() => AvxVnniInt16.X64.IsSupported;
 
     static bool GfniIsSupported() => Gfni.IsSupported;
     static bool GfniV256IsSupported() => Gfni.V256.IsSupported;
