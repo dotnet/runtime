@@ -93,13 +93,14 @@ namespace HostActivation.Tests
             string testFile = Path.Combine(sharedTestState.BaseDirectory.Location, "subdir", "test.json");
             File.WriteAllText(testFile, "{}");
 
-            TestContext.BuiltDotNet.Exec("./subdir/test.json")
+            string relativePath = "./subdir/test.json";
+            TestContext.BuiltDotNet.Exec(relativePath)
                 .WorkingDirectory(sharedTestState.BaseDirectory.Location)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
                 .Should().Fail()
-                .And.HaveStdErrContaining("The application './subdir/test.json' is not a managed .dll or .exe.");
+                .And.HaveStdErrContaining($"The application '{relativePath}' is not a managed .dll or .exe.");
         }
 
         [Fact]
