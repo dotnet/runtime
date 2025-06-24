@@ -898,7 +898,7 @@ namespace System
             {
                 // System.Environment.FailFast("!!!!");
                 // if (t1.Ticks == 8000000000000000) System.Environment.FailFast("!!!!");
-                // throw new OverflowException(t1.Ticks.ToString("x") + " " + t2.Ticks.ToString("x"));
+                throw new OverflowException(t1.Ticks.ToString("x") + " " + t2.Ticks.ToString("x"));
             }
         }
 
