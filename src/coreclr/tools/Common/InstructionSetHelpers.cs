@@ -187,10 +187,8 @@ namespace System.CommandLine
                 // Note that we do not indicate support for AVX, or any other instruction set which uses the VEX encodings as
                 // the presence of those makes otherwise acceptable code be unusable on hardware which does not support VEX encodings.
                 //
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2"); // Lower SSE versions included by implication
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse42");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("waitpkg");
@@ -203,16 +201,10 @@ namespace System.CommandLine
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
                 {
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx2");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("movbe");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxifma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes_v256");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v256");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vaes");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul");
 
                     // If AVX2 is not in the supported set, we need to restrict the optimistic Vector<T> size, because
                     // 256-bit Vector<T> cannot be fully accelerated based on AVX2 being in the optimistic set only.
@@ -231,9 +223,8 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vp2intersect");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v512");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vaes_v512");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul_v512");
 
                 }
             }

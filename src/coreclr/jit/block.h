@@ -595,6 +595,9 @@ private:
     // Convenience flag for phases that need to track edge visitation
     bool m_visited;
 
+    // Indicates if m_likelihood was determined using profile synthesis's heuristics
+    bool m_heuristicBasedLikelihood;
+
     // True if likelihood has been set
     INDEBUG(bool m_likelihoodSet);
 
@@ -606,6 +609,7 @@ public:
         , m_likelihood(0)
         , m_dupCount(0)
         , m_visited(false)
+        , m_heuristicBasedLikelihood(false)
 #ifdef DEBUG
         , m_likelihoodSet(false)
 #endif // DEBUG
@@ -662,7 +666,8 @@ public:
 
     void clearLikelihood()
     {
-        m_likelihood = 0.0;
+        m_likelihood               = 0.0;
+        m_heuristicBasedLikelihood = false;
         INDEBUG(m_likelihoodSet = false);
     }
 
@@ -706,6 +711,16 @@ public:
     {
         assert(visited());
         m_visited = false;
+    }
+
+    bool isHeuristicBased() const
+    {
+        return m_heuristicBasedLikelihood;
+    }
+
+    void setHeuristicBased(bool isHeuristicBased)
+    {
+        m_heuristicBasedLikelihood = isHeuristicBased;
     }
 };
 
@@ -1307,7 +1322,7 @@ public:
 
     bool isBBWeightCold(Compiler* comp) const
     {
-        return getBBWeight(comp) < BB_COLD_WEIGHT;
+        return bbWeight < (getCalledCount(comp) * BB_COLD_WEIGHT);
     }
 
     // Returns "true" if the block is empty. Empty here means there are no statement

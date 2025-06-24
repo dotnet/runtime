@@ -24,6 +24,9 @@ struct StackVal
     } data;
 };
 
+typedef DPTR(struct InterpMethodContextFrame) PTR_InterpMethodContextFrame;
+class InterpreterFrame;
+
 struct InterpMethodContextFrame
 {
     PTR_InterpMethodContextFrame pParent;
@@ -47,14 +50,14 @@ struct InterpMethodContextFrame
 
 struct InterpThreadContext
 {
-    int8_t *pStackStart;
-    int8_t *pStackEnd;
+    PTR_INT8 pStackStart;
+    PTR_INT8 pStackEnd;
 
     // This stack pointer is the highest stack memory that can be used by the current frame. This does not
     // change throughout the execution of a frame and it is essentially the upper limit of the execution
     // stack pointer. It is needed when re-entering interp, to know from which address we can start using
     // stack, and also needed for the GC to be able to scan the stack.
-    int8_t *pStackPointer;
+    PTR_INT8 pStackPointer;
 
     FrameDataAllocator frameDataAllocator;
 
@@ -75,5 +78,7 @@ struct ExceptionClauseArgs
 };
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs = NULL);
+
+CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod);
 
 #endif

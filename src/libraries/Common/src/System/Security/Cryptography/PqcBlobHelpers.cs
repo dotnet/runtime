@@ -10,13 +10,13 @@ using BCRYPT_PQDSA_KEY_BLOB = Interop.BCrypt.BCRYPT_PQDSA_KEY_BLOB;
 
 namespace System.Security.Cryptography
 {
-    internal static class PqcBlobHelpers
+    internal static partial class PqcBlobHelpers
     {
         internal const string BCRYPT_MLDSA_PARAMETER_SET_44 = "44";
         internal const string BCRYPT_MLDSA_PARAMETER_SET_65 = "65";
         internal const string BCRYPT_MLDSA_PARAMETER_SET_87 = "87";
 
-        internal static string GetParameterSet(MLDsaAlgorithm algorithm)
+        internal static string GetMLDsaParameterSet(MLDsaAlgorithm algorithm)
         {
             if (algorithm == MLDsaAlgorithm.MLDsa44)
             {
@@ -32,25 +32,6 @@ namespace System.Security.Cryptography
             }
 
             Debug.Fail($"Unknown MLDsaAlgorithm: {algorithm}");
-            throw new PlatformNotSupportedException();
-        }
-
-        internal static MLDsaAlgorithm GetMLDsaAlgorithmFromParameterSet(ReadOnlySpan<char> parameterSet)
-        {
-            if (parameterSet.SequenceEqual(BCRYPT_MLDSA_PARAMETER_SET_44))
-            {
-                return MLDsaAlgorithm.MLDsa44;
-            }
-            else if (parameterSet.SequenceEqual(BCRYPT_MLDSA_PARAMETER_SET_65))
-            {
-                return MLDsaAlgorithm.MLDsa65;
-            }
-            else if (parameterSet.SequenceEqual(BCRYPT_MLDSA_PARAMETER_SET_87))
-            {
-                return MLDsaAlgorithm.MLDsa87;
-            }
-
-            Debug.Fail($"Unknown parameter set: {parameterSet.ToString()}");
             throw new PlatformNotSupportedException();
         }
 
@@ -141,7 +122,7 @@ namespace System.Security.Cryptography
                 int index = 0;
 
                 // Write header
-                ref BCRYPT_PQDSA_KEY_BLOB blobHeader = ref MemoryMarshal.AsRef<BCRYPT_PQDSA_KEY_BLOB>(blobBytes);
+                ref BCRYPT_PQDSA_KEY_BLOB blobHeader = ref MemoryMarshal.Cast<byte, BCRYPT_PQDSA_KEY_BLOB>(blobBytes)[0];
                 blobHeader.Magic = magic;
                 blobHeader.cbParameterSet = parameterSetLengthWithNullTerminator;
                 blobHeader.cbKey = data.Length;
@@ -176,7 +157,7 @@ namespace System.Security.Cryptography
         {
             int index = 0;
 
-            ref readonly BCRYPT_PQDSA_KEY_BLOB blob = ref MemoryMarshal.AsRef<BCRYPT_PQDSA_KEY_BLOB>(blobBytes);
+            ref readonly BCRYPT_PQDSA_KEY_BLOB blob = ref MemoryMarshal.Cast<byte, BCRYPT_PQDSA_KEY_BLOB>(blobBytes)[0];
             magic = blob.Magic;
             int parameterSetLength = blob.cbParameterSet - 2; // Null terminator char, '\0'
             int keyLength = blob.cbKey;
