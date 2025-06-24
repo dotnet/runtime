@@ -3935,6 +3935,7 @@ int ValueNumStore::GetConstantInt32(ValueNum argVN)
             result = (int)ConstantValue<size_t>(argVN);
             break;
 #endif
+
         default:
             unreached();
     }
@@ -7868,6 +7869,30 @@ ValueNum EvaluateSimdCvtVectorToMask(ValueNumStore* vns, var_types simdType, var
     return vns->VNForSimdMaskCon(result);
 }
 
+#if defined(TARGET_ARM64)
+
+ValueNum EvaluateBinarySimdAndMask(ValueNumStore* vns,
+                                   genTreeOps     oper,
+                                   bool           scalar,
+                                   var_types      simdType,
+                                   var_types      baseType,
+                                   ValueNum       arg0VN,
+                                   ValueNum       arg1VNMask)
+{
+    assert(simdType == TYP_SIMD16);
+
+    simd16_t arg0 = GetConstantSimd16(vns, baseType, arg0VN);
+
+    ValueNum arg1VNSimd = EvaluateSimdCvtMaskToVector(vns, simdType, baseType, arg1VNMask);
+    simd16_t arg1       = GetConstantSimd16(vns, baseType, arg1VNSimd);
+
+    simd16_t result = {};
+    EvaluateBinarySimd<simd16_t>(oper, scalar, baseType, &result, arg0, arg1);
+    return vns->VNForSimd16Con(result);
+}
+
+#endif // TARGET_ARM64
+
 ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                                                 VNFunc              func,
                                                 ValueNum            arg0VN,
@@ -9145,9 +9170,20 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
                 {
                     // (y & x) | (z & ~x)
 
+#if defined(TARGET_ARM64)
+                    if (ni == NI_Sve_ConditionalSelect)
+                    {
+                        assert(TypeOfVN(arg0VN) == TYP_MASK);
+                        ValueNum trueVN =
+                            EvaluateBinarySimdAndMask(this, GT_AND, false, type, baseType, arg1VN, arg0VN);
+                        ValueNum falseVN =
+                            EvaluateBinarySimdAndMask(this, GT_AND_NOT, false, type, baseType, arg2VN, arg0VN);
+                        return EvaluateBinarySimd(this, GT_OR, false, type, baseType, trueVN, falseVN);
+                    }
+#endif // TARGET_ARM64
+
                     ValueNum trueVN  = EvaluateBinarySimd(this, GT_AND, false, type, baseType, arg1VN, arg0VN);
                     ValueNum falseVN = EvaluateBinarySimd(this, GT_AND_NOT, false, type, baseType, arg2VN, arg0VN);
-
                     return EvaluateBinarySimd(this, GT_OR, false, type, baseType, trueVN, falseVN);
                 }
             }
