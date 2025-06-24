@@ -7,8 +7,7 @@ import BuildConfiguration from "consts:configuration";
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs, marshal_task_to_cs } from "./marshal-to-cs";
 import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid, get_sync_done_semaphore_ptr, get_arg } from "./marshal";
 import { fixupPointer, forceThreadMemoryViewRefresh, free } from "./memory";
-import { JSFunctionSignature, JSMarshalerArguments, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType, VoidPtrNull } from "./types/internal";
-import { VoidPtr } from "./types/emscripten";
+import { JSFunctionSignature, JSMarshalerArguments, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
 import { INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_log_debug, mono_wasm_symbolicate_string } from "./logging";
@@ -19,17 +18,27 @@ import { threads_c_functions as tcwraps } from "./cwraps";
 import { monoThreadInfo } from "./pthreads";
 import { stringToUTF16Ptr } from "./strings";
 
-export const js_import_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
+export function isWasm64 (): boolean {
+    // This is a common runtime check, adjust if you have a better flag
+    return typeof Module.HEAP64 !== "undefined";
+}
 
-export function mono_wasm_bind_js_import_ST (signature: JSFunctionSignature): VoidPtr {
-    if (WasmEnableThreads) return VoidPtrNull;
+export const js_import_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
+function toPointerForWasm (signature: number, wasm64: boolean): number | bigint {
+    return wasm64 ? BigInt(signature) : signature;
+}
+
+export function mono_wasm_bind_js_import_ST (signature: JSFunctionSignature): number | bigint {
+    if (WasmEnableThreads) return isWasm64() ? 0n : 0;
     assert_js_interop();
     signature = fixupPointer(signature, 0);
     try {
         bind_js_import(signature);
-        return VoidPtrNull;
+        return isWasm64() ? (BigInt("0") as any) : 0;
     } catch (ex: any) {
-        return stringToUTF16Ptr(normalize_exception(ex));
+        const ptr = stringToUTF16Ptr(normalize_exception(ex));
+        // @ts-expect-error TS2352: convert VoidPtr (number) to bigint for wasm64, or keep it as number for wasm32.
+        return toPointerForWasm(ptr as number, isWasm64());
     }
 }
 

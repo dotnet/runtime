@@ -115,7 +115,10 @@ export function set_args_context (args: JSMarshalerArguments): void {
     set_arg_proxy_context(exc);
     set_arg_proxy_context(res);
 }
-function add_offset (ptr: JSMarshalerArguments | JSMarshalerArgument | JSFunctionSignature | number | bigint | JSMarshalerType, offset: number): number {
+export function add_offset (
+    ptr: JSMarshalerArguments | JSMarshalerArgument | JSFunctionSignature | number | bigint | JSMarshalerType,
+    offset: number
+): number {
     if (typeof ptr === "bigint") {
         const result = ptr + BigInt(offset);
         if (result > BigInt(Number.MAX_SAFE_INTEGER)) {
@@ -128,17 +131,17 @@ function add_offset (ptr: JSMarshalerArguments | JSMarshalerArgument | JSFunctio
 }
 export function get_sig (signature: JSFunctionSignature, index: number): JSMarshalerType {
     mono_assert(signature, "Null signatures");
-    return <any>signature + (index * JSMarshalerTypeSize) + JSMarshalerSignatureHeaderSize;
+    return add_offset(signature, (index * JSMarshalerTypeSize) + JSMarshalerSignatureHeaderSize) as any;
 }
 
 export function get_signature_type (sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU8(<any>sig + JSBindingTypeOffsets.Type);
+    return getU8(add_offset(sig, JSBindingTypeOffsets.Type)) as any;
 }
 
 export function get_signature_res_type (sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU8(<any>sig + JSBindingTypeOffsets.ResultMarshalerType);
+    return getU8(add_offset(sig, JSBindingTypeOffsets.ResultMarshalerType)) as any;
 }
 
 export function get_signature_arg1_type (sig: JSMarshalerType): MarshalerType {
