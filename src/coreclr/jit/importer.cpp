@@ -6953,25 +6953,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             }
                         }
 
-                        // TODO -- handle CT_INDIRECT virtuals here too
-                        // but we don't have the right method handle
-                        //
-                        NamedIntrinsic ni = NI_Illegal;
-
-                        if (call->gtCallType == CT_USER_FUNC)
-                        {
-                            ni = lookupNamedIntrinsic(call->gtCallMethHnd);
-                        }
-                        else if (call->IsGuardedDevirtualizationCandidate())
-                        {
-                            JITDUMP("No GDV IEnumerable<T> check for [%06u]\n", dspTreeID(call));
-                        }
-
-                        if (ni == NI_System_Collections_Generic_IEnumerable_GetEnumerator)
-                        {
-                            assert(isEnumeratorT);
-                        }
-
                         if (isEnumeratorT)
                         {
                             JITDUMP("V%02u value is IEnumerator<T> via GDV\n", lclNum);
