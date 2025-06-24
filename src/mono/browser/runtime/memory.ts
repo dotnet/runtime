@@ -511,6 +511,10 @@ export function forceThreadMemoryViewRefresh () {
     }
 }
 
-export function fixupPointer (signature: any, shiftAmount: number): any {
-    return ((signature as any) >>> shiftAmount) as any;
+export function fixupPointer (signature: any, shiftAmount: any): any {
+    if (typeof signature === "bigint") {
+        return signature >> BigInt(shiftAmount);
+    } else {
+        return (signature as number) >>> shiftAmount;
+    }
 }
