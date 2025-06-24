@@ -165,8 +165,13 @@ namespace ILCompiler
                         continue;
                     }
 
-                    TypeDesc type = (TypeDesc)currentAssembly.GetObject(attributeType);
-
+                    TypeDesc type = (TypeDesc)currentAssembly.GetObject(attributeType, NotFoundBehavior.ReturnNull);
+                    if (type == null)
+                    {
+                        // If the type doesn't resolve, it can't be a type map attribute
+                        continue;
+                    }
+                    
                     TypeMapAttributeKind attrKind = LookupTypeMapType(type);
 
                     if (attrKind == TypeMapAttributeKind.None)
