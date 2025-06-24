@@ -1598,8 +1598,9 @@ void EvaluateSimdCvtVectorToMask(simdmask_t* result, TSimd arg0)
     uint32_t count = sizeof(TSimd) / sizeof(TBase);
     uint64_t mask  = 0;
 
+    TBase significantBit = 1;
 #if defined(TARGET_XARCH)
-    TBase significantBit = static_cast<TBase>(1) << ((sizeof(TBase) * 8) - 1);
+    significantBit = static_cast<TBase>(1) << ((sizeof(TBase) * 8) - 1);
 #endif
 
     for (uint32_t i = 0; i < count; i++)
@@ -1607,24 +1608,25 @@ void EvaluateSimdCvtVectorToMask(simdmask_t* result, TSimd arg0)
         TBase input0;
         memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
 
-#if defined(TARGET_XARCH)
-        // For xarch we have count sequential bits to write depending on if the
-        // corresponding the input element has its most significant bit set
         if ((input0 & significantBit) != 0)
         {
+#if defined(TARGET_XARCH)
+            // For xarch we have count sequential bits to write
+            // depending on if the corresponding the input element
+            // has its most significant bit set
+
             mask |= static_cast<uint64_t>(1) << i;
-        }
 #elif defined(TARGET_ARM64)
-        // For Arm64 we have count total bits to write, but they are sizeof(TBase)
-        // bits apart. We set depending on if the corresponding input element has
-        // any bit set (this matches the use of cmpne in outputted assembly).
-        if (input0 != 0)
-        {
+            // For Arm64 we have count total bits to write, but
+            // they are sizeof(TBase) bits apart. We set
+            // depending on if the corresponding input element
+            // has its least significant bit set
+
             mask |= static_cast<uint64_t>(1) << (i * sizeof(TBase));
-        }
 #else
-        unreached();
+            unreached();
 #endif
+        }
     }
 
     memcpy(&result->u8[0], &mask, sizeof(uint64_t));
@@ -1998,12 +2000,13 @@ SveMaskPattern EvaluateSimdVectorToPattern(TSimd arg0)
     uint32_t count    = sizeof(TSimd) / sizeof(TBase);
     uint32_t finalOne = count;
 
+    TBase significantBit = 1;
+
     // A mask pattern starts with zero or more 1s and then the rest of the mask is filled with 0s.
     // This pattern is extracted using the least significant bits of the vector elements.
 
     // For Arm64 we have count total bits to read, but they are sizeof(TBase) bits apart. We set
-    // depending on if the corresponding input element has any bit set (this matches the use
-    // of cmpne in outputted assembly)
+    // depending on if the corresponding input element has its least significant bit set
 
     // Find an unbroken sequence of 1s.
     for (uint32_t i = 0; i < count; i++)
@@ -2011,7 +2014,7 @@ SveMaskPattern EvaluateSimdVectorToPattern(TSimd arg0)
         TBase input0;
         memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
 
-        bool isSet = input0 != 0;
+        bool isSet = (input0 & significantBit) != 0;
         if (!isSet)
         {
             finalOne = i;
@@ -2025,7 +2028,7 @@ SveMaskPattern EvaluateSimdVectorToPattern(TSimd arg0)
         TBase input0;
         memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
 
-        bool isSet = input0 != 0;
+        bool isSet = (input0 & significantBit) != 0;
         if (isSet)
         {
             // Invalid sequence
