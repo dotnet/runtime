@@ -299,8 +299,6 @@ GTNODE(SLLI_UW          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(BIT_SET          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Maps to bclr/bclri instruction. Computes result = op1 & ~(1 << op2)
 GTNODE(BIT_CLEAR        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
-// Maps to bext/bexti instruction. Computes result = (op1 >> op2) & 1
-GTNODE(BIT_EXTRACT      , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Maps to binv/binvi instruction. Computes result = op1 ^ (1 << op2)
 GTNODE(BIT_INVERT       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 #endif

@@ -195,100 +195,6 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     bool isOp1Negated = op1->OperIs(GT_NOT);
     bool isOp2Negated = op2->OperIs(GT_NOT);
 
-    LIR::Use use;
-    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND) &&
-        (op2->IsIntegralConstUnsignedPow2() || (op2->OperIs(GT_LSH) && op2->gtGetOp1()->IsIntegralConst(1))) &&
-        BlockRange().TryGetUse(binOp, &use))
-    {
-        GenTree* user = use.User();
-        if (user->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst() &&
-            user->gtGetOp2()->IsIntegralConst(op2->AsIntConCommon()->IntegralValue()))
-        {
-            // (a & bit) == bit   =>   (a & bit) != 0
-            // (a & bit) != bit   =>   (a & bit) == 0
-            user->ChangeOper(GenTree::ReverseRelop(user->OperGet()));
-            user->gtGetOp2()->AsIntConCommon()->SetIntegralValue(0);
-        }
-
-        if (user->OperIs(GT_NE) && user->gtGetOp2()->IsIntegralConst(0))
-        {
-            // (a & bit) != 0   =>   (a >> log2(bit)) & 1
-            use = LIR::Use();
-            if (BlockRange().TryGetUse(user, &use) && !use.User()->OperIsConditionalJump())
-            {
-                // Remove the "!= 0"
-                use.ReplaceWith(binOp);
-                BlockRange().Remove(user->gtGetOp2());
-                BlockRange().Remove(user);
-
-                if (op2->IsIntegralConst())
-                {
-                    GenTreeIntConCommon* constant = op2->AsIntConCommon();
-
-                    UINT64 bit  = (UINT64)constant->IntegralValue();
-                    int    log2 = BitOperations::Log2(bit);
-                    constant->SetIntegralValue(1);
-
-                    if (!op1->OperIs(GT_RSZ, GT_RSH) || !op1->gtGetOp2()->IsIntegralConst())
-                    {
-                        GenTreeIntCon* shiftAmount = comp->gtNewIconNode(0);
-                        shiftAmount->SetContained();
-                        BlockRange().InsertAfter(op1, shiftAmount);
-                        op1 = comp->gtNewOperNode(GT_RSZ, op2->TypeGet(), op1, shiftAmount);
-                        BlockRange().InsertAfter(shiftAmount, op1);
-                    }
-                    GenTreeIntConCommon* shiftAmount = op1->gtGetOp2()->AsIntConCommon();
-                    int                  size        = emitActualTypeSize(op1) * 8;
-                    log2 += shiftAmount->IntegralValue();
-                    if (log2 == 0)
-                    {
-                        BlockRange().Remove(op1->gtGetOp2());
-                        BlockRange().Remove(op1);
-                        op1 = op1->gtGetOp1();
-                    }
-                    else if (log2 < size)
-                    {
-                        // (a >> N) & bit  =>  (a >> N + log2(bit)) & 1
-                        shiftAmount->SetIntegralValue(log2);
-                    }
-                    else
-                    {
-                        // Replace the AND with a constant zero or a shift right calculating the last/sign bit
-                        GenTree* replacement = nullptr;
-                        if (log2 >= size && op1->OperIs(GT_RSZ))
-                        {
-                            constant->SetIntegralValue(0);
-                            BlockRange().Remove(op1, true);
-                            replacement = constant;
-                        }
-                        else
-                        {
-                            op1->ChangeOper(GT_RSZ);
-                            BlockRange().Remove(op2, true);
-                            shiftAmount->AsIntConCommon()->SetIntegralValue(size - 1);
-                            replacement = op1;
-                        }
-                        use.ReplaceWith(replacement);
-                        BlockRange().Remove(binOp);
-                        return replacement->gtNext;
-                    }
-                }
-                else
-                {
-                    // a & (1 << N)   =>   (a >> N) & 1
-                    assert(op2->OperIs(GT_LSH) && op2->gtGetOp1()->IsIntegralConst(1));
-                    GenTreeOp* shiftLeft   = op2->AsOp();
-                    GenTree*   shiftAmount = shiftLeft->gtGetOp2();
-
-                    op2 = op2->gtGetOp1();
-                    BlockRange().Remove(shiftLeft);
-                    op1 = comp->gtNewOperNode(GT_RSZ, op2->TypeGet(), op1, shiftAmount);
-                    BlockRange().InsertAfter(shiftAmount, op1);
-                }
-            }
-        }
-    }
-
     ContainCheckBinary(binOp);
 
     if (!comp->opts.OptimizationEnabled())
@@ -300,38 +206,21 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         {
             GenTreeIntConCommon* constant = op2->AsIntConCommon();
             UINT64               bit      = (UINT64)constant->IntegralValue();
-            if (binOp->OperIs(GT_AND) && op1->OperIs(GT_RSZ, GT_RSH) && bit == 1)
+            if (binOp->OperIs(GT_AND))
+                bit = ~bit;
+
+            if (!op2->isContained() && isPow2(bit) &&
+                (!op1->TypeIs(TYP_INT) || BitOperations::Log2(bit) != 31)) // don't change the sign bit alone
             {
-                if (op1->gtGetOp1()->TypeIs(TYP_LONG) || op1->gtGetOp2()->IsIntegralConst())
-                {
-                    // (a >> b) & 1   =>   BIT_EXTRACT(a, b)
-                    binOp->ChangeOper(GT_BIT_EXTRACT);
-                    binOp->gtType = TYP_INT;
+                assert(binOp->OperIs(GT_OR, GT_XOR, GT_AND));
+                static_assert(AreContiguous(GT_OR, GT_XOR, GT_AND), "");
+                constexpr genTreeOps singleBitOpers[] = {GT_BIT_SET, GT_BIT_INVERT, GT_BIT_CLEAR};
+                binOp->ChangeOper(singleBitOpers[binOp->OperGet() - GT_OR]);
 
-                    BlockRange().Remove(op2);
-                    op2 = op1->gtGetOp2();
-                    BlockRange().Remove(op1);
-                    op1 = op1->gtGetOp1();
-                }
-            }
-            else
-            {
-                if (binOp->OperIs(GT_AND))
-                    bit = ~bit;
-
-                if (!op2->isContained() && isPow2(bit) &&
-                    (!op1->TypeIs(TYP_INT) || BitOperations::Log2(bit) != 31)) // don't change the sign bit alone
-                {
-                    assert(binOp->OperIs(GT_OR, GT_XOR, GT_AND));
-                    static_assert(AreContiguous(GT_OR, GT_XOR, GT_AND), "");
-                    constexpr genTreeOps singleBitOpers[] = {GT_BIT_SET, GT_BIT_INVERT, GT_BIT_CLEAR};
-                    binOp->ChangeOper(singleBitOpers[binOp->OperGet() - GT_OR]);
-
-                    bit = BitOperations::Log2(bit);
-                    assert(bit >= 11); // smaller single-bit masks fit into ori/xori/andi
-                    constant->SetIntegralValue(bit);
-                    constant->SetContained();
-                }
+                bit = BitOperations::Log2(bit);
+                assert(bit >= 11); // smaller single-bit masks fit into ori/xori/andi
+                constant->SetIntegralValue(bit);
+                constant->SetContained();
             }
         }
         else // op2 is not constant

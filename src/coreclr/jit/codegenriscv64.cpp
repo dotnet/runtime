@@ -1075,7 +1075,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     emitter*         emit      = GetEmitter();
 
     assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_AND_NOT, GT_OR, GT_OR_NOT, GT_XOR, GT_XOR_NOT,
-                            GT_BIT_SET, GT_BIT_CLEAR, GT_BIT_EXTRACT, GT_BIT_INVERT));
+                            GT_BIT_SET, GT_BIT_CLEAR, GT_BIT_INVERT));
 
     GenTree*    op1 = treeNode->gtGetOp1();
     GenTree*    op2 = treeNode->gtGetOp2();
@@ -2694,11 +2694,6 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 ins = isImmed(treeNode) ? INS_bclri : INS_bclr;
                 break;
 
-            case GT_BIT_EXTRACT:
-                assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbs));
-                ins = isImmed(treeNode) ? INS_bexti : INS_bext;
-                break;
-
             case GT_BIT_INVERT:
                 assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbs));
                 ins = isImmed(treeNode) ? INS_binvi : INS_binv;
@@ -4170,7 +4165,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_XOR_NOT:
         case GT_BIT_SET:
         case GT_BIT_CLEAR:
-        case GT_BIT_EXTRACT:
         case GT_BIT_INVERT:
             assert(varTypeIsIntegralOrI(treeNode));
 
