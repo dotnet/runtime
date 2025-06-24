@@ -2059,7 +2059,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                     if (isDominant)
                     {
                         printf("[dom]");
-                        printedBlockWidth += 10;
+                        printedBlockWidth += 5;
                     }
                 }
 

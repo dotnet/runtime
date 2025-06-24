@@ -2906,10 +2906,6 @@ void Compiler::fgPeelSwitch(BasicBlock* block)
         jumpTab[i]->setLikelihood(min(1.0, newLikelihood));
     }
 
-    // JITDUMP("fgPeelSwitch: Updated flow into " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
-    //         newBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
-    // fgPgoConsistent = false;
-
     // For now we leave the switch as is, since there's no way
     // to indicate that one of the cases is now unreachable.
     //
