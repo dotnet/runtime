@@ -9967,7 +9967,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             NamedIntrinsic addIntrinsic =
                 GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, GT_ADD, op1, op2, simdBaseType, simdSize, isScalar);
 
-            node->ChangeHWIntrinsicId(addIntrinsic);
+            node->ChangeHWIntrinsicId(addIntrinsic, op1, op2);
             return fgMorphHWIntrinsicRequired(node);
         }
 
@@ -11474,12 +11474,10 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
     // Try to fold it, maybe we get lucky,
     GenTree* morphedTree = gtFoldExpr(tree);
 
-    if ((morphedTree != tree) || !morphedTree->OperIsHWIntrinsic())
+    if (morphedTree->OperIsHWIntrinsic())
     {
-        morphedTree->SetMorphed(this);
-    }
-    else
-    {
+        tree = morphedTree->AsHWIntrinsic();
+
         if (allArgsAreConst && tree->IsVectorCreate())
         {
             // Avoid unexpected CSE for constant arguments for Vector_.Create
@@ -11497,17 +11495,20 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
 
         morphedTree = fgMorphHWIntrinsicRequired(tree);
 
-        // ------------------------------------------------------------------------
-        // Optional morphing is done if tree transformations is permitted
-        //
-
-        if ((opts.compFlags & CLFLG_TREETRANS) != 0)
+        if (morphedTree->OperIsHWIntrinsic())
         {
-            morphedTree = fgMorphHWIntrinsicOptional(morphedTree->AsHWIntrinsic());
+            tree = morphedTree->AsHWIntrinsic();
+
+            // ------------------------------------------------------------------------
+            // Optional morphing is done if tree transformations is permitted
+            //
+
+            morphedTree = fgMorphHWIntrinsicOptional(tree);
         }
     }
 
     assert(retType == morphedTree->TypeGet());
+    morphedTree->SetMorphed(this);
     return morphedTree;
 }
 
@@ -11606,7 +11607,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                     GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, GT_ADD, op1, op2, simdBaseType, simdSize,
                                                                  isScalar);
 
-                tree->ChangeHWIntrinsicId(addIntrinsic);
+                tree->ChangeHWIntrinsicId(addIntrinsic, op1, op2);
                 return fgMorphHWIntrinsicRequired(tree);
             }
             else if (op1->IsCnsVec())
@@ -11620,7 +11621,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                     DEBUG_DESTROY_NODE(op1);
                     DEBUG_DESTROY_NODE(tree);
 
-                    return fgMorphHWIntrinsic(op2->AsHWIntrinsic());
+                    return fgMorphHWIntrinsicRequired(op2->AsHWIntrinsic());
 #endif // TARGET_ARM64
                 }
                 else
