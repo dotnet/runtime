@@ -4476,6 +4476,7 @@ void emitter::emitRecomputeIGoffsets()
         ig->igOffs = offs;
         assert(IsCodeAligned(ig->igOffs));
         offs += ig->igSize;
+        assert(offs >= ig->igOffs); // must not overflow
     }
 
     /* Set the total code size */
