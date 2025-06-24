@@ -541,6 +541,20 @@ namespace ILLink.Shared.TrimAnalysis
 						} else if (value is NullValue) {
 							// null.GetMethod(...) throws - so track empty value set as its result
 							AddReturnValue (MultiValueLattice.Top);
+						} else if (value is MethodReturnValue returnValueType &&
+							returnValueType.Method.IsDeclaredOnType ("System.Reflection.EventInfo") &&
+							returnValueType.Method.Name == "get_EventHandlerType")
+						{
+							foreach (var stringParam in argumentValues[0].AsEnumerable ()) {
+								if (stringParam is KnownStringValue stringValue && stringValue.Contents == "Invoke") {
+									// EventInfo.EventHandlerType.GetMethod("Invoke") is trim-safe because we keep the Invoke method on delegates
+									AddReturnValue (MultiValueLattice.Top);
+								} else {
+									// Otherwise fall back to the bitfield requirements
+									_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+									AddReturnValue (annotatedMethodReturnValue);
+								}
+							}
 						} else {
 							// Otherwise fall back to the bitfield requirements
 							_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
