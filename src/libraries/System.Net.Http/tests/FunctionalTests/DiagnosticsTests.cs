@@ -17,9 +17,11 @@ using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [Collection(nameof(DisableParallelization))]
     public abstract class DiagnosticsTest : DiagnosticsTestBase
     {
         private const string EnableActivityPropagationEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION";
