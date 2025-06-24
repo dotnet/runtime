@@ -9897,7 +9897,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     else if (cvtIntrin != nullptr)
                     {
                         cvtIntrin->Op(1) = op1Intrin;
-                        op1Intrin = cvtIntrin;
+                        op1Intrin        = cvtIntrin;
                     }
                     return fgMorphHWIntrinsicRequired(op1Intrin);
                 }
