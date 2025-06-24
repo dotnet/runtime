@@ -351,18 +351,35 @@ do_icall (MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval 
 		break;
 	}
 	case MINT_ICALLSIG_PPP_V: {
-		typedef void (*T)(gpointer,gpointer,gpointer);		
-		T func = (T)ptr;
-		MH_LOG("Param count is %d, ptr is %p", sig->param_count, ptr);
-
-		func (sp [0].data.p, sp [1].data.p, sp [2].data.p);
+		if (!strcmp(sigTest, "848_V"))
+		{
+			typedef void (*T)(I8,I4,I8);		
+			T func = (T)ptr;			
+			func (sp [0].data.p, sp [1].data.i, sp [2].data.p);
+		}
+		else
+		{
+			typedef void (*T)(gpointer,gpointer,gpointer);		
+			T func = (T)ptr;			
+			func (sp [0].data.p, sp [1].data.p, sp [2].data.p);
+		}
 		break;
 	}
 	case MINT_ICALLSIG_PPP_P: {
-		typedef gpointer (*T)(gpointer,gpointer,gpointer);
-		T func = (T)ptr;
-		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p);
-		break;
+		if (!strcmp(sigTest, "884_8"))
+		{
+			typedef gpointer (*T)(I8,I8,I4);
+			T func = (T)ptr;
+			ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.i);
+			break;
+		}
+		else
+		{
+			typedef gpointer (*T)(gpointer,gpointer,gpointer);
+			T func = (T)ptr;
+			ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p);
+			break;
+		}		
 	}
 	case MINT_ICALLSIG_PPPP_V: {
 		typedef void (*T)(gpointer,gpointer,gpointer,gpointer);
@@ -383,9 +400,18 @@ do_icall (MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval 
 		break;
 	}
 	case MINT_ICALLSIG_PPPPP_P: {
-		typedef gpointer (*T)(gpointer,gpointer,gpointer,gpointer,gpointer);
-		T func = (T)ptr;
-		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p);
+		if (!strcmp(sigTest, "44444_4"))
+		{
+			typedef I4 (*T)(I4,I4,I4,I4,I4);
+			T func = (T)ptr;
+			ret_sp->data.i = func (sp [0].data.i, sp [1].data.i, sp [2].data.i, sp [3].data.i, sp [4].data.i);
+		}
+		else
+		{
+			typedef gpointer (*T)(gpointer,gpointer,gpointer,gpointer,gpointer);
+			T func = (T)ptr;
+			ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p);
+		}
 		break;
 	}
 	case MINT_ICALLSIG_PPPPPP_V: {
@@ -395,10 +421,13 @@ do_icall (MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval 
 		break;
 	}
 	case MINT_ICALLSIG_PPPPPP_P: {
-		typedef gpointer (*T)(gpointer,gpointer,gpointer,gpointer,gpointer,gpointer);
-		T func = (T)ptr;
-		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p, sp [5].data.p);
-		break;
+		
+			typedef gpointer (*T)(gpointer,gpointer,gpointer,gpointer,gpointer,gpointer);
+			T func = (T)ptr;
+			ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p, sp [5].data.p);
+			break;
+		
+		
 	}
 	default:
 		g_assert_not_reached ();
