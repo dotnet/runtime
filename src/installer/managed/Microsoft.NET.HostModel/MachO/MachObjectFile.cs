@@ -230,26 +230,25 @@ internal unsafe partial class MachObjectFile
     public bool RemoveCodeSignatureIfPresent(IMachOFileWriter file, out long? newLength)
     {
         newLength = null;
-        MachObjectFile machFile = this;
-        if (machFile._codeSignatureLoadCommand.Command.IsDefault)
+        if (_codeSignatureLoadCommand.Command.IsDefault)
         {
-            Debug.Assert(machFile._codeSignatureBlob is null);
+            Debug.Assert(_codeSignatureBlob is null);
             return false;
         }
 
         LinkEditLoadCommand clearedCommand = default;
         file.Write(_codeSignatureLoadCommand.FileOffset, ref clearedCommand);
-        machFile._header.NumberOfCommands -= 1;
-        machFile._header.SizeOfCommands -= (uint)sizeof(LinkEditLoadCommand);
-        machFile._linkEditSegment64.Command.SetFileSize(
-            machFile._linkEditSegment64.Command.GetFileSize(machFile._header)
-                - machFile._codeSignatureLoadCommand.Command.GetFileSize(machFile._header),
-            machFile._header);
-        newLength = machFile.GetFileSize();
-        machFile._codeSignatureLoadCommand = default;
-        machFile._codeSignatureBlob = null;
-        machFile.Validate();
-        machFile.Write(file);
+        _header.NumberOfCommands -= 1;
+        _header.SizeOfCommands -= (uint)sizeof(LinkEditLoadCommand);
+        _linkEditSegment64.Command.SetFileSize(
+            _linkEditSegment64.Command.GetFileSize(_header)
+                - _codeSignatureLoadCommand.Command.GetFileSize(_header),
+            _header);
+        newLength = GetFileSize();
+        _codeSignatureLoadCommand = default;
+        _codeSignatureBlob = null;
+        Validate();
+        Write(file);
         return true;
     }
 

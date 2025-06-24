@@ -50,8 +50,11 @@ namespace Microsoft.NET.HostModel.Bundle
                        string? appAssemblyName = null,
                        bool macosCodesign = true)
         {
+            if (!string.IsNullOrEmpty(Path.GetDirectoryName(hostName)))
+            {
+                throw new ArgumentException("Host name must be a file name, not a path", nameof(hostName));
+            }
             _tracer = new Trace(diagnosticOutput);
-
             _hostName = hostName;
             _outputDir = Path.GetFullPath(string.IsNullOrEmpty(outputDir) ? Environment.CurrentDirectory : outputDir);
             _target = new TargetInfo(targetOS, targetArch, targetFrameworkVersion);
@@ -242,6 +245,8 @@ namespace Microsoft.NET.HostModel.Bundle
             0xee, 0x3b, 0x2d, 0xce, 0x24, 0xb3, 0x6a, 0xae
         ];
 
+        public static ReadOnlySpan<byte> BundleHeaderSignature => BundleHeaderPlaceholder.AsSpan().Slice(8);
+
         /// <summary>
         /// Generate a bundle, given the specification of embedded files
         /// </summary>
@@ -279,7 +284,7 @@ namespace Microsoft.NET.HostModel.Bundle
                 throw new ArgumentException("Invalid input specification: Must specify the host binary");
             }
 
-            var relativePathToSpec = GetFilteredFileSpecs(fileSpecs);
+            (FileSpec Spec, FileType Type)[] relativePathToSpec = GetFilteredFileSpecs(fileSpecs);
             long bundledFilesSize = 0;
             // Conservatively estimate the size of bundled files.
             // Assume no compression and worst case alignment for assemblies.
@@ -309,12 +314,11 @@ namespace Microsoft.NET.HostModel.Bundle
             {
                 Directory.CreateDirectory(destinationDirectory);
             }
-            var bundleName = Path.GetFileName(bundlePath);
             var hostLength = new FileInfo(hostSource).Length;
-            var bundleManifestLength = BundleManifest.GetManifestLength(BundleManifest.BundleMajorVersion, relativePathToSpec.Select(x => x.Spec.BundleRelativePath));
+            var bundleManifestLength = Manifest.GetManifestLength(BundleManifest.BundleMajorVersion, relativePathToSpec.Select(x => x.Spec.BundleRelativePath));
             long bundleTotalSize = hostLength + bundledFilesSize + bundleManifestLength;
             if (_target.IsOSX && _macosCodesign)
-                bundleTotalSize += MachObjectFile.GetSignatureSizeEstimate((uint)bundleTotalSize, bundleName);
+                bundleTotalSize += MachObjectFile.GetSignatureSizeEstimate((uint)bundleTotalSize, _hostName);
 
             using (MemoryMappedFile bundleMap = MemoryMappedFile.CreateNew(null, bundleTotalSize, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
             {
@@ -382,7 +386,7 @@ namespace Microsoft.NET.HostModel.Bundle
                         }
                         if (_macosCodesign)
                         {
-                            endOfBundle = (ulong)machFile.AdHocSignFile(machFileReader!, bundleName, signatureBlob);
+                            endOfBundle = (ulong)machFile.AdHocSignFile(machFileReader!, _hostName, signatureBlob);
                         }
                     }
 
@@ -410,14 +414,6 @@ namespace Microsoft.NET.HostModel.Bundle
         /// <returns>True if the AppHost is a single-file bundle, false otherwise</returns>
         public static bool IsBundle(string appHostFilePath, out long bundleHeaderOffset)
         {
-            byte[] bundleSignature = {
-                // 32 bytes represent the bundle signature: SHA-256 for ".net core bundle"
-                0x8b, 0x12, 0x02, 0xb9, 0x6a, 0x61, 0x20, 0x38,
-                0x72, 0x7b, 0x93, 0x02, 0x14, 0xd7, 0xa0, 0x32,
-                0x13, 0xf5, 0xb9, 0xe6, 0xef, 0xae, 0x33, 0x18,
-                0xee, 0x3b, 0x2d, 0xce, 0x24, 0xb3, 0x6a, 0xae
-            };
-
             long headerOffset = 0;
             void FindBundleHeader()
             {
@@ -425,10 +421,10 @@ namespace Microsoft.NET.HostModel.Bundle
                 {
                     using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
                     {
-                        int position = BinaryUtils.SearchInFile(accessor, bundleSignature);
+                        int position = BinaryUtils.SearchInFile(accessor, BundleHeaderSignature);
                         if (position == -1)
                         {
-                            throw new PlaceHolderNotFoundInAppHostException(bundleSignature);
+                            throw new PlaceHolderNotFoundInAppHostException(BundleHeaderSignature);
                         }
 
                         headerOffset = accessor.ReadInt64(position - sizeof(long));

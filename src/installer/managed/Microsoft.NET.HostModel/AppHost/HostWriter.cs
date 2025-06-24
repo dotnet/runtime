@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.NET.HostModel.Bundle;
 using Microsoft.NET.HostModel.MachO;
 
 namespace Microsoft.NET.HostModel.AppHost
@@ -128,12 +126,14 @@ namespace Microsoft.NET.HostModel.AppHost
 
                     long appHostSourceLength = new FileInfo(appHostSourceFilePath).Length;
                     string destinationFileName = Path.GetFileName(appHostDestinationFilePath);
+                    // Memory-mapped files cannot be resized, so calculate
+                    // the maximum length of the destination file upfront.
                     long appHostDestinationLength = enableMacOSCodeSign ?
                         appHostSourceLength + MachObjectFile.GetSignatureSizeEstimate((uint)appHostSourceLength, destinationFileName)
                         : appHostSourceLength;
-                    using (var appHostDestinationMap = MemoryMappedFile.CreateNew(null, appHostDestinationLength))
+                    using (MemoryMappedFile appHostDestinationMap = MemoryMappedFile.CreateNew(null, appHostDestinationLength))
                     {
-                        using (var appHostDestinationStream = appHostDestinationMap.CreateViewStream())
+                        using (MemoryMappedViewStream appHostDestinationStream = appHostDestinationMap.CreateViewStream())
                         using (FileStream appHostSourceStream = new(appHostSourceFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
                         {
                             isMachOImage = MachObjectFile.IsMachOImage(appHostSourceStream);
@@ -144,10 +144,8 @@ namespace Microsoft.NET.HostModel.AppHost
                             appHostSourceStream.CopyTo(appHostDestinationStream);
                         }
 
-                        using (var memoryMappedViewAccessor = appHostDestinationMap.CreateViewAccessor())
+                        using (MemoryMappedViewAccessor memoryMappedViewAccessor = appHostDestinationMap.CreateViewAccessor())
                         {
-                            // Get the size of the source app host to ensure that we don't write extra data to the destination.
-                            // On Windows, the size of the view accessor is rounded up to the next page boundary.
                             // Transform the host file in-memory.
                             RewriteAppHost(appHostDestinationMap, memoryMappedViewAccessor);
                             if (isMachOImage)
@@ -164,15 +162,17 @@ namespace Microsoft.NET.HostModel.AppHost
                                 }
                             }
                         }
-                        using (var appHostDestinationStream = new FileStream(appHostDestinationFilePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize: 1))
-                        using (var appHostAccessor = appHostDestinationMap.CreateViewAccessor(0, appHostDestinationLength, MemoryMappedFileAccess.Read))
+                        using (FileStream appHostDestinationStream = new FileStream(appHostDestinationFilePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize: 1))
+                        using (MemoryMappedViewAccessor appHostAccessor = appHostDestinationMap.CreateViewAccessor(0, appHostDestinationLength, MemoryMappedFileAccess.Read))
                         {
-                            // Write the final content to the destination file.
+                            // Write the final content to the destination file, only up to the total length of the host, not the entire mapped file.
+                            // On Windows, memory-mapped files are rounded up to the next page size.
+                            // On MacOS, the memory-mapped file is created with a conservative estimate of the size of the signature.
                             BinaryUtils.WriteToStream(appHostAccessor, appHostDestinationStream, appHostDestinationLength);
-                            // This could be moved to work on the MemoryMappedFile if we can precalculate the size required.
+                            // TODO: This could be moved to work on the MemoryMappedFile if we can precalculate the size required.
                             if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
                             {
-                                using var updater = new ResourceUpdater(appHostDestinationStream, leaveOpen: true);
+                                using ResourceUpdater updater = new ResourceUpdater(appHostDestinationStream, leaveOpen: true);
                                 updater.AddResourcesFromPEImage(assemblyToCopyResourcesFrom);
                                 updater.Update();
                             }

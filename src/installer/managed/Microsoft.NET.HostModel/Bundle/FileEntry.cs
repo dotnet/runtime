@@ -62,10 +62,10 @@ namespace Microsoft.NET.HostModel.Bundle
         /// </summary>
         public static uint GetFileEntryLength(uint bundleMajorVersion, string bundleRelativePath)
         {
-           return 8u // Offset
-                    + 8u // Size
-                    + (bundleMajorVersion >= 6 ? 8u : 0u) // CompressedSize
-                    + 1u // Type (FileType)
+           return sizeof(long) // Offset
+                    + sizeof(long) // Size
+                    + (bundleMajorVersion >= 6 ? sizeof(long) : 0u) // CompressedSize
+                    + sizeof(FileType) // Type (FileType)
                     + Bundler.GetBinaryWriterStringLength(bundleRelativePath);
         }
 

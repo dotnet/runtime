@@ -1,4 +1,5 @@
-
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -168,7 +169,8 @@ public class MachObjectTests
             Assert.NotNull(embeddedSignatureBlob);
         }
 
-        var (exitcode, stderr) = Codesign.Run("--display --verbose=4", filePath);
+        var (exitcode, stderr) = Codesign.Run("--display --verbose=6", filePath);
+#pragma warning disable CS0162
         if (exitcode != 0)
         {
             output.WriteLine($"Codesign command failed with exit code {exitcode}: {stderr}");
@@ -191,8 +193,23 @@ public class MachObjectTests
         Assert.True(csi.ExecutableSegmentLimit == b.CodeDirectoryBlob.ExecutableSegmentLimit, "ExecutableSegmentLimit do not match");
         Assert.True(csi.ExecutableSegmentFlags == b.CodeDirectoryBlob.ExecutableSegmentFlags, "ExecutableSegmentFlags do not match");
 
-        // Assert.True(csi.SpecialSlotHashes.Zip(b.CodeDirectoryBlob.SpecialSlotHashes, static (a, b) => a.SequenceEqual(b)).All(static x => x));
-        // Assert.True(csi.CodeHashes.Zip(b.CodeDirectoryBlob.CodeHashes, static (a, b) => a.SequenceEqual(b)).All(static x => x));
+        AssertEqual(csi.SpecialSlotHashes, b.CodeDirectoryBlob.SpecialSlotHashes);
+        AssertEqual(csi.CodeHashes, b.CodeDirectoryBlob.CodeHashes);
+
+        static void AssertEqual(byte[][] hashes1, IReadOnlyList<IReadOnlyList<byte>> hashes2)
+        {
+            Assert.Equal(hashes1.Length, hashes2.Count);
+
+            for (int i = 0; i < hashes1.Length; i++)
+            {
+                Assert.Equal(hashes1[i].Length, hashes2[i].Count);
+
+                for(int j = 0; j < hashes1[i].Length; j++)
+                {
+                    Assert.Equal(hashes1[i][j], hashes2[i][j]);
+                }
+            }
+        }
     }
 
     /// <summary>
