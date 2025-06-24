@@ -166,7 +166,7 @@ namespace
                 {
                     // Check if this is a non-managed file with directory separator that exists
                     // This should show a specific error instead of routing to CLI
-                    bool has_dir_separator = strchr(app_candidate.c_str(), DIR_SEPARATOR) != nullptr;
+                    bool has_dir_separator = app_candidate.find(DIR_SEPARATOR) != pal::string_t::npos;
                     if (has_dir_separator)
                     {
                         pal::string_t app_candidate_fullpath = app_candidate;
