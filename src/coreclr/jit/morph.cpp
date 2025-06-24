@@ -9886,6 +9886,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (lookupType != op1RetType)
                     {
+                        assert(cvtIntrin == nullptr);
                         assert(varTypeIsSIMD(op1RetType));
                         assert(varTypeIsMask(lookupType));
 
@@ -9893,10 +9894,10 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                         op1Intrin = gtNewSimdCvtMaskToVectorNode(retType, op1Intrin, op1SimdBaseJitType, op1SimdSize)
                                         ->AsHWIntrinsic();
                     }
-
-                    if (cvtIntrin != nullptr)
+                    else if (cvtIntrin != nullptr)
                     {
-                        DEBUG_DESTROY_NODE(cvtIntrin);
+                        cvtIntrin->Op(1) = op1Intrin;
+                        op1Intrin = cvtIntrin;
                     }
                     return fgMorphHWIntrinsicRequired(op1Intrin);
                 }
@@ -11506,12 +11507,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
         }
     }
 
-    if (retType != morphedTree->TypeGet())
-    {
-        assert(varTypeIsMask(morphedTree));
-        morphedTree = gtNewSimdCvtMaskToVectorNode(retType, morphedTree, simdBaseJitType, simdSize);
-        morphedTree = gtFoldExpr(morphedTree);
-    }
+    assert(retType == morphedTree->TypeGet());
     return morphedTree;
 }
 
