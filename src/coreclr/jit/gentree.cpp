@@ -24470,15 +24470,14 @@ GenTree* Compiler::gtNewSimdLoadNonTemporalNode(var_types   type,
 // Return Value:
 //    The node representing the minimum or maximum operation
 //
-GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
-                                       GenTree*    op1,
-                                       GenTree*    op2,
-                                       CorInfoType simdBaseJitType,
-                                       unsigned    simdSize,
-                                       bool        isMax,
-                                       bool        isMagnitude,
-                                       bool        isNumber
-                                       ARM64_ARG(bool isScalable))
+GenTree* Compiler::gtNewSimdMinMaxNode(var_types     type,
+                                       GenTree*      op1,
+                                       GenTree*      op2,
+                                       CorInfoType   simdBaseJitType,
+                                       unsigned      simdSize,
+                                       bool          isMax,
+                                       bool          isMagnitude,
+                                       bool isNumber ARM64_ARG(bool isScalable))
 {
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -24530,7 +24529,6 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
             type     = TYP_SIMD16;
         }
         else if (op1->IsCnsVec())
-                                          unsigned simdSize ARM64_ARG(bool isScalable))
         {
             cnsNode   = op1;
             otherNode = op2;
@@ -24942,7 +24940,7 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
 #elif defined(TARGET_ARM64)
         if (!isMagnitude && !isNumber)
         {
-            return gtNewSimdMinMaxNativeNode(type, op1, op2, simdBaseJitType, simdSize, isMax);
+            return gtNewSimdMinMaxNativeNode(type, op1, op2, simdBaseJitType, simdSize, isMax ARM64_ARG(isScalable));
         }
 
         if (isScalar)
@@ -24959,7 +24957,7 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
 
         if (retNode == nullptr)
         {
-        // intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(type, intrinsic);
+            // intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(type, intrinsic);
 
             GenTree* op1Dup = fgMakeMultiUse(&op1);
             GenTree* op2Dup = fgMakeMultiUse(&op2);
@@ -24991,58 +24989,68 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
                 absOp1Dup = fgMakeMultiUse(&absOp1);
                 absOp2Dup = fgMakeMultiUse(&absOp2);
 
-                equalsMask = gtNewSimdCmpOpNode(GT_EQ, type, absOp1, absOp2, simdBaseJitType, simdSize);
+                equalsMask =
+                    gtNewSimdCmpOpNode(GT_EQ, type, absOp1, absOp2, simdBaseJitType, simdSize ARM64_ARG(isScalable));
 
                 if (isMax)
                 {
-                    signMask = gtNewSimdIsPositiveNode(type, op1Dup, simdBaseJitType, simdSize);
-                    cmpMask  = gtNewSimdCmpOpNode(GT_GT, type, absOp1Dup, absOp2Dup, simdBaseJitType, simdSize);
+                    signMask = gtNewSimdIsPositiveNode(type, op1Dup, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+                    cmpMask  = gtNewSimdCmpOpNode(GT_GT, type, absOp1Dup, absOp2Dup, simdBaseJitType,
+                                                  simdSize ARM64_ARG(isScalable));
                 }
                 else
                 {
-                    signMask = gtNewSimdIsNegativeNode(type, op1Dup, simdBaseJitType, simdSize);
-                    cmpMask  = gtNewSimdCmpOpNode(GT_LT, type, absOp1Dup, absOp2Dup, simdBaseJitType, simdSize);
+                    signMask = gtNewSimdIsNegativeNode(type, op1Dup, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+                    cmpMask  = gtNewSimdCmpOpNode(GT_LT, type, absOp1Dup, absOp2Dup, simdBaseJitType,
+                                                  simdSize ARM64_ARG(isScalable));
                 }
 
                 if (isNumber)
                 {
-                    nanMask = gtNewSimdIsNaNNode(type, gtCloneExpr(absOp2Dup), simdBaseJitType, simdSize);
+                    nanMask = gtNewSimdIsNaNNode(type, gtCloneExpr(absOp2Dup), simdBaseJitType,
+                                                 simdSize ARM64_ARG(isScalable));
                 }
                 else
                 {
-                    nanMask = gtNewSimdIsNaNNode(type, gtCloneExpr(absOp1Dup), simdBaseJitType, simdSize);
+                    nanMask = gtNewSimdIsNaNNode(type, gtCloneExpr(absOp1Dup), simdBaseJitType,
+                                                 simdSize ARM64_ARG(isScalable));
                 }
             }
             else
             {
-                equalsMask = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
+                equalsMask = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize ARM64_ARG(isScalable));
 
                 if (isMax)
                 {
-                    signMask = gtNewSimdIsNegativeNode(type, op2Dup, simdBaseJitType, simdSize);
-                    cmpMask  = gtNewSimdCmpOpNode(GT_LT, type, gtCloneExpr(op2Dup), op1Dup, simdBaseJitType, simdSize);
+                    signMask = gtNewSimdIsNegativeNode(type, op2Dup, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+                    cmpMask  = gtNewSimdCmpOpNode(GT_LT, type, gtCloneExpr(op2Dup), op1Dup, simdBaseJitType,
+                                                  simdSize ARM64_ARG(isScalable));
                 }
                 else
                 {
-                    signMask = gtNewSimdIsNegativeNode(type, op1Dup, simdBaseJitType, simdSize);
-                    cmpMask  = gtNewSimdCmpOpNode(GT_LT, type, gtCloneExpr(op1Dup), op2Dup, simdBaseJitType, simdSize);
+                    signMask = gtNewSimdIsNegativeNode(type, op1Dup, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+                    cmpMask  = gtNewSimdCmpOpNode(GT_LT, type, gtCloneExpr(op1Dup), op2Dup, simdBaseJitType,
+                                                  simdSize ARM64_ARG(isScalable));
                 }
 
                 if (isNumber)
                 {
-                    nanMask = gtNewSimdIsNaNNode(type, gtCloneExpr(op2Dup), simdBaseJitType, simdSize);
+                    nanMask =
+                        gtNewSimdIsNaNNode(type, gtCloneExpr(op2Dup), simdBaseJitType, simdSize ARM64_ARG(isScalable));
                 }
                 else
                 {
-                    nanMask = gtNewSimdIsNaNNode(type, gtCloneExpr(op1Dup), simdBaseJitType, simdSize);
+                    nanMask =
+                        gtNewSimdIsNaNNode(type, gtCloneExpr(op1Dup), simdBaseJitType, simdSize ARM64_ARG(isScalable));
                 }
 
                 op2Dup = gtCloneExpr(op2Dup);
             }
 
-            GenTree* mask = gtNewSimdBinOpNode(GT_AND, type, equalsMask, signMask, simdBaseJitType, simdSize);
-            mask          = gtNewSimdBinOpNode(GT_OR, type, mask, nanMask, simdBaseJitType, simdSize);
-            mask          = gtNewSimdBinOpNode(GT_OR, type, mask, cmpMask, simdBaseJitType, simdSize);
+            GenTree* mask =
+                gtNewSimdBinOpNode(GT_AND, type, equalsMask, signMask, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+            mask = gtNewSimdBinOpNode(GT_OR, type, mask, nanMask, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+            mask = gtNewSimdBinOpNode(GT_OR, type, mask, cmpMask, simdBaseJitType, simdSize ARM64_ARG(isScalable));
 
             retNode = gtNewSimdCndSelNode(type, mask, gtCloneExpr(op1Dup), op2Dup, simdBaseJitType, simdSize);
         }
@@ -25054,12 +25062,9 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
         }
         return retNode;
     }
+    assert(!isScalar);
 
-GenTree* Compiler::gtNewSimdMinNativeNode(var_types         type,
-                                          GenTree*          op1,
-                                          GenTree*          op2,
-                                          CorInfoType       simdBaseJitType,
-                                          unsigned simdSize ARM64_ARG(bool isScalable))
+    if (isMagnitude)
     {
         GenTree* op1Dup = fgMakeMultiUse(&op1);
         GenTree* op2Dup = fgMakeMultiUse(&op2);
@@ -25070,7 +25075,8 @@ GenTree* Compiler::gtNewSimdMinNativeNode(var_types         type,
         GenTree* absOp1Dup = fgMakeMultiUse(&absOp1);
         GenTree* absOp2Dup = fgMakeMultiUse(&absOp2);
 
-        GenTree* equalsMask = gtNewSimdCmpOpNode(GT_EQ, type, absOp1, absOp2, simdBaseJitType, simdSize);
+        GenTree* equalsMask =
+            gtNewSimdCmpOpNode(GT_EQ, type, absOp1, absOp2, simdBaseJitType, simdSize ARM64_ARG(isScalable));
         ;
         GenTree* signMask1 = nullptr;
         GenTree* signMask2 = nullptr;
@@ -25079,29 +25085,31 @@ GenTree* Compiler::gtNewSimdMinNativeNode(var_types         type,
 
         if (isMax)
         {
-            signMask1 = gtNewSimdIsNegativeNode(type, op2Dup, simdBaseJitType, simdSize);
-            signMask2 = gtNewSimdIsPositiveNode(type, absOp2Dup, simdBaseJitType, simdSize);
-            signMask3 = gtNewSimdIsNegativeNode(type, absOp1Dup, simdBaseJitType, simdSize);
+            signMask1 = gtNewSimdIsNegativeNode(type, op2Dup, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+            signMask2 = gtNewSimdIsPositiveNode(type, absOp2Dup, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+            signMask3 = gtNewSimdIsNegativeNode(type, absOp1Dup, simdBaseJitType, simdSize ARM64_ARG(isScalable));
             cmpMask   = gtNewSimdCmpOpNode(GT_GT, type, gtCloneExpr(absOp1Dup), gtCloneExpr(absOp2Dup), simdBaseJitType,
-                                           simdSize);
+                                           simdSize ARM64_ARG(isScalable));
         }
         else
         {
-            signMask1 = gtNewSimdIsNegativeNode(type, op1Dup, simdBaseJitType, simdSize);
-            signMask2 = gtNewSimdIsPositiveNode(type, absOp1Dup, simdBaseJitType, simdSize);
-            signMask3 = gtNewSimdIsNegativeNode(type, absOp2Dup, simdBaseJitType, simdSize);
+            signMask1 = gtNewSimdIsNegativeNode(type, op1Dup, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+            signMask2 = gtNewSimdIsPositiveNode(type, absOp1Dup, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+            signMask3 = gtNewSimdIsNegativeNode(type, absOp2Dup, simdBaseJitType, simdSize ARM64_ARG(isScalable));
             cmpMask   = gtNewSimdCmpOpNode(GT_LT, type, gtCloneExpr(absOp1Dup), gtCloneExpr(absOp2Dup), simdBaseJitType,
-                                           simdSize);
+                                           simdSize ARM64_ARG(isScalable));
         }
 
-        GenTree* mask1 = gtNewSimdBinOpNode(GT_AND, type, equalsMask, signMask1, simdBaseJitType, simdSize);
-        GenTree* mask2 = gtNewSimdBinOpNode(GT_AND, type, cmpMask, signMask2, simdBaseJitType, simdSize);
-        GenTree* mask3 = gtNewSimdBinOpNode(GT_OR, type, mask1, mask2, simdBaseJitType, simdSize);
-        mask3          = gtNewSimdBinOpNode(GT_OR, type, mask3, signMask3, simdBaseJitType, simdSize);
+        GenTree* mask1 =
+            gtNewSimdBinOpNode(GT_AND, type, equalsMask, signMask1, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+        GenTree* mask2 =
+            gtNewSimdBinOpNode(GT_AND, type, cmpMask, signMask2, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+        GenTree* mask3 = gtNewSimdBinOpNode(GT_OR, type, mask1, mask2, simdBaseJitType, simdSize ARM64_ARG(isScalable));
+        mask3 = gtNewSimdBinOpNode(GT_OR, type, mask3, signMask3, simdBaseJitType, simdSize ARM64_ARG(isScalable));
 
         return gtNewSimdCndSelNode(type, mask3, gtCloneExpr(op1Dup), gtCloneExpr(op2Dup), simdBaseJitType, simdSize);
     }
-    return gtNewSimdMinMaxNativeNode(type, op1, op2, simdBaseJitType, simdSize, isMax);
+    return gtNewSimdMinMaxNativeNode(type, op1, op2, simdBaseJitType, simdSize, isMax ARM64_ARG(isScalable));
 }
 
 //------------------------------------------------------------------------
@@ -25124,8 +25132,12 @@ GenTree* Compiler::gtNewSimdMinNativeNode(var_types         type,
 //    is most efficient. This means that the exact result returned if either input is
 //    NaN or -0 can differ based on the underlying hardware.
 //
-GenTree* Compiler::gtNewSimdMinMaxNativeNode(
-    var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isMax)
+GenTree* Compiler::gtNewSimdMinMaxNativeNode(var_types   type,
+                                             GenTree*    op1,
+                                             GenTree*    op2,
+                                             CorInfoType simdBaseJitType,
+                                             unsigned    simdSize,
+                                             bool isMax  ARM64_ARG(bool isScalable))
 {
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -25359,7 +25371,7 @@ GenTree* Compiler::gtNewSimdMinMaxNativeNode(
     // op1 = op1 < op2
     // -or-
     // op1 = op1 > op2
-    op1 = gtNewSimdCmpOpNode(isMax ? GT_GT : GT_LT, type, op1, op2, simdBaseJitType, simdSize);
+    op1 = gtNewSimdCmpOpNode(isMax ? GT_GT : GT_LT, type, op1, op2, simdBaseJitType, simdSize ARM64_ARG(isScalable));
 
     // result = ConditionalSelect(op1, op1Dup, op2Dup)
     return gtNewSimdCndSelNode(type, op1, op1Dup, op2Dup, simdBaseJitType, simdSize);

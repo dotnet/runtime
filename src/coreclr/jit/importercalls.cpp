@@ -4952,11 +4952,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 if (isNative)
                 {
                     assert(!isMagnitude && !isNumber);
-                    retNode = gtNewSimdMinMaxNativeNode(callType, op1, op2, callJitType, 0, isMax);
+                    retNode = gtNewSimdMinMaxNativeNode(callType, op1, op2, callJitType, 0, isMax ARM64_ARG(false));
                 }
                 else
                 {
-                    retNode = gtNewSimdMinMaxNode(callType, op1, op2, callJitType, 0, isMax, isMagnitude, isNumber);
+                    retNode = gtNewSimdMinMaxNode(callType, op1, op2, callJitType, 0, isMax, isMagnitude,
+                                                  isNumber ARM64_ARG(false));
                 }
 #endif // FEATURE_HW_INTRINSICS
 

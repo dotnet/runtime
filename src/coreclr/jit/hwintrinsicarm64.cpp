@@ -658,6 +658,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     bool isValidScalarIntrinsic = false;
 #endif
 
+    bool isScalable        = false;
     bool isMinMaxIntrinsic = false;
     bool isMax             = false;
     bool isMagnitude       = false;
@@ -2252,6 +2253,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Vector_Max:
+        {
+            isScalable = true;
+            FALLTHROUGH;
+        }
         // case NI_Vector_MaxNumber:
         case NI_Vector64_Max:
         case NI_Vector128_Max:
@@ -2281,6 +2286,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Vector_MaxNative:
+        {
+            isScalable = true;
+            FALLTHROUGH;
+        }
         case NI_Vector64_MaxNative:
         case NI_Vector128_MaxNative:
         {
@@ -2293,7 +2302,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector64_MaxNumber:
         case NI_Vector128_MaxNumber:
         {
-s            isMinMaxIntrinsic = true;
+            isMinMaxIntrinsic = true;
             isMax             = true;
             isNumber          = true;
             //{
@@ -2305,7 +2314,11 @@ s            isMinMaxIntrinsic = true;
         }
 
         case NI_Vector_Min:
-        // case NI_Vector_MinNumber:
+            // case NI_Vector_MinNumber:
+            {
+                isScalable = true;
+                FALLTHROUGH;
+            }
         case NI_Vector64_Min:
         case NI_Vector128_Min:
         {
@@ -2332,6 +2345,10 @@ s            isMinMaxIntrinsic = true;
         }
 
         case NI_Vector_MinNative:
+        {
+            isScalable = true;
+            FALLTHROUGH;
+        }
         case NI_Vector64_MinNative:
         case NI_Vector128_MinNative:
         {
@@ -3810,11 +3827,13 @@ s            isMinMaxIntrinsic = true;
         if (isNative)
         {
             assert(!isMagnitude && !isNumber);
-            retNode = gtNewSimdMinMaxNativeNode(retType, op1, op2, simdBaseJitType, simdSize, isMax);
+            retNode =
+                gtNewSimdMinMaxNativeNode(retType, op1, op2, simdBaseJitType, simdSize, isMax ARM64_ARG(isScalable));
         }
         else
         {
-            retNode = gtNewSimdMinMaxNode(retType, op1, op2, simdBaseJitType, simdSize, isMax, isMagnitude, isNumber);
+            retNode = gtNewSimdMinMaxNode(retType, op1, op2, simdBaseJitType, simdSize, isMax, isMagnitude,
+                                          isNumber ARM64_ARG(isScalable));
         }
     }
 
