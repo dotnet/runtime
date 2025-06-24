@@ -2702,7 +2702,7 @@ namespace System
             Debug.Assert(_info != null && (_flags & Flags.MinimalUriInfoSet) != 0);
 
             // Which Uri parts are not escaped canonically ?
-            // Notice that public UriComponents and private Uri.Flags must me in Sync so below code can work
+            // Notice that public UriComponents and private Uri.Flags must be in Sync so below code can work
             //
             ushort nonCanonical = unchecked((ushort)((ushort)_flags & (ushort)Flags.CannotDisplayCanonical));
 
