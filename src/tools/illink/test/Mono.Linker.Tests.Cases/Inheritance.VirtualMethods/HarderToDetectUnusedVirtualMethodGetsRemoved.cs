@@ -2,33 +2,33 @@
 
 namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods
 {
-	class HarderToDetectUnusedVirtualMethodGetsRemoved
-	{
-		public static void Main ()
-		{
-			new Base ().Call ();
-		}
+    class HarderToDetectUnusedVirtualMethodGetsRemoved
+    {
+        public static void Main()
+        {
+            new Base().Call();
+        }
 
-		static void DeadCode ()
-		{
-			new B ();
-		}
+        static void DeadCode()
+        {
+            new B();
+        }
 
-		[Kept]
-		[KeptMember (".ctor()")]
-		class Base
-		{
-			[Kept]
-			public virtual void Call ()
-			{
-			}
-		}
+        [Kept]
+        [KeptMember(".ctor()")]
+        class Base
+        {
+            [Kept]
+            public virtual void Call()
+            {
+            }
+        }
 
-		class B : Base
-		{
-			public override void Call ()
-			{
-			}
-		}
-	}
+        class B : Base
+        {
+            public override void Call()
+            {
+            }
+        }
+    }
 }
