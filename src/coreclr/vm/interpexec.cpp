@@ -20,7 +20,9 @@ FCDECL1(double, JIT_ULng2Dbl, uint64_t val);
 FCDECL1(float, JIT_Lng2Flt, int64_t val);
 FCDECL1(double, JIT_Lng2Dbl, int64_t val);
 
-#ifndef TARGET_WASM
+#ifdef TARGET_WASM
+void InvokeCalliStub(PCODE ftn, CallStubHeader *stubHeaderTemplate, int8_t *pArgs, int8_t *pRet);
+#else
 #include "callstubgenerator.h"
 
 void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
@@ -1481,7 +1483,6 @@ MAIN_LOOP:
 
                 case INTOP_CALLI:
                 {
-#ifndef TARGET_WASM
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     int32_t calliFunctionPointerVar = ip[3];
@@ -1491,9 +1492,6 @@ MAIN_LOOP:
                     ip += 5;
 
                     InvokeCalliStub(LOCAL_VAR(calliFunctionPointerVar, PCODE), pCallStub, stack + callArgsOffset, stack + returnOffset);
-#else
-                    PORTABILITY_ASSERT("Attempted to execute calli instruction on wasm, this is not yet implemented");
-#endif // TARGET_WASM
                     break;
                 }
 

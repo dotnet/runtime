@@ -477,3 +477,8 @@ extern "C" int32_t mono_wasm_browser_entropy(uint8_t* buffer, int32_t bufferLeng
     PORTABILITY_ASSERT("mono_wasm_browser_entropy is not implemented");
     return -1;
 }
+
+void InvokeCalliStub(PCODE ftn, CallStubHeader *stubHeaderTemplate, int8_t *pArgs, int8_t *pRet)
+{
+    PORTABILITY_ASSERT("InvokeCalliStub is not implemented on wasm");
+}
