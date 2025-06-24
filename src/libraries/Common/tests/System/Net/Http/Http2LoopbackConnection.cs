@@ -425,7 +425,7 @@ namespace System.Net.Test.Common
             return QPackTestDecoder.DecodeInteger(headerBlock, prefixMask);
         }
 
-        private static (int bytesConsumed, string value) DecodeString(ReadOnlySpan<byte> headerBlock)
+        private static (int bytesConsumed, string value, bool huffmanEncoded) DecodeString(ReadOnlySpan<byte> headerBlock)
         {
             (int bytesConsumed, int stringLength) = DecodeInteger(headerBlock, 0b01111111);
             if ((headerBlock[0] & 0b10000000) != 0)
@@ -434,12 +434,12 @@ namespace System.Net.Test.Common
                 byte[] buffer = new byte[stringLength * 2];
                 int bytesDecoded = HuffmanDecoder.Decode(headerBlock.Slice(bytesConsumed, stringLength), buffer);
                 string value = Encoding.ASCII.GetString(buffer, 0, bytesDecoded);
-                return (bytesConsumed + stringLength, value);
+                return (bytesConsumed + stringLength, value, true);
             }
             else
             {
                 string value = Encoding.ASCII.GetString(headerBlock.Slice(bytesConsumed, stringLength).ToArray());
-                return (bytesConsumed + stringLength, value);
+                return (bytesConsumed + stringLength, value, false);
             }
         }
 
@@ -523,7 +523,7 @@ namespace System.Net.Test.Common
             string name;
             if (index == 0)
             {
-                (bytesConsumed, name) = DecodeString(headerBlock.Slice(i));
+                (bytesConsumed, name, _) = DecodeString(headerBlock.Slice(i));
                 i += bytesConsumed;
             }
             else
@@ -532,10 +532,10 @@ namespace System.Net.Test.Common
             }
 
             string value;
-            (bytesConsumed, value) = DecodeString(headerBlock.Slice(i));
+            (bytesConsumed, value, bool huffmanEncoded) = DecodeString(headerBlock.Slice(i));
             i += bytesConsumed;
 
-            return (i, new HttpHeaderData(name, value));
+            return (i, new HttpHeaderData(name, value, huffmanEncoded));
         }
 
         private static (int bytesConsumed, HttpHeaderData headerData) DecodeHeader(ReadOnlySpan<byte> headerBlock)

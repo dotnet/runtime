@@ -2283,30 +2283,43 @@ namespace System.Net.Http.Functional.Tests
                 }, async server =>
                 {
                     var data = await server.AcceptConnectionSendResponseAndCloseAsync();
-                    var encoding = Encoding.GetEncoding("ISO-8859-1");
                     switch (headerType)
                     {
                         case HeaderType.Request:
                         {
-                            var headerLine = encoding.GetString(data.GetSingleHeaderData("Custom-Header").Raw);
+                            var headerLine = DecodeHeaderValue("Custom-Header");
                             var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
                             Assert.Equal(headerValue, receivedHeaderValue);
                             break;
                         }
                         case HeaderType.Content:
                         {
-                            var headerLine = encoding.GetString(data.GetSingleHeaderData("Custom-Content-Header").Raw);
+                            var headerLine = DecodeHeaderValue("Custom-Content-Header");
                             var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
                             Assert.Equal(headerValue, receivedHeaderValue);
                             break;
                         }
                         case HeaderType.Cookie:
                         {
-                            var headerLine = encoding.GetString(data.GetSingleHeaderData("cookie").Raw);
+                            var headerLine = DecodeHeaderValue("cookie");
                             var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
                             Assert.Equal(headerValue, receivedHeaderValue);
                             break;
                         }
+                    }
+
+                    string DecodeHeaderValue(string headerName)
+                    {
+                        var encoding = Encoding.GetEncoding("ISO-8859-1");
+                        HttpHeaderData headerData = data.GetSingleHeaderData(headerName);
+                        byte[] raw = headerData.Raw;
+                        if (headerData.HuffmanEncoded)
+                        {
+                            byte[] buffer = new byte[raw.Length * 2];
+                            int length = HuffmanDecoder.Decode(headerData.Raw, buffer);
+                            raw = buffer.AsSpan().Slice(0, length).ToArray();
+                        }
+                        return encoding.GetString(raw);
                     }
                 });
         }
