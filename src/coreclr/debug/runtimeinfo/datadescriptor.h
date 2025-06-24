@@ -797,7 +797,6 @@ CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Eip, offsetof(HijackArgs, Eip))
 #elif defined(TARGET_ARM)
 
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R0, offsetof(HijackArgs, R0))
-CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R1, offsetof(HijackArgs, R1))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R2, offsetof(HijackArgs, R2))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R4, offsetof(HijackArgs, R4))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R5, offsetof(HijackArgs, R5))
@@ -807,7 +806,6 @@ CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R8, offsetof(HijackArgs, R8))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R9, offsetof(HijackArgs, R9))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R10, offsetof(HijackArgs, R10))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R11, offsetof(HijackArgs, R11))
-CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Lr, offsetof(HijackArgs, Lr))
 
 #endif // Platform switch
 CDAC_TYPE_END(HijackArgs)
