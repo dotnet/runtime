@@ -377,15 +377,32 @@ void ETW::LoaderLog::SendModuleEvent(HANDLE pModule, uint32_t dwEventOptions)
     wszModuleFileName = (const WCHAR *)&wszModuleFileNameUnicode[0];
 #endif
 
-    GUID managedGuid;
     GUID nativeGuid;
     uint32_t dwAge;
     WCHAR wszPath[1024];
-    PalGetPDBInfo(pModule, &nativeGuid, &dwAge, wszPath, ARRAY_SIZE(wszPath), &managedGuid);
+    uint32_t cbBuildId;
+    void* pBuildId;
+    PalGetPDBInfo(pModule, &nativeGuid, &dwAge, wszPath, ARRAY_SIZE(wszPath), &cbBuildId, &pBuildId);
+
+    WCHAR wszBuildId[65];
+    size_t written = 0;
+    wszBuildId[0] = 0;
+    for (size_t i = 0; i < cbBuildId; i++)
+    {
+        if (written + 3 <= ARRAY_SIZE(wszBuildId)) { // 2 hex digits + 1 null terminator
+            // Convert each byte to hex and append to the output string
+            written += swprintf_s(wszBuildId + written, ARRAY_SIZE(wszBuildId) - written, L"%02X", ((uint8_t*)pBuildId)[i]);
+        } else {
+            // If buffer not enough to fit, truncate 
+            break;
+        }
+    }
+
+    GUID zeroGuid = { 0 };
 
     if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad)
     {
-        FireEtwModuleLoad_V2(
+        FireEtwModuleLoad_V3(
             ULONGLONG(pModule),
             0,                      // AssemblyID
             ETW::LoaderLog::LoaderStructs::NativeModule, // Module Flags
@@ -393,17 +410,18 @@ void ETW::LoaderLog::SendModuleEvent(HANDLE pModule, uint32_t dwEventOptions)
             wszModuleILFileName,    // ModuleILPath, 
             wszModuleFileName,      // ModuleNativePath, 
             GetClrInstanceId(),
-            &managedGuid,           // ManagedPdbSignature,
+            &zeroGuid,              // ManagedPdbSignature,
             0,                      // ManagedPdbAge, 
             NULL,                   // ManagedPdbBuildPath, 
             &nativeGuid,            // NativePdbSignature,
             dwAge,                  // NativePdbAge, 
-            wszPath                 // NativePdbBuildPath, 
+            wszPath,                // NativePdbBuildPath,
+            wszBuildId              // NativeBuildId,
             );
     }
     else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd)
     {
-        FireEtwModuleDCEnd_V2(
+        FireEtwModuleDCEnd_V3(
             ULONGLONG(pModule),
             0,                      // AssemblyID
             ETW::LoaderLog::LoaderStructs::NativeModule, // Module Flags
@@ -411,12 +429,13 @@ void ETW::LoaderLog::SendModuleEvent(HANDLE pModule, uint32_t dwEventOptions)
             wszModuleILFileName,    // ModuleILPath, 
             wszModuleFileName,      // ModuleNativePath, 
             GetClrInstanceId(),
-            &managedGuid,           // ManagedPdbSignature,
+            &zeroGuid,              // ManagedPdbSignature,
             0,                      // ManagedPdbAge, 
             NULL,                   // ManagedPdbBuildPath, 
             &nativeGuid,            // NativePdbSignature,
             dwAge,                  // NativePdbAge, 
-            wszPath                 // NativePdbBuildPath, 
+            wszPath,                // NativePdbBuildPath, 
+            wszBuildId              // NativeBuildId,
             );
     }
     else

@@ -165,50 +165,27 @@ static int PalGetPDBInfoPhdrCallback(struct dl_phdr_info *info, size_t size, voi
 }
 #endif
 
-void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) WCHAR * wszPath, int32_t cchPath, GUID * pManagedGuidSignature)
+void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) WCHAR * wszPath, int32_t cchPath, _Out_ uint32_t * pcbBuildId, _Out_ void ** ppBuildId)
 {
     memset(pGuidSignature, 0, sizeof(*pGuidSignature));
-    memset(pManagedGuidSignature, 0, sizeof(*pManagedGuidSignature));
     *pdwAge = 0;
+    *ppBuildId = NULL;
+    *pcbBuildId = 0;
     if (cchPath <= 0)
         return;
     wszPath[0] = L'\0';
 
 #if TARGET_LINUX
-    // Since on Linux the debug information is not stored in PDBs and we don't have a PDB GUID,
-    // we'll use the GNU build-id instead if available.
-    // Since build-id doesn't have a predefined length but is typically 20 bytes, we need more bytes
-    // than what a GUID can store. We'll misuse the managedGuid signature to store the overflow.
-    // PDB age will store the actual number of bytes used. If the build-id is longer than what
-    // we can store in two GUIDs, we'll truncate. The consumer can decide what to do about it
-    // based on seeing dwAge > 2*sizeof(GUID).
-
-    Dl_info info;
-    if (!dladdr((void*)&PalGetPDBInfo, &info)
-        || !info.dli_fbase)
-    {
-        return;
-    }
-
     struct PalGetPDBInfoPhdrCallbackData data;
-    data.Base = info.dli_fbase;
+    data.Base = hOsHandle;
 
     if (!dl_iterate_phdr(&PalGetPDBInfoPhdrCallback, &data))
     {
         return;
     }
 
-    *pdwAge = data.BuildIDLength;
-
-    uint8_t* src = (uint8_t*)data.BuildID;
-    uint32_t count = data.BuildIDLength;
-    memcpy(pGuidSignature, src, count < sizeof(*pGuidSignature) ? count : sizeof(*pGuidSignature));
-    if (count > sizeof(*pGuidSignature))
-    {
-        count -= sizeof(*pGuidSignature);
-        src += sizeof(*pGuidSignature);
-        memcpy(pManagedGuidSignature, src, count < sizeof(*pManagedGuidSignature) ? count : sizeof(*pManagedGuidSignature));
-    }
+    *pcbBuildId = data.BuildIDLength;
+    *ppBuildId = data.BuildID;
 #endif
 }
 
