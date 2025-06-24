@@ -378,34 +378,6 @@ HCIMPLEND
 
 //========================================================================
 //
-//      STATIC FIELD DYNAMIC HELPERS
-//
-//========================================================================
-
-#include <optsmallperfcritical.h>
-HCIMPL1_RAW(TADDR, JIT_StaticFieldAddress_Dynamic, StaticFieldAddressArgs * pArgs)
-{
-    FCALL_CONTRACT;
-
-    TADDR base = HCCALL1(pArgs->staticBaseHelper, pArgs->arg0);
-    return base + pArgs->offset;
-}
-HCIMPLEND_RAW
-#include <optdefault.h>
-
-#include <optsmallperfcritical.h>
-HCIMPL1_RAW(TADDR, JIT_StaticFieldAddressUnbox_Dynamic, StaticFieldAddressArgs * pArgs)
-{
-    FCALL_CONTRACT;
-
-    TADDR base = HCCALL1(pArgs->staticBaseHelper, pArgs->arg0);
-    return *(TADDR *)(base + pArgs->offset) + Object::GetOffsetOfFirstField();
-}
-HCIMPLEND_RAW
-#include <optdefault.h>
-
-//========================================================================
-//
 //      CASTING HELPERS
 //
 //========================================================================

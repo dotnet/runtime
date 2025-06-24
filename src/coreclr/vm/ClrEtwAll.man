@@ -672,6 +672,7 @@
                         <map value="0x2" message="$(string.RuntimePublisher.TypeFlags.Finalizable)"/>
                         <map value="0x4" message="$(string.RuntimePublisher.TypeFlags.ExternallyImplementedCOMObject)"/>
                         <map value="0x8" message="$(string.RuntimePublisher.TypeFlags.Array)"/>
+                        <map value="0x10" message="$(string.RuntimePublisher.TypeFlags.ModuleBaseAddress)"/>
                         <map value="0x100" message="$(string.RuntimePublisher.TypeFlags.ArrayRankBit0)"/>
                         <map value="0x200" message="$(string.RuntimePublisher.TypeFlags.ArrayRankBit1)"/>
                         <map value="0x400" message="$(string.RuntimePublisher.TypeFlags.ArrayRankBit2)"/>
@@ -8970,6 +8971,7 @@
                 <string id="RuntimePublisher.TypeFlags.Finalizable" value="Finalizable"/>
                 <string id="RuntimePublisher.TypeFlags.ExternallyImplementedCOMObject" value="ExternallyImplementedCOMObject"/>
                 <string id="RuntimePublisher.TypeFlags.Array" value="Array"/>
+                <string id="RuntimePublisher.TypeFlags.ModuleBaseAddress" value="ModuleBaseAddress"/>
                 <string id="RuntimePublisher.TypeFlags.ArrayRankBit0" value="ArrayRankBit0"/>
                 <string id="RuntimePublisher.TypeFlags.ArrayRankBit1" value="ArrayRankBit1"/>
                 <string id="RuntimePublisher.TypeFlags.ArrayRankBit2" value="ArrayRankBit2"/>
