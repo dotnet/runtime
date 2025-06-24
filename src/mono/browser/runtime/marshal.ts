@@ -75,7 +75,7 @@ export function alloc_stack_frame (size: number): JSMarshalerArguments {
 
 export function get_arg (args: JSMarshalerArguments, index: number): JSMarshalerArgument {
     mono_assert(args, "Null args");
-    return <any>args + (index * JavaScriptMarshalerArgSize);
+    return add_offset(args, index * JavaScriptMarshalerArgSize) as any;
 }
 
 export function is_args_exception (args: JSMarshalerArguments): boolean {
@@ -87,24 +87,24 @@ export function is_args_exception (args: JSMarshalerArguments): boolean {
 export function is_receiver_should_free (args: JSMarshalerArguments): boolean {
     if (!WasmEnableThreads) return false;
     mono_assert(args, "Null args");
-    return getB8(<any>args + JSMarshalerArgumentOffsets.ReceiverShouldFree);
+    return getB8(add_offset(args, JSMarshalerArgumentOffsets.ReceiverShouldFree));
 }
 
 export function get_sync_done_semaphore_ptr (args: JSMarshalerArguments): VoidPtr {
     if (!WasmEnableThreads) return VoidPtrNull;
     mono_assert(args, "Null args");
-    return getI32(<any>args + JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr) as any;
+    return getI32(add_offset(args, JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr)) as any;
 }
 
 export function get_caller_native_tid (args: JSMarshalerArguments): PThreadPtr {
     if (!WasmEnableThreads) return PThreadPtrNull;
     mono_assert(args, "Null args");
-    return getI32(<any>args + JSMarshalerArgumentOffsets.CallerNativeTID) as any;
+    return getI32(add_offset(args, JSMarshalerArgumentOffsets.CallerNativeTID)) as any;
 }
 
 export function set_receiver_should_free (args: JSMarshalerArguments): void {
     mono_assert(args, "Null args");
-    setB8(<any>args + JSMarshalerArgumentOffsets.ReceiverShouldFree, true);
+    setB8(add_offset(args, JSMarshalerArgumentOffsets.ReceiverShouldFree), true);
 }
 
 export function set_args_context (args: JSMarshalerArguments): void {
@@ -115,7 +115,7 @@ export function set_args_context (args: JSMarshalerArguments): void {
     set_arg_proxy_context(exc);
     set_arg_proxy_context(res);
 }
-function add_offset (ptr: JSFunctionSignature | number | bigint | JSMarshalerType, offset: number): number {
+function add_offset (ptr: JSMarshalerArguments | JSMarshalerArgument | JSFunctionSignature | number | bigint | JSMarshalerType, offset: number): number {
     if (typeof ptr === "bigint") {
         const result = ptr + BigInt(offset);
         if (result > BigInt(Number.MAX_SAFE_INTEGER)) {
@@ -143,59 +143,56 @@ export function get_signature_res_type (sig: JSMarshalerType): MarshalerType {
 
 export function get_signature_arg1_type (sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU8(add_offset(sig, JSBindingTypeOffsets.Arg1MarshalerType));
+    return getU8(add_offset(sig, JSBindingTypeOffsets.Arg1MarshalerType)) as any;
 }
 
 export function get_signature_arg2_type (sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU8(<any>sig + JSBindingTypeOffsets.Arg2MarshalerType);
+    return getU8(add_offset(sig, JSBindingTypeOffsets.Arg2MarshalerType)) as any;
 }
 
 export function get_signature_arg3_type (sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU8(<any>sig + JSBindingTypeOffsets.Arg3MarshalerType);
+    return getU8(add_offset(sig, JSBindingTypeOffsets.Arg3MarshalerType)) as any;
 }
 
 export function get_signature_argument_count (signature: JSFunctionSignature): number {
     mono_assert(signature, "Null signatures");
-    return <any>getI32(<any>signature + JSBindingHeaderOffsets.ArgumentCount);
+    return getI32(add_offset(signature, JSBindingHeaderOffsets.ArgumentCount)) as any;
 }
 
 export function get_signature_version (signature: JSFunctionSignature): number {
     mono_assert(signature, "Null signatures");
-    if (typeof signature === "bigint") {
-        const offset = signature + BigInt(JSBindingHeaderOffsets.Version);
-        if (offset > BigInt(Number.MAX_SAFE_INTEGER)) {
-            throw new Error("Offset too large for JavaScript typed arrays/DataView");
-        }
-        return new DataView(Module.HEAPU8.buffer).getInt32(Number(offset), true);
-    } else {
-        const offset = <any>signature + JSBindingHeaderOffsets.Version;
-        return getI32(offset);
-    }
+    const offset = add_offset(signature, JSBindingHeaderOffsets.Version);
+    return getI32(offset);
 }
 
 export function get_signature_handle (signature: JSFunctionSignature): number {
     mono_assert(signature, "Null signatures");
-    return <any>getI32(<any>signature + JSBindingHeaderOffsets.ImportHandle);
+    return getI32(add_offset(signature, JSBindingHeaderOffsets.ImportHandle)) as any;
 }
 
 export function get_signature_function_name (signature: JSFunctionSignature): string | null {
     mono_assert(signature, "Null signatures");
-    const functionNameOffset = <any>getI32(add_offset(signature, JSBindingHeaderOffsets.FunctionNameOffset));
+    const functionNameOffset = getI32(add_offset(signature, JSBindingHeaderOffsets.FunctionNameOffset));
     if (functionNameOffset === 0) return null;
-    const functionNameLength = <any>getI32(add_offset(signature, JSBindingHeaderOffsets.FunctionNameLength));
+    const functionNameLength = getI32(add_offset(signature, JSBindingHeaderOffsets.FunctionNameLength));
     mono_assert(functionNameOffset, "Null name");
-    return utf16ToString(add_offset(signature, functionNameOffset),
-        add_offset(signature, functionNameOffset + functionNameLength));
+    return utf16ToString(
+        add_offset(signature, functionNameOffset),
+        add_offset(signature, functionNameOffset + functionNameLength)
+    );
 }
 
 export function get_signature_module_name (signature: JSFunctionSignature): string | null {
     mono_assert(signature, "Null signatures");
-    const moduleNameOffset = <any>getI32(<any>signature + JSBindingHeaderOffsets.ModuleNameOffset);
+    const moduleNameOffset = getI32(add_offset(signature, JSBindingHeaderOffsets.ModuleNameOffset));
     if (moduleNameOffset === 0) return null;
-    const moduleNameLength = <any>getI32(<any>signature + JSBindingHeaderOffsets.ModuleNameLength);
-    return utf16ToString(<any>signature + moduleNameOffset, <any>signature + moduleNameOffset + moduleNameLength);
+    const moduleNameLength = getI32(add_offset(signature, JSBindingHeaderOffsets.ModuleNameLength));
+    return utf16ToString(
+        add_offset(signature, moduleNameOffset),
+        add_offset(signature, moduleNameOffset + moduleNameLength)
+    );
 }
 
 export function get_sig_type (sig: JSMarshalerType): MarshalerType {
@@ -205,34 +202,34 @@ export function get_sig_type (sig: JSMarshalerType): MarshalerType {
 
 export function get_arg_type (arg: JSMarshalerArgument): MarshalerType {
     mono_assert(arg, "Null arg");
-    const type = getU8(<any>arg + JSMarshalerArgumentOffsets.Type);
-    return <any>type;
+    const type = getU8(add_offset(arg, JSMarshalerArgumentOffsets.Type));
+    return type as any;
 }
 
 export function get_arg_element_type (arg: JSMarshalerArgument): MarshalerType {
     mono_assert(arg, "Null arg");
-    const type = getU8(<any>arg + JSMarshalerArgumentOffsets.ElementType);
-    return <any>type;
+    const type = getU8(add_offset(arg, JSMarshalerArgumentOffsets.ElementType));
+    return type as any;
 }
 
 export function set_arg_type (arg: JSMarshalerArgument, type: MarshalerType): void {
     mono_assert(arg, "Null arg");
-    setU8(<any>arg + JSMarshalerArgumentOffsets.Type, type);
+    setU8(add_offset(arg, JSMarshalerArgumentOffsets.Type), type);
 }
 
 export function set_arg_element_type (arg: JSMarshalerArgument, type: MarshalerType): void {
     mono_assert(arg, "Null arg");
-    setU8(<any>arg + JSMarshalerArgumentOffsets.ElementType, type);
+    setU8(add_offset(arg, JSMarshalerArgumentOffsets.ElementType), type);
 }
 
 export function get_arg_bool (arg: JSMarshalerArgument): boolean {
     mono_assert(arg, "Null arg");
-    return getB8(<any>arg);
+    return getB8(arg as any);
 }
 
 export function get_arg_u8 (arg: JSMarshalerArgument): number {
     mono_assert(arg, "Null arg");
-    return getU8(<any>arg);
+    return getU8(arg as any);
 }
 
 export function get_arg_u16 (arg: JSMarshalerArgument): number {
@@ -345,29 +342,29 @@ export function set_arg_f32 (arg: JSMarshalerArgument, value: number): void {
 
 export function get_arg_js_handle (arg: JSMarshalerArgument): JSHandle {
     mono_assert(arg, "Null arg");
-    return <any>getI32(<any>arg + JSMarshalerArgumentOffsets.JSHandle);
+    return getI32(add_offset(arg, JSMarshalerArgumentOffsets.JSHandle)) as any;
 }
 
 export function set_arg_proxy_context (arg: JSMarshalerArgument): void {
     if (!WasmEnableThreads) return;
     mono_assert(arg, "Null arg");
-    setI32(<any>arg + JSMarshalerArgumentOffsets.ContextHandle, <any>runtimeHelpers.proxyGCHandle);
+    setI32(add_offset(arg, JSMarshalerArgumentOffsets.ContextHandle), runtimeHelpers.proxyGCHandle as any);
 }
 
 export function set_js_handle (arg: JSMarshalerArgument, jsHandle: JSHandle): void {
     mono_assert(arg, "Null arg");
-    setI32(<any>arg + JSMarshalerArgumentOffsets.JSHandle, <any>jsHandle);
+    setI32(add_offset(arg, JSMarshalerArgumentOffsets.JSHandle), jsHandle as any);
     set_arg_proxy_context(arg);
 }
 
 export function get_arg_gc_handle (arg: JSMarshalerArgument): GCHandle {
     mono_assert(arg, "Null arg");
-    return <any>getI32(<any>arg + JSMarshalerArgumentOffsets.GCHandle);
+    return getI32(add_offset(arg, JSMarshalerArgumentOffsets.GCHandle)) as any;
 }
 
 export function set_gc_handle (arg: JSMarshalerArgument, gcHandle: GCHandle): void {
     mono_assert(arg, "Null arg");
-    setI32(<any>arg + JSMarshalerArgumentOffsets.GCHandle, <any>gcHandle);
+    setI32(add_offset(arg, JSMarshalerArgumentOffsets.GCHandle), gcHandle as any);
     set_arg_proxy_context(arg);
 }
 
@@ -378,17 +375,17 @@ export function get_string_root (arg: JSMarshalerArgument): WasmRoot<MonoString>
 
 export function get_arg_length (arg: JSMarshalerArgument): number {
     mono_assert(arg, "Null arg");
-    return <any>getI32(<any>arg + JSMarshalerArgumentOffsets.Length);
+    return getI32(add_offset(arg, JSMarshalerArgumentOffsets.Length)) as any;
 }
 
 export function set_arg_length (arg: JSMarshalerArgument, size: number): void {
     mono_assert(arg, "Null arg");
-    setI32(<any>arg + JSMarshalerArgumentOffsets.Length, size);
+    setI32(add_offset(arg, JSMarshalerArgumentOffsets.Length), size);
 }
 
 export function set_root (arg: JSMarshalerArgument, root: WasmRoot<MonoObject>): void {
     mono_assert(arg, "Null arg");
-    setU32(<any>arg + 0, root.get_address());
+    setU32(add_offset(arg, 0), root.get_address());
 }
 
 export interface IDisposable {
