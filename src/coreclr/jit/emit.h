@@ -2356,8 +2356,7 @@ protected:
 #endif // TARGET_ARM
 
     insUpdateModes emitInsUpdateMode(instruction ins);
-    insFormat      emitInsModeFormat(instruction ins, insFormat base);
-    insFormat      emitNddInsModeFormat(instruction ins, insFormat base);
+    insFormat      emitInsModeFormat(instruction ins, insFormat base, bool useNDD = false);
 
     static const BYTE emitInsModeFmtTab[];
 #ifdef DEBUG
