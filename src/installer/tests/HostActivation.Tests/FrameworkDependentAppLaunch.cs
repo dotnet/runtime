@@ -56,7 +56,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             TestContext.BuiltDotNet.Exec(appOtherExt)
                 .CaptureStdErr()
-                .Execute(expectedToFail: true)
+                .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining($"The application '{appOtherExt}' does not exist or is not a managed .dll or .exe");
         }
@@ -143,6 +143,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             TestContext.BuiltDotNet.Exec(appExe)
                 .CaptureStdOut()
                 .CaptureStdErr()
+                .DisableDumps() // Expected to throw an exception
                 .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining("BadImageFormatException");
@@ -429,7 +430,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .EnableTracingAndCaptureOutputs()
                     .DotNetRoot(invalidDotNet.Location)
                     .MultilevelLookup(false)
-                    .Execute(expectedToFail: true);
+                    .Execute();
 
                 result.Should().Fail()
                     .And.HaveStdErrContaining($"https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
@@ -466,7 +467,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 command.Process.Kill();
 
                 string expectedMissingFramework = $"'{Constants.MicrosoftNETCoreApp}', version '{TestContext.MicrosoftNETCoreAppVersion}' ({TestContext.BuildArchitecture})";
-                var result = command.WaitForExit(true)
+                var result = command.WaitForExit()
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
                     .And.HaveStdErrContaining($"url: 'https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
@@ -496,7 +497,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 command.Process.Kill();
 
                 var expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x");
-                var result = command.WaitForExit(true)
+                var result = command.WaitForExit()
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
                     .And.HaveStdErrContaining($"url: 'https://aka.ms/dotnet-core-applaunch?missing_runtime=true")
@@ -531,7 +532,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 command.Process.Kill();
 
                 string expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
-                command.WaitForExit(true)
+                command.WaitForExit()
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
                     .And.HaveStdErrContaining("You must install or update .NET to run this application.")
