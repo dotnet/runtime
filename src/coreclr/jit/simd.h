@@ -2000,7 +2000,7 @@ SveMaskPattern EvaluateSimdVectorToPattern(TSimd arg0)
     uint32_t count    = sizeof(TSimd) / sizeof(TBase);
     uint32_t finalOne = count;
 
-    TBase significantBit = 1;
+    TBase leastSignificantBit = 1;
 
     // A mask pattern starts with zero or more 1s and then the rest of the mask is filled with 0s.
     // This pattern is extracted using the least significant bits of the vector elements.
@@ -2014,7 +2014,7 @@ SveMaskPattern EvaluateSimdVectorToPattern(TSimd arg0)
         TBase input0;
         memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
 
-        bool isSet = (input0 & significantBit) != 0;
+        bool isSet = (input0 & leastSignificantBit) != 0;
         if (!isSet)
         {
             finalOne = i;
@@ -2028,7 +2028,7 @@ SveMaskPattern EvaluateSimdVectorToPattern(TSimd arg0)
         TBase input0;
         memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
 
-        bool isSet = (input0 & significantBit) != 0;
+        bool isSet = (input0 & leastSignificantBit) != 0;
         if (isSet)
         {
             // Invalid sequence
