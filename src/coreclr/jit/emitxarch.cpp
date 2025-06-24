@@ -11795,7 +11795,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
             }
 
 #if defined(TARGET_AMD64)
-            if (reg > REG_R15)
+            if (reg > REG_R31)
             {
                 break;
             }
