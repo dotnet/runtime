@@ -41,10 +41,10 @@ jobs:
       jobParameters:
         dependsOn:
           - ${{ if eq(platform, 'browser_wasm') }}:
-            # - build_browser_wasm_linux_Release_MultiThreaded_BuildOnly
+            - build_browser_wasm_linux_Release_MultiThreaded_BuildOnly
             - build_browser_wasm_linux_Release_SingleThreaded_BuildOnly
           - ${{ if eq(platform, 'browser_wasm_win') }}:
-            # - build_browser_wasm_windows_Release_MultiThreaded_BuildOnly
+            - build_browser_wasm_windows_Release_MultiThreaded_BuildOnly
             - build_browser_wasm_windows_Release_SingleThreaded_BuildOnly
         isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
         testGroup: innerloop
