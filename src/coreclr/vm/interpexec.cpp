@@ -1575,10 +1575,10 @@ MAIN_LOOP:
                     break;
                 }
 
-                case INTOP_CALL_HELPER_PP:
-                case INTOP_CALL_HELPER_PP_2:
+                case INTOP_CALL_HELPER_P_P:
+                case INTOP_CALL_HELPER_P_PP:
                 {
-                    int base = (*ip == INTOP_CALL_HELPER_PP) ? 2 : 3;
+                    int base = (*ip == INTOP_CALL_HELPER_P_P) ? 2 : 3;
 
                     HELPER_FTN_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_PP>(pMethod->pDataItems[ip[base]]);
                     void* helperArg = pMethod->pDataItems[ip[base + 1]];
@@ -1586,7 +1586,7 @@ MAIN_LOOP:
                     // This can call either native or compiled managed code. For an interpreter
                     // only configuration, this might be problematic, at least performance wise.
 
-                    if (*ip == INTOP_CALL_HELPER_PP)
+                    if (*ip == INTOP_CALL_HELPER_P_P)
                     {
                         LOCAL_VAR(ip[1], void*) = ((HELPER_FTN_PP)helperFtn)(helperArg);
                         ip += 4;
@@ -1599,10 +1599,10 @@ MAIN_LOOP:
                     break;
                 }
 
-                case INTOP_CALL_HELPER_PG:
-                case INTOP_CALL_HELPER_PG_2:
+                case INTOP_CALL_HELPER_P_G:
+                case INTOP_CALL_HELPER_P_GP:
                 {
-                    int base = (*ip == INTOP_CALL_HELPER_PG) ? 3 : 4;
+                    int base = (*ip == INTOP_CALL_HELPER_P_G) ? 3 : 4;
 
                     DO_GENERIC_LOOKUP(ip[2], base + 1);
 
@@ -1612,7 +1612,7 @@ MAIN_LOOP:
                     // This can call either native or compiled managed code. For an interpreter
                     // only configuration, this might be problematic, at least performance wise.
 
-                    if (*ip == INTOP_CALL_HELPER_PG)
+                    if (*ip == INTOP_CALL_HELPER_P_G)
                     {
                         LOCAL_VAR(ip[1], void*) = ((HELPER_FTN_PP)helperFtn)(helperArg);
                         ip += 5;
@@ -1625,7 +1625,7 @@ MAIN_LOOP:
                     break;
                 }
 
-                case INTOP_CALL_HELPER_AG_2:
+                case INTOP_CALL_HELPER_P_GA:
                 {
                     int base = 4;
                     DO_GENERIC_LOOKUP(ip[2], base + 1);
@@ -1637,7 +1637,7 @@ MAIN_LOOP:
                     break;
                 }
 
-                case INTOP_CALL_HELPER_AP_2:
+                case INTOP_CALL_HELPER_P_PA:
                 {
                     int base = 3;
 

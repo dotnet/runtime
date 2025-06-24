@@ -2272,7 +2272,7 @@ void InterpCompiler::EmitPushHelperCall_2(const CorInfoHelpFunc ftn, const CORIN
 
     if (handleData.argType == HelperArgType::GenericResolution)
     {
-        AddIns(INTOP_CALL_HELPER_PG_2);
+        AddIns(INTOP_CALL_HELPER_P_GP);
         m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(ftn);
         m_pLastNewIns->data[1] = handleData.dataItemIndex;
 
@@ -2281,7 +2281,7 @@ void InterpCompiler::EmitPushHelperCall_2(const CorInfoHelpFunc ftn, const CORIN
     }
     else
     {
-        AddIns(INTOP_CALL_HELPER_PP_2);
+        AddIns(INTOP_CALL_HELPER_P_PP);
         m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(ftn);
         m_pLastNewIns->SetSVar(arg2);
         m_pLastNewIns->SetDVar(resultVar);
@@ -2353,7 +2353,7 @@ void InterpCompiler::EmitPushHelperCall_Addr2(const CorInfoHelpFunc ftn, const C
 
     if (handleData.argType == HelperArgType::GenericResolution)
     {
-        AddIns(INTOP_CALL_HELPER_AG_2);
+        AddIns(INTOP_CALL_HELPER_P_GA);
         m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(ftn);
         m_pLastNewIns->data[1] = handleData.dataItemIndex;
 
@@ -2362,7 +2362,7 @@ void InterpCompiler::EmitPushHelperCall_Addr2(const CorInfoHelpFunc ftn, const C
     }
     else
     {
-        AddIns(INTOP_CALL_HELPER_AP_2);
+        AddIns(INTOP_CALL_HELPER_P_PA);
         m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(ftn);
         m_pLastNewIns->SetSVar(arg2);
         m_pLastNewIns->SetDVar(resultVar);
@@ -2380,7 +2380,7 @@ void InterpCompiler::EmitPushHelperCall(const CorInfoHelpFunc ftn, const CORINFO
 
     if (handleData.argType == HelperArgType::GenericResolution)
     {
-        AddIns(INTOP_CALL_HELPER_PG);
+        AddIns(INTOP_CALL_HELPER_P_G);
         m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(ftn);
         m_pLastNewIns->data[1] = handleData.dataItemIndex;
 
@@ -2389,7 +2389,7 @@ void InterpCompiler::EmitPushHelperCall(const CorInfoHelpFunc ftn, const CORINFO
     }
     else
     {
-        AddIns(INTOP_CALL_HELPER_PP);
+        AddIns(INTOP_CALL_HELPER_P_P);
         m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(ftn);
         m_pLastNewIns->SetDVar(resultVar);
 
@@ -3056,7 +3056,7 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
                     break;
             }
             // Call helper to obtain thread static base address
-            AddIns(INTOP_CALL_HELPER_PP);
+            AddIns(INTOP_CALL_HELPER_P_P);
             m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(pFieldInfo->helper);
             m_pLastNewIns->data[1] = GetDataItemIndex(helperArg);
             PushInterpType(InterpTypeByRef, NULL);
@@ -3073,7 +3073,7 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
         }
         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
         {
-            AddIns(INTOP_CALL_HELPER_PP);
+            AddIns(INTOP_CALL_HELPER_P_P);
             m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(pFieldInfo->helper);
             m_pLastNewIns->data[1] = GetDataItemIndex(pResolvedToken->tokenContext);
             PushInterpType(InterpTypeByRef, NULL);

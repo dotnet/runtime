@@ -344,18 +344,18 @@ OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodHandle)
 // If there is a generic context argument it is always the first SVar to the instruction.
 
 // Call a helper function with a signature of PointerSizedDest helper(TypeOrGenericArg))
-OPDEF(INTOP_CALL_HELPER_PP, "call.helper.pp", 4, 1, 0, InterpOpHelperFtn)
-OPDEF(INTOP_CALL_HELPER_PP_2, "call.helper.pp.2", 5, 1, 1, InterpOpHelperFtn)
+OPDEF(INTOP_CALL_HELPER_P_P, "call.helper.p.p", 4, 1, 0, InterpOpHelperFtn)
+OPDEF(INTOP_CALL_HELPER_P_PP, "call.helper.p.pp", 5, 1, 1, InterpOpHelperFtn)
 
 // Call a helper function with a signature of PointerSizedDest helper(TypeOrGenericArg, SVar))
-OPDEF(INTOP_CALL_HELPER_PG, "call.helper.pg", 5, 1, 1, InterpOpGenericHelperFtn)
-OPDEF(INTOP_CALL_HELPER_PG_2, "call.helper.pg.2", 6, 1, 2, InterpOpGenericHelperFtn)
+OPDEF(INTOP_CALL_HELPER_P_G, "call.helper.p.g", 5, 1, 1, InterpOpGenericHelperFtn)
+OPDEF(INTOP_CALL_HELPER_P_GP, "call.helper.p.gp", 6, 1, 2, InterpOpGenericHelperFtn)
 
 // Call a helper function with a signature of PointerSizedDest helper(TypeOrGenericArg, AddrOfSVar))
-OPDEF(INTOP_CALL_HELPER_AP_2, "call.helper.ap.2", 5, 1, 1, InterpOpHelperFtn)
-OPDEF(INTOP_CALL_HELPER_AG_2, "call.helper.ag.2", 6, 1, 2, InterpOpGenericHelperFtn)
+OPDEF(INTOP_CALL_HELPER_P_PA, "call.helper.p.pa", 5, 1, 1, InterpOpHelperFtn)
+OPDEF(INTOP_CALL_HELPER_P_GA, "call.helper.p.ga", 6, 1, 2, InterpOpGenericHelperFtn)
 
-// Call a helper function with a signature of void helper(ref byte destPtr, TypeOrGenericArg, SVar))
+// Call a helper function with a signature of void helper(AddrOfDVar, TypeOrGenericArg, SVar))
 OPDEF(INTOP_CALL_HELPER_V_APP, "call.helper.v.app", 5, 1, 1, InterpOpHelperFtn)
 OPDEF(INTOP_CALL_HELPER_V_AGP, "call.helper.v.agp", 6, 1, 2, InterpOpGenericHelperFtn)
 
