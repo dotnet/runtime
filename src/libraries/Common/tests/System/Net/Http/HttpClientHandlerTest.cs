@@ -2312,14 +2312,14 @@ namespace System.Net.Http.Functional.Tests
                     {
                         var encoding = Encoding.GetEncoding("ISO-8859-1");
                         HttpHeaderData headerData = data.GetSingleHeaderData(headerName);
-                        byte[] raw = headerData.Raw;
+                        ReadOnlySpan<byte> raw = headerData.Raw.AsSpan().Slice(headerData.RawValueStart);
                         if (headerData.HuffmanEncoded)
                         {
                             byte[] buffer = new byte[raw.Length * 2];
-                            int length = HuffmanDecoder.Decode(headerData.Raw, buffer);
-                            raw = buffer.AsSpan().Slice(0, length).ToArray();
+                            int length = HuffmanDecoder.Decode(raw, buffer);
+                            raw = buffer.AsSpan().Slice(0, length);
                         }
-                        return encoding.GetString(raw);
+                        return encoding.GetString(raw.ToArray());
                     }
                 });
         }
