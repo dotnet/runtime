@@ -32,23 +32,23 @@ namespace System.Numerics.Tensors
             public static TTo Invoke(TFrom x) => TFrom.ConvertToInteger<TTo>(x);
 
             public static bool Vectorizable =>
-                (typeof(TFrom) == typeof(float) && typeof(TTo) == typeof(int)) ||
-                (typeof(TFrom) == typeof(float) && typeof(TTo) == typeof(uint)) ||
-                (typeof(TFrom) == typeof(double) && typeof(TTo) == typeof(long)) ||
-                (typeof(TFrom) == typeof(double) && typeof(TTo) == typeof(ulong));
+                (typeof(TFrom) == typeof(float) && IsInt32Like<TTo>()) ||
+                (typeof(TFrom) == typeof(float) && IsUInt32Like<TTo>()) ||
+                (typeof(TFrom) == typeof(double) && IsInt64Like<TTo>()) ||
+                (typeof(TFrom) == typeof(double) && IsUInt64Like<TTo>());
 
             public static Vector128<TTo> Invoke(Vector128<TFrom> x)
             {
                 if (typeof(TFrom) == typeof(float))
                 {
-                    if (typeof(TTo) == typeof(int)) return Vector128.ConvertToInt32(x.AsSingle()).As<int, TTo>();
-                    if (typeof(TTo) == typeof(uint)) return Vector128.ConvertToUInt32(x.AsSingle()).As<uint, TTo>();
+                    if (IsInt32Like<TTo>()) return Vector128.ConvertToInt32(x.AsSingle()).As<int, TTo>();
+                    if (IsUInt32Like<TTo>()) return Vector128.ConvertToUInt32(x.AsSingle()).As<uint, TTo>();
                 }
 
                 if (typeof(TFrom) == typeof(double))
                 {
-                    if (typeof(TTo) == typeof(long)) return Vector128.ConvertToInt64(x.AsDouble()).As<long, TTo>();
-                    if (typeof(TTo) == typeof(ulong)) return Vector128.ConvertToUInt64(x.AsDouble()).As<ulong, TTo>();
+                    if (IsInt64Like<TTo>()) return Vector128.ConvertToInt64(x.AsDouble()).As<long, TTo>();
+                    if (IsUInt64Like<TTo>()) return Vector128.ConvertToUInt64(x.AsDouble()).As<ulong, TTo>();
                 }
 
                 throw new NotSupportedException();
@@ -58,14 +58,14 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(TFrom) == typeof(float))
                 {
-                    if (typeof(TTo) == typeof(int)) return Vector256.ConvertToInt32(x.AsSingle()).As<int, TTo>();
-                    if (typeof(TTo) == typeof(uint)) return Vector256.ConvertToUInt32(x.AsSingle()).As<uint, TTo>();
+                    if (IsInt32Like<TTo>()) return Vector256.ConvertToInt32(x.AsSingle()).As<int, TTo>();
+                    if (IsUInt32Like<TTo>()) return Vector256.ConvertToUInt32(x.AsSingle()).As<uint, TTo>();
                 }
 
                 if (typeof(TFrom) == typeof(double))
                 {
-                    if (typeof(TTo) == typeof(long)) return Vector256.ConvertToInt64(x.AsDouble()).As<long, TTo>();
-                    if (typeof(TTo) == typeof(ulong)) return Vector256.ConvertToUInt64(x.AsDouble()).As<ulong, TTo>();
+                    if (IsInt64Like<TTo>()) return Vector256.ConvertToInt64(x.AsDouble()).As<long, TTo>();
+                    if (IsUInt64Like<TTo>()) return Vector256.ConvertToUInt64(x.AsDouble()).As<ulong, TTo>();
                 }
 
                 throw new NotSupportedException();
@@ -75,14 +75,14 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(TFrom) == typeof(float))
                 {
-                    if (typeof(TTo) == typeof(int)) return Vector512.ConvertToInt32(x.AsSingle()).As<int, TTo>();
-                    if (typeof(TTo) == typeof(uint)) return Vector512.ConvertToUInt32(x.AsSingle()).As<uint, TTo>();
+                    if (IsInt32Like<TTo>()) return Vector512.ConvertToInt32(x.AsSingle()).As<int, TTo>();
+                    if (IsUInt32Like<TTo>()) return Vector512.ConvertToUInt32(x.AsSingle()).As<uint, TTo>();
                 }
 
                 if (typeof(TFrom) == typeof(double))
                 {
-                    if (typeof(TTo) == typeof(long)) return Vector512.ConvertToInt64(x.AsDouble()).As<long, TTo>();
-                    if (typeof(TTo) == typeof(ulong)) return Vector512.ConvertToUInt64(x.AsDouble()).As<ulong, TTo>();
+                    if (IsInt64Like<TTo>()) return Vector512.ConvertToInt64(x.AsDouble()).As<long, TTo>();
+                    if (IsUInt64Like<TTo>()) return Vector512.ConvertToUInt64(x.AsDouble()).As<ulong, TTo>();
                 }
 
                 throw new NotSupportedException();
