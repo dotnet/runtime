@@ -2124,11 +2124,6 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
         if (instrIsExtendedReg3opImul(ins))
         {
             // EVEX.R3
-            // TODO-XArch-APX:
-            // A few side notes: based on how JIT defined IMUL, we may need to extend
-            // the definition to `IMUL_31` to cover EGPRs. And it can be defined in a
-            // similar way that opcodes comes with built-in REX2 prefix, and convert
-            // it to EVEX when needed with some helper functions.
             code &= 0xFF7FFFFFFFFFFFFFULL;
         }
 #ifdef TARGET_AMD64

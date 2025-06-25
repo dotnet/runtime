@@ -584,7 +584,7 @@ void SetEvexZuIfNeeded(instrDesc* id, insOpts instOptions)
         assert(UsePromotedEVEXEncoding());
         instruction ins = id->idIns();
 #ifdef TARGET_AMD64
-        assert((ins >= INS_setzuo && ins <= INS_setzug) || (ins >= INS_imul_AX && ins <= INS_imul_31));
+        assert(ins >= INS_setzuo && ins <= INS_setzug);
 #else
         // This method is not expected to be used on 32-bit systems.
         unreached();
