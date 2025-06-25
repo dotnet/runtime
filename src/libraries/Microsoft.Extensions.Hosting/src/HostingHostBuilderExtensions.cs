@@ -261,10 +261,6 @@ namespace Microsoft.Extensions.Hosting
                 {
                     // The assembly cannot be found, so just skip it.
                 }
-                catch (FileLoadException)
-                {
-                    // The assembly name is invalid (e.g., contains path separators), so just skip it.
-                }
             }
 
             appConfigBuilder.AddEnvironmentVariables();
