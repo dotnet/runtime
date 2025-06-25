@@ -70,7 +70,7 @@ jobs:
 
           - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
               # outerloop only CoreCLR
-              - AzureLinux.3.0.Amd64.Open
+              - AzureLinux.3.Amd64.Open
 
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true))}}:
               # inner and outer loop CoreCLR (general set)
