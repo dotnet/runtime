@@ -879,7 +879,7 @@ HRESULT GetFileVersion(LPCWSTR wszFilePath, ULARGE_INTEGER* pFileVersion);
     ENUM_PAGE_SIZE(32768) \
     ENUM_PAGE_SIZE(65536)
 
-void FillStubCodePage(BYTE* pageBase, const void* code, SIZE_T codeSize, SIZE_T pageSize);
+void FillStubCodePage(BYTE* pageBase, const void* code, SIZE_T codeSize, SIZE_T pageSize, SIZE_T paddingSize);
 
 #ifdef TARGET_64BIT
 // We use modified Daniel Lemire's fastmod algorithm (https://github.com/dotnet/runtime/pull/406),
