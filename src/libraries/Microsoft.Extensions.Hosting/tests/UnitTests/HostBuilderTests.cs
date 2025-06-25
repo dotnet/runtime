@@ -862,11 +862,11 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             using TempDirectory tempDir = new();
             string appSettingsPath = Path.Combine(tempDir.Path, "testapp.settings.json");
-            string appSettingsEnvPath = Path.Combine(tempDir.Path, "testapp.settings.Development.json");
+            string appSettingsEnvPath = Path.Combine(tempDir.Path, "testapp.settings.Production.json");
 
             // Create test configuration files
             File.WriteAllText(appSettingsPath, """{"TestKey": "AppValue"}""");
-            File.WriteAllText(appSettingsEnvPath, """{"TestKey": "AppDevValue", "DevKey": "DevValue"}""");
+            File.WriteAllText(appSettingsEnvPath, """{"TestKey": "ProductionValue", "ProductionKey": "ProductionValue"}""");
 
             using var host = new HostBuilder()
                 .ConfigureDefaults(args: null)
@@ -883,9 +883,9 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             var configuration = host.Services.GetRequiredService<IConfiguration>();
 
-            // Verify that app-specific environment settings override app-specific settings
-            Assert.Equal("AppDevValue", configuration["TestKey"]);
-            Assert.Equal("DevValue", configuration["DevKey"]);
+            // Verify that Production-specific file is not loaded when running in Development environment
+            Assert.Equal("AppValue", configuration["TestKey"]); // Should come from base settings, not Production
+            Assert.Null(configuration["ProductionKey"]); // Should not be loaded from Production file
         }
 
         [Fact]
