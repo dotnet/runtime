@@ -29,7 +29,7 @@ struct PatchpointInfo
     static uint32_t ComputeSize(uint32_t localCount)
     {
         uint32_t baseSize     = sizeof(PatchpointInfo);
-        uint32_t variableSize = localCount * sizeof(int);
+        uint32_t variableSize = localCount * sizeof(int32_t);
         uint32_t totalSize    = baseSize + variableSize;
         return totalSize;
     }
