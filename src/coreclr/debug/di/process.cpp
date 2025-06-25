@@ -8691,18 +8691,18 @@ CordbAppDomain * CordbProcess::LookupOrCreateAppDomain(VMPTR_AppDomain vmAppDoma
 CordbAppDomain * CordbProcess::GetAppDomain()
 {
     // Return the one and only app domain
-    const ULONG appDomainId = 1; // DefaultADID in appdomain.hpp
     HASHFIND find;
     CordbAppDomain* appDomain = m_appDomains.FindFirst(&find);
     if (appDomain != NULL)
     {
+        const ULONG appDomainId = 1; // DefaultADID in appdomain.hpp
         ULONG32 id;
         HRESULT hr = appDomain->GetID(&id);
         TargetConsistencyCheck(SUCCEEDED(hr) && id == appDomainId);
         return appDomain;
     }
 
-    VMPTR_AppDomain vmAppDomain = GetDAC()->GetAppDomainFromId(appDomainId);
+    VMPTR_AppDomain vmAppDomain = GetDAC()->GetCurrentAppDomain();
     appDomain = LookupOrCreateAppDomain(vmAppDomain);
     return appDomain;
 }
