@@ -24,8 +24,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Divide<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : IDivisionOperators<T, T, T> =>
+            where T : IDivisionOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, DivideOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, DivideOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise division of numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -43,8 +50,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Divide<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
-            where T : IDivisionOperators<T, T, T> =>
+            where T : IDivisionOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, DivideOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarIntoSpan<T, DivideOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise division of numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a scalar.</param>
@@ -62,8 +76,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Divide<T>(T x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : IDivisionOperators<T, T, T> =>
+            where T : IDivisionOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, DivideOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeScalarSpanIntoSpan<T, DivideOperator<T>>(x, y, destination);
+        }
 
         /// <summary>x / y</summary>
         internal readonly struct DivideOperator<T> : IBinaryOperator<T> where T : IDivisionOperators<T, T, T>
