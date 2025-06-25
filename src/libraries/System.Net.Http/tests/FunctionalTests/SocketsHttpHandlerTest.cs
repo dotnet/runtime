@@ -1284,7 +1284,6 @@ namespace System.Net.Http.Functional.Tests
             stream.Stream.CompleteWrites();
         }
 
-        // This is a regression test for https://github.com/dotnet/runtime/issues/60118.
         [Theory]
         [InlineData(false, HttpCompletionOption.ResponseContentRead)]
         [InlineData(false, HttpCompletionOption.ResponseHeadersRead)]
