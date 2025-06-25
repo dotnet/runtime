@@ -137,7 +137,7 @@ internal static partial class Interop
     // Safe handle classes for Network Framework TLS resources
     internal sealed class SafeNetworkFrameworkHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        public SafeNetworkFrameworkHandle() : base(ownsHandle: false) { }
+        public SafeNetworkFrameworkHandle() : base(ownsHandle: true) { }
 
         public SafeNetworkFrameworkHandle(IntPtr handle, bool ownsHandle) : base(ownsHandle)
         {
