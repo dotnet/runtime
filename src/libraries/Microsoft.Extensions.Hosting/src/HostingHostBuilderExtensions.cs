@@ -248,18 +248,22 @@ namespace Microsoft.Extensions.Hosting
                                                            .Replace(Path.AltDirectorySeparatorChar, '_');
                 appConfigBuilder.AddJsonFile($"{applicationName}.settings.json", optional: true, reloadOnChange: reloadOnChange)
                         .AddJsonFile($"{applicationName}.settings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
+            }
 
-                if (env.IsDevelopment())
+            if (env.IsDevelopment() && env.ApplicationName is { Length: > 0 })
+            {
+                try
                 {
-                    try
-                    {
-                        var appAssembly = Assembly.Load(new AssemblyName(applicationName));
-                        appConfigBuilder.AddUserSecrets(appAssembly, optional: true, reloadOnChange: reloadOnChange);
-                    }
-                    catch (FileNotFoundException)
-                    {
-                        // The assembly cannot be found, so just skip it.
-                    }
+                    var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
+                    appConfigBuilder.AddUserSecrets(appAssembly, optional: true, reloadOnChange: reloadOnChange);
+                }
+                catch (FileNotFoundException)
+                {
+                    // The assembly cannot be found, so just skip it.
+                }
+                catch (FileLoadException)
+                {
+                    // The assembly name is invalid (e.g., contains path separators), so just skip it.
                 }
             }
 

@@ -939,8 +939,12 @@ namespace Microsoft.Extensions.Hosting.Tests
                 .Build();
 
             var configuration = host.Services.GetRequiredService<IConfiguration>();
+            var hostEnvironment = host.Services.GetRequiredService<IHostEnvironment>();
 
-            // Verify that path separators are replaced with underscores
+            // Verify that ApplicationName retains original value (not sanitized)
+            Assert.Equal("my/app", hostEnvironment.ApplicationName);
+            
+            // Verify that path separators are replaced with underscores for file loading
             Assert.Equal("PathSeparatorValue", configuration["TestKey"]);
         }
 
