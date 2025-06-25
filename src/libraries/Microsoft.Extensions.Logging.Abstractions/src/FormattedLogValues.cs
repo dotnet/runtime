@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Microsoft.Extensions.Logging
@@ -24,6 +25,7 @@ namespace Microsoft.Extensions.Logging
         private readonly LogValuesFormatter? _formatter;
         private readonly object?[]? _values;
         private readonly string _originalMessage;
+        private readonly string? _cachedToString;
 
         // for testing purposes
         internal LogValuesFormatter? Formatter => _formatter;
@@ -55,6 +57,7 @@ namespace Microsoft.Extensions.Logging
 
             _originalMessage = format ?? NullFormat;
             _values = values;
+            _cachedToString = null;
         }
 
         public KeyValuePair<string, object?> this[int index]
@@ -103,7 +106,14 @@ namespace Microsoft.Extensions.Logging
                 return _originalMessage;
             }
 
-            return _formatter.Format(_values);
+            if (_cachedToString is null)
+            {
+                // caching the formatted string to avoid repeated formatting and allocations.
+                // FormattedLogValues is readonly struct, use Unsafe.AsRef to mutate the cached string.
+                Unsafe.AsRef(in _cachedToString) = _formatter.Format(_values);
+            }
+
+            return _cachedToString!;
         }
 
         IEnumerator IEnumerable.GetEnumerator()
