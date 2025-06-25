@@ -24,8 +24,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Remainder<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : IModulusOperators<T, T, T> =>
+            where T : IModulusOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, RemainderOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, RemainderOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise remainder of numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -43,8 +50,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Remainder<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
-            where T : IModulusOperators<T, T, T> =>
+            where T : IModulusOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, RemainderOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarIntoSpan<T, RemainderOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise remainder of numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -62,8 +76,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Remainder<T>(T x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : IModulusOperators<T, T, T> =>
+            where T : IModulusOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, RemainderOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeScalarSpanIntoSpan<T, RemainderOperator<T>>(x, y, destination);
+        }
 
         /// <summary>x % y</summary>
         internal readonly struct RemainderOperator<T> : IBinaryOperator<T>
