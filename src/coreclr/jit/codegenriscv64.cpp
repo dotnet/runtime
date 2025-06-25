@@ -1344,15 +1344,7 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
         }
         else
         {
-            if (attr == EA_4BYTE)
-            {
-                GetEmitter()->emitIns_R_R_I(INS_addiw, attr, retReg, op1->GetRegNum(), 0);
-            }
-            else
-            {
-                GetEmitter()->emitIns_R_R(INS_mov, attr, retReg, op1->GetRegNum());
-            }
-            
+            GetEmitter()->emitIns_R_R(attr == EA_4BYTE ? INS_sext_w : INS_mov, attr, retReg, op1->GetRegNum());
         }
     }
 }
