@@ -372,6 +372,10 @@ namespace System.Net.WebSockets
             public override ValueTask DisposeAsync()
             {
                 _disposed = true;
+                if (!_eof && WebSocket.State < WebSocketState.CloseReceived)
+                {
+                    WebSocket.Abort();
+                }
                 return default;
             }
         }
