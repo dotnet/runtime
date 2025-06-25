@@ -98,6 +98,8 @@ namespace Mono.Linker.Steps
             }
         }
 
+        internal TypeMapHandler TypeMapHandler => _typeMapHandler;
+
 #if DEBUG
         static readonly DependencyKind[] _entireTypeReasons = new DependencyKind[] {
             DependencyKind.AccessedViaReflection,
