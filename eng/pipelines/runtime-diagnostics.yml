@@ -24,9 +24,9 @@ pr:
     - main
   paths:
     include:
-    - 'eng/pipelines/**'
-    - 'src/coreclr/**'
-    - 'src/native/**'
+    - eng/pipelines/**
+    - src/coreclr/**
+    - src/native/**
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
