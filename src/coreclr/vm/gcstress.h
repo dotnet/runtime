@@ -15,7 +15,7 @@
 //
 //  GCStress<> template classes with its IsEnabled() & MaybeTrigger members.
 //
-//  Use GCStress<> to abstract away the GC stress related decissions. The
+//  Use GCStress<> to abstract away the GC stress related decisions. The
 //  template definitions will resolve to nothing when STRESS_HEAP is not
 //  defined, and will inline the function body at the call site otherwise.
 //
