@@ -22,6 +22,9 @@ public static class SingleBit
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Set31(int a) => a | (1 << 31);
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int SetNegatedBit(int a, int b) => ~(1 << a) | (1 << b);
+
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Clear(int a, int b) => a & ~(1 << b);
@@ -37,6 +40,12 @@ public static class SingleBit
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Clear31(int a) => a & ~(1 << 31);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int ClearNegatedBit(int a, int b) => ~(1 << a) & ~(1 << b);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int ClearPositiveBit(int a, int b) => (1 << a) & ~(1 << b);
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -118,6 +127,8 @@ public static class SingleBit
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Invert31(int a) => a ^ (1 << 31);
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int InvertNegatedBit(int a, int b) => ~(1 << a) ^ (1 << b);
 
     [Fact]
     public static void Test()
@@ -129,6 +140,7 @@ public static class SingleBit
         Assert.Equal(0x12345478, Set10(0x12345078));
         Assert.Equal(0x12345878, Set11(0x12345078));
         Assert.Equal(int.MinValue, Set31(0));
+        Assert.Equal(-1, SetNegatedBit(0, 0 + 32));
 
         Assert.Equal(0x12345078, Clear(0x12345478, 10 + 32));
         Assert.Equal(0x12345078, Clear(0x12345878, 11 + 32));
@@ -137,6 +149,8 @@ public static class SingleBit
         Assert.Equal(0x12345078, Clear10(0x12345478));
         Assert.Equal(0x12345078, Clear11(0x12345878));
         Assert.Equal(0, Clear31(int.MinValue));
+        Assert.Equal(-4, ClearNegatedBit(0, 1 + 32));
+        Assert.Equal(0, ClearPositiveBit(0, 0 + 32));
 
         Assert.Equal(0, ExtractShift(0x12345878, 10 + 32));
         Assert.Equal(1, ExtractShift(0x12345878, 11 + 32));
@@ -184,5 +198,7 @@ public static class SingleBit
         Assert.Equal(0x12345078, Invert11(0x12345878));
         Assert.Equal(0, Invert31(int.MinValue));
         Assert.Equal(int.MinValue, Invert31(0));
+        Assert.Equal(-1, InvertNegatedBit(0, 0 + 32));
+        Assert.Equal(-4, InvertNegatedBit(0, 1 + 32));
     }
 }

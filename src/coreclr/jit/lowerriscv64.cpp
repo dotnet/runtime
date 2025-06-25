@@ -227,44 +227,47 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         {
             GenTree* opp1 = isOp1Negated ? op1->gtGetOp1() : op1;
             GenTree* opp2 = isOp2Negated ? op2->gtGetOp1() : op2;
-            if ((opp1->OperIs(GT_LSH) && opp1->gtGetOp1()->IsIntegralConst(1)) ||
-                (opp2->OperIs(GT_LSH) && opp2->gtGetOp1()->IsIntegralConst(1)))
+
+            bool isOp1SingleBit =
+                (isOp1Negated == binOp->OperIs(GT_AND)) && opp1->OperIs(GT_LSH) && opp1->gtGetOp1()->IsIntegralConst(1);
+            bool isOp2SingleBit =
+                (isOp2Negated == binOp->OperIs(GT_AND)) && opp2->OperIs(GT_LSH) && opp2->gtGetOp1()->IsIntegralConst(1);
+
+            if (isOp1SingleBit || isOp2SingleBit)
             {
-                GenTree* shift = opp1->OperIs(GT_LSH) ? opp1 : opp2;
-                assert(!shift->gtGetOp2()->IsIntegralConst());
-                bool isShiftNegated = opp1->OperIs(GT_LSH) ? isOp1Negated : isOp2Negated;
+                // a | (1 << b),  a ^ (1 << b),  a & ~(1 << b)   =>   BIT_{SET,INVERT,CLEAR}(a, b)
 
-                // a | (1 << b),  a ^ (1 << b),  a & ~(1 << b)
-                if (!binOp->OperIs(GT_AND) || isShiftNegated)
+                if (isOp1SingleBit)
+                    std::swap(op1, op2);
+
+                if (binOp->OperIs(GT_AND))
                 {
-                    assert(binOp->OperIs(GT_OR, GT_XOR, GT_AND));
-                    static_assert(AreContiguous(GT_OR, GT_XOR, GT_AND), "");
-                    constexpr genTreeOps singleBitOpers[] = {GT_BIT_SET, GT_BIT_INVERT, GT_BIT_CLEAR};
-                    binOp->ChangeOper(singleBitOpers[binOp->OperGet() - GT_OR]);
+                    assert(op2->OperIs(GT_NOT));
+                    BlockRange().Remove(op2);
+                    op2 = op2->gtGetOp1();
+                }
 
-                    if (isShiftNegated)
-                    {
-                        GenTree* shiftOp = isOp1Negated ? op1 : op2;
-                        BlockRange().Remove(shiftOp);
-                    }
+                assert(binOp->OperIs(GT_OR, GT_XOR, GT_AND));
+                static_assert(AreContiguous(GT_OR, GT_XOR, GT_AND), "");
+                constexpr genTreeOps singleBitOpers[] = {GT_BIT_SET, GT_BIT_INVERT, GT_BIT_CLEAR};
+                binOp->ChangeOper(singleBitOpers[binOp->OperGet() - GT_OR]);
 
-                    if (opp1->OperIs(GT_LSH))
-                        std::swap(op1, op2);
+                assert(op2->OperIs(GT_LSH));
+                assert(op2->gtGetOp1()->IsIntegralConst(1));
+                assert(!op2->gtGetOp2()->IsIntegralConst());
+                BlockRange().Remove(op2->gtGetOp1());
+                BlockRange().Remove(op2);
+                op2 = op2->gtGetOp2(); // shift amount becomes bit index
 
-                    op2 = shift->gtGetOp2();
-                    BlockRange().Remove(shift->gtGetOp1());
-                    BlockRange().Remove(shift);
-
-                    assert(op1->TypeIs(TYP_INT, TYP_LONG));
-                    if (!op2->IsIntegralConst() && op1->TypeIs(TYP_INT))
-                    {
-                        // Zbs instructions don't have *w variants so wrap the bit index / shift amount to 0-31 manually
-                        GenTreeIntCon* mask = comp->gtNewIconNode(0x1F);
-                        mask->SetContained();
-                        BlockRange().InsertAfter(op2, mask);
-                        op2 = comp->gtNewOperNode(GT_AND, op2->TypeGet(), op2, mask);
-                        BlockRange().InsertAfter(mask, op2);
-                    }
+                assert(op1->TypeIs(TYP_INT, TYP_LONG));
+                if (!op2->IsIntegralConst() && op1->TypeIs(TYP_INT))
+                {
+                    // Zbs instructions don't have *w variants so wrap the bit index / shift amount to 0-31 manually
+                    GenTreeIntCon* mask = comp->gtNewIconNode(0x1F);
+                    mask->SetContained();
+                    BlockRange().InsertAfter(op2, mask);
+                    op2 = comp->gtNewOperNode(GT_AND, op2->TypeGet(), op2, mask);
+                    BlockRange().InsertAfter(mask, op2);
                 }
             }
         }
