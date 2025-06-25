@@ -93,7 +93,7 @@ namespace HostActivation.Tests
             string testFile = Path.Combine(sharedTestState.BaseDirectory.Location, "subdir", "test.json");
             File.WriteAllText(testFile, "{}");
 
-            string relativePath = "./subdir/test.json";
+            string relativePath = Path.GetRelativePath(sharedTestState.BaseDirectory.Location, testFile);
             TestContext.BuiltDotNet.Exec(relativePath)
                 .WorkingDirectory(sharedTestState.BaseDirectory.Location)
                 .CaptureStdOut()
