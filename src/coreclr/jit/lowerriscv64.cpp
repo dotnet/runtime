@@ -288,6 +288,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             if (isOp1Negated != isOp2Negated)
             {
                 assert(comp->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                op2->ClearContained(); // negated binary instructions don't have immediate variants
                 if (isOp1Negated)
                     std::swap(op1, op2);
 
