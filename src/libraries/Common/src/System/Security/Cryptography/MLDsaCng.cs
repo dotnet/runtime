@@ -2,10 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    /// <summary>
+    ///   Provides a Cryptography Next Generation (CNG) implementation of the Module-Lattice-Based Digital Signature Algorithm (ML-DSA).
+    /// </summary>
+    /// <remarks>
+    ///   <para>
+    ///     This algorithm is specified by FIPS-204.
+    ///   </para>
+    ///   <para>
+    ///     Developers are encouraged to program against the <see cref="MLDsa" /> base class,
+    ///     rather than any specific derived class.
+    ///     The derived classes are intended for interop with the underlying system
+    ///     cryptographic libraries.
+    ///   </para>
+    /// </remarks>
     [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed partial class MLDsaCng : MLDsa
     {
@@ -28,9 +43,21 @@ namespace System.Security.Cryptography
         /// </exception>
         [SupportedOSPlatform("windows")]
         public MLDsaCng(CngKey key)
-            : base(AlgorithmFromHandle(key, out CngKey duplicateKey))
+            : base(AlgorithmFromHandleWithPlatformCheck(key, out CngKey duplicateKey))
         {
             _key = duplicateKey;
+        }
+
+        private static MLDsaAlgorithm AlgorithmFromHandleWithPlatformCheck(CngKey key, out CngKey duplicateKey)
+        {
+#if !NETFRAMEWORK
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                throw new PlatformNotSupportedException();
+            }
+#endif
+
+            return AlgorithmFromHandle(key, out duplicateKey);
         }
 
         private static partial MLDsaAlgorithm AlgorithmFromHandle(CngKey key, out CngKey duplicateKey);

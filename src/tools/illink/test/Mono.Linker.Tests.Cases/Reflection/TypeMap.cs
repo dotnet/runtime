@@ -10,262 +10,266 @@ using Mono.Linker;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Reflection;
 
-[assembly: KeptAttributeAttribute (typeof (TypeMapAttribute<UsedTypeMap>), By = Tool.Trimmer)]
-[assembly: KeptAttributeAttribute (typeof (TypeMapAssociationAttribute<UsedTypeMap>), By = Tool.Trimmer)]
-[assembly: TypeMap<UsedTypeMap> ("TrimTargetIsTarget", typeof (TargetAndTrimTarget))]
-[assembly: TypeMap<UsedTypeMap> ("TrimTargetIsUnrelated", typeof (TargetType), typeof (TrimTarget))]
-[assembly: TypeMap<UsedTypeMap> ("TrimTargetIsAllocatedNoTypeCheckClass", typeof (TargetType2), typeof (AllocatedNoTypeCheckClass))]
-[assembly: TypeMap<UsedTypeMap> ("TrimTargetIsAllocatedNoTypeCheckStruct", typeof (TargetType3), typeof (AllocatedNoTypeCheckStruct))]
-[assembly: TypeMap<UsedTypeMap> ("TrimTargetIsUnreferenced", typeof (UnreferencedTargetType), typeof (UnreferencedTrimTarget))]
-[assembly: TypeMapAssociation<UsedTypeMap> (typeof (SourceClass), typeof (ProxyType))]
-[assembly: TypeMapAssociation<UsedTypeMap> (typeof (TypeCheckOnlyClass), typeof (ProxyType2))]
-[assembly: TypeMapAssociation<UsedTypeMap> (typeof (AllocatedNoBoxStructType), typeof (ProxyType3))]
-[assembly: TypeMapAssociation<UsedTypeMap> (typeof (I), typeof (IImpl))]
-[assembly: TypeMapAssociation<UsedTypeMap> (typeof (IInterfaceWithDynamicImpl), typeof (IDynamicImpl))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), By = Tool.Trimmer)]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), By = Tool.Trimmer)]
+[assembly: TypeMap<UsedTypeMap>("TrimTargetIsTarget", typeof(TargetAndTrimTarget))]
+[assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnrelated", typeof(TargetType), typeof(TrimTarget))]
+[assembly: TypeMap<UsedTypeMap>("TrimTargetIsAllocatedNoTypeCheckClass", typeof(TargetType2), typeof(AllocatedNoTypeCheckClass))]
+[assembly: TypeMap<UsedTypeMap>("TrimTargetIsAllocatedNoTypeCheckStruct", typeof(TargetType3), typeof(AllocatedNoTypeCheckStruct))]
+[assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnreferenced", typeof(UnreferencedTargetType), typeof(UnreferencedTrimTarget))]
+[assembly: TypeMapAssociation<UsedTypeMap>(typeof(SourceClass), typeof(ProxyType))]
+[assembly: TypeMapAssociation<UsedTypeMap>(typeof(TypeCheckOnlyClass), typeof(ProxyType2))]
+[assembly: TypeMapAssociation<UsedTypeMap>(typeof(AllocatedNoBoxStructType), typeof(ProxyType3))]
+[assembly: TypeMapAssociation<UsedTypeMap>(typeof(I), typeof(IImpl))]
+[assembly: TypeMapAssociation<UsedTypeMap>(typeof(IInterfaceWithDynamicImpl), typeof(IDynamicImpl))]
 
-[assembly: TypeMap<UnusedTypeMap> ("UnusedName", typeof (UnusedTargetType), typeof (TrimTarget))]
-[assembly: TypeMapAssociation<UsedTypeMap> (typeof (UnusedSourceClass), typeof (UnusedProxyType))]
+[assembly: TypeMap<UnusedTypeMap>("UnusedName", typeof(UnusedTargetType), typeof(TrimTarget))]
+[assembly: TypeMapAssociation<UsedTypeMap>(typeof(UnusedSourceClass), typeof(UnusedProxyType))]
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
-	[Kept]
-	class TypeMap
-	{
-		[Kept]
-		[ExpectedWarning ("IL2057", "Unrecognized value passed to the parameter 'typeName' of method 'System.Type.GetType(String)'")]
-		public static void Main (string[] args)
-		{
-			object t = Activator.CreateInstance (Type.GetType (args[1]));
-			CheckTargetAndTrimTarget (t);
-			CheckTrimTarget (t);
-			CheckTypeCheckOnlyClass (t);
-			if (t is IInterfaceWithDynamicImpl d) {
-				d.Method ();
-			}
+    [Kept]
+    class TypeMap
+    {
+        [Kept]
+        [ExpectedWarning("IL2057", "Unrecognized value passed to the parameter 'typeName' of method 'System.Type.GetType(String)'")]
+        public static void Main(string[] args)
+        {
+            object t = Activator.CreateInstance(Type.GetType(args[1]));
+            CheckTargetAndTrimTarget(t);
+            CheckTrimTarget(t);
+            CheckTypeCheckOnlyClass(t);
+            if (t is IInterfaceWithDynamicImpl d)
+            {
+                d.Method();
+            }
 
-			Console.WriteLine ("Hash code of SourceClass instance: " + new SourceClass ().GetHashCode ());
-			Console.WriteLine ("Hash code of UsedClass instance: " + new UsedClass ().GetHashCode ());
-			Console.WriteLine ("Hash code of AllocatedNoTypeCheckClass instance: " + new AllocatedNoTypeCheckClass ().GetHashCode ());
-			Console.WriteLine ("Hash code of AllocatedNoTypeCheckStruct instance: " + new AllocatedNoTypeCheckStruct ().GetHashCode ());
+            Console.WriteLine("Hash code of SourceClass instance: " + new SourceClass().GetHashCode());
+            Console.WriteLine("Hash code of UsedClass instance: " + new UsedClass().GetHashCode());
+            Console.WriteLine("Hash code of AllocatedNoTypeCheckClass instance: " + new AllocatedNoTypeCheckClass().GetHashCode());
+            Console.WriteLine("Hash code of AllocatedNoTypeCheckStruct instance: " + new AllocatedNoTypeCheckStruct().GetHashCode());
 
-			Console.WriteLine (TypeMapping.GetOrCreateExternalTypeMapping<UsedTypeMap> ());
-			Console.WriteLine (GetExternalTypeMap<UnusedTypeMap> ());
+            Console.WriteLine(TypeMapping.GetOrCreateExternalTypeMapping<UsedTypeMap>());
+            Console.WriteLine(GetExternalTypeMap<UnusedTypeMap>());
 
-			var proxyMap = TypeMapping.GetOrCreateProxyTypeMapping<UsedTypeMap> ();
+            var proxyMap = TypeMapping.GetOrCreateProxyTypeMapping<UsedTypeMap>();
 
-			AllocatedNoBoxStructType allocatedNoBoxStructType = new AllocatedNoBoxStructType (Random.Shared.Next ());
-			Console.WriteLine ("AllocatedNoBoxStructType value: " + allocatedNoBoxStructType.Value);
-			Console.WriteLine (proxyMap[typeof (AllocatedNoBoxStructType)]);
-		}
+            AllocatedNoBoxStructType allocatedNoBoxStructType = new AllocatedNoBoxStructType(Random.Shared.Next());
+            Console.WriteLine("AllocatedNoBoxStructType value: " + allocatedNoBoxStructType.Value);
+            Console.WriteLine(proxyMap[typeof(AllocatedNoBoxStructType)]);
+        }
 
-		[Kept]
-		private static void CheckTargetAndTrimTarget (object o)
-		{
-			if (o is TargetAndTrimTarget) {
-				Console.WriteLine ("Type deriving from TargetAndTrimTarget instantiated.");
-			}
-		}
+        [Kept]
+        private static void CheckTargetAndTrimTarget(object o)
+        {
+            if (o is TargetAndTrimTarget)
+            {
+                Console.WriteLine("Type deriving from TargetAndTrimTarget instantiated.");
+            }
+        }
 
-		[Kept]
-		[ExpectedInstructionSequence ([
-			"nop",
-			"ldarg.0",
-			"pop",
-			"ldnull",
-			"ldnull",
-			"cgt.un",
-			"stloc.0",
-			"ldloc.0",
-			"brfalse.s il_18",
-			"nop",
-			"ldstr 'Type deriving from TypeCheckOnlyClass instantiated.'",
-			"call System.Void System.Console::WriteLine(System.String)",
-			"nop",
-			"nop",
-			"ret",
-		])]
-		private static void CheckTypeCheckOnlyClass (object o)
-		{
-			if (o is TypeCheckOnlyClass) {
-				Console.WriteLine ("Type deriving from TypeCheckOnlyClass instantiated.");
-			}
-		}
+        [Kept]
+        [ExpectedInstructionSequence([
+            "nop",
+            "ldarg.0",
+            "pop",
+            "ldnull",
+            "ldnull",
+            "cgt.un",
+            "stloc.0",
+            "ldloc.0",
+            "brfalse.s il_18",
+            "nop",
+            "ldstr 'Type deriving from TypeCheckOnlyClass instantiated.'",
+            "call System.Void System.Console::WriteLine(System.String)",
+            "nop",
+            "nop",
+            "ret",
+        ])]
+        private static void CheckTypeCheckOnlyClass(object o)
+        {
+            if (o is TypeCheckOnlyClass)
+            {
+                Console.WriteLine("Type deriving from TypeCheckOnlyClass instantiated.");
+            }
+        }
 
-		[Kept]
-		[ExpectedInstructionSequence ([
-			"nop",
-			"ldarg.0",
-			"pop",
-			"ldnull",
-			"ldnull",
-			"cgt.un",
-			"stloc.0",
-			"ldloc.0",
-			"brfalse.s il_18",
-			"nop",
-			"ldstr 'Type deriving from TrimTarget instantiated.'",
-			"call System.Void System.Console::WriteLine(System.String)",
-			"nop",
-			"nop",
-			"ret"
-			])]
-		private static void CheckTrimTarget (object o)
-		{
-			if (o is TrimTarget) {
-				Console.WriteLine ("Type deriving from TrimTarget instantiated.");
-			}
-		}
+        [Kept]
+        [ExpectedInstructionSequence([
+            "nop",
+            "ldarg.0",
+            "pop",
+            "ldnull",
+            "ldnull",
+            "cgt.un",
+            "stloc.0",
+            "ldloc.0",
+            "brfalse.s il_18",
+            "nop",
+            "ldstr 'Type deriving from TrimTarget instantiated.'",
+            "call System.Void System.Console::WriteLine(System.String)",
+            "nop",
+            "nop",
+            "ret"
+            ])]
+        private static void CheckTrimTarget(object o)
+        {
+            if (o is TrimTarget)
+            {
+                Console.WriteLine("Type deriving from TrimTarget instantiated.");
+            }
+        }
 
-		[Kept]
-		[ExpectedWarning ("IL2124", "Type 'T' must not contain signature variables to be used as a type map group.")]
-		private static IReadOnlyDictionary<string, Type> GetExternalTypeMap<T> ()
-		{
-			return TypeMapping.GetOrCreateExternalTypeMapping<T> ();
-		}
-	}
+        [Kept]
+        [ExpectedWarning("IL2124", "Type 'T' must not contain signature variables to be used as a type map group.")]
+        private static IReadOnlyDictionary<string, Type> GetExternalTypeMap<T>()
+        {
+            return TypeMapping.GetOrCreateExternalTypeMapping<T>();
+        }
+    }
 
-	[Kept]
-	class UsedTypeMap;
+    [Kept]
+    class UsedTypeMap;
 
-	[Kept]
-	class TargetAndTrimTarget;
+    [Kept]
+    class TargetAndTrimTarget;
 
-	[Kept]
-	class TargetType;
+    [Kept]
+    class TargetType;
 
-	[Kept] // This is kept by NativeAot by the scanner. It is not kept during codegen.
-	class TrimTarget;
+    [Kept] // This is kept by NativeAot by the scanner. It is not kept during codegen.
+    class TrimTarget;
 
-	class UnreferencedTargetType;
+    class UnreferencedTargetType;
 
-	class UnreferencedTrimTarget;
+    class UnreferencedTrimTarget;
 
-	[Kept]
-	[KeptMember (".ctor()")]
-	class SourceClass;
+    [Kept]
+    [KeptMember(".ctor()")]
+    class SourceClass;
 
-	[Kept]
-	class ProxyType;
+    [Kept]
+    class ProxyType;
 
-	[Kept]
-	class UnusedTypeMap;
-	class UnusedTargetType;
-	class UnusedSourceClass;
-	class UnusedProxyType;
+    [Kept]
+    class UnusedTypeMap;
+    class UnusedTargetType;
+    class UnusedSourceClass;
+    class UnusedProxyType;
 
-	interface I;
+    interface I;
 
-	interface IImpl : I;
+    interface IImpl : I;
 
-	[Kept]
-	[KeptMember (".ctor()")]
-	class UsedClass : IImpl;
+    [Kept]
+    [KeptMember(".ctor()")]
+    class UsedClass : IImpl;
 
-	[Kept]
-	interface IInterfaceWithDynamicImpl
-	{
-		[Kept (By = Tool.Trimmer)]
-		void Method ();
-	}
+    [Kept]
+    interface IInterfaceWithDynamicImpl
+    {
+        [Kept(By = Tool.Trimmer)]
+        void Method();
+    }
 
-	[Kept]
-	[KeptInterface (typeof (IInterfaceWithDynamicImpl))]
-	[KeptAttributeAttribute (typeof (DynamicInterfaceCastableImplementationAttribute), By = Tool.Trimmer)]
-	[DynamicInterfaceCastableImplementation]
-	interface IDynamicImpl : IInterfaceWithDynamicImpl
-	{
-		[Kept]
-		void IInterfaceWithDynamicImpl.Method ()
-		{
-		}
-	}
+    [Kept]
+    [KeptInterface(typeof(IInterfaceWithDynamicImpl))]
+    [KeptAttributeAttribute(typeof(DynamicInterfaceCastableImplementationAttribute), By = Tool.Trimmer)]
+    [DynamicInterfaceCastableImplementation]
+    interface IDynamicImpl : IInterfaceWithDynamicImpl
+    {
+        [Kept]
+        void IInterfaceWithDynamicImpl.Method()
+        {
+        }
+    }
 
-	[Kept]
-	[KeptMember(".ctor()")]
-	class AllocatedNoTypeCheckClass;
+    [Kept]
+    [KeptMember(".ctor()")]
+    class AllocatedNoTypeCheckClass;
 
-	[Kept]
-	struct AllocatedNoTypeCheckStruct;
+    [Kept]
+    struct AllocatedNoTypeCheckStruct;
 
-	[Kept]
-	class TargetType2;
+    [Kept]
+    class TargetType2;
 
-	[Kept]
-	class TargetType3;
+    [Kept]
+    class TargetType3;
 
-	[Kept(By = Tool.NativeAot)] // Kept by NativeAot by the scanner. It is not kept during codegen.
-	class TypeCheckOnlyClass;
+    [Kept(By = Tool.NativeAot)] // Kept by NativeAot by the scanner. It is not kept during codegen.
+    class TypeCheckOnlyClass;
 
-	class ProxyType2;
+    class ProxyType2;
 
-	[Kept]
-	struct AllocatedNoBoxStructType
-	{
-		[Kept]
-		public AllocatedNoBoxStructType (int value)
-		{
-			Value = value;
-		}
+    [Kept]
+    struct AllocatedNoBoxStructType
+    {
+        [Kept]
+        public AllocatedNoBoxStructType(int value)
+        {
+            Value = value;
+        }
 
-		[Kept]
-		[KeptBackingField]
-		public int Value { [Kept] get; }
-	}
+        [Kept]
+        [KeptBackingField]
+        public int Value { [Kept] get; }
+    }
 
-	[Kept]
-	class ProxyType3;
+    [Kept]
+    class ProxyType3;
 }
 
 // Polyfill for the type map types until we use an LKG runtime that has it.
 namespace System.Runtime.InteropServices
 {
-	[Kept (By = Tool.Trimmer)]
-	[KeptBaseType (typeof (Attribute), By = Tool.Trimmer)]
-	[KeptAttributeAttribute (typeof (AttributeUsageAttribute), By = Tool.Trimmer)]
-	[KeptAttributeAttribute (typeof (RemoveAttributeInstancesAttribute), By = Tool.Trimmer)]
-	[RemoveAttributeInstances]
-	[AttributeUsage (AttributeTargets.Assembly, AllowMultiple = true)]
-	public sealed class TypeMapAttribute<TTypeMapGroup> : Attribute
-	{
-		[Kept (By = Tool.Trimmer)]
-		public TypeMapAttribute (string value, Type target) { }
+    [Kept(By = Tool.Trimmer)]
+    [KeptBaseType(typeof(Attribute), By = Tool.Trimmer)]
+    [KeptAttributeAttribute(typeof(AttributeUsageAttribute), By = Tool.Trimmer)]
+    [KeptAttributeAttribute(typeof(RemoveAttributeInstancesAttribute), By = Tool.Trimmer)]
+    [RemoveAttributeInstances]
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    public sealed class TypeMapAttribute<TTypeMapGroup> : Attribute
+    {
+        [Kept(By = Tool.Trimmer)]
+        public TypeMapAttribute(string value, Type target) { }
 
-		[Kept (By = Tool.Trimmer)]
-		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute), By = Tool.Trimmer)]
-		[RequiresUnreferencedCode ("Interop types may be removed by trimming")]
-		public TypeMapAttribute (string value, Type target, Type trimTarget) { }
-	}
+        [Kept(By = Tool.Trimmer)]
+        [KeptAttributeAttribute(typeof(RequiresUnreferencedCodeAttribute), By = Tool.Trimmer)]
+        [RequiresUnreferencedCode("Interop types may be removed by trimming")]
+        public TypeMapAttribute(string value, Type target, Type trimTarget) { }
+    }
 
-	[Kept (By = Tool.Trimmer)]
-	[KeptBaseType (typeof (Attribute), By = Tool.Trimmer)]
-	[KeptAttributeAttribute (typeof (AttributeUsageAttribute), By = Tool.Trimmer)]
-	[KeptAttributeAttribute (typeof (RemoveAttributeInstancesAttribute), By = Tool.Trimmer)]
-	[RemoveAttributeInstances]
-	[AttributeUsage (AttributeTargets.Assembly, AllowMultiple = true)]
-	public sealed class TypeMapAssociationAttribute<TTypeMapGroup> : Attribute
-	{
-		[Kept (By = Tool.Trimmer)]
-		public TypeMapAssociationAttribute (Type source, Type proxy) { }
-	}
+    [Kept(By = Tool.Trimmer)]
+    [KeptBaseType(typeof(Attribute), By = Tool.Trimmer)]
+    [KeptAttributeAttribute(typeof(AttributeUsageAttribute), By = Tool.Trimmer)]
+    [KeptAttributeAttribute(typeof(RemoveAttributeInstancesAttribute), By = Tool.Trimmer)]
+    [RemoveAttributeInstances]
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    public sealed class TypeMapAssociationAttribute<TTypeMapGroup> : Attribute
+    {
+        [Kept(By = Tool.Trimmer)]
+        public TypeMapAssociationAttribute(Type source, Type proxy) { }
+    }
 
-	[Kept(By = Tool.Trimmer)]
-	public static class TypeMapping
-	{
-		[Kept(By = Tool.Trimmer)]
-		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute), By = Tool.Trimmer)]
-		[RequiresUnreferencedCode ("Interop types may be removed by trimming")]
-		public static IReadOnlyDictionary<string, Type> GetOrCreateExternalTypeMapping<TTypeMapGroup> ()
-		{
-			throw new NotImplementedException ();
-		}
+    [Kept(By = Tool.Trimmer)]
+    public static class TypeMapping
+    {
+        [Kept(By = Tool.Trimmer)]
+        [KeptAttributeAttribute(typeof(RequiresUnreferencedCodeAttribute), By = Tool.Trimmer)]
+        [RequiresUnreferencedCode("Interop types may be removed by trimming")]
+        public static IReadOnlyDictionary<string, Type> GetOrCreateExternalTypeMapping<TTypeMapGroup>()
+        {
+            throw new NotImplementedException();
+        }
 
-		[Kept(By = Tool.Trimmer)]
-		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute), By = Tool.Trimmer)]
-		[RequiresUnreferencedCode ("Interop types may be removed by trimming")]
-		public static IReadOnlyDictionary<Type, Type> GetOrCreateProxyTypeMapping<TTypeMapGroup> ()
-		{
-			throw new NotImplementedException ();
-		}
-	}
+        [Kept(By = Tool.Trimmer)]
+        [KeptAttributeAttribute(typeof(RequiresUnreferencedCodeAttribute), By = Tool.Trimmer)]
+        [RequiresUnreferencedCode("Interop types may be removed by trimming")]
+        public static IReadOnlyDictionary<Type, Type> GetOrCreateProxyTypeMapping<TTypeMapGroup>()
+        {
+            throw new NotImplementedException();
+        }
+    }
 }
 
