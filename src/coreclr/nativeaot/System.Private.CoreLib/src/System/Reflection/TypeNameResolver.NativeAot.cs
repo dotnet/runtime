@@ -75,13 +75,13 @@ namespace System.Reflection
             bool ignoreCase,
             Assembly topLevelAssembly)
         {
-            TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError);
+            TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError, new() { IsAssemblyGetType = true });
 
             if (parsed is null)
             {
                 return null;
             }
-            else if (topLevelAssembly is not null && parsed.AssemblyName is not null)
+            else if (parsed.AssemblyName is not null)
             {
                 return throwOnError ? throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly) : null;
             }
@@ -158,7 +158,7 @@ namespace System.Reflection
                 {
                     if (assembly is RuntimeAssemblyInfo runtimeAssembly)
                     {
-                        type = runtimeAssembly.GetTypeCore(TypeNameHelpers.Unescape(escapedTypeName), throwOnError: _throwOnError, ignoreCase: _ignoreCase);
+                        type = runtimeAssembly.GetTypeCore(TypeName.Unescape(escapedTypeName), throwOnError: _throwOnError, ignoreCase: _ignoreCase);
                     }
                     else
                     {
@@ -173,7 +173,7 @@ namespace System.Reflection
                 }
                 else
                 {
-                    string? unescapedTypeName = TypeNameHelpers.Unescape(escapedTypeName);
+                    string? unescapedTypeName = TypeName.Unescape(escapedTypeName);
 
                     RuntimeAssemblyInfo? defaultAssembly = null;
                     if (_defaultAssemblyName != null)
@@ -235,7 +235,7 @@ namespace System.Reflection
                     if (_throwOnError)
                     {
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType,
-                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : TypeNameHelpers.Unescape(escapedTypeName)),
+                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : TypeName.Unescape(escapedTypeName)),
                             typeName: parsedName.FullName);
                     }
                     return null;

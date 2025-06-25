@@ -7,7 +7,8 @@ set(RUNTIMEINFO_SOURCES
 add_library_clr(runtimeinfo STATIC ${RUNTIMEINFO_SOURCES})
 
 function(generate_module_index Target ModuleIndexFile)
-    if(CLR_CMAKE_HOST_WIN32)
+    # Win32 may be false when cross compiling
+    if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
         set(scriptExt ".cmd")
     else()
         set(scriptExt ".sh")
@@ -40,6 +41,11 @@ install_clr(TARGETS runtimeinfo DESTINATIONS lib COMPONENT runtime)
 
 
 # cDAC contract descriptor
+
+if(CDAC_BUILD_TOOL_BINARY_PATH AND "${CLR_DOTNET_RID}" STREQUAL "")
+  message(FATAL_ERROR "CLR_DOTNET_RID is not set. Please ensure it is being set to the portable RID of the target platform by runtime.proj.")
+endif()
+configure_file(configure.h.in ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
 if (NOT CDAC_BUILD_TOOL_BINARY_PATH)
   # if CDAC_BUILD_TOOL_BINARY_PATH is unspecified (for example for a build without a .NET SDK or msbuild),

@@ -89,6 +89,11 @@ bool Compiler::fgHaveSufficientProfileWeights()
         case ICorJitInfo::PgoSource::Blend:
             return true;
 
+        case ICorJitInfo::PgoSource::Synthesis:
+            // Single-edge methods always have sufficient profile data.
+            // Assuming we don't synthesize value and class profile data (which we don't currently).
+            return fgPgoSingleEdge;
+
         case ICorJitInfo::PgoSource::Static:
         {
             // We sometimes call this very early, eg evaluating the prejit root.
@@ -134,6 +139,12 @@ bool Compiler::fgHaveTrustedProfileWeights()
         case ICorJitInfo::PgoSource::Blend:
         case ICorJitInfo::PgoSource::Text:
             return true;
+
+        case ICorJitInfo::PgoSource::Synthesis:
+            // Single-edge methods with synthetic profile are trustful.
+            // Assuming we don't synthesize value and class profile data (which we don't currently).
+            return fgPgoSingleEdge;
+
         default:
             return false;
     }
@@ -2504,10 +2515,10 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     // We enable edge profiling by default, except when:
     //
     // * disabled by option
-    // * we are prejitting
+    // * we are AOT compiling
     //
     const bool edgesEnabled    = (JitConfig.JitEdgeProfiling() > 0);
-    const bool prejit          = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool prejit          = IsAot();
     const bool useEdgeProfiles = edgesEnabled && !prejit;
     const bool minimalProfiling =
         prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
@@ -2666,14 +2677,14 @@ PhaseStatus Compiler::fgInstrumentMethod()
     // Optionally, when jitting, if there were no class probes, no value probes and only one count probe,
     // suppress instrumentation.
     //
-    // We leave instrumentation in place when prejitting as the sample hits in the method
-    // may be used to determine if the method should be prejitted or not.
+    // We leave instrumentation in place for AOT as the sample hits in the method
+    // may be used to determine if the method should be AOT or not.
     //
     // For jitting, no information is conveyed by the count in a single=block method.
     //
     bool minimalProbeMode = false;
 
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    if (IsAot())
     {
         minimalProbeMode = (JitConfig.JitMinimalPrejitProfiling() > 0);
     }
@@ -4787,20 +4798,12 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
     weight_t       incomingLikelyWeight = 0;
     unsigned       missingLikelyWeight  = 0;
     bool           foundPreds           = false;
-    bool           foundEHPreds         = false;
 
     for (FlowEdge* const predEdge : block->PredEdges())
     {
         if (predEdge->hasLikelihood())
         {
-            if (BasicBlock::sameHndRegion(block, predEdge->getSourceBlock()))
-            {
-                incomingLikelyWeight += predEdge->getLikelyWeight();
-            }
-            else
-            {
-                foundEHPreds = true;
-            }
+            incomingLikelyWeight += predEdge->getLikelyWeight();
         }
         else
         {
@@ -4812,29 +4815,11 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
         foundPreds = true;
     }
 
-    // We almost certainly won't get the likelihoods on a BBJ_EHFINALLYRET right,
-    // so special-case BBJ_CALLFINALLYRET incoming flow.
-    //
-    if (block->isBBCallFinallyPairTail())
-    {
-        incomingLikelyWeight = block->Prev()->bbWeight;
-        foundEHPreds         = false;
-    }
-
-    // We almost certainly won't get the likelihoods on a BBJ_EHFINALLYRET right,
-    // so special-case BBJ_CALLFINALLYRET incoming flow.
-    //
-    if (block->isBBCallFinallyPairTail())
-    {
-        incomingLikelyWeight = block->Prev()->bbWeight;
-        foundEHPreds         = false;
-    }
-
     bool likelyWeightsValid = true;
 
     // If we have EH preds we may not have consistent incoming flow.
     //
-    if (foundPreds && !foundEHPreds)
+    if (foundPreds)
     {
         if (verifyLikelyWeights)
         {
@@ -4890,7 +4875,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
     //
     const unsigned numSuccs = block->NumSucc(this);
 
-    if ((numSuccs > 0) && !block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET))
+    if ((numSuccs > 0) && !block->KindIs(BBJ_EHFAULTRET, BBJ_EHFILTERRET))
     {
         weight_t const blockWeight        = block->bbWeight;
         weight_t       outgoingLikelihood = 0;
@@ -4978,8 +4963,37 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
 #endif // DEBUG
 
 //------------------------------------------------------------------------
+// fgRepairProfile: If we have PGO data and the profile is inconsistent,
+//   run synthesis to re-establish consistency.
+//
+// Returns:
+//   PhaseStatus indicating if profile synthesis ran or not.
+//
+PhaseStatus Compiler::fgRepairProfile()
+{
+    if (fgIsUsingProfileWeights())
+    {
+        if (fgPgoConsistent)
+        {
+            JITDUMP("Profile is already consistent.\n");
+        }
+        else
+        {
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::RetainLikelihoods);
+            return PhaseStatus::MODIFIED_EVERYTHING;
+        }
+    }
+    else
+    {
+        JITDUMP("No PGO data. Skipping profile repair.\n");
+    }
+
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
+//------------------------------------------------------------------------
 // fgRepairProfileCondToUncond: attempt to repair profile after modifying
-//   a conditinal branch to an unconditional branch.
+//   a conditional branch to an unconditional branch.
 //
 // Arguments:
 //   block        - block that was just altered

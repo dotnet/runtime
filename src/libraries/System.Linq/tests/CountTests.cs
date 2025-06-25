@@ -99,9 +99,9 @@ namespace System.Linq.Tests
 
         private static IEnumerable<object[]> EnumerateCollectionTypesAndCounts<T>(int count, IEnumerable<T> enumerable)
         {
-            foreach (var transform in IdentityTransforms<T>())
+            foreach (IEnumerable<T> source in CreateSources(enumerable))
             {
-                yield return [count, transform(enumerable)];
+                yield return [count, source];
             }
         }
 

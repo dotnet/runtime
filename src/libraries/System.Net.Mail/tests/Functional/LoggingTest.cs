@@ -36,7 +36,7 @@ namespace System.Net.Mail.Tests
                     listener.RunWithCallback(events.Enqueue, () =>
                     {
                         // Invoke a test that'll cause some events to be generated
-                        new SmtpClientTest().TestMailDelivery();
+                        new SmtpClientTest(null!).TestMailDelivery();
                     });
                     Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
                     Assert.InRange(events.Count, 1, int.MaxValue);

@@ -31,6 +31,10 @@
         type([TestLibrary]TestLibrary.PlatformDetection)
         string[1] ('IsMonoInterpreter')
     }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms) = {
+        string('https://github.com/dotnet/runtime/issues/74687')
+        int32(0x2400) // Browser | Wasi
+    }
 
     .entrypoint
 

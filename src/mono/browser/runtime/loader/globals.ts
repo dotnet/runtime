@@ -4,11 +4,11 @@
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="../types/sidecar.d.ts" />
 
-import { exceptions, simd } from "wasm-feature-detect";
+import { exceptions, simd, relaxedSimd } from "wasm-feature-detect";
 
 import gitHash from "consts:gitHash";
 
-import type { DotnetModuleInternal, GlobalObjects, LoaderHelpers, MonoConfigInternal, PThreadWorker, RuntimeHelpers } from "../types/internal";
+import type { DiagnosticHelpers, DotnetModuleInternal, GlobalObjects, LoaderHelpers, MonoConfigInternal, PThreadWorker, RuntimeHelpers } from "../types/internal";
 import type { MonoConfig, RuntimeAPI } from "../types";
 import { assert_runtime_running, installUnhandledErrorHandler, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
@@ -16,7 +16,6 @@ import { mono_download_assets, resolve_single_asset_path, retrieve_asset_downloa
 import { mono_log_error, set_thread_prefix, setup_proxy_console } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
 import { deep_merge_config, isDebuggingSupported } from "./config";
-import { logDownloadStatsToConsole, purgeUnusedCacheEntriesAsync } from "./assetsCache";
 
 // if we are the first script loaded in the web worker, we are expected to become the sidecar
 if (typeof importScripts === "function" && !globalThis.onmessage) {
@@ -33,6 +32,7 @@ export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE;
 
 export let runtimeHelpers: RuntimeHelpers = {} as any;
 export let loaderHelpers: LoaderHelpers = {} as any;
+export let diagnosticHelpers: DiagnosticHelpers = {} as any;
 export let exportedRuntimeAPI: RuntimeAPI = {} as any;
 export let INTERNAL: any = {};
 export let _loaderModuleLoaded = false; // please keep it in place also as rollup guard
@@ -48,6 +48,7 @@ export const globalObjectsRoot: GlobalObjects = {
     module: emscriptenModule,
     loaderHelpers,
     runtimeHelpers,
+    diagnosticHelpers: diagnosticHelpers,
     api: exportedRuntimeAPI,
 } as any;
 
@@ -62,6 +63,7 @@ export function setLoaderGlobals (
     _loaderModuleLoaded = true;
     runtimeHelpers = globalObjects.runtimeHelpers;
     loaderHelpers = globalObjects.loaderHelpers;
+    diagnosticHelpers = globalObjects.diagnosticHelpers;
     exportedRuntimeAPI = globalObjects.api;
     INTERNAL = globalObjects.internal;
     Object.assign(exportedRuntimeAPI, {
@@ -119,8 +121,6 @@ export function setLoaderGlobals (
         resolve_single_asset_path,
         setup_proxy_console,
         set_thread_prefix,
-        logDownloadStatsToConsole,
-        purgeUnusedCacheEntriesAsync,
         installUnhandledErrorHandler,
 
         retrieve_asset_download,
@@ -130,6 +130,7 @@ export function setLoaderGlobals (
         // from wasm-feature-detect npm package
         exceptions,
         simd,
+        relaxedSimd
     };
     Object.assign(runtimeHelpers, rh);
     Object.assign(loaderHelpers, lh);

@@ -259,9 +259,9 @@ stack, even on ARM architectures, due to its return address hijacking mechanism.
 
 When the result is returned by value the JIT will introduce a local and pass a
 pointer to it in the second argument. For ret bufs the JIT will typically
-directly pass along its own return buffer parameter to DispatchTailCalls. It is
-possible that this return buffer is pointing into GC heap, so the result is
-always tracked as a byref in the mechanism.
+directly pass along its own return buffer parameter to DispatchTailCalls. The
+return buffer is always located on the stack, so the result does not need to be
+tracked as a byref.
 
 In certain cases the target function pointer is also stored. For some targets
 this might require the JIT to perform the equivalent of `ldvirtftn` or `ldftn`

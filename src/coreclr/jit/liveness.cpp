@@ -15,14 +15,30 @@
 #endif
 #include "lower.h" // for LowerRange()
 
-/*****************************************************************************
- *
- *  Helper for Compiler::fgPerBlockLocalVarLiveness().
- *  The goal is to compute the USE and DEF sets for a basic block.
- */
+//------------------------------------------------------------------------
+// fgMarkUseDef:
+//   Mark a local in the current def/use set.
+//
+// Parameters:
+//   tree - The local
+//
+// Template parameters:
+//   ssaLiveness - Whether the liveness computed is for SSA and should follow
+//   same modelling rules as SSA. SSA models partial defs like (v.x = 123) as
+//   (v = v with x = 123), which also implies that these partial definitions
+//   become uses. For dead-code elimination this is more conservative than
+//   needed, so outside SSA we do not model partial defs in this way:
+//
+//   * In SSA: Partial defs are full defs but are also uses. They impact both
+//   bbVarUse and bbVarDef.
+//
+//   * Outside SSA: Partial defs are _not_ full defs and are also not
+//   considered uses. They do not get included in bbVarUse/bbVarDef.
+//
+template <bool ssaLiveness>
 void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
 {
-    assert((tree->OperIsLocal() && (tree->OperGet() != GT_PHI_ARG)) || tree->OperIs(GT_LCL_ADDR));
+    assert((tree->OperIsLocal() && !tree->OperIs(GT_PHI_ARG)) || tree->OperIs(GT_LCL_ADDR));
 
     const unsigned   lclNum = tree->GetLclNum();
     LclVarDsc* const varDsc = lvaGetDesc(lclNum);
@@ -35,8 +51,9 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
         varDsc->setLvRefCnt(1);
     }
 
-    const bool isDef = (tree->gtFlags & GTF_VAR_DEF) != 0;
-    const bool isUse = !isDef || ((tree->gtFlags & GTF_VAR_USEASG) != 0);
+    const bool isDef     = ((tree->gtFlags & GTF_VAR_DEF) != 0);
+    const bool isFullDef = isDef && ((tree->gtFlags & GTF_VAR_USEASG) == 0);
+    const bool isUse     = ssaLiveness ? !isFullDef : !isDef;
 
     if (varDsc->lvTracked)
     {
@@ -60,7 +77,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
             VarSetOps::AddElemD(this, fgCurUseSet, varDsc->lvVarIndex);
         }
 
-        if (isDef)
+        if (ssaLiveness ? isDef : isFullDef)
         {
             // This is a def, add it to the set of defs.
             VarSetOps::AddElemD(this, fgCurDefSet, varDsc->lvVarIndex);
@@ -106,7 +123,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
                         VarSetOps::AddElemD(this, fgCurUseSet, varIndex);
                     }
 
-                    if (isDef)
+                    if (ssaLiveness ? isDef : isFullDef)
                     {
                         VarSetOps::AddElemD(this, fgCurDefSet, varIndex);
                     }
@@ -116,7 +133,10 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
     }
 }
 
-/*****************************************************************************/
+//------------------------------------------------------------------------
+// fgLocalVarLiveness:
+//   Compute block def/use sets, liveness, and do dead code elimination.
+//
 void Compiler::fgLocalVarLiveness()
 {
 #ifdef DEBUG
@@ -216,7 +236,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
         case GT_LCL_FLD:
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
-            fgMarkUseDef(tree->AsLclVarCommon());
+            fgMarkUseDef<!lowered>(tree->AsLclVarCommon());
             break;
 
         case GT_LCL_ADDR:
@@ -229,7 +249,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
                     break;
                 }
 
-                fgMarkUseDef(tree->AsLclVarCommon());
+                fgMarkUseDef<!lowered>(tree->AsLclVarCommon());
             }
             break;
 
@@ -325,7 +345,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             GenTreeLclVarCommon* definedLcl = gtCallGetDefinedRetBufLclAddr(call);
             if (definedLcl != nullptr)
             {
-                fgMarkUseDef(definedLcl);
+                fgMarkUseDef<!lowered>(definedLcl);
             }
             break;
         }
@@ -356,7 +376,10 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsic)
 }
 #endif // FEATURE_HW_INTRINSICS
 
-/*****************************************************************************/
+//------------------------------------------------------------------------
+// fgPerBlockLocalVarLiveness:
+//   Compute def and use sets for the IR.
+//
 void Compiler::fgPerBlockLocalVarLiveness()
 {
 #ifdef DEBUG
@@ -419,7 +442,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
                     {
                         for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
                         {
-                            fgMarkUseDef(lcl);
+                            fgMarkUseDef<false>(lcl);
                         }
                     }
                     else
@@ -436,12 +459,12 @@ void Compiler::fgPerBlockLocalVarLiveness()
                         // qmark arms.
                         for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
                         {
-                            bool isUse = ((lcl->gtFlags & GTF_VAR_DEF) == 0) || ((lcl->gtFlags & GTF_VAR_USEASG) != 0);
+                            bool isUse = (lcl->gtFlags & GTF_VAR_DEF) == 0;
                             // We can still handle the pure def at the top level.
                             bool conditional = lcl != dst;
                             if (isUse || !conditional)
                             {
-                                fgMarkUseDef(lcl);
+                                fgMarkUseDef<false>(lcl);
                             }
                         }
                     }
@@ -453,7 +476,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
                 {
                     for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
                     {
-                        fgMarkUseDef(lcl);
+                        fgMarkUseDef<false>(lcl);
                     }
                 }
             }
@@ -1175,7 +1198,7 @@ void Compiler::fgComputeLife(VARSET_TP&           life,
     for (GenTree* tree = startNode; tree != endNode; tree = tree->gtPrev)
     {
     AGAIN:
-        assert(tree->OperGet() != GT_QMARK);
+        assert(!tree->OperIs(GT_QMARK));
 
         bool       isUse        = false;
         bool       doAgain      = false;
@@ -1266,7 +1289,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_CALL:
             {
                 GenTreeCall* const call = node->AsCall();
-                if (((call->TypeGet() == TYP_VOID) || call->IsUnusedValue()) && !call->HasSideEffects(this))
+                if ((call->TypeIs(TYP_VOID) || call->IsUnusedValue()) && !call->HasSideEffects(this))
                 {
                     JITDUMP("Removing dead call:\n");
                     DISPNODE(call);
@@ -1454,6 +1477,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_JCC:
             case GT_JTRUE:
             case GT_RETURN:
+            case GT_RETURN_SUSPEND:
             case GT_SWITCH:
             case GT_RETFILT:
             case GT_START_NONGC:
@@ -1470,6 +1494,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_IL_OFFSET:
             case GT_KEEPALIVE:
             case GT_SWIFT_ERROR_RET:
+            case GT_GCPOLL:
                 // Never remove these nodes, as they are always side-effecting.
                 //
                 // NOTE: the only side-effect of some of these nodes (GT_CMP, GT_SUB_HI) is a write to the flags
@@ -1599,7 +1624,7 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
         // (as opposed to side effects of their children).
         // This default case should never include calls or stores.
         assert(!node->OperRequiresAsgFlag() && !node->OperIs(GT_CALL));
-        if (!node->gtSetFlags() && !node->OperMayThrow(this))
+        if (!node->gtSetFlags() && !node->OperMayThrow(this) && fgCanUncontainOrRemoveOperands(node))
         {
             JITDUMP("Removing dead node:\n");
             DISPNODE(node);
@@ -1642,8 +1667,7 @@ bool Compiler::fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclN
     if ((lclNode->gtFlags & GTF_VAR_USEASG) == 0)
     {
         LclVarDsc* varDsc = lvaGetDesc(lclNode);
-        if (varDsc->lvHasExplicitInit && (varDsc->TypeGet() == TYP_STRUCT) && varDsc->HasGCPtr() &&
-            (varDsc->lvRefCnt() > 1))
+        if (varDsc->lvHasExplicitInit && varDsc->TypeIs(TYP_STRUCT) && varDsc->HasGCPtr() && (varDsc->lvRefCnt() > 1))
         {
             JITDUMP("Not removing a potential explicit init [%06u] of V%02u\n", dspTreeID(store), lclNode->GetLclNum());
             return false;
@@ -1657,6 +1681,38 @@ bool Compiler::fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclN
     fgStmtRemoved = true;
 
     return true;
+}
+
+//---------------------------------------------------------------------
+// fgCanUncontainOrRemoveOperands - Check if the operands of a node that is
+// slated for removal can be either uncontained or deleted entirely.
+//
+// Arguments:
+//   node - The node whose operands are to be checked
+//
+// Return Value:
+//   Whether the operands can be uncontained or removed.
+//
+// Remarks:
+//   Only embedded mask ops do not support standalone codegen. All other
+//   nodes can be uncontained.
+//
+bool Compiler::fgCanUncontainOrRemoveOperands(GenTree* node)
+{
+#ifdef FEATURE_HW_INTRINSICS
+    auto visit = [=](GenTree* op) {
+        if (!op->isContained() || !op->IsEmbMaskOp() || !op->NodeOrContainedOperandsMayThrow(this))
+        {
+            return GenTree::VisitResult::Continue;
+        }
+
+        return GenTree::VisitResult::Abort;
+    };
+
+    return node->VisitOperands(visit) != GenTree::VisitResult::Abort;
+#else
+    return true;
+#endif
 }
 
 //---------------------------------------------------------------------
@@ -2086,7 +2142,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
                     for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
                     {
                         assert(cur->OperIsAnyLocal());
-                        bool isDef = ((cur->gtFlags & GTF_VAR_DEF) != 0) && ((cur->gtFlags & GTF_VAR_USEASG) == 0);
+                        bool isDef       = (cur->gtFlags & GTF_VAR_DEF) != 0;
                         bool conditional = cur != dst;
                         // Ignore conditional defs that would otherwise
                         // (incorrectly) interfere with liveness in other

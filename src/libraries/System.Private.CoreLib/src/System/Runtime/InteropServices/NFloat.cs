@@ -1259,7 +1259,7 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static NFloat Clamp(NFloat value, NFloat min, NFloat max) => new NFloat(NativeType.Clamp(value._value, min._value, max._value));
 
-        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
+        /// <inheritdoc cref="INumber{TSelf}.ClampNative(TSelf, TSelf, TSelf)" />
         public static NFloat ClampNative(NFloat value, NFloat min, NFloat max) => new NFloat(NativeType.ClampNative(value._value, min._value, max._value));
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
@@ -1919,7 +1919,7 @@ namespace System.Runtime.InteropServices
             return (new NFloat(sin), new NFloat(cos));
         }
 
-        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCosPi(TSelf)" />
         public static (NFloat SinPi, NFloat CosPi) SinCosPi(NFloat x)
         {
             var (sinPi, cosPi) = NativeType.SinCosPi(x._value);

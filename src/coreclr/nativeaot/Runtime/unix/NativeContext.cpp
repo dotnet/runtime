@@ -6,7 +6,7 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
+#include "PalLimitedContext.h"
 #include "regdisplay.h"
 #include "config.h"
 
@@ -816,7 +816,9 @@ uint64_t GetPC(void* context)
 #elif TARGET_LOONGARCH64
 
     uint64_t& NATIVE_CONTEXT::R0() { return (uint64_t&)MCREG_R0(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Ra() { return (uint64_t&)MCREG_Ra(ctx.uc_mcontext); }
     uint64_t& NATIVE_CONTEXT::R2() { return (uint64_t&)MCREG_Tp(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Sp() { return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); }
     uint64_t& NATIVE_CONTEXT::R4() { return (uint64_t&)MCREG_A0(ctx.uc_mcontext); }
     uint64_t& NATIVE_CONTEXT::R5() { return (uint64_t&)MCREG_A1(ctx.uc_mcontext); }
     uint64_t& NATIVE_CONTEXT::R6() { return (uint64_t&)MCREG_A2(ctx.uc_mcontext); }
@@ -835,6 +837,7 @@ uint64_t GetPC(void* context)
     uint64_t& NATIVE_CONTEXT::R19() { return (uint64_t&)MCREG_T7(ctx.uc_mcontext); }
     uint64_t& NATIVE_CONTEXT::R20() { return (uint64_t&)MCREG_T8(ctx.uc_mcontext); }
     uint64_t& NATIVE_CONTEXT::R21() { return (uint64_t&)MCREG_X0(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Fp() { return (uint64_t&)MCREG_Fp(ctx.uc_mcontext); }
     uint64_t& NATIVE_CONTEXT::R23() { return (uint64_t&)MCREG_S0(ctx.uc_mcontext); }
     uint64_t& NATIVE_CONTEXT::R24() { return (uint64_t&)MCREG_S1(ctx.uc_mcontext); }
     uint64_t& NATIVE_CONTEXT::R25() { return (uint64_t&)MCREG_S2(ctx.uc_mcontext); }
@@ -844,9 +847,6 @@ uint64_t GetPC(void* context)
     uint64_t& NATIVE_CONTEXT::R29() { return (uint64_t&)MCREG_S6(ctx.uc_mcontext); }
     uint64_t& NATIVE_CONTEXT::R30() { return (uint64_t&)MCREG_S7(ctx.uc_mcontext); }
     uint64_t& NATIVE_CONTEXT::R31() { return (uint64_t&)MCREG_S8(ctx.uc_mcontext); }
-    uint64_t& NATIVE_CONTEXT::Fp() { return (uint64_t&)MCREG_Fp(ctx.uc_mcontext); } // R22
-    uint64_t& NATIVE_CONTEXT::Ra() { return (uint64_t&)MCREG_Ra(ctx.uc_mcontext); } // R1
-    uint64_t& NATIVE_CONTEXT::Sp() { return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); } // R3
     uint64_t& NATIVE_CONTEXT::Pc() { return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }
 
 #elif TARGET_RISCV64

@@ -113,6 +113,71 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        /// <summary>
+        ///   Exports the certificate and private key in PKCS#12 / PFX format.
+        /// </summary>
+        /// <param name="exportParameters">The algorithm parameters to use for the export.</param>
+        /// <param name="password">The password to use for the export.</param>
+        /// <returns>A byte array containing the encoded PKCS#12.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="password"/> contains a Unicode 'NULL' character.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="exportParameters"/> is not a valid value.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The export operation failed.</para>
+        /// </exception>
+        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, string? password)
+        {
+            Helpers.ThrowIfInvalidPkcs12ExportParameters(exportParameters);
+            Helpers.ThrowIfPasswordContainsNullCharacter(password);
+
+            using (SafePasswordHandle safePasswordHandle = new(password, passwordProvided: true))
+            using (IExportPal storePal = StorePal.LinkFromCertificateCollection(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, safePasswordHandle);
+            }
+        }
+
+        /// <summary>
+        ///   Exports the certificates and private keys in PKCS#12 / PFX format.
+        /// </summary>
+        /// <param name="exportParameters">The algorithm parameters to use for the export.</param>
+        /// <param name="password">The password to use for the export.</param>
+        /// <returns>A byte array containing the encoded PKCS#12.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="password"/> contains a Unicode 'NULL' character.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="exportParameters"/> is <see langword="null"/> .
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The export operation failed.</para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="exportParameters"/> specifies a <see cref="PbeParameters.HashAlgorithm"/> value that is
+        ///     not supported for the <see cref="PbeParameters.EncryptionAlgorithm"/> value.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="exportParameters"/> contains an invalid encryption algorithm for
+        ///     <see cref="PbeParameters.EncryptionAlgorithm"/>.
+        ///   </para>
+        /// </exception>
+        public byte[] ExportPkcs12(PbeParameters exportParameters, string? password)
+        {
+            ArgumentNullException.ThrowIfNull(exportParameters);
+            Helpers.ThrowIfInvalidPkcs12ExportParameters(exportParameters);
+            Helpers.ThrowIfPasswordContainsNullCharacter(password);
+
+            using (SafePasswordHandle safePasswordHandle = new(password, passwordProvided: true))
+            using (IExportPal storePal = StorePal.LinkFromCertificateCollection(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, safePasswordHandle);
+            }
+        }
+
         public byte[]? Export(X509ContentType contentType, string? password)
         {
             using (var safePasswordHandle = new SafePasswordHandle(password, passwordProvided: true))

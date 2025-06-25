@@ -8,15 +8,15 @@ using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 
-internal sealed class ComposeCommand : CliCommand
+internal sealed class ComposeCommand : Command
 {
-    private readonly CliArgument<string[]> inputFiles = new("INPUT [INPUTS...]") { Arity = ArgumentArity.OneOrMore, Description = "One or more input files" };
-    private readonly CliOption<string> outputFile = new("-o") { Arity = ArgumentArity.ExactlyOne, HelpName = "OUTPUT", Required = true, Description = "Output file" };
-    private readonly CliOption<string[]> contractFile = new("-c") { Arity = ArgumentArity.ZeroOrMore, HelpName = "CONTRACT", Description = "Contract file (may be specified multiple times)" };
-    private readonly CliOption<string> baselinePath = new("-b", "--baseline") { Arity = ArgumentArity.ExactlyOne, HelpName = "BASELINEPATH", Description = "Directory containing the baseline contracts"};
-    private readonly CliOption<string> templateFile = new ("-i", "--input-template") { Arity = ArgumentArity.ExactlyOne, HelpName = "TEMPLATE", Description = "Contract descriptor template to be filled in" };
-    private readonly CliOption<bool> _verboseOption;
-    public ComposeCommand(CliOption<bool> verboseOption) : base("compose")
+    private readonly Argument<string[]> inputFiles = new("INPUT [INPUTS...]") { Arity = ArgumentArity.OneOrMore, Description = "One or more input files" };
+    private readonly Option<string> outputFile = new("-o") { Arity = ArgumentArity.ExactlyOne, HelpName = "OUTPUT", Required = true, Description = "Output file" };
+    private readonly Option<string[]> contractFile = new("-c") { Arity = ArgumentArity.ZeroOrMore, HelpName = "CONTRACT", Description = "Contract file (may be specified multiple times)" };
+    private readonly Option<string> baselinePath = new("-b", "--baseline") { Arity = ArgumentArity.ExactlyOne, HelpName = "BASELINEPATH", Description = "Directory containing the baseline contracts"};
+    private readonly Option<string> templateFile = new("-i", "--input-template") { Arity = ArgumentArity.ExactlyOne, HelpName = "TEMPLATE", Description = "Contract descriptor template to be filled in" };
+    private readonly Option<bool> _verboseOption;
+    public ComposeCommand(Option<bool> verboseOption) : base("compose")
     {
         _verboseOption = verboseOption;
         Add(inputFiles);

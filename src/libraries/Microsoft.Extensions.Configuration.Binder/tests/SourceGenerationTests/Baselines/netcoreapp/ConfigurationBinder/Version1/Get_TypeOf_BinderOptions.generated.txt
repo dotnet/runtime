@@ -67,14 +67,29 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             ValidateConfigurationKeys(typeof(global::Program.MyClass2), s_configKeys_ProgramMyClass2, configuration, binderOptions);
 
-            if (configuration["MyInt"] is string value1 && !string.IsNullOrEmpty(value1))
+            if (TryGetConfigurationValue(configuration, key: "MyInt", out string? value1))
             {
-                instance.MyInt = ParseInt(value1, configuration.GetSection("MyInt").Path);
+                if (!string.IsNullOrEmpty(value1))
+                {
+                    instance.MyInt = ParseInt(value1, configuration.GetSection("MyInt").Path);
+                }
             }
             else if (defaultValueIfNotFound)
             {
                 instance.MyInt = instance.MyInt;
             }
+        }
+
+        /// <summary>Tries to get the configuration value for the specified key.</summary>
+        public static bool TryGetConfigurationValue(IConfiguration configuration, string key, out string? value)
+        {
+            if (configuration is ConfigurationSection section)
+            {
+                return section.TryGetValue(key, out value);
+            }
+        
+            value = key != null ? configuration[key] : configuration is IConfigurationSection sec ? sec.Value : null;
+            return value != null;
         }
 
 
@@ -144,7 +159,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
         #endregion Core binding extensions.

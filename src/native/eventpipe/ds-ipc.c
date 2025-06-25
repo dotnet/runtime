@@ -454,6 +454,12 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 
 		// clear the view.
 		dn_vector_clear (&ipc_poll_handles);
+
+#ifdef PERFTRACING_DISABLE_THREADS
+		// in single-threaded mode, we only do one poll
+		// we can't loop here, that would block the browser event loop
+		break;
+#endif
 	}
 
 ep_on_exit:
@@ -703,7 +709,7 @@ connect_port_get_ipc_poll_handle_func (
 			buffer [0] = '\0';
 		DS_LOG_DEBUG_1 ("connect_port_get_ipc_poll_handle - returned connection %s", buffer);
 
-		if (!ds_icp_advertise_v1_send (connection)) {
+		if (!ds_ipc_advertise_v1_send (connection)) {
 			if (callback)
 				callback("Failed to send advertise message", -1);
 			ep_raise_error ();

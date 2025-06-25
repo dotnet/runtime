@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.Configuration
         /// <exception cref="System.InvalidOperationException">There is no section with key <paramref name="key"/>.</exception>
         public static IConfigurationSection GetRequiredSection(this IConfiguration configuration, string key)
         {
-            ThrowHelper.ThrowIfNull(configuration);
+            ArgumentNullException.ThrowIfNull(configuration);
 
             IConfigurationSection section = configuration.GetSection(key);
             if (section.Exists())

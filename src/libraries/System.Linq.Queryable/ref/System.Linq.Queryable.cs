@@ -128,12 +128,20 @@ namespace System.Linq
         public static long LongCount<TSource>(this System.Linq.IQueryable<TSource> source) { throw null; }
         public static long LongCount<TSource>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, bool>> predicate) { throw null; }
         public static TSource? MaxBy<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
+        [System.ObsoleteAttribute("The Queryable MinBy and MaxBy taking an IComparer<TSource> are obsolete. Use the new ones that take an IComparer<TKey>.", DiagnosticId="SYSLIB0061", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static TSource? MaxBy<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector, System.Collections.Generic.IComparer<TSource>? comparer) { throw null; }
+        public static TSource? MaxBy<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector, System.Collections.Generic.IComparer<TKey>? comparer) { throw null; }
         public static TSource? Max<TSource>(this System.Linq.IQueryable<TSource> source) { throw null; }
         public static TSource? Max<TSource>(this System.Linq.IQueryable<TSource> source, System.Collections.Generic.IComparer<TSource>? comparer) { throw null; }
         public static TResult? Max<TSource, TResult>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TResult>> selector) { throw null; }
         public static TSource? MinBy<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
+        [System.ObsoleteAttribute("The Queryable MinBy and MaxBy taking an IComparer<TSource> are obsolete. Use the new ones that take an IComparer<TKey>.", DiagnosticId="SYSLIB0061", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static TSource? MinBy<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector, System.Collections.Generic.IComparer<TSource>? comparer) { throw null; }
+        public static TSource? MinBy<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector, System.Collections.Generic.IComparer<TKey>? comparer) { throw null; }
         public static TSource? Min<TSource>(this System.Linq.IQueryable<TSource> source) { throw null; }
         public static TSource? Min<TSource>(this System.Linq.IQueryable<TSource> source, System.Collections.Generic.IComparer<TSource>? comparer) { throw null; }
         public static TResult? Min<TSource, TResult>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TResult>> selector) { throw null; }
@@ -158,6 +166,7 @@ namespace System.Linq
         public static System.Linq.IQueryable<TResult> Select<TSource, TResult>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TResult>> selector) { throw null; }
         public static bool SequenceEqual<TSource>(this System.Linq.IQueryable<TSource> source1, System.Collections.Generic.IEnumerable<TSource> source2) { throw null; }
         public static bool SequenceEqual<TSource>(this System.Linq.IQueryable<TSource> source1, System.Collections.Generic.IEnumerable<TSource> source2, System.Collections.Generic.IEqualityComparer<TSource>? comparer) { throw null; }
+        public static System.Linq.IQueryable<TSource> Shuffle<TSource>(this System.Linq.IQueryable<TSource> source) { throw null; }
         public static TSource? SingleOrDefault<TSource>(this System.Linq.IQueryable<TSource> source) { throw null; }
         public static TSource? SingleOrDefault<TSource>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, bool>> predicate) { throw null; }
         public static TSource SingleOrDefault<TSource>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, bool>> predicate, TSource defaultValue) { throw null; }

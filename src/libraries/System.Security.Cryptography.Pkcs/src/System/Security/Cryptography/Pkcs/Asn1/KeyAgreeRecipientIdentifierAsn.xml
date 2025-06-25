@@ -12,6 +12,6 @@
         rKeyId[0] IMPLICIT RecipientKeyIdentifier
     }
   -->
-  <asn:AsnType name="IssuerAndSerialNumber" typeName="System.Security.Cryptography.Pkcs.Asn1.IssuerAndSerialNumberAsn" />
+  <asn:AsnType name="IssuerAndSerialNumber" typeName="System.Security.Cryptography.Asn1.Pkcs7.IssuerAndSerialNumberAsn" />
   <asn:AsnType name="RKeyId" typeName="System.Security.Cryptography.Pkcs.Asn1.RecipientKeyIdentifier" implicitTag="0" />
 </asn:Choice>

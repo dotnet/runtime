@@ -1000,15 +1000,23 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
+#if MONO
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
+#if MONO
                 result = (actualValue == Half.PositiveInfinity) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue == Half.NegativeInfinity) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(BFloat16))
@@ -1053,8 +1061,12 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
+#if MONO
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else
@@ -1084,15 +1096,23 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
+#if MONO
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
+#if MONO
                 result = (actualValue == Half.PositiveInfinity) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue == Half.NegativeInfinity) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(BFloat16))
@@ -1135,8 +1155,12 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
+#if MONO
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+#else
+                result = (nint)actualValue;
+#endif
                 return true;
             }
             else

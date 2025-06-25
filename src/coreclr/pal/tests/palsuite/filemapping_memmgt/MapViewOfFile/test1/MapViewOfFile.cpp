@@ -35,7 +35,7 @@ PALTEST(filemapping_memmgt_MapViewOfFile_test1_paltest_mapviewoffile_test1, "fil
     HANDLE  hFile = INVALID_HANDLE_VALUE;
     LPSTR   buf = NULL;
     CHAR    ch[MAPPINGSIZE];
-    CHAR    lpFilePath[MAX_PATH];
+    CHAR*   lpFilePath = TEMP_DIRECTORY_PATH"tst";
     DWORD   dwBytesWritten = 0;
     DWORD   dwInitialSize = 0;
     DWORD   dwFinalSize = 0;
@@ -50,8 +50,6 @@ PALTEST(filemapping_memmgt_MapViewOfFile_test1_paltest_mapviewoffile_test1, "fil
     {
         return FAIL;
     }
-
-    GetTempFileName(TEMP_DIRECTORY_PATH, "tst", 0, lpFilePath);
 
     /* Create a file handle with CreateFile.
      */

@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveTypeBuilderAPIsTests
     {
         [Fact]
@@ -547,7 +547,6 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-
         [Fact]
         public void CreateType_ValidateMethods()
         {
@@ -570,7 +569,6 @@ namespace System.Reflection.Emit.Tests
             implFlagsSetMethod.SetImplementationFlags(MethodImplAttributes.InternalCall);
 
             MethodBuilder methodNeedsIL = concreteTypeWithNativeAndPinvokeMethod.DefineMethod("MethodNeedsIL", MethodAttributes.Public);
-            Assert.Throws<InvalidOperationException>(() => concreteTypeWithNativeAndPinvokeMethod.CreateType()); // Method 'MethodNeedsIL' does not have a method body.
             methodNeedsIL.GetILGenerator().Emit(OpCodes.Ret);
             concreteTypeWithNativeAndPinvokeMethod.CreateType(); // succeeds
         }

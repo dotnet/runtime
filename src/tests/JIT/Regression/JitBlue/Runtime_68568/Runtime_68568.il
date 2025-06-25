@@ -22,8 +22,9 @@
   .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = { }
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnMonoAttribute::.ctor(string) = {
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnMonoAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms) = {
         string('Tests coreclr handling of switches on natively sized integers')
+        int32(0xFFFFFFFF) // Any
     }
     .entrypoint
     // Code size       79 (0x4f)

@@ -891,7 +891,7 @@ namespace System
             return null;
         }
 
-        private unsafe string GetRelativeSerializationString(UriFormat format)
+        private string GetRelativeSerializationString(UriFormat format)
         {
             if (format == UriFormat.UriEscaped)
             {

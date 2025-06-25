@@ -41,9 +41,7 @@ inline static bool isHighSimdReg(regNumber reg)
 inline static bool isHighGPReg(regNumber reg)
 {
 #ifdef TARGET_AMD64
-    // TODO-apx: the definition here is incorrect, we will need to revisit this after we extend the register definition.
-    //           for now, we can simply use REX2 as REX.
-    return ((reg >= REG_R8) && (reg <= REG_R15));
+    return ((reg >= REG_R16) && (reg <= REG_R31));
 #else
     // X86 JIT operates in 32-bit mode and hence extended regs are not available.
     return false;
@@ -122,20 +120,18 @@ static bool IsSSEInstruction(instruction ins);
 static bool IsSSEOrAVXInstruction(instruction ins);
 static bool IsAVXOnlyInstruction(instruction ins);
 static bool IsAvx512OnlyInstruction(instruction ins);
-static bool IsFMAInstruction(instruction ins);
-static bool IsPermuteVar2xInstruction(instruction ins);
-static bool IsAVXVNNIInstruction(instruction ins);
+static bool IsKMOVInstruction(instruction ins);
+static bool Is3OpRmwInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
 static bool IsKInstruction(instruction ins);
 static bool IsKInstructionWithLBit(instruction ins);
+static bool IsApxOnlyInstruction(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
-bool             HasVexEncoding(instruction ins) const;
-bool             HasEvexEncoding(instruction ins) const;
-bool             HasRex2Encoding(instruction ins) const;
-bool             HasApxNdd(instruction ins) const;
-bool             HasApxNf(instruction ins) const;
+static bool      HasRex2Encoding(instruction ins);
+static bool      HasApxNdd(instruction ins);
+static bool      HasApxNf(instruction ins);
 bool             IsVexEncodableInstruction(instruction ins) const;
 bool             IsEvexEncodableInstruction(instruction ins) const;
 bool             IsRex2EncodableInstruction(instruction ins) const;
@@ -228,7 +224,8 @@ code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr 
     return code;
 }
 
-insTupleType insTupleTypeInfo(instruction ins) const;
+static insTupleType insTupleTypeInfo(instruction ins);
+static unsigned     insKMaskBaseSize(instruction ins);
 
 // 2-byte REX2 prefix starts with byte 0xD5
 #define REX2_PREFIX_MASK_2BYTE 0xFF0000000000ULL
@@ -296,6 +293,11 @@ bool HasKMaskRegisterDest(instruction ins) const
         case INS_vgatherqps:
         case INS_vgatherdpd:
         case INS_vgatherqpd:
+        // KMOV can be promoted to EVEX with APX.
+        case INS_kmovb_msk:
+        case INS_kmovw_msk:
+        case INS_kmovd_msk:
+        case INS_kmovq_msk:
         {
             return true;
         }
@@ -517,15 +519,12 @@ void SetEvexEmbMaskIfNeeded(instrDesc* id, insOpts instOptions)
     {
         assert(UseEvexEncoding());
         id->idSetEvexAaaContext(instOptions);
-
-        if ((instOptions & INS_OPTS_EVEX_z_MASK) == INS_OPTS_EVEX_em_zero)
-        {
-            id->idSetEvexZContext();
-        }
     }
-    else
+
+    if ((instOptions & INS_OPTS_EVEX_z_MASK) == INS_OPTS_EVEX_em_zero)
     {
-        assert((instOptions & INS_OPTS_EVEX_z_MASK) == 0);
+        assert(UseEvexEncoding());
+        id->idSetEvexZContext();
     }
 }
 
@@ -569,6 +568,41 @@ void SetEvexNfIfNeeded(instrDesc* id, insOpts instOptions)
     {
         assert((instOptions & INS_OPTS_EVEX_nf_MASK) == 0);
     }
+}
+
+//------------------------------------------------------------------------
+// SetApxPpxIfNeeded: set APX.ppx on instrDesc
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetApxPpxIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_APX_ppx_MASK) != 0)
+    {
+        assert(HasApxPpx(id->idIns()));
+        id->idSetApxPpxContext();
+    }
+}
+
+//------------------------------------------------------------------------
+// SetEvexDFVIfNeeded: set default flag values on an instrDesc
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetEvexDFVIfNeeded(instrDesc* id, insOpts instOptions)
+{
+#if defined(TARGET_AMD64)
+    if ((instOptions & INS_OPTS_EVEX_dfv_MASK) != 0)
+    {
+        assert(UsePromotedEVEXEncoding());
+        assert(IsCCMP(id->idIns()));
+        id->idSetEvexDFV(instOptions);
+    }
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -683,6 +717,9 @@ static bool IsRexW1Instruction(instruction ins);
 static bool IsRexWXInstruction(instruction ins);
 static bool IsRexW1EvexInstruction(instruction ins);
 
+static bool  IsCCMP(instruction ins);
+static insCC GetCCFromCCMP(instruction ins);
+
 bool isAvx512Blendv(instruction ins)
 {
     return ins == INS_vblendmps || ins == INS_vblendmpd || ins == INS_vpblendmb || ins == INS_vpblendmd ||
@@ -727,14 +764,16 @@ instrDesc* emitNewInstrCallDir(int              argCnt,
                                VARSET_VALARG_TP GCvars,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
-                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
+                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                               bool             hasAsyncRet);
 
 instrDesc* emitNewInstrCallInd(int              argCnt,
                                ssize_t          disp,
                                VARSET_VALARG_TP GCvars,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
-                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
+                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                               bool             hasAsyncRet);
 
 void    emitGetInsCns(const instrDesc* id, CnsVal* cv) const;
 ssize_t emitGetInsAmdCns(const instrDesc* id, CnsVal* cv) const;
@@ -978,7 +1017,8 @@ void emitIns_R_R_R_R(instruction ins,
 
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 
-void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
+void emitIns_S_R(
+    instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_R_S(
     instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions = INS_OPTS_NONE);
@@ -1198,36 +1238,6 @@ void emitIns_BASE_R_R_I(instruction ins, emitAttr attr, regNumber op1Reg, regNum
 regNumber emitIns_BASE_R_R_RM(
     instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode, GenTree* regOp, GenTree* rmOp);
 
-enum EmitCallType
-{
-    EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method (call addr with RIP-relative encoding)
-    EC_FUNC_TOKEN_INDIR, // Indirect call to a helper/static/nonvirtual/global method (call [addr]/call [rip+addr])
-    EC_INDIR_R,          // Indirect call via register (call rax)
-    EC_INDIR_ARD,        // Indirect call via an addressing mode (call [rax+rdx*8+disp])
-
-    EC_COUNT
-};
-
-// clang-format off
-void emitIns_Call(EmitCallType          callType,
-                  CORINFO_METHOD_HANDLE methHnd,
-                  INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                  void*                 addr,
-                  ssize_t               argSize,
-                  emitAttr              retSize
-                  MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                  VARSET_VALARG_TP      ptrVars,
-                  regMaskTP             gcrefRegs,
-                  regMaskTP             byrefRegs,
-                  const DebugInfo& di = DebugInfo(),
-                  regNumber             ireg     = REG_NA,
-                  regNumber             xreg     = REG_NA,
-                  unsigned              xmul     = 0,
-                  ssize_t               disp     = 0,
-                  bool                  isJump   = false,
-                  bool                  noSafePoint   = false);
-// clang-format on
-
 #ifdef TARGET_AMD64
 // Is the last instruction emitted a call instruction?
 bool emitIsLastInsCall();
@@ -1290,12 +1300,17 @@ inline bool HasEmbeddedBroadcast(const instrDesc* id) const
 //
 inline bool HasEmbeddedMask(const instrDesc* id) const
 {
-    return id->idIsEvexAaaContextSet();
+    return id->idIsEvexAaaContextSet() || id->idIsEvexZContextSet();
 }
 
 inline bool HasHighSIMDReg(const instrDesc* id) const;
 inline bool HasExtendedGPReg(const instrDesc* id) const;
 
 inline bool HasMaskReg(const instrDesc* id) const;
+
+#ifdef TARGET_AMD64
+// true if this 'imm' can be encoded as a input operand to a ccmp instruction
+static bool emitIns_valid_imm_for_ccmp(INT64 imm);
+#endif // TARGET_AMD64
 
 #endif // TARGET_XARCH
