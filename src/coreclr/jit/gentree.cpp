@@ -30957,15 +30957,15 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*     comp,
 // Returns:
 //    The intrinsic ID based on the oper, base type, and simd size
 //
-NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*        comp,
-                                                            genTreeOps       oper,
-                                                            var_types        type,
-                                                            GenTree*         op1,
-                                                            GenTree*         op2,
-                                                            var_types        simdBaseType,
-                                                            unsigned         simdSize,
-                                                            bool             isScalar,
-                                                            bool reverseCond ARM64_ARG(bool isScalable))
+NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*     comp,
+                                                            genTreeOps    oper,
+                                                            var_types     type,
+                                                            GenTree*      op1,
+                                                            GenTree*      op2,
+                                                            var_types     simdBaseType,
+                                                            unsigned      simdSize,
+                                                            bool isScalar ARM64_ARG(bool isScalable),
+                                                            bool          reverseCond)
 {
     var_types simdType = comp->getSIMDTypeForSize(simdSize);
     assert(varTypeIsMask(type) || (type == simdType));
@@ -31347,12 +31347,12 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*        com
 //    type doesn't match with the type IR wants us to be producing. For example, the consuming node
 //    may expect a TYP_SIMD16 but the underlying instruction may produce a TYP_MASK.
 //
-var_types GenTreeHWIntrinsic::GetLookupTypeForCmpOp(Compiler*        comp,
-                                                    genTreeOps       oper,
-                                                    var_types        type,
-                                                    var_types        simdBaseType,
-                                                    unsigned         simdSize,
-                                                    bool reverseCond ARM64_ARG(bool isScalable))
+var_types GenTreeHWIntrinsic::GetLookupTypeForCmpOp(Compiler*         comp,
+                                                    genTreeOps        oper,
+                                                    var_types         type,
+                                                    var_types         simdBaseType,
+                                                    unsigned simdSize ARM64_ARG(bool isScalable),
+                                                    bool              reverseCond)
 {
     var_types simdType = comp->getSIMDTypeForSize(simdSize);
     assert(varTypeIsMask(type) || (type == simdType));

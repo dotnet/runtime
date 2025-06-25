@@ -9874,12 +9874,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node ARM64_ARG(bool
                 const bool reverseCond = true;
 
                 var_types lookupType =
-                    GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, op1Oper, op1RetType, op1SimdBaseType, op1SimdSize,
-                                                              reverseCond);
+                    GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, op1Oper, op1RetType, op1SimdBaseType,
+                                                              op1SimdSize ARM64_ARG(isScalable), reverseCond);
                 NamedIntrinsic newId =
                     GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, op1Oper, lookupType, cmpOp1, cmpOp2,
-                                                                 op1SimdBaseType, op1SimdSize, op1IsScalar,
-                                                                 reverseCond);
+                                                                 op1SimdBaseType, op1SimdSize,
+                                                                 op1IsScalar ARM64_ARG(isScalable), reverseCond);
 
                 if (newId != NI_Illegal)
                 {
