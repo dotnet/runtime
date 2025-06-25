@@ -244,10 +244,10 @@ namespace Microsoft.Extensions.Hosting
 
             if (env.ApplicationName is { Length: > 0 })
             {
-                string applicationName = env.ApplicationName.Replace(Path.DirectorySeparatorChar, '_')
-                                                           .Replace(Path.AltDirectorySeparatorChar, '_');
-                appConfigBuilder.AddJsonFile($"{applicationName}.settings.json", optional: true, reloadOnChange: reloadOnChange)
-                        .AddJsonFile($"{applicationName}.settings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
+                string sanitizedApplicationName = env.ApplicationName.Replace(Path.DirectorySeparatorChar, '_')
+                                                                    .Replace(Path.AltDirectorySeparatorChar, '_');
+                appConfigBuilder.AddJsonFile($"{sanitizedApplicationName}.settings.json", optional: true, reloadOnChange: reloadOnChange)
+                        .AddJsonFile($"{sanitizedApplicationName}.settings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
             }
 
             if (env.IsDevelopment() && env.ApplicationName is { Length: > 0 })

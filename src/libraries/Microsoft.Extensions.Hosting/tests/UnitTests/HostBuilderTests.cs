@@ -933,7 +933,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                     config.AddInMemoryCollection(new[]
                     {
                         new KeyValuePair<string, string>(HostDefaults.ApplicationKey, "my/app"),
-                        new KeyValuePair<string, string>(HostDefaults.EnvironmentKey, "Development")
+                        new KeyValuePair<string, string>(HostDefaults.EnvironmentKey, "Production")
                     });
                 })
                 .Build();
