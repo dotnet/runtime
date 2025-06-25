@@ -9,6 +9,7 @@ import { Module } from "./globals";
 import cwraps from "./cwraps";
 import { isSharedArrayBuffer, localHeapViewU8, getU32_local, setU16_local, localHeapViewU32, getU16_local, localHeapViewU16, _zero_region, malloc, free } from "./memory";
 import { NativePointer, CharPtr, VoidPtr } from "./types/emscripten";
+import { safeBigIntToNumber } from "./invoke-js";
 
 export const interned_js_string_table = new Map<string, MonoString>();
 export const mono_wasm_empty_string = "";
@@ -65,7 +66,14 @@ export function utf8ToStringRelaxed (buffer: Uint8Array): string {
 
 export function utf8ToString (ptr: CharPtr): string {
     const heapU8 = localHeapViewU8();
-    return utf8BufferToString(heapU8, ptr as any, heapU8.length - (ptr as any));
+    let idx: number;
+    if (typeof ptr === "bigint") {
+        idx = safeBigIntToNumber(ptr);
+    } else {
+        // @ts-expect-error TS2352
+        idx = ptr as number;
+    }
+    return utf8BufferToString(heapU8, idx, heapU8.length - idx);
 }
 
 export function utf8BufferToString (heapOrArray: Uint8Array, idx: number, maxBytesToRead: number): string {

@@ -22,6 +22,12 @@ export function isWasm64 (): boolean {
     // This is a common runtime check, adjust if you have a better flag
     return typeof Module.HEAP64 !== "undefined";
 }
+export function safeBigIntToNumber (ptr: bigint): number {
+    if (ptr > BigInt(Number.MAX_SAFE_INTEGER) || ptr < BigInt(Number.MIN_SAFE_INTEGER)) {
+        throw new Error(`Pointer value ${ptr} is out of safe integer range for JavaScript numbers.`);
+    }
+    return Number(ptr);
+}
 
 export const js_import_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 function toPointerForWasm (signature: number, wasm64: boolean): number | bigint {
