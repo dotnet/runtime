@@ -3318,12 +3318,11 @@ namespace System.Diagnostics.Tracing
                                 else if (eventAttribute.Opcode == EventOpcode.Stop)
                                 {
                                     // Find the start associated with this stop event.  We require start to be immediately before the stop
+                                    Debug.Assert(0 <= startEventId); 
                                     int startEventId = eventAttribute.EventId - 1;
-                                    if (eventData != null && eventData.TryGetValue(startEventId, out _))
+                                    if (eventData != null && eventData.TryGetValue(startEventId, out EventMetadata startEventMetadata))
                                     {
-                                        Debug.Assert(0 <= startEventId);                // Since we reserve id 0, we know that id-1 is <= 0
-                                        EventMetadata startEventMetadata = eventData[startEventId];
-
+                                        // Since we reserve id 0, we know that id-1 is <= 0
                                         // If you remove the Stop and add a Start does that name match the Start Event's Name?
                                         // Ideally we would throw an error
                                         if (startEventMetadata.Descriptor.Opcode == (byte)EventOpcode.Start &&
