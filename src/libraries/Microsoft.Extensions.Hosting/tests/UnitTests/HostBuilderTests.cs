@@ -858,6 +858,37 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
+        public void ConfigureDefaults_LoadsApplicationSpecificSettings_WithDevelopmentEnvironment()
+        {
+            using TempDirectory tempDir = new();
+            string appSettingsPath = Path.Combine(tempDir.Path, "testapp.settings.json");
+            string appSettingsEnvPath = Path.Combine(tempDir.Path, "testapp.settings.Development.json");
+
+            // Create test configuration files
+            File.WriteAllText(appSettingsPath, """{"TestKey": "AppValue"}""");
+            File.WriteAllText(appSettingsEnvPath, """{"TestKey": "AppDevValue", "DevKey": "DevValue"}""");
+
+            using var host = new HostBuilder()
+                .ConfigureDefaults(args: null)
+                .UseContentRoot(tempDir.Path)
+                .ConfigureHostConfiguration(config =>
+                {
+                    config.AddInMemoryCollection(new[]
+                    {
+                        new KeyValuePair<string, string>(HostDefaults.ApplicationKey, "testapp"),
+                        new KeyValuePair<string, string>(HostDefaults.EnvironmentKey, "Development")
+                    });
+                })
+                .Build();
+
+            var configuration = host.Services.GetRequiredService<IConfiguration>();
+
+            // Verify that app-specific environment settings override app-specific settings
+            Assert.Equal("AppDevValue", configuration["TestKey"]);
+            Assert.Equal("DevValue", configuration["DevKey"]);
+        }
+
+        [Fact]
         public void ConfigureDefaults_DoesNotLoadApplicationSpecificSettings_WhenApplicationNameIsEmpty()
         {
             using TempDirectory tempDir = new();
