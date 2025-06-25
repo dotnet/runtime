@@ -592,7 +592,7 @@ protected:
 
     void emitRecomputeIGoffsets();
 
-    void emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flags);
+    void emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flags) const;
 
     /************************************************************************/
     /*          The following describes a single instruction                */
@@ -2381,12 +2381,12 @@ protected:
 
 #ifdef TARGET_XARCH
 
-    ssize_t emitGetInsCns(instrDesc* id);
-    ssize_t emitGetInsDsp(instrDesc* id);
-    ssize_t emitGetInsAmd(instrDesc* id);
+    ssize_t emitGetInsCns(instrDesc* id) const;
+    ssize_t emitGetInsDsp(instrDesc* id) const;
+    ssize_t emitGetInsAmd(instrDesc* id) const;
 
-    ssize_t  emitGetInsCIdisp(instrDesc* id);
-    unsigned emitGetInsCIargs(instrDesc* id);
+    ssize_t  emitGetInsCIdisp(instrDesc* id) const;
+    unsigned emitGetInsCIargs(instrDesc* id) const;
 
     inline emitAttr emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast = false) const;
 
@@ -2446,6 +2446,7 @@ protected:
     void emitDispEmbBroadcastCount(instrDesc* id) const;
     void emitDispEmbRounding(instrDesc* id) const;
     void emitDispEmbMasking(instrDesc* id) const;
+    void emitDispConstant(const instrDesc* id, bool skipComma = false) const;
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,
@@ -4100,12 +4101,12 @@ inline emitter::instrDesc* emitter::emitNewInstrLoadImm(emitAttr attr, cnsval_ss
  *  get stored in different places within the instruction descriptor.
  */
 
-inline ssize_t emitter::emitGetInsCns(instrDesc* id)
+inline ssize_t emitter::emitGetInsCns(instrDesc* id) const
 {
     return id->idIsLargeCns() ? ((instrDescCns*)id)->idcCnsVal : id->idSmallCns();
 }
 
-inline ssize_t emitter::emitGetInsDsp(instrDesc* id)
+inline ssize_t emitter::emitGetInsDsp(instrDesc* id) const
 {
     if (id->idIsLargeDsp())
     {
@@ -4123,7 +4124,7 @@ inline ssize_t emitter::emitGetInsDsp(instrDesc* id)
  *  Get hold of the argument count for an indirect call.
  */
 
-inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
+inline unsigned emitter::emitGetInsCIargs(instrDesc* id) const
 {
     if (id->idIsLargeCall())
     {
