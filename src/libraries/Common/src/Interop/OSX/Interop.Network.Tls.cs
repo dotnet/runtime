@@ -24,14 +24,14 @@ internal static partial class Interop
                                                    delegate* unmanaged<IntPtr, byte*, void**, int> writeCallback);
 
             [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwCreateContext")]
-            internal static partial SafeNetworkFrameworkHandle CreateContext([MarshalAs(UnmanagedType.I4)] bool isServer);
+            internal static partial SafeNwHandle CreateContext([MarshalAs(UnmanagedType.I4)] bool isServer);
 
             [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwSetTlsOptions", StringMarshalling = StringMarshalling.Utf8)]
-            private static partial int SetTlsOptions(SafeNetworkFrameworkHandle connection, IntPtr gcHandle,
+            private static partial int SetTlsOptions(SafeNwHandle connection, IntPtr gcHandle,
                                                             string targetName, Span<byte> alpnBuffer, int alpnLength,
                                                             SslProtocols minTlsProtocol, SslProtocols maxTlsProtocol);
 
-            internal static int SetTlsOptions(SafeNetworkFrameworkHandle nwHandle, IntPtr gcHandle, string targetName, List<SslApplicationProtocol>? applicationProtocols, SslProtocols minTlsVersion, SslProtocols maxTlsVersion)
+            internal static int SetTlsOptions(SafeNwHandle nwHandle, IntPtr gcHandle, string targetName, List<SslApplicationProtocol>? applicationProtocols, SslProtocols minTlsVersion, SslProtocols maxTlsVersion)
             {
                 int alpnLength = GetAlpnProtocolListSerializedLength(applicationProtocols);
                 Span<byte> alpn = alpnLength <= 256 ? stackalloc byte[256].Slice(0, alpnLength) : new byte[alpnLength];
@@ -41,30 +41,30 @@ internal static partial class Interop
             }
 
             [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwStartTlsHandshake")]
-            internal static partial int StartTlsHandshake(SafeNetworkFrameworkHandle connection, IntPtr gcHandle);
+            internal static partial int StartTlsHandshake(SafeNwHandle connection, IntPtr gcHandle);
 
             [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwProcessInputData")]
-            internal static unsafe partial int ProcessInputData(SafeNetworkFrameworkHandle connection,
-                                                               SafeNetworkFrameworkHandle framer,
+            internal static unsafe partial int ProcessInputData(SafeNwHandle connection,
+                                                               SafeNwHandle framer,
                                                                byte* buffer, int bufferLength);
 
             [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwSendToConnection")]
-            internal static unsafe partial int SendToConnection(SafeNetworkFrameworkHandle connection, IntPtr gcHandle,
+            internal static unsafe partial int SendToConnection(SafeNwHandle connection, IntPtr gcHandle,
                                                                void* buffer, int bufferLength);
 
             [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwReadFromConnection")]
-            internal static partial int ReadFromConnection(SafeNetworkFrameworkHandle connection, IntPtr gcHandle);
+            internal static partial int ReadFromConnection(SafeNwHandle connection, IntPtr gcHandle);
 
             [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwCancelConnection")]
-            internal static partial int CancelConnection(SafeNetworkFrameworkHandle connection);
+            internal static partial int CancelConnection(SafeNwHandle connection);
 
             [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwGetConnectionInfo")]
-            internal static unsafe partial int GetConnectionInfo(SafeNetworkFrameworkHandle connection,
+            internal static unsafe partial int GetConnectionInfo(SafeNwHandle connection,
                                                                out SslProtocols pProtocol, out TlsCipherSuite pCipherSuiteOut,
                                                                ref void* negotiatedAlpn, out uint alpnLength);
 
             [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwCopyCertChain")]
-            internal static partial int CopyCertChain(SafeNetworkFrameworkHandle connection,
+            internal static partial int CopyCertChain(SafeNwHandle connection,
                                                              out SafeCFArrayHandle certificates,
                                                              out int count);
 
@@ -135,11 +135,11 @@ internal static partial class Interop
     }
 
     // Safe handle classes for Network Framework TLS resources
-    internal sealed class SafeNetworkFrameworkHandle : SafeHandleZeroOrMinusOneIsInvalid
+    internal sealed class SafeNwHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        public SafeNetworkFrameworkHandle() : base(ownsHandle: true) { }
+        public SafeNwHandle() : base(ownsHandle: true) { }
 
-        public SafeNetworkFrameworkHandle(IntPtr handle, bool ownsHandle) : base(ownsHandle)
+        public SafeNwHandle(IntPtr handle, bool ownsHandle) : base(ownsHandle)
         {
             SetHandle(NetworkFramework.Retain(handle));
         }
