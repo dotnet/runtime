@@ -263,9 +263,9 @@ namespace System.Net.WebSockets.Tests
 
             stream = WebSocketStream.CreateReadableMessageStream(webSocket);
             Assert.Same(webSocket, stream.WebSocket);
-            stream.Dispose();
+            stream.Dispose(); // For read message stream, disposing is equal to cancelling a read operation
             Assert.Same(webSocket, stream.WebSocket);
-            Assert.Equal(WebSocketState.Open, webSocket.State);
+            Assert.Equal(WebSocketState.Aborted, webSocket.State);
         }
 
         [Theory]
