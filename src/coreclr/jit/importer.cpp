@@ -6929,30 +6929,33 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
 
                     // If we see a local being assigned the result of a GDV-inlineable
-                    // IEnumerable<T>.GetEnumerator, keep track of both the local and the call.
+                    // GetEnumerator call, keep track of both the local and the call.
                     //
                     if (op1->OperIs(GT_RET_EXPR))
                     {
-                        JITDUMP(".... checking for GDV of IEnumerable<T>...\n");
+                        JITDUMP(".... checking for GDV returning IEnumerator<T>...\n");
 
-                        GenTreeCall* const call = op1->AsRetExpr()->gtInlineCandidate;
-                        NamedIntrinsic     ni   = NI_Illegal;
+                        bool                 isEnumeratorT = false;
+                        GenTreeCall* const   call          = op1->AsRetExpr()->gtInlineCandidate;
+                        bool                 isExact       = false;
+                        bool                 isNonNull     = false;
+                        CORINFO_CLASS_HANDLE retCls        = gtGetClassHandle(call, &isExact, &isNonNull);
 
-                        // TODO -- handle CT_INDIRECT virtuals here too
-                        // but we don't have the right method handle
-                        //
-                        if (call->gtCallType == CT_USER_FUNC)
+                        if ((retCls != NO_CLASS_HANDLE) && info.compCompHnd->isIntrinsicType(retCls))
                         {
-                            ni = lookupNamedIntrinsic(call->gtCallMethHnd);
+                            const char* namespaceName;
+                            const char* className = info.compCompHnd->getClassNameFromMetadata(retCls, &namespaceName);
+
+                            if ((strcmp(namespaceName, "System.Collections.Generic") == 0) &&
+                                (strcmp(className, "IEnumerator`1") == 0))
+                            {
+                                isEnumeratorT = true;
+                            }
                         }
-                        else if (call->IsGuardedDevirtualizationCandidate())
-                        {
-                            JITDUMP("No GDV IEnumerable<T> check for [%06u]\n", dspTreeID(call));
-                        }
 
-                        if (ni == NI_System_Collections_Generic_IEnumerable_GetEnumerator)
+                        if (isEnumeratorT)
                         {
-                            JITDUMP("V%02u value is GDV of IEnumerable<T>.GetEnumerator\n", lclNum);
+                            JITDUMP("V%02u value is IEnumerator<T> via GDV\n", lclNum);
                             lvaTable[lclNum].lvIsEnumerator = true;
                             JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", dspTreeID(call), lclNum);
                             getImpEnumeratorGdvLocalMap()->Set(call, lclNum);
