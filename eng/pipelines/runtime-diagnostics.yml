@@ -1,4 +1,44 @@
-trigger: none
+# Setting batch to true, triggers one build at a time.
+# if there is a push while a build in progress, it will wait,
+# until the running build finishes, and produce a build with all the changes
+# that happened during the last build.
+trigger:
+  batch: true
+  branches:
+    include:
+    - release/*.*
+  paths:
+    include:
+    - '*'
+    exclude:
+    - '**.md'
+    - eng/Version.Details.xml
+    - .devcontainer/*
+    - .github/*
+    - docs/*
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - THIRD-PARTY-NOTICES.TXT
+    - eng/pipelines/performance/*
+    - eng/testing/performance/*
+
+schedules:
+- cron: "30 2 * * *"
+  displayName: Every night at 2:30AM
+  branches:
+    include:
+    - main
+  always: true
+
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - eng/pipelines/**
+    - src/coreclr/**
+    - src/native/**
 
 resources:
   repositories:
@@ -9,14 +49,6 @@ resources:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
-
-schedules:
-- cron: "30 2 * * *"
-  displayName: Every night at 2:30AM
-  branches:
-    include:
-    - main
-  always: true
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
