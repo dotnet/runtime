@@ -42,16 +42,16 @@ namespace System.Collections.Tests
         [InlineData(1000_000)]
         public static void InsertionOpsOnly_Enumeration_PreservesInsertionOrder(int count)
         {
-            var set = new HashSet<int>();
+            var set = new HashSet<string>();
             for (int i = 0; i < count; i++)
             {
-                set.Add(i);
+                set.Add(i.ToString());
             }
 
             int j = 0;
-            foreach (int elem in set)
+            foreach (string elem in set)
             {
-                Assert.Equal(j, elem);
+                Assert.Equal(j.ToString(), elem);
                 j++;
             }
         }

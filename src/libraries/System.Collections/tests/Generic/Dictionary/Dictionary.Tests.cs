@@ -267,31 +267,31 @@ namespace System.Collections.Tests
         [InlineData(1000_000)]
         public void InsertionOpsOnly_Enumeration_PreservesInsertionOrder(int count)
         {
-            var dictionary = new Dictionary<int, int>();
+            var dictionary = new Dictionary<string, int>();
             for (int i = 0; i < count; i++)
             {
-                dictionary.Add(i, i);
+                dictionary.Add(i.ToString(), i);
             }
 
             int j = 0;
-            foreach (KeyValuePair<int, int> kvp in dictionary)
+            foreach (KeyValuePair<string, int> kvp in dictionary)
             {
-                Assert.Equal(j, kvp.Key);
+                Assert.Equal(j.ToString(), kvp.Key);
                 Assert.Equal(j, kvp.Value);
                 j++;
             }
 
             j = 0;
-            foreach (int key in dictionary.Keys)
+            foreach (string key in dictionary.Keys)
             {
-                Assert.Equal(j, key);
+                Assert.Equal(j.ToString(), key);
                 j++;
             }
 
             j = 0;
-            foreach (int key in dictionary.Values)
+            foreach (int value in dictionary.Values)
             {
-                Assert.Equal(j, key);
+                Assert.Equal(j, value);
                 j++;
             }
         }
