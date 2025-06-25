@@ -329,6 +329,44 @@ namespace System.Net.WebSockets.Tests
         }
 
         [Theory]
+        [InlineData(false, false, WebSocketState.Aborted)] // abortive: read canceled
+        [InlineData(true,  false, WebSocketState.Open)]    // graceful: EOF consumed
+        [InlineData(false, true, WebSocketState.CloseReceived)] // graceful: Close frame consumed
+        [InlineData(true,  true, WebSocketState.Open)]     // graceful: EOF consumed, Close frame NOT consumed (no reads after EOF)
+        public async Task Read_DisposeBeforeEofOrCloseIsAbortive(bool eof, bool close, WebSocketState expectedWebSocketState)
+        {
+            (WebSocket webSocket1, WebSocket webSocket2) = CreateWebSockets();
+
+            byte[] data = "hello"u8.ToArray();
+            await webSocket1.SendAsync(data, WebSocketMessageType.Binary, endOfMessage: false, default);
+
+            if (eof)
+            {
+                await webSocket1.SendAsync(Array.Empty<byte>(), WebSocketMessageType.Binary, endOfMessage: true, default);
+            }
+
+            if (close)
+            {
+                await webSocket1.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, default);
+            }
+
+            WebSocketStream stream2 = WebSocketStream.CreateReadableMessageStream(webSocket2);
+            Memory<byte> buffer = new byte[10];
+
+            await stream2.ReadExactlyAsync(buffer[..data.Length], default);
+            Assert.Equal(data, buffer[..data.Length].ToArray());
+            Assert.Equal(WebSocketState.Open, webSocket2.State);
+
+            if (eof || close)
+            {
+                Assert.Equal(-1, stream2.ReadByte()); // consuming EOF or Close
+            }
+
+            stream2.Dispose();
+            Assert.Equal(expectedWebSocketState, webSocket2.State);
+        }
+
+        [Theory]
         [InlineData(WebSocketMessageType.Binary, 0)]
         [InlineData(WebSocketMessageType.Binary, 1)]
         [InlineData(WebSocketMessageType.Binary, 5)]
