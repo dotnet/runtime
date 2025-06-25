@@ -1994,6 +1994,19 @@ namespace System.Security.Cryptography
         public override string ToString() { throw null; }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    public sealed partial class MLKemCng : System.Security.Cryptography.MLKem
+    {
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public MLKemCng(System.Security.Cryptography.CngKey key) : base (default(System.Security.Cryptography.MLKemAlgorithm)) { }
+        public System.Security.Cryptography.CngKey Key { get { throw null; } }
+        protected override void DecapsulateCore(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        protected override void EncapsulateCore(System.Span<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        protected override void ExportDecapsulationKeyCore(System.Span<byte> destination) { }
+        protected override void ExportEncapsulationKeyCore(System.Span<byte> destination) { }
+        protected override void ExportPrivateSeedCore(System.Span<byte> destination) { }
+        protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class MLKemOpenSsl : System.Security.Cryptography.MLKem
     {
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]

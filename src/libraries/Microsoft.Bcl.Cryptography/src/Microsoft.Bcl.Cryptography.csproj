@@ -364,7 +364,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Cng.cs"
              Link="Common\Interop\Windows\BCrypt\Cng.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs" /> 
+             Link="Common\Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDecapsulateEncapsulate.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDecapsulateEncapsulate.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptExportKey.cs"
@@ -387,6 +387,8 @@
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKem.cs"
              Link="Common\System\Security\Cryptography\MLKem.cs" />
+<Compile Include="$(CommonPath)System\Security\Cryptography\MLKem.Windows.cs"
+             Link="Common\System\Security\Cryptography\MLKem.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemAlgorithm.cs"
              Link="Common\System\Security\Cryptography\MLKemAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.Windows.cs"
