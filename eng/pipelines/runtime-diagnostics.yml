@@ -24,6 +24,7 @@ pr:
     - main
   paths:
     include:
+    - '*'
     - eng/pipelines/**
     - src/coreclr/**
     - src/native/**
