@@ -571,6 +571,33 @@ void SetEvexNfIfNeeded(instrDesc* id, insOpts instOptions)
 }
 
 //------------------------------------------------------------------------
+// SetEvexNdIfNeeded: set Evex.zu on instrDesc
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetEvexZuIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_EVEX_zu_MASK) != 0)
+    {
+        assert(UsePromotedEVEXEncoding());
+        instruction ins = id->idIns();
+#ifdef TARGET_AMD64
+        assert((ins >= INS_setzuo && ins <= INS_setzug) || (ins >= INS_imul_AX && ins <= INS_imul_31));
+#else
+        // This method is not expected to be used on 32-bit systems.
+        unreached();
+#endif
+        id->idSetEvexZuContext();
+    }
+    else
+    {
+        assert((instOptions & INS_OPTS_EVEX_zu_MASK) == 0);
+    }
+}
+
+//------------------------------------------------------------------------
 // SetApxPpxIfNeeded: set APX.ppx on instrDesc
 //
 // Arguments:
