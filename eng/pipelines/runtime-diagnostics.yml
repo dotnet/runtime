@@ -1,5 +1,15 @@
 trigger: none
 
+resources:
+  repositories:
+    - repository: diagnostics
+      type: github
+      name: dotnet/diagnostics
+      endpoint: public
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 schedules:
 - cron: "30 2 * * *"
   displayName: Every night at 2:30AM
@@ -14,19 +24,9 @@ pr:
     - main
   paths:
     include:
-    - eng/pipelines/*
-    - src/coreclr/*
-    - src/native/*
-
-resources:
-  repositories:
-    - repository: diagnostics
-      type: github
-      name: dotnet/diagnostics
-      endpoint: public
-
-variables:
-  - template: /eng/pipelines/common/variables.yml
+    - '/eng/pipelines/**'
+    - '/src/coreclr/**'
+    - '/src/native/**'
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml

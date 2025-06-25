@@ -73,6 +73,7 @@ Contracts used:
 | `Thread` |
 
 
+TEST CHANGE
 ### Stackwalk Algorithm
 The intuition for walking a managed stack is relatively simply: unwind managed portions of the stack until we hit native code then use capital "F" Frames as checkpoints to get into new sections of managed code. Because Frames are added at each point before managed code (higher SP value) calls native code (lower SP values), we are guaranteed that a Frame exists at the top (lower SP value) of each managed call frame run.
 
