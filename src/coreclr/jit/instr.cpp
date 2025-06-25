@@ -251,9 +251,7 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
 
     if (id->idIsApxPpxContextSet())
     {
-        sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "%sp", insName);
-        retbuf = buf[curBuf];
-        return retbuf;
+        return AddPrefixAndSuffix("", insName, "p", "");
     }
 
     if (emit->IsVexOrEvexEncodableInstruction(ins))
