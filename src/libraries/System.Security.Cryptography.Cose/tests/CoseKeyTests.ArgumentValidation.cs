@@ -80,8 +80,8 @@ namespace System.Security.Cryptography.Cose.Tests
             CoseSigner signer = new CoseSigner(key);
             byte[] payload = Encoding.UTF8.GetBytes(nameof(VerifySingleSignerWithNullDetachedContent_Throws));
             MemoryStream payloadStream = new(payload);
-            byte[] detatchedMessageBytes = CoseSign1Message.SignDetached(payload, signer, Array.Empty<byte>());
-            CoseSign1Message detachedMessage = CoseSign1Message.DecodeSign1(detatchedMessageBytes);
+            byte[] detachedMessageBytes = CoseSign1Message.SignDetached(payload, signer, Array.Empty<byte>());
+            CoseSign1Message detachedMessage = CoseSign1Message.DecodeSign1(detachedMessageBytes);
 
             AssertExtensions.Throws<ArgumentNullException>("detachedContent", () => detachedMessage.VerifyDetached(key, (byte[])null!, Array.Empty<byte>()));
         }
