@@ -5830,18 +5830,14 @@ PhaseStatus Compiler::fgResolveGDVs()
         GuardInfo info;
         if (ObjectAllocator::IsGuard(block, &info))
         {
+            assert(block == info.m_block);
             LclVarDsc* const lclDsc = lvaGetDesc(info.m_local);
 
             if (lclDsc->lvClassIsExact && lclDsc->lvSingleDef && (lclDsc->lvClassHnd == info.m_type))
             {
                 JITDUMP("GDV in " FMT_BB " can be resolved; type is now known exactly\n", block->bbNum);
 
-                Statement* const stmt     = block->lastStmt();
-                GenTree* const   jumpTree = stmt->GetRootNode();
-                assert(jumpTree->OperIs(GT_JTRUE));
-                GenTree* const tree = jumpTree->gtGetOp1();
-                assert(tree->OperIs(GT_EQ, GT_NE));
-                bool const      isCondTrue   = tree->OperIs(GT_EQ);
+                bool const      isCondTrue   = info.m_relop->OperIs(GT_EQ);
                 FlowEdge* const retainedEdge = isCondTrue ? block->GetTrueEdge() : block->GetFalseEdge();
                 FlowEdge* const removedEdge  = isCondTrue ? block->GetFalseEdge() : block->GetTrueEdge();
 
@@ -5851,7 +5847,11 @@ PhaseStatus Compiler::fgResolveGDVs()
                 fgRemoveRefPred(removedEdge);
                 block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
                 fgRepairProfileCondToUncond(block, retainedEdge, removedEdge);
-                stmt->SetRootNode(tree);
+
+                // The GDV relop will typically be side effecting so just
+                // leave it in place for later cleanup.
+                //
+                info.m_stmt->SetRootNode(info.m_relop);
                 madeChanges = true;
             }
         }

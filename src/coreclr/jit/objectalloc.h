@@ -64,6 +64,8 @@ struct GuardInfo
     unsigned             m_local = BAD_VAR_NUM;
     CORINFO_CLASS_HANDLE m_type  = NO_CLASS_HANDLE;
     BasicBlock*          m_block = nullptr;
+    Statement*           m_stmt  = nullptr;
+    GenTree*             m_relop = nullptr;
 };
 
 // Describes a guarded enumerator cloning candidate
