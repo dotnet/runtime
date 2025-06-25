@@ -47,4 +47,4 @@ if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Net.Security.Native.Apple PROGRAMS .)
 endif()
 
-install (TARGETS System.Net.Security.Native.Apple-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs) 
+install (TARGETS System.Net.Security.Native.Apple-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
