@@ -91,11 +91,11 @@ jobs:
 
     # iOS devices
     - ${{ if in(parameters.platform, 'ios_arm64') }}:
-      - osx.arm64.iphone.scouting.open
+      - osx.amd64.iphone.scouting.open
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvos_arm64') }}:
-      - osx.arm64.appletv.scouting.open
+      - osx.amd64.appletv.scouting.open
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
