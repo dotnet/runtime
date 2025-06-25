@@ -227,7 +227,7 @@ namespace System.Net.Http
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
                 }
 
-                if (IsHttp3Supported() && _http3Enabled)
+                if (IsHttp3Supported() && GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && _http3Enabled)
                 {
                     _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
                 }
@@ -244,7 +244,7 @@ namespace System.Net.Http
             {
                 _http2RequestQueue = new RequestQueue<Http2Connection?>();
             }
-            if (IsHttp3Supported() && _http3Enabled)
+            if (IsHttp3Supported() && GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && _http3Enabled)
             {
                 _http3RequestQueue = new RequestQueue<Http3Connection?>();
             }
@@ -401,6 +401,7 @@ namespace System.Net.Http
 
                     // Use HTTP/3 if possible.
                     if (IsHttp3Supported() && // guard to enable trimming HTTP/3 support
+                        GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && // guard to enable trimming HTTP/3 support
                         _http3Enabled &&
                         (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
                         !request.IsExtendedConnectRequest)
@@ -913,7 +914,7 @@ namespace System.Net.Http
                     _availableHttp2Connections.Clear();
                 }
 
-                if (IsHttp3Supported() && _availableHttp3Connections is not null)
+                if (IsHttp3Supported() && GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && _availableHttp3Connections is not null)
                 {
                     toDispose ??= new();
                     toDispose.AddRange(_availableHttp3Connections);
@@ -989,7 +990,7 @@ namespace System.Net.Http
                     // Note: Http11 connections will decrement the _associatedHttp11ConnectionCount when disposed.
                     // Http2 connections will not, hence the difference in handing _associatedHttp2ConnectionCount.
                 }
-                if (IsHttp3Supported() && _availableHttp3Connections is not null)
+                if (IsHttp3Supported() && GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && _availableHttp3Connections is not null)
                 {
                     int removed = ScavengeHttp3ConnectionList(_availableHttp3Connections, ref toDispose, nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout);
                     _associatedHttp3ConnectionCount -= removed;

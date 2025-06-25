@@ -40,6 +40,7 @@ namespace System.Net.Http
 
             // Default to allowing HTTP/3, but enable that to be overridden by an
             // AppContext switch, or by an environment variable being set to false/0.
+            [FeatureSwitchDefinition("System.Net.SocketsHttpHandler.Http3Support")]
             public static bool AllowHttp3 { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
                 "System.Net.SocketsHttpHandler.Http3Support",
                 "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3SUPPORT",
