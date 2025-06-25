@@ -258,7 +258,7 @@ static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol
     return (tls_protocol_version_t)0;
 }
 
-// This configures TLS proeprties
+// This configures TLS properties
 PALEXPORT int32_t AppleNetNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHandle, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol)
 {
     nw_protocol_options_t tlsOptions = nw_tls_create_options();
