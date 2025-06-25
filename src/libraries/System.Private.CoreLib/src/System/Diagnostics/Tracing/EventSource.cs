@@ -3153,9 +3153,8 @@ namespace System.Diagnostics.Tracing
                 if (source != null || (flags & EventManifestOptions.Strict) != 0)
                 {
                     eventData = new();
-                    EventMetadata newEventMetadata = default(EventMetadata);
+                    ref EventMetadata newEventMetadata = ref CollectionsMarshal.GetValueRefOrAddDefault(eventData, 0, out _);
                     newEventMetadata.Name = ""; // Event 0 is the 'write messages string' event, and has an empty name.
-                    eventData[0] = newEventMetadata;
                 }
 
                 // See if we have localization information.
@@ -3318,22 +3317,26 @@ namespace System.Diagnostics.Tracing
                                 else if (eventAttribute.Opcode == EventOpcode.Stop)
                                 {
                                     // Find the start associated with this stop event.  We require start to be immediately before the stop
-                                    Debug.Assert(0 <= startEventId); 
                                     int startEventId = eventAttribute.EventId - 1;
-                                    if (eventData != null && eventData.TryGetValue(startEventId, out EventMetadata startEventMetadata))
+                                    Debug.Assert(0 <= startEventId);
+                                    if (eventData != null)
                                     {
-                                        // Since we reserve id 0, we know that id-1 is <= 0
-                                        // If you remove the Stop and add a Start does that name match the Start Event's Name?
-                                        // Ideally we would throw an error
-                                        if (startEventMetadata.Descriptor.Opcode == (byte)EventOpcode.Start &&
-                                            startEventMetadata.Name.EndsWith(ActivityStartSuffix, StringComparison.Ordinal) &&
-                                            eventName.EndsWith(ActivityStopSuffix, StringComparison.Ordinal) &&
-                                            startEventMetadata.Name.AsSpan()[..^ActivityStartSuffix.Length].SequenceEqual(
-                                                eventName.AsSpan()[..^ActivityStopSuffix.Length]))
+                                        ref EventMetadata startEventMetadata = ref CollectionsMarshal.GetValueRefOrNullRef(eventData, startEventId);
+                                        if (!Unsafe.IsNullRef(ref startEventMetadata))
                                         {
-                                            // Make the stop event match the start event
-                                            eventAttribute.Task = (EventTask)startEventMetadata.Descriptor.Task;
-                                            noTask = false;
+                                            // Since we reserve id 0, we know that id-1 is <= 0
+                                            // If you remove the Stop and add a Start does that name match the Start Event's Name?
+                                            // Ideally we would throw an error
+                                            if (startEventMetadata.Descriptor.Opcode == (byte)EventOpcode.Start &&
+                                                startEventMetadata.Name.EndsWith(ActivityStartSuffix, StringComparison.Ordinal) &&
+                                                eventName.EndsWith(ActivityStopSuffix, StringComparison.Ordinal) &&
+                                                startEventMetadata.Name.AsSpan()[..^ActivityStartSuffix.Length].SequenceEqual(
+                                                    eventName.AsSpan()[..^ActivityStopSuffix.Length]))
+                                            {
+                                                // Make the stop event match the start event
+                                                eventAttribute.Task = (EventTask)startEventMetadata.Descriptor.Task;
+                                                noTask = false;
+                                            }
                                         }
                                     }
                                     if (noTask && (flags & EventManifestOptions.Strict) != 0)        // Throw an error if we can compatibly.
