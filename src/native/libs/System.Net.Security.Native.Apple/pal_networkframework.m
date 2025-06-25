@@ -15,7 +15,7 @@ static dispatch_queue_t _inputQueue;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunguarded-availability-new"
 
-nw_connection_t AppleNetNative_NwCreateContext(int32_t isServer)
+PALEXPORT nw_connection_t AppleNetNative_NwCreateContext(int32_t isServer)
 {
     if (isServer != 0)  // only client supported at this point.
         return NULL;
@@ -47,8 +47,8 @@ static nw_framer_output_handler_t framer_output_handler = ^(nw_framer_t framer, 
         nw_framer_parse_output(framer, 1, message_length, NULL, ^size_t(uint8_t *buffer, size_t buffer_length, bool is_complete2) {
             size_t length = buffer_length;
             (_writeFunc)(ptr, buffer, length);
-            (int)is_complete2;
-            (void*)message;
+            (void)is_complete2;
+            (void)message;
             return buffer_length;
         });
     }
@@ -68,7 +68,7 @@ static nw_framer_stop_handler_t framer_stop_handler = ^bool(nw_framer_t framer) 
         if (num != NULL)
         {
             [num getValue:&gcHandle];
-            (_statusFunc)(gcHandle, PAL_NwStatusUpdates_FramerStart, 0, 0);
+            (_statusFunc)(gcHandle, PAL_NwStatusUpdates_FramerStop, 0, 0);
         }
     }
     else
@@ -80,7 +80,7 @@ static nw_framer_stop_handler_t framer_stop_handler = ^bool(nw_framer_t framer) 
 };
 
 static nw_framer_cleanup_handler_t framer_cleanup_handler = ^(nw_framer_t framer) {
-    (void*)framer;
+    (void)framer;
 };
 
 
@@ -108,7 +108,7 @@ static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_fra
 
 
 // this takes encrypted input from underlying stream and feeds it to nw_connection.
-int32_t AppleNetNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * buffer, int bufferLength)
+PALEXPORT int32_t AppleNetNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * buffer, int bufferLength)
 {
     if (connection == NULL || framer == NULL)
     {
@@ -139,14 +139,14 @@ int32_t AppleNetNative_NwProcessInputData(nw_connection_t connection, nw_framer_
         nw_release(message);
     });
 
-    (void*)connection;
+    (void)connection;
 
     return 0;
 }
 
 // This starts TLS handshake. For client, it will produce ClientHello and call output handler (on thread pool)
 // important part here is the state handler that will get asynchronous n=notifications about progress.
-int AppleNetNative_NwStartTlsHandshake(nw_connection_t connection, size_t gcHandle)
+PALEXPORT int AppleNetNative_NwStartTlsHandshake(nw_connection_t connection, size_t gcHandle)
 {
     if (connection == NULL)
         return -1;
@@ -178,14 +178,14 @@ int AppleNetNative_NwStartTlsHandshake(nw_connection_t connection, size_t gcHand
 }
 
 // This will start connection cleanup
-int32_t AppleNetNative_NwCancelConnection(nw_connection_t connection)
+PALEXPORT int32_t AppleNetNative_NwCancelConnection(nw_connection_t connection)
 {
     nw_connection_cancel(connection);
     return 0;
 }
 
 // this is used by encrypt. We write plain text to the connection and it will be handound out encrypted via output handler
-int32_t AppleNetNative_NwSendToConnection(nw_connection_t connection,  size_t gcHandle,  uint8_t* buffer, int length)
+PALEXPORT int32_t AppleNetNative_NwSendToConnection(nw_connection_t connection,  size_t gcHandle,  uint8_t* buffer, int length)
 {
     dispatch_data_t data = dispatch_data_create(buffer, (size_t)length, _inputQueue, ^{ printf("%s:%d: dispatch destructor called!!!\n", __func__, __LINE__);});
 
@@ -205,7 +205,7 @@ int32_t AppleNetNative_NwSendToConnection(nw_connection_t connection,  size_t gc
 }
 
 // This is used by decrypt. We feed data in via AppleNetNative_NwProcessInputData and we try to read from the connection.
-int32_t AppleNetNative_NwReadFromConnection(nw_connection_t connection, size_t gcHandle)
+PALEXPORT int32_t AppleNetNative_NwReadFromConnection(nw_connection_t connection, size_t gcHandle)
 {
     nw_connection_receive(connection, 1, 65536, ^(dispatch_data_t content, nw_content_context_t context, bool is_complete, nw_error_t error) {
         int errorCode  = error ? nw_error_get_error_code(error) : 0;
@@ -259,7 +259,7 @@ static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol
 }
 
 // This configures TLS proeprties
-int32_t AppleNetNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHandle, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol)
+PALEXPORT int32_t AppleNetNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHandle, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol)
 {
     nw_protocol_options_t tlsOptions = nw_tls_create_options();
     sec_protocol_options_t sec_options = nw_tls_copy_sec_protocol_options(tlsOptions);
@@ -292,8 +292,8 @@ int32_t AppleNetNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHand
 
     // we accept all certificates here and we will do validation later
     sec_protocol_options_set_verify_block(sec_options, ^(sec_protocol_metadata_t metadata, sec_trust_t trust_ref, sec_protocol_verify_complete_t complete) {
-        (void*)metadata;
-        (void*)trust_ref;
+        (void)metadata;
+        (void)trust_ref;
         complete(true);
     }, _tlsQueue);
 
@@ -315,7 +315,7 @@ int32_t AppleNetNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHand
 }
 
 // This wil get TLS details after handshake is finished
-int32_t AppleNetNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, const char** negotiatedAlpn, uint32_t* alpnLength)
+PALEXPORT int32_t AppleNetNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, const char** negotiatedAlpn, uint32_t* alpnLength)
 {
     nw_protocol_metadata_t meta = nw_connection_copy_protocol_metadata(connection, _tlsDefinition);
     if (meta != NULL)
@@ -409,7 +409,7 @@ PALEXPORT int32_t AppleNetNative_NwCopyCertChain(nw_connection_t connection, CFA
 #pragma clang diagnostic pop
 
 // this is called once to set everything up
-int32_t AppleNetNative_NwInit(StatusUpdateCallback statusFunc, ReadCallback readFunc, WriteCallback writeFunc)
+PALEXPORT int32_t AppleNetNative_NwInit(StatusUpdateCallback statusFunc, ReadCallback readFunc, WriteCallback writeFunc)
 {
     assert(statusFunc != NULL);
     assert(writeFunc != NULL);
@@ -420,13 +420,14 @@ int32_t AppleNetNative_NwInit(StatusUpdateCallback statusFunc, ReadCallback read
         _writeFunc = writeFunc;
         _readFunc = readFunc;
         _statusFunc = statusFunc;
-        _framerDefinition = nw_framer_create_definition("tlsFramer", NW_FRAMER_CREATE_FLAGS_DEFAULT, framer_start);
+        _framerDefinition = nw_framer_create_definition("com.dotnet.networkframework.tlsframer",
+            NW_FRAMER_CREATE_FLAGS_DEFAULT, framer_start);
         _tlsDefinition = nw_protocol_copy_tls_definition();
-        _tlsQueue = dispatch_queue_create("TLS", NULL);
-        _inputQueue = dispatch_queue_create("TLS_INPUT", NULL);
+        _tlsQueue = dispatch_queue_create("com.dotnet.networkframework.tlsqueue", NULL);
+        _inputQueue = dispatch_queue_create("com.dotnet.networkframework.inputqueue", NULL);
 
         return 0;
    }
 
-   return -1;
+   return 1;
 }

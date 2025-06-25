@@ -36,13 +36,14 @@ typedef enum
 {
     PAL_NwStatusUpdates_UnknownError = 0,
     PAL_NwStatusUpdates_FramerStart = 1,
-    PAL_NwStatusUpdates_HandshakeFinished = 2,
-    PAL_NwStatusUpdates_HandshakeFailed = 3,
-    PAL_NwStatusUpdates_ConnectionReadFinished = 4,
-    PAL_NwStatusUpdates_ConnectionWriteFinished = 5,
-    PAL_NwStatusUpdates_ConnectionWriteFailed = 6,
-    PAL_NwStatusUpdates_ConnectionError = 7,
-    PAL_NwStatusUpdates_ConnectionCancelled = 8,
+    PAL_NwStatusUpdates_FramerStop = 2,
+    PAL_NwStatusUpdates_HandshakeFinished = 3,
+    PAL_NwStatusUpdates_HandshakeFailed = 4,
+
+    PAL_NwStatusUpdates_ConnectionReadFinished = 100,
+    PAL_NwStatusUpdates_ConnectionWriteFinished = 101,
+    PAL_NwStatusUpdates_ConnectionWriteFailed = 102,
+    PAL_NwStatusUpdates_ConnectionCancelled = 103,
 } PAL_NwStatusUpdates;
 
 // Callback type definitions that match the implementation usage
