@@ -601,7 +601,7 @@ namespace System.Net.Http
             _trailingHeaders = new List<(HeaderDescriptor name, string value)>();
             await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
 
-            // In typical cases, there should be no more frames. Make sure to read the EOS by attempting to read a frame envelope one more time.
+            // In typical cases, there should be no more frames. Make sure to read the EOS.
             _recvBuffer.EnsureAvailableSpace(1);
             int bytesRead = await _stream.ReadAsync(_recvBuffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
             if (bytesRead > 0)
