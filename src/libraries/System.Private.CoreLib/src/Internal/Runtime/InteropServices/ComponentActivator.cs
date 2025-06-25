@@ -18,7 +18,7 @@ namespace Internal.Runtime.InteropServices
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
@@ -107,6 +107,7 @@ namespace Internal.Runtime.InteropServices
         [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
@@ -283,6 +284,7 @@ namespace Internal.Runtime.InteropServices
         [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         private static IsolatedComponentLoadContext GetIsolatedComponentLoadContext(string assemblyPath)
