@@ -32,8 +32,9 @@ namespace System.Security.Cryptography
 
             try
             {
-                key.ExportMLDsaPrivateSeed(rented);
-                return ImportSeed(alg, rented);
+                Span<byte> seedSpan = rented.AsSpan(0, alg.SeedSizeInBytes);
+                key.ExportMLDsaPrivateSeed(seedSpan);
+                return ImportSeed(alg, seedSpan);
             }
             catch (CryptographicException)
             {
