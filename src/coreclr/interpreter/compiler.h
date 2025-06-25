@@ -8,6 +8,51 @@
 #include "datastructs.h"
 #include "enum_class_flags.h"
 
+#include "../../native/containers/dn-simdhash.h"
+#include "../../native/containers/dn-simdhash-specializations.h"
+
+class dn_simdhash_ptr_ptr_holder
+{
+    dn_simdhash_ptr_ptr_t *Value;
+public:
+    dn_simdhash_ptr_ptr_holder() :
+        Value(nullptr)
+    {
+    }
+
+    dn_simdhash_ptr_ptr_t* GetValue()
+    {
+        if (!Value)
+            Value = dn_simdhash_ptr_ptr_new(0, nullptr);
+        return Value;
+    }
+
+    dn_simdhash_ptr_ptr_holder(const dn_simdhash_ptr_ptr_holder&) = delete;
+    dn_simdhash_ptr_ptr_holder& operator=(const dn_simdhash_ptr_ptr_holder&) = delete;
+    dn_simdhash_ptr_ptr_holder(dn_simdhash_ptr_ptr_holder&& other)
+    {
+        Value = other.Value;
+        other.Value = nullptr;
+    }
+    dn_simdhash_ptr_ptr_holder& operator=(dn_simdhash_ptr_ptr_holder&& other)
+    {
+        if (this != &other)
+        {
+            if (Value != nullptr)
+                dn_simdhash_free(Value);
+            Value = other.Value;
+            other.Value = nullptr;
+        }
+        return *this;
+    }
+
+    ~dn_simdhash_ptr_ptr_holder()
+    {
+        if (Value != nullptr)
+            dn_simdhash_free(Value);
+    }
+};
+
 struct InterpException
 {
     InterpException(const char* message, CorJitResult result)
@@ -390,19 +435,14 @@ private:
     const char* PointerIsClassHandle = (const char*)0x1;
     const char* PointerIsMethodHandle = (const char*)0x2;
     const char* PointerIsStringLiteral = (const char*)0x3;
-    struct PointerToName
-    {
-        void* ptr;
-        const char* name;
-    };
 
-    TArray<PointerToName> m_pointerToNameMap;
+    dn_simdhash_ptr_ptr_holder m_pointerToNameMap;
     bool PointerInNameMap(void* ptr)
     {
-        for (int32_t i = 0; i < m_pointerToNameMap.GetSize(); i++)
+        void* result;
+        if (dn_simdhash_ptr_ptr_try_get_value(m_pointerToNameMap.GetValue(), ptr, &result))
         {
-            if (m_pointerToNameMap.Get(i).ptr == ptr)
-                return true;
+            return true;
         }
         return false;
     }
@@ -410,10 +450,7 @@ private:
     {
         if (!PointerInNameMap(ptr))
         {
-            PointerToName ptn;
-            ptn.ptr = ptr;
-            ptn.name = name;
-            m_pointerToNameMap.Add(ptn);
+            dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name);
         }
     }
     void PrintNameInPointerMap(void* ptr);
@@ -492,7 +529,7 @@ private:
         GenericHandleData() = default;
 
         HelperArgType argType = HelperArgType::Value;
-        int genericVar = -1; // Set to a meaningful value if HelperArgType is GenericResolution
+        int genericVar = -1; // This will be set to the var of the generic context argument if argType == HelperArgType::GenericResolution
         int dataItemIndex = 0;
     };
 

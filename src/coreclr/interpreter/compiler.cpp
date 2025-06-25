@@ -761,12 +761,12 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         {
             // This code assumes that instructions for the same IL offset are emitted in a single run without
             // any other IL offsets in between and that they don't repeat again after the run ends.
-#ifdef _DEBUG
+#ifdef DEBUG
             for (int i = 0; i < m_ILToNativeMapSize; i++)
             {
                 assert(m_pILToNativeMap[i].ilOffset != ilOffset);
             }
-#endif // _DEBUG
+#endif // DEBUG
 
             // Since we can have at most one entry per IL offset,
             // this map cannot possibly use more entries than the size of the IL code
@@ -2112,7 +2112,7 @@ int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
         addr = (void*)((size_t)addr | INTERP_INDIRECT_HELPER_TAG);
     }
 
-#ifdef _DEBUG
+#ifdef DEBUG
     if (!PointerInNameMap(addr))
     {
         const char* name = CorInfoHelperToName(ftn);
@@ -2283,10 +2283,10 @@ void InterpCompiler::EmitPushHelperCall_2(const CorInfoHelpFunc ftn, const CORIN
     {
         AddIns(INTOP_CALL_HELPER_P_PP);
         m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(ftn);
+        m_pLastNewIns->data[1] = handleData.dataItemIndex;
+
         m_pLastNewIns->SetSVar(arg2);
         m_pLastNewIns->SetDVar(resultVar);
-
-        m_pLastNewIns->data[1] = handleData.dataItemIndex;
     }
 }
 
@@ -2310,10 +2310,10 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
     {
         AddIns(INTOP_UNBOX_ANY);
         m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_UNBOX);
+        m_pLastNewIns->data[1] = handleData.dataItemIndex;
+
         m_pLastNewIns->SetSVar(arg2);
         m_pLastNewIns->SetDVar(resultVar);
-
-        m_pLastNewIns->data[1] = handleData.dataItemIndex;
     }
 }
 
@@ -2329,7 +2329,7 @@ void InterpCompiler::EmitPushUnboxAnyNullable(const CORINFO_GENERICHANDLE_RESULT
         AddIns(INTOP_CALL_HELPER_V_AGP);
         m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_UNBOX_NULLABLE);
         m_pLastNewIns->data[1] = handleData.dataItemIndex;
-
+        
         m_pLastNewIns->SetSVars2(handleData.genericVar, arg2);
         m_pLastNewIns->SetDVar(resultVar);
     }
@@ -2337,10 +2337,10 @@ void InterpCompiler::EmitPushUnboxAnyNullable(const CORINFO_GENERICHANDLE_RESULT
     {
         AddIns(INTOP_CALL_HELPER_V_APP);
         m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(CORINFO_HELP_UNBOX_NULLABLE);
+        m_pLastNewIns->data[1] = handleData.dataItemIndex;
+
         m_pLastNewIns->SetSVar(arg2);
         m_pLastNewIns->SetDVar(resultVar);
-
-        m_pLastNewIns->data[1] = handleData.dataItemIndex;
     }
 }
 
@@ -2364,10 +2364,10 @@ void InterpCompiler::EmitPushHelperCall_Addr2(const CorInfoHelpFunc ftn, const C
     {
         AddIns(INTOP_CALL_HELPER_P_PA);
         m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(ftn);
+        m_pLastNewIns->data[1] = handleData.dataItemIndex;
+
         m_pLastNewIns->SetSVar(arg2);
         m_pLastNewIns->SetDVar(resultVar);
-
-        m_pLastNewIns->data[1] = handleData.dataItemIndex;
     }
 }
 
@@ -2391,9 +2391,9 @@ void InterpCompiler::EmitPushHelperCall(const CorInfoHelpFunc ftn, const CORINFO
     {
         AddIns(INTOP_CALL_HELPER_P_P);
         m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(ftn);
-        m_pLastNewIns->SetDVar(resultVar);
-
         m_pLastNewIns->data[1] = handleData.dataItemIndex;
+
+        m_pLastNewIns->SetDVar(resultVar);
     }
 }
 
@@ -2443,9 +2443,9 @@ int InterpCompiler::EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &e
     else
     {
         AddIns(INTOP_LDPTR);
-        m_pLastNewIns->SetDVar(resultVar);
-
         m_pLastNewIns->data[0] = handleData.dataItemIndex;
+
+        m_pLastNewIns->SetDVar(resultVar);
     }
 
     return resultVar;
@@ -5023,6 +5023,7 @@ DO_LDFTN:
                     EmitLdLocA(m_pStackPointer[0].var);
                 }
                 m_ip += 5;
+                break;
             }
             case CEE_UNBOX_ANY:
             {
@@ -5076,6 +5077,8 @@ DO_LDFTN:
                 DeclarePointerIsClass(arrayClsHnd);
 
                 m_pStackPointer--;
+                int newArrLenVar = m_pStackPointer[0].var;
+                PushInterpType(InterpTypeO, NULL);
 
                 if (m_compHnd->getClassAttribs(arrayClsHnd) & CORINFO_FLG_SHAREDINST)
                 {
@@ -5085,24 +5088,22 @@ DO_LDFTN:
                     GenericHandleData handleData = GenericHandleToGenericHandleData(embedInfo);
                     assert(handleData.argType == HelperArgType::GenericResolution);
 
-                    AddIns(INTOP_NEWARR_GENERIC);
-                    m_pLastNewIns->SetSVars2(handleData.genericVar, m_pStackPointer[0].var);
-                    PushInterpType(InterpTypeO, NULL);
-                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 
+                    AddIns(INTOP_NEWARR_GENERIC);
                     m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(helpFunc);
                     m_pLastNewIns->data[1] = handleData.dataItemIndex;
+                    
+                    m_pLastNewIns->SetSVars2(handleData.genericVar, newArrLenVar);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 }
                 else
                 {
                     AddIns(INTOP_NEWARR);
-                    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
-
-                    PushInterpType(InterpTypeO, NULL);
-                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-
                     m_pLastNewIns->data[0] = GetDataItemIndex(arrayClsHnd);
                     m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
+
+                    m_pLastNewIns->SetSVar(newArrLenVar);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 }
 
                 m_ip += 5;
@@ -5687,66 +5688,63 @@ void PrintInterpGenericLookup(InterpGenericLookup* lookup)
     }
 }
 
-#ifdef _DEBUG
+#ifdef DEBUG
 void InterpCompiler::PrintNameInPointerMap(void* ptr)
 {
-    for (int32_t i = 0; i < m_pointerToNameMap.GetSize(); i++)
+    const char *name;
+    if (dn_simdhash_ptr_ptr_try_get_value(m_pointerToNameMap.GetValue(), ptr, (void**)&name))
     {
-        if (m_pointerToNameMap.Get(i).ptr == ptr)
+        if (name == PointerIsMethodHandle)
         {
-            const char *name = m_pointerToNameMap.Get(i).name;
-            if (name == PointerIsMethodHandle)
+            printf("(");
+            PrintMethodName((CORINFO_METHOD_HANDLE)((size_t)ptr));
+            printf(")");
+        }
+        else if (name == PointerIsClassHandle)
+        {
+            printf("(");
+            PrintClassName((CORINFO_CLASS_HANDLE)((size_t)ptr));
+            printf(")");
+        }
+        else if (name == PointerIsStringLiteral)
+        {
+            printf("(\"");
+            CORINFO_String* stringPtr = (CORINFO_String*)ptr;
+            unsigned i = 0;
+            for (; i < stringPtr->stringLen && i < 50; i++)
             {
-                printf("(");
-                PrintMethodName((CORINFO_METHOD_HANDLE)((size_t)ptr));
-                printf(")");
-            }
-            else if (name == PointerIsClassHandle)
-            {
-                printf("(");
-                PrintClassName((CORINFO_CLASS_HANDLE)((size_t)ptr));
-                printf(")");
-            }
-            else if (name == PointerIsStringLiteral)
-            {
-                printf("(\"");
-                CORINFO_String* stringPtr = (CORINFO_String*)ptr;
-                unsigned i = 0;
-                for (; i < stringPtr->stringLen && i < 50; i++)
+                char16_t c16 = stringPtr->chars[i];
+                if (c16 > 0x7F)
                 {
-                    char16_t c16 = stringPtr->chars[i];
-                    if (c16 > 0x7F)
-                    {
-                        printf("?");
-                        continue;
-                    }
-                    char c = (char)c16;
-                    if (c == '\n')
-                        printf("\\n");
-                    else if (c == '\r')
-                        printf("\\r");
-                    else if (c == '\t')
-                        printf("\\t");
-                    else if (c == '\"')
-                        printf("\\\"");
-                    else if (c == '\\')
-                        printf("\\\\");
-                    else if (isprint((unsigned char)c))
-                        printf("%c", c);
-                    else
-                        printf("\\x%02x", (unsigned char)c);
+                    printf("?");
+                    continue;
                 }
-                printf("\"");
-                if (i < stringPtr->stringLen)
-                {
-                    printf("...");
-                }
-                printf(")");
+                char c = (char)c16;
+                if (c == '\n')
+                    printf("\\n");
+                else if (c == '\r')
+                    printf("\\r");
+                else if (c == '\t')
+                    printf("\\t");
+                else if (c == '\"')
+                    printf("\\\"");
+                else if (c == '\\')
+                    printf("\\\\");
+                else if (isprint((unsigned char)c))
+                    printf("%c", c);
+                else
+                    printf("\\x%02x", (unsigned char)c);
             }
-            else
+            printf("\"");
+            if (i < stringPtr->stringLen)
             {
-                printf("(%s)", m_pointerToNameMap.Get(i).name);
+                printf("...");
             }
+            printf(")");
+        }
+        else
+        {
+            printf("(%s)", name);
         }
     }
     return;
@@ -5756,7 +5754,7 @@ void InterpCompiler::PrintNameInPointerMap(void* ptr)
 void InterpCompiler::PrintPointer(void* pointer)
 {
     printf("%p ", pointer);
-#ifdef _DEBUG
+#ifdef DEBUG
     PrintNameInPointerMap(pointer);
 #endif
 }

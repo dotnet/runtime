@@ -6,10 +6,10 @@
 #include "interpreter.h"
 #include "stackmap.h"
 
-extern "C" {
-    #include "../../native/containers/dn-simdhash.h"
-    #include "../../native/containers/dn-simdhash-specializations.h"
+#include "../../native/containers/dn-simdhash.h"
+#include "../../native/containers/dn-simdhash-specializations.h"
 
+extern "C" {
     void assertAbort(const char* why, const char* file, unsigned line);
 
     void

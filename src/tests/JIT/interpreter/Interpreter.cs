@@ -1928,6 +1928,11 @@ public class InterpreterTest
         return value;
     }
 
+    public static T TestUnboxInst<T>(object o)
+    {
+        return ((GenericStruct<T>)o).Value;
+    }
+
     struct GenericStruct<T>
     {
         public T Value;
@@ -2046,6 +2051,20 @@ public class InterpreterTest
         }
 
         if (Box<GenericStruct<object>?>(null) != null)
+        {
+            return false;
+        }
+
+        Console.WriteLine("Test classic unbox instruction with shared generics");
+        if (TestUnboxInst<object>(Box<GenericStruct<object>>(gsObj)) != objOriginal)
+        {
+            return false;
+        }
+
+        GenericStruct<int> gsInt = new GenericStruct<int>();
+        gsInt.Value = 42;
+
+        if (TestUnboxInst<int>(Box<GenericStruct<int>>(gsInt)) != 42)
         {
             return false;
         }

@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 // Gluing macro expansions together requires nested macro invocation :/
 #ifndef DN_SIMDHASH_GLUE
 #define DN_SIMDHASH_GLUE_INNER(a, b) a ## b
@@ -74,3 +78,7 @@ DN_SIMDHASH_TRY_REPLACE_VALUE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY
 
 void
 DN_SIMDHASH_FOREACH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_FOREACH_FUNC func, void *user_data);
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus

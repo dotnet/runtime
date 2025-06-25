@@ -7,6 +7,10 @@ typedef void         (*dn_simdhash_ght_destroy_func) (void * data);
 typedef unsigned int (*dn_simdhash_ght_hash_func)    (const void * key);
 typedef int32_t      (*dn_simdhash_ght_equal_func)   (const void * a, const void * b);
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 dn_simdhash_ght_t *
 dn_simdhash_ght_new (
 	dn_simdhash_ght_hash_func hash_func, dn_simdhash_ght_equal_func key_equal_func,
@@ -33,6 +37,10 @@ void *
 dn_simdhash_ght_get_value_or_default (
 	dn_simdhash_ght_t *hash, void * key
 );
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 
 // compatibility shims for the g_hash_table_ versions in glib.h
 #define dn_simdhash_ght_insert(h,k,v)  dn_simdhash_ght_insert_replace ((h),(k),(v),FALSE)
