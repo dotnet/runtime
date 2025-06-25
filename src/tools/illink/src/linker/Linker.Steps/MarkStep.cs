@@ -1964,10 +1964,16 @@ namespace Mono.Linker.Steps
                 // If a type is visible to reflection, we need to stop doing optimization that could cause observable difference
                 // in reflection APIs. This includes APIs like MakeGenericType (where variant castability of the produced type
                 // could be incorrect) or IsAssignableFrom (where assignability of unconstructed types might change).
-                Annotations.MarkRelevantToVariantCasting(definition);
+                MarkRelevantToVariantCasting(definition);
                 Annotations.MarkReflectionUsed(definition);
                 MarkImplicitlyUsedFields(definition, origin);
             }
+        }
+
+        internal void MarkRelevantToVariantCasting(TypeDefinition type)
+        {
+            _typeMapHandler.ProcessType(type);
+            Annotations.MarkRelevantToVariantCasting(type);
         }
 
         internal void MarkMethodVisibleToReflection(MethodReference method, in DependencyInfo reason, in MessageOrigin origin)
@@ -2090,8 +2096,6 @@ namespace Mono.Linker.Steps
                     Annotations.Mark(type, reason, origin);
                     break;
             }
-
-            _typeMapHandler.ProcessType(type);
 
             // Treat cctors triggered by a called method specially and mark this case up-front.
             if (type.HasMethods && ShouldMarkTypeStaticConstructor(type) && reason.Kind == DependencyKind.DeclaringTypeOfCalledMethod)
@@ -2922,7 +2926,7 @@ namespace Mono.Linker.Steps
                 if (argumentTypeDef == null)
                     continue;
 
-                Annotations.MarkRelevantToVariantCasting(argumentTypeDef);
+                MarkRelevantToVariantCasting(argumentTypeDef);
 
                 if (parameter?.HasDefaultConstructorConstraint == true)
                     MarkDefaultConstructor(argumentTypeDef, new DependencyInfo(DependencyKind.DefaultCtorForNewConstrainedGenericArgument, instance), origin);
@@ -3131,7 +3135,7 @@ namespace Mono.Linker.Steps
 
                 if (reference.Name == ".ctor" && Context.TryResolve(arrayType) is TypeDefinition typeDefinition)
                 {
-                    Annotations.MarkRelevantToVariantCasting(typeDefinition);
+                    MarkRelevantToVariantCasting(typeDefinition);
                 }
                 return null;
             }
@@ -3506,6 +3510,8 @@ namespace Mono.Linker.Steps
                 return;
 
             Annotations.MarkInstantiated(type);
+
+            _typeMapHandler.ProcessType(type);
 
             var typeOrigin = new MessageOrigin(type);
 
@@ -3975,7 +3981,7 @@ namespace Mono.Linker.Steps
                         case Code.Newarr:
                             if (Context.TryResolve(operand) is TypeDefinition typeDefinition)
                             {
-                                Annotations.MarkRelevantToVariantCasting(typeDefinition);
+                                MarkRelevantToVariantCasting(typeDefinition);
                             }
                             break;
                         case Code.Isinst:

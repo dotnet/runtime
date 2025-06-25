@@ -25,9 +25,21 @@ using Mono.Linker.Tests.Cases.Reflection;
 
 [assembly: TypeMap<UnusedTypeMap>("UnusedName", typeof(UnusedTargetType), typeof(TrimTarget))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(UnusedSourceClass), typeof(UnusedProxyType))]
+[assembly: TypeMap<UsedTypeMap>("TrimTargetIsKeptButNoTypeCheck", typeof(TargetType4), typeof(OnlyKeptClass))]
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
+    class TargetType4
+    {
+    }
+
+    [Kept]
+    class OnlyKeptClass
+    {
+        [Kept]
+        public static void KeepThisType() { }
+    }
+
     [Kept]
     class TypeMap
     {
@@ -57,6 +69,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
             AllocatedNoBoxStructType allocatedNoBoxStructType = new AllocatedNoBoxStructType(Random.Shared.Next());
             Console.WriteLine("AllocatedNoBoxStructType value: " + allocatedNoBoxStructType.Value);
             Console.WriteLine(proxyMap[typeof(AllocatedNoBoxStructType)]);
+            OnlyKeptClass.KeepThisType();
         }
 
         [Kept]
