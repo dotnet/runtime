@@ -829,158 +829,120 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         public void ConfigureDefaults_LoadsApplicationSpecificSettings()
         {
-            string tempPath = Path.GetTempPath();
-            string appSettingsPath = Path.Combine(tempPath, "testapp.settings.json");
-            string appSettingsEnvPath = Path.Combine(tempPath, "testapp.settings.Production.json");
+            using TempDirectory tempDir = new();
+            string appSettingsPath = Path.Combine(tempDir.Path, "testapp.settings.json");
+            string appSettingsEnvPath = Path.Combine(tempDir.Path, "testapp.settings.Production.json");
 
-            try
-            {
-                // Create test configuration files
-                File.WriteAllText(appSettingsPath, """{"TestKey": "AppValue"}""");
-                File.WriteAllText(appSettingsEnvPath, """{"TestKey": "AppEnvValue", "EnvKey": "EnvValue"}""");
+            // Create test configuration files
+            File.WriteAllText(appSettingsPath, """{"TestKey": "AppValue"}""");
+            File.WriteAllText(appSettingsEnvPath, """{"TestKey": "AppEnvValue", "EnvKey": "EnvValue"}""");
 
-                using var host = new HostBuilder()
-                    .ConfigureDefaults(args: null)
-                    .UseContentRoot(tempPath)
-                    .ConfigureHostConfiguration(config =>
+            using var host = new HostBuilder()
+                .ConfigureDefaults(args: null)
+                .UseContentRoot(tempDir.Path)
+                .ConfigureHostConfiguration(config =>
+                {
+                    config.AddInMemoryCollection(new[]
                     {
-                        config.AddInMemoryCollection(new[]
-                        {
-                            new KeyValuePair<string, string>(HostDefaults.ApplicationKey, "testapp"),
-                            new KeyValuePair<string, string>(HostDefaults.EnvironmentKey, "Production")
-                        });
-                    })
-                    .Build();
+                        new KeyValuePair<string, string>(HostDefaults.ApplicationKey, "testapp"),
+                        new KeyValuePair<string, string>(HostDefaults.EnvironmentKey, "Production")
+                    });
+                })
+                .Build();
 
-                var configuration = host.Services.GetRequiredService<IConfiguration>();
+            var configuration = host.Services.GetRequiredService<IConfiguration>();
 
-                // Verify that app-specific environment settings override app-specific settings
-                Assert.Equal("AppEnvValue", configuration["TestKey"]);
-                Assert.Equal("EnvValue", configuration["EnvKey"]);
-            }
-            finally
-            {
-                // Clean up test files
-                File.Delete(appSettingsPath);
-                File.Delete(appSettingsEnvPath);
-            }
+            // Verify that app-specific environment settings override app-specific settings
+            Assert.Equal("AppEnvValue", configuration["TestKey"]);
+            Assert.Equal("EnvValue", configuration["EnvKey"]);
         }
 
         [Fact]
         public void ConfigureDefaults_DoesNotLoadApplicationSpecificSettings_WhenApplicationNameIsEmpty()
         {
-            string tempPath = Path.GetTempPath();
-            string appSettingsPath = Path.Combine(tempPath, ".settings.json");
+            using TempDirectory tempDir = new();
+            string appSettingsPath = Path.Combine(tempDir.Path, ".settings.json");
 
-            try
-            {
-                // Create test configuration file that should NOT be loaded
-                File.WriteAllText(appSettingsPath, """{"TestKey": "ShouldNotBeLoaded"}""");
+            // Create test configuration file that should NOT be loaded
+            File.WriteAllText(appSettingsPath, """{"TestKey": "ShouldNotBeLoaded"}""");
 
-                using var host = new HostBuilder()
-                    .ConfigureDefaults(args: null)
-                    .UseContentRoot(tempPath)
-                    .ConfigureHostConfiguration(config =>
+            using var host = new HostBuilder()
+                .ConfigureDefaults(args: null)
+                .UseContentRoot(tempDir.Path)
+                .ConfigureHostConfiguration(config =>
+                {
+                    config.AddInMemoryCollection(new[]
                     {
-                        config.AddInMemoryCollection(new[]
-                        {
-                            new KeyValuePair<string, string>(HostDefaults.ApplicationKey, ""),
-                            new KeyValuePair<string, string>(HostDefaults.EnvironmentKey, "Production")
-                        });
-                    })
-                    .Build();
+                        new KeyValuePair<string, string>(HostDefaults.ApplicationKey, ""),
+                        new KeyValuePair<string, string>(HostDefaults.EnvironmentKey, "Production")
+                    });
+                })
+                .Build();
 
-                var configuration = host.Services.GetRequiredService<IConfiguration>();
+            var configuration = host.Services.GetRequiredService<IConfiguration>();
 
-                // Verify that app-specific settings are not loaded when ApplicationName is empty
-                Assert.Null(configuration["TestKey"]);
-            }
-            finally
-            {
-                // Clean up test files
-                if (File.Exists(appSettingsPath))
-                    File.Delete(appSettingsPath);
-            }
+            // Verify that app-specific settings are not loaded when ApplicationName is empty
+            Assert.Null(configuration["TestKey"]);
         }
 
         [Fact]
         public void ConfigureDefaults_ReplacesPathSeparatorsInApplicationName()
         {
-            string tempPath = Path.GetTempPath();
-            string appSettingsPath = Path.Combine(tempPath, "my_app.settings.json");
+            using TempDirectory tempDir = new();
+            string appSettingsPath = Path.Combine(tempDir.Path, "my_app.settings.json");
 
-            try
-            {
-                // Create test configuration file with path separators replaced by underscores
-                File.WriteAllText(appSettingsPath, """{"TestKey": "PathSeparatorValue"}""");
+            // Create test configuration file with path separators replaced by underscores
+            File.WriteAllText(appSettingsPath, """{"TestKey": "PathSeparatorValue"}""");
 
-                using var host = new HostBuilder()
-                    .ConfigureDefaults(args: null)
-                    .UseContentRoot(tempPath)
-                    .ConfigureHostConfiguration(config =>
+            using var host = new HostBuilder()
+                .ConfigureDefaults(args: null)
+                .UseContentRoot(tempDir.Path)
+                .ConfigureHostConfiguration(config =>
+                {
+                    config.AddInMemoryCollection(new[]
                     {
-                        config.AddInMemoryCollection(new[]
-                        {
-                            new KeyValuePair<string, string>(HostDefaults.ApplicationKey, "my/app"),
-                            new KeyValuePair<string, string>(HostDefaults.EnvironmentKey, "Development")
-                        });
-                    })
-                    .Build();
+                        new KeyValuePair<string, string>(HostDefaults.ApplicationKey, "my/app"),
+                        new KeyValuePair<string, string>(HostDefaults.EnvironmentKey, "Development")
+                    });
+                })
+                .Build();
 
-                var configuration = host.Services.GetRequiredService<IConfiguration>();
+            var configuration = host.Services.GetRequiredService<IConfiguration>();
 
-                // Verify that path separators are replaced with underscores
-                Assert.Equal("PathSeparatorValue", configuration["TestKey"]);
-            }
-            finally
-            {
-                // Clean up test files
-                if (File.Exists(appSettingsPath))
-                    File.Delete(appSettingsPath);
-            }
+            // Verify that path separators are replaced with underscores
+            Assert.Equal("PathSeparatorValue", configuration["TestKey"]);
         }
 
         [Fact]
         public void ConfigureDefaults_ApplicationSpecificSettingsOverrideAppSettings()
         {
-            string tempPath = Path.GetTempPath();
-            string appSettingsPath = Path.Combine(tempPath, "appsettings.json");
-            string appSpecificSettingsPath = Path.Combine(tempPath, "myapp.settings.json");
+            using TempDirectory tempDir = new();
+            string appSettingsPath = Path.Combine(tempDir.Path, "appsettings.json");
+            string appSpecificSettingsPath = Path.Combine(tempDir.Path, "myapp.settings.json");
 
-            try
-            {
-                // Create test configuration files
-                File.WriteAllText(appSettingsPath, """{"SharedKey": "AppSettingsValue", "AppKey": "AppSettingsOnly"}""");
-                File.WriteAllText(appSpecificSettingsPath, """{"SharedKey": "AppSpecificValue", "SpecificKey": "AppSpecificOnly"}""");
+            // Create test configuration files
+            File.WriteAllText(appSettingsPath, """{"SharedKey": "AppSettingsValue", "AppKey": "AppSettingsOnly"}""");
+            File.WriteAllText(appSpecificSettingsPath, """{"SharedKey": "AppSpecificValue", "SpecificKey": "AppSpecificOnly"}""");
 
-                using var host = new HostBuilder()
-                    .ConfigureDefaults(args: null)
-                    .UseContentRoot(tempPath)
-                    .ConfigureHostConfiguration(config =>
+            using var host = new HostBuilder()
+                .ConfigureDefaults(args: null)
+                .UseContentRoot(tempDir.Path)
+                .ConfigureHostConfiguration(config =>
+                {
+                    config.AddInMemoryCollection(new[]
                     {
-                        config.AddInMemoryCollection(new[]
-                        {
-                            new KeyValuePair<string, string>(HostDefaults.ApplicationKey, "myapp"),
-                            new KeyValuePair<string, string>(HostDefaults.EnvironmentKey, "Development")
-                        });
-                    })
-                    .Build();
+                        new KeyValuePair<string, string>(HostDefaults.ApplicationKey, "myapp"),
+                        new KeyValuePair<string, string>(HostDefaults.EnvironmentKey, "Development")
+                    });
+                })
+                .Build();
 
-                var configuration = host.Services.GetRequiredService<IConfiguration>();
+            var configuration = host.Services.GetRequiredService<IConfiguration>();
 
-                // Verify that app-specific settings override general appsettings
-                Assert.Equal("AppSpecificValue", configuration["SharedKey"]);
-                Assert.Equal("AppSettingsOnly", configuration["AppKey"]);
-                Assert.Equal("AppSpecificOnly", configuration["SpecificKey"]);
-            }
-            finally
-            {
-                // Clean up test files
-                if (File.Exists(appSettingsPath))
-                    File.Delete(appSettingsPath);
-                if (File.Exists(appSpecificSettingsPath))
-                    File.Delete(appSpecificSettingsPath);
-            }
+            // Verify that app-specific settings override general appsettings
+            Assert.Equal("AppSpecificValue", configuration["SharedKey"]);
+            Assert.Equal("AppSettingsOnly", configuration["AppKey"]);
+            Assert.Equal("AppSpecificOnly", configuration["SpecificKey"]);
         }
 
         internal class ServiceD { }
