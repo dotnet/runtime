@@ -744,7 +744,7 @@ namespace Mono.Linker
 
 			// Don't warn for RUC on assembly attributes.
 			// There's no way to suppress it.
-			if (warningCode == 2026 && origin.Provider is AssemblyDefinition)
+			if ((DiagnosticId)warningCode == DiagnosticId.RequiresUnreferencedCode && origin.Provider is AssemblyDefinition)
 				return true;
 
 			return Suppressions.IsSuppressed (warningCode, origin, out _);

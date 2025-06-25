@@ -109,7 +109,11 @@ namespace Mono.Linker
 			RecordTargetTypeSeen (definition, _unmarkedExternalTypeMapEntries, _referencedExternalTypeMaps, _pendingExternalTypeMapEntries);
 		}
 
-		void RecordTargetTypeSeen (TypeDefinition targetType, Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttributeWithOrigin>>> unmarkedTypeMapAttributes, HashSet<TypeReference> referenceTypeMapGroups, Dictionary<TypeReference, List<CustomAttributeWithOrigin>> typeMapAttributesPendingUniverseMarking)
+		void RecordTargetTypeSeen (
+			TypeDefinition targetType,
+			Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttributeWithOrigin>>> unmarkedTypeMapAttributes,
+			HashSet<TypeReference> referenceTypeMapGroups,
+			Dictionary<TypeReference, List<CustomAttributeWithOrigin>> typeMapAttributesPendingUniverseMarking)
 		{
 			if (unmarkedTypeMapAttributes.Remove (targetType, out Dictionary<TypeReference, List<CustomAttributeWithOrigin>>? entries)) {
 				foreach (var (typeMapGroup, attributes) in entries) {
