@@ -27,11 +27,11 @@ internal static partial class Interop
             internal static partial SafeNetworkFrameworkHandle CreateContext([MarshalAs(UnmanagedType.I4)] bool isServer);
 
             [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwSetTlsOptions", StringMarshalling = StringMarshalling.Utf8)]
-            private static unsafe partial int SetTlsOptions(SafeNetworkFrameworkHandle connection, IntPtr gcHandle,
+            private static partial int SetTlsOptions(SafeNetworkFrameworkHandle connection, IntPtr gcHandle,
                                                             string targetName, Span<byte> alpnBuffer, int alpnLength,
                                                             SslProtocols minTlsProtocol, SslProtocols maxTlsProtocol);
 
-            internal static unsafe int SetTlsOptions(SafeNetworkFrameworkHandle nwHandle, IntPtr gcHandle, string targetName, List<SslApplicationProtocol>? applicationProtocols, SslProtocols minTlsVersion, SslProtocols maxTlsVersion)
+            internal static int SetTlsOptions(SafeNetworkFrameworkHandle nwHandle, IntPtr gcHandle, string targetName, List<SslApplicationProtocol>? applicationProtocols, SslProtocols minTlsVersion, SslProtocols maxTlsVersion)
             {
                 int alpnLength = GetAlpnProtocolListSerializedLength(applicationProtocols);
                 Span<byte> alpn = alpnLength <= 256 ? stackalloc byte[256].Slice(0, alpnLength) : new byte[alpnLength];
@@ -64,8 +64,8 @@ internal static partial class Interop
                                                                ref void* negotiatedAlpn, out uint alpnLength);
 
             [LibraryImport(Interop.Libraries.AppleNetworkNative, EntryPoint = "AppleNetNative_NwCopyCertChain")]
-            internal static unsafe partial int CopyCertChain(SafeNetworkFrameworkHandle connection,
-                                                             out SafeCFArrayHandle certificates, // CFArrayRef
+            internal static partial int CopyCertChain(SafeNetworkFrameworkHandle connection,
+                                                             out SafeCFArrayHandle certificates,
                                                              out int count);
 
             internal static int GetAlpnProtocolListSerializedLength(List<SslApplicationProtocol>? applicationProtocols)
