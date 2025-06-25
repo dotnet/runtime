@@ -6071,14 +6071,14 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                 }
                 break;
             case GenIntCastDesc::SIGN_EXTEND_INT:
-                emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, dstReg, srcReg, 0);
+                emit->emitIns_R_R(INS_sext_w, EA_4BYTE, dstReg, srcReg);
                 break;
 
             default:
                 assert(desc.ExtendKind() == GenIntCastDesc::COPY);
                 if (srcType == TYP_INT)
                 {
-                    emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, dstReg, srcReg, 0);
+                    emit->emitIns_R_R(INS_sext_w, EA_4BYTE, dstReg, srcReg);
                 }
                 else
                 {
