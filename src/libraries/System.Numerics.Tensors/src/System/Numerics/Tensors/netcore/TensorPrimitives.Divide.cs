@@ -70,7 +70,7 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable => typeof(T) == typeof(float)
                                             || typeof(T) == typeof(double)
-                                            || (Vector256.IsHardwareAccelerated && typeof(T) == typeof(int));
+                                            || (Vector256.IsHardwareAccelerated && IsInt32Like<T>());
             public static T Invoke(T x, T y) => x / y;
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x / y;
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x / y;
