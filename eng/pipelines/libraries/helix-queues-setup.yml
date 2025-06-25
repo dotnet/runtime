@@ -57,13 +57,9 @@ jobs:
 
       - ${{ else }}:
         - ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
-          # Mono path
-          - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
-              # mono outerloop
-              - Ubuntu.2204.Amd64.Open
-          # Do we need a branch for inner loop mono?
-
-        - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
+          # Mono path - test minimal scenario
+          - Ubuntu.2204.Amd64.Open
+        - ${{ else }}:
         # CoreCLR path
           - ${{ if and(eq(parameters.jobParameters.isExtraPlatformsBuild, true), ne(parameters.jobParameters.testScope, 'outerloop'))}}:
             # extra-platforms CoreCLR (inner loop only)
