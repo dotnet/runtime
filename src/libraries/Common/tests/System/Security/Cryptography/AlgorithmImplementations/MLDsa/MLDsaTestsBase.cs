@@ -30,9 +30,7 @@ namespace System.Security.Cryptography.Tests
         {
             using MLDsa mldsa = GenerateKey(algorithm);
             byte[] data = [ 1, 2, 3, 4, 5 ];
-            byte[] signature = new byte[mldsa.Algorithm.SignatureSizeInBytes];
-            Assert.Equal(signature.Length, mldsa.SignData(data, signature));
-
+            byte[] signature = mldsa.SignData(data);
             ExerciseSuccessfulVerify(mldsa, data, signature, []);
         }
 
@@ -43,8 +41,7 @@ namespace System.Security.Cryptography.Tests
             using MLDsa mldsa = GenerateKey(algorithm);
             byte[] context = [ 1, 1, 3, 5, 6 ];
             byte[] data = [ 1, 2, 3, 4, 5 ];
-            byte[] signature = new byte[mldsa.Algorithm.SignatureSizeInBytes];
-            Assert.Equal(signature.Length, mldsa.SignData(data, signature, context));
+            byte[] signature = mldsa.SignData(data, context);
 
             ExerciseSuccessfulVerify(mldsa, data, signature, context);
         }
@@ -55,9 +52,7 @@ namespace System.Security.Cryptography.Tests
         public void GenerateSignVerifyEmptyMessageNoContext(MLDsaAlgorithm algorithm)
         {
             using MLDsa mldsa = GenerateKey(algorithm);
-            byte[] signature = new byte[mldsa.Algorithm.SignatureSizeInBytes];
-            Assert.Equal(signature.Length, mldsa.SignData([], signature));
-
+            byte[] signature = mldsa.SignData([]);
             ExerciseSuccessfulVerify(mldsa, [], signature, []);
         }
 
@@ -68,9 +63,7 @@ namespace System.Security.Cryptography.Tests
         {
             using MLDsa mldsa = GenerateKey(algorithm);
             byte[] context = [1, 1, 3, 5, 6];
-            byte[] signature = new byte[mldsa.Algorithm.SignatureSizeInBytes];
-            Assert.Equal(signature.Length, mldsa.SignData([], signature, context));
-
+            byte[] signature = mldsa.SignData([], context);
             ExerciseSuccessfulVerify(mldsa, [], signature, context);
         }
 
@@ -84,8 +77,7 @@ namespace System.Security.Cryptography.Tests
 
             using (MLDsa mldsa = GenerateKey(algorithm))
             {
-                signature = new byte[algorithm.SignatureSizeInBytes];
-                Assert.Equal(signature.Length, mldsa.SignData(data, signature));
+                signature = mldsa.SignData(data);
                 AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature));
 
                 publicKey = mldsa.ExportMLDsaPublicKey();
@@ -107,9 +99,7 @@ namespace System.Security.Cryptography.Tests
 
             using (MLDsa mldsaTmp = GenerateKey(algorithm))
             {
-                signature = new byte[algorithm.SignatureSizeInBytes];
-                Assert.Equal(signature.Length, mldsaTmp.SignData(data, signature));
-
+                signature = mldsaTmp.SignData(data);
                 secretKey = mldsaTmp.ExportMLDsaSecretKey();
             }
 
@@ -118,7 +108,7 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature));
 
                 signature.AsSpan().Fill(0);
-                Assert.Equal(signature.Length, mldsa.SignData(data, signature));
+                mldsa.SignData(data, signature);
 
                 AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature));
                 data[0] ^= 1;
@@ -136,9 +126,7 @@ namespace System.Security.Cryptography.Tests
 
             using (MLDsa mldsaTmp = GenerateKey(algorithm))
             {
-                signature = new byte[algorithm.SignatureSizeInBytes];
-                Assert.Equal(signature.Length, mldsaTmp.SignData(data, signature));
-
+                signature = mldsaTmp.SignData(data);
                 privateSeed = mldsaTmp.ExportMLDsaPrivateSeed();
             }
 
@@ -147,7 +135,7 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature));
 
                 signature.AsSpan().Fill(0);
-                Assert.Equal(signature.Length, mldsa.SignData(data, signature));
+                mldsa.SignData(data, signature);
 
                 ExerciseSuccessfulVerify(mldsa, data, signature, []);
             }

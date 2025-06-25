@@ -37,16 +37,11 @@ namespace System.Security.Cryptography.X509Certificates
 
         public override byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm)
         {
-            ArgumentNullException.ThrowIfNull(data);
-
             // Ignore the hashAlgorithm parameter.
             // This generator only supports ML-DSA "Pure" signatures, but the overall design of
             // CertificateRequest makes it easy for a hashAlgorithm value to get here.
 
-            byte[] signature = new byte[_key.Algorithm.SignatureSizeInBytes];
-            int written = _key.SignData(data, signature);
-            Debug.Assert(written == signature.Length);
-            return signature;
+            return _key.SignData(data);
         }
 
         protected override PublicKey BuildPublicKey()

@@ -85,17 +85,15 @@ namespace System.Security.Cryptography
         ///   The data to sign.
         /// </param>
         /// <param name="destination">
-        ///   The buffer to receive the signature.
+        ///   The buffer to receive the signature. Its length must be exactly
+        ///   <see cref="MLDsaAlgorithm.SignatureSizeInBytes"/>.
         /// </param>
         /// <param name="context">
         ///   An optional context-specific value to limit the scope of the signature.
         ///   The default value is an empty buffer.
         /// </param>
-        /// <returns>
-        ///   The number of bytes written to the <paramref name="destination" /> buffer.
-        /// </returns>
         /// <exception cref="ArgumentException">
-        ///   The buffer in <paramref name="destination"/> is too small to hold the signature.
+        ///   The buffer in <paramref name="destination"/> is the incorrect length to receive the signature.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
@@ -109,8 +107,17 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while signing the data.</para>
         /// </exception>
-        public int SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
+        public void SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
         {
+            int signatureSizeInBytes = Algorithm.SignatureSizeInBytes;
+
+            if (destination.Length != signatureSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, signatureSizeInBytes),
+                    nameof(destination));
+            }
+
             if (context.Length > MaxContextLength)
             {
                 throw new ArgumentOutOfRangeException(
@@ -119,14 +126,44 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            if (destination.Length < Algorithm.SignatureSizeInBytes)
-            {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-            }
-
             ThrowIfDisposed();
-            SignDataCore(data, context, destination.Slice(0, Algorithm.SignatureSizeInBytes));
-            return Algorithm.SignatureSizeInBytes;
+            SignDataCore(data, context, destination);
+        }
+
+        /// <summary>
+        ///   Signs the specified data.
+        /// </summary>
+        /// <param name="data">
+        ///   The data to sign.
+        /// </param>
+        /// <param name="context">
+        ///   An optional context-specific value to limit the scope of the signature.
+        ///   The default value is <see langword="null" />.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="data"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="context"/> has a length in excess of 255 bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The instance represents only a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while signing the data.</para>
+        /// </exception>
+        /// <remarks>
+        ///   A <see langword="null" /> context is treated as empty.
+        /// </remarks>
+        public byte[] SignData(byte[] data, byte[]? context = default)
+        {
+            ArgumentNullException.ThrowIfNull(data);
+
+            byte[] destination = new byte[Algorithm.SignatureSizeInBytes];
+            SignData(new ReadOnlySpan<byte>(data), destination.AsSpan(), new ReadOnlySpan<byte>(context));
+            return destination;
         }
 
         // TODO: SignPreHash
@@ -177,6 +214,45 @@ namespace System.Security.Cryptography
             }
 
             return VerifyDataCore(data, context, signature);
+        }
+
+        /// <summary>
+        ///   Verifies that the specified signature is valid for this key and the provided data.
+        /// </summary>
+        /// <param name="data">
+        ///   The data to verify.
+        /// </param>
+        /// <param name="signature">
+        ///   The signature to verify.
+        /// </param>
+        /// <param name="context">
+        ///   The context value which was provided during signing.
+        ///   The default value is <see langword="null" />.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if the signature validates the data; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="data"/> or <paramref name="signature"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="context"/> has a length in excess of 255 bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>An error occurred while verifying the data.</para>
+        /// </exception>
+        /// <remarks>
+        ///   A <see langword="null" /> context is treated as empty.
+        /// </remarks>
+        public bool VerifyData(byte[] data, byte[] signature, byte[]? context = default)
+        {
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(signature);
+
+            return VerifyData(new ReadOnlySpan<byte>(data), new ReadOnlySpan<byte>(signature), new ReadOnlySpan<byte>(context));
         }
 
         // TODO: VerifyPreHash
@@ -1368,6 +1444,17 @@ namespace System.Security.Cryptography
             return MLDsaImplementation.ImportPublicKey(algorithm, source);
         }
 
+        /// <inheritdoc cref="ImportMLDsaPublicKey(MLDsaAlgorithm, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm"/> or <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        public static MLDsa ImportMLDsaPublicKey(MLDsaAlgorithm algorithm, byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return ImportMLDsaPublicKey(algorithm, new ReadOnlySpan<byte>(source));
+        }
+
         /// <summary>
         ///   Imports an ML-DSA private key in the FIPS 204 secret key format.
         /// </summary>
@@ -1406,6 +1493,17 @@ namespace System.Security.Cryptography
             return MLDsaImplementation.ImportSecretKey(algorithm, source);
         }
 
+        /// <inheritdoc cref="ImportMLDsaSecretKey(MLDsaAlgorithm, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm"/> or <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        public static MLDsa ImportMLDsaSecretKey(MLDsaAlgorithm algorithm, byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return ImportMLDsaSecretKey(algorithm, new ReadOnlySpan<byte>(source));
+        }
+
         /// <summary>
         ///   Imports an ML-DSA private key from its private seed value.
         /// </summary>
@@ -1442,6 +1540,17 @@ namespace System.Security.Cryptography
 
             ThrowIfNotSupported();
             return MLDsaImplementation.ImportSeed(algorithm, source);
+        }
+
+        /// <inheritdoc cref="ImportMLDsaPrivateSeed(MLDsaAlgorithm, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm"/> or <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        public static MLDsa ImportMLDsaPrivateSeed(MLDsaAlgorithm algorithm, byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return ImportMLDsaPrivateSeed(algorithm, new ReadOnlySpan<byte>(source));
         }
 
         /// <summary>
