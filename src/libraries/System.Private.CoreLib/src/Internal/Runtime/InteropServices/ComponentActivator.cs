@@ -57,6 +57,7 @@ namespace Internal.Runtime.InteropServices
         [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
