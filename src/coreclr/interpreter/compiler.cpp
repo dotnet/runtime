@@ -89,15 +89,67 @@ public:
     }
 };
 
-void CopyToInterpGenericLookup(InterpGenericLookup* dst, const CORINFO_RUNTIME_LOOKUP *src)
+size_t GetGenericLookupOffset(const CORINFO_RUNTIME_LOOKUP *pLookup, uint32_t index)
 {
-    dst->signature = src->signature;
-    dst->indirections = src->indirections;
-    dst->sizeOffset = src->sizeOffset;
-    dst->offsets[0] = src->offsets[0];
-    dst->offsets[1] = src->offsets[1];
-    dst->offsets[2] = src->offsets[2];
-    dst->offsets[3] = src->offsets[3];
+    if (pLookup->indirections == CORINFO_USEHELPER)
+        return 0;
+    else if (index < pLookup->indirections)
+        return pLookup->offsets[index];
+    else
+        return 0;
+}
+
+void InterpCompiler::CopyToInterpGenericLookup(InterpGenericLookup* dst, const CORINFO_RUNTIME_LOOKUP *src)
+{
+    if (src->testForNull || src->indirections == CORINFO_USEHELPER)
+    {
+        dst->signature = src->signature;
+    }
+    else
+    {
+        dst->signature = nullptr;
+    }
+
+    if (src->indirections == CORINFO_USEHELPER)
+        dst->indirections = InterpGenericLookup_UseHelper;
+    else
+        dst->indirections = src->indirections;
+
+    assert(CORINFO_MAXINDIRECTIONS == sizeof(dst->offsets)/sizeof(dst->offsets[0]));
+
+    if (GetGenericLookupOffset(src, 0) > UINT16_MAX || GetGenericLookupOffset(src, 1) > UINT16_MAX ||
+        GetGenericLookupOffset(src, 2) > UINT16_MAX || GetGenericLookupOffset(src, 3) > UINT16_MAX)
+    {
+        if (m_verbose)
+        {
+            printf("CopyToInterpGenericLookup: Offsets too large for generic lookup, unable to compile\n");
+            printf("  Indirections: %d\n", (int)src->indirections);
+            printf("  Offsets: %zu %zu %zu %zu\n",
+                src->offsets[0], src->offsets[1], src->offsets[2], src->offsets[3]);
+        }
+        NO_WAY("CopyToInterpGenericLookup: Offsets too large for generic lookup");
+    }
+
+    if (dst->indirections == InterpGenericLookup_UseHelper)
+    {
+        if (dst->signature == NULL)
+        {
+            NO_WAY("CopyToInterpGenericLookup: Helper lookup must have a signature");
+        }
+        dst->sizeOffset = 0;
+        dst->offsets[0] = 0;
+        dst->offsets[1] = 0;
+        dst->offsets[2] = 0;
+        dst->offsets[3] = 0;
+    }
+    else
+    {
+        dst->sizeOffset = src->sizeOffset;
+        dst->offsets[0] = (uint16_t)GetGenericLookupOffset(src, 0);
+        dst->offsets[1] = (uint16_t)GetGenericLookupOffset(src, 1);
+        dst->offsets[2] = (uint16_t)GetGenericLookupOffset(src, 2);
+        dst->offsets[3] = (uint16_t)GetGenericLookupOffset(src, 3);
+    }
     assert(!src->indirectFirstOffset);
     assert(!src->indirectSecondOffset);
 }
@@ -1177,6 +1229,8 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     : m_pInitLocalsIns(nullptr)
     , m_globalVarsWithRefsStackTop(0)
 {
+    m_genericLookupToDataItemIndex.Init(&m_dataItems, this);
+
     // Fill in the thread-local used for assertions
     t_InterpJitInfoTls = compHnd;
 
@@ -2077,15 +2131,6 @@ void InterpCompiler::EmitCompareOp(int32_t opBase)
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
 
-int32_t InterpCompiler::GetDataItemIndex(void *data)
-{
-    int32_t index = m_dataItems.Find(data);
-    if (index != -1)
-        return index;
-
-    return m_dataItems.Add(data);
-}
-
 void* InterpCompiler::GetDataItemAtIndex(int32_t index)
 {
     if (index < 0 || index >= m_dataItems.GetSize())
@@ -2094,6 +2139,16 @@ void* InterpCompiler::GetDataItemAtIndex(int32_t index)
         return NULL;
     }
     return m_dataItems.Get(index);
+}
+
+void* InterpCompiler::GetAddrOfDataItemAtIndex(int32_t index)
+{
+    if (index < 0 || index >= m_dataItems.GetSize())
+    {
+        assert(!"Invalid data item index");
+        return NULL;
+    }
+    return (void*)&m_dataItems.GetUnderlyingArray()[index];
 }
 
 int32_t InterpCompiler::GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle)
@@ -2240,22 +2295,22 @@ InterpCompiler::GenericHandleData InterpCompiler::GenericHandleToGenericHandleDa
     if (embedInfo.lookup.lookupKind.needsRuntimeLookup)
     {
         CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind = embedInfo.lookup.lookupKind.runtimeLookupKind;
-        InterpGenericLookup *pRuntimeLookup = (InterpGenericLookup*)AllocMethodData(sizeof(InterpGenericLookup));
+        InterpGenericLookup runtimeLookup;
 
         if (runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM)
         {
-            pRuntimeLookup->lookupType = InterpGenericLookupType::Method;
+            runtimeLookup.lookupType = InterpGenericLookupType::Method;
         }
         else if (runtimeLookupKind == CORINFO_LOOKUP_THISOBJ)
         {
-            pRuntimeLookup->lookupType = InterpGenericLookupType::This;
+            runtimeLookup.lookupType = InterpGenericLookupType::This;
         }
         else
         {
-            pRuntimeLookup->lookupType = InterpGenericLookupType::Class;
+            runtimeLookup.lookupType = InterpGenericLookupType::Class;
         }
-        CopyToInterpGenericLookup(pRuntimeLookup, &embedInfo.lookup.runtimeLookup);
-        return GenericHandleData(getParamArgIndex(), GetDataItemIndex(pRuntimeLookup));
+        CopyToInterpGenericLookup(&runtimeLookup, &embedInfo.lookup.runtimeLookup);
+        return GenericHandleData(getParamArgIndex(), GetDataItemIndex(runtimeLookup));
     }
     else
     {
@@ -2403,22 +2458,22 @@ void InterpCompiler::EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup)
     int resultVar = m_pStackPointer[-1].var;
 
     CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind = lookup.lookupKind.runtimeLookupKind;
-    InterpGenericLookup *pRuntimeLookup = (InterpGenericLookup*)AllocMethodData(sizeof(InterpGenericLookup));
+    InterpGenericLookup runtimeLookup;
     if (runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM)
     {
-        pRuntimeLookup->lookupType = InterpGenericLookupType::Method;
+        runtimeLookup.lookupType = InterpGenericLookupType::Method;
     }
     else if (runtimeLookupKind == CORINFO_LOOKUP_THISOBJ)
     {
-        pRuntimeLookup->lookupType = InterpGenericLookupType::This;
+        runtimeLookup.lookupType = InterpGenericLookupType::This;
     }
     else
     {
-        pRuntimeLookup->lookupType = InterpGenericLookupType::Class;
+        runtimeLookup.lookupType = InterpGenericLookupType::Class;
     }
-    CopyToInterpGenericLookup(pRuntimeLookup, &lookup.runtimeLookup);
+    CopyToInterpGenericLookup(&runtimeLookup, &lookup.runtimeLookup);
     AddIns(INTOP_GENERICLOOKUP);
-    m_pLastNewIns->data[0] = GetDataItemIndex(pRuntimeLookup);
+    m_pLastNewIns->data[0] = GetDataItemIndex(runtimeLookup);
 
     m_pLastNewIns->SetSVar(getParamArgIndex());
     m_pLastNewIns->SetDVar(resultVar);
@@ -4995,36 +5050,6 @@ DO_LDFTN:
             }
 
             case CEE_UNBOX:
-            {
-                uint32_t token = getU4LittleEndian(m_ip + 1);
-                CHECK_STACK(1);
-                CORINFO_RESOLVED_TOKEN resolvedToken;
-                ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
-                CORINFO_GENERICHANDLE_RESULT embedInfo;
-                m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
-                m_pStackPointer -= 1;
-                CorInfoHelpFunc helpFunc = m_compHnd->getUnBoxHelper((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
-                DeclarePointerIsClass((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
-
-                if (helpFunc == CORINFO_HELP_UNBOX)
-                {
-                    EmitPushHelperCall_2(helpFunc, embedInfo, m_pStackPointer[0].var, StackTypeO, (CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
-                }
-                else
-                {
-                    // NOTE: what we do here doesn't comply with the ECMA spec, see
-                    // https://github.com/dotnet/runtime/issues/86203#issuecomment-1546709542
-
-                    // Unbox nullable helper returns a struct type.
-                    // We need to spill it to a temp so than can take the address of it.
-
-                    EmitPushUnboxAnyNullable(embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass))], resolvedToken.hClass);
-                    m_pStackPointer--;
-                    EmitLdLocA(m_pStackPointer[0].var);
-                }
-                m_ip += 5;
-                break;
-            }
             case CEE_UNBOX_ANY:
             {
                 uint32_t token = getU4LittleEndian(m_ip + 1);
@@ -5036,28 +5061,56 @@ DO_LDFTN:
                 DeclarePointerIsClass((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
 
                 m_pStackPointer--;
-                if (!m_compHnd->isValueClass(resolvedToken.hClass))
+                if (*m_ip == CEE_UNBOX)
                 {
-                    // Unbox.any of a reference type is just a cast
-                    CorInfoHelpFunc castingHelper = m_compHnd->getCastingHelper(&resolvedToken, true /* throwing */);
+                    if (!m_compHnd->isValueClass(resolvedToken.hClass))
+                    {
+                        NO_WAY("Unbox of a reference type is not valid");
+                    }
 
-                    CORINFO_GENERICHANDLE_RESULT embedInfo;
-                    InterpEmbedGenericResult result;
-                    m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
-
-                    EmitPushHelperCall_2(castingHelper, embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[InterpTypeO], NULL);
-                }
-                else
-                {
                     CorInfoHelpFunc helpFunc = m_compHnd->getUnBoxHelper((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
-
                     if (helpFunc == CORINFO_HELP_UNBOX)
                     {
-                        EmitPushUnboxAny(embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass))], resolvedToken.hClass);
+                        EmitPushHelperCall_2(helpFunc, embedInfo, m_pStackPointer[0].var, StackTypeO, (CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
                     }
                     else
                     {
+                        // NOTE: what we do here doesn't comply with the ECMA spec, see
+                        // https://github.com/dotnet/runtime/issues/86203#issuecomment-1546709542
+
+                        // Unbox nullable helper returns a struct type.
+                        // We need to spill it to a temp so than can take the address of it.
+
                         EmitPushUnboxAnyNullable(embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass))], resolvedToken.hClass);
+                        m_pStackPointer--;
+                        EmitLdLocA(m_pStackPointer[0].var);
+                    }
+                }
+                else
+                {
+                    if (!m_compHnd->isValueClass(resolvedToken.hClass))
+                    {
+                        // Unbox.any of a reference type is just a cast
+                        CorInfoHelpFunc castingHelper = m_compHnd->getCastingHelper(&resolvedToken, true /* throwing */);
+                        
+                        CORINFO_GENERICHANDLE_RESULT embedInfo;
+                        InterpEmbedGenericResult result;
+                        m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
+                        
+                        EmitPushHelperCall_2(castingHelper, embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[InterpTypeO], NULL);
+                    }
+                    else
+                    {
+                        CorInfoHelpFunc helpFunc = m_compHnd->getUnBoxHelper((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
+                        
+                        if (helpFunc == CORINFO_HELP_UNBOX)
+                        {
+                            EmitPushUnboxAny(embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass))], resolvedToken.hClass);
+                        }
+                        else
+                        {
+                            EmitPushUnboxAnyNullable(embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass))], resolvedToken.hClass);
+                        }
                     }
                 }
                 m_ip += 5;
@@ -5674,12 +5727,23 @@ void PrintInterpGenericLookup(InterpGenericLookup* lookup)
         lookupType = "Unknown";
 
     printf("%s,%p[", lookupType, lookup->signature);
-    for (int i = 0; i < lookup->indirections; i++)
+    if (lookup->indirections == 0)
     {
-        if (i > 0)
-            printf(",");
+        printf("UseContextMethodTableOrMethodDescDirectly");
+    }
+    else if (lookup->indirections == InterpGenericLookup_UseHelper)
+    {
+        printf("UseHelper");
+    }
+    else
+    {
+        for (int i = 0; i < lookup->indirections; i++)
+        {
+            if (i > 0)
+                printf(",");
 
-        printf("%d", (int)lookup->offsets[i]);
+            printf("%d", (int)lookup->offsets[i]);
+        }
     }
     printf("]");
     if (lookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
@@ -5819,13 +5883,13 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
         case InterpOpGenericHelperFtn:
             {
                 PrintHelperFtn((void*)GetDataItemAtIndex(pData[0]));
-                InterpGenericLookup *pGenericLookup = (InterpGenericLookup*)GetDataItemAtIndex(pData[1]);
+                InterpGenericLookup *pGenericLookup = (InterpGenericLookup*)GetAddrOfDataItemAtIndex(pData[1]);
                 PrintInterpGenericLookup(pGenericLookup);
                 break;
             }
         case InterpOpGenericLookup:
             {
-                InterpGenericLookup *pGenericLookup = (InterpGenericLookup*)GetDataItemAtIndex(pData[0]);
+                InterpGenericLookup *pGenericLookup = (InterpGenericLookup*)GetAddrOfDataItemAtIndex(pData[0]);
                 PrintInterpGenericLookup(pGenericLookup);
             }
             break;
@@ -5882,7 +5946,7 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
         }
         case InterpOpGenericLookupInt:
         {
-            InterpGenericLookup *pGenericLookup = (InterpGenericLookup*)GetDataItemAtIndex(pData[0]);
+            InterpGenericLookup *pGenericLookup = (InterpGenericLookup*)GetAddrOfDataItemAtIndex(pData[0]);
             PrintInterpGenericLookup(pGenericLookup);
             printf(", %d", pData[1]);
             break;

@@ -120,7 +120,7 @@ const CORINFO_CLASS_HANDLE  NO_CLASS_HANDLE  = nullptr;
 const CORINFO_FIELD_HANDLE  NO_FIELD_HANDLE  = nullptr;
 const CORINFO_METHOD_HANDLE NO_METHOD_HANDLE = nullptr;
 
-enum class InterpGenericLookupType
+enum class InterpGenericLookupType : uint32_t
 {
     This,
     Method,
@@ -128,6 +128,8 @@ enum class InterpGenericLookupType
 };
 
 const int InterpGenericLookup_MaxIndirections = 4;
+
+const uint16_t InterpGenericLookup_UseHelper = InterpGenericLookup_MaxIndirections + 1;
 
 struct InterpGenericLookup
 {
@@ -139,14 +141,17 @@ struct InterpGenericLookup
     InterpGenericLookupType lookupType;
 
     // Number of indirections to get there
-    // CORINFO_USEHELPER = don't know how to get it, so use helper function at run-time instead
-    // CORINFO_USENULL = the context should be null because the callee doesn't actually use it
+    // InterpGenericLookup_UseHelper = don't know how to get it, so use helper function at run-time instead
     // 0 = use the this pointer itself (e.g. token is C<!0> inside code in sealed class C)
     //     or method desc itself (e.g. token is method void M::mymeth<!!0>() inside code in M::mymeth)
     // Otherwise, follow each byte-offset stored in the "offsets[]" array (may be negative)
     uint16_t                indirections;
+
+    // If this is not CORINFO_NO_SIZE_CHECK, then the last indirection used needs to be checked
+    // against the size stored at this offset from the previous indirection pointer. The logic
+    // here is to allow for the generic dictionary to change in size without requiring any locks.
     uint16_t                sizeOffset;
-    size_t                  offsets[InterpGenericLookup_MaxIndirections];
+    uint16_t                offsets[InterpGenericLookup_MaxIndirections];
 };
 
 #endif

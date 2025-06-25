@@ -10,6 +10,7 @@
 
 #include "../../native/containers/dn-simdhash.h"
 #include "../../native/containers/dn-simdhash-specializations.h"
+#include "../../native/containers/dn-simdhash-utils.h"
 
 class dn_simdhash_ptr_ptr_holder
 {
@@ -73,6 +74,104 @@ struct InterpException
 INTERPRETER_NORETURN void NO_WAY(const char* message);
 INTERPRETER_NORETURN void BADCODE(const char* message);
 INTERPRETER_NORETURN void NOMEM();
+
+class InterpCompiler;
+
+class InterpDataItemIndexMap
+{
+    struct VarSizedData
+    {
+        VarSizedData(size_t size) : size(size)
+        {
+        }
+
+        const size_t size;
+        uint32_t SizeOf()
+        {
+            return (uint32_t)(size * sizeof(void*));
+        }
+    };
+
+    template<typename T>
+    struct VarSizedDataWithPayload : public VarSizedData
+    {
+        VarSizedDataWithPayload() : VarSizedData(sizeof(VarSizedDataWithPayload<T>)/sizeof(void*))
+        {
+            assert(SizeOf() == sizeof(VarSizedDataWithPayload<T>));
+        }
+        T payload;
+    };
+
+    dn_simdhash_ght_t* _hash = nullptr;
+    TArray<void*> *_dataItems = nullptr; // Actual data items stored here, indexed by the value in the hash table. This pointer is owned by the InterpCompiler class.
+    InterpCompiler* _compiler = nullptr;
+
+    static unsigned int HashVarSizedData(const void *voidKey)
+    {
+        VarSizedData* key = (VarSizedData*)voidKey;
+        return MurmurHash3_32((const uint8_t*)key, key->SizeOf(), 0);
+    }
+
+    static int32_t KeyEqualVarSizeData(const void * aVoid, const void * bVoid)
+    {
+        VarSizedData* keyA = (VarSizedData*)aVoid;
+        VarSizedData* keyB = (VarSizedData*)bVoid;
+
+        if (keyA->size != keyB->size)
+            return 0;
+
+        if (memcmp(aVoid, bVoid, keyA->SizeOf()) == 0)
+            return 1;
+        else
+            return 0;
+    }
+
+    dn_simdhash_ght_t* GetHash()
+    {
+        if (_hash == nullptr)
+            _hash = dn_simdhash_ght_new(HashVarSizedData, KeyEqualVarSizeData, 0, NULL);
+        if (_hash == nullptr)
+            NOMEM();
+
+        return _hash;
+    }
+
+public:
+    InterpDataItemIndexMap() = default;
+    InterpDataItemIndexMap(const InterpDataItemIndexMap&) = delete;
+    InterpDataItemIndexMap& operator=(const InterpDataItemIndexMap&) = delete;
+
+    void Init(TArray<void*> *dataItems, InterpCompiler* compiler)
+    {
+        _compiler = compiler;
+        _dataItems = dataItems;
+    }
+
+    int32_t GetDataItemIndex(const InterpGenericLookup& lookup)
+    {
+        size_t sizeOfFieldsConcatenated = sizeof(InterpGenericLookup::offsets) +
+                                          sizeof(InterpGenericLookup::indirections) +
+                                          sizeof(InterpGenericLookup::sizeOffset) +
+                                          sizeof(InterpGenericLookup::lookupType) +
+                                          sizeof(InterpGenericLookup::signature);
+
+        size_t sizeOfStruct = sizeof(InterpGenericLookup);
+
+        assert(sizeOfFieldsConcatenated == sizeOfStruct); // Assert that there is no padding in the struct, so a fixed size hash unaware of padding is safe to use
+        return GetDataItemIndexForT(lookup);
+    }
+
+    int32_t GetDataItemIndex(void* lookup)
+    {
+        // TODO: this is a bit more expensive than necessary size we are allocating a full varsized struct for a single pointer
+        // Consider optimizing this to use a seperate hashtable like a dn_simdhash_ptr_ptr_t if it becomes a bottleneck
+        return GetDataItemIndexForT(lookup);
+    }
+
+private:
+    template<typename T>
+    int32_t GetDataItemIndexForT(const T& lookup);
+};
 
 TArray<char> PrintMethodName(COMP_HANDLE comp,
                              CORINFO_CLASS_HANDLE  clsHnd,
@@ -472,10 +571,20 @@ private:
     // instruction can request an index for some data (like a MethodDesc pointer), that it
     // will then embed in the instruction stream. The data item table will be referenced
     // from the interpreter code header during execution.
-    // FIXME during compilation this should be a hashtable for fast lookup of duplicates
     TArray<void*> m_dataItems;
-    int32_t GetDataItemIndex(void* data);
+
+    InterpDataItemIndexMap m_genericLookupToDataItemIndex;
+    int32_t GetDataItemIndex(void* data)
+    {
+        return m_genericLookupToDataItemIndex.GetDataItemIndex(data);
+    }
+    int32_t GetDataItemIndex(const InterpGenericLookup& data)
+    {
+        return m_genericLookupToDataItemIndex.GetDataItemIndex(data);
+    }
+
     void* GetDataItemAtIndex(int32_t index);
+    void* GetAddrOfDataItemAtIndex(int32_t index);
     int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
     int32_t GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn);
 
@@ -540,6 +649,7 @@ private:
     int EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo);
 
     // Emit a generic dictionary lookup and push the result onto the interpreter stack
+    void CopyToInterpGenericLookup(InterpGenericLookup* dst, const CORINFO_RUNTIME_LOOKUP *src);
     void EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup);
     void EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
     void EmitPushHelperCall_2(const CorInfoHelpFunc ftn, const CORINFO_GENERICHANDLE_RESULT& arg1, int arg2, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack);
@@ -723,5 +833,42 @@ public:
  {
      return compiler->AllocMemPool0(sz);
  }
+
+template<typename T>
+int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)
+{
+    VarSizedDataWithPayload<T> key;
+    key.payload = lookup;
+
+    dn_simdhash_ght_t* hash = GetHash();
+
+    void* resultAsPtr = nullptr;
+    if (dn_simdhash_ght_try_get_value(hash, (void*)&key, &resultAsPtr))
+    {
+        return (int32_t)(size_t)resultAsPtr;
+    }
+
+    // Assert that there is no padding in the struct, so a fixed size hash unaware of padding is safe to use
+    assert(sizeof(VarSizedData) == sizeof(void*));
+    assert(sizeof(T) % sizeof(void*) == 0);
+    assert(sizeof(VarSizedDataWithPayload<T>) == sizeof(T) + sizeof(void*));
+
+    void** LookupAsPtrs = (void**)&lookup;
+    int32_t dataItemIndex = _dataItems->Add(LookupAsPtrs[0]);
+    for (unsigned i = 1; i < sizeof(T) / sizeof(void*); i++)
+    {
+        _dataItems->Add(LookupAsPtrs[i]);
+    }
+
+    void* hashItemPayload = _compiler->AllocMemPool0(sizeof(VarSizedDataWithPayload<T>));
+    if (hashItemPayload == nullptr)
+        NOMEM();
+
+    VarSizedDataWithPayload<T>* pLookup = new(hashItemPayload) VarSizedDataWithPayload<T>();
+    memcpy(&pLookup->payload, &lookup, sizeof(T));
+
+    dn_simdhash_ght_insert(hash, (void*)pLookup, (void*)(size_t)dataItemIndex);
+    return dataItemIndex;
+}
 
 #endif //_COMPILER_H_

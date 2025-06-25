@@ -295,6 +295,9 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
 
 void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
 {
+    // TODO! If this becomes a performance bottleneck, we could expand out the various permutations of this
+    // so that we have 24 versions of lookup (or 48 is we allow for avoiding the null check), do the only 
+    // if check to figure out which one to use, and then have the rest of the logic be straight-line code.
     MethodTable *pMT = nullptr;
     MethodDesc* pMD = nullptr;
     uint8_t* lookup;
@@ -318,26 +321,31 @@ void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
     }
     void* result = 0;
 
-    if (pLookup->indirections != 0)
+    uint16_t indirections = pLookup->indirections;
+    if (indirections == 0)
     {
-        lookup = *(uint8_t**)(lookup + pLookup->offsets[0]);
-        if (pLookup->indirections >= 3)
-            lookup = *(uint8_t**)(lookup + pLookup->offsets[1]);
-        if (pLookup->indirections >= 4)
-            lookup = *(uint8_t**)(lookup + pLookup->offsets[2]);
+        return lookup;
+    }
+    else if (indirections != InterpGenericLookup_UseHelper)
+    {
+        lookup = VolatileLoadWithoutBarrier((uint8_t**)(lookup + pLookup->offsets[0]));
+        if (indirections >= 3)
+            lookup = VolatileLoadWithoutBarrier((uint8_t**)(lookup + pLookup->offsets[1]));
+        if (indirections >= 4)
+            lookup = VolatileLoadWithoutBarrier((uint8_t**)(lookup + pLookup->offsets[2]));
         do {
-            size_t lastOffset = pLookup->offsets[pLookup->indirections - 1];
+            size_t lastOffset = pLookup->offsets[indirections - 1];
             if (pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
             {
-                /* Last indirection is the size*/
-                size_t size = *(size_t*)(lookup + pLookup->sizeOffset);
+                /* Last indirection to check is the size*/
+                size_t size = VolatileLoadWithoutBarrier((size_t*)(lookup + pLookup->sizeOffset));
                 if (size <= lastOffset)
                 {
                     result = GenericHandleCommon(pMD, pMT, pLookup->signature);
                     break;
                 }
             }
-            lookup = *(uint8_t**)(lookup + lastOffset);
+            lookup = VolatileLoadWithoutBarrier((uint8_t**)(lookup + lastOffset));
 
             if (lookup == NULL)
             {
@@ -349,13 +357,13 @@ void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
     }
     else
     {
-        result = lookup;
+        return GenericHandleCommon(pMD, pMT, pLookup->signature);
     }
     return result;
 }
 
 #define DO_GENERIC_LOOKUP(genericVar, lookupIndex) \
-                    InterpGenericLookup *pLookup = (InterpGenericLookup*)pMethod->pDataItems[ip[lookupIndex]]; \
+                    InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[lookupIndex]]; \
                     void* result = DoGenericLookup(LOCAL_VAR(genericVar, void*), pLookup)
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
