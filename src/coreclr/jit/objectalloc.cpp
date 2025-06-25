@@ -3204,6 +3204,7 @@ GenTree* ObjectAllocator::IsGuard(BasicBlock* block, GuardInfo* info)
     bool isNonNull = false;
     bool isExact   = false;
     info->m_type   = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->gtCompileTimeHandle;
+    info->m_block  = block;
     info->m_stmt   = stmt;
     info->m_relop  = tree;
 
