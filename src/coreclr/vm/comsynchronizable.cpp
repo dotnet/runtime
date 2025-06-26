@@ -160,7 +160,7 @@ static void PulseAllHelper(Thread* pThread)
     {
         // just keep going...
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 // When an exposed thread is started by Win32, this is where it starts.

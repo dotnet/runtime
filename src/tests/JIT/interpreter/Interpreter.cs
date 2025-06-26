@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 public interface ITest
 {
     public int VirtualMethod();
+    public Type GenericVirtualMethod<T>(out bool isBase);
 }
 
 public class BaseClass : ITest
@@ -21,6 +22,12 @@ public class BaseClass : ITest
     {
         return 0xbebe;
     }
+
+    public virtual Type GenericVirtualMethod<T>(out bool isBase)
+    {
+        isBase = true;
+        return typeof(T);
+    }
 }
 
 public class DerivedClass : BaseClass
@@ -30,6 +37,11 @@ public class DerivedClass : BaseClass
         return 0xdede;
     }
 
+    public override Type GenericVirtualMethod<T>(out bool isBase)
+    {
+        isBase = false;
+        return typeof(T);
+    }
 }
 
 public struct MyStruct
@@ -845,10 +857,11 @@ public class InterpreterTest
         Console.WriteLine("TestLdtoken");
         if (!TestLdtoken())
             Environment.FailFast(null);
-        /*
+
+        Console.WriteLine("TestMdArray");
         if (!TestMdArray())
             Environment.FailFast(null);
-        */
+
         Console.WriteLine("TestExceptionHandling");
         TestExceptionHandling();
 
@@ -859,6 +872,24 @@ public class InterpreterTest
         Console.WriteLine("TestSharedGenerics");
         if (!TestSharedGenerics())
             Environment.FailFast(null);
+
+        Console.WriteLine("TestDelegate");
+        if (!TestDelegate())
+            Environment.FailFast(null);
+
+        Console.WriteLine("TestCalli");
+        if (!TestCalli())
+            Environment.FailFast(null);
+
+        Console.WriteLine("TestStaticVirtualGeneric_CodePointerCase");
+        if (!TestStaticVirtualGeneric_CodePointerCase())
+            Environment.FailFast(null);
+
+	Console.WriteLine("Empty string length: {0}", string.Empty.Length);
+
+	Console.WriteLine("BitConverter.IsLittleEndian: {0}", BitConverter.IsLittleEndian);
+
+	Console.WriteLine("IntPtr.Zero: {0}, UIntPtr.Zero: {1}", IntPtr.Zero, UIntPtr.Zero);
 
         System.GC.Collect();
 
@@ -1501,31 +1532,42 @@ public class InterpreterTest
             if (d != i8)
                 return false;
 
-            try {
+            try
+            {
                 a = (byte)nan;
                 return false;
-            } catch (OverflowException) {
+            }
+            catch (OverflowException)
+            {
             }
 
-            try {
+            try
+            {
                 b = (byte)hugeInt;
                 return false;
-            } catch (OverflowException) {
+            }
+            catch (OverflowException)
+            {
             }
 
-            try {
+            try
+            {
                 c = (byte)negativeInt;
                 return false;
-            } catch (OverflowException) {
+            }
+            catch (OverflowException)
+            {
             }
         }
 
         return true;
     }
 
-    public static bool TestConvBoundaries (double inRangeShort, double outOfRangeShort, double inRangeInt, double outOfRangeInt) {
+    public static bool TestConvBoundaries(double inRangeShort, double outOfRangeShort, double inRangeInt, double outOfRangeInt)
+    {
         // In unchecked mode, the interpreter saturates on float->int conversions if the value is out of range
-        unchecked {
+        unchecked
+        {
             short a = (short)inRangeShort,
                 b = (short)outOfRangeShort;
             int c = (int)inRangeInt,
@@ -1537,19 +1579,26 @@ public class InterpreterTest
                 return false;
         }
 
-        checked {
+        checked
+        {
             short tempA = (short)inRangeShort;
-            try {
+            try
+            {
                 tempA = (short)outOfRangeShort;
                 return false;
-            } catch (OverflowException) {
+            }
+            catch (OverflowException)
+            {
             }
 
             int tempB = (int)inRangeInt;
-            try {
+            try
+            {
                 tempB = (int)outOfRangeInt;
                 return false;
-            } catch (OverflowException) {
+            }
+            catch (OverflowException)
+            {
             }
         }
 
@@ -1766,9 +1815,29 @@ public class InterpreterTest
         Console.WriteLine("bc.VirtualMethod");
         if (bc.VirtualMethod() != 0xdede)
             return false;
+        Console.WriteLine("bc.GenericVirtualMethod");
+        bool isBase = false;
+        Type retType;
+        Console.WriteLine("bc.GenericVirtualMethod<int>");
+        retType = bc.GenericVirtualMethod<int>(out isBase);
+        if (retType != typeof(int) || isBase)
+            return false;
+        Console.WriteLine("bc.GenericVirtualMethod<string>");
+        retType = bc.GenericVirtualMethod<string>(out isBase);
+        if (retType != typeof(string) || isBase)
+            return false;
         Console.WriteLine("itest.VirtualMethod");
         if (itest.VirtualMethod() != 0xdede)
             return false;
+        Console.WriteLine("itest.GenericVirtualMethod<int>");
+        retType = itest.GenericVirtualMethod<int>(out isBase);
+        if (retType != typeof(int) || isBase)
+            return false;
+        Console.WriteLine("itest.GenericVirtualMethod<string>");
+        retType = itest.GenericVirtualMethod<string>(out isBase);
+        if (retType != typeof(string) || isBase)
+            return false;
+
         bc = new BaseClass();
         itest = bc;
         Console.WriteLine("bc.NonVirtualMethod");
@@ -1777,8 +1846,24 @@ public class InterpreterTest
         Console.WriteLine("bc.VirtualMethod");
         if (bc.VirtualMethod() != 0xbebe)
             return false;
+        Console.WriteLine("bc.GenericVirtualMethod<int>");
+        retType = bc.GenericVirtualMethod<int>(out isBase);
+        if (retType != typeof(int) || !isBase)
+            return false;
+        Console.WriteLine("bc.GenericVirtualMethod<string>");
+        retType = bc.GenericVirtualMethod<string>(out isBase);
+        if (retType != typeof(string) || !isBase)
+            return false;
         Console.WriteLine("itest.VirtualMethod");
         if (itest.VirtualMethod() != 0xbebe)
+            return false;
+        Console.WriteLine("itest.GenericVirtualMethod<int>");
+        retType = itest.GenericVirtualMethod<int>(out isBase);
+        if (retType != typeof(int) || !isBase)
+            return false;
+        Console.WriteLine("itest.GenericVirtualMethod<string>");
+        retType = itest.GenericVirtualMethod<string>(out isBase);
+        if (retType != typeof(string) || !isBase)
             return false;
         return true;
     }
@@ -2238,12 +2323,181 @@ public class InterpreterTest
 
     public static bool TestMdArray()
     {
-        // FIXME: This generates roughly:
-        // newobj int[,].ctor
-        // ldtoken int[,]
-        // call System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray
-        // The newobj currently fails because int[,].ctor isn't a real method, the interp needs to use getCallInfo to determine how to invoke it
         int[,] a = { { 1, 2 }, { 3, 4 } };
-        return a[0, 1] == 2;
+        if (a[0, 1] != 2)
+            return false;
+
+        object[,] b = new object[1, 1];
+        ref object bElt = ref b[0, 0];
+        bElt = null;
+
+        object[,] c = new string[1, 1];
+
+        try
+        {
+            ref object cElt = ref c[0, 0];
+            return false;
+        }
+        catch (ArrayTypeMismatchException)
+        {
+        }
+
+        ref readonly object cElt2 = ref c[0, 0];
+
+        return true;
+    }
+
+    private static int _fieldA;
+    private static int _fieldB;
+    private static int _fieldResult;
+    private static void MultiplyAandB()
+    {
+        _fieldResult = _fieldA * _fieldB;
+    }
+
+    private static Type _typeFromFill;
+
+    private static void Fill<T>()
+    {
+        _typeFromFill = typeof(T);
+    }
+
+    private static Func<int> GetDelegateFromBaseClass(BaseClass bc)
+    {
+        return bc.VirtualMethod;
+    }
+
+    public static bool TestDelegate()
+    {
+        _fieldA = 3;
+        _fieldB = 1;
+        _fieldResult = 0;
+
+        // This tests delegate creation, ldftn, and invocation via the "Invoke" method
+        Action func = new Action(MultiplyAandB);
+
+        _fieldB = 4;
+        Console.WriteLine("CallingFunc first time");
+        func();
+        Console.WriteLine("Return CallingFunc first time");
+        if (_fieldResult != 12)
+        {
+            Console.WriteLine("Delegate test failed: expected 12, got " + _fieldResult);
+            return false;
+        }
+
+        _fieldB = 3;
+        Console.WriteLine("CallingFunc second time");
+        func();
+        Console.WriteLine("Return CallingFunc second time");
+        if (_fieldResult != 9)
+        {
+            Console.WriteLine("Delegate test failed: expected 9, got " + _fieldResult);
+            return false;
+        }
+
+        if (GetDelegateFromBaseClass(new BaseClass())() != 0xbebe)
+        {
+            Console.WriteLine("Delegate test failed: expected 0xbebe, got " + GetDelegateFromBaseClass(new BaseClass())());
+            return false;
+        }
+
+        if (GetDelegateFromBaseClass(new DerivedClass())() != 0xdede)
+        {
+            Console.WriteLine("Delegate test failed: expected 0xdede, got " + GetDelegateFromBaseClass(new DerivedClass())());
+            return false;
+        }
+        return true;
+    }
+
+    public unsafe static bool TestCalli()
+    {
+        delegate*<void> func = &MultiplyAandB;
+
+        _fieldA = 3;
+        _fieldB = 1;
+        _fieldResult = 0;
+
+        // This tests ldftn, and calli
+
+        _fieldB = 4;
+        Console.WriteLine("CallingFunc first time");
+        func();
+        Console.WriteLine("Return CallingFunc first time");
+        if (_fieldResult != 12)
+        {
+            Console.WriteLine("Calli test failed: expected 12, got " + _fieldResult);
+            return false;
+        }
+
+        _fieldB = 3;
+        Console.WriteLine("CallingFunc second time");
+        func();
+        Console.WriteLine("Return CallingFunc second time");
+        if (_fieldResult != 9)
+        {
+            Console.WriteLine("Calli test failed: expected 9, got " + _fieldResult);
+            return false;
+        }
+
+        GetCalliGeneric<int>()();
+        if (_typeFromFill != typeof(int))
+        {
+            Console.WriteLine("Calli generic test failed: expected int, got " + _typeFromFill);
+            return false;
+        }
+
+
+        GetCalliGeneric<object>()();
+        if (_typeFromFill != typeof(object))
+        {
+            Console.WriteLine("Calli generic test failed: expected object, got " + _typeFromFill);
+            return false;
+        }
+
+        GetCalliGeneric<string>()();
+        if (_typeFromFill != typeof(string))
+        {
+            Console.WriteLine("Calli generic test failed: expected string, got " + _typeFromFill);
+            return false;
+        }
+        return true;
+    }
+
+    private static unsafe delegate*<void> GetCalliGeneric<T>()
+    {
+        return &Fill<T>;
+    }
+
+    interface IStaticVirtualGeneric<T>
+    {
+        abstract static int StaticVirtualGeneric();
+    }
+
+    struct MyGenericStruct<T> : IStaticVirtualGeneric<string>, IStaticVirtualGeneric<object>
+    {
+        static int IStaticVirtualGeneric<string>.StaticVirtualGeneric()
+        {
+            return 1;
+        }
+        static int IStaticVirtualGeneric<object>.StaticVirtualGeneric()
+        {
+            return 2;
+        }
+    }
+
+    private static int StaticVirtualGeneric<T, U>() where T : IStaticVirtualGeneric<U>
+    {
+        return T.StaticVirtualGeneric();
+    }
+
+    public static bool TestStaticVirtualGeneric_CodePointerCase()
+    {
+        if (StaticVirtualGeneric<MyGenericStruct<BaseClass>, string>() != 1)
+            return false;
+        if (StaticVirtualGeneric<MyGenericStruct<BaseClass>, object>() != 2)
+            return false;
+
+        return true;
     }
 }

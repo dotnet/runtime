@@ -114,6 +114,11 @@ ds_ipc_stream_read (
 	uint32_t timeout_ms);
 
 bool
+ds_ipc_stream_read_fd (
+	DiagnosticsIpcStream *ipc_stream,
+	int *data_fd);
+
+bool
 ds_ipc_stream_write (
 	DiagnosticsIpcStream *ipc_stream,
 	const uint8_t *buffer,

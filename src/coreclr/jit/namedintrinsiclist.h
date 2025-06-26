@@ -47,11 +47,13 @@ enum NamedIntrinsic : unsigned short
     NI_System_Math_Max,
     NI_System_Math_MaxMagnitude,
     NI_System_Math_MaxMagnitudeNumber,
+    NI_System_Math_MaxNative,
     NI_System_Math_MaxNumber,
     NI_System_Math_MaxUnsigned,
     NI_System_Math_Min,
     NI_System_Math_MinMagnitude,
     NI_System_Math_MinMagnitudeNumber,
+    NI_System_Math_MinNative,
     NI_System_Math_MinNumber,
     NI_System_Math_MinUnsigned,
     NI_System_Math_MultiplyAddEstimate,
@@ -257,7 +259,6 @@ enum NamedIntrinsic : unsigned short
     //
     NI_System_SZArrayHelper_GetEnumerator,
     NI_System_Array_T_GetEnumerator,
-    NI_System_Collections_Generic_IEnumerable_GetEnumerator,
 };
 
 #endif // _NAMEDINTRINSICLIST_H_
