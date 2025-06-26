@@ -2891,7 +2891,7 @@ namespace System.Diagnostics.Tracing
                 EventDispatcher? dispatcher = m_Dispatchers;
                 while (dispatcher != null)
                 {
-                    Dictionary<int, bool> eventEnabled = new Dictionary<int, bool>();
+                    Dictionary<int, bool> eventEnabled = new Dictionary<int, bool>(m_eventData?.Count ?? 0);
                     if (m_eventData != null)
                     {
                         foreach (int eventId in m_eventData.Keys)
