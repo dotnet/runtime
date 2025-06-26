@@ -133,7 +133,7 @@ method_leave (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 	ProfilerStackFrame *top_frame = &profiler_stack_frames[top_index];
 	
 	if (!is_over) {
-		g_assertf(top_frame->method == method, "method_exc_leave: %d method mismatch top_frame %s != leave %s\n", top_stack_frame_index, mono_method_get_full_name (top_frame->method), mono_method_get_full_name (method));
+		g_assertf(top_frame->method == method, "method_exc_leave: %d method mismatch. Pointer comparison: %p : %p. \ntop_frame %s != leave %s. \n", top_stack_frame_index, top_frame->method, method, mono_method_get_full_name (top_frame->method), mono_method_get_full_name (method));
 		g_assertf(!ctx || !top_frame->interp_frame || top_frame->interp_frame == ctx->interp_frame, "method_exc_leave: %d interp_frame mismatch top_frame %p != leave %p\n", top_stack_frame_index, top_frame->interp_frame, ctx->interp_frame);
 	}
 	
