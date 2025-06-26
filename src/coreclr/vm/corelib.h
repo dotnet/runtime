@@ -728,7 +728,10 @@ DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK_1, Finalize
 DEFINE_METHOD(ASYNC_HELPERS,      UNSAFE_AWAIT_AWAITER_1,    UnsafeAwaitAwaiter, GM_T_RetVoid)
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTEXTS,          CaptureContexts, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS,          RestoreContexts, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_EXECUTION_CONTEXT, CaptureExecutionContext, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_EXECUTION_CONTEXT, RestoreExecutionContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      SWITCH_CONTEXT,            SwitchContext, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      SWITCH_OFF_THREAD,         SwitchOffThread, NoSig)
 
 DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
 DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)
@@ -850,6 +853,7 @@ DEFINE_FIELD(CONTINUATION,              NEXT,               Next)
 DEFINE_FIELD(CONTINUATION,              RESUME,             Resume)
 DEFINE_FIELD(CONTINUATION,              STATE,              State)
 DEFINE_FIELD(CONTINUATION,              FLAGS,              Flags)
+DEFINE_FIELD(CONTINUATION,              EXECUTION_CONTEXT,  ExecutionContext)
 DEFINE_FIELD(CONTINUATION,              DATA,               Data)
 DEFINE_FIELD(CONTINUATION,              GCDATA,             GCData)
 

@@ -4233,14 +4233,12 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_ALLOC_SIDE_EFFECTS      = 0x00100000, // this is a call to an allocator with side effects
     GTF_CALL_M_SUPPRESS_GC_TRANSITION  = 0x00200000, // suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
     GTF_CALL_M_ASYNC                   = 0x00400000, // this call is a runtime async method call and thus a suspension point
-    GTF_CALL_M_ASYNC_CONTINUE_ON_CAPTURED_CONTEXT = 0x00800000, // the continuation of this call should continue on the captured synchronization context
-    GTF_CALL_M_ASYNC_SAVE_AND_RESTORE_CONTEXTS = 0x01000000, // SynchronizationContext and ExecutionContext should be saved and restored around this async call
-    GTF_CALL_M_EXPANDED_EARLY          = 0x02000000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
-    GTF_CALL_M_LDVIRTFTN_INTERFACE     = 0x04000000, // ldvirtftn on an interface type
-    GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x08000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
-    GTF_CALL_M_CAST_OBJ_NONNULL        = 0x10000000, // if we expand this specific cast we don't need to check the input object for null
+    GTF_CALL_M_EXPANDED_EARLY          = 0x00800000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
+    GTF_CALL_M_LDVIRTFTN_INTERFACE     = 0x01000000, // ldvirtftn on an interface type
+    GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x02000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
+    GTF_CALL_M_CAST_OBJ_NONNULL        = 0x04000000, // if we expand this specific cast we don't need to check the input object for null
                                                      // NOTE: if needed, this flag can be removed, and we can introduce new _NONNUL cast helpers
-    GTF_CALL_M_STACK_ARRAY             = 0x20000000, // this call is a new array helper for a stack allocated array.
+    GTF_CALL_M_STACK_ARRAY             = 0x08000000, // this call is a new array helper for a stack allocated array.
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -4306,6 +4304,35 @@ inline GenTreeCallDebugFlags& operator &=(GenTreeCallDebugFlags& a, GenTreeCallD
 #endif
 
 // clang-format on
+
+enum class ExecutionContextHandling
+{
+    // No special handling of execution context is required.
+    None,
+    // Always save and restore ExecutionContext around this await.
+    // Used for task awaits.
+    SaveAndRestore,
+    // Save and restore execution context on suspension/resumption only.
+    // Used for custom awaitables.
+    AsyncSaveAndRestore,
+};
+
+enum class SynchronizationContextHandling
+{
+    // No special handling of synchronization context is required.
+    None,
+    // Save and restore SynchronizationContext around this await but only if it
+    // finishes synchronously.
+    // Used for task awaits.
+    SyncSaveAndRestore,
+};
+
+// Additional async call info.
+struct AsyncCallInfo
+{
+    ExecutionContextHandling ExecutionContextHandling = ExecutionContextHandling::None;
+    SynchronizationContextHandling SynchronizationContextHandling = SynchronizationContextHandling::None;
+};
 
 // Return type descriptor of a GT_CALL node.
 // x64 Unix, Arm64, Arm32 and x86 allow a value to be returned in multiple
@@ -4963,14 +4990,8 @@ struct GenTreeCall final : public GenTree
         TailCallSiteInfo* tailCallInfo;
         // Only used for unmanaged calls, which cannot be tail-called
         CorInfoCallConvExtension unmgdCallConv;
-        struct
-        {
-            // Local referring to SynchronizationContext that is restored around
-            // this async call in the synchronous case (but not in the resuming
-            // case). Only used for async calls.
-            unsigned restoredSyncContextVar;
-            unsigned restoredExecContextVar;
-        };
+        // Immutable since gtCloneExprCallHelper clones this shallowly
+        const AsyncCallInfo* asyncInfo;
     };
 
 #if FEATURE_MULTIREG_RET
@@ -5028,12 +5049,22 @@ struct GenTreeCall final : public GenTree
 #endif
     }
 
-    void SetIsAsync()
+    void SetIsAsync(const AsyncCallInfo* info)
     {
+        assert(info != nullptr);
         gtCallMoreFlags |= GTF_CALL_M_ASYNC;
+        asyncInfo = info;
     }
 
     bool IsAsync() const;
+
+    const AsyncCallInfo& GetAsyncInfo() const
+    {
+        assert(IsAsync());
+        return *asyncInfo;
+    }
+
+    bool IsAsyncAndAlwaysSavesAndRestoresExecutionContext() const;
 
     //---------------------------------------------------------------------------
     // GetRegNumByIdx: get i'th return register allocated to this call node.

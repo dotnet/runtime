@@ -4435,8 +4435,10 @@ private:
 #ifdef DEBUG
         PREFIX_TAILCALL_STRESS = 0x00000040, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
 #endif
-        PREFIX_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000080, // call should continue on captured synchronization context
-        PREFIX_AWAIT_SAVE_AND_RESTORE_CONTEXTS = 0x00000100, // we should save and restore async contexts around this call
+        // This call is a task await
+        PREFIX_IS_TASK_AWAIT = 0x00000080,
+        // This call is a task await that should continue on captured synchronization context
+        PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000100,
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
@@ -4859,7 +4861,7 @@ public:
 
     bool impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE* codeEndp, int* consumed);
 
-    bool impMatchAwaitPattern(const BYTE * codeAddr, const BYTE * codeEndp, int* configVal);
+    bool impMatchTaskAwaitPattern(const BYTE * codeAddr, const BYTE * codeEndp, int* configVal);
 
     GenTree* impCastClassOrIsInstToTree(
         GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, bool* booleanCheck, IL_OFFSET ilOffset);
@@ -5539,6 +5541,7 @@ public:
 #endif
 
     PhaseStatus SaveAsyncContexts();
+    BasicBlock* InsertTryFinallyForContextRestore(BasicBlock* block, Statement* stmt);
     PhaseStatus TransformAsync();
 
     // This field keep the R2R helper call that would be inserted to trigger the constructor

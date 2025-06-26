@@ -85,6 +85,7 @@ namespace System.Runtime.CompilerServices
         public delegate*<Continuation, Continuation?> Resume;
         public uint State;
         public CorInfoContinuationFlags Flags;
+        public ExecutionContext? ExecutionContext;
 
         // Data and GCData contain the state of the continuation.
         // Note: The JIT is ultimately responsible for laying out these arrays.
@@ -413,13 +414,13 @@ namespace System.Runtime.CompilerServices
                                 task.TrySetCanceled(oce.CancellationToken, oce) :
                                 task.TrySetException(ex);
 
+                            contexts.Pop();
+
                             if (!successfullySet)
                             {
-                                contexts.Pop();
                                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
                             }
 
-                            contexts.Pop();
                             return;
                         }
 
@@ -430,13 +431,15 @@ namespace System.Runtime.CompilerServices
 
                     if (continuation.Resume == null)
                     {
-                        if (!TOps.SetCompleted(task, continuation))
+                        bool successfullySet = !TOps.SetCompleted(task, continuation);
+
+                        contexts.Pop();
+
+                        if (!successfullySet)
                         {
-                            contexts.Pop();
                             ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
                         }
 
-                        contexts.Pop();
                         return;
                     }
 
@@ -457,9 +460,8 @@ namespace System.Runtime.CompilerServices
                         out ICriticalNotifyCompletion? criticalNotifier,
                         out INotifyCompletion? notifier);
 
-                // Head continuation should be the result of async call to
-                // AwaitAwaiter, UnsafeAwaitAwaiter or SwitchContext, and these
-                // cannot be configured.
+                // Head continuation should be the result of async call to AwaitAwaiter, UnsafeAwaitAwaiter,
+                // SwitchContext or SwitchOffThread. These cannot be configured.
                 Debug.Assert(!headContinuation.Flags.HasFlag(CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT));
 
                 // TODO: Does this need a volatile write, or is the data dependency enough?
@@ -640,6 +642,23 @@ namespace System.Runtime.CompilerServices
                 thread._synchronizationContext = previousSyncCtx;
             }
 
+            ExecutionContext? currentExecutionCtx = thread._executionContext;
+            if (previousExecutionCtx != currentExecutionCtx)
+            {
+                ExecutionContext.RestoreChangedContextToThread(thread, previousExecutionCtx, currentExecutionCtx);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ExecutionContext? CaptureExecutionContext()
+        {
+            return Thread.CurrentThreadNoInit!._executionContext;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void RestoreExecutionContext(ExecutionContext? previousExecutionCtx)
+        {
+            Thread thread = Thread.CurrentThreadNoInit!;
             ExecutionContext? currentExecutionCtx = thread._executionContext;
             if (previousExecutionCtx != currentExecutionCtx)
             {

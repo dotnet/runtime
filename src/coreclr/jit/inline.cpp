@@ -1348,10 +1348,10 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     assert(call->gtCallType == CT_USER_FUNC);
     context->m_Callee = call->gtCallMethHnd;
 
-    if ((call->gtCallMoreFlags & GTF_CALL_M_ASYNC_SAVE_AND_RESTORE_CONTEXTS) != 0)
-    {
-        context->m_AsyncSyncContext = call->restoredSyncContextVar;
-    }
+    //if ((call->gtCallMoreFlags & GTF_CALL_M_ASYNC_SAVE_AND_RESTORE_CONTEXTS) != 0)
+    //{
+    //    context->m_AsyncSyncContext = call->restoredSyncContextVar;
+    //}
 
 #if defined(DEBUG)
     context->m_Devirtualized = call->IsDevirtualized();

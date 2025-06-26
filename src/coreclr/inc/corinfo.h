@@ -1729,6 +1729,8 @@ struct CORINFO_ASYNC_INFO
     CORINFO_FIELD_HANDLE continuationStateFldHnd;
     // 'Flags' field
     CORINFO_FIELD_HANDLE continuationFlagsFldHnd;
+    // 'ExecutionContext' field
+    CORINFO_FIELD_HANDLE continuationExecutionContextFldHnd;
     // 'Data' field
     CORINFO_FIELD_HANDLE continuationDataFldHnd;
     // 'GCData' field
@@ -1736,12 +1738,18 @@ struct CORINFO_ASYNC_INFO
     // Whether or not the continuation needs to be allocated through the
     // helper that also takes a method handle
     bool continuationsNeedMethodHandle;
-    // Method handle for AsyncHelpers.SwitchContext
-    CORINFO_METHOD_HANDLE switchContextMethHnd;
     // Method handle for AsyncHelpers.CaptureContexts
     CORINFO_METHOD_HANDLE captureContextsMethHnd;
     // Method handle for AsyncHelpers.RestoreContexts
     CORINFO_METHOD_HANDLE restoreContextsMethHnd;
+    // Method handle for AsyncHelpers.CaptureExecutionContext
+    CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
+    // Method handle for AsyncHelpers.RestoreExecutionContext
+    CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
+    // Method handle for AsyncHelpers.SwitchContext
+    CORINFO_METHOD_HANDLE switchContextMethHnd;
+    // Method handle for AsyncHelpers.SwitchOffThread
+    CORINFO_METHOD_HANDLE switchOffThreadMethHnd;
 };
 
 // Flags passed from JIT to runtime.

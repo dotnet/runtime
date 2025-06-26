@@ -708,41 +708,54 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        call->AsCall()->SetIsAsync();
-        JITDUMP("Call is async");
-        if ((prefixFlags & PREFIX_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
+        AsyncCallInfo asyncInfo;
+
+        JITDUMP("Call is an async ");
+
+        if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
         {
-            call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_ASYNC_CONTINUE_ON_CAPTURED_CONTEXT;
-            JITDUMP(" and continues on captured context\n");
+            JITDUMP("task await ");
+
+            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::SaveAndRestore;
+            asyncInfo.SynchronizationContextHandling = SynchronizationContextHandling::SyncSaveAndRestore;
+
+            if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
+            {
+                JITDUMP("that continues on captured synchronization context\n");
+            }
+            else
+            {
+                JITDUMP("that does not continue on captured synchronization context\n");
+            }
         }
         else
         {
-            JITDUMP(" and does not continue on captured context\n");
+            JITDUMP("non-task await\n");
+            // Only expected non-task await to see in IL is one of the AsyncHelpers.AwaitAwaiter variants.
+            // These are awaits of custom awaitables, and they come with the behavior that the execution context
+            // is captured and restored on suspension/resumption.
+            // We could perhaps skip this for AwaitAwaiter (but not for UnsafeAwaitAwaiter) since it is expected
+            // that the safe INotifyCompletion will take care of flowing ExecutionContext.
+            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::AsyncSaveAndRestore;
         }
 
-        // For awaits we need to save and restore the async contexts if there
-        // is possibility that the remainder of the function will read them.
-        if (((prefixFlags & PREFIX_AWAIT_SAVE_AND_RESTORE_CONTEXTS) != 0) && (tailCallFlags == 0))
+        // For tailcalls the context does not need saving/restoring: it will be
+        // overwritten by the caller anyway.
+        //
+        // More specifically, if we can show that
+        // Thread.CurrentThread._executionContext is not accessed between the
+        // call and returning then we can omit save/restore of the execution
+        // context. We do not do that optimization yet.
+        if (tailCallFlags != 0)
         {
-            call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_ASYNC_SAVE_AND_RESTORE_CONTEXTS;
-            JITDUMP("  and needs to save and restore async contexts\n");
+            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::None;
+        }
+
+        call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
+
+        if (asyncInfo.ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore)
+        {
             compMustSaveAsyncContexts = true;
-
-            unsigned syncContextVar = lvaGrabTemp(false DEBUGARG(printfAlloc("Sync context for [%06u]", dspTreeID(call))));
-            unsigned execContextVar = lvaGrabTemp(false DEBUGARG(printfAlloc("Exec context for [%06u]", dspTreeID(call))));
-            LclVarDsc* syncContextDsc = lvaGetDesc(syncContextVar);
-            LclVarDsc* execContextDsc = lvaGetDesc(execContextVar);
-            syncContextDsc->lvType = TYP_REF;
-            execContextDsc->lvType = TYP_REF;
-            syncContextDsc->lvHasLdAddrOp = true;
-            execContextDsc->lvHasLdAddrOp = true;
-
-            call->AsCall()->restoredSyncContextVar = syncContextVar;
-            call->AsCall()->restoredExecContextVar = execContextVar;
-        }
-        else
-        {
-            JITDUMP("  and does not need to save and restore contexts\n");
         }
     }
 
@@ -1492,7 +1505,7 @@ DONE_CALL:
             }
             else
             {
-                if (call->IsCall() && (isFatPointerCandidate || ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_ASYNC_SAVE_AND_RESTORE_CONTEXTS) != 0)))
+                if (call->IsCall() && (isFatPointerCandidate || call->AsCall()->IsAsyncAndAlwaysSavesAndRestoresExecutionContext()))
                 {
                     // these calls should be in statements of the form call() or var = call().
                     // Such form allows to find statements with fat calls without walking through whole trees

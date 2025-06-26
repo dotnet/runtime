@@ -6012,8 +6012,9 @@ bool Compiler::impBlockIsInALoop(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
-// impMatchAwaitPattern: check if a method call starts an Await pattern
-//                       that can be optimized for runtime async
+// impMatchTaskAwaitPattern:
+//   Check if a method call starts an a task await pattern that can be
+//   optimized for runtime async
 //
 // Arguments:
 //   codeAddr - IL after call[virt]
@@ -6023,7 +6024,7 @@ bool Compiler::impBlockIsInALoop(BasicBlock* block)
 // Returns:
 //    true if this is an Await that we can optimize
 //
-bool Compiler::impMatchAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal)
+bool Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal)
 {
     // If we see the following code pattern in runtime async methods:
     //
@@ -9112,19 +9113,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     int configVal = -1; // -1 not configured, 0/1 configured to false/true
                     if (compIsAsync() && JitConfig.JitOptimizeAwait())
                     {
-                        isAwait = impMatchAwaitPattern(codeAddr, codeEndp, &configVal);
+                        isAwait = impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal);
                         if (isAwait)
                         {
-                            // All awaits continue on captured context unless explicitly
+                            prefixFlags |= PREFIX_IS_TASK_AWAIT;
+
+                            // All task awaits continue on captured context unless explicitly
                             // configured not to
                             if (configVal != 0)
                             {
-                                prefixFlags |= PREFIX_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT;
+                                prefixFlags |= PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT;
                             }
-
-                            // Also, all awaits save and restore the contexts around the call, even
-                            // in the sync case.
-                            prefixFlags |= PREFIX_AWAIT_SAVE_AND_RESTORE_CONTEXTS;
                         }
                     }
 

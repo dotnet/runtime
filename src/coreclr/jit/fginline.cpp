@@ -1720,9 +1720,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 JITDUMP("Inlinee is not nested inside any EH region\n");
             }
 
-            // Grow the EH table.
-            //
-            // TODO: verify earlier that this won't fail...
+            // Grow the EH table. We verified in fgFindBasicBlocks that this won't fail.
             //
             EHblkDsc* const outermostEbd =
                 fgTryAddEHTableEntries(insertBeforeIndex, inlineeRegionCount, /* deferAdding */ false);
@@ -2404,7 +2402,7 @@ void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* bloc
 // Arguments:
 //    inlineInfo - information about the inline
 //    block      - basic block for the new statements
-//    stmtAfter  - (optional) insertion point for mid-block cases
+//    stmtAfter  - [in, out] insertion point for mid-block cases
 //
 // Notes:
 //    If the call we're inlining is in tail position then
@@ -2500,50 +2498,70 @@ void Compiler::fgNullOutGcRefLocals(InlineInfo* inlineInfo, BasicBlock* block, S
 
 //------------------------------------------------------------------------
 // fgAsyncSwitchContext:
-//   Insert IR to switch to the captured synchronization context, if necessary.
+//   Insert IR to potentially switch contexts after an inlined async call.
 //
 // Arguments:
 //    inlineInfo - information about the inline
 //    block      - basic block for the new statements
-//    stmtAfter  - (optional) insertion point for mid-block cases
+//    stmtAfter  - [in, out] insertion point
 //
 void Compiler::fgAsyncSwitchContext(InlineInfo* inlineInfo, BasicBlock* block, Statement** stmtAfter)
 {
-    if ((inlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_ASYNC_CONTINUE_ON_CAPTURED_CONTEXT) == 0)
-    {
-        return;
-    }
+    //bool continueOnCapturedContext = (inlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_ASYNC_CONTINUE_ON_CAPTURED_CONTEXT) != 0;
+    //bool saveAndRestoreContexts = (inlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_ASYNC_SAVE_AND_RESTORE_CONTEXTS) != 0;
+    //if (continueOnCapturedContext)
+    //{
+    //    JITDUMP("Inlining of async call [%06u] requires possible switch back to captured context\n", dspTreeID(inlineInfo->iciCall));
+    //}
+    //else if (saveAndRestoreContexts)
+    //{
+    //    JITDUMP("Inlining of async call [%06u] requires possible switch off thread\n", dspTreeID(inlineInfo->iciCall));
 
-    JITDUMP("Inlining of call [%06u] requires possible switch back to captured context\n", dspTreeID(inlineInfo->iciCall));
+    //    // Continuing on captured context should imply that we are savning and restoring contexts.
+    //    assert(saveAndRestoreContexts);
+    //}
+    //else
+    //{
+    //    return;
+    //}
 
-    // Continuing on captured context should imply that we are savning and restoring contexts.
-    assert((inlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_ASYNC_SAVE_AND_RESTORE_CONTEXTS) != 0);
+    //GenTreeCall* call;
+    //if (continueOnCapturedContext)
+    //{
+    //    unsigned syncContextLcl = inlineInfo->iciCall->restoredSyncContextVar;
+    //    call = gtNewCallNode(CT_USER_FUNC, eeGetAsyncInfo()->switchContextMethHnd, TYP_VOID);
+    //    call->SetIsAsync();
 
-    unsigned syncContextLcl = inlineInfo->iciCall->restoredSyncContextVar;
-    GenTreeCall* call = gtNewCallNode(CT_USER_FUNC, eeGetAsyncInfo()->switchContextMethHnd, TYP_VOID);
-    call->SetIsAsync();
+    //    call->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(syncContextLcl)));
+    //    call->gtArgs.InsertAsyncContinuation(this, gtNewNull());
+    //}
+    //else
+    //{
+    //    call = gtNewCallNode(CT_USER_FUNC, eeGetAsyncInfo()->switchOffThreadMethHnd, TYP_VOID);
+    //    call->SetIsAsync();
+    //}
 
-    call->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(syncContextLcl)));
-    call->gtArgs.InsertAsyncContinuation(this, gtNewNull());
+    //call->gtInlineContext = compInlineContext;
 
-    CORINFO_CALL_INFO callInfo = {};
-    callInfo.hMethod = call->gtCallMethHnd;
-    callInfo.methodFlags = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-    impMarkInlineCandidate(call, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
+    //call->restoredSyncContextVar = inlineInfo->iciCall->restoredSyncContextVar;
 
-    Statement* switchContextStmt = gtNewStmt(call);
+    //CORINFO_CALL_INFO callInfo = {};
+    //callInfo.hMethod = call->gtCallMethHnd;
+    //callInfo.methodFlags = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
+    //impMarkInlineCandidate(call, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
+    //Statement* callStmt = gtNewStmt(call);
 
-    if (*stmtAfter == nullptr)
-    {
-        fgInsertStmtAtBeg(block, switchContextStmt);
-    }
-    else
-    {
-        fgInsertStmtAfter(block, *stmtAfter, switchContextStmt);
-    }
-    *stmtAfter = switchContextStmt;
+    //if (*stmtAfter == nullptr)
+    //{
+    //    fgInsertStmtAtBeg(block, callStmt);
+    //}
+    //else
+    //{
+    //    fgInsertStmtAfter(block, *stmtAfter, callStmt);
+    //}
+    //*stmtAfter = callStmt;
 
-    DISPSTMT(switchContextStmt);
+    //DISPSTMT(callStmt);
 }
 
 //------------------------------------------------------------------------

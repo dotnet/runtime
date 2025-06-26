@@ -57,6 +57,7 @@ INLINE_OBSERVATION(STACK_CRAWL_MARK,          bool,   "uses stack crawl mark",  
 INLINE_OBSERVATION(STFLD_NEEDS_HELPER,        bool,   "stfld needs helper",                   FATAL,       CALLEE)
 INLINE_OBSERVATION(TOO_MANY_ARGUMENTS,        bool,   "too many arguments",                   FATAL,       CALLEE)
 INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",                      FATAL,       CALLEE)
+INLINE_OBSERVATION(ASYNC_REQUIRES_SYNC_ONLY_SAVE, bool, "callee requires synchronous-only save/restore",FATAL,       CALLEE)
 
 // ------ Callee Performance -------
 

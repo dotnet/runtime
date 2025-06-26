@@ -2270,6 +2270,11 @@ bool GenTreeCall::IsAsync() const
     return (gtCallMoreFlags & GTF_CALL_M_ASYNC) != 0;
 }
 
+bool GenTreeCall::IsAsyncAndAlwaysSavesAndRestoresExecutionContext() const
+{
+    return IsAsync() && (GetAsyncInfo().ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore);
+}
+
 //-------------------------------------------------------------------------
 // HasNonStandardAddedArgs: Return true if the method has non-standard args added to the call
 // argument list during argument morphing (fgMorphArgs), e.g., passed in R10 or R11 on AMD64.
@@ -9894,9 +9899,20 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     // because the inlinee still uses the inliner's memory allocator anyway.)
     INDEBUG(copy->callSig = tree->callSig;)
 
-    // The tail call info does not change after it is allocated, so for the same reasons as above
-    // a shallow copy suffices.
-    copy->tailCallInfo = tree->tailCallInfo;
+    if (tree->IsUnmanaged())
+    {
+        copy->unmgdCallConv = tree->unmgdCallConv;
+    }
+    else if (tree->IsAsync())
+    {
+        copy->asyncInfo = tree->asyncInfo;
+    }
+    else if (tree->IsTailPrefixedCall())
+    {
+        // The tail call info does not change after it is allocated, so for the same reasons as above
+        // a shallow copy suffices.
+        copy->tailCallInfo = tree->tailCallInfo;
+    }
 
     copy->gtRetClsHnd        = tree->gtRetClsHnd;
     copy->gtControlExpr      = gtCloneExpr(tree->gtControlExpr);

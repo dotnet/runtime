@@ -96,6 +96,7 @@ class AsyncTransformation
                                              unsigned int   dataSize);
     void         FillInGCPointersOnSuspension(const jitstd::vector<LiveLocalInfo>& liveLocals, BasicBlock* suspendBB);
     void         FillInDataOnSuspension(const jitstd::vector<LiveLocalInfo>& liveLocals, BasicBlock* suspendBB);
+    void         FillInExecutionContextOnSuspension(BasicBlock* suspendBB);
     void         CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                 const CallDefinitionInfo& callDefInfo,
                                                 AsyncLiveness&            life,
@@ -108,6 +109,7 @@ class AsyncTransformation
                                  const CallDefinitionInfo& callDefInfo,
                                  unsigned                  stateNum,
                                  const ContinuationLayout& layout);
+    void        RestoreExecutionContextOnResumption(BasicBlock* resumeBB);
     void        RestoreFromDataOnResumption(unsigned                             resumeByteArrLclNum,
                                             const jitstd::vector<LiveLocalInfo>& liveLocals,
                                             BasicBlock*                          resumeBB);

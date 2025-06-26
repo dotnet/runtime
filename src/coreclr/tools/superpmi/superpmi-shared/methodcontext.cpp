@@ -4477,6 +4477,8 @@ void MethodContext::recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo)
     value.continuationsNeedMethodHandle = pAsyncInfo->continuationsNeedMethodHandle ? 1 : 0;
     value.captureContextsMethHnd = CastHandle(pAsyncInfo->captureContextsMethHnd);
     value.restoreContextsMethHnd = CastHandle(pAsyncInfo->restoreContextsMethHnd);
+    value.captureExecutionContextMethHnd = CastHandle(pAsyncInfo->captureExecutionContextMethHnd);
+    value.restoreExecutionContextMethHnd = CastHandle(pAsyncInfo->restoreExecutionContextMethHnd);
     value.switchContextMethHnd = CastHandle(pAsyncInfo->switchContextMethHnd);
 
     GetAsyncInfo->Add(0, value);
@@ -4505,6 +4507,8 @@ void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->continuationsNeedMethodHandle = value.continuationsNeedMethodHandle != 0;
     pAsyncInfoOut->captureContextsMethHnd = (CORINFO_METHOD_HANDLE)value.captureContextsMethHnd;
     pAsyncInfoOut->restoreContextsMethHnd = (CORINFO_METHOD_HANDLE)value.restoreContextsMethHnd;
+    pAsyncInfoOut->captureExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.captureExecutionContextMethHnd;
+    pAsyncInfoOut->restoreExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.restoreExecutionContextMethHnd;
     pAsyncInfoOut->switchContextMethHnd = (CORINFO_METHOD_HANDLE)value.switchContextMethHnd;
     DEBUG_REP(dmpGetAsyncInfo(0, value));
 }

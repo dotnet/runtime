@@ -45,12 +45,9 @@ PhaseStatus Compiler::SaveAsyncContexts()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    unsigned threadLclNum = BAD_VAR_NUM;
-    unsigned syncCtxLclNum = BAD_VAR_NUM;
-    unsigned execCtxLclNum = BAD_VAR_NUM;
+    PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
 
     BasicBlock* curBB = fgFirstBB;
-    PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
     while (curBB != nullptr)
     {
         BasicBlock* nextBB = curBB->Next();
@@ -63,57 +60,83 @@ PhaseStatus Compiler::SaveAsyncContexts()
                 tree = tree->AsLclVarCommon()->Data();
             }
 
-            if (!tree->IsCall())
+            if (!tree->IsCall() || !tree->AsCall()->IsAsyncAndAlwaysSavesAndRestoresExecutionContext())
             {
                 continue;
             }
 
             GenTreeCall* call = tree->AsCall();
-            if ((call->gtCallMoreFlags & GTF_CALL_M_ASYNC_SAVE_AND_RESTORE_CONTEXTS) == 0)
-            {
-                continue;
-            }
 
-            JITDUMP("Expanding async contexts (V%02u, V%02u) save/restore around [%06u]\n", call->restoredSyncContextVar, call->restoredExecContextVar, dspTreeID(call));
+            unsigned lclNum = lvaGrabTemp(false DEBUGARG("ExecutionContext for SaveAndRestore async call"));
 
-            if (curBB->hasTryIndex())
-            {
-                // Requires inserting try-finally
-                assert(!"Cannot handle await inside try yet");
-                implLimitation();
-            }
+            JITDUMP("Saving ExecutionContext in V%02u around [%06u]\n", lclNum, call->gtTreeID);
 
             CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
 
-            GenTreeCall* capture = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureContextsMethHnd, TYP_VOID);
-            capture->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(call->restoredExecContextVar, 0)));
-            capture->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(call->restoredSyncContextVar, 0)));
-
+            GenTreeCall* capture = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureExecutionContextMethHnd, TYP_REF);
             CORINFO_CALL_INFO callInfo = {};
             callInfo.hMethod = capture->gtCallMethHnd;
             callInfo.methodFlags = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
             impMarkInlineCandidate(capture, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
 
-            GenTreeCall* restore = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
-            restore->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(call->restoredExecContextVar)));
-            restore->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(call->restoredSyncContextVar)));
+            if (capture->IsInlineCandidate())
+            {
+                Statement* captureStmt = fgNewStmtFromTree(capture);
+
+                GenTreeRetExpr* retExpr = gtNewInlineCandidateReturnExpr(capture, TYP_REF);
+
+                capture->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+                GenTree* storeCapture = gtNewTempStore(lclNum, retExpr);
+                Statement* storeCaptureStmt = fgNewStmtFromTree(storeCapture);
+
+                fgInsertStmtBefore(curBB, stmt, captureStmt);
+                fgInsertStmtBefore(curBB, stmt, storeCaptureStmt);
+
+                JITDUMP("Inserted capture:\n");
+                DISPSTMT(captureStmt);
+                DISPSTMT(storeCaptureStmt);
+            }
+            else
+            {
+                GenTree* storeCapture = gtNewTempStore(lclNum, capture);
+                Statement* storeCaptureStmt = fgNewStmtFromTree(storeCapture);
+
+                fgInsertStmtBefore(curBB, stmt, storeCaptureStmt);
+
+                JITDUMP("Inserted capture:\n");
+                DISPSTMT(storeCaptureStmt);
+            }
+
+            BasicBlock* restoreBB = curBB;
+            Statement* restoreAfterStmt = stmt;
+
+            if (curBB->hasTryIndex())
+            {
+                restoreBB = InsertTryFinallyForContextRestore(curBB, stmt);
+                restoreAfterStmt = nullptr;
+            }
+
+            GenTreeCall* restore = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreExecutionContextMethHnd, TYP_VOID);
+            restore->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lclNum)));
 
             callInfo = {};
             callInfo.hMethod = restore->gtCallMethHnd;
             callInfo.methodFlags = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
             impMarkInlineCandidate(restore, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
 
-            Statement* captureStmt = fgNewStmtFromTree(capture);
             Statement* restoreStmt = fgNewStmtFromTree(restore);
+            if (restoreAfterStmt == nullptr)
+            {
+                fgInsertStmtNearEnd(restoreBB, restoreStmt);
+            }
+            else
+            {
+                fgInsertStmtAfter(restoreBB, restoreAfterStmt, restoreStmt);
+            }
 
-            fgInsertStmtBefore(curBB, stmt, captureStmt);
-            fgInsertStmtAfter(curBB, stmt, restoreStmt);
-
-            JITDUMP("Inserted capture:\n");
-            DISPSTMT(captureStmt);
-
-            JITDUMP("\nInserted restore:\n");
+            JITDUMP("Inserted restore:\n");
             DISPSTMT(restoreStmt);
+
             result = PhaseStatus::MODIFIED_EVERYTHING;
         }
 
@@ -121,6 +144,92 @@ PhaseStatus Compiler::SaveAsyncContexts()
     }
 
     return result;
+}
+
+BasicBlock* Compiler::InsertTryFinallyForContextRestore(BasicBlock* block, Statement* stmt)
+{
+    assert(!block->hasHndIndex());
+    EHblkDsc* ebd = fgTryAddEHTableEntries(block->bbTryIndex - 1, 1);
+    if (ebd == nullptr)
+    {
+        IMPL_LIMITATION("Awaits require insertion of too many EH clauses");
+    }
+
+    if (stmt == block->firstStmt())
+    {
+        block = fgSplitBlockAtBeginning(block);
+    }
+    else
+    {
+        block = fgSplitBlockAfterStatement(block, stmt->GetPrevStmt());
+    }
+
+    BasicBlock* tailBB = fgSplitBlockAfterStatement(block, stmt);
+
+    BasicBlock* callFinally = fgNewBBafter(BBJ_CALLFINALLY, block, false);
+    BasicBlock* callFinallyRet = fgNewBBafter(BBJ_CALLFINALLYRET, callFinally, false);
+    BasicBlock* finallyRet = fgNewBBafter(BBJ_EHFINALLYRET, callFinallyRet, false);
+    BasicBlock* goToTailBlock = fgNewBBafter(BBJ_ALWAYS, finallyRet, false);
+
+    // Set some info the starting blocks like fgFindBasicBlocks does
+    block->SetFlags(BBF_DONT_REMOVE);
+    finallyRet->SetFlags(BBF_DONT_REMOVE);
+    finallyRet->bbRefs++; // Artificial ref count on handler begins
+
+    fgRemoveRefPred(block->GetTargetEdge());
+    // Wire up the control flow for the new blocks
+    block->SetTargetEdge(fgAddRefPred(callFinally, block));
+    callFinally->SetTargetEdge(fgAddRefPred(finallyRet, callFinally));
+
+    BBehfDesc* ehfDesc = new (this, CMK_BasicBlock) BBehfDesc;
+    ehfDesc->bbeCount = 1;
+    ehfDesc->bbeSuccs = new (this, CMK_BasicBlock) FlowEdge*[1] { fgAddRefPred(callFinallyRet, finallyRet) };
+    ehfDesc->bbeSuccs[0]->setLikelihood(1.0);
+    finallyRet->SetEhfTargets(ehfDesc);
+
+    callFinallyRet->SetTargetEdge(fgAddRefPred(goToTailBlock, callFinallyRet));
+    goToTailBlock->SetTargetEdge(fgAddRefPred(tailBB, goToTailBlock));
+
+    // Most of these blocks go in the old EH region
+    callFinally->bbTryIndex = block->bbTryIndex;
+    callFinallyRet->bbTryIndex = block->bbTryIndex;
+    finallyRet->bbTryIndex = block->bbTryIndex;
+    goToTailBlock->bbTryIndex = block->bbTryIndex;
+
+    callFinally->bbHndIndex = block->bbHndIndex;
+    callFinallyRet->bbHndIndex = block->bbHndIndex;
+    finallyRet->bbHndIndex = block->bbHndIndex;
+    goToTailBlock->bbHndIndex = block->bbHndIndex;
+
+    // block goes into the inserted EH clause and the finally becomes the handler
+    block->bbTryIndex--;
+    finallyRet->bbHndIndex = block->bbTryIndex;
+
+    ebd->ebdID = impInlineRoot()->compEHID++;
+    ebd->ebdHandlerType = EH_HANDLER_FINALLY;
+
+    ebd->ebdTryBeg = block;
+    ebd->ebdTryLast = block;
+
+    ebd->ebdHndBeg = finallyRet;
+    ebd->ebdHndLast = finallyRet;
+
+    ebd->ebdTyp = 0;
+    ebd->ebdEnclosingTryIndex = (unsigned short)goToTailBlock->getTryIndex();
+    ebd->ebdEnclosingHndIndex = EHblkDsc::NO_ENCLOSING_INDEX;
+
+    ebd->ebdTryBegOffset = block->bbCodeOffs;
+    ebd->ebdTryEndOffset = block->bbCodeOffsEnd;
+    ebd->ebdFilterBegOffset = 0;
+    ebd->ebdHndBegOffset = 0;
+    ebd->ebdHndEndOffset = 0;
+
+    finallyRet->bbCatchTyp = BBCT_FINALLY;
+    GenTree* retFilt = gtNewOperNode(GT_RETFILT, TYP_VOID, nullptr);
+    Statement* retFiltStmt = fgNewStmtFromTree(retFilt);
+    fgInsertStmtAtEnd(finallyRet, retFiltStmt);
+
+    return finallyRet;
 }
 
 class AsyncLiveness
@@ -751,25 +860,25 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
         }
     }
 
-    unsigned syncContextLcl = BAD_VAR_NUM;
-    if ((call->gtCallMoreFlags & GTF_CALL_M_ASYNC_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
-    {
-        assert((call->gtCallMoreFlags & GTF_CALL_M_ASYNC_SAVE_AND_RESTORE_CONTEXTS) != 0);
-        syncContextLcl = call->restoredSyncContextVar;
-    }
+    //unsigned syncContextLcl = BAD_VAR_NUM;
+    //if ((call->gtCallMoreFlags & GTF_CALL_M_ASYNC_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
+    //{
+    //    assert((call->gtCallMoreFlags & GTF_CALL_M_ASYNC_SAVE_AND_RESTORE_CONTEXTS) != 0);
+    //    syncContextLcl = call->restoredSyncContextVar;
+    //}
 
     jitstd::sort(liveLocals.begin(), liveLocals.end(), [=](const LiveLocalInfo& lhs, const LiveLocalInfo& rhs) {
         // Put the synchronization context first as the BCL needs to be able to
         // find it in ThunkTask.
-        if (lhs.LclNum == syncContextLcl)
-        {
-            return true;
-        }
+        //if (lhs.LclNum == syncContextLcl)
+        //{
+        //    return true;
+        //}
 
-        if (rhs.LclNum == syncContextLcl)
-        {
-            return false;
-        }
+        //if (rhs.LclNum == syncContextLcl)
+        //{
+        //    return false;
+        //}
 
         if (lhs.Alignment == rhs.Alignment)
         {
@@ -845,22 +954,22 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
                 block->getTryIndex(), layout.ExceptionGCDataIndex);
     }
 
-    if (syncContextLcl != BAD_VAR_NUM)
-    {
-        layout.SyncContextGCDataIndex = layout.GCRefsCount;
-        JITDUMP("  Call continues on a captured context; SynchronizationContext will be at GC@+%02u in GC data\n",
-            layout.SyncContextGCDataIndex);
+    //if (syncContextLcl != BAD_VAR_NUM)
+    //{
+    //    layout.SyncContextGCDataIndex = layout.GCRefsCount;
+    //    JITDUMP("  Call continues on a captured context; SynchronizationContext will be at GC@+%02u in GC data\n",
+    //        layout.SyncContextGCDataIndex);
 
-        // If we have a sync context that the BCL needs to access, and we somehow
-        // found that it isn't live (for example because we were able to show that
-        // the async call does not return), then still allocate a slot for it. This
-        // is defensive and probably unnecessary, but just in case the VM goes
-        // looking it will find null instead of some other GC data.
-        if ((liveLocals.size() == 0) || (liveLocals[0].LclNum != syncContextLcl))
-        {
-            layout.GCRefsCount++;
-        }
-    }
+    //    // If we have a sync context that the BCL needs to access, and we somehow
+    //    // found that it isn't live (for example because we were able to show that
+    //    // the async call does not return), then still allocate a slot for it. This
+    //    // is defensive and probably unnecessary, but just in case the VM goes
+    //    // looking it will find null instead of some other GC data.
+    //    if ((liveLocals.size() == 0) || (liveLocals[0].LclNum != syncContextLcl))
+    //    {
+    //        layout.GCRefsCount++;
+    //    }
+    //}
 
     for (LiveLocalInfo& inf : liveLocals)
     {
@@ -1024,8 +1133,8 @@ BasicBlock* AsyncTransformation::CreateSuspension(BasicBlock*               bloc
         continuationFlags |= CORINFO_CONTINUATION_NEEDS_EXCEPTION;
     if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
         continuationFlags |= CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA;
-    if ((call->gtCallMoreFlags & GTF_CALL_M_ASYNC_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
-        continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT;
+    //if ((call->gtCallMoreFlags & GTF_CALL_M_ASYNC_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
+    //    continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT;
 
     newContinuation      = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
     unsigned flagsOffset = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
@@ -1041,6 +1150,13 @@ BasicBlock* AsyncTransformation::CreateSuspension(BasicBlock*               bloc
     if (layout.DataSize > 0)
     {
         FillInDataOnSuspension(layout.Locals, suspendBB);
+    }
+
+    const AsyncCallInfo& callInfo = call->GetAsyncInfo();
+
+    if (callInfo.ExecutionContextHandling == ExecutionContextHandling::AsyncSaveAndRestore)
+    {
+        FillInExecutionContextOnSuspension(suspendBB);
     }
 
     if (suspendBB->KindIs(BBJ_RETURN))
@@ -1282,6 +1398,19 @@ void AsyncTransformation::FillInDataOnSuspension(const jitstd::vector<LiveLocalI
     }
 }
 
+void AsyncTransformation::FillInExecutionContextOnSuspension(BasicBlock* suspendBB)
+{
+    GenTreeCall* captureExecContext = m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureExecutionContextMethHnd, TYP_REF);
+
+    m_comp->compCurBB = suspendBB;
+    m_comp->fgMorphTree(captureExecContext);
+
+    GenTree* newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+    unsigned execContextOffset = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationExecutionContextFldHnd);
+    GenTree* storeExecContext = StoreAtOffset(newContinuation, execContextOffset, captureExecContext, TYP_REF);
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeExecContext));
+}
+
 //------------------------------------------------------------------------
 // AsyncTransformation::CreateCheckAndSuspendAfterCall:
 //   Split the block containing the specified async call, and create the IR
@@ -1365,6 +1494,12 @@ BasicBlock* AsyncTransformation::CreateResumption(BasicBlock*               bloc
 
     JITDUMP("  Creating resumption " FMT_BB " for state %u\n", resumeBB->bbNum, stateNum);
 
+    const AsyncCallInfo& callInfo = call->GetAsyncInfo();
+    if (callInfo.ExecutionContextHandling == ExecutionContextHandling::AsyncSaveAndRestore)
+    {
+        RestoreExecutionContextOnResumption(resumeBB);
+    }
+
     // We need to restore data before we restore GC pointers, since restoring
     // the data may also write the GC pointer fields with nulls.
     unsigned resumeByteArrLclNum = BAD_VAR_NUM;
@@ -1416,6 +1551,31 @@ BasicBlock* AsyncTransformation::CreateResumption(BasicBlock*               bloc
     }
 
     return resumeBB;
+}
+
+void AsyncTransformation::RestoreExecutionContextOnResumption(BasicBlock* resumeBB)
+{
+    GenTree* valuePlaceholder = m_comp->gtNewZeroConNode(TYP_REF);
+    GenTreeCall* restoreCall = m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreExecutionContextMethHnd, TYP_VOID);
+    restoreCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(valuePlaceholder));
+
+    m_comp->compCurBB = resumeBB;
+    m_comp->fgMorphTree(restoreCall);
+
+    LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, restoreCall));
+
+    LIR::Use valueUse;
+    bool gotUse = LIR::AsRange(resumeBB).TryGetUse(valuePlaceholder, &valueUse);
+    assert(gotUse);
+
+    GenTree* continuationParam = m_comp->gtNewLclVarNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
+    unsigned execContextOffset = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationExecutionContextFldHnd);
+    GenTree* execContextValue = LoadFromOffset(continuationParam, execContextOffset, TYP_REF);
+
+    LIR::AsRange(resumeBB).InsertBefore(valuePlaceholder, LIR::SeqTree(m_comp, execContextValue));
+    valueUse.ReplaceWith(execContextValue);
+
+    LIR::AsRange(resumeBB).Remove(valuePlaceholder);
 }
 
 //------------------------------------------------------------------------
