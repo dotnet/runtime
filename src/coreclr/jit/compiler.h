@@ -4503,6 +4503,8 @@ protected:
         return compiler->impEnumeratorGdvLocalMap;
     }
 
+    bool hasUpdatedTypeLocals = false;
+
 #define SMALL_STACK_SIZE 16 // number of elements in impSmallStack
 
     struct SavedStack // used to save/restore stack contents.
@@ -5338,6 +5340,8 @@ public:
     PhaseStatus fgMorphInit();
 
     PhaseStatus fgInline();
+
+    PhaseStatus fgResolveGDVs();
 
     PhaseStatus fgRemoveEmptyTry();
 
