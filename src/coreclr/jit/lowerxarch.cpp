@@ -1366,58 +1366,223 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
 }
 
 //----------------------------------------------------------------------------------------------
-// LowerFusedMultiplyAdd: Changes NI_AVX2_MultiplyAddScalar produced
-//     by Math(F).FusedMultiplyAdd to a better FMA intrinsics if there are GT_NEG around in order
+// LowerFusedMultiplyOp: Changes FusedMultiply* operation produced
+//     to a better FMA intrinsics if there are GT_NEG around in order
 //     to eliminate them.
 //
 //  Arguments:
 //     node - The hardware intrinsic node
 //
 //  Notes:
-//     Math(F).FusedMultiplyAdd is expanded into NI_AVX2_MultiplyAddScalar and
-//     depending on additional GT_NEG nodes around it can be:
+//      x *  y + z -> FusedMultiplyAdd
+//      x * -y + z -> FusedMultiplyAddNegated
+//     -x *  y + z -> FusedMultiplyAddNegated
+//     -x * -y + z -> FusedMultiplyAdd
+//      x *  y - z -> FusedMultiplySubtract
+//      x * -y - z -> FusedMultiplySubtractNegated
+//     -x *  y - z -> FusedMultiplySubtractNegated
+//     -x * -y - z -> FusedMultiplySubtract
 //
-//      x *  y + z -> NI_AVX2_MultiplyAddScalar
-//      x * -y + z -> NI_AVX2_MultiplyAddNegatedScalar
-//     -x *  y + z -> NI_AVX2_MultiplyAddNegatedScalar
-//     -x * -y + z -> NI_AVX2_MultiplyAddScalar
-//      x *  y - z -> NI_AVX2_MultiplySubtractScalar
-//      x * -y - z -> NI_AVX2_MultiplySubtractNegatedScalar
-//     -x *  y - z -> NI_AVX2_MultiplySubtractNegatedScalar
-//     -x * -y - z -> NI_AVX2_MultiplySubtractScalar
-//
-void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
+void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
 {
-    assert(node->GetHWIntrinsicId() == NI_AVX2_MultiplyAddScalar);
     assert(node->GetOperandCount() == 3);
 
+    bool negated  = false;
+    bool subtract = false;
+    bool isScalar = false;
+
+    NamedIntrinsic intrinsic = node->GetHWIntrinsicId();
+
+    switch (intrinsic)
+    {
+        case NI_AVX2_MultiplyAdd:
+        case NI_AVX512_FusedMultiplyAdd:
+        {
+            break;
+        }
+
+        case NI_AVX2_MultiplyAddScalar:
+        case NI_AVX512_FusedMultiplyAddScalar:
+        {
+            isScalar = true;
+            break;
+        }
+
+        case NI_AVX2_MultiplyAddNegated:
+        case NI_AVX512_FusedMultiplyAddNegated:
+        {
+            negated = true;
+            break;
+        }
+
+        case NI_AVX2_MultiplyAddNegatedScalar:
+        case NI_AVX512_FusedMultiplyAddNegatedScalar:
+        {
+            negated  = true;
+            isScalar = true;
+            break;
+        }
+
+        case NI_AVX2_MultiplySubtract:
+        case NI_AVX512_FusedMultiplySubtract:
+        {
+            subtract = true;
+            break;
+        }
+
+        case NI_AVX2_MultiplySubtractScalar:
+        case NI_AVX512_FusedMultiplySubtractScalar:
+        {
+            subtract = true;
+            isScalar = true;
+            break;
+        }
+
+        case NI_AVX2_MultiplySubtractNegated:
+        case NI_AVX512_FusedMultiplySubtractNegated:
+        {
+            subtract = true;
+            negated  = true;
+            break;
+        }
+
+        case NI_AVX2_MultiplySubtractNegatedScalar:
+        case NI_AVX512_FusedMultiplySubtractNegatedScalar:
+        {
+            subtract = true;
+            negated  = true;
+            isScalar = true;
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
     bool negatedArgs[3] = {};
+
     for (size_t i = 1; i <= 3; i++)
     {
         GenTree* arg = node->Op(i);
-        if (arg->OperIsHWIntrinsic(NI_Vector128_CreateScalarUnsafe))
+
+        if (!arg->OperIsHWIntrinsic())
         {
-            GenTree*& argOp = arg->AsHWIntrinsic()->Op(1);
-            if (argOp->OperIs(GT_NEG))
+            continue;
+        }
+
+        GenTreeHWIntrinsic* hwArg = arg->AsHWIntrinsic();
+
+        switch (hwArg->GetHWIntrinsicId())
+        {
+            case NI_Vector128_CreateScalarUnsafe:
+            case NI_Vector256_CreateScalarUnsafe:
+            case NI_Vector512_CreateScalarUnsafe:
             {
-                BlockRange().Remove(argOp);
-                argOp = argOp->gtGetOp1();
-                argOp->ClearContained();
-                ContainCheckHWIntrinsic(arg->AsHWIntrinsic());
-                negatedArgs[i - 1] = true;
+                GenTree*& argOp = hwArg->Op(1);
+
+                if (argOp->OperIs(GT_NEG))
+                {
+                    BlockRange().Remove(argOp);
+
+                    argOp = argOp->gtGetOp1();
+                    argOp->ClearContained();
+                    ContainCheckHWIntrinsic(arg->AsHWIntrinsic());
+
+                    negatedArgs[i - 1] ^= true;
+                }
+
+                break;
+            }
+
+            default:
+            {
+                bool       isScalarArg = false;
+                genTreeOps oper        = hwArg->GetOperForHWIntrinsicId(&isScalarArg);
+
+                if (oper != GT_XOR)
+                {
+                    break;
+                }
+
+                GenTree* argOp = hwArg->Op(2);
+
+                if (!argOp->isContained())
+                {
+                    // A constant should have already been contained
+                    break;
+                }
+
+                // xor is bitwise and the actual xor node might be a different base type
+                // from the FMA node, so we check if its negative zero using the FMA base
+                // type since that's what the end negation would end up using
+
+                if (argOp->IsVectorNegativeZero(node->GetSimdBaseType()))
+                {
+                    BlockRange().Remove(hwArg);
+                    BlockRange().Remove(argOp);
+
+                    argOp = hwArg->Op(1);
+                    argOp->ClearContained();
+                    node->Op(i) = argOp;
+
+                    negatedArgs[i - 1] ^= true;
+                }
+
+                break;
             }
         }
     }
 
-    bool negMul = negatedArgs[0] ^ negatedArgs[1];
-    if (negatedArgs[2])
+    negated ^= negatedArgs[0];
+    negated ^= negatedArgs[1];
+    subtract ^= negatedArgs[2];
+
+    if (intrinsic >= FIRST_NI_AVX512)
     {
-        node->ChangeHWIntrinsicId(negMul ? NI_AVX2_MultiplySubtractNegatedScalar : NI_AVX2_MultiplySubtractScalar);
+        if (negated)
+        {
+            if (subtract)
+            {
+                intrinsic =
+                    isScalar ? NI_AVX512_FusedMultiplySubtractNegatedScalar : NI_AVX512_FusedMultiplySubtractNegated;
+            }
+            else
+            {
+                intrinsic = isScalar ? NI_AVX512_FusedMultiplyAddNegatedScalar : NI_AVX512_FusedMultiplyAddNegated;
+            }
+        }
+        else if (subtract)
+        {
+            intrinsic = isScalar ? NI_AVX512_FusedMultiplySubtractScalar : NI_AVX512_FusedMultiplySubtract;
+        }
+        else
+        {
+            intrinsic = isScalar ? NI_AVX512_FusedMultiplyAddScalar : NI_AVX512_FusedMultiplyAdd;
+        }
+    }
+    else if (negated)
+    {
+        if (subtract)
+        {
+            intrinsic = isScalar ? NI_AVX2_MultiplySubtractNegatedScalar : NI_AVX2_MultiplySubtractNegated;
+        }
+        else
+        {
+            intrinsic = isScalar ? NI_AVX2_MultiplyAddNegatedScalar : NI_AVX2_MultiplyAddNegated;
+        }
+    }
+    else if (subtract)
+    {
+        intrinsic = isScalar ? NI_AVX2_MultiplySubtractScalar : NI_AVX2_MultiplySubtract;
     }
     else
     {
-        node->ChangeHWIntrinsicId(negMul ? NI_AVX2_MultiplyAddNegatedScalar : NI_AVX2_MultiplyAddScalar);
+        intrinsic = isScalar ? NI_AVX2_MultiplyAddScalar : NI_AVX2_MultiplyAdd;
     }
+
+    node->ChangeHWIntrinsicId(intrinsic);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -2468,9 +2633,26 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LowerHWIntrinsicCC(node, NI_AVX_PTEST, GenCondition::UGT);
             break;
 
+        case NI_AVX2_MultiplyAdd:
+        case NI_AVX2_MultiplyAddNegated:
+        case NI_AVX2_MultiplyAddNegatedScalar:
         case NI_AVX2_MultiplyAddScalar:
-            LowerFusedMultiplyAdd(node);
+        case NI_AVX2_MultiplySubtract:
+        case NI_AVX2_MultiplySubtractNegated:
+        case NI_AVX2_MultiplySubtractNegatedScalar:
+        case NI_AVX2_MultiplySubtractScalar:
+        case NI_AVX512_FusedMultiplyAdd:
+        case NI_AVX512_FusedMultiplyAddNegated:
+        case NI_AVX512_FusedMultiplyAddNegatedScalar:
+        case NI_AVX512_FusedMultiplyAddScalar:
+        case NI_AVX512_FusedMultiplySubtract:
+        case NI_AVX512_FusedMultiplySubtractNegated:
+        case NI_AVX512_FusedMultiplySubtractNegatedScalar:
+        case NI_AVX512_FusedMultiplySubtractScalar:
+        {
+            LowerFusedMultiplyOp(node);
             break;
+        }
 
         case NI_AVX512_TernaryLogic:
         {
@@ -3646,8 +3828,16 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                 if (condition->OperIsConvertMaskToVector())
                 {
                     GenTree* tmp = condition->AsHWIntrinsic()->Op(1);
-                    BlockRange().Remove(condition);
-                    condition = tmp;
+                    if (tmp->OperIsHWIntrinsic())
+                    {
+                        BlockRange().Remove(condition);
+                        condition = tmp;
+                    }
+                    else
+                    {
+                        // We can't change to a BlendVariable intrinsic
+                        break;
+                    }
                 }
                 else if (!varTypeIsMask(condition))
                 {
@@ -9687,7 +9877,28 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (containedOperand != nullptr)
                     {
-                        if (containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic(comp))
+                        bool isEmbeddedBroadcastCompatible =
+                            containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic(comp);
+
+                        bool       isScalarArg = false;
+                        genTreeOps oper        = node->GetOperForHWIntrinsicId(&isScalarArg);
+
+                        // We want to skip trying to make this an embedded broadcast in certain scenarios
+                        // because it will prevent other transforms that will be better for codegen.
+
+                        LIR::Use use;
+
+                        if ((oper == GT_XOR) && isEmbeddedBroadcastCompatible && BlockRange().TryGetUse(node, &use) &&
+                            use.User()->OperIsVectorFusedMultiplyOp())
+                        {
+                            // xor is bitwise and the actual xor node might be a different base type
+                            // from the FMA node, so we check if its negative zero using the FMA base
+                            // type since that's what the end negation would end up using
+                            var_types fmaSimdBaseType     = use.User()->AsHWIntrinsic()->GetSimdBaseType();
+                            isEmbeddedBroadcastCompatible = !containedOperand->IsVectorNegativeZero(fmaSimdBaseType);
+                        }
+
+                        if (isEmbeddedBroadcastCompatible)
                         {
                             TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());
                         }

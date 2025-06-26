@@ -225,6 +225,27 @@ void Compiler::unwindPush(regNumber reg)
     }
 }
 
+//------------------------------------------------------------------------
+// Compiler::unwindPush2Windows: Record  push/save of 2 registers simultaneously.
+//
+// Arguments:
+//    reg1 - The first register being pushed/saved.
+//    reg2 - The second register being pushed/saved.
+//
+void Compiler::unwindPush2(regNumber reg1, regNumber reg2)
+{
+#ifdef UNIX_AMD64_ABI
+    if (generateCFIUnwindCodes())
+    {
+        unwindPush2Pop2CFI(reg1, reg2);
+    }
+    else
+#endif // UNIX_AMD64_ABI
+    {
+        unwindPush2Windows(reg1, reg2);
+    }
+}
+
 void Compiler::unwindPushWindows(regNumber reg)
 {
     assert(compGeneratingProlog);
@@ -258,6 +279,20 @@ void Compiler::unwindPushWindows(regNumber reg)
         code->UnwindOp = UWOP_ALLOC_SMALL;
         code->OpInfo   = 0;
     }
+}
+
+//------------------------------------------------------------------------
+// Compiler::unwindPush2Windows: Record  push/save of 2 registers simultaneously in windows OS.
+//
+// Arguments:
+//    reg1 - The first register being pushed/saved.
+//    reg2 - The second register being pushed/saved.
+//
+void Compiler::unwindPush2Windows(regNumber reg1, regNumber reg2)
+{
+    // ToDo: This is a placeholder till Windows OS has unwind support for push2/pop2.
+    unwindPushWindows(reg1);
+    unwindPushWindows(reg2);
 }
 
 #ifdef UNIX_AMD64_ABI

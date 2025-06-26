@@ -14,7 +14,7 @@ namespace TestUnhandledException
 
     unsafe class Program
     {
-        [DllImport("foreignunhandled")]
+        [DllImport("unhandlednative")]
         public static extern void InvokeCallbackOnNewThread(delegate*unmanaged<void> callBack);
 
         private const string INTERNAL_CALL = "__internal";
