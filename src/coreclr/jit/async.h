@@ -25,7 +25,7 @@ struct ContinuationLayout
     bool                                 ReturnInGCData       = false;
     unsigned                             ReturnValDataOffset  = UINT_MAX;
     unsigned                             ExceptionGCDataIndex = UINT_MAX;
-    unsigned                             SyncContextGCDataIndex = UINT_MAX;
+    unsigned                             ExecContextGCDataIndex = UINT_MAX;
     const jitstd::vector<LiveLocalInfo>& Locals;
 
     explicit ContinuationLayout(const jitstd::vector<LiveLocalInfo>& locals)
@@ -94,9 +94,8 @@ class AsyncTransformation
                                              GenTree*       prevContinuation,
                                              unsigned       gcRefsCount,
                                              unsigned int   dataSize);
-    void         FillInGCPointersOnSuspension(const jitstd::vector<LiveLocalInfo>& liveLocals, BasicBlock* suspendBB);
+    void         FillInGCPointersOnSuspension(const ContinuationLayout& layout, BasicBlock* suspendBB);
     void         FillInDataOnSuspension(const jitstd::vector<LiveLocalInfo>& liveLocals, BasicBlock* suspendBB);
-    void         FillInExecutionContextOnSuspension(BasicBlock* suspendBB);
     void         CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                 const CallDefinitionInfo& callDefInfo,
                                                 AsyncLiveness&            life,
@@ -109,13 +108,12 @@ class AsyncTransformation
                                  const CallDefinitionInfo& callDefInfo,
                                  unsigned                  stateNum,
                                  const ContinuationLayout& layout);
-    void        RestoreExecutionContextOnResumption(BasicBlock* resumeBB);
     void        RestoreFromDataOnResumption(unsigned                             resumeByteArrLclNum,
                                             const jitstd::vector<LiveLocalInfo>& liveLocals,
                                             BasicBlock*                          resumeBB);
-    void        RestoreFromGCPointersOnResumption(unsigned                             resumeObjectArrLclNum,
-                                                  const jitstd::vector<LiveLocalInfo>& liveLocals,
-                                                  BasicBlock*                          resumeBB);
+    void        RestoreFromGCPointersOnResumption(unsigned                  resumeObjectArrLclNum,
+                                                  const ContinuationLayout& layout,
+                                                  BasicBlock*               resumeBB);
     BasicBlock* RethrowExceptionOnResumption(BasicBlock*               block,
                                              BasicBlock*               remainder,
                                              unsigned                  resumeObjectArrLclNum,

@@ -85,7 +85,6 @@ namespace System.Runtime.CompilerServices
         public delegate*<Continuation, Continuation?> Resume;
         public uint State;
         public CorInfoContinuationFlags Flags;
-        public ExecutionContext? ExecutionContext;
 
         // Data and GCData contain the state of the continuation.
         // Note: The JIT is ultimately responsible for laying out these arrays.
@@ -622,30 +621,6 @@ namespace System.Runtime.CompilerServices
                 continuation = continuation.Next;
                 if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
                     return continuation;
-            }
-        }
-
-        // Calls to these functions are inserted by the JIT around async/await calls.
-        private static void CaptureContexts(out SynchronizationContext? syncCtx, out ExecutionContext? executionCtx)
-        {
-            Thread thread = Thread.CurrentThreadNoInit!;
-            syncCtx = thread._synchronizationContext;
-            executionCtx = thread._executionContext;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void RestoreContexts(SynchronizationContext? previousSyncCtx, ExecutionContext? previousExecutionCtx)
-        {
-            Thread thread = Thread.CurrentThreadNoInit!;
-            if (previousSyncCtx != thread._synchronizationContext)
-            {
-                thread._synchronizationContext = previousSyncCtx;
-            }
-
-            ExecutionContext? currentExecutionCtx = thread._executionContext;
-            if (previousExecutionCtx != currentExecutionCtx)
-            {
-                ExecutionContext.RestoreChangedContextToThread(thread, previousExecutionCtx, currentExecutionCtx);
             }
         }
 

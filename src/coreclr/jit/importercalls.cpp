@@ -1502,6 +1502,30 @@ DONE_CALL:
 
                 // Propagate retExpr as the placeholder for the call.
                 call = retExpr;
+
+                if (origCall->IsAsyncAndAlwaysSavesAndRestoresExecutionContext())
+                {
+                    // Async calls that require save/restore of
+                    // ExecutionContext need to be top most so that we can
+                    // insert try-finally around them. We can inline these, so
+                    // we need to ensure that the RET_EXPR is findable when we
+                    // later expand this.
+
+                    unsigned   resultLcl = lvaGrabTemp(true DEBUGARG("async"));
+                    LclVarDsc* varDsc    = lvaGetDesc(resultLcl);
+                    // Keep the information about small typedness to avoid
+                    // inserting unnecessary casts around normalization.
+                    if (varTypeIsSmall(origCall->gtReturnType))
+                    {
+                        assert(origCall->NormalizesSmallTypesOnReturn());
+                        varDsc->lvType = origCall->gtReturnType;
+                    }
+
+                    impStoreToTemp(resultLcl, call, CHECK_SPILL_ALL);
+                    // impStoreToTemp can change src arg list and return type for call that returns struct.
+                    var_types type = genActualType(lvaGetDesc(resultLcl)->TypeGet());
+                    call           = gtNewLclvNode(resultLcl, type);
+                }
             }
             else
             {
