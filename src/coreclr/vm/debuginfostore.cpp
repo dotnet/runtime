@@ -658,18 +658,18 @@ void CompressDebugInfo::CompressBoundaries(
             ICorDebugInfo::OffsetMapping * pBound = &pMap[i];
 
             uint32_t sourceBits = 0;
-            switch (pBound->source)
+            switch ((int)pBound->source)
             {
-                case ICorDebugInfo::SOURCE_TYPE_INVALID:
+                case (int)ICorDebugInfo::SOURCE_TYPE_INVALID:
                     sourceBits = 0;
                     break;
-                case ICorDebugInfo::CALL_INSTRUCTION:
+                case (int)ICorDebugInfo::CALL_INSTRUCTION:
                     sourceBits = 1;
                     break;
-                case ICorDebugInfo::STACK_EMPTY:
+                case (int)ICorDebugInfo::STACK_EMPTY:
                     sourceBits = 2;
                     break;
-                case (ICorDebugInfo::SourceTypes)(ICorDebugInfo::CALL_INSTRUCTION | ICorDebugInfo::STACK_EMPTY):
+                case (int)(ICorDebugInfo::CALL_INSTRUCTION | ICorDebugInfo::STACK_EMPTY):
                     sourceBits = 3;
                     break;
                 default:
