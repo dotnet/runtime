@@ -14,15 +14,15 @@ namespace System.Runtime.InteropServices.Java
         {
 #if NATIVEAOT
             throw new NotImplementedException();
-#elif MONO
-            throw new NotSupportedException();
-#else
+#elif FEATURE_JAVAMARSHAL
             ArgumentNullException.ThrowIfNull(markCrossReferences);
 
             if (!InitializeInternal((IntPtr)markCrossReferences))
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ReinitializeJavaMarshal);
             }
+#else
+            throw new PlatformNotSupportedException();
 #endif
         }
 
@@ -30,13 +30,13 @@ namespace System.Runtime.InteropServices.Java
         {
 #if NATIVEAOT
             throw new NotImplementedException();
-#elif MONO
-            throw new NotSupportedException();
-#else
+#elif FEATURE_JAVAMARSHAL
             ArgumentNullException.ThrowIfNull(obj);
 
             IntPtr handle = CreateReferenceTrackingHandleInternal(ObjectHandleOnStack.Create(ref obj), context);
             return GCHandle.FromIntPtr(handle);
+#else
+            throw new PlatformNotSupportedException();
 #endif
         }
 
@@ -44,9 +44,7 @@ namespace System.Runtime.InteropServices.Java
         {
 #if NATIVEAOT
             throw new NotImplementedException();
-#elif MONO
-            throw new NotSupportedException();
-#else
+#elif FEATURE_JAVAMARSHAL
             IntPtr handle = GCHandle.ToIntPtr(obj);
             if (handle == IntPtr.Zero
                 || !GetContextInternal(handle, out void* context))
@@ -55,6 +53,8 @@ namespace System.Runtime.InteropServices.Java
             }
 
             return context;
+#else
+            throw new PlatformNotSupportedException();
 #endif
         }
 
@@ -64,9 +64,7 @@ namespace System.Runtime.InteropServices.Java
         {
 #if NATIVEAOT
             throw new NotImplementedException();
-#elif MONO
-            throw new NotSupportedException();
-#else
+#elif FEATURE_JAVAMARSHAL
             fixed (GCHandle* pHandles = unreachableObjectHandles)
             {
                 FinishCrossReferenceProcessing(
@@ -74,10 +72,12 @@ namespace System.Runtime.InteropServices.Java
                     (nuint)unreachableObjectHandles.Length,
                     pHandles);
             }
+#else
+            throw new PlatformNotSupportedException();
 #endif
         }
 
-#if CORECLR
+#if FEATURE_JAVAMARSHAL && !NATIVEAOT
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_Initialize")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool InitializeInternal(IntPtr callback);

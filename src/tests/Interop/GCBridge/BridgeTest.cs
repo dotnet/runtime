@@ -70,17 +70,24 @@ public unsafe class GCBridgeTests
     [Fact]
     public static void TestEntryPoint()
     {
-        JavaMarshal.Initialize(GetMarkCrossReferencesFtn());
-        SetBridgeProcessingFinishCallback(&BridgeProcessingFinishCallback);
+        try
+        {
+            JavaMarshal.Initialize(GetMarkCrossReferencesFtn());
+            SetBridgeProcessingFinishCallback(&BridgeProcessingFinishCallback);
 
-        RunGraphTest(SimpleTest, 2, 1);
+            RunGraphTest(SimpleTest, 2, 1);
 
-        RunGraphTest(NestedCycles, 2, 1);
+            RunGraphTest(NestedCycles, 2, 1);
 
-        RunGraphTest(Spider, 3, 2);
+            RunGraphTest(Spider, 3, 2);
 
-        // expected result from mono implementation
-        RunGraphTest(RandomLinks, 1993, 2695);
+            // expected result from mono implementation
+            RunGraphTest(RandomLinks, 1993, 2695);
+        }
+        catch (PlatformNotSupportedException)
+        {
+            Console.WriteLine("GCBridge not supported on this platform");
+        }
     }
 
     static void CheckWeakRefs(List<WeakReference> weakRefs, bool expectedAlive)
