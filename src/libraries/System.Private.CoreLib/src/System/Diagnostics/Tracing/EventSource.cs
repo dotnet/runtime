@@ -3592,7 +3592,7 @@ namespace System.Diagnostics.Tracing
                 manifest.ManifestError(SR.Format(SR.EventSource_MismatchIdToWriteEvent, evtName, evtId, eventArg), true);
             }
 
-            if (eventData.TryGetValue(evtId, out _) && eventData[evtId].Descriptor.EventId != 0)
+            if (eventData.TryGetValue(evtId, out descriptor) && descriptor.EventId != 0)
             {
                 manifest.ManifestError(SR.Format(SR.EventSource_EventIdReused, evtName, evtId), true);
             }
