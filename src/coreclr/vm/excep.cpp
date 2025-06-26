@@ -7361,7 +7361,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         else
         {
 #ifdef FEATURE_INTERPRETER
-            if (pEntryFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            if ((pEntryFrame != NULL) && (pEntryFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
             {
                 ((InterpreterFrame*)pEntryFrame)->SetIsFaulting(true);
             }
