@@ -793,7 +793,7 @@
              Link="CommonTest\System\Security\Cryptography\MLKemCngTests.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PqcBlobHelpers.cs"
              Link="Common\System\Security\Cryptography\PqcBlobHelpers.cs" />
-<Compile Include="$(CommonPath)System\Security\Cryptography\PqcBlobHelpers.MLKem.cs"
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PqcBlobHelpers.MLKem.cs"
              Link="Common\System\Security\Cryptography\PqcBlobHelpers.MLKem.cs" />
 
     <Compile Include="MLKemOpenSslTests.NotSupported.cs" />

@@ -11,7 +11,6 @@ namespace System.Security.Cryptography
 {
     public abstract partial class MLKem
     {
-        // This takes ownership of exported and clears it when done.
         private protected unsafe void ReadCngMLKemBlob(
             KeyBlobMagicNumber kind,
             ReadOnlySpan<byte> exportedSpan,

@@ -19,8 +19,7 @@ namespace System.Security.Cryptography
         private const string NCRYPT_MLKEM_PARAMETER_SET_768 = PqcBlobHelpers.BCRYPT_MLKEM_PARAMETER_SET_768;
         private const string NCRYPT_MLKEM_PARAMETER_SET_1024 = PqcBlobHelpers.BCRYPT_MLKEM_PARAMETER_SET_1024;
 
-        internal MLKemCng(CngKey key, bool transferOwnership)
-            : base(AlgorithmFromHandleNoDuplicate(key))
+        internal MLKemCng(CngKey key, bool transferOwnership) : base(AlgorithmFromHandleNoDuplicate(key))
         {
             Debug.Assert(key is not null);
             Debug.Assert(key.AlgorithmGroup == CngAlgorithmGroup.MLKem);
@@ -97,6 +96,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <inheritdoc/>
         protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
         {
             Debug.Assert(IsSupported);
@@ -110,6 +110,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <inheritdoc/>
         protected override void EncapsulateCore(Span<byte> ciphertext, Span<byte> sharedSecret)
         {
             Debug.Assert(IsSupported);
@@ -131,6 +132,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <inheritdoc/>
         protected override void ExportPrivateSeedCore(Span<byte> destination)
         {
             Debug.Assert(IsSupported);
@@ -138,12 +140,15 @@ namespace System.Security.Cryptography
 
             if (CngPkcs8.AllowsOnlyEncryptedExport(_key))
             {
+                // Windows ncrypt does not yet give us an encrypted PKCS#8 export. For now, we have to throw an exception
+                // indicating the seed is not extractable.
                 throw new CryptographicException(SR.Cryptography_KeyNotExtractable);
             }
 
             ExportKey(KeyBlobMagicNumber.BCRYPT_MLKEM_PRIVATE_SEED_MAGIC, destination);
         }
 
+        /// <inheritdoc/>
         protected override void ExportDecapsulationKeyCore(Span<byte> destination)
         {
             Debug.Assert(IsSupported);
@@ -151,12 +156,15 @@ namespace System.Security.Cryptography
 
             if (CngPkcs8.AllowsOnlyEncryptedExport(_key))
             {
+                // Windows ncrypt does not yet give us an encrypted PKCS#8 export. For now, we have to throw an exception
+                // indicating the key is not extractable.
                 throw new CryptographicException(SR.Cryptography_KeyNotExtractable);
             }
 
             ExportKey(KeyBlobMagicNumber.BCRYPT_MLKEM_PRIVATE_MAGIC, destination);
         }
 
+        /// <inheritdoc/>
         protected override void ExportEncapsulationKeyCore(Span<byte> destination)
         {
             Debug.Assert(IsSupported);
@@ -165,6 +173,7 @@ namespace System.Security.Cryptography
             ExportKey(KeyBlobMagicNumber.BCRYPT_MLKEM_PUBLIC_MAGIC, destination);
         }
 
+        /// <inheritdoc/>
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
             // Windows ncrypt does not yet have functional PKCS#8 exports. For now, try exporting it as a seed or
@@ -174,6 +183,9 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_KeyNotExtractable);
             }
 
+            // Since Windows does not have a PKCS#8 export yet, try exporting the seed, and if that fails, the
+            // decapsulation key. If that fails, then we cannot export the key. When native PKCS#8 export is available
+            // this will use that instead.
             try
             {
                 return MLKemPkcs8.TryExportPkcs8PrivateKey(
@@ -199,17 +211,24 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_KeyNotExtractable);
                 }
             }
-
         }
 
         private void ExportKey(KeyBlobMagicNumber kind, Span<byte> destination)
         {
+            Debug.Assert(kind is KeyBlobMagicNumber.BCRYPT_MLKEM_PUBLIC_MAGIC or
+                KeyBlobMagicNumber.BCRYPT_MLKEM_PRIVATE_MAGIC or
+                KeyBlobMagicNumber.BCRYPT_MLKEM_PRIVATE_SEED_MAGIC);
+
+            if (kind != KeyBlobMagicNumber.BCRYPT_MLKEM_PUBLIC_MAGIC && _key.ExportPolicy == CngExportPolicies.None)
+            {
+                throw new CryptographicException(SR.Cryptography_KeyNotExtractable);
+            }
+
             int bufferSize;
             string blobKind = PqcBlobHelpers.MLKemBlobMagicToBlobType(kind);
 
             using (SafeNCryptKeyHandle duplicatedHandle = _key.Handle)
             {
-
                 ErrorCode errorCode = Interop.NCrypt.NCryptExportKey(
                     duplicatedHandle,
                     IntPtr.Zero,
@@ -231,14 +250,14 @@ namespace System.Security.Cryptography
                 try
                 {
                     errorCode = Interop.NCrypt.NCryptExportKey(
-                    duplicatedHandle,
-                    IntPtr.Zero,
-                    blobKind,
-                    IntPtr.Zero,
-                    buffer,
-                    bufferSize,
-                    out int written,
-                    0);
+                        duplicatedHandle,
+                        IntPtr.Zero,
+                        blobKind,
+                        IntPtr.Zero,
+                        buffer,
+                        bufferSize,
+                        out int written,
+                        0);
 
                     if (errorCode != ErrorCode.ERROR_SUCCESS)
                     {
