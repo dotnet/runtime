@@ -501,7 +501,7 @@ private:
         {
             AddPointerToNameMap(ptr, PointerIsClassHandle);
         }
-#endif DEBUG
+#endif // DEBUG
     }
 
     void DeclarePointerIsMethod(CORINFO_METHOD_HANDLE methodHnd)
@@ -512,7 +512,7 @@ private:
         {
             AddPointerToNameMap(ptr, PointerIsMethodHandle);
         }
-#endif DEBUG
+#endif // DEBUG
     }
 
     void DeclarePointerIsString(void* stringLiteral)
@@ -523,7 +523,7 @@ private:
         {
             AddPointerToNameMap(ptr, PointerIsStringLiteral);
         }
-#endif DEBUG
+#endif // DEBUG
     }
 
 #ifdef DEBUG
