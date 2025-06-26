@@ -868,9 +868,7 @@ namespace System.Security.Cryptography.Cose.Tests
             else if (key is MLDsa mldsa)
             {
                 Assert.Null(hash);
-                byte[] sig = new byte[mldsa.Algorithm.SignatureSizeInBytes];
-                Assert.Equal(sig.Length, mldsa.SignData(toBeSigned, sig));
-                return sig;
+                return mldsa.SignData(toBeSigned);
             }
 
             throw new NotImplementedException($"Unhandled key type: {key.GetType()}");
