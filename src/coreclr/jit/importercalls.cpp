@@ -746,6 +746,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         if (asyncInfo.ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore)
         {
             compMustSaveAsyncContexts = true;
+
+            // In this case we will need to save the context after the arguments are evaluated.
+            // Spill the arguments to accomplish that.
+            // (We could do this via splitting in SaveAsyncContexts, but since we need to
+            //  handle inline candidates we won't gain much.)
+            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Async await with save and restore"));
         }
     }
 
