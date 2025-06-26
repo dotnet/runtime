@@ -63,7 +63,7 @@ struct PatchpointInfo
         }
     }
 
-    // Total size of this patchpoint32_t info record, in bytes
+    // Total size of this patchpoint info record, in bytes
     uint32_t PatchpointInfoSize() const
     {
         return ComputeSize(m_numberOfLocals);
