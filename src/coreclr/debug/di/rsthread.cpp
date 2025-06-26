@@ -1891,7 +1891,7 @@ HRESULT CordbThread::GetObject(ICorDebugValue ** ppThreadObject)
                 ThrowHR(E_FAIL);
             }
 
-            CordbAppDomain * pThreadCurrentDomain = pThreadCurrentDomain = GetProcess()->GetAppDomain();
+            CordbAppDomain * pThreadCurrentDomain = GetProcess()->GetAppDomain();
             _ASSERTE(pThreadCurrentDomain != NULL);     // we should be aware of all AppDomains
 
             lockHolder.Release();
