@@ -95,7 +95,39 @@ namespace System.Reflection.Metadata
         /// If <see cref="AssemblyName"/> returns null, simply returns <see cref="FullName"/>.
         /// </remarks>
         public string AssemblyQualifiedName
-            => _assemblyQualifiedName ??= AssemblyName is null ? FullName : $"{FullName}, {AssemblyName.FullName}"; // see recursion comments in FullName
+        {
+            get
+            {
+                if (_assemblyQualifiedName is null)
+                {
+                    if (_fullName is not null && AssemblyName is null)
+                    {
+                        // _fullName may carry more information than FullName property, so we need to use FullName property.
+                        _assemblyQualifiedName = FullName;
+                    }
+                    else
+                    {
+                        ValueStringBuilder builder = new(stackalloc char[256]);
+                        AppendFullName(ref builder); // see recursion comments in AppendFullName
+                        if (AssemblyName is not null)
+                        {
+                            builder.Append(", ");
+                            AssemblyName.AppendFullName(ref builder);
+                        }
+                        _assemblyQualifiedName = builder.ToString();
+
+                        if (AssemblyName is null)
+                        {
+                            // If the type name was not created from a assembly-qualified name,
+                            // the FullName and AssemblyQualifiedName are the same.
+                            _fullName = _assemblyQualifiedName;
+                        }
+                    }
+                }
+
+                return _assemblyQualifiedName;
+            }
+        }
 
         /// <summary>
         /// Returns assembly name which contains this type, or null if this <see cref="TypeName"/> was not
@@ -142,38 +174,11 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                // This is a recursive method over potentially hostile input. Protection against DoS is offered
-                // via the [Try]Parse method and TypeNameParserOptions.MaxNodes property at construction time.
-                // This FullName property getter and related methods assume that this TypeName instance has an
-                // acceptable node count.
-                //
-                // The node count controls the total amount of work performed by this method, including:
-                // - The max possible stack depth due to the recursive methods calls; and
-                // - The total number of bytes allocated by this function. For a deeply-nested TypeName
-                //   object, the total allocation across the full object graph will be
-                //   O(FullName.Length * GetNodeCount()).
-
                 if (_fullName is null)
                 {
-                    if (IsConstructedGenericType)
-                    {
-                        _fullName = TypeNameParserHelpers.GetGenericTypeFullName(GetGenericTypeDefinition().FullName.AsSpan(),
-#if SYSTEM_PRIVATE_CORELIB
-                            CollectionsMarshal.AsSpan(_genericArguments));
-#else
-                            _genericArguments.AsSpan());
-#endif
-                    }
-                    else if (IsArray || IsPointer || IsByRef)
-                    {
-                        ValueStringBuilder builder = new(stackalloc char[128]);
-                        builder.Append(GetElementType().FullName);
-                        _fullName = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
-                    }
-                    else
-                    {
-                        Debug.Fail("Pre-allocated full name should have been provided in the ctor");
-                    }
+                    ValueStringBuilder builder = new(stackalloc char[128]);
+                    AppendFullName(ref builder);
+                    _fullName = builder.ToString();
                 }
                 else if (_nestedNameLength > 0 && _fullName.Length > _nestedNameLength) // Declaring types
                 {
@@ -183,6 +188,58 @@ namespace System.Reflection.Metadata
                 }
 
                 return _fullName!;
+            }
+        }
+
+        private void AppendFullName(ref ValueStringBuilder builder)
+        {
+            // This is a recursive method over potentially hostile input. Protection against DoS is offered
+            // via the [Try]Parse method and TypeNameParserOptions.MaxNodes property at construction time.
+            // This FullName property getter and related methods assume that this TypeName instance has an
+            // acceptable node count.
+            //
+            // The node count controls the total amount of work performed by this method, including:
+            // - The max possible stack depth due to the recursive methods calls.
+
+            if (_fullName is null)
+            {
+                if (IsConstructedGenericType)
+                {
+                    GetGenericTypeDefinition().AppendFullName(ref builder);
+                    builder.Append('[');
+                    foreach (TypeName genericArg in GetGenericArguments())
+                    {
+                        builder.Append('[');
+                        genericArg.AppendFullName(ref builder);
+                        // Generic arguments need to be always fully qualified.
+                        if (genericArg.AssemblyName is not null)
+                        {
+                            builder.Append(", ");
+                            genericArg.AssemblyName.AppendFullName(ref builder);
+                        }
+                        builder.Append("],");
+                    }
+                    builder[builder.Length - 1] = ']'; // replace ',' with ']'
+                }
+                else if (IsArray || IsPointer || IsByRef)
+                {
+                    GetElementType().AppendFullName(ref builder);
+                    TypeNameParserHelpers.AppendRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
+                }
+                else
+                {
+                    Debug.Fail("Pre-allocated full name should have been provided in the ctor");
+                }
+            }
+            else if (_nestedNameLength > 0 && _fullName.Length > _nestedNameLength) // Declaring types
+            {
+                // Stored fullName represents the full name of the nested type.
+                // Example: Namespace.Declaring+Nested
+                builder.Append(_fullName.AsSpan(0, _nestedNameLength));
+            }
+            else
+            {
+                builder.Append(_fullName);
             }
         }
 
@@ -258,45 +315,51 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                // Lookups to Name and FullName might be recursive. See comments in FullName property getter.
-
                 if (_name is null)
                 {
-                    if (IsConstructedGenericType)
-                    {
-                        _name = GetGenericTypeDefinition().Name;
-                    }
-                    else if (IsPointer || IsByRef || IsArray)
-                    {
-                        ValueStringBuilder builder = new(stackalloc char[64]);
-                        builder.Append(GetElementType().Name);
-                        _name = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
-                    }
-                    else
-                    {
-                        // _fullName can be null only in constructed generic or modified types, which we handled above.
-                        Debug.Assert(_fullName is not null);
-                        ReadOnlySpan<char> name = _fullName.AsSpan();
-                        if (_nestedNameLength > 0)
-                        {
-                            name = name.Slice(0, _nestedNameLength);
-                        }
-                        if (IsNested)
-                        {
-                            // If the type is nested, we know the length of the declaring type's full name.
-                            // Get the characters after that plus one for the '+' separator.
-                            name = name.Slice(_declaringType._nestedNameLength + 1);
-                        }
-                        else if (TypeNameParserHelpers.IndexOfNamespaceDelimiter(name) is int idx && idx >= 0)
-                        {
-                            // If the type is not nested, find the namespace delimiter in the full name and return the substring after it.
-                            name = name.Slice(idx + 1);
-                        }
-                        _name = name.ToString();
-                    }
+                    ValueStringBuilder builder = new(stackalloc char[64]);
+                    AppendName(ref builder);
+                    _name = builder.ToString();
                 }
 
                 return _name;
+            }
+        }
+
+        private void AppendName(ref ValueStringBuilder builder)
+        {
+            // Lookups to Name and FullName might be recursive. See comments in AppendFullName method.
+
+            if (IsConstructedGenericType)
+            {
+                GetGenericTypeDefinition().AppendName(ref builder);
+            }
+            else if (IsPointer || IsByRef || IsArray)
+            {
+                GetElementType().AppendName(ref builder);
+                TypeNameParserHelpers.AppendRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
+            }
+            else
+            {
+                // _fullName can be null only in constructed generic or modified types, which we handled above.
+                Debug.Assert(_fullName is not null);
+                ReadOnlySpan<char> name = _fullName.AsSpan();
+                if (_nestedNameLength > 0)
+                {
+                    name = name.Slice(0, _nestedNameLength);
+                }
+                if (IsNested)
+                {
+                    // If the type is nested, we know the length of the declaring type's full name.
+                    // Get the characters after that plus one for the '+' separator.
+                    name = name.Slice(_declaringType._nestedNameLength + 1);
+                }
+                else if (TypeNameParserHelpers.IndexOfNamespaceDelimiter(name) is int idx && idx >= 0)
+                {
+                    // If the type is not nested, find the namespace delimiter in the full name and return the substring after it.
+                    name = name.Slice(idx + 1);
+                }
+                builder.Append(name);
             }
         }
 

@@ -289,7 +289,7 @@ public:
 #endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    PatchpointInfo * GetOSRInfo(unsigned * ilOffset) const;
+    PatchpointInfo * GetOSRInfo(unsigned * ilOffset);
 #endif
 
 private:

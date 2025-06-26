@@ -174,7 +174,7 @@ WaitForGC
         EPILOG_RETURN
 ThrowThreadAbort
         POP_PROBE_FRAME
-        EPILOG_NOP mov w0, #STATUS_REDHAWK_THREAD_ABORT
+        EPILOG_NOP mov w0, #STATUS_NATIVEAOT_THREAD_ABORT
         EPILOG_NOP mov x1, lr ;; return address as exception PC
         EPILOG_NOP b RhpThrowHwEx
     NESTED_END RhpWaitForGC

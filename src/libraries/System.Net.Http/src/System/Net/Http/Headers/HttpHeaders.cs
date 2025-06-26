@@ -266,24 +266,34 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
+            var vsb = new ValueStringBuilder(stackalloc char[512]);
+            Dump(ref vsb, indentLines: false);
+            return vsb.ToString();
+        }
+
+        internal void Dump(ref ValueStringBuilder builder, bool indentLines)
+        {
             // Return all headers as string similar to:
             // HeaderName1: Value1, Value2
             // HeaderName2: Value1
             // ...
 
-            var vsb = new ValueStringBuilder(stackalloc char[512]);
-
             foreach (HeaderEntry entry in GetEntries())
             {
-                vsb.Append(entry.Key.Name);
-                vsb.Append(": ");
+                if (indentLines)
+                {
+                    builder.Append("  ");
+                }
+
+                builder.Append(entry.Key.Name);
+                builder.Append(": ");
 
                 GetStoreValuesAsStringOrStringArray(entry.Key, entry.Value, out string? singleValue, out string[]? multiValue);
                 Debug.Assert(singleValue is not null ^ multiValue is not null);
 
                 if (singleValue is not null)
                 {
-                    vsb.Append(singleValue);
+                    builder.Append(singleValue);
                 }
                 else
                 {
@@ -292,18 +302,16 @@ namespace System.Net.Http.Headers
                     string separator = entry.Key.Separator;
 
                     Debug.Assert(multiValue is not null && multiValue.Length > 0);
-                    vsb.Append(multiValue[0]);
+                    builder.Append(multiValue[0]);
                     for (int i = 1; i < multiValue.Length; i++)
                     {
-                        vsb.Append(separator);
-                        vsb.Append(multiValue[i]);
+                        builder.Append(separator);
+                        builder.Append(multiValue[i]);
                     }
                 }
 
-                vsb.Append(Environment.NewLine);
+                builder.Append(Environment.NewLine);
             }
-
-            return vsb.ToString();
         }
 
         internal string GetHeaderString(HeaderDescriptor descriptor)
@@ -798,7 +806,7 @@ namespace System.Net.Http.Headers
             Debug.Assert(Monitor.IsEntered(info));
             if (descriptor.Parser == null)
             {
-                if (HttpRuleParser.ContainsNewLine(rawValue))
+                if (HttpRuleParser.ContainsNewLineOrNull(rawValue))
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_no_newlines, descriptor.Name, rawValue));
                     AddInvalidValue(info, rawValue);
@@ -1016,8 +1024,8 @@ namespace System.Net.Http.Headers
             if (descriptor.Parser == null)
             {
                 // If we don't have a parser for the header, we consider the value valid if it doesn't contains
-                // newline characters. We add the values as "parsed value". Note that we allow empty values.
-                CheckContainsNewLine(value);
+                // newline or \0 characters. We add the values as "parsed value". Note that we allow empty values.
+                CheckContainsNewLineOrNull(value);
                 AddParsedValue(info, value ?? string.Empty);
                 return;
             }
@@ -1119,16 +1127,16 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        internal static void CheckContainsNewLine(string? value)
+        internal static void CheckContainsNewLineOrNull(string? value)
         {
             if (value == null)
             {
                 return;
             }
 
-            if (HttpRuleParser.ContainsNewLine(value))
+            if (HttpRuleParser.ContainsNewLineOrNull(value))
             {
-                throw new FormatException(SR.net_http_headers_no_newlines);
+                throw new FormatException(SR.net_http_headers_no_newlines_no_nul);
             }
         }
 
@@ -1427,7 +1435,7 @@ namespace System.Net.Http.Headers
             }
             else if (store is not null)
             {
-                valueRef = ref CollectionsMarshal.GetValueRefOrNullRef(Unsafe.As<Dictionary<HeaderDescriptor, object>>(store), key);
+                valueRef = ref CollectionsMarshal.GetValueRefOrNullRef((Dictionary<HeaderDescriptor, object>)store, key);
             }
 
             return ref valueRef;
@@ -1572,7 +1580,7 @@ namespace System.Net.Http.Headers
             }
             else if (store is not null)
             {
-                removed = Unsafe.As<Dictionary<HeaderDescriptor, object>>(store).Remove(key);
+                removed = ((Dictionary<HeaderDescriptor, object>)store).Remove(key);
             }
 
             if (removed)

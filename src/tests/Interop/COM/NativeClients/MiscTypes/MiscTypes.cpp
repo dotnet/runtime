@@ -89,6 +89,23 @@ struct VariantMarshalTest
     }
 };
 
+class InterfaceImpl :
+    public UnknownImpl,
+    public IInterface2
+{
+public: // IInterface1
+public: // IInterface2
+public: // IUnknown
+    STDMETHOD(QueryInterface)(
+        /* [in] */ REFIID riid,
+        /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
+    {
+        return DoQueryInterface(riid, ppvObject, static_cast<IInterface1 *>(this), static_cast<IInterface2 *>(this));
+    }
+
+    DEFINE_REF_COUNTING();
+};
+
 void ValidationTests()
 {
     ::printf(__FUNCTION__ "() through CoCreateInstance...\n");
@@ -334,30 +351,11 @@ void ValidationTests()
 
     ::printf("-- Interfaces...\n");
     {
-        struct InterfaceImpl : IInterface2
-        {
-            STDMETHOD(QueryInterface)(REFIID riid, void** ppvObject) override
-            {
-                if (riid == __uuidof(IInterface1) || riid == __uuidof(IInterface2))
-                {
-                    *ppvObject = static_cast<IInterface2*>(this);
-                }
-                else if (riid == __uuidof(IUnknown))
-                {
-                    *ppvObject = static_cast<IUnknown*>(this);
-                }
-                else
-                {
-                    *ppvObject = nullptr;
-                    return E_NOINTERFACE;
-                }
-                return S_OK;
-            }
-            STDMETHOD_(ULONG, AddRef)() override { return 1; }
-            STDMETHOD_(ULONG, Release)() override { return 1; }
-        } iface{};
+        ComSmartPtr<InterfaceImpl> iface;
+        iface.Attach(new InterfaceImpl());
+
         ComSmartPtr<IInterface2> result;
-        HRESULT hr = miscTypesTesting->Marshal_Interface(&iface, &result);
+        HRESULT hr = miscTypesTesting->Marshal_Interface(iface, &result);
         THROW_IF_FAILED(hr);
     }
 }

@@ -27,9 +27,9 @@ namespace System
             Debug.Assert(strA.Length == strB.Length);
 
             return SpanHelpers.SequenceEqual(
-                    ref Unsafe.As<char, byte>(ref strA.GetRawStringData()),
-                    ref Unsafe.As<char, byte>(ref strB.GetRawStringData()),
-                    ((uint)strA.Length) * sizeof(char));
+                ref strA.GetRawStringDataAsUInt8(),
+                ref strB.GetRawStringDataAsUInt8(),
+                ((uint)strA.Length) * sizeof(char));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -539,7 +539,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if ((object)this == (object)value)
+            if (ReferenceEquals(this, value))
             {
                 CheckStringComparison(comparisonType);
                 return true;
@@ -580,7 +580,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if ((object)this == (object)value)
+            if (ReferenceEquals(this, value))
             {
                 return true;
             }
@@ -1108,7 +1108,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if ((object)this == (object)value)
+            if (ReferenceEquals(this, value))
             {
                 CheckStringComparison(comparisonType);
                 return true;
@@ -1138,8 +1138,8 @@ namespace System
                     return (value.Length == 1) ?
                             true :                 // First char is the same and thats all there is to compare
                             SpanHelpers.SequenceEqual(
-                                ref Unsafe.As<char, byte>(ref this.GetRawStringData()),
-                                ref Unsafe.As<char, byte>(ref value.GetRawStringData()),
+                                ref this.GetRawStringDataAsUInt8(),
+                                ref value.GetRawStringDataAsUInt8(),
                                 ((nuint)value.Length) * 2);
 
                 case StringComparison.OrdinalIgnoreCase:
@@ -1158,7 +1158,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if ((object)this == (object)value)
+            if (ReferenceEquals(this, value))
             {
                 return true;
             }

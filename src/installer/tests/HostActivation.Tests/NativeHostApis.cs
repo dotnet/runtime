@@ -238,6 +238,32 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        public void Hostfxr_resolve_sdk2_GlobalJson_Paths()
+        {
+            // With global.json specifying custom search paths, no version.
+            // Return first search location match (latest in that location).
+
+            var f = sharedTestState.SdkAndFrameworkFixture;
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(workingDir)))
+            {
+                string globalJson = GlobalJson.Write(workingDir.Location, new GlobalJson.Sdk() { Paths = [ f.SelfRegistered, f.LocalSdkDir ] });
+                string expectedData = string.Join(';', new[]
+                {
+                    ("resolved_sdk_dir", Path.Combine(f.SelfRegisteredGlobalSdkDir, "15.1.4-preview")),
+                    ("global_json_path", globalJson)
+                });
+
+                string api = ApiNames.hostfxr_resolve_sdk2;
+                TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "0")
+                    .EnableTracingAndCaptureOutputs()
+                    .Execute()
+                    .Should().Pass()
+                    .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
+                    .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
+            }
+        }
+
+        [Fact]
         public void Hostfxr_corehost_set_error_writer_test()
         {
             TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, "Test_hostfxr_set_error_writer")
@@ -412,9 +438,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void Hostfxr_resolve_frameworks_for_runtime_config(bool isMissing)
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public void Hostfxr_resolve_frameworks_for_runtime_config(bool isMissing, bool withUtf8Bom)
         {
             string api = ApiNames.hostfxr_resolve_frameworks_for_runtime_config;
             using (TestArtifact artifact = TestArtifact.Create(api))
@@ -423,7 +451,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 string configPath = Path.Combine(artifact.Location, "test.runtimeconfig.json");
                 RuntimeConfig.FromFile(configPath)
                     .WithFramework(requested.Name, requested.Version)
-                    .Save();
+                    .Save(withUtf8Bom);
 
                 var builder = new DotNetBuilder(artifact.Location, TestContext.BuiltDotNet.BinPath, "dotnet");
                 if (!isMissing)

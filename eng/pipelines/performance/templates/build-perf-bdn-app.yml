@@ -85,9 +85,8 @@ steps:
   - script: |
       echo '{ }' > ./global.json
       curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/${{parameters.framework}}/NuGet.config'
-      curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
-      curl -Lo performance-version-details.xml 'https://raw.githubusercontent.com/dotnet/performance/${{parameters.perfBranch}}/eng/Version.Details.xml'
-      version=$(sed -nr 's/[[:space:]]*<Dependency Name="Microsoft.NET.Sdk" Version="(.*)"[[:space:]].*/\1/p' ./performance-version-details.xml)
+      curl -o dotnet-install.sh 'https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh'
+      version=$(sed -nr 's/[[:space:]]*<Dependency Name="Microsoft.NET.Sdk" Version="([^"]*)"[[:space:]]?.*/\1/p' ./performance/eng/Version.Details.xml)
       echo dotnet-version: $version
       chmod -R a+rx .
       ./dotnet-install.sh --version $version --install-dir .

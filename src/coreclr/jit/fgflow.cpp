@@ -182,6 +182,7 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
             // Copy likelihood from old edge.
             //
             flow->setLikelihood(oldEdge->getLikelihood());
+            flow->setHeuristicBased(oldEdge->isHeuristicBased());
         }
     }
 
@@ -287,7 +288,7 @@ FlowEdge* Compiler::fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred
 //
 void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 {
-    PREFIX_ASSUME(block != nullptr);
+    assert(block != nullptr);
 
     switch (block->GetKind())
     {

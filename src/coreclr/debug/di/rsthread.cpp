@@ -633,7 +633,7 @@ void CordbThread::RefreshHandle(HANDLE * phThread)
     HANDLE hThread = pDAC->GetThreadHandle(m_vmThreadToken);
 
     _ASSERTE(hThread != INVALID_HANDLE_VALUE);
-    PREFAST_ASSUME(hThread != NULL);
+    _ASSERTE(hThread != NULL);
 
     // need to dup handle here
     if (hThread == m_hCachedOutOfProcThread)
@@ -3125,7 +3125,7 @@ HRESULT CordbUnmanagedThread::SetTlsSlot(DWORD slot, REMOTE_PTR value)
     return S_OK;
 }
 
-// gets the value of gCurrentThreadInfo.m_pThread
+// gets the value of t_CurrentThreadInfo.m_pThread
 DWORD_PTR CordbUnmanagedThread::GetEEThreadValue()
 {
     DWORD_PTR ret = NULL;
@@ -3152,7 +3152,7 @@ DWORD_PTR CordbUnmanagedThread::GetEEThreadValue()
     return ret;
 }
 
-// returns the remote address of gCurrentThreadInfo
+// returns the remote address of t_CurrentThreadInfo
 HRESULT CordbUnmanagedThread::GetClrModuleTlsDataAddress(REMOTE_PTR* pAddress)
 {
     *pAddress = NULL;
@@ -3376,7 +3376,7 @@ bool CordbUnmanagedThread::IsCantStop()
     {
         _ASSERTE(!"IsCantStop: Failed updating debugger control block");
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     // Helper's canary thread is always can't-stop.
     if (this->m_id == GetProcess()->GetDCB()->m_CanaryThreadId)
@@ -3721,9 +3721,14 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
     LOG((LF_CORDB, LL_INFO10000, "CUT::SFCHFS: hijackCtx started as:\n"));
     LogContext(GetHijackCtx());
 
-    // Save the thread's full context.
+    // Save the thread's full context + DT_CONTEXT_EXTENDED_REGISTERS
+    // to avoid getting incomplete information and corrupt the thread context
     DT_CONTEXT context;
+#if defined(DT_CONTEXT_EXTENDED_REGISTERS)
+    context.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_EXTENDED_REGISTERS;
+#else
     context.ContextFlags = DT_CONTEXT_FULL;
+#endif
     BOOL succ = DbiGetThreadContext(m_handle, &context);
     _ASSERTE(succ);
     // for debugging when GetThreadContext fails
@@ -3732,8 +3737,11 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
         DWORD error = GetLastError();
         LOG((LF_CORDB, LL_ERROR, "CUT::SFCHFS: DbiGetThreadContext error=0x%x\n", error));
     }
-
+#if defined(DT_CONTEXT_EXTENDED_REGISTERS)
+    GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_EXTENDED_REGISTERS;
+#else
     GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL;
+#endif
     CORDbgCopyThreadContext(GetHijackCtx(), &context);
     LOG((LF_CORDB, LL_INFO10000, "CUT::SFCHFS: thread=0x%x Hijacking for sync. Original context is:\n", this));
     LogContext(GetHijackCtx());
@@ -5893,7 +5901,7 @@ CORDB_ADDRESS CordbNativeFrame::GetLSStackAddress(
         // This should never be null as long as regNum is a member of the RegNum enum.
         // If it is, an AV dereferencing a null-pointer in retail builds, or an assert in debug
         // builds is exactly the behavior we want.
-        PREFIX_ASSUME(pRegAddr != NULL);
+        _ASSERTE(pRegAddr != NULL);
 
         pRemoteValue = PTR_TO_CORDB_ADDRESS(*pRegAddr + offset);
     }
@@ -10560,7 +10568,7 @@ HRESULT CordbEval::GetResult(ICorDebugValue **ppResult)
         {
             pAppDomain = m_thread->GetAppDomain();
         }
-        PREFIX_ASSUME(pAppDomain != NULL);
+        _ASSERTE(pAppDomain != NULL);
 
         CordbType * pType = NULL;
         hr = CordbType::TypeDataToType(pAppDomain, &m_resultType, &pType);

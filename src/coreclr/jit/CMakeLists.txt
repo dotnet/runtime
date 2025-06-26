@@ -60,7 +60,7 @@ function(create_standalone_jit)
   add_jit(${TARGETDETAILS_TARGET})
 
   set_target_definitions_to_custom_os_and_arch(${ARGN})
-  set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_FEATURE_MERGE_JIT_AND_ENGINE TRUE)
+  set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_FEATURE_STATICALLY_LINKED TRUE)
 
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_NO_HOST)
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE SELF_NO_HOST)
@@ -89,6 +89,7 @@ set( JIT_SOURCES
   abi.cpp
   alloc.cpp
   assertionprop.cpp
+  async.cpp
   bitset.cpp
   block.cpp
   buildstring.cpp
@@ -159,10 +160,10 @@ set( JIT_SOURCES
   promotiondecomposition.cpp
   promotionliveness.cpp
   rangecheck.cpp
+  rangecheckcloning.cpp
   rationalize.cpp
   redundantbranchopts.cpp
   regalloc.cpp
-  registerargconvention.cpp
   regMaskTPOps.cpp
   regset.cpp
   scev.cpp
@@ -286,6 +287,7 @@ set( JIT_HEADERS
   abi.h
   alloc.h
   arraystack.h
+  async.h
   bitset.h
   layout.h
   bitsetasshortlong.h
@@ -356,9 +358,9 @@ set( JIT_HEADERS
   priorityqueue.h
   promotion.h
   rangecheck.h
+  rangecheckcloning.h
   rationalize.h
   regalloc.h
-  registerargconvention.h
   register.h
   regset.h
   scev.h
@@ -495,6 +497,9 @@ elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
 elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
   set(JIT_ARCH_SOURCES ${JIT_RISCV64_SOURCES})
   set(JIT_ARCH_HEADERS ${JIT_RISCV64_HEADERS})
+elseif(CLR_CMAKE_TARGET_ARCH_WASM)
+  set(JIT_ARCH_SOURCES ${JIT_WASM32_SOURCES})
+  set(JIT_ARCH_HEADERS ${JIT_WASM32_HEADERS})
 else()
   clr_unknown_arch()
 endif()
@@ -502,7 +507,7 @@ endif()
 
 set(JIT_DLL_MAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/dllmain.cpp)
 
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_HOST_WIN32)
   set(CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.exports)
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/ClrJit.exports.def)
   preprocess_file (${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
@@ -527,6 +532,7 @@ add_custom_target(jit_exports DEPENDS ${JIT_EXPORTS_FILE})
 
 set(JIT_LINK_LIBRARIES
    utilcodestaticnohost
+   minipal
 )
 
 set(JIT_ARCH_LINK_LIBRARIES
@@ -557,6 +563,10 @@ else()
        coreclrminipal
     )
 endif(CLR_CMAKE_HOST_UNIX)
+
+if (CLR_CMAKE_HOST_ANDROID)
+    list(APPEND JIT_LINK_LIBRARIES log)
+endif()
 
 # Shared function for generating JIT
 function(add_jit jitName)

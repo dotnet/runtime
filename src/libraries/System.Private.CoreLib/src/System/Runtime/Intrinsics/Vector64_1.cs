@@ -528,7 +528,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Alignment" />
         static int ISimdVector<Vector64<T>, T>.Alignment => Vector64.Alignment;
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.Count" />
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ElementCount" />
         static int ISimdVector<Vector64<T>, T>.ElementCount => Vector64<T>.Count;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsHardwareAccelerated" />

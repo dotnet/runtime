@@ -28,7 +28,8 @@ namespace Microsoft.Extensions.Caching.Memory
         private readonly MemoryCacheOptions _options;
 
         private readonly List<WeakReference<Stats>>? _allStats;
-        private readonly Stats? _accumulatedStats;
+        private long _accumulatedHits;
+        private long _accumulatedMisses;
         private readonly ThreadLocal<Stats>? _stats;
         private CoherentState _coherentState;
         private bool _disposed;
@@ -48,8 +49,8 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="loggerFactory">The factory used to create loggers.</param>
         public MemoryCache(IOptions<MemoryCacheOptions> optionsAccessor, ILoggerFactory loggerFactory)
         {
-            ThrowHelper.ThrowIfNull(optionsAccessor);
-            ThrowHelper.ThrowIfNull(loggerFactory);
+            ArgumentNullException.ThrowIfNull(optionsAccessor);
+            ArgumentNullException.ThrowIfNull(loggerFactory);
 
             _options = optionsAccessor.Value;
             _logger = loggerFactory.CreateLogger<MemoryCache>();
@@ -59,7 +60,6 @@ namespace Microsoft.Extensions.Caching.Memory
             if (_options.TrackStatistics)
             {
                 _allStats = new List<WeakReference<Stats>>();
-                _accumulatedStats = new Stats();
                 _stats = new ThreadLocal<Stats>(() => new Stats(this));
             }
 
@@ -99,7 +99,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public ICacheEntry CreateEntry(object key)
         {
             CheckDisposed();
-            ValidateCacheKey(key);
+            ArgumentNullException.ThrowIfNull(key);
 
             return new CacheEntry(key, this);
         }
@@ -204,16 +204,69 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <inheritdoc />
         public bool TryGetValue(object key, out object? result)
         {
-            ThrowHelper.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(key);
 
             CheckDisposed();
-
-            DateTime utcNow = UtcNow;
-
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
-            if (coherentState.TryGetValue(key, out CacheEntry? tmp))
+            coherentState.TryGetValue(key, out CacheEntry? entry); // note we rely on documented "default when fails" contract re the out
+            return PostProcessTryGetValue(coherentState, entry, out result);
+        }
+
+#if NET9_0_OR_GREATER
+        /// <summary>
+        /// Gets the item associated with this key if present.
+        /// </summary>
+        /// <param name="key">A character span corresponding to a <see cref="string"/> identifying the requested entry.</param>
+        /// <param name="value">The located value or null.</param>
+        /// <returns>True if the key was found.</returns>
+        /// <remarks>This method allows values with <see cref="string"/> keys to be queried by content without allocating a new <see cref="string"/> instance.</remarks>
+        [OverloadResolutionPriority(1)]
+        public bool TryGetValue(ReadOnlySpan<char> key, out object? value)
+        {
+            CheckDisposed();
+            CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
+            coherentState.TryGetValue(key, out CacheEntry? entry); // note we rely on documented "default when fails" contract re the out
+            return PostProcessTryGetValue(coherentState, entry, out value);
+        }
+
+        /// <summary>
+        /// Gets the item associated with this key if present.
+        /// </summary>
+        /// <param name="key">A character span corresponding to a <see cref="string"/> identifying the requested entry.</param>
+        /// <param name="value">The located value or null.</param>
+        /// <returns>True if the key was found.</returns>
+        /// <remarks>This method allows values with <see cref="string"/> keys to be queried by content without allocating a new <see cref="string"/> instance.</remarks>
+        [OverloadResolutionPriority(1)]
+        public bool TryGetValue<TItem>(ReadOnlySpan<char> key, out TItem? value)
+        {
+            // this implementation intentionally based on (and consistent with) CacheExtensions.TryGetValue<TItem>
+            if (TryGetValue(key, out object? untyped))
             {
-                CacheEntry entry = tmp;
+                if (untyped == null)
+                {
+                    value = default;
+                    return true;
+                }
+
+                if (untyped is TItem item)
+                {
+                    value = item;
+                    return true;
+                }
+            }
+
+            value = default;
+            return false;
+
+        }
+#endif
+
+        private bool PostProcessTryGetValue(CoherentState coherentState, CacheEntry? entry, out object? result)
+        {
+            // shared "get value" logic
+            DateTime utcNow = UtcNow;
+            if (entry is not null)
+            {
                 // Check if expired due to expiration tokens, timers, etc. and if so, remove it.
                 // Allow a stale Replaced value to be returned due to concurrent calls to SetExpired during SetEntry.
                 if (!entry.CheckExpired(utcNow) || entry.EvictionReason == EvictionReason.Replaced)
@@ -230,7 +283,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
                     StartScanForExpiredItemsIfNeeded(utcNow);
                     // Hit
-                    if (_allStats is not null)
+                    if (_stats is not null)
                     {
                         if (IntPtr.Size == 4)
                             Interlocked.Increment(ref GetStats().Hits);
@@ -251,7 +304,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             result = null;
             // Miss
-            if (_allStats is not null)
+            if (_stats is not null)
             {
                 if (IntPtr.Size == 4)
                     Interlocked.Increment(ref GetStats().Misses);
@@ -265,7 +318,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <inheritdoc />
         public void Remove(object key)
         {
-            ThrowHelper.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(key);
 
             CheckDisposed();
 
@@ -314,7 +367,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     TotalMisses = sumTotal.miss,
                     TotalHits = sumTotal.hit,
                     CurrentEntryCount = Count,
-                    CurrentEstimatedSize = _options.SizeLimit.HasValue ? Size : null
+                    CurrentEstimatedSize = _options.HasSizeLimit ? Size : null
                 };
             }
 
@@ -350,15 +403,15 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             lock (_allStats!)
             {
-                long hits = _accumulatedStats!.Hits;
-                long misses = _accumulatedStats.Misses;
+                long hits = _accumulatedHits;
+                long misses = _accumulatedMisses;
 
                 foreach (WeakReference<Stats> wr in _allStats)
                 {
                     if (wr.TryGetTarget(out Stats? stats))
                     {
-                        hits += Interlocked.Read(ref stats.Hits);
-                        misses += Interlocked.Read(ref stats.Misses);
+                        hits += Volatile.Read(ref stats.Hits);
+                        misses += Volatile.Read(ref stats.Misses);
                     }
                 }
 
@@ -370,11 +423,9 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal sealed class Stats
         {
-            private readonly MemoryCache? _memoryCache;
+            private readonly MemoryCache _memoryCache;
             public long Hits;
             public long Misses;
-
-            public Stats() { }
 
             public Stats(MemoryCache memoryCache)
             {
@@ -382,25 +433,23 @@ namespace Microsoft.Extensions.Caching.Memory
                 _memoryCache.AddToStats(this);
             }
 
-            ~Stats() => _memoryCache?.RemoveFromStats(this);
+            ~Stats() => _memoryCache.RemoveFromStats(this);
         }
 
         private void RemoveFromStats(Stats current)
         {
             lock (_allStats!)
             {
-                for (int i = 0; i < _allStats.Count; i++)
-                {
-                    if (!_allStats[i].TryGetTarget(out Stats? stats))
-                    {
-                        _allStats.RemoveAt(i);
-                        i--;
-                    }
-                }
+                _accumulatedHits += Volatile.Read(ref current.Hits);
+                _accumulatedMisses += Volatile.Read(ref current.Misses);
 
-                _accumulatedStats!.Hits += Interlocked.Read(ref current.Hits);
-                _accumulatedStats.Misses += Interlocked.Read(ref current.Misses);
-                _allStats.TrimExcess();
+                List<WeakReference<Stats>> all = _allStats;
+                for (int i = all.Count - 1; i >= 0; i--)
+                {
+                    if (!all[i].TryGetTarget(out _))
+                        all.RemoveAt(i);
+                }
+                all.TrimExcess();
             }
         }
 
@@ -481,7 +530,7 @@ namespace Microsoft.Extensions.Caching.Memory
             // If there is already a thread that is running compact - do nothing
             if (Interlocked.CompareExchange(ref lockFlag, 1, 0) == 0)
                 // Spawn background thread for compaction
-                ThreadPool.QueueUserWorkItem(s =>
+                ThreadPool.UnsafeQueueUserWorkItem(static s =>
                 {
                     try
                     {
@@ -489,7 +538,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     }
                     finally
                     {
-                        lockFlag = 0; // Release the lock
+                        ((MemoryCache)s!).lockFlag = 0; // Release the lock
                     }
                 }, this);
         }
@@ -534,9 +583,9 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             var entriesToRemove = new List<CacheEntry>();
             // cache LastAccessed outside of the CacheEntry so it is stable during compaction
-            var lowPriEntries = new List<(CacheEntry entry, DateTimeOffset lastAccessed)>();
-            var normalPriEntries = new List<(CacheEntry entry, DateTimeOffset lastAccessed)>();
-            var highPriEntries = new List<(CacheEntry entry, DateTimeOffset lastAccessed)>();
+            var lowPriEntries = new List<(CacheEntry entry, DateTime lastAccessed)>();
+            var normalPriEntries = new List<(CacheEntry entry, DateTime lastAccessed)>();
+            var highPriEntries = new List<(CacheEntry entry, DateTime lastAccessed)>();
             long removedSize = 0;
 
             // Sort items by expired & priority status
@@ -583,7 +632,7 @@ namespace Microsoft.Extensions.Caching.Memory
             // ?. Items with the soonest absolute expiration.
             // ?. Items with the soonest sliding expiration.
             // ?. Larger objects - estimated by object graph size, inaccurate.
-            static void ExpirePriorityBucket(ref long removedSize, long removalSizeTarget, Func<CacheEntry, long> computeEntrySize, List<CacheEntry> entriesToRemove, List<(CacheEntry Entry, DateTimeOffset LastAccessed)> priorityEntries)
+            static void ExpirePriorityBucket(ref long removedSize, long removalSizeTarget, Func<CacheEntry, long> computeEntrySize, List<CacheEntry> entriesToRemove, List<(CacheEntry Entry, DateTime LastAccessed)> priorityEntries)
             {
                 // Do we meet our quota by just removing expired entries?
                 if (removalSizeTarget <= removedSize)
@@ -646,11 +695,6 @@ namespace Microsoft.Extensions.Caching.Memory
             static void Throw() => throw new ObjectDisposedException(typeof(MemoryCache).FullName);
         }
 
-        private static void ValidateCacheKey(object key)
-        {
-            ThrowHelper.ThrowIfNull(key);
-        }
-
         /// <summary>
         /// Wrapper for the memory cache entries collection.
         ///
@@ -669,12 +713,32 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         private sealed class CoherentState
         {
+#if NET
+            private readonly ConcurrentDictionary<string, CacheEntry> _stringEntries = [];
+#else
             private readonly ConcurrentDictionary<string, CacheEntry> _stringEntries = new ConcurrentDictionary<string, CacheEntry>(StringKeyComparer.Instance);
-            private readonly ConcurrentDictionary<object, CacheEntry> _nonStringEntries = new ConcurrentDictionary<object, CacheEntry>();
+#endif
+            private readonly ConcurrentDictionary<object, CacheEntry> _nonStringEntries = [];
+
+#if NET9_0_OR_GREATER
+            private readonly ConcurrentDictionary<string, CacheEntry>.AlternateLookup<ReadOnlySpan<char>> _stringAltLookup;
+
+            public CoherentState()
+            {
+                _stringAltLookup = _stringEntries.GetAlternateLookup<ReadOnlySpan<char>>();
+            }
+#endif
+
             internal long _cacheSize;
 
             internal bool TryGetValue(object key, [NotNullWhen(true)] out CacheEntry? entry)
                 => key is string s ? _stringEntries.TryGetValue(s, out entry) : _nonStringEntries.TryGetValue(key, out entry);
+
+#if NET9_0_OR_GREATER
+            internal bool TryGetValue(ReadOnlySpan<char> key, [NotNullWhen(true)] out CacheEntry? entry)
+                => _stringAltLookup.TryGetValue(key, out entry);
+#endif
+
 
             internal bool TryRemove(object key, [NotNullWhen(true)] out CacheEntry? entry)
                 => key is string s ? _stringEntries.TryRemove(s, out entry) : _nonStringEntries.TryRemove(key, out entry);
@@ -713,29 +777,21 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
-            private ICollection<KeyValuePair<string, CacheEntry>> StringEntriesCollection => _stringEntries;
-            private ICollection<KeyValuePair<object, CacheEntry>> NonStringEntriesCollection => _nonStringEntries;
-
             internal int Count => _stringEntries.Count + _nonStringEntries.Count;
 
             internal long Size => Volatile.Read(ref _cacheSize);
 
             internal void RemoveEntry(CacheEntry entry, MemoryCacheOptions options)
             {
-                if (entry.Key is string s)
+#if NET
+                if (entry.Key is string s ? _stringEntries.TryRemove(KeyValuePair.Create(s, entry))
+                    : _nonStringEntries.TryRemove(KeyValuePair.Create(entry.Key, entry)))
+#else
+                if (entry.Key is string s ? ((ICollection<KeyValuePair<string, CacheEntry>>)_stringEntries).Remove(new KeyValuePair<string, CacheEntry>(s, entry))
+                    : ((ICollection<KeyValuePair<object, CacheEntry>>)_nonStringEntries).Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
+#endif
                 {
-                    if (StringEntriesCollection.Remove(new KeyValuePair<string, CacheEntry>(s, entry)))
-                    {
-                        if (options.SizeLimit.HasValue)
-                        {
-                            Interlocked.Add(ref _cacheSize, -entry.Size);
-                        }
-                        entry.InvokeEvictionCallbacks();
-                    }
-                }
-                else if (NonStringEntriesCollection.Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
-                {
-                    if (options.SizeLimit.HasValue)
+                    if (options.HasSizeLimit)
                     {
                         Interlocked.Add(ref _cacheSize, -entry.Size);
                     }
@@ -743,13 +799,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
-#if NETCOREAPP
-            // on .NET Core, the inbuilt comparer has Marvin built in; no need to intercept
-            private static class StringKeyComparer
-            {
-                internal static IEqualityComparer<string> Instance => EqualityComparer<string>.Default;
-            }
-#else
+#if !NET
+            // on .NET Core, the inbuilt comparer has Marvin built in;
             // otherwise, we need a custom comparer that manually implements Marvin
             private sealed class StringKeyComparer : IEqualityComparer<string>, IEqualityComparer
             {

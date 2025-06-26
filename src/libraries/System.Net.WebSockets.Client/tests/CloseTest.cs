@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 using Xunit;
 using Xunit.Abstractions;
+using Microsoft.DotNet.RemoteExecutor;
 
 namespace System.Net.WebSockets.Client.Tests
 {
@@ -510,5 +511,42 @@ namespace System.Net.WebSockets.Client.Tests
         [Theory, MemberData(nameof(EchoServers))]
         public Task CloseAsync_DuringConcurrentReceiveAsync_ExpectedStates(Uri server)
             => RunClient_CloseAsync_DuringConcurrentReceiveAsync_ExpectedStates(server);
+
+        // Regression test for https://github.com/dotnet/runtime/issues/80116.
+        [OuterLoop("Uses Task.Delay")]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task CloseHandshake_ExceptionsAreObserved()
+        {
+            await RemoteExecutor.Invoke(static (typeName) =>
+            {
+                CloseTest test = (CloseTest)Activator.CreateInstance(typeof(CloseTest).Assembly.GetType(typeName), new object[] { null });
+                using CancellationTokenSource timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
+
+                Exception unobserved = null;
+                TaskScheduler.UnobservedTaskException += (obj, args) =>
+                {
+                    unobserved = args.Exception;
+                };
+
+                TaskCompletionSource clientCompleted = new TaskCompletionSource();
+
+                return LoopbackWebSocketServer.RunAsync(async (clientWs, ct) =>
+                {
+                    await clientWs.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", ct);
+                    await clientWs.ReceiveAsync(new byte[16], ct);
+                    await Task.Delay(1500);
+                    GC.Collect(2);
+                    GC.WaitForPendingFinalizers();
+                    clientCompleted.SetResult();
+                    Assert.Null(unobserved);
+                },
+                async (serverWs, ct) =>
+                {
+                    await serverWs.ReceiveAsync(new byte[16], ct);
+                    await serverWs.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", ct);
+                    await clientCompleted.Task;
+                }, new LoopbackWebSocketServer.Options(HttpVersion.Version11, true, test.GetInvoker()), timeoutCts.Token);
+            }, GetType().FullName).DisposeAsync();
+        }
     }
 }

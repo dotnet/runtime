@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    public sealed unsafe partial class HttpListener : IDisposable
+    public sealed partial class HttpListener : IDisposable
     {
         public delegate ExtendedProtectionPolicy ExtendedProtectionSelector(HttpListenerRequest request);
 

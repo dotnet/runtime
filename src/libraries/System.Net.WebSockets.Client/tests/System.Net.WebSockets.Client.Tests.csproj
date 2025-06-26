@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
   </PropertyGroup>
@@ -48,6 +49,7 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\GenericLoopbackServer.cs" Link="Common\System\Net\Http\GenericLoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Prerequisites\NetCoreServer\Helpers\WebSocketEchoHelper.cs" Link="Common\System\Net\Prerequisites\NetCoreServer\Helpers\WebSocketEchoHelper.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Prerequisites\NetCoreServer\Helpers\WebSocketEchoOptions.cs" Link="Common\System\Net\Prerequisites\NetCoreServer\Helpers\WebSocketEchoOptions.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs" Link="Common\System\Net\RemoteExecutorExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateDelegatingStream.cs" Link="Common\System\IO\DelegateDelegatingStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs" Link="Common\System\IO\DelegateStream.cs" />

@@ -55,7 +55,5 @@ namespace System
             AppContext.OnProcessExit();
 #endif
         }
-
-        public static int TickCount => (int)TickCount64;
     }
 }

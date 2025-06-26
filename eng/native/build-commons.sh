@@ -63,6 +63,20 @@ build_native()
     # All set to commence the build
     echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__TargetArch.$__BuildType in $intermediatesDir"
 
+    SAVED_CFLAGS="${CFLAGS}"
+    SAVED_CXXFLAGS="${CXXFLAGS}"
+    SAVED_LDFLAGS="${LDFLAGS}"
+
+    # Let users provide additional compiler/linker flags via EXTRA_CFLAGS/EXTRA_CXXFLAGS/EXTRA_LDFLAGS.
+    # If users directly override CFLAG/CXXFLAGS/LDFLAGS, that may lead to some configure tests working incorrectly.
+    # See https://github.com/dotnet/runtime/issues/35727 for more information.
+    # 
+    # These flags MUST be exported before gen-buildsys.sh runs or cmake will ignore them
+    #
+    export CFLAGS="${CFLAGS} ${EXTRA_CFLAGS}"
+    export CXXFLAGS="${CXXFLAGS} ${EXTRA_CXXFLAGS}"
+    export LDFLAGS="${LDFLAGS} ${EXTRA_LDFLAGS}"
+
     if [[ "$targetOS" == osx || "$targetOS" == maccatalyst ]]; then
         if [[ "$hostArch" == x64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
@@ -194,17 +208,6 @@ build_native()
         return
     fi
 
-    SAVED_CFLAGS="${CFLAGS}"
-    SAVED_CXXFLAGS="${CXXFLAGS}"
-    SAVED_LDFLAGS="${LDFLAGS}"
-
-    # Let users provide additional compiler/linker flags via EXTRA_CFLAGS/EXTRA_CXXFLAGS/EXTRA_LDFLAGS.
-    # If users directly override CFLAG/CXXFLAGS/LDFLAGS, that may lead to some configure tests working incorrectly.
-    # See https://github.com/dotnet/runtime/issues/35727 for more information.
-    export CFLAGS="${CFLAGS} ${EXTRA_CFLAGS}"
-    export CXXFLAGS="${CXXFLAGS} ${EXTRA_CXXFLAGS}"
-    export LDFLAGS="${LDFLAGS} ${EXTRA_LDFLAGS}"
-
     local exit_code
     if [[ "$__StaticAnalyzer" == 1 ]]; then
         pushd "$intermediatesDir"
@@ -266,7 +269,7 @@ usage()
     echo "-gccx.y: optional argument to build using gcc version x.y."
     echo "-ninja: target ninja instead of GNU make"
     echo "-numproc: set the number of build processes."
-    echo "-outputrid: optional argument that overrides the target rid name."
+    echo "-targetrid: optional argument that overrides the target rid name."
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
     echo "-keepnativesymbols: keep native/unmanaged debug symbols."
@@ -286,7 +289,7 @@ source "$__RepoRootDir/eng/common/native/init-os-and-arch.sh"
 
 __TargetArch=$arch
 __TargetOS=$os
-__OutputRid=''
+__TargetRid=''
 
 # Get the number of processors available to the scheduler
 platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
@@ -458,12 +461,12 @@ while :; do
             __TargetArch=wasm
             ;;
 
-        outputrid|-outputrid)
+        targetrid|-targetrid|outputrid|-outputrid)
             if [[ -n "$2" ]]; then
-                __OutputRid="$2"
+                __TargetRid="$2"
                 shift
             else
-                echo "ERROR: 'outputrid' requires a non-empty option argument"
+                echo "ERROR: 'targetrid' requires a non-empty option argument"
                 exit 1
             fi
             ;;
@@ -564,15 +567,15 @@ fi
 
 # init the target distro name (__DistroRid) and target portable os (__PortableTargetOS).
 initTargetDistroRid
-if [ -z "$__OutputRid" ]; then
+if [ -z "$__TargetRid" ]; then
     if [[ "$__PortableBuild" == 0 ]]; then
-        __OutputRid="$__DistroRid"
+        __TargetRid="$__DistroRid"
     else
-        __OutputRid="$__PortableTargetOS-$__TargetArch"
+        __TargetRid="$__PortableTargetOS-$__TargetArch"
     fi
 fi
-export __OutputRid
-echo "__OutputRid: ${__OutputRid}"
+export __TargetRid
+echo "__TargetRid: ${__TargetRid}"
 
 # When the host runs on an unknown rid, it falls back to the output rid
-__HostFallbackOS="${__OutputRid%-*}" # Strip architecture
+__HostFallbackOS="${__TargetRid%-*}" # Strip architecture

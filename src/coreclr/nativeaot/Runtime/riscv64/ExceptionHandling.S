@@ -4,7 +4,7 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-#define STACKSIZEOF_ExInfo ((SIZEOF__ExInfo + 15)&(~15))
+#define STACKSIZEOF_ExInfo ((SIZEOF__ExInfo + 7) & ~7)
 
 #define HARDWARE_EXCEPTION 1
 #define SOFTWARE_EXCEPTION 0
@@ -560,7 +560,7 @@ LOCAL_LABEL(DonePopping):
         // It was the ThreadAbortException, so rethrow it
         // Reset SP
         mv  a1, a0  // a1 <- continuation address as exception PC
-        li  a0, STATUS_REDHAWK_THREAD_ABORT
+        li  a0, STATUS_NATIVEAOT_THREAD_ABORT
         mv  sp, a2
         tail  C_FUNC(RhpThrowHwEx)
 

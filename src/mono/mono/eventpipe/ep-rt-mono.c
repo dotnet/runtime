@@ -13,6 +13,7 @@
 #include <mono/metadata/profiler.h>
 #include <mono/mini/mini-runtime.h>
 #include <minipal/getexepath.h>
+#include <minipal/time.h>
 #include <runtime_version.h>
 #include <clretwallmain.h>
 
@@ -329,27 +330,19 @@ ep_rt_mono_thread_exited (void)
 	}
 }
 
-#ifdef HOST_WIN32
 int64_t
 ep_rt_mono_perf_counter_query (void)
 {
-	LARGE_INTEGER value;
-	if (QueryPerformanceCounter (&value))
-		return (int64_t)value.QuadPart;
-	else
-		return 0;
+	return minipal_hires_ticks();
 }
 
 int64_t
 ep_rt_mono_perf_frequency_query (void)
 {
-	LARGE_INTEGER value;
-	if (QueryPerformanceFrequency (&value))
-		return (int64_t)value.QuadPart;
-	else
-		return 0;
+	return minipal_hires_tick_frequency();
 }
 
+#ifdef HOST_WIN32
 void
 ep_rt_mono_system_time_get (EventPipeSystemTime *system_time)
 {
@@ -385,19 +378,12 @@ ep_rt_mono_system_timestamp_get (void)
 #include <sys/time.h>
 #endif // HAVE_SYS_TIME_H
 
-#if HAVE_MACH_ABSOLUTE_TIME
-#include <mach/mach_time.h>
-static mono_lazy_init_t _ep_rt_mono_time_base_info_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
-static mach_timebase_info_data_t _ep_rt_mono_time_base_info = {0};
-#endif
-
 #ifdef HAVE_LOCALTIME_R
 #define HAVE_GMTIME_R 1
 #endif
 
 static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
 static const int64_t SECS_TO_100NS = 10000000;
-static const int64_t SECS_TO_NS = 1000000000;
 static const int64_t MSECS_TO_MIS = 1000;
 
 /* clock_gettime () is found by configure on Apple builds, but its only present from ios 10, macos 10.12, tvos 10 and watchos 3 */
@@ -410,65 +396,10 @@ static const int64_t MISECS_TO_NS = 1000;
 #endif
 
 static
-void
-time_base_info_lazy_init (void);
-
-static
 int64_t
 system_time_to_int64 (
 	time_t sec,
 	long nsec);
-
-#if HAVE_MACH_ABSOLUTE_TIME
-static
-void
-time_base_info_lazy_init (void)
-{
-	kern_return_t result = mach_timebase_info (&_ep_rt_mono_time_base_info);
-	if (result != KERN_SUCCESS)
-		memset (&_ep_rt_mono_time_base_info, 0, sizeof (_ep_rt_mono_time_base_info));
-}
-#endif
-
-int64_t
-ep_rt_mono_perf_counter_query (void)
-{
-#if HAVE_MACH_ABSOLUTE_TIME
-	return (int64_t)mach_absolute_time ();
-#elif HAVE_CLOCK_MONOTONIC
-	struct timespec ts;
-	int result = clock_gettime (CLOCK_MONOTONIC, &ts);
-	if (result == 0)
-		return ((int64_t)(ts.tv_sec) * (int64_t)(SECS_TO_NS)) + (int64_t)(ts.tv_nsec);
-#else
-	#error "ep_rt_mono_perf_counter_get requires either mach_absolute_time () or clock_gettime (CLOCK_MONOTONIC) to be supported."
-#endif
-	return 0;
-}
-
-int64_t
-ep_rt_mono_perf_frequency_query (void)
-{
-#if HAVE_MACH_ABSOLUTE_TIME
-	// (numer / denom) gives you the nanoseconds per tick, so the below code
-	// computes the number of ticks per second. We explicitly do the multiplication
-	// first in order to help minimize the error that is produced by integer division.
-	mono_lazy_initialize (&_ep_rt_mono_time_base_info_init, time_base_info_lazy_init);
-	if (_ep_rt_mono_time_base_info.denom == 0 || _ep_rt_mono_time_base_info.numer == 0)
-		return 0;
-	return ((int64_t)(SECS_TO_NS) * (int64_t)(_ep_rt_mono_time_base_info.denom)) / (int64_t)(_ep_rt_mono_time_base_info.numer);
-#elif HAVE_CLOCK_MONOTONIC
-	// clock_gettime () returns a result in terms of nanoseconds rather than a count. This
-	// means that we need to either always scale the result by the actual resolution (to
-	// get a count) or we need to say the resolution is in terms of nanoseconds. We prefer
-	// the latter since it allows the highest throughput and should minimize error propagated
-	// to the user.
-	return (int64_t)(SECS_TO_NS);
-#else
-	#error "ep_rt_mono_perf_frequency_query requires either mach_absolute_time () or clock_gettime (CLOCK_MONOTONIC) to be supported."
-#endif
-	return 0;
-}
 
 void
 ep_rt_mono_system_time_get (EventPipeSystemTime *system_time)
@@ -789,6 +720,7 @@ ep_rt_mono_component_init (void)
 	g_free (diag_env);
 
 	ep_rt_mono_runtime_provider_component_init ();
+	ep_rt_mono_sampling_provider_component_init ();
 	ep_rt_mono_profiler_provider_component_init ();
 }
 
@@ -836,6 +768,7 @@ void
 ep_rt_mono_fini (void)
 {
 	ep_rt_mono_runtime_provider_fini ();
+	ep_rt_mono_sampling_provider_component_fini ();
 	ep_rt_mono_profiler_provider_fini ();
 
 	if (_ep_rt_mono_default_profiler_provider) {

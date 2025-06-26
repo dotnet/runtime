@@ -698,26 +698,26 @@ Dictionary::PopulateEntry(
         BYTE fixupKind = *pBlob++;
 
         ModuleBase * pInfoModule = pModule;
-        if (fixupKind & ENCODE_MODULE_OVERRIDE)
+        if (fixupKind & READYTORUN_FIXUP_ModuleOverride)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
             pInfoModule = pModule->GetModuleFromIndex(moduleIndex);
-            fixupKind &= ~ENCODE_MODULE_OVERRIDE;
+            fixupKind &= ~READYTORUN_FIXUP_ModuleOverride;
         }
 
-        _ASSERTE(fixupKind == ENCODE_DICTIONARY_LOOKUP_THISOBJ ||
-                 fixupKind == ENCODE_DICTIONARY_LOOKUP_TYPE ||
-                 fixupKind == ENCODE_DICTIONARY_LOOKUP_METHOD);
+        _ASSERTE(fixupKind == READYTORUN_FIXUP_ThisObjDictionaryLookup ||
+                 fixupKind == READYTORUN_FIXUP_TypeDictionaryLookup ||
+                 fixupKind == READYTORUN_FIXUP_MethodDictionaryLookup);
 
-        if (fixupKind == ENCODE_DICTIONARY_LOOKUP_THISOBJ)
+        if (fixupKind == READYTORUN_FIXUP_ThisObjDictionaryLookup)
         {
             SigPointer p(pBlob);
             p.SkipExactlyOne();
             pBlob = p.GetPtr();
         }
 
-        BYTE signatureKind = *pBlob++;
-        if (signatureKind & ENCODE_MODULE_OVERRIDE)
+        ReadyToRunFixupKind signatureKind = (ReadyToRunFixupKind)*pBlob++;
+        if (signatureKind & READYTORUN_FIXUP_ModuleOverride)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
             ModuleBase * pSignatureModule = pModule->GetModuleFromIndex(moduleIndex);
@@ -726,20 +726,20 @@ Dictionary::PopulateEntry(
                 pInfoModule = pSignatureModule;
             }
             _ASSERTE(pInfoModule == pSignatureModule);
-            signatureKind &= ~ENCODE_MODULE_OVERRIDE;
+            signatureKind = (ReadyToRunFixupKind)(signatureKind & ~READYTORUN_FIXUP_ModuleOverride);
         }
 
-        switch ((CORCOMPILE_FIXUP_BLOB_KIND) signatureKind)
+        switch (signatureKind)
         {
-            case ENCODE_DECLARINGTYPE_HANDLE:   kind = DeclaringTypeHandleSlot; break;
-            case ENCODE_TYPE_HANDLE:            kind = TypeHandleSlot; break;
-            case ENCODE_FIELD_HANDLE:           kind = FieldDescSlot; break;
-            case ENCODE_METHOD_HANDLE:          kind = MethodDescSlot; break;
-            case ENCODE_METHOD_ENTRY:           kind = MethodEntrySlot; break;
-            case ENCODE_VIRTUAL_ENTRY:          kind = DispatchStubAddrSlot; break;
+            case READYTORUN_FIXUP_DeclaringTypeHandle:   kind = DeclaringTypeHandleSlot; break;
+            case READYTORUN_FIXUP_TypeHandle:            kind = TypeHandleSlot; break;
+            case READYTORUN_FIXUP_FieldHandle:           kind = FieldDescSlot; break;
+            case READYTORUN_FIXUP_MethodHandle:          kind = MethodDescSlot; break;
+            case READYTORUN_FIXUP_MethodEntry:           kind = MethodEntrySlot; break;
+            case READYTORUN_FIXUP_VirtualEntry:          kind = DispatchStubAddrSlot; break;
 
             default:
-                _ASSERTE(!"Unexpected CORCOMPILE_FIXUP_BLOB_KIND");
+                _ASSERTE(!"Unexpected ReadyToRunFixupKind");
                 ThrowHR(COR_E_BADIMAGEFORMAT);
         }
 
@@ -889,6 +889,7 @@ Dictionary::PopulateEntry(
 
             uint32_t methodSlot = -1;
             BOOL fRequiresDispatchStub = 0;
+            BOOL isAsyncVariant = 0;
 
             if (isReadyToRunModule)
             {
@@ -900,6 +901,7 @@ Dictionary::PopulateEntry(
                 isInstantiatingStub = ((methodFlags & ENCODE_METHOD_SIG_InstantiatingStub) != 0) || (kind == MethodEntrySlot);
                 isUnboxingStub = ((methodFlags & ENCODE_METHOD_SIG_UnboxingStub) != 0);
                 fMethodNeedsInstantiation = ((methodFlags & ENCODE_METHOD_SIG_MethodInstantiation) != 0);
+                isAsyncVariant = ((methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0);
 
                 if (methodFlags & ENCODE_METHOD_SIG_OwnerType)
                 {
@@ -950,6 +952,10 @@ Dictionary::PopulateEntry(
                         _ASSERTE(pZapSigContext->pInfoModule->IsFullModule());
                         pMethod = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pZapSigContext->pInfoModule), TokenFromRid(rid, mdtMethodDef), FALSE);
                     }
+                    if (isAsyncVariant)
+                    {
+                        pMethod = pMethod->GetAsyncOtherVariant();
+                    }
                 }
 
                 if (ownerType.IsNull())
@@ -993,6 +999,7 @@ Dictionary::PopulateEntry(
                 isInstantiatingStub = ((methodFlags & ENCODE_METHOD_SIG_InstantiatingStub) != 0);
                 isUnboxingStub = ((methodFlags & ENCODE_METHOD_SIG_UnboxingStub) != 0);
                 fMethodNeedsInstantiation = ((methodFlags & ENCODE_METHOD_SIG_MethodInstantiation) != 0);
+                isAsyncVariant = ((methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0);
 
                 if ((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) != 0)
                 {
@@ -1034,6 +1041,12 @@ Dictionary::PopulateEntry(
 
                     // The RID map should have been filled out if we fully loaded the class
                     pMethod = pMethodDefMT->GetModule()->LookupMethodDef(token);
+
+                    if (isAsyncVariant)
+                    {
+                        pMethod = pMethod->GetAsyncOtherVariant();
+                    }
+
                     _ASSERTE(pMethod != NULL);
                     pMethod->CheckRestore();
                 }
@@ -1041,7 +1054,8 @@ Dictionary::PopulateEntry(
 
             if (fRequiresDispatchStub)
             {
-                // Generate a dispatch stub and store it in the dictionary.
+                LoaderAllocator * pDictLoaderAllocator = (pMT != NULL) ? pMT->GetLoaderAllocator() : pMD->GetLoaderAllocator();
+                // Generate a dispatch stub and gather a slot.
                 //
                 // We generate an indirection so we don't have to write to the dictionary
                 // when we do updates, and to simplify stub indirect callsites.  Stubs stored in
@@ -1053,18 +1067,16 @@ Dictionary::PopulateEntry(
                 // dictionary entry to the  caller, still using "call [eax]", and then the
                 // stub dispatch mechanism can update the dictitonary itself and we don't
                 // need an indirection.
-                LoaderAllocator * pDictLoaderAllocator = (pMT != NULL) ? pMT->GetLoaderAllocator() : pMD->GetLoaderAllocator();
-
-                VirtualCallStubManager * pMgr = pDictLoaderAllocator->GetVirtualCallStubManager();
-
+                //
                 // We indirect through a cell so that updates can take place atomically.
                 // The call stub and the indirection cell have the same lifetime as the dictionary itself, i.e.
-                // are allocated in the domain of the dicitonary.
-                PCODE addr = pMgr->GetCallStub(ownerType, methodSlot);
+                // are allocated in the domain of the dictionary.
 
-                result = (CORINFO_GENERIC_HANDLE)pMgr->GenerateStubIndirection(addr);
+                result = (CORINFO_GENERIC_HANDLE)GenerateDispatchStubCellEntrySlot(pDictLoaderAllocator, ownerType, methodSlot, NULL);
                 break;
             }
+
+            _ASSERTE((!!isAsyncVariant) == pMethod->IsAsyncVariantMethod());
 
             Instantiation inst;
 
@@ -1109,6 +1121,8 @@ Dictionary::PopulateEntry(
                 isUnboxingStub,
                 inst,
                 (!isInstantiatingStub && !isUnboxingStub));
+
+            _ASSERTE((!!isAsyncVariant) == pMethod->IsAsyncVariantMethod());
 
             if (kind == ConstrainedMethodEntrySlot)
             {

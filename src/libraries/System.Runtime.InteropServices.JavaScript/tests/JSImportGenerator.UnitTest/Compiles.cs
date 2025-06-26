@@ -251,7 +251,7 @@ namespace JSImportGenerator.Unit.Tests
                                                 __delegate_arg_arg1.ToManaged(out __delegate_arg1);
                                             });
                                             __a4_native.ToManaged(out a4);
-                                            Basic.AnnotatedExport(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15);
+                                            global::Basic.AnnotatedExport(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15);
                                         }
                                         catch (global::System.Exception __arg_exception)
                                         {
@@ -368,7 +368,7 @@ namespace JSImportGenerator.Unit.Tests
                                         global::System.Threading.Tasks.Task<int> __invokeRetVal = default;
                                         try
                                         {
-                                            __invokeRetVal = Basic.Export1();
+                                            __invokeRetVal = global::Basic.Export1();
                                             // Marshal - Convert managed data to native data.
                                             __invokeRetValUnmanaged.ToJS(__invokeRetVal, static (ref global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __task_result_arg, int __task_result) =>
                                             {

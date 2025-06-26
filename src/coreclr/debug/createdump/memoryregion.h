@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "specialdiaginfo.h"
+
 #if !defined(PAGE_SIZE) && (defined(__arm__) || defined(__aarch64__) || defined(__loongarch64)) || defined(__riscv)
 extern long g_pageSize;
 #define PAGE_SIZE g_pageSize
@@ -44,8 +46,15 @@ public:
         m_endAddress(end),
         m_offset(0)
     {
-        assert((start & ~PAGE_MASK) == 0);
-        assert((end & ~PAGE_MASK) == 0);
+        if (start == SpecialDiagInfoAddress)
+        {
+            assert(end == (SpecialDiagInfoAddress + SpecialDiagInfoSize));
+        }
+        else
+        {
+            assert((start & ~PAGE_MASK) == 0);
+            assert((end & ~PAGE_MASK) == 0);
+        }
     }
 
     // copy with new flags constructor. The file name is not copied.

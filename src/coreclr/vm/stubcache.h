@@ -57,7 +57,7 @@ public:
     //
     // Throws on out of memory or other fatal error.
     //---------------------------------------------------------
-    Stub *Canonicalize(const BYTE *pRawStub);
+    Stub *Canonicalize(const BYTE *pRawStub, const char *stubType);
 
 protected:
     //---------------------------------------------------------
