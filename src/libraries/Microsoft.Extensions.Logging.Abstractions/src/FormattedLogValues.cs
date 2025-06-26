@@ -12,9 +12,9 @@ namespace Microsoft.Extensions.Logging
 {
     /// <summary>
     /// LogValues to enable formatting options supported by <see cref="string.Format(IFormatProvider, string, object?)"/>.
-    /// This also enables using {NamedformatItem} in the format string.
+    /// This also enables using {NamedFormatItem} in the format string.
     /// </summary>
-    internal readonly struct FormattedLogValues : IReadOnlyList<KeyValuePair<string, object?>>
+    internal struct FormattedLogValues : IReadOnlyList<KeyValuePair<string, object?>>
     {
         internal const int MaxCachedFormatters = 1024;
         private const string NullFormat = "[null]";
@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Logging
         private readonly LogValuesFormatter? _formatter;
         private readonly object?[]? _values;
         private readonly string _originalMessage;
-        private readonly string? _cachedToString;
+        private string? _cachedToString;
 
         // for testing purposes
         internal LogValuesFormatter? Formatter => _formatter;
@@ -106,14 +106,7 @@ namespace Microsoft.Extensions.Logging
                 return _originalMessage;
             }
 
-            if (_cachedToString is null)
-            {
-                // caching the formatted string to avoid repeated formatting and allocations.
-                // FormattedLogValues is readonly struct, use Unsafe.AsRef to mutate the cached string.
-                Unsafe.AsRef(in _cachedToString) = _formatter.Format(_values);
-            }
-
-            return _cachedToString!;
+            return _cachedToString ??= _formatter.Format(_values);
         }
 
         IEnumerator IEnumerable.GetEnumerator()
