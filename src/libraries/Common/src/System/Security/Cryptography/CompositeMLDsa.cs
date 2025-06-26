@@ -456,7 +456,8 @@ namespace System.Security.Cryptography
         ///   Imports a Composite ML-DSA key from an encrypted RFC 7468 PEM-encoded string.
         /// </summary>
         /// <param name="source">
-        ///   The PEM text of the encrypted key to import.</param>
+        ///   The PEM text of the encrypted key to import.
+        /// </param>
         /// <param name="passwordBytes">
         ///   The bytes to use as a password when decrypting the key material.
         /// </param>
@@ -863,8 +864,6 @@ namespace System.Security.Cryptography
 
             return CompositeMLDsaImplementation.ImportPublicKeyImpl(algorithm, source);
         }
-
-
         /// <summary>
         ///   Imports a Composite ML-DSA private key from its private seed value.
         /// </summary>
@@ -1429,8 +1428,6 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            ThrowIfDisposed();
-
             // TODO Pick a good estimate for the initial size of the buffer.
             int initalSize = 1;
 
@@ -1706,7 +1703,7 @@ namespace System.Security.Cryptography
 
                 // TODO verify overhead
 
-                // The ASN.1 overhead of a SubjectPublicKeyInfo encoding a public key is ___ bytes.
+                // TODO: The ASN.1 overhead of a SubjectPublicKeyInfo encoding a public key is ___ bytes.
                 // Round it off to 32. This checked operation should never throw because the inputs are not
                 // user provided.
                 int capacity = checked(32 + written);
