@@ -62,6 +62,38 @@ namespace System.Security.Cryptography.Tests
         }
     }
 
+    [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    public static class MLKemCngContractTests
+    {
+        [Fact]
+        public static void MLKemCng_Ctor_ArgValidation()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("key", static () => new MLKemCng(null));
+        }
+
+        [Fact]
+        public static void MLKemCng_Ctor_KeyWrongAlgorithm()
+        {
+            using CngKey rsaKey = CngKey.Create(CngAlgorithm.Rsa, keyName: null);
+            AssertExtensions.Throws<ArgumentException>("key", () => new MLKemCng(rsaKey));
+        }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void MLKemCng_Key(MLKemAlgorithm algorithm)
+        {
+            using CngKey key = MLKemCngTests.GenerateCngKey(
+                algorithm,
+                CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
+
+            using MLKemCng mlKemKey = new(key);
+
+            Assert.NotSame(key, mlKemKey.Key);
+            Assert.Same(mlKemKey.Key, mlKemKey.Key);
+        }
+    }
+
     public abstract class MLKemCngTests : MLKemBaseTests
     {
         protected abstract CngExportPolicies ExportPolicies { get; }
@@ -115,30 +147,6 @@ namespace System.Security.Cryptography.Tests
             CngExportPolicies exportPolicies)
         {
             return ImportMLKemKey(KeyBlobMagicNumber.BCRYPT_MLKEM_PRIVATE_SEED_MAGIC, algorithm, seed, exportPolicies);
-        }
-
-        [Fact]
-        public void MLKemCng_Ctor_ArgValidation()
-        {
-            AssertExtensions.Throws<ArgumentNullException>("key", static () => new MLKemCng(null));
-        }
-
-        [Fact]
-        public void MLKemCng_Ctor_KeyWrongAlgorithm()
-        {
-            using CngKey rsaKey = CngKey.Create(CngAlgorithm.Rsa, keyName: null);
-            AssertExtensions.Throws<ArgumentException>("key", () => new MLKemCng(rsaKey));
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void MLKemCng_Key(MLKemAlgorithm algorithm)
-        {
-            using CngKey key = GenerateCngKey(algorithm, ExportPolicies);
-            using MLKemCng mlKemKey = new(key);
-
-            Assert.NotSame(key, mlKemKey.Key);
-            Assert.Same(mlKemKey.Key, mlKemKey.Key);
         }
 
         private static CngProperty GetCngProperty(MLKemAlgorithm algorithm)

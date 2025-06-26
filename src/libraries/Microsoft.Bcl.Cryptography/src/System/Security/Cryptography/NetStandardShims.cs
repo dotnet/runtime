@@ -24,9 +24,6 @@ namespace System.Security.Cryptography
 
         internal static unsafe int GetBytes(this Encoding encoding, string str, Span<byte> destination)
         {
-            if (str is null)
-                throw new ArgumentNullException(nameof(str));
-
             return GetBytes(encoding, str.AsSpan(), destination);
         }
 
