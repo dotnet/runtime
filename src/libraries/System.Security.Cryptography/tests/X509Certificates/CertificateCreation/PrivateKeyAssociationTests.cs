@@ -719,8 +719,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 AssertExtensions.SequenceEqual(MLDsaTestsData.IetfMLDsa44.PublicKey, publicKey);
 
                 // Verify the key is not actually private
-                byte[] signature = new byte[certKey.Algorithm.SignatureSizeInBytes];
-                Assert.ThrowsAny<CryptographicException>(() => certKey.SignData([1, 2, 3], signature));
+                Assert.ThrowsAny<CryptographicException>(() => certKey.SignData([1, 2, 3]));
             }
 
             // Cert with private key
@@ -732,8 +731,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 AssertExtensions.SequenceEqual(MLDsaTestsData.IetfMLDsa44.PublicKey, publicKey);
 
                 // Verify the key is not actually private
-                byte[] signature = new byte[certKey.Algorithm.SignatureSizeInBytes];
-                Assert.ThrowsAny<CryptographicException>(() => certKey.SignData([1, 2, 3], signature));
+                Assert.ThrowsAny<CryptographicException>(() => certKey.SignData([1, 2, 3]));
             }
         }
 

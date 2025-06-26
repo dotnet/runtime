@@ -107,8 +107,9 @@ namespace System.Security.Cryptography.Tests
             {
                 AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature));
 
-                signature.AsSpan().Fill(0);
-                mldsa.SignData(data, signature);
+                Span<byte> signatureSpan = signature.AsSpan();
+                signatureSpan.Fill(0);
+                mldsa.SignData(data, signatureSpan);
 
                 AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature));
                 data[0] ^= 1;
@@ -134,8 +135,9 @@ namespace System.Security.Cryptography.Tests
             {
                 AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature));
 
-                signature.AsSpan().Fill(0);
-                mldsa.SignData(data, signature);
+                Span<byte> signatureSpan = signature.AsSpan();
+                signatureSpan.Fill(0);
+                mldsa.SignData(data, signatureSpan);
 
                 ExerciseSuccessfulVerify(mldsa, data, signature, []);
             }

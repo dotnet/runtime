@@ -1450,6 +1450,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLDsa ImportMLDsaPublicKey(MLDsaAlgorithm algorithm, byte[] source)
         {
+            ArgumentNullException.ThrowIfNull(algorithm);
             ArgumentNullException.ThrowIfNull(source);
 
             return ImportMLDsaPublicKey(algorithm, new ReadOnlySpan<byte>(source));
@@ -1499,6 +1500,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLDsa ImportMLDsaSecretKey(MLDsaAlgorithm algorithm, byte[] source)
         {
+            ArgumentNullException.ThrowIfNull(algorithm);
             ArgumentNullException.ThrowIfNull(source);
 
             return ImportMLDsaSecretKey(algorithm, new ReadOnlySpan<byte>(source));
@@ -1548,6 +1550,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLDsa ImportMLDsaPrivateSeed(MLDsaAlgorithm algorithm, byte[] source)
         {
+            ArgumentNullException.ThrowIfNull(algorithm);
             ArgumentNullException.ThrowIfNull(source);
 
             return ImportMLDsaPrivateSeed(algorithm, new ReadOnlySpan<byte>(source));
