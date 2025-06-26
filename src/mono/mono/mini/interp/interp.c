@@ -1990,10 +1990,11 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	context->stack_pointer = (guchar*)(sp + 4);
 	g_assert (context->stack_pointer < context->stack_end);
 	MH_LOG_INDENT();
-	MH_LOG("calling mono_interp_exec_method for %s : %s", method->name, mono_method_full_name (method, TRUE));
+	MH_LOG("calling mono_interp_exec_method for %s", mono_method_full_name (method, TRUE));
 	MONO_ENTER_GC_UNSAFE;
 	mono_interp_exec_method (&frame, context, NULL);
 	MONO_EXIT_GC_UNSAFE;
+	MH_LOG("completed mono_interp_exec_method for %s", mono_method_full_name (method, TRUE));
 	MH_LOG_UNINDENT();
 	context->stack_pointer = (guchar*)sp;
 
