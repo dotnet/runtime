@@ -21,6 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 #include "stacklevelsetter.h"
 #include "patchpointinfo.h"
+#include "fgprofilesynthesis.h"
 #include "jitstd/algorithm.h"
 #include "minipal/time.h"
 
@@ -4411,6 +4412,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Try and resolve GDV checks if improved types were found during inlining
+        //
+        DoPhase(this, PHASE_RESOLVE_GDVS, &Compiler::fgResolveGDVs);
+
         // Build post-order and remove dead blocks
         //
         DoPhase(this, PHASE_DFS_BLOCKS1, &Compiler::fgDfsBlocksAndRemove);
@@ -4591,6 +4596,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Compute DFS tree and remove all unreachable blocks.
         //
         DoPhase(this, PHASE_DFS_BLOCKS3, &Compiler::fgDfsBlocksAndRemove);
+
+        auto adjustThrowEdgeLikelihoods = [this]() -> PhaseStatus {
+            return ProfileSynthesis::AdjustThrowEdgeLikelihoods(this);
+        };
+
+        // Adjust heuristic-derived edge likelihoods into paths that are known to throw.
+        //
+        DoPhase(this, PHASE_ADJUST_THROW_LIKELIHOODS, adjustThrowEdgeLikelihoods);
 
         // Discover and classify natural loops (e.g. mark iterative loops as such).
         //

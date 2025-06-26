@@ -26,17 +26,19 @@ namespace System.Numerics.Tensors
         /// <summary>Gets the total number of items in the tensor.</summary>
         nint FlattenedLength { get; }
 
-        /// <summary>Determines if the current tensor has any dimension where <c>GetDimensionSpan(int)</c> will iterate through tensors that would have <see cref="IsDense" /> be <c>true</c>.</summary>
+        /// <summary>Gets a value that indicates whether the current tensor has any dimension span where <see cref="IsDense" /> is <see langword="true"/>.</summary>
+        /// <value><see langword="true"/> if this tensor has any dense dimensions; otherwise, <see langword="false"/>.</value>
         /// <remarks>
-        ///   <para>This does not include the last dimension, <c>GetDimensionSpan(Rank - 1)</c>, as it always iterates 1 element at a time and would mean this property always returns true.</para>
-        ///   <para>An example of a tensor which is not dense but which would have a dense dimension is a 2x2 Tensor where <c>FlattenedLength: 4; Lengths: [2, 2]; Strides: [4, 1]</c>. In such a scenario, the overall tensor is not dense because the backing storage has a length of at least 6 and so has 2 used elements, 2 unused elements, followed by the last 2 used elements. However, the two slices representing <c>[0..1, ..]</c> and <c>[1..2, ..]</c> would themselves be dense; thus <c>GetDimension(0).GetSlice(n)</c> will iterate dense tensors: <c>FlattenedLength: 2, Length: [2], Strides: [1]</c>.</para>
+        ///   <para>This does not include the last dimension, <c>GetDimensionSpan(Rank - 1)</c>, as it always iterates one element at a time and would mean this property always returns <see langword="true"/>.</para>
+        ///   <para>An example of a tensor that's not dense but has a dense dimension is a 2x2 Tensor where <c>FlattenedLength: 4; Lengths: [2, 2]; Strides: [4, 1]</c>. In such a scenario, the overall tensor is not dense because the backing storage has a length of at least 6. It has two used elements, two unused elements, followed by the last two used elements. However, the two slices representing <c>[0..1, ..]</c> and <c>[1..2, ..]</c> are dense; thus <c>GetDimension(0).GetSlice(n)</c> will iterate dense tensors: <c>FlattenedLength: 2, Length: [2], Strides: [1]</c>.</para>
         /// </remarks>
         bool HasAnyDenseDimensions { get; }
 
-        /// <summary>Determines if the current tensor is dense.</summary>
+        /// <summary>Gets a value that indicates whether the current tensor is dense.</summary>
+        /// <value><see langword="true"/> if this tensor is dense; otherwise, <see langword="false"/>.</value>
         /// <remarks>
         ///   <para>A dense tensor is one where the elements are ordered sequentially in memory and where no gaps exist between the elements.</para>
-        ///   <para>For a 2x2 Tensor, this would mean it has <c>FlattenedLength: 4; Lengths: [2, 2]; Strides: [2, 1]</c>. The elements would be sequentially accessed via indexes: <c>[0, 0]; [0, 1]; [1, 0]; [1, 1]</c></para>
+        ///   <para>For a 2x2 Tensor, this would mean it has <c>FlattenedLength: 4; Lengths: [2, 2]; Strides: [2, 1]</c>. The elements would be sequentially accessed via indexes: <c>[0, 0]; [0, 1]; [1, 0]; [1, 1]</c>.</para>
         /// </remarks>
         bool IsDense { get; }
 

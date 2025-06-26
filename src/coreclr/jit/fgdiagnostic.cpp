@@ -2058,8 +2058,8 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                     const bool isDominant = jumpSwt->bbsHasDominantCase && (i == jumpSwt->bbsDominantCase);
                     if (isDominant)
                     {
-                        printf("[dom(" FMT_WT ")]", jumpSwt->bbsDominantFraction);
-                        printedBlockWidth += 10;
+                        printf("[dom]");
+                        printedBlockWidth += 5;
                     }
                 }
 
@@ -3104,6 +3104,11 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         if (block->HasTarget())
         {
             assert(block->HasInitializedTarget());
+        }
+
+        if (block->KindIs(BBJ_COND))
+        {
+            assert(block->GetTrueEdge()->isHeuristicBased() == block->GetFalseEdge()->isHeuristicBased());
         }
 
         // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated

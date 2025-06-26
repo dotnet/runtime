@@ -4922,6 +4922,12 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
     curr->bbCodeOffs    = BAD_IL_OFFSET;
     curr->bbCodeOffsEnd = BAD_IL_OFFSET;
 
+    // fgSplitBlockAtEnd conservatively removes the BBF_GC_SAFE_POINT flag from the new block.
+    // Since we moved all of the code back into the new block, set the flag again, if applicable.
+    // For the same reason as fgSplitBlockAtEnd, we will conservatively remove the flag from 'curr'.
+    newBlock->CopyFlags(curr, BBF_GC_SAFE_POINT);
+    curr->RemoveFlags(BBF_GC_SAFE_POINT);
+
     return newBlock;
 }
 

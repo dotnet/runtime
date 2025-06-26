@@ -1682,6 +1682,7 @@ public:
     bool OperIsConvertMaskToVector() const;
     bool OperIsConvertVectorToMask() const;
     bool OperIsVectorConditionalSelect() const;
+    bool OperIsVectorFusedMultiplyOp() const;
 
     // This is here for cleaner GT_LONG #ifdefs.
     static bool OperIsLong(genTreeOps gtOper)
@@ -1802,8 +1803,8 @@ public:
     inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
     inline bool IsVectorBroadcast(var_types simdBaseType) const;
-    inline bool IsMaskAllBitsSet() const;
-    inline bool IsMaskZero() const;
+    inline bool IsTrueMask(var_types simdBaseType) const;
+    inline bool IsFalseMask() const;
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
 
@@ -2359,11 +2360,7 @@ public:
     // Note that this function does not respect `GTF_REVERSE_OPS`. This is always safe in LIR, but may be dangerous
     // in HIR if for some reason you need to visit operands in the order in which they will execute.
     template <typename TVisitor>
-    void VisitOperands(TVisitor visitor);
-
-private:
-    template <typename TVisitor>
-    void VisitBinOpOperands(TVisitor visitor);
+    VisitResult VisitOperands(TVisitor visitor);
 
 public:
     bool Precedes(GenTree* other);
@@ -6472,14 +6469,63 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     bool OperIsVectorConditionalSelect() const
     {
+        switch (GetHWIntrinsicId())
+        {
 #if defined(TARGET_XARCH)
-        return OperIsHWIntrinsic(NI_Vector128_ConditionalSelect) || OperIsHWIntrinsic(NI_Vector256_ConditionalSelect) ||
-               OperIsHWIntrinsic(NI_Vector512_ConditionalSelect);
-#elif defined(TARGET_ARM64)
-        return OperIsHWIntrinsic(NI_AdvSimd_BitwiseSelect) || OperIsHWIntrinsic(NI_Sve_ConditionalSelect);
-#else
-        return false;
-#endif
+            case NI_Vector128_ConditionalSelect:
+            case NI_Vector256_ConditionalSelect:
+            case NI_Vector512_ConditionalSelect:
+            {
+                return true;
+            }
+#endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+            case NI_AdvSimd_BitwiseSelect:
+            case NI_Sve_ConditionalSelect:
+            {
+                return true;
+            }
+#endif // TARGET_ARM64
+
+            default:
+            {
+                return false;
+            }
+        }
+    }
+
+    bool OperIsVectorFusedMultiplyOp() const
+    {
+        switch (GetHWIntrinsicId())
+        {
+#if defined(TARGET_XARCH)
+            case NI_AVX2_MultiplyAdd:
+            case NI_AVX2_MultiplyAddNegated:
+            case NI_AVX2_MultiplyAddNegatedScalar:
+            case NI_AVX2_MultiplyAddScalar:
+            case NI_AVX2_MultiplySubtract:
+            case NI_AVX2_MultiplySubtractNegated:
+            case NI_AVX2_MultiplySubtractNegatedScalar:
+            case NI_AVX2_MultiplySubtractScalar:
+            case NI_AVX512_FusedMultiplyAdd:
+            case NI_AVX512_FusedMultiplyAddNegated:
+            case NI_AVX512_FusedMultiplyAddNegatedScalar:
+            case NI_AVX512_FusedMultiplyAddScalar:
+            case NI_AVX512_FusedMultiplySubtract:
+            case NI_AVX512_FusedMultiplySubtractNegated:
+            case NI_AVX512_FusedMultiplySubtractNegatedScalar:
+            case NI_AVX512_FusedMultiplySubtractScalar:
+            {
+                return true;
+            }
+#endif // TARGET_XARCH
+
+            default:
+            {
+                return false;
+            }
+        }
     }
 
     bool OperRequiresAsgFlag() const;
@@ -6594,17 +6640,19 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                                                    GenTree*   op2,
                                                    var_types  simdBaseType,
                                                    unsigned   simdSize,
-                                                   bool       isScalar);
+                                                   bool       isScalar,
+                                                   bool       reverseCond = false);
 
-    static var_types GetLookupTypeForCmpOp(
-        Compiler* comp, genTreeOps oper, var_types type, var_types simdBaseType, unsigned simdSize);
+    static var_types GetLookupTypeForCmpOp(Compiler*  comp,
+                                           genTreeOps oper,
+                                           var_types  type,
+                                           var_types  simdBaseType,
+                                           unsigned   simdSize,
+                                           bool       reverseCond = false);
 
     static genTreeOps GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
 
-    genTreeOps GetOperForHWIntrinsicId(bool* isScalar) const
-    {
-        return GetOperForHWIntrinsicId(GetHWIntrinsicId(), GetSimdBaseType(), isScalar);
-    }
+    genTreeOps GetOperForHWIntrinsicId(bool* isScalar, bool getEffectiveOp = false) const;
 
     bool ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon);
 
@@ -9550,54 +9598,46 @@ inline bool GenTree::IsVectorBroadcast(var_types simdBaseType) const
     return false;
 }
 
-inline bool GenTree::IsMaskAllBitsSet() const
+//------------------------------------------------------------------------
+// IsTrueMask: Is the given node a true mask
+//
+// Arguments:
+//   simdBaseType - the base type of the mask
+//
+// Returns true if the node is a true mask for the given simdBaseType.
+//
+// Note that a byte true mask (1111...) is different to an int true mask
+// (10001000...), therefore the simdBaseType of the mask needs to be
+// taken into account.
+//
+inline bool GenTree::IsTrueMask(var_types simdBaseType) const
 {
 #ifdef TARGET_ARM64
-    static_assert_no_msg(AreContiguous(NI_Sve_CreateTrueMaskByte, NI_Sve_CreateTrueMaskDouble,
-                                       NI_Sve_CreateTrueMaskInt16, NI_Sve_CreateTrueMaskInt32,
-                                       NI_Sve_CreateTrueMaskInt64, NI_Sve_CreateTrueMaskSByte,
-                                       NI_Sve_CreateTrueMaskSingle, NI_Sve_CreateTrueMaskUInt16,
-                                       NI_Sve_CreateTrueMaskUInt32, NI_Sve_CreateTrueMaskUInt64));
+    // TODO-SVE: For agnostic VL, vector type may not be simd16_t
 
-    if (OperIsHWIntrinsic())
+    if (IsCnsMsk())
     {
-        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
-        if (id == NI_Sve_ConvertMaskToVector)
-        {
-            GenTree* op1 = AsHWIntrinsic()->Op(1);
-            assert(op1->OperIsHWIntrinsic());
-            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
-        }
-        return ((id == NI_Sve_CreateTrueMaskAll) ||
-                ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)));
+        return SveMaskPatternAll == EvaluateSimdMaskToPattern<simd16_t>(simdBaseType, AsMskCon()->gtSimdMaskVal);
     }
-
 #endif
+
     return false;
 }
 
-inline bool GenTree::IsMaskZero() const
+//------------------------------------------------------------------------
+// IsFalseMask: Is the given node a false mask
+//
+// Returns true if the node is a false mask, ie all zeros
+//
+inline bool GenTree::IsFalseMask() const
 {
 #ifdef TARGET_ARM64
-    static_assert_no_msg(AreContiguous(NI_Sve_CreateFalseMaskByte, NI_Sve_CreateFalseMaskDouble,
-                                       NI_Sve_CreateFalseMaskInt16, NI_Sve_CreateFalseMaskInt32,
-                                       NI_Sve_CreateFalseMaskInt64, NI_Sve_CreateFalseMaskSByte,
-                                       NI_Sve_CreateFalseMaskSingle, NI_Sve_CreateFalseMaskUInt16,
-                                       NI_Sve_CreateFalseMaskUInt32, NI_Sve_CreateFalseMaskUInt64));
-
-    if (OperIsHWIntrinsic())
+    if (IsCnsMsk())
     {
-        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
-        if (id == NI_Sve_ConvertMaskToVector)
-        {
-            GenTree* op1 = AsHWIntrinsic()->Op(1);
-            assert(op1->OperIsHWIntrinsic());
-            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
-        }
-        return ((id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64));
+        return AsMskCon()->IsZero();
     }
-
 #endif
+
     return false;
 }
 
