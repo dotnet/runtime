@@ -2390,6 +2390,11 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 //    block      - basic block for the new statements
 //    stmtAfter  - (optional) insertion point for mid-block cases
 //
+// Notes:
+//    If the call we're inlining is in tail position then
+//    we skip nulling the locals, since it can interfere
+//    with tail calls introduced by the local.
+//
 void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmtAfter)
 {
     // Null out any gc ref locals
