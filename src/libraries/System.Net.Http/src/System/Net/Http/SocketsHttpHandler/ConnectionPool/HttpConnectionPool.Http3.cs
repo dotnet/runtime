@@ -28,7 +28,8 @@ namespace System.Net.Http
         [SupportedOSPlatformGuard("linux")]
         [SupportedOSPlatformGuard("macOS")]
         [SupportedOSPlatformGuard("windows")]
-        internal static bool IsHttp3Supported() => (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
+        [FeatureSwitchDefinition("System.Net.SocketsHttpHandler.Http3Support")]
+        internal static bool IsHttp3Supported => RuntimeSettingParser.QueryRuntimeSettingSwitch("System.Net.SocketsHttpHandler.Http3Support", (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS());
 
         /// <summary>List of available HTTP/3 connections stored in the pool.</summary>
         private List<Http3Connection>? _availableHttp3Connections;
@@ -67,7 +68,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         private async ValueTask<HttpResponseMessage?> TrySendUsingHttp3Async(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(IsHttp3Supported);
 
             Debug.Assert(_kind == HttpConnectionKind.Https);
             Debug.Assert(_http3Enabled);
@@ -135,7 +136,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         private bool TryGetPooledHttp3Connection(HttpRequestMessage request, [NotNullWhen(true)] out Http3Connection? connection, [NotNullWhen(false)] out HttpConnectionWaiter<Http3Connection?>? waiter, out bool streamAvailable)
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(IsHttp3Supported);
 
             // Look for a usable connection.
             while (true)
@@ -210,7 +211,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         private void CheckForHttp3ConnectionInjection()
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(IsHttp3Supported);
 
             Debug.Assert(HasSyncObjLock);
 
@@ -249,7 +250,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         private async Task InjectNewHttp3ConnectionAsync(RequestQueue<Http3Connection?>.QueueItem queueItem)
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(IsHttp3Supported);
 
             if (NetEventSource.Log.IsEnabled()) Trace("Creating new HTTP/3 connection for pool.");
 
@@ -332,7 +333,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         private void HandleHttp3ConnectionFailure(HttpConnectionWaiter<Http3Connection?> requestWaiter, Exception? e)
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(IsHttp3Supported);
 
             if (NetEventSource.Log.IsEnabled()) Trace($"HTTP3 connection failed: {e}");
 
@@ -363,7 +364,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         private void ReturnHttp3Connection(Http3Connection connection, bool isNewConnection, HttpConnectionWaiter<Http3Connection?>? initialRequestWaiter = null)
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(IsHttp3Supported);
 
             if (NetEventSource.Log.IsEnabled()) connection.Trace($"{nameof(isNewConnection)}={isNewConnection}");
 
@@ -485,7 +486,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         private void DisableHttp3Connection(Http3Connection connection)
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(IsHttp3Supported);
 
             if (NetEventSource.Log.IsEnabled()) connection.Trace("");
 
@@ -528,7 +529,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         public void InvalidateHttp3Connection(Http3Connection connection, bool dispose = true)
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(IsHttp3Supported);
 
             if (NetEventSource.Log.IsEnabled()) connection.Trace("");
 
@@ -564,7 +565,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         private static int ScavengeHttp3ConnectionList(List<Http3Connection> list, ref List<HttpConnectionBase>? toDispose, long nowTicks, TimeSpan pooledConnectionLifetime, TimeSpan pooledConnectionIdleTimeout)
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(IsHttp3Supported);
 
             int freeIndex = 0;
             while (freeIndex < list.Count && list[freeIndex].IsUsable(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout))
