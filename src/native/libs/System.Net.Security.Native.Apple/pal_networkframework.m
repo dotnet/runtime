@@ -279,12 +279,12 @@ PALEXPORT int32_t AppleNetNative_NwSetTlsOptions(nw_connection_t connection, siz
         sec_protocol_options_set_max_tls_protocol_version(sec_options, version);
     }
 
-    if (alpnBuffer != NULL && alpnLength > 0)
+    if (alpnBuffer != NULL)
     {
         int offset = 0;
         while (offset < alpnLength)
         {
-            uint8_t length = *(alpnBuffer  + offset);
+            uint8_t length = alpnBuffer[offset];
             sec_protocol_options_add_tls_application_protocol(sec_options, (const char*) &alpnBuffer[offset + 1]);
             offset += length + 2;
         }
@@ -329,7 +329,7 @@ PALEXPORT int32_t AppleNetNative_NwGetConnectionInfo(nw_connection_t connection,
         }
         else
         {
-            *negotiatedAlpn= NULL;
+            *negotiatedAlpn = NULL;
             *alpnLength = 0;
         }
 
@@ -388,6 +388,7 @@ PALEXPORT int32_t AppleNetNative_NwCopyCertChain(nw_connection_t connection, CFA
                 sec_protocol_metadata_access_peer_certificate_chain(secMeta, ^(sec_certificate_t certificate) {
                     CFArrayAppendValue(certs, sec_certificate_copy_ref(certificate));
                 });
+
             }
             sec_release(secMeta);
         }
