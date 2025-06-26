@@ -213,6 +213,16 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _key.Dispose();
+                _key = null!;
+            }
+        }
+
         private void ExportKey(KeyBlobMagicNumber kind, Span<byte> destination)
         {
             Debug.Assert(kind is KeyBlobMagicNumber.BCRYPT_MLKEM_PUBLIC_MAGIC or
