@@ -276,7 +276,7 @@ namespace System.Collections.Tests
             int j = 0;
             foreach (KeyValuePair<string, int> kvp in dictionary)
             {
-                Assert.Equal(j.ToString(), kvp.Key);
+                Assert.Equal(j, int.Parse(kvp.Key));
                 Assert.Equal(j, kvp.Value);
                 j++;
             }
