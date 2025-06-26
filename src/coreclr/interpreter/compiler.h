@@ -7,6 +7,7 @@
 #include "intops.h"
 #include "datastructs.h"
 #include "enum_class_flags.h"
+#include <new>
 
 #include "../../native/containers/dn-simdhash.h"
 #include "../../native/containers/dn-simdhash-specializations.h"

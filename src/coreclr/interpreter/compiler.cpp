@@ -120,6 +120,7 @@ void InterpCompiler::CopyToInterpGenericLookup(InterpGenericLookup* dst, const C
     if (GetGenericLookupOffset(src, 0) > UINT16_MAX || GetGenericLookupOffset(src, 1) > UINT16_MAX ||
         GetGenericLookupOffset(src, 2) > UINT16_MAX || GetGenericLookupOffset(src, 3) > UINT16_MAX)
     {
+#ifdef DEBUG
         if (m_verbose)
         {
             printf("CopyToInterpGenericLookup: Offsets too large for generic lookup, unable to compile\n");
@@ -127,6 +128,7 @@ void InterpCompiler::CopyToInterpGenericLookup(InterpGenericLookup* dst, const C
             printf("  Offsets: %zu %zu %zu %zu\n",
                 src->offsets[0], src->offsets[1], src->offsets[2], src->offsets[3]);
         }
+#endif // DEBUG
         NO_WAY("CopyToInterpGenericLookup: Offsets too large for generic lookup");
     }
 
