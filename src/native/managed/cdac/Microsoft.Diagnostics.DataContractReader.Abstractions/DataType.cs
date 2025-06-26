@@ -103,6 +103,8 @@ public enum DataType
     EETypeHashTable,
     InstMethodHashTable,
     ECHash,
+    EEJitManager,
+    PatchpointInfo,
 
     TransitionBlock,
     DebuggerEval,

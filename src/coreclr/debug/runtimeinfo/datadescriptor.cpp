@@ -18,6 +18,7 @@
 
 #include "../debug/ee/debugger.h"
 #include "ecall.h"
+#include "patchpointinfo.h"
 
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
