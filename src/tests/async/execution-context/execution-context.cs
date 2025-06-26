@@ -22,7 +22,6 @@ public class Async2ExecutionContext
         await ChangeThenReturn();
         Assert.Equal(42, s_local.Value);
 
-
         try
         {
             s_local.Value = 43;
