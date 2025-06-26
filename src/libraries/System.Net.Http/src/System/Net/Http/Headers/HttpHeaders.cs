@@ -109,6 +109,15 @@ namespace System.Net.Http.Headers
         {
             ArgumentNullException.ThrowIfNull(values);
 
+            // It's relatively common to only add a single value with this overload, especially when copying
+            // between HttpHeaders collections. Avoid boxing the enumerator and possibly a HeaderStoreItemInfo
+            // allocation by deferring to the overload for a single value instead.
+            if (values is IList<string?> { Count: 1 } valuesList)
+            {
+                Add(descriptor, valuesList[0]);
+                return;
+            }
+
             PrepareHeaderInfoForAdd(descriptor, out HeaderStoreItemInfo info, out bool addToStore);
 
             try
@@ -277,21 +286,17 @@ namespace System.Net.Http.Headers
             if (!Unsafe.IsNullRef(ref storeValueRef))
             {
                 object value = storeValueRef;
-                HeaderStoreItemInfo info;
 
-                if (value is HeaderStoreItemInfo hsi)
+                if (value is not HeaderStoreItemInfo info)
                 {
-                    info = hsi;
-                }
-                else if (descriptor.Parser is null)
-                {
-                    // If this is a custom header without a known parser, unparsed values won't change.
-                    // Avoid allocating the HeaderStoreItemInfo in this case and just return the raw value as-is.
-                    values = new string[] { (string)value };
-                    return true;
-                }
-                else
-                {
+                    if (descriptor.Parser is null)
+                    {
+                        // This is a custom header without a known parser, so unparsed values won't change.
+                        // Avoid allocating the HeaderStoreItemInfo and just return the raw value as-is.
+                        values = new string[] { (string)value };
+                        return true;
+                    }
+
                     info = ReplaceWithHeaderStoreItemInfo(ref storeValueRef, value);
                 }
 
@@ -395,6 +400,14 @@ namespace System.Net.Http.Headers
 
                 if (entry.Value is not HeaderStoreItemInfo info)
                 {
+                    if (entry.Key.Parser is null)
+                    {
+                        // This is a custom header without a known parser, so unparsed values won't change.
+                        // Avoid allocating the HeaderStoreItemInfo and just return the raw value as-is.
+                        yield return new KeyValuePair<string, IEnumerable<string>>(entry.Key.Name, new string[] { (string)entry.Value });
+                        continue;
+                    }
+
                     // To retain consistent semantics, we need to upgrade a raw string to a HeaderStoreItemInfo
                     // during enumeration so that we can parse the raw value in order to a) return
                     // the correct set of parsed values, and b) update the instance for subsequent enumerations
