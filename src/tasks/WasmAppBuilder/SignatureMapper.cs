@@ -11,6 +11,14 @@ using WasmAppBuilder;
 
 internal static class SignatureMapper
 {
+#if SignatureMappingWasm64
+    private const char ptrChar = 'L'; // Pointer types are L for wasm64
+    private const string refVoid = "VL"; // ByRef structs are passed as a pointer to the struct in slot 0
+#else
+    private const char ptrChar = 'I'; // Pointer types are I for wasm32
+    private const string refVoid = "VI"; // ByRef structs are passed as a pointer to the struct in slot 0
+#endif
+
     internal static char? TypeToChar(Type t, LogAdapter log, out bool isByRefStruct, int depth = 0)
     {
         isByRefStruct = false;
@@ -21,13 +29,7 @@ internal static class SignatureMapper
         }
 
         char? c = null;
-#if SignatureMappingWasm64
-        const char ptrChar = 'L'; // Pointer types are L for wasm64
-        const string refVoid = "VL"; // ByRef structs are passed as a pointer to the struct in slot 0
-#else
-        const char ptrChar = 'I'; // Pointer types are I for wasm32
-        const string refVoid = "VI"; // ByRef structs are passed as a pointer to the struct in slot 0
-#endif
+
         if (t.Namespace == "System") {
             c = t.Name switch
             {
