@@ -8,71 +8,71 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[ExpectedNoWarnings]
+    [ExpectedNoWarnings]
 
-	[SetupCompileBefore ("base.dll", new[] { "Dependencies/MemberTypesAllBaseTypeAssembly.cs" })]
-	[KeptAssembly ("base.dll")]
-	[SetupLinkerAction ("link", "base")]
-	[SetupLinkerAction ("copy", "test")]
+    [SetupCompileBefore("base.dll", new[] { "Dependencies/MemberTypesAllBaseTypeAssembly.cs" })]
+    [KeptAssembly("base.dll")]
+    [SetupLinkerAction("link", "base")]
+    [SetupLinkerAction("copy", "test")]
 
-	[KeptTypeInAssembly ("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType")]
-	[KeptMemberInAssembly ("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType", new string[] {
-		".cctor()",
-		".ctor()",
-		".ctor(System.Boolean)",
-		"PublicMethod()",
-		"PrivateMethod()",
-		"PublicStaticMethod()",
-		"PrivateStaticMethod()",
-		"PublicField",
-		"PrivateField",
-		"PublicStaticField",
-		"PrivateStaticField",
-		"PublicProperty",
-		"get_PublicProperty()",
-		"set_PublicProperty(System.Boolean)",
-		"PrivateProperty",
-		"get_PrivateProperty()",
-		"set_PrivateProperty(System.Boolean)",
-		"PublicStaticProperty",
-		"get_PublicStaticProperty()",
-		"set_PublicStaticProperty(System.Boolean)",
-		"PrivateStaticProperty",
-		"get_PrivateStaticProperty()",
-		"set_PrivateStaticProperty(System.Boolean)",
-		"PublicEvent",
-		"add_PublicEvent(System.EventHandler`1<System.EventArgs>)",
-		"remove_PublicEvent(System.EventHandler`1<System.EventArgs>)",
-		"PrivateEvent",
-		"add_PrivateEvent(System.EventHandler`1<System.EventArgs>)",
-		"remove_PrivateEvent(System.EventHandler`1<System.EventArgs>)",
-		"PublicStaticEvent",
-		"add_PublicStaticEvent(System.EventHandler`1<System.EventArgs>)",
-		"remove_PublicStaticEvent(System.EventHandler`1<System.EventArgs>)",
-		"PrivateStaticEvent",
-		"add_PrivateStaticEvent(System.EventHandler`1<System.EventArgs>)",
-		"remove_PrivateStaticEvent(System.EventHandler`1<System.EventArgs>)",
-	})]
+    [KeptTypeInAssembly("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType")]
+    [KeptMemberInAssembly("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType", new string[] {
+        ".cctor()",
+        ".ctor()",
+        ".ctor(System.Boolean)",
+        "PublicMethod()",
+        "PrivateMethod()",
+        "PublicStaticMethod()",
+        "PrivateStaticMethod()",
+        "PublicField",
+        "PrivateField",
+        "PublicStaticField",
+        "PrivateStaticField",
+        "PublicProperty",
+        "get_PublicProperty()",
+        "set_PublicProperty(System.Boolean)",
+        "PrivateProperty",
+        "get_PrivateProperty()",
+        "set_PrivateProperty(System.Boolean)",
+        "PublicStaticProperty",
+        "get_PublicStaticProperty()",
+        "set_PublicStaticProperty(System.Boolean)",
+        "PrivateStaticProperty",
+        "get_PrivateStaticProperty()",
+        "set_PrivateStaticProperty(System.Boolean)",
+        "PublicEvent",
+        "add_PublicEvent(System.EventHandler`1<System.EventArgs>)",
+        "remove_PublicEvent(System.EventHandler`1<System.EventArgs>)",
+        "PrivateEvent",
+        "add_PrivateEvent(System.EventHandler`1<System.EventArgs>)",
+        "remove_PrivateEvent(System.EventHandler`1<System.EventArgs>)",
+        "PublicStaticEvent",
+        "add_PublicStaticEvent(System.EventHandler`1<System.EventArgs>)",
+        "remove_PublicStaticEvent(System.EventHandler`1<System.EventArgs>)",
+        "PrivateStaticEvent",
+        "add_PrivateStaticEvent(System.EventHandler`1<System.EventArgs>)",
+        "remove_PrivateStaticEvent(System.EventHandler`1<System.EventArgs>)",
+    })]
 
-	[KeptTypeInAssembly ("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType/PublicNestedType")]
-	[KeptMemberInAssembly ("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType/PublicNestedType", new string[] { "PrivateMethod()" })]
+    [KeptTypeInAssembly("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType/PublicNestedType")]
+    [KeptMemberInAssembly("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType/PublicNestedType", new string[] { "PrivateMethod()" })]
 
-	[KeptTypeInAssembly ("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType/PrivateNestedType")]
-	[KeptMemberInAssembly ("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType/PrivateNestedType", new string[] { "PrivateMethod()" })]
+    [KeptTypeInAssembly("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType/PrivateNestedType")]
+    [KeptMemberInAssembly("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType/PrivateNestedType", new string[] { "PrivateMethod()" })]
 
-	[KeptMember (".ctor()")]
-	public class MemberTypesAllOnCopyAssembly
-	{
-		public static void Main ()
-		{
-			typeof (TestType).RequiresAll ();
-		}
+    [KeptMember(".ctor()")]
+    public class MemberTypesAllOnCopyAssembly
+    {
+        public static void Main()
+        {
+            typeof(TestType).RequiresAll();
+        }
 
-		[Kept]
-		[KeptBaseType (typeof (MemberTypesAllBaseType))]
-		[KeptMember (".ctor()")]
-		class TestType : MemberTypesAllBaseType
-		{
-		}
-	}
+        [Kept]
+        [KeptBaseType(typeof(MemberTypesAllBaseType))]
+        [KeptMember(".ctor()")]
+        class TestType : MemberTypesAllBaseType
+        {
+        }
+    }
 }

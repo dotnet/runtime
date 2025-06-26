@@ -151,12 +151,13 @@ namespace Microsoft.NET.HostModel.AppHost
                             RewriteAppHost(memoryMappedFile, memoryMappedViewAccessor);
                             if (isMachOImage)
                             {
+                                IMachOFileAccess file = new MemoryMappedMachOViewAccessor(memoryMappedViewAccessor);
                                 if (enableMacOSCodeSign)
                                 {
-                                    MachObjectFile machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
-                                    appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, destinationFileName);
+                                    MachObjectFile machObjectFile = MachObjectFile.Create(file);
+                                    appHostLength = machObjectFile.AdHocSignFile(file, destinationFileName);
                                 }
-                                else if (MachObjectFile.RemoveCodeSignatureIfPresent(memoryMappedViewAccessor, out long? length))
+                                else if (MachObjectFile.RemoveCodeSignatureIfPresent(file, out long? length))
                                 {
                                     appHostLength = length.Value;
                                 }
@@ -241,18 +242,19 @@ namespace Microsoft.NET.HostModel.AppHost
                                                         BitConverter.GetBytes(bundleHeaderOffset),
                                                         pad0s: false);
 
-                            if (MachObjectFile.IsMachOImage(accessor))
+                            var file = new MemoryMappedMachOViewAccessor(accessor);
+                            if (MachObjectFile.IsMachOImage(file))
                             {
-                                var machObjectFile = MachObjectFile.Create(accessor);
+                                var machObjectFile = MachObjectFile.Create(file);
                                 if (machObjectFile.HasSignature)
                                     throw new AppHostMachOFormatException(MachOFormatError.SignNotRemoved);
 
-                                bool wasBundled = machObjectFile.TryAdjustHeadersForBundle((ulong)bundleSize, accessor);
+                                bool wasBundled = machObjectFile.TryAdjustHeadersForBundle((ulong)bundleSize, file);
                                 if (!wasBundled)
                                     throw new InvalidOperationException("The single-file bundle was unable to be created. This is likely because the bundled content is too large.");
 
                                 if (macosCodesign)
-                                    bundleSize = machObjectFile.CreateAdHocSignature(accessor, Path.GetFileName(appHostPath));
+                                    bundleSize = machObjectFile.AdHocSignFile(file, Path.GetFileName(appHostPath));
                             }
                         }
                         newBundleStream.SetLength(bundleSize);

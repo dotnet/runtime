@@ -2338,6 +2338,50 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             break;
         }
+
+        case GT_CNS_MSK:
+        {
+            GenTreeMskCon* mask = tree->AsMskCon();
+            emitter*       emit = GetEmitter();
+
+            // Try every type until a match is found
+
+            if (mask->IsZero())
+            {
+                emit->emitInsSve_R(INS_sve_pfalse, EA_SCALABLE, targetReg, INS_OPTS_SCALABLE_B);
+                break;
+            }
+
+            insOpts        opt = INS_OPTS_SCALABLE_B;
+            SveMaskPattern pat = EvaluateSimdMaskToPattern<simd16_t>(TYP_BYTE, mask->gtSimdMaskVal);
+
+            if (pat == SveMaskPatternNone)
+            {
+                opt = INS_OPTS_SCALABLE_H;
+                pat = EvaluateSimdMaskToPattern<simd16_t>(TYP_SHORT, mask->gtSimdMaskVal);
+            }
+
+            if (pat == SveMaskPatternNone)
+            {
+                opt = INS_OPTS_SCALABLE_S;
+                pat = EvaluateSimdMaskToPattern<simd16_t>(TYP_INT, mask->gtSimdMaskVal);
+            }
+
+            if (pat == SveMaskPatternNone)
+            {
+                opt = INS_OPTS_SCALABLE_D;
+                pat = EvaluateSimdMaskToPattern<simd16_t>(TYP_LONG, mask->gtSimdMaskVal);
+            }
+
+            // Should only ever create constant masks for valid patterns.
+            if (pat == SveMaskPatternNone)
+            {
+                unreached();
+            }
+
+            emit->emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE, targetReg, opt, (insSvePattern)pat);
+            break;
+        }
 #endif // FEATURE_SIMD
 
         default:
@@ -3613,7 +3657,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         // On ARM64, SIMD loads/stores provide 8-byte atomicity guarantees when aligned to 8 bytes.
         regNumber tmpSimdReg1 = REG_NA;
         regNumber tmpSimdReg2 = REG_NA;
-        if ((slots >= 4) && compiler->IsBaselineSimdIsaSupported())
+        if (slots >= 4)
         {
             tmpSimdReg1 = internalRegisters.Extract(cpObjNode, RBM_ALLFLOAT);
             tmpSimdReg2 = internalRegisters.Extract(cpObjNode, RBM_ALLFLOAT);
@@ -3644,8 +3688,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
                     // Copy at least two slots at a time
                     if (nonGcSlots >= 2)
                     {
-                        // Do 4 slots at a time if SIMD is supported
-                        if ((nonGcSlots >= 4) && compiler->IsBaselineSimdIsaSupported())
+                        // Do 4 slots at a time with SIMD instructions
+                        if (nonGcSlots >= 4)
                         {
                             // We need SIMD temp regs now
                             tmp1 = tmpSimdReg1;
@@ -5134,15 +5178,23 @@ bool CodeGen::IsSaveFpLrWithAllCalleeSavedRegisters() const
 
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
 {
-    void* pAddr = nullptr;
-
     EmitCallParams params;
-    params.callType   = EC_FUNC_TOKEN;
-    params.addr       = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
-    regMaskTP killSet = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
-    if (params.addr == nullptr)
+    CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
+    regMaskTP            killSet        = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+
+    params.callType = EC_FUNC_TOKEN;
+
+    if (helperFunction.accessType == IAT_VALUE)
     {
+        params.addr = (void*)helperFunction.addr;
+    }
+    else
+    {
+        params.addr = nullptr;
+        assert(helperFunction.accessType == IAT_PVALUE);
+        void* pAddr = helperFunction.addr;
+
         // This is call to a runtime helper.
         // adrp x, [reloc:rel page addr]
         // add x, x, [reloc:page offset]

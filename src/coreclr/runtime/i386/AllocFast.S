@@ -219,7 +219,7 @@ LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
         // Delegate overflow handling to the generic helper conservatively
 
         cmp         edx, (0x40000000 / 4) // sizeof(void*)
-        jae         RhpNewVariableSizeObject
+        jae         RhpNewArrayFast
 
         // In this case we know the element size is sizeof(void *), or 4 for x86
         // This helps us in two ways - we can shift instead of multiplying, and

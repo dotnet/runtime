@@ -211,7 +211,7 @@ FASTCALL_FUNC   RhpNewPtrArrayFast, 8
         ; Delegate overflow handling to the generic helper conservatively
 
         cmp         edx, (40000000h / 4) ; sizeof(void*)
-        jae         @RhpNewVariableSizeObject@8
+        jae         @RhpNewArrayFast@8
 
         ; In this case we know the element size is sizeof(void *), or 4 for x86
         ; This helps us in two ways - we can shift instead of multiplying, and

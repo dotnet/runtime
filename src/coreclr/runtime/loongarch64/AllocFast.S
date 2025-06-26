@@ -199,7 +199,7 @@ LOCAL_LABEL(ArraySizeOverflow):
         // Delegate overflow handling to the generic helper conservatively
 
         li.w  $a2, (0x40000000 / 8) // sizeof(void*)
-        bgeu  $a1, $a2, C_FUNC(RhpNewVariableSizeObject)
+        bgeu  $a1, $a2, C_FUNC(RhpNewArrayFast)
 
         // In this case we know the element size is sizeof(void *), or 8 for arm64
         // This helps us in two ways - we can shift instead of multiplying, and

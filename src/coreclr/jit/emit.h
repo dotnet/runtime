@@ -592,7 +592,7 @@ protected:
 
     void emitRecomputeIGoffsets();
 
-    void emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flags);
+    void emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flags) const;
 
     /************************************************************************/
     /*          The following describes a single instruction                */
@@ -663,8 +663,8 @@ protected:
     private:
 // The assembly instruction
 #if defined(TARGET_XARCH)
-        static_assert_no_msg(INS_count <= 1024);
-        instruction _idIns : 10;
+        static_assert_no_msg(INS_count <= 2048);
+        instruction _idIns : 11;
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
 #define INSTR_ENCODED_SIZE 4
@@ -752,8 +752,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         17 bits
-        // amd64:       17 bits
+        // x86:         18 bits
+        // amd64:       18 bits
         // arm:         16 bits
         // arm64:       21 bits
         // loongarch64: 14 bits
@@ -786,21 +786,22 @@ protected:
 
         // The idReg1 and idReg2 fields hold the first and second register
         // operand(s), whenever these are present. Note that currently the
-        // size of these fields is 6 bits on all targets, and care needs to
-        // be taken to make sure all of these fields stay reasonably packed.
+        // size of these fields is 6 bits on most targets, but 7 on others,
+        // and care needs to be taken to make sure all of these fields stay
+        // reasonably packed.
 
         // Note that we use the _idReg1 and _idReg2 fields to hold
         // the live gcrefReg mask for the call instructions on x86/x64
         //
-#if !defined(TARGET_AMD64)
+#if !defined(TARGET_XARCH)
         regNumber _idReg1 : REGNUM_BITS; // register num
         regNumber _idReg2 : REGNUM_BITS;
 #endif
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         38 bits
-        // amd64:       26 bits
+        // x86:         27 bits
+        // amd64:       27 bits
         // arm:         32 bits
         // arm64:       46 bits
         // loongarch64: 28 bits
@@ -818,7 +819,7 @@ protected:
         unsigned _idCustom1 : 1;
         unsigned _idCustom2 : 1;
         unsigned _idCustom3 : 1;
-#if defined(TARGET_AMD64)
+#if defined(TARGET_XARCH)
         regNumber _idReg1 : REGNUM_BITS; // register num
         regNumber _idReg2 : REGNUM_BITS;
 #endif
@@ -852,11 +853,14 @@ protected:
         // We repurpose 4 bits for the default flag value bits for ccmp instructions.
 #define _idEvexDFV (_idCustom4 << 3) | (_idCustom3 << 2) | (_idCustom2 << 1) | _idCustom1
 
-        // In certian cases, we do not allow instructions to be promoted to APX-EVEX.
+        unsigned _idCustom7 : 1;
+        // In certain cases, we do not allow instructions to be promoted to APX-EVEX.
         // e.g. instructions like add/and/or/inc/dec can be used with LOCK prefix, but cannot be prefixed by LOCK and
         // EVEX together.
-        unsigned _idNoApxEvexXPromotion : 1;
-#endif //  TARGET_XARCH
+#define _idNoApxEvexXPromotion _idCustom7
+        // We repurpose _idCustom7 for the APX-EVEX.ppx context for Push/Pop/Push2/Pop2.
+#define _idApxPpxContext _idCustom7 /* bits used for the APX-EVEX.ppx context for Push/Pop/Push2/Pop2 */
+#endif                              //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
         unsigned _idLclVar     : 1; // access a local on stack
@@ -888,8 +892,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         49 bits
-        // amd64:       51 bits
+        // x86:         50 bits
+        // amd64:       52 bits
         // arm:         48 bits
         // arm64:       55 bits
         // loongarch64: 46 bits
@@ -906,8 +910,10 @@ protected:
 #define ID_EXTRA_BITFIELD_BITS (23)
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
-#elif defined(TARGET_XARCH)
-#define ID_EXTRA_BITFIELD_BITS (19)
+#elif defined(TARGET_X86)
+#define ID_EXTRA_BITFIELD_BITS (18)
+#elif defined(TARGET_AMD64)
+#define ID_EXTRA_BITFIELD_BITS (20)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -941,8 +947,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
-        // x86:         55/51 bits
-        // amd64:       58/53 bits
+        // x86:         56/52 bits
+        // amd64:       59/54 bits
         // arm:         54/50 bits
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
@@ -953,12 +959,11 @@ protected:
         /* Use whatever bits are left over for small constants */
 
 #define ID_BIT_SMALL_CNS (32 - ID_EXTRA_BITS)
-        C_ASSERT(ID_BIT_SMALL_CNS > 0);
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size (with/without prev offset, assuming host==target):
-        // x86:         10/14 bits
-        // amd64:       9/14 bits
+        // x86:          8/12 bits
+        // amd64:        5/10 bits
         // arm:         10/14 bits
         // arm64:        2/7 bits
         // loongarch64: 11/16 bits
@@ -1799,9 +1804,20 @@ protected:
             _idEvexNfContext = 1;
         }
 
+        bool idIsApxPpxContextSet() const
+        {
+            return (_idApxPpxContext != 0) && (HasApxPpx(_idIns));
+        }
+
+        void idSetApxPpxContext()
+        {
+            assert(!idIsApxPpxContextSet());
+            _idApxPpxContext = 1;
+        }
+
         bool idIsNoApxEvexPromotion() const
         {
-            return _idNoApxEvexXPromotion != 0;
+            return (_idNoApxEvexXPromotion != 0) && !(HasApxPpx(_idIns));
         }
 
         void idSetNoApxEvexPromotion()
@@ -2365,12 +2381,12 @@ protected:
 
 #ifdef TARGET_XARCH
 
-    ssize_t emitGetInsCns(instrDesc* id);
-    ssize_t emitGetInsDsp(instrDesc* id);
-    ssize_t emitGetInsAmd(instrDesc* id);
+    ssize_t emitGetInsCns(instrDesc* id) const;
+    ssize_t emitGetInsDsp(instrDesc* id) const;
+    ssize_t emitGetInsAmd(instrDesc* id) const;
 
-    ssize_t  emitGetInsCIdisp(instrDesc* id);
-    unsigned emitGetInsCIargs(instrDesc* id);
+    ssize_t  emitGetInsCIdisp(instrDesc* id) const;
+    unsigned emitGetInsCIargs(instrDesc* id) const;
 
     inline emitAttr emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast = false) const;
 
@@ -2378,6 +2394,7 @@ protected:
     int emitGetInsCDinfo(instrDesc* id);
 
     static const IS_INFO emitGetSchedInfo(insFormat f);
+    static bool          HasApxPpx(instruction ins);
 #endif // TARGET_XARCH
 
     cnsval_ssize_t emitGetInsSC(const instrDesc* id) const;
@@ -2429,6 +2446,7 @@ protected:
     void emitDispEmbBroadcastCount(instrDesc* id) const;
     void emitDispEmbRounding(instrDesc* id) const;
     void emitDispEmbMasking(instrDesc* id) const;
+    void emitDispConstant(const instrDesc* id, bool skipComma = false) const;
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,
@@ -2668,12 +2686,13 @@ private:
 
 #if defined(TARGET_XARCH)
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src, regNumber targetReg = REG_NA);
+    void emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem, insOpts instOptions = INS_OPTS_NONE);
 #else
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
+    void      emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem);
 #endif
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
     void      emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
-    void      emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem);
     void      emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommon* varNode);
     insFormat emitMapFmtForIns(insFormat fmt, instruction ins);
     insFormat emitMapFmtAtoM(insFormat fmt);
@@ -4082,12 +4101,12 @@ inline emitter::instrDesc* emitter::emitNewInstrLoadImm(emitAttr attr, cnsval_ss
  *  get stored in different places within the instruction descriptor.
  */
 
-inline ssize_t emitter::emitGetInsCns(instrDesc* id)
+inline ssize_t emitter::emitGetInsCns(instrDesc* id) const
 {
     return id->idIsLargeCns() ? ((instrDescCns*)id)->idcCnsVal : id->idSmallCns();
 }
 
-inline ssize_t emitter::emitGetInsDsp(instrDesc* id)
+inline ssize_t emitter::emitGetInsDsp(instrDesc* id) const
 {
     if (id->idIsLargeDsp())
     {
@@ -4105,7 +4124,7 @@ inline ssize_t emitter::emitGetInsDsp(instrDesc* id)
  *  Get hold of the argument count for an indirect call.
  */
 
-inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
+inline unsigned emitter::emitGetInsCIargs(instrDesc* id) const
 {
     if (id->idIsLargeCall())
     {

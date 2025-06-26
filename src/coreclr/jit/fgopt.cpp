@@ -1298,6 +1298,17 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
     assert(bDest->isEmpty());
     assert(bDest->KindIs(BBJ_ALWAYS));
 
+    BasicBlock* const bDestTarget = bDest->GetTarget();
+
+    // Don't redirect 'block' to 'bDestTarget' if the latter jumps to 'bDest'.
+    // This will lead the JIT to consider optimizing 'block' -> 'bDestTarget' -> 'bDest',
+    // entering an infinite loop.
+    //
+    if (bDestTarget->GetUniqueSucc() == bDest)
+    {
+        optimizeJump = false;
+    }
+
     // We do not optimize jumps between two different try regions.
     // However jumping to a block that is not in any try region is OK
     //
@@ -1307,7 +1318,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
     }
 
     // Don't optimize a jump to a removed block
-    if (bDest->GetTarget()->HasFlag(BBF_REMOVED))
+    if (bDestTarget->HasFlag(BBF_REMOVED))
     {
         optimizeJump = false;
     }
@@ -2247,6 +2258,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     //
     fgRedirectTargetEdge(block, target->GetTrueTarget());
     block->GetTargetEdge()->setLikelihood(target->GetTrueEdge()->getLikelihood());
+    block->GetTargetEdge()->setHeuristicBased(target->GetTrueEdge()->isHeuristicBased());
 
     FlowEdge* const falseEdge = fgAddRefPred(target->GetFalseTarget(), block, target->GetFalseEdge());
     block->SetCond(block->GetTargetEdge(), falseEdge);
@@ -2741,6 +2753,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 
     fgRedirectTargetEdge(bJump, falseTarget);
     bJump->GetTargetEdge()->setLikelihood(falseEdge->getLikelihood());
+    bJump->GetTargetEdge()->setHeuristicBased(falseEdge->isHeuristicBased());
 
     FlowEdge* const newTrueEdge = fgAddRefPred(trueTarget, bJump, trueEdge);
 
@@ -5780,4 +5793,69 @@ bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt,
     }
 
     return true;
+}
+
+//-------------------------------------------------------------
+// fgResolveGDVs: Try and resolve GDV checks
+//
+// Returns:
+//    Suitable phase status.
+//
+PhaseStatus Compiler::fgResolveGDVs()
+{
+    if (!opts.OptimizationEnabled())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (!doesMethodHaveGuardedDevirtualization())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (!hasUpdatedTypeLocals)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    bool madeChanges = false;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        if (!block->KindIs(BBJ_COND))
+        {
+            continue;
+        }
+
+        GuardInfo info;
+        if (ObjectAllocator::IsGuard(block, &info))
+        {
+            assert(block == info.m_block);
+            LclVarDsc* const lclDsc = lvaGetDesc(info.m_local);
+
+            if (lclDsc->lvClassIsExact && lclDsc->lvSingleDef && (lclDsc->lvClassHnd == info.m_type))
+            {
+                JITDUMP("GDV in " FMT_BB " can be resolved; type is now known exactly\n", block->bbNum);
+
+                bool const      isCondTrue   = info.m_relop->OperIs(GT_EQ);
+                FlowEdge* const retainedEdge = isCondTrue ? block->GetTrueEdge() : block->GetFalseEdge();
+                FlowEdge* const removedEdge  = isCondTrue ? block->GetFalseEdge() : block->GetTrueEdge();
+
+                JITDUMP("The conditional jump becomes an unconditional jump to " FMT_BB "\n",
+                        retainedEdge->getDestinationBlock()->bbNum);
+
+                fgRemoveRefPred(removedEdge);
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+                fgRepairProfileCondToUncond(block, retainedEdge, removedEdge);
+
+                // The GDV relop will typically be side effecting so just
+                // leave it in place for later cleanup.
+                //
+                info.m_stmt->SetRootNode(info.m_relop);
+                madeChanges = true;
+            }
+        }
+    }
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
