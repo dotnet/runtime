@@ -6,10 +6,19 @@
 #include "threads.h"
 #include "gcenv.h"
 #include "interpexec.h"
-#include "callstubgenerator.h"
 
 // for numeric_limits
 #include <limits>
+
+FCDECL1(float, JIT_ULng2Flt, uint64_t val);
+FCDECL1(double, JIT_ULng2Dbl, uint64_t val);
+FCDECL1(float, JIT_Lng2Flt, int64_t val);
+FCDECL1(double, JIT_Lng2Dbl, int64_t val);
+
+#ifdef TARGET_WASM
+void InvokeCalliStub(PCODE ftn, CallStubHeader *stubHeaderTemplate, int8_t *pArgs, int8_t *pRet);
+#else
+#include "callstubgenerator.h"
 
 void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
 {
@@ -104,6 +113,8 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
 
     return pHeader;
 }
+
+#endif // !TARGET_WASM
 
 typedef void* (*HELPER_FTN_PP)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
@@ -1601,8 +1612,12 @@ CALL_INTERP_METHOD:
                         }
                         if (targetIp == NULL)
                         {
+#ifndef TARGET_WASM
                             // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
                             InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset);
+#else
+                            PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
+#endif // !TARGET_WASM
                             break;
                         }
                     }
