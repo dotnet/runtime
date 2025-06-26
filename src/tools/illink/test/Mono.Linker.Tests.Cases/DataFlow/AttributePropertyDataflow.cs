@@ -56,8 +56,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [Kept]
             [KeptAttributeAttribute(typeof(KeepsPublicMethodsAttribute))]
-            // Trimmer/NativeAot only for now
-            [ExpectedWarning("IL2026", "--ClassWithKeptPublicMethodsKeptByName--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+            [ExpectedWarning("IL2026", "--ClassWithKeptPublicMethodsKeptByName--")]
             [KeepsPublicMethods(TypeName = "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributesOnMethod+ClassWithKeptPublicMethodsKeptByName, test")]
             public static void TestKeepsPublicMethodsByName()
             {
@@ -213,8 +212,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             [Kept]
             [KeptAttributeAttribute(typeof(KeepsPublicMethodsAttribute))]
-            // Trimmer/NativeAot only for now
-            [ExpectedWarning("IL2026", "--ClassWithKeptPublicMethods--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+            [ExpectedWarning("IL2026", "--ClassWithKeptPublicMethods--")]
             [KeepsPublicMethods(TypeName = 1 + 1 == 2 ? "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributeWithConditionalExpression+ClassWithKeptPublicMethodsKeptByName, test" : null)]
             public static void Test()
             {
@@ -226,7 +224,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // where the owning symbol is not a method.
             [Kept]
             [KeptAttributeAttribute(typeof(KeepsPublicMethodsAttribute))]
-            [ExpectedWarning("IL2026", "--ClassWithKeptPublicMethods--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+            [ExpectedWarning("IL2026", "--ClassWithKeptPublicMethods--")]
             [KeepsPublicMethods(TypeName = 1 + 1 == 2 ? "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributeWithConditionalExpression+ClassWithKeptPublicMethodsKeptByName, test" : null)]
             public static int field;
 

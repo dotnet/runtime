@@ -10,16 +10,20 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer
 {
-    internal sealed class DynamicallyAccessedMembersTypeHierarchy
+    sealed class DynamicallyAccessedMembersTypeHierarchy
     {
-        public static void ApplyDynamicallyAccessedMembersToTypeHierarchy(Location typeLocation, INamedTypeSymbol type, Action<Diagnostic> reportDiagnostic)
+        public static void ApplyDynamicallyAccessedMembersToTypeHierarchy(
+            TypeNameResolver typeNameResolver,
+            Location typeLocation,
+            INamedTypeSymbol type,
+            Action<Diagnostic> reportDiagnostic)
         {
             var annotation = FlowAnnotations.GetTypeAnnotation(type);
 
             // We need to apply annotations to this type, and its base/interface types (recursively)
             // But the annotations on base/interfaces may already be applied so we don't need to apply those
             // again (and should avoid doing so as it would produce extra warnings).
-            var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer(reportDiagnostic, type);
+            var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer(reportDiagnostic, typeNameResolver, type);
             if (type.BaseType is INamedTypeSymbol baseType)
             {
                 var baseAnnotation = FlowAnnotations.GetTypeAnnotation(baseType);
