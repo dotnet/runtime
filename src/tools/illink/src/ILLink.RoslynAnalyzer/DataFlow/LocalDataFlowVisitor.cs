@@ -131,7 +131,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         public abstract TValue GetFieldTargetValue(IFieldReferenceOperation fieldReference, in TContext context);
 
-        public abstract TValue GetPropertyTargetValue(IPropertyReferenceOperation propertyReference, in TContext context);
+        public abstract TValue GetBackingFieldTargetValue(IPropertyReferenceOperation propertyReference, in TContext context);
 
         public abstract TValue GetParameterTargetValue(IParameterSymbol parameter);
 
@@ -286,7 +286,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                         // the case where there is no set method.
 
                         var current = state.Current;
-                        TValue targetValue = GetPropertyTargetValue(propertyRef, in current.Context);
+                        TValue targetValue = GetBackingFieldTargetValue(propertyRef, in current.Context);
                         HandleAssignment(value, targetValue, operation, in current.Context);
                         return value;
                     }

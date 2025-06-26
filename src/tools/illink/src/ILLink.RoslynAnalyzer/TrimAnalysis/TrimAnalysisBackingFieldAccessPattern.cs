@@ -8,14 +8,14 @@ using ILLink.RoslynAnalyzer.DataFlow;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-    internal readonly record struct TrimAnalysisPropertyAccessPattern
+    internal readonly record struct TrimAnalysisBackingFieldAccessPattern
     {
         public IPropertySymbol Property { get; init; }
         public IPropertyReferenceOperation Operation { get; init; }
         public ISymbol OwningSymbol { get; init; }
         public FeatureContext FeatureContext { get; init; }
 
-        public TrimAnalysisPropertyAccessPattern(
+        public TrimAnalysisBackingFieldAccessPattern(
             IPropertySymbol property,
             IPropertyReferenceOperation operation,
             ISymbol owningSymbol,
@@ -27,15 +27,15 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             FeatureContext = featureContext;
         }
 
-        public TrimAnalysisPropertyAccessPattern Merge(
+        public TrimAnalysisBackingFieldAccessPattern Merge(
             FeatureContextLattice featureContextLattice,
-            TrimAnalysisPropertyAccessPattern other)
+            TrimAnalysisBackingFieldAccessPattern other)
         {
             Debug.Assert(SymbolEqualityComparer.Default.Equals(Property, other.Property));
             Debug.Assert(Operation == other.Operation);
             Debug.Assert(SymbolEqualityComparer.Default.Equals(OwningSymbol, other.OwningSymbol));
 
-            return new TrimAnalysisPropertyAccessPattern(
+            return new TrimAnalysisBackingFieldAccessPattern(
                 Property,
                 Operation,
                 OwningSymbol,

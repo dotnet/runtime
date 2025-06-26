@@ -14,7 +14,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
     {
         private readonly Dictionary<IOperation, TrimAnalysisAssignmentPattern> AssignmentPatterns;
         private readonly Dictionary<IOperation, TrimAnalysisFieldAccessPattern> FieldAccessPatterns;
-        private readonly Dictionary<IOperation, TrimAnalysisPropertyAccessPattern> PropertyAccessPatterns;
+        private readonly Dictionary<IOperation, TrimAnalysisBackingFieldAccessPattern> BackingFieldAccessPatterns;
         private readonly Dictionary<IOperation, TrimAnalysisGenericInstantiationPattern> GenericInstantiationPatterns;
         private readonly Dictionary<IOperation, TrimAnalysisMethodCallPattern> MethodCallPatterns;
         private readonly Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ReflectionAccessPatterns;
@@ -28,7 +28,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         {
             AssignmentPatterns = new Dictionary<IOperation, TrimAnalysisAssignmentPattern>();
             FieldAccessPatterns = new Dictionary<IOperation, TrimAnalysisFieldAccessPattern>();
-            PropertyAccessPatterns = new Dictionary<IOperation, TrimAnalysisPropertyAccessPattern>();
+            BackingFieldAccessPatterns = new Dictionary<IOperation, TrimAnalysisBackingFieldAccessPattern>();
             GenericInstantiationPatterns = new Dictionary<IOperation, TrimAnalysisGenericInstantiationPattern>();
             MethodCallPatterns = new Dictionary<IOperation, TrimAnalysisMethodCallPattern>();
             ReflectionAccessPatterns = new Dictionary<IOperation, TrimAnalysisReflectionAccessPattern>();
@@ -37,15 +37,15 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             FeatureContextLattice = featureContextLattice;
         }
 
-        public void Add(TrimAnalysisPropertyAccessPattern pattern)
+        public void Add(TrimAnalysisBackingFieldAccessPattern pattern)
         {
-            if (!PropertyAccessPatterns.TryGetValue(pattern.Operation, out var existingPattern))
+            if (!BackingFieldAccessPatterns.TryGetValue(pattern.Operation, out var existingPattern))
             {
-                PropertyAccessPatterns.Add(pattern.Operation, pattern);
+                BackingFieldAccessPatterns.Add(pattern.Operation, pattern);
                 return;
             }
 
-            PropertyAccessPatterns[pattern.Operation] = pattern.Merge(FeatureContextLattice, existingPattern);
+            BackingFieldAccessPatterns[pattern.Operation] = pattern.Merge(FeatureContextLattice, existingPattern);
         }
 
         public void Add(TrimAnalysisAssignmentPattern trimAnalysisPattern)
@@ -130,8 +130,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             foreach (var fieldAccessPattern in FieldAccessPatterns.Values)
                 fieldAccessPattern.ReportDiagnostics(context, reportDiagnostic);
 
-            foreach (var propertyAccessPattern in PropertyAccessPatterns.Values)
-                propertyAccessPattern.ReportDiagnostics(context, reportDiagnostic);
+            foreach (var backingFieldAccessPattern in BackingFieldAccessPatterns.Values)
+                backingFieldAccessPattern.ReportDiagnostics(context, reportDiagnostic);
 
             foreach (var genericInstantiationPattern in GenericInstantiationPatterns.Values)
                 genericInstantiationPattern.ReportDiagnostics(context, reportDiagnostic);

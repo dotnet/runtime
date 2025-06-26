@@ -17,7 +17,7 @@ namespace ILLink.Shared.TrimAnalysis
         }
 
         public FieldValue(IPropertySymbol propertySymbol)
-            : this(propertySymbol, propertySymbol.Type, FlowAnnotations.GetFieldAnnotation(propertySymbol))
+            : this(propertySymbol, propertySymbol.Type, FlowAnnotations.GetBackingFieldAnnotation(propertySymbol))
         {
         }
 
