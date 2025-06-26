@@ -34,11 +34,12 @@ internal sealed class FrameIterator
 
         HijackFrame,
 
+        TailCallFrame,
+
         /* Other Frame Types not handled by the iterator */
         UnmanagedToManagedFrame,
         ComMethodFrame,
         ComPrestubMethodFrame,
-        TailCallFrame,
         ProtectValueClassFrame,
         DebuggerClassInitMarkFrame,
         DebuggerExitFrame,
@@ -124,6 +125,10 @@ internal sealed class FrameIterator
                 Data.HijackFrame hijackFrame = target.ProcessedData.GetOrAdd<Data.HijackFrame>(CurrentFrame.Address);
                 GetFrameHandler(context).HandleHijackFrame(hijackFrame);
                 return;
+            case FrameType.TailCallFrame:
+                Data.TailCallFrame tailCallFrame = target.ProcessedData.GetOrAdd<Data.TailCallFrame>(CurrentFrame.Address);
+                GetFrameHandler(context).HandleTailCallFrame(tailCallFrame);
+                return;
             default:
                 // Unknown Frame type. This could either be a Frame that we don't know how to handle,
                 // or a Frame that does not update the context.
@@ -175,6 +180,7 @@ internal sealed class FrameIterator
         {
             ContextHolder<X86Context> contextHolder => new X86FrameHandler(target, contextHolder),
             ContextHolder<AMD64Context> contextHolder => new AMD64FrameHandler(target, contextHolder),
+            ContextHolder<ARMContext> contextHolder => new ARMFrameHandler(target, contextHolder),
             ContextHolder<ARM64Context> contextHolder => new ARM64FrameHandler(target, contextHolder),
             _ => throw new InvalidOperationException("Unsupported context type"),
         };

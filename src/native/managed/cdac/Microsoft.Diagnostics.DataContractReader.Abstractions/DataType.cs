@@ -103,6 +103,7 @@ public enum DataType
 
     TransitionBlock,
     DebuggerEval,
+    ArgumentRegisters,
     CalleeSavedRegisters,
     HijackArgs,
 
@@ -114,4 +115,5 @@ public enum DataType
     ResumableFrame,
     FaultingExceptionFrame,
     HijackFrame,
+    TailCallFrame,
 }

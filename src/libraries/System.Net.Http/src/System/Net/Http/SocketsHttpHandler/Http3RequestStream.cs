@@ -319,6 +319,12 @@ namespace System.Net.Http
 
                 throw new HttpRequestException(httpRequestError, SR.net_http_client_execution_error, _connection.AbortException);
             }
+            catch (QuicException ex)
+            {
+                // Any other QuicException means transport error, and should be treated as a connection failure.
+                _connection.Abort(ex);
+                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_http3_connection_quic_error, ex);
+            }
             // It is possible for user's Content code to throw an unexpected OperationCanceledException.
             catch (OperationCanceledException ex) when (ex.CancellationToken == _requestBodyCancellationSource.Token || ex.CancellationToken == cancellationToken)
             {

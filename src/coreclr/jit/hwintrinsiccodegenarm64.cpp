@@ -512,7 +512,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // destination using /Z.
 
                     assert((targetReg != embMaskOp2Reg) || (embMaskOp1Reg == embMaskOp2Reg));
-                    assert(intrin.op3->isContained() || !intrin.op1->IsMaskAllBitsSet());
+                    assert(intrin.op3->isContained() || !intrin.op1->IsTrueMask(node->GetSimdBaseType()));
                     GetEmitter()->emitInsSve_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
                 }
                 else
@@ -610,7 +610,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         {
                             assert(intrin.op3->IsVectorZero());
 
-                            if (intrin.op1->isContained() || intrin.op1->IsMaskAllBitsSet())
+                            if (intrin.op1->isContained() || intrin.op1->IsTrueMask(node->GetSimdBaseType()))
                             {
                                 // We already skip importing ConditionalSelect if op1 == trueAll, however
                                 // if we still see it here, it is because we wrapped the predicated instruction
@@ -2031,7 +2031,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Sve_CreateTrueMaskAll:
+            case NI_Sve_ConversionTrueMask:
                 // Must use the pattern variant, as the non-pattern varient is SVE2.1.
                 GetEmitter()->emitIns_R_PATTERN(ins, emitSize, targetReg, opt, SVE_PATTERN_ALL);
                 break;
@@ -2684,6 +2684,15 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 break;
             }
+
+            case NI_Sve2_AddCarryWideningLower:
+            case NI_Sve2_AddCarryWideningUpper:
+                if (targetReg != op3Reg)
+                {
+                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op3Reg, /* canSkip */ true);
+                }
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
 
             case NI_Sve2_BitwiseClearXor:
             case NI_Sve2_Xor:
