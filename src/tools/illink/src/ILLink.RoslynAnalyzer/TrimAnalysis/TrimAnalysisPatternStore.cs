@@ -14,6 +14,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
     {
         private readonly Dictionary<IOperation, TrimAnalysisAssignmentPattern> AssignmentPatterns;
         private readonly Dictionary<IOperation, TrimAnalysisFieldAccessPattern> FieldAccessPatterns;
+        private readonly Dictionary<IOperation, TrimAnalysisPropertyAccessPattern> PropertyAccessPatterns;
         private readonly Dictionary<IOperation, TrimAnalysisGenericInstantiationPattern> GenericInstantiationPatterns;
         private readonly Dictionary<IOperation, TrimAnalysisMethodCallPattern> MethodCallPatterns;
         private readonly Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ReflectionAccessPatterns;
@@ -27,12 +28,24 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         {
             AssignmentPatterns = new Dictionary<IOperation, TrimAnalysisAssignmentPattern>();
             FieldAccessPatterns = new Dictionary<IOperation, TrimAnalysisFieldAccessPattern>();
+            PropertyAccessPatterns = new Dictionary<IOperation, TrimAnalysisPropertyAccessPattern>();
             GenericInstantiationPatterns = new Dictionary<IOperation, TrimAnalysisGenericInstantiationPattern>();
             MethodCallPatterns = new Dictionary<IOperation, TrimAnalysisMethodCallPattern>();
             ReflectionAccessPatterns = new Dictionary<IOperation, TrimAnalysisReflectionAccessPattern>();
             FeatureCheckReturnValuePatterns = new Dictionary<IOperation, FeatureCheckReturnValuePattern>();
             Lattice = lattice;
             FeatureContextLattice = featureContextLattice;
+        }
+
+        public void Add(TrimAnalysisPropertyAccessPattern pattern)
+        {
+            if (!PropertyAccessPatterns.TryGetValue(pattern.Operation, out var existingPattern))
+            {
+                PropertyAccessPatterns.Add(pattern.Operation, pattern);
+                return;
+            }
+
+            PropertyAccessPatterns[pattern.Operation] = pattern.Merge(FeatureContextLattice, existingPattern);
         }
 
         public void Add(TrimAnalysisAssignmentPattern trimAnalysisPattern)
@@ -116,6 +129,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
             foreach (var fieldAccessPattern in FieldAccessPatterns.Values)
                 fieldAccessPattern.ReportDiagnostics(context, reportDiagnostic);
+
+            foreach (var propertyAccessPattern in PropertyAccessPatterns.Values)
+                propertyAccessPattern.ReportDiagnostics(context, reportDiagnostic);
 
             foreach (var genericInstantiationPattern in GenericInstantiationPatterns.Values)
                 genericInstantiationPattern.ReportDiagnostics(context, reportDiagnostic);
