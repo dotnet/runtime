@@ -36,22 +36,16 @@ namespace System.Net.WebSockets.Client.Tests
                 var ub = new UriBuilder(server);
                 ub.Query = "delay10sec";
 
-                //Console.WriteLine($"Client: Connecting to {ub.Uri}");
-
                 Task t = ConnectAsync(cws, ub.Uri, cts.Token);
 
-                //Console.WriteLine($"Client: aborting websocket");
                 cws.Abort();
-                //Console.WriteLine($"Client: aborted");
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() => t);
-                //Console.WriteLine($"Client: ConnectAsync threw exception: {ex}");
 
                 Assert.Equal(ResourceHelper.GetExceptionMessage("net_webstatus_ConnectFailure"), ex.Message);
 
                 Assert.Equal(WebSocketError.Faulted, ex.WebSocketErrorCode);
                 Assert.Equal(WebSocketState.Closed, cws.State);
             }
-            //Console.WriteLine($"Client: FINISHED");
         }
 
         protected async Task RunClient_Abort_SendAndAbort_Success(Uri server)
@@ -74,29 +68,24 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_Abort_ReceiveAndAbort_Success(Uri server)
         {
-            //Console.WriteLine($"[Client - {nameof(RunClient_Abort_ReceiveAndAbort_Success)}] Starting test with server: {server}");
             await TestCancellation(async (cws) =>
             {
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
-                //Console.WriteLine($"[Client - {nameof(RunClient_Abort_ReceiveAndAbort_Success)}] Sending '.delay5sec' message.");
                 await cws.SendAsync(
                     WebSocketData.GetBufferFromText(".delay5sec"),
                     WebSocketMessageType.Text,
                     true,
                     ctsDefault.Token);
 
-                //Console.WriteLine($"[Client - {nameof(RunClient_Abort_ReceiveAndAbort_Success)}] Receiving message.");
                 var recvBuffer = new byte[100];
                 var segment = new ArraySegment<byte>(recvBuffer);
 
                 Task t = cws.ReceiveAsync(segment, ctsDefault.Token);
 
-                //Console.WriteLine($"[Client - {nameof(RunClient_Abort_ReceiveAndAbort_Success)}] Aborting WebSocket.");
                 cws.Abort();
 
                 await t;
-                //Console.WriteLine($"[Client - {nameof(RunClient_Abort_ReceiveAndAbort_Success)}] Test completed.");
             }, server);
         }
 

@@ -237,7 +237,7 @@ namespace System.Net.WebSockets.Client.Tests
             using (var cws = new ClientWebSocket())
             using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
             {
-                cws.Options.HttpVersion = HttpVersion.Version11;
+                cws.Options.HttpVersion = Net.HttpVersion.Version11;
                 cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
                 await cws.ConnectAsync(server, GetInvoker(), cts.Token);
                 Assert.Equal(WebSocketState.Open, cws.State);
@@ -253,7 +253,7 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var cws = new ClientWebSocket())
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
-                    cws.Options.HttpVersion = HttpVersion.Version11;
+                    cws.Options.HttpVersion = Net.HttpVersion.Version11;
                     cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
 
                     Task connectTask = cws.ConnectAsync(url, GetInvoker(), cts.Token);

@@ -17,7 +17,7 @@ namespace System.Net.WebSockets.Client.Tests
             Options options,
             CancellationToken cancellationToken)
         {
-            Assert.False(options.SkipServerHandshakeResponse, "Not supported in this overload");
+            Assert.False(options.SkipServerHandshakeResponse, "Required to create ClientWebSocket");
 
             return RunAsyncPrivate(
                 uri => RunClientWebSocketAsync(uri, clientWebSocketFunc, options, cancellationToken),
@@ -32,9 +32,9 @@ namespace System.Net.WebSockets.Client.Tests
             Options options,
             CancellationToken cancellationToken)
         {
-            Assert.False(options.DisposeClientWebSocket, "Not supported in this overload");
-            Assert.False(options.DisposeServerWebSocket, "Not supported in this overload");
-            Assert.False(options.DisposeHttpInvoker, "Not supported in this overload");
+            Assert.False(options.DisposeClientWebSocket, "ClientWebSocket is not created in this overload");
+            Assert.False(options.DisposeServerWebSocket, "ServerWebSocket is not created in this overload");
+            Assert.False(options.DisposeHttpInvoker, "HttpInvoker is not used in this overload");
             Assert.Null(options.HttpInvoker); // Not supported in this overload
 
             return RunAsyncPrivate(loopbackClientFunc, loopbackServerFunc, options, cancellationToken);
@@ -57,8 +57,14 @@ namespace System.Net.WebSockets.Client.Tests
             return RunClientAndServerAsync(
                 async uri =>
                 {
-                    await loopbackClientFunc(uri);
-                    clientExitCts.Cancel();
+                    try
+                    {
+                        await loopbackClientFunc(uri);
+                    }
+                    finally
+                    {
+                        clientExitCts.Cancel();
+                    }
                 },
                 loopbackServerFunc,
                 options,
@@ -81,7 +87,7 @@ namespace System.Net.WebSockets.Client.Tests
 
             if (options.DisposeServerWebSocket)
             {
-                serverWebSocket?.Dispose();
+                serverWebSocket.Dispose();
             }
         }
 

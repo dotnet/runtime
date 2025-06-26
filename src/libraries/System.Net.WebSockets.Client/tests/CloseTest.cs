@@ -545,7 +545,7 @@ namespace System.Net.WebSockets.Client.Tests
                     await serverWs.ReceiveAsync(new byte[16], ct);
                     await serverWs.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", ct);
                     await clientCompleted.Task;
-                }, new LoopbackWebSocketServer.Options(HttpVersion.Version11, true, test.GetInvoker()), timeoutCts.Token);
+                }, new LoopbackWebSocketServer.Options{ HttpVersion = Net.HttpVersion.Version11, UseSsl = true, HttpInvoker = test.GetInvoker() }, timeoutCts.Token);
             }, GetType().FullName).DisposeAsync();
         }
     }

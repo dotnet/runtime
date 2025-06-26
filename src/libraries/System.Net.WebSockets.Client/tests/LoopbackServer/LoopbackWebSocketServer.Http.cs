@@ -74,7 +74,18 @@ namespace System.Net.WebSockets.Client.Tests
 
             await loopbackServerFunc(requestData, cancellationToken).ConfigureAwait(false);
 
-            await requestData.Http2Connection!.ShutdownIgnoringErrorsAsync(requestData.Http2StreamId.Value);
+            DateTime now = DateTime.UtcNow;
+
+            if (options.AbortServerOnClientExit)
+            {
+                // Wait for the client to exit
+                await requestData.Http2Connection!.WaitForConnectionShutdownAsync(ignoreUnexpectedFrames: true).ConfigureAwait(false);
+            }
+            else
+            {
+                // This will send GOAWAY
+                await requestData.Http2Connection!.ShutdownIgnoringErrorsAsync(requestData.Http2StreamId.Value).ConfigureAwait(false);
+            }
         }
 
         private static async Task RunHttpServer<THttpServer>(

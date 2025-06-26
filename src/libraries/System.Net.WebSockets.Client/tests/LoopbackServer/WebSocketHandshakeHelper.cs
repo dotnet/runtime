@@ -21,9 +21,7 @@ namespace System.Net.WebSockets.Client.Tests
             bool parseEchoOptions = false,
             CancellationToken cancellationToken = default)
         {
-            //Console.WriteLine($"[Server - {nameof(ProcessHttp11RequestAsync)}] Handling HTTP/1.1 request on {connection.Socket.LocalEndPoint}...");
             List<string> headers = await connection.ReadRequestHeaderAsync().WaitAsync(cancellationToken).ConfigureAwait(false);
-            //Console.WriteLine($"[Server - {nameof(ProcessHttp11RequestAsync)}] Received headers: {string.Join(", ", headers)}");
 
             var data = new WebSocketRequestData()
             {
@@ -40,14 +38,11 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     int spaceIndex = headers[0].IndexOf(' ', queryIndex);
                     string query = headers[0].Substring(queryIndex, spaceIndex - queryIndex);
-                    //Console.WriteLine($"[Server - {nameof(ProcessHttp11RequestAsync)}] query: {query}");
 
                     // NOTE: ProcessOptions needs to be called before sending the server response
                     // because it may be configured to delay the response.
 
-                    //Console.WriteLine($"[Server - {nameof(ProcessHttp11RequestAsync)}] Processing options...");
                     data.EchoOptions = await WebSocketEchoHelper.ProcessOptions(query).ConfigureAwait(false);
-                    //Console.WriteLine($"[Server - {nameof(ProcessHttp11RequestAsync)}] Parsed options: {data.EchoOptions}");
                 }
                 else
                 {
@@ -79,9 +74,7 @@ namespace System.Net.WebSockets.Client.Tests
                     }
                 }
 
-                //Console.WriteLine($"[Server - {nameof(ProcessHttp11RequestAsync)}] Sending server handshake response...");
                 await SendHttp11ServerResponseAsync(connection, secWebSocketKey, cancellationToken: cancellationToken).ConfigureAwait(false);
-                //Console.WriteLine($"[Server - {nameof(ProcessHttp11RequestAsync)}] Sent server handshake response.");
             }
 
             data.TransportStream = connection.Stream;
@@ -119,13 +112,10 @@ namespace System.Net.WebSockets.Client.Tests
                 Http2StreamId = streamId
             };
 
-            //Console.WriteLine($"[Server - {nameof(ProcessHttp2RequestAsync)}] Headers:");
-
             foreach (var header in httpRequestData.Headers)
             {
                 Assert.NotNull(header.Name);
                 data.Headers.Add(header.Name, header.Value);
-                //Console.WriteLine($"[Server - {nameof(ProcessHttp2RequestAsync)}] {header.Name}: {data.Headers[header.Name] ?? "<null>"}");
             }
 
             var isValidOpeningHandshake = httpRequestData.Method == HttpMethod.Connect.ToString() && data.Headers.ContainsKey(":protocol");

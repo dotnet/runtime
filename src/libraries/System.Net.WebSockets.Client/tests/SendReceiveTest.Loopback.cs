@@ -49,9 +49,9 @@ namespace System.Net.WebSockets.Client.Tests
         public Task SendReceive_Concurrent_Success(Uri server)
             => RunClient_SendReceive_Concurrent_Success(server);
 
-        //[Fact]
-        //public Task SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated()
-        //    => RunClient_SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated();
+        [Fact]
+        public Task SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated()
+            => RunClient_SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated();
 
         [Theory, MemberData(nameof(UseSsl_MemberData))]
         public Task ZeroByteReceive_CompletesWhenDataAvailable(Uri server)
