@@ -2895,9 +2895,9 @@ namespace System.Diagnostics.Tracing
                     if (m_eventData != null)
                     {
                         foreach (int eventId in m_eventData.Keys)
-                            {
-                                eventEnabled[eventId] = false;
-                            }
+                        {
+                            eventEnabled[eventId] = false;
+                        }
                     }
                     dispatcher.m_EventEnabled ??= eventEnabled;
                     dispatcher = dispatcher.m_Next;
