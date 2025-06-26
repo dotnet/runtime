@@ -13,8 +13,18 @@ internal class TransitionBlock : IData<TransitionBlock>
         Target.TypeInfo type = target.GetTypeInfo(DataType.TransitionBlock);
         ReturnAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(ReturnAddress)].Offset);
         CalleeSavedRegisters = address + (ulong)type.Fields[nameof(CalleeSavedRegisters)].Offset;
+
+        if (type.Fields.ContainsKey(nameof(ArgumentRegisters)))
+        {
+            ArgumentRegisters = address + (ulong)type.Fields[nameof(ArgumentRegisters)].Offset;
+        }
     }
 
     public TargetPointer ReturnAddress { get; }
     public TargetPointer CalleeSavedRegisters { get; }
+
+    /// <summary>
+    /// Only available on ARM targets.
+    /// </summary>
+    public TargetPointer? ArgumentRegisters { get; }
 }
