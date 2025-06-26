@@ -18,13 +18,13 @@ struct LiveLocalInfo
 
 struct ContinuationLayout
 {
-    unsigned                             DataSize             = 0;
-    unsigned                             GCRefsCount          = 0;
-    ClassLayout*                         ReturnStructLayout   = nullptr;
-    unsigned                             ReturnSize           = 0;
-    bool                                 ReturnInGCData       = false;
-    unsigned                             ReturnValDataOffset  = UINT_MAX;
-    unsigned                             ExceptionGCDataIndex = UINT_MAX;
+    unsigned                             DataSize               = 0;
+    unsigned                             GCRefsCount            = 0;
+    ClassLayout*                         ReturnStructLayout     = nullptr;
+    unsigned                             ReturnSize             = 0;
+    bool                                 ReturnInGCData         = false;
+    unsigned                             ReturnValDataOffset    = UINT_MAX;
+    unsigned                             ExceptionGCDataIndex   = UINT_MAX;
     unsigned                             ExecContextGCDataIndex = UINT_MAX;
     const jitstd::vector<LiveLocalInfo>& Locals;
 
@@ -85,11 +85,8 @@ class AsyncTransformation
 
     CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness& life);
 
-    BasicBlock*  CreateSuspension(BasicBlock*               block,
-                                  GenTreeCall*              call,
-                                  unsigned                  stateNum,
-                                  AsyncLiveness&            life,
-                                  const ContinuationLayout& layout);
+    BasicBlock* CreateSuspension(
+        BasicBlock* block, GenTreeCall* call, unsigned stateNum, AsyncLiveness& life, const ContinuationLayout& layout);
     GenTreeCall* CreateAllocContinuationCall(AsyncLiveness& life,
                                              GenTree*       prevContinuation,
                                              unsigned       gcRefsCount,
