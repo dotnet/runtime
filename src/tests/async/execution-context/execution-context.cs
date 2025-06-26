@@ -26,10 +26,10 @@ public class Async2ExecutionContext
         {
             s_local.Value = 43;
             await ChangeThenThrow();
-            Assert.Equal(43, s_local.Value);
         }
         catch (Exception)
         {
+            Assert.Equal(43, s_local.Value);
         }
 
         s_local.Value = 44;
@@ -40,10 +40,10 @@ public class Async2ExecutionContext
         {
             s_local.Value = 45;
             await ChangeThenThrowInlined();
-            Assert.Equal(45, s_local.Value);
         }
         catch (Exception)
         {
+            Assert.Equal(45, s_local.Value);
         }
 
         s_local.Value = 46;
