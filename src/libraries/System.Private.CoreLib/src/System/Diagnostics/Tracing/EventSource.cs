@@ -175,7 +175,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-
 namespace System.Diagnostics.Tracing
 {
     [Conditional("NEEDED_FOR_SOURCE_GENERATOR_ONLY")]
@@ -2892,7 +2891,15 @@ namespace System.Diagnostics.Tracing
                 EventDispatcher? dispatcher = m_Dispatchers;
                 while (dispatcher != null)
                 {
-                    dispatcher.m_EventEnabled ??= new Dictionary<int, bool>();
+                    Dictionary<int, bool> eventEnabled = new Dictionary<int, bool>();
+                    if (m_eventData != null)
+                    {
+                        foreach (int eventId in m_eventData.Keys)
+                            {
+                                eventEnabled[eventId] = false;
+                            }
+                    }
+                    dispatcher.m_EventEnabled ??= eventEnabled;
                     dispatcher = dispatcher.m_Next;
                 }
 #if FEATURE_PERFTRACING
