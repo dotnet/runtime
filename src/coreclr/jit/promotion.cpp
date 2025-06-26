@@ -3035,7 +3035,7 @@ PhaseStatus Promotion::Run()
             if (replacer.MayHaveForwardSubOpportunity())
             {
                 JITDUMP("Invoking forward sub due to a potential opportunity\n");
-                while ((stmt != bb->firstStmt()) && m_compiler->fgForwardSubStatement(stmt->GetPrevStmt()))
+                while ((stmt != bb->firstStmt()) && m_compiler->fgForwardSubStatement(stmt->GetPrevStmt(), stmt))
                 {
                     m_compiler->fgRemoveStmt(bb, stmt->GetPrevStmt());
                 }

@@ -147,7 +147,7 @@ bool Compiler::fgForwardSubBlock(BasicBlock* block)
     {
         Statement* const prevStmt    = stmt->GetPrevStmt();
         Statement* const nextStmt    = stmt->GetNextStmt();
-        bool const       substituted = fgForwardSubStatement(stmt);
+        bool const       substituted = fgForwardSubStatement(stmt, lastStmt);
 
         if (substituted)
         {
@@ -437,10 +437,11 @@ private:
 
 //------------------------------------------------------------------------
 // fgForwardSubStatement: forward substitute this statement's
-//  computation to the next statement, if legal and profitable
+//  computation to a subsequent statement, if legal and profitable
 //
 // arguments:
-//    stmt - statement in question
+//    stmt     - statement in question
+//    lastStmt - the farthest statement to consider for substitution
 //
 // Returns:
 //    true if statement computation was forwarded.
@@ -450,7 +451,7 @@ private:
 //    This requires locals to be linked (fgNodeThreading == AllLocals) and
 //    liveness information to be up-to-date (specifically GTF_VAR_DEATH).
 //
-bool Compiler::fgForwardSubStatement(Statement* stmt)
+bool Compiler::fgForwardSubStatement(Statement* stmt, Statement* lastStmt)
 {
     // Is this tree a def of a single use, unaliased local?
     //
@@ -532,36 +533,48 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     }
 
     // Local and tree to substitute seem suitable.
-    // See if the next statement contains the one and only use.
-    //
-    Statement* const nextStmt = stmt->GetNextStmt();
+    // See if a subsequent statement contains the one and only use.
 
     ForwardSubVisitor fsv(this, lclNum);
-    // Do a quick scan through the linked locals list to see if there is a last use.
-    bool found = false;
-    for (GenTreeLclVarCommon* lcl : nextStmt->LocalsTreeList())
+    Statement*        nextStmt = stmt->GetNextStmt();
+    bool              found    = false;
+
+    if (!fwdSubNode->OperIsConst())
     {
-        if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum))
+        lastStmt = nextStmt;
+    }
+
+    do
+    {
+        // Do a quick scan through the linked locals list to see if there is a last use.
+        for (GenTreeLclVarCommon* lcl : nextStmt->LocalsTreeList())
         {
-            if (fsv.IsLastUse(lcl->AsLclVar()))
+            if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum))
             {
-                found = true;
-                break;
+                if (fsv.IsLastUse(lcl->AsLclVar()))
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (fsv.IsUse(lcl))
+            {
+                JITDUMP(" stmt, " FMT_STMT ", has non-last use\n", nextStmt->GetID());
+                return false;
             }
         }
 
-        if (fsv.IsUse(lcl))
+        if (!found)
         {
-            JITDUMP(" next stmt has non-last use\n");
-            return false;
+            if (nextStmt == lastStmt)
+            {
+                JITDUMP(" no stmt use\n");
+                return false;
+            }
+            nextStmt = nextStmt->GetNextStmt();
         }
-    }
-
-    if (!found)
-    {
-        JITDUMP(" no next stmt use\n");
-        return false;
-    }
+    } while (!found);
 
     // Don't fwd sub overly large trees.
     // Size limit here is ad-hoc. Need to tune.
