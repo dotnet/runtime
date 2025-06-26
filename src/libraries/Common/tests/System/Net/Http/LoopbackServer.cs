@@ -812,7 +812,7 @@ namespace System.Net.Test.Common
                     int offset = line.IndexOf(':');
                     string name = line.Substring(0, offset);
                     string value = line.Substring(offset + 1).TrimStart();
-                    requestData.Headers.Add(new HttpHeaderData(name, value, raw: lineBytes));
+                    requestData.Headers.Add(new HttpHeaderData(name, value, raw: lineBytes, rawValueStart: offset + 1));
                 }
 
                 if (requestData.Method != "GET")

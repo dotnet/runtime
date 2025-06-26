@@ -5,18 +5,18 @@ using System;
 
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 {
-	[AttributeUsage (AttributeTargets.Field, Inherited = false, AllowMultiple = true)]
-	public class KeptAttributeOnFixedBufferTypeAttribute : KeptAttribute
-	{
-		public KeptAttributeOnFixedBufferTypeAttribute (string attributeName)
-		{
-			if (string.IsNullOrEmpty (attributeName))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (attributeName));
-		}
+    [AttributeUsage(AttributeTargets.Field, Inherited = false, AllowMultiple = true)]
+    public class KeptAttributeOnFixedBufferTypeAttribute : KeptAttribute
+    {
+        public KeptAttributeOnFixedBufferTypeAttribute(string attributeName)
+        {
+            if (string.IsNullOrEmpty(attributeName))
+                throw new ArgumentException("Value cannot be null or empty.", nameof(attributeName));
+        }
 
-		public KeptAttributeOnFixedBufferTypeAttribute (Type type)
-		{
-			ArgumentNullException.ThrowIfNull (type);
-		}
-	}
+        public KeptAttributeOnFixedBufferTypeAttribute(Type type)
+        {
+            ArgumentNullException.ThrowIfNull(type);
+        }
+    }
 }

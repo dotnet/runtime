@@ -419,6 +419,45 @@
              Link="Common\System\Security\Cryptography\MLDsaAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.cs"
              Link="Common\System\Security\Cryptography\MLDsaImplementation.cs" />
+
+    <Compile Include="System\Security\Cryptography\PinAndClear.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildPqc)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETStandard'">
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs"
+             Link="Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CngHelpers.cs"
+             Link="Common\System\Security\Cryptography\CngHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CngHelpers.SignVerify.cs"
+             Link="Common\System\Security\Cryptography\CngHelpers.SignVerify.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.Shared.cs"
+             Link="Common\System\Security\Cryptography\CngPkcs8.Shared.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\KeyPropertyName.cs"
+             Link="Common\System\Security\Cryptography\KeyPropertyName.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaCng.cs"
+             Link="Common\System\Security\Cryptography\MLDsaCng.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaCng.Windows.cs"
+             Link="Common\System\Security\Cryptography\MLDsaCng.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.CreateCng.cs"
+             Link="Common\System\Security\Cryptography\MLDsaImplementation.CreateCng.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs"
+             Link="Common\Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.ErrorCode.cs"
+             Link="Common\Interop\Windows\NCrypt\Interop.ErrorCode.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.Keys.cs"
+             Link="Common\Interop\Windows\NCrypt\Interop.Keys.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.NCryptBuffer.cs"
+             Link="Common\Interop\Windows\NCrypt\Interop.NCryptBuffer.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.Properties.cs"
+             Link="Common\Interop\Windows\NCrypt\Interop.Properties.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.SignVerify.cs"
+             Link="Common\Interop\Windows\NCrypt\Interop.SignVerify.cs" />
+
+    <Compile Include="System\Security\Cryptography\CngHelpers.cs" />
+    <Compile Include="System\Security\Cryptography\CngExtensions.cs" />
+    <Compile Include="System\Security\Cryptography\CngIdentifierExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
