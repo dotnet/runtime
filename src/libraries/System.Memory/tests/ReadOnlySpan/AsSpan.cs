@@ -103,10 +103,10 @@ namespace System.SpanTests
         [MemberData(nameof(TestHelpers.StringSlice2ArgTestOutOfRangeData), MemberType = typeof(TestHelpers))]
         public static unsafe void AsSpan_2Arg_OutOfRange(string text, int start)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsSpan(start).DontBox());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => text.AsSpan(start).DontBox());
             if (start >= 0)
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => text.AsSpan(new Index(start)).DontBox());
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => text.AsSpan(new Index(start)).DontBox());
             }
         }
 
@@ -114,10 +114,10 @@ namespace System.SpanTests
         [MemberData(nameof(TestHelpers.StringSlice3ArgTestOutOfRangeData), MemberType = typeof(TestHelpers))]
         public static unsafe void AsSpan_3Arg_OutOfRange(string text, int start, int length)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsSpan(start, length).DontBox());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => text.AsSpan(start, length).DontBox());
             if (start >= 0 && length >= 0 && start + length >= 0)
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => text.AsSpan(start..(start + length)).DontBox());
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => text.AsSpan(start..(start + length)).DontBox());
             }
         }
     }
