@@ -3570,9 +3570,10 @@ namespace System.Diagnostics.Tracing
         {
             lock (EventListener.EventListenersLock)
             {
-                Dictionary<int, bool> enabledDict = new Dictionary<int, bool>(m_eventData?.Count ?? 0);
+                Dictionary<int, bool>? enabledDict = null;
                 if (m_eventData != null)
                 {
+                    enabledDict = new Dictionary<int, bool>(m_eventData.Count);
                     foreach (int eventId in m_eventData.Keys)
                     {
                         enabledDict[eventId] = false;
