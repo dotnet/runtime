@@ -188,62 +188,16 @@ namespace System.Security.Cryptography
 
         private static SafeBCryptKeyHandle ImportKey(KeyBlobMagicNumber kind, MLKemAlgorithm algorithm, ReadOnlySpan<byte> key)
         {
-            checked
-            {
-                Debug.Assert(IsSupported);
-                // ML-KEM 1024 seeds are 86 byte blobs. Round it off to 128.
-                // Other keys like encapsulation or decapsulation keys will never fit in a stack buffer, so don't
-                // try to accommodate them.
-                const int MaxKeyStackSize = 128;
-                string parameterSet = PqcBlobHelpers.GetMLKemParameterSet(algorithm);
-                int blobHeaderSize = Marshal.SizeOf<BCRYPT_MLKEM_KEY_BLOB>();
-                int parameterSetMarshalLength = ((parameterSet.Length + 1) * 2);
-                int blobSize =
-                    blobHeaderSize +
-                    parameterSetMarshalLength +
-                    key.Length;
-
-                byte[]? rented = null;
-                Span<byte> buffer = (uint)blobSize <= MaxKeyStackSize ?
-                    stackalloc byte[MaxKeyStackSize] :
-                    (rented = CryptoPool.Rent(blobSize));
-
-                try
-                {
-                    buffer.Clear();
-
-                    unsafe
-                    {
-                        fixed (byte* pBuffer = buffer)
-                        {
-                            BCRYPT_MLKEM_KEY_BLOB* blob = (BCRYPT_MLKEM_KEY_BLOB*)pBuffer;
-                            blob->dwMagic = kind;
-                            blob->cbParameterSet = (uint)parameterSetMarshalLength;
-                            blob->cbKey = (uint)key.Length;
-                        }
-                    }
-
-                    // This won't write the null byte, but we zeroed the whole buffer earlier.
-                    Encoding.Unicode.GetBytes(parameterSet, buffer.Slice(blobHeaderSize));
-                    key.CopyTo(buffer.Slice(blobHeaderSize + parameterSetMarshalLength));
-                    string blobKind = PqcBlobHelpers.MLKemBlobMagicToBlobType(kind);
-                    return Interop.BCrypt.BCryptImportKeyPair(
-                        s_algHandle,
+            Debug.Assert(IsSupported);
+            return PqcBlobHelpers.EncodeMLKemBlob(
+                kind,
+                algorithm,
+                key,
+                s_algHandle,
+                static (algHandle, blobKind, blob) => Interop.BCrypt.BCryptImportKeyPair(
+                        algHandle,
                         blobKind,
-                        buffer.Slice(0, blobSize));
-                }
-                finally
-                {
-                    CryptographicOperations.ZeroMemory(buffer.Slice(0, blobSize));
-
-                    if (rented is not null)
-                    {
-                        // buffer is a slice of rented which was zeroed, since it needs to be zeroed regardless of being
-                        // a rent or a stack buffer.
-                        CryptoPool.Return(rented, 0);
-                    }
-                }
-            }
+                        blob));
         }
     }
 }

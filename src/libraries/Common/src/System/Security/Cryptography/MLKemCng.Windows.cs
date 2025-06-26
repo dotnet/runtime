@@ -8,6 +8,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
+using KeyBlobMagicNumber = Interop.BCrypt.KeyBlobMagicNumber;
+using ErrorCode = Interop.NCrypt.ErrorCode;
+
 namespace System.Security.Cryptography
 {
     public sealed partial class MLKemCng : MLKem
@@ -32,7 +35,7 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(key);
             ThrowIfNotSupported();
 
-            if (key.AlgorithmGroup != CngAlgorithmGroup.MLDsa)
+            if (key.AlgorithmGroup != CngAlgorithmGroup.MLKem)
             {
                 throw new ArgumentException(SR.Cryptography_ArgMLKemRequiresMLKemKey, nameof(key));
             }
@@ -52,7 +55,7 @@ namespace System.Security.Cryptography
         {
             if (key.AlgorithmGroup != CngAlgorithmGroup.MLKem)
             {
-                throw new CryptographicException(SR.Cryptography_ArgMLDsaRequiresMLDsaKey);
+                throw new CryptographicException(SR.Cryptography_ArgMLKemRequiresMLKemKey);
             }
 
             Debug.Assert(key is not null);
@@ -96,38 +99,161 @@ namespace System.Security.Cryptography
 
         protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
         {
-            Debug.Fail("Caller should have checked platform availability.");
-            throw new PlatformNotSupportedException();
+            Debug.Assert(IsSupported);
+            Debug.Assert(ciphertext.Length == Algorithm.CiphertextSizeInBytes);
+            Debug.Assert(sharedSecret.Length == Algorithm.SharedSecretSizeInBytes);
+
+            using (SafeNCryptKeyHandle duplicatedHandle = _key.Handle)
+            {
+                uint written = Interop.NCrypt.NCryptDecapsulate(duplicatedHandle, ciphertext, sharedSecret, 0);
+                Debug.Assert(written == (uint)sharedSecret.Length);
+            }
         }
 
         protected override void EncapsulateCore(Span<byte> ciphertext, Span<byte> sharedSecret)
         {
-            Debug.Fail("Caller should have checked platform availability.");
-            throw new PlatformNotSupportedException();
+            Debug.Assert(IsSupported);
+            Debug.Assert(ciphertext.Length == Algorithm.CiphertextSizeInBytes);
+            Debug.Assert(sharedSecret.Length == Algorithm.SharedSecretSizeInBytes);
+
+            using (SafeNCryptKeyHandle duplicatedHandle = _key.Handle)
+            {
+                Interop.NCrypt.NCryptEncapsulate(
+                    duplicatedHandle,
+                    sharedSecret,
+                    ciphertext,
+                    out uint sharedSecretWritten,
+                    out uint ciphertextWritten,
+                    0);
+
+                Debug.Assert(sharedSecretWritten == (uint)sharedSecret.Length);
+                Debug.Assert(ciphertextWritten == (uint)ciphertext.Length);
+            }
         }
 
         protected override void ExportPrivateSeedCore(Span<byte> destination)
         {
-            Debug.Fail("Caller should have checked platform availability.");
-            throw new PlatformNotSupportedException();
+            Debug.Assert(IsSupported);
+            Debug.Assert(destination.Length == Algorithm.PrivateSeedSizeInBytes);
+
+            if (CngPkcs8.AllowsOnlyEncryptedExport(_key))
+            {
+                throw new CryptographicException(SR.Cryptography_KeyNotExtractable);
+            }
+
+            ExportKey(KeyBlobMagicNumber.BCRYPT_MLKEM_PRIVATE_SEED_MAGIC, destination);
         }
 
         protected override void ExportDecapsulationKeyCore(Span<byte> destination)
         {
-            Debug.Fail("Caller should have checked platform availability.");
-            throw new PlatformNotSupportedException();
+            Debug.Assert(IsSupported);
+            Debug.Assert(destination.Length == Algorithm.DecapsulationKeySizeInBytes);
+
+            if (CngPkcs8.AllowsOnlyEncryptedExport(_key))
+            {
+                throw new CryptographicException(SR.Cryptography_KeyNotExtractable);
+            }
+
+            ExportKey(KeyBlobMagicNumber.BCRYPT_MLKEM_PRIVATE_MAGIC, destination);
         }
 
         protected override void ExportEncapsulationKeyCore(Span<byte> destination)
         {
-            Debug.Fail("Caller should have checked platform availability.");
-            throw new PlatformNotSupportedException();
+            Debug.Assert(IsSupported);
+            Debug.Assert(destination.Length == Algorithm.EncapsulationKeySizeInBytes);
+
+            ExportKey(KeyBlobMagicNumber.BCRYPT_MLKEM_PUBLIC_MAGIC, destination);
         }
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
-            Debug.Fail("Caller should have checked platform availability.");
-            throw new PlatformNotSupportedException();
+            // Windows ncrypt does not yet have functional PKCS#8 exports. For now, try exporting it as a seed or
+            // decapsulation key.
+            if (CngPkcs8.AllowsOnlyEncryptedExport(_key))
+            {
+                throw new CryptographicException(SR.Cryptography_KeyNotExtractable);
+            }
+
+            try
+            {
+                return MLKemPkcs8.TryExportPkcs8PrivateKey(
+                    this,
+                    hasSeed: true,
+                    hasDecapsulationKey: true,
+                    destination,
+                    out bytesWritten);
+            }
+            catch (CryptographicException)
+            {
+                try
+                {
+                    return MLKemPkcs8.TryExportPkcs8PrivateKey(
+                        this,
+                        hasSeed: false,
+                        hasDecapsulationKey: true,
+                        destination,
+                        out bytesWritten);
+                }
+                catch (CryptographicException)
+                {
+                    throw new CryptographicException(SR.Cryptography_KeyNotExtractable);
+                }
+            }
+
+        }
+
+        private void ExportKey(KeyBlobMagicNumber kind, Span<byte> destination)
+        {
+            int bufferSize;
+            string blobKind = PqcBlobHelpers.MLKemBlobMagicToBlobType(kind);
+
+            using (SafeNCryptKeyHandle duplicatedHandle = _key.Handle)
+            {
+
+                ErrorCode errorCode = Interop.NCrypt.NCryptExportKey(
+                    duplicatedHandle,
+                    IntPtr.Zero,
+                    blobKind,
+                    IntPtr.Zero,
+                    null,
+                    0,
+                    out bufferSize,
+                    0);
+
+                if (errorCode != ErrorCode.ERROR_SUCCESS)
+                {
+                    throw errorCode.ToCryptographicException();
+                }
+
+                byte[] buffer = CryptoPool.Rent(bufferSize);
+                PinAndClear pin = PinAndClear.Track(buffer);
+
+                try
+                {
+                    errorCode = Interop.NCrypt.NCryptExportKey(
+                    duplicatedHandle,
+                    IntPtr.Zero,
+                    blobKind,
+                    IntPtr.Zero,
+                    buffer,
+                    bufferSize,
+                    out int written,
+                    0);
+
+                    if (errorCode != ErrorCode.ERROR_SUCCESS)
+                    {
+                        throw errorCode.ToCryptographicException();
+                    }
+
+                    ReadCngMLKemBlob(kind, buffer.AsSpan(0, written), destination);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(buffer);
+                    pin.Dispose();
+                    CryptoPool.Return(buffer, clearSize: 0); // Manually cleared above.
+                }
+            }
         }
     }
 }
