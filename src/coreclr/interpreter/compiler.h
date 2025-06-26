@@ -548,7 +548,9 @@ private:
     }
     void AddPointerToNameMap(void* ptr, const char* name)
     {
-        dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name);
+        dn_simdhash_add_result addResult = dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name);
+        if (addResult < 0)
+            NOMEM();
     }
     void PrintNameInPointerMap(void* ptr);
 #endif
@@ -865,7 +867,14 @@ int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)
     VarSizedDataWithPayload<T>* pLookup = new(hashItemPayload) VarSizedDataWithPayload<T>();
     memcpy(&pLookup->payload, &lookup, sizeof(T));
 
-    dn_simdhash_ght_insert(hash, (void*)pLookup, (void*)(size_t)dataItemIndex);
+    dn_simdhash_add_result addResult = dn_simdhash_ght_try_insert(
+        hash, (void*)pLookup, (void*)(size_t)dataItemIndex, DN_SIMDHASH_INSERT_MODE_ENSURE_UNIQUE
+    );
+    if (addResult == DN_SIMDHASH_OUT_OF_MEMORY)
+        NOMEM();
+    else if (addResult != DN_SIMDHASH_ADD_INSERTED)
+        assert(!"Internal error in dn_simdhash");
+
     return dataItemIndex;
 }
 

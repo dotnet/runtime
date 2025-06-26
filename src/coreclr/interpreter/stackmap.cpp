@@ -24,10 +24,17 @@ InterpreterStackMap* GetInterpreterStackMap(ICorJitInfo* jitInfo, CORINFO_CLASS_
     InterpreterStackMap* result = nullptr;
     if (!t_sharedStackMapLookup)
         t_sharedStackMapLookup = dn_simdhash_ptr_ptr_new(0, nullptr);
+    if (!t_sharedStackMapLookup)
+        NOMEM();
+
     if (!dn_simdhash_ptr_ptr_try_get_value(t_sharedStackMapLookup, classHandle, (void **)&result))
     {
         result = new InterpreterStackMap(jitInfo, classHandle);
-        dn_simdhash_ptr_ptr_try_add(t_sharedStackMapLookup, classHandle, result);
+        dn_simdhash_add_result addResult = dn_simdhash_ptr_ptr_try_add(t_sharedStackMapLookup, classHandle, result);
+        if (addResult == DN_SIMDHASH_OUT_OF_MEMORY)
+            NOMEM();
+        else
+            assert(addResult == DN_SIMDHASH_ADD_INSERTED);
     }
     return result;
 }
