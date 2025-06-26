@@ -3204,6 +3204,9 @@ GenTree* ObjectAllocator::IsGuard(BasicBlock* block, GuardInfo* info)
     bool isNonNull = false;
     bool isExact   = false;
     info->m_type   = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->gtCompileTimeHandle;
+    info->m_block  = block;
+    info->m_stmt   = stmt;
+    info->m_relop  = tree;
 
     JITDUMP("... " FMT_BB " is guard for V%02u\n", block->bbNum, info->m_local);
     return tree;
