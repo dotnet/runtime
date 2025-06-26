@@ -35,7 +35,7 @@ using namespace CorUnix;
 // Note: when MUTEX_BASED_CSS is defined, PALCS_TRANSFER_OWNERSHIP_ON_RELEASE
 // has no effect
 //
-// #define MUTEX_BASED_CSS
+#define MUTEX_BASED_CSS
 
 //
 // Important notes on critical sections layout/semantics on Unix
@@ -147,8 +147,10 @@ typedef struct _CRITICAL_SECTION_DEBUG_INFO
 typedef struct _PAL_CRITICAL_SECTION_NATIVE_DATA
 {
     pthread_mutex_t mutex;
+#ifndef MUTEX_BASED_CSS
     pthread_cond_t condition;
     int iPredicate;
+#endif
 } PAL_CRITICAL_SECTION_NATIVE_DATA, *PPAL_CRITICAL_SECTION_NATIVE_DATA;
 
 typedef struct _PAL_CRITICAL_SECTION {
@@ -430,10 +432,12 @@ VOID InternalDeleteCriticalSection(
     {
         int iRet;
 
+#ifndef MUTEX_BASED_CSS
         // destroy condition
         iRet = pthread_cond_destroy(&pPalCriticalSection->csndNativeData.condition);
         _ASSERT_MSG(0 == iRet, "Failed destroying condition in CS @ %p "
                     "[err=%d]\n", pPalCriticalSection, iRet);
+#endif
 
         // destroy mutex
         iRet = pthread_mutex_destroy(&pPalCriticalSection->csndNativeData.mutex);
@@ -940,7 +944,6 @@ namespace CorUnix
     ILCS_cs_exit:
         return;
     }
-
 #endif // MUTEX_BASED_CSS
 
     /*++
@@ -954,6 +957,7 @@ namespace CorUnix
     {
         LONG lVal, lNewVal;
         bool fRet = true;
+        pthread_mutexattr_t mutexAttributes;
 
         lVal = pPalCriticalSection->cisInitState;
         if (PalCsFullyInitialized == lVal)
@@ -986,7 +990,20 @@ namespace CorUnix
             // Actual native initialization
             //
             // Mutex
+#ifdef MUTEX_BASED_CSS
+            iRet = pthread_mutexattr_init(&mutexAttributes);
+            if (iRet == 0)
+            {
+                iRet = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
+                if (iRet == 0)
+                {
+                    iRet = pthread_mutex_init(&pPalCriticalSection->csndNativeData.mutex, &mutexAttributes);
+                }
+                pthread_mutexattr_destroy(&mutexAttributes);
+            }
+#else
             iRet = pthread_mutex_init(&pPalCriticalSection->csndNativeData.mutex, NULL);
+#endif
             if (0 != iRet)
             {
                 ASSERT("Failed initializing mutex in CS @ %p [err=%d]\n",
@@ -1032,7 +1049,7 @@ namespace CorUnix
         return fRet;
     }
 
-
+#ifndef MUTEX_BASED_CSS
     /*++
     Function:
       CorUnix::PALCS_WaitOnCS
@@ -1228,6 +1245,7 @@ namespace CorUnix
     PCWUW_exit:
         return palErr;
     }
+#endif // !MUTEX_BASED_CSS
 
 #ifdef _DEBUG
     /*++
@@ -1353,9 +1371,11 @@ namespace CorUnix
 #endif // PAL_TRACK_CRITICAL_SECTIONS_DATA
                    pCS->cisInitState.Load(), &pCS->csndNativeData);
 
+#ifndef MUTEX_BASED_CSS
             printf("\t{\n\t\t[mutex]\n\t\t[condition]\n"
                    "\t\tPredicate \t= %d\n"
                    "\t}\n}\n",pCS->csndNativeData.iPredicate);
+#endif
 
             printf("}\n");
 
@@ -1396,6 +1416,9 @@ namespace CorUnix
 
         threadId = ObtainCurrentThreadId(pThread);
 
+        iRet = pthread_mutex_lock(&pPalCriticalSection->csndNativeData.mutex);
+        _ASSERTE(0 == iRet);
+
         /* check if the current thread already owns the criticalSection */
         if (pPalCriticalSection->OwningThread == threadId)
         {
@@ -1403,9 +1426,6 @@ namespace CorUnix
             pPalCriticalSection->RecursionCount += 1;
             return;
         }
-
-        iRet = pthread_mutex_lock(&pPalCriticalSection->csndNativeData.mutex);
-        _ASSERTE(0 == iRet);
 
         pPalCriticalSection->OwningThread = threadId;
         pPalCriticalSection->RecursionCount = 1;
@@ -1445,10 +1465,8 @@ namespace CorUnix
         _ASSERTE(0 < pPalCriticalSection->RecursionCount);
 #endif // _DEBUG
 
-        if (0 < --pPalCriticalSection->RecursionCount)
-            return;
-
-        pPalCriticalSection->OwningThread = 0;
+        if (0 == --pPalCriticalSection->RecursionCount)
+            pPalCriticalSection->OwningThread = 0;
 
         iRet = pthread_mutex_unlock(&pPalCriticalSection->csndNativeData.mutex);
         _ASSERTE(0 == iRet);
