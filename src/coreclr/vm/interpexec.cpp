@@ -1719,8 +1719,16 @@ CALL_INTERP_METHOD:
                     // Interpreter-TODO: Remove this
                     {
                         pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
-                        GCX_COOP();
-                        GCHeapUtilities::GetGCHeap()->GarbageCollect(-1, false, collection_blocking | collection_aggressive);
+
+                        InlinedCallFrame inlinedCallFrame;
+                        inlinedCallFrame.m_pCallerReturnAddress = (TADDR)ip;
+                        inlinedCallFrame.m_pCallSiteSP = pFrame;
+                        inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+                        inlinedCallFrame.m_pThread = GetThread();
+                        inlinedCallFrame.m_Datum = NULL;
+                        inlinedCallFrame.Push();
+                        GCInterface_Collect(-1, collection_blocking | collection_aggressive, false);
+                        inlinedCallFrame.Pop();
                     }
                     ip++;
                     break;

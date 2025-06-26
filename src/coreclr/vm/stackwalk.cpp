@@ -1053,9 +1053,6 @@ void StackFrameIterator::CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 
     m_movedPastFirstExInfo = false;
     m_fFuncletNotSeen = false;
     m_fFoundFirstFunclet = false;
-#ifdef FEATURE_INTERPRETER
-    m_walkingInterpreterFrames = false;
-#endif
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     m_pvResumableFrameTargetSP = NULL;
 #endif
@@ -2848,7 +2845,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
             {
                 PREGDISPLAY pRD = m_crawl.GetRegisterSet();
 
-                if (!m_walkingInterpreterFrames)
+                if (GetIP(pRD->pCurrentContext) != (TADDR)InterpreterFrame::DummyCallerIP)
                 {
                     // We have hit the InterpreterFrame while we were not processing the interpreter frames.
                     // Switch to walking the underlying interpreted frames.
@@ -2864,12 +2861,10 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     pRD->pCurrentContext->ContextFlags = CONTEXT_FULL;
                     SyncRegDisplayToCurrentContext(pRD);
                     ProcessIp(GetControlPC(pRD));
-                    m_walkingInterpreterFrames = m_crawl.isFrameless;
                 }
                 else
                 {
                     // We have finished walking the interpreted frames. Process the InterpreterFrame itself.
-                    m_walkingInterpreterFrames = false;
                     // Restore the registers to the values they had before we started walking the interpreter frames.
                     SetIP(pRD->pCurrentContext, m_interpExecMethodIP);
                     SetSP(pRD->pCurrentContext, m_interpExecMethodSP);
