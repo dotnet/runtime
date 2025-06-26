@@ -546,8 +546,6 @@ private:
 
     CORINFO_METHOD_HANDLE GetMethodHandle(GenTreeCall* call)
     {
-        JITDUMP("GetMethodHandle: [%06u]\n", m_compiler->dspTreeID(call));
-
         assert(call->IsDevirtualizationCandidate(m_compiler));
         if (call->IsVirtual())
         {
@@ -558,9 +556,6 @@ private:
             GenTree* runtimeMethHndNode =
                 call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetNode();
             assert(runtimeMethHndNode != nullptr);
-
-            JITDUMP(" ... via node [%06u]\n", m_compiler->dspTreeID(runtimeMethHndNode));
-
             switch (runtimeMethHndNode->OperGet())
             {
                 case GT_RUNTIMELOOKUP:
