@@ -7360,6 +7360,10 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         }
         else
         {
+            if (pEntryFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            {
+                ((InterpreterFrame*)pEntryFrame)->SetIsFaulting(true);
+            }
             DispatchManagedException(orThrowable);
         }
     }
