@@ -24,14 +24,6 @@
 #include "perfmap.h"
 #endif
 
-struct UM2MThunk_Args
-{
-    UMEntryThunk *pEntryThunk;
-    void *pAddr;
-    void *pThunkArgs;
-    int argLen;
-};
-
 class UMEntryThunkFreeList
 {
 public:
@@ -46,7 +38,7 @@ public:
         m_crst.Init(CrstUMEntryThunkFreeListLock, CRST_UNSAFE_ANYMODE);
     }
 
-    UMEntryThunk *GetUMEntryThunk()
+    UMEntryThunkData *GetUMEntryThunk()
     {
         WRAPPER_NO_CONTRACT;
 
@@ -55,18 +47,18 @@ public:
 
         CrstHolder ch(&m_crst);
 
-        UMEntryThunk *pThunk = m_pHead;
+        UMEntryThunkData *pThunk = m_pHead;
 
         if (pThunk == NULL)
             return NULL;
 
-        m_pHead = m_pHead->GetData()->m_pNextFreeThunk;
+        m_pHead = m_pHead->m_pNextFreeThunk;
         --m_count;
 
         return pThunk;
     }
 
-    void AddToList(UMEntryThunk *pThunk)
+    void AddToList(UMEntryThunkData *pThunk)
     {
         CONTRACTL
         {
@@ -83,11 +75,11 @@ public:
         }
         else
         {
-            m_pTail->GetData()->m_pNextFreeThunk = pThunk;
+            m_pTail->m_pNextFreeThunk = pThunk;
             m_pTail = pThunk;
         }
 
-        pThunk->GetData()->m_pNextFreeThunk = NULL;
+        pThunk->m_pNextFreeThunk = NULL;
 
         ++m_count;
     }
@@ -96,8 +88,8 @@ private:
     // Used to delay reusing freed thunks
     size_t m_threshold;
     size_t m_count;
-    UMEntryThunk *m_pHead;
-    UMEntryThunk *m_pTail;
+    UMEntryThunkData *m_pHead;
+    UMEntryThunkData *m_pTail;
     CrstStatic m_crst;
 };
 
@@ -127,14 +119,14 @@ UMEntryThunkCache::~UMEntryThunkCache()
     for (SHash<ThunkSHashTraits>::Iterator i = m_hash.Begin(); i != m_hash.End(); i++)
     {
         // UMEntryThunks in this cache own UMThunkMarshInfo in 1-1 fashion
-        DestroyMarshInfo(i->m_pThunk->GetUMThunkMarshInfo());
-        UMEntryThunk::FreeUMEntryThunk(i->m_pThunk);
+        DestroyMarshInfo((*i)->GetUMThunkMarshInfo());
+        UMEntryThunkData::FreeUMEntryThunk(*i);
     }
 }
 
-UMEntryThunk *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
+UMEntryThunkData *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
 {
-    CONTRACT (UMEntryThunk *)
+    CONTRACT (UMEntryThunkData *)
     {
         THROWS;
         GC_TRIGGERS;
@@ -144,20 +136,14 @@ UMEntryThunk *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
     }
     CONTRACT_END;
 
-    UMEntryThunk *pThunk;
-
     CrstHolder ch(&m_crst);
 
-    const CacheElement *pElement = m_hash.LookupPtr(pMD);
-    if (pElement != NULL)
-    {
-        pThunk = pElement->m_pThunk;
-    }
-    else
+    UMEntryThunkData *pThunk = m_hash.Lookup(pMD);
+    if (pThunk == NULL)
     {
         // cache miss -> create a new thunk
-        pThunk = UMEntryThunk::CreateUMEntryThunk();
-        Holder<UMEntryThunk *, DoNothing, UMEntryThunk::FreeUMEntryThunk> umHolder;
+        pThunk = UMEntryThunkData::CreateUMEntryThunk();
+        Holder<UMEntryThunkData *, DoNothing, UMEntryThunkData::FreeUMEntryThunk> umHolder;
         umHolder.Assign(pThunk);
 
         UMThunkMarshInfo *pMarshInfo = (UMThunkMarshInfo *)(void *)(m_pDomain->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMThunkMarshInfo))));
@@ -169,10 +155,7 @@ UMEntryThunk *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
         pThunk->LoadTimeInit((PCODE)NULL, NULL, pMarshInfo, pMD);
 
         // add it to the cache
-        CacheElement element;
-        element.m_pMD = pMD;
-        element.m_pThunk = pThunk;
-        m_hash.Add(element);
+        m_hash.Add(pThunk);
 
         miHolder.SuppressRelease();
         umHolder.SuppressRelease();
@@ -207,8 +190,6 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunkData)
         CREATETHREAD_IF_NULL_FAILFAST(pThread, W("Failed to setup new thread during reverse P/Invoke"));
     }
 
-    UMEntryThunk* pUMEntryThunk = pUMEntryThunkData->m_pUMEntryThunk;
-
     // Verify the current thread isn't in COOP mode.
     if (pThread->PreemptiveGCDisabled())
         ReversePInvokeBadTransition();
@@ -219,17 +200,17 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunkData)
     // exceptions don't leak out into managed code.
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
-    pUMEntryThunk->RunTimeInit();
+    pUMEntryThunkData->RunTimeInit();
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
-    return (PCODE)pUMEntryThunk->GetCode();
+    return (PCODE)pUMEntryThunkData->GetCode();
 }
 
-UMEntryThunk* UMEntryThunk::CreateUMEntryThunk()
+UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
 {
-    CONTRACT (UMEntryThunk*)
+    CONTRACT (UMEntryThunkData*)
     {
         THROWS;
         GC_NOTRIGGER;
@@ -239,31 +220,29 @@ UMEntryThunk* UMEntryThunk::CreateUMEntryThunk()
     }
     CONTRACT_END;
 
-    UMEntryThunk * p;
+    UMEntryThunkData * pData = s_thunkFreeList.GetUMEntryThunk();
 
-    p = s_thunkFreeList.GetUMEntryThunk();
-
-    if (p == NULL)
+    if (pData == NULL)
     {
         static_assert_no_msg(sizeof(UMEntryThunk) == sizeof(StubPrecode));
         LoaderAllocator *pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         AllocMemTracker amTracker;
         AllocMemTracker *pamTracker = &amTracker;
        
-        UMEntryThunkData *pData = (UMEntryThunkData *)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMEntryThunkData))));
-        p = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
+        pData = (UMEntryThunkData *)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMEntryThunkData))));
+        UMEntryThunk* pThunk = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
 #ifdef FEATURE_PERFMAP
         PerfMap::LogStubs(__FUNCTION__, "UMEntryThunk", (PCODE)p, sizeof(UMEntryThunk), PerfMapStubType::IndividualWithinBlock);
 #endif
-        pData->m_pUMEntryThunk = p;
-        p->Init(p, dac_cast<TADDR>(pData), NULL, dac_cast<TADDR>(PRECODE_UMENTRY_THUNK));
+        pData->m_pUMEntryThunk = pThunk;
+        pThunk->Init(pThunk, dac_cast<TADDR>(pData), NULL, dac_cast<TADDR>(PRECODE_UMENTRY_THUNK));
         pamTracker->SuppressRelease();
     }
 
-    RETURN p;
+    RETURN pData;
 }
 
-void UMEntryThunk::Terminate()
+void UMEntryThunkData::Terminate()
 {
     CONTRACTL
     {
@@ -272,18 +251,18 @@ void UMEntryThunk::Terminate()
     }
     CONTRACTL_END;
 
-    SetTargetUnconditional((TADDR)UMEntryThunk::ReportViolation);
+    m_pUMEntryThunk->SetTargetUnconditional((TADDR)UMEntryThunkData::ReportViolation);
 
     if (GetObjectHandle())
     {
         DestroyLongWeakHandle(GetObjectHandle());
-        GetData()->m_pObjectHandle = 0;
+        m_pObjectHandle = 0;
     }
 
     s_thunkFreeList.AddToList(this);
 }
 
-VOID UMEntryThunk::FreeUMEntryThunk(UMEntryThunk* p)
+VOID UMEntryThunkData::FreeUMEntryThunk(UMEntryThunkData* p)
 {
     CONTRACTL
     {
@@ -304,7 +283,7 @@ VOID UMEntryThunk::FreeUMEntryThunk(UMEntryThunk* p)
 // function will not be called in all cases of the collected delegate call,
 // also it may crash while trying to report the problem.
 //-------------------------------------------------------------------------
-VOID __fastcall UMEntryThunk::ReportViolation(UMEntryThunkData* pEntryThunkData)
+VOID __fastcall UMEntryThunkData::ReportViolation(UMEntryThunkData* pEntryThunkData)
 {
     CONTRACTL
     {
@@ -315,9 +294,7 @@ VOID __fastcall UMEntryThunk::ReportViolation(UMEntryThunkData* pEntryThunkData)
     }
     CONTRACTL_END;
 
-    UMEntryThunk* pEntryThunk = pEntryThunkData->m_pUMEntryThunk;
-
-    MethodDesc* pMethodDesc = pEntryThunk->GetMethod();
+    MethodDesc* pMethodDesc = pEntryThunkData->GetMethod();
 
     SString namespaceOrClassName;
     SString methodName;
@@ -435,33 +412,3 @@ VOID UMThunkMarshInfo::RunTimeInit()
     // Must be the last thing we set!
     InterlockedCompareExchangeT<PCODE>(&m_pILStub, pFinalILStub, (PCODE)1);
 }
-
-#ifdef _DEBUG
-void STDCALL LogUMTransition(UMEntryThunk* thunk)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        DEBUG_ONLY;
-        GC_NOTRIGGER;
-        ENTRY_POINT;
-        if (GetThreadNULLOk()) MODE_PREEMPTIVE; else MODE_ANY;
-        DEBUG_ONLY;
-        PRECONDITION(CheckPointer(thunk));
-        PRECONDITION((GetThreadNULLOk() != NULL) ? (!GetThread()->PreemptiveGCDisabled()) : TRUE);
-    }
-    CONTRACTL_END;
-
-    void** retESP = ((void**) &thunk) + 4;
-
-    MethodDesc* method = thunk->GetMethod();
-    if (method)
-    {
-        LOG((LF_STUBS, LL_INFO1000000, "UNMANAGED -> MANAGED Stub To Method = %s::%s SIG %s Ret Address ESP = 0x%x ret = 0x%x\n",
-            method->m_pszDebugClassName,
-            method->m_pszDebugMethodName,
-            method->m_pszDebugMethodSignature, retESP, *retESP));
-    }
-}
-#endif // _DEBUG
-

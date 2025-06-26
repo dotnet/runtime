@@ -136,7 +136,7 @@ CallDescrWorkerInternalReturnAddressOffset:
 // ------------------------------------------------------------------
 
 //
-// r12 = UMEntryThunk*
+// r12 = UMEntryThunkData*
 //
         NESTED_ENTRY TheUMEntryPrestub,_TEXT,NoHandler
 

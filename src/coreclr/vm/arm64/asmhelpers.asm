@@ -429,7 +429,7 @@ COMToCLRDispatchHelper_RegSetup
 #endif ; FEATURE_COMINTEROP
 
 ;
-; x12 = UMEntryThunk*
+; x12 = UMEntryThunkData*
 ;
     NESTED_ENTRY TheUMEntryPrestub,,UMEntryPrestubUnwindFrameChainHandler
 
