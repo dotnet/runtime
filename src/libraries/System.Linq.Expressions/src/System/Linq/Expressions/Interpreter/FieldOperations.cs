@@ -101,7 +101,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    FieldData.SetValueDirect(self!, _field, value);
+                    _field.SetValue(self, value);
                 }
             }
 

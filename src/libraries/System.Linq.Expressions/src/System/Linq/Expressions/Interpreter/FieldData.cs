@@ -62,12 +62,5 @@ namespace System.Linq.Expressions.Interpreter
 
             return field.GetValueDirect(typedReference);
         }
-
-        public static void SetValueDirect(object obj, FieldInfo field, object? value)
-        {
-            var typedReference = __makeref(obj);
-
-            field.SetValueDirect(typedReference, value!);
-        }
     }
 }
