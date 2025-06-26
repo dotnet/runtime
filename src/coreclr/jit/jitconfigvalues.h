@@ -311,11 +311,6 @@ CONFIG_STRING(JitStressRange, "JitStressRange")        // Internal Jit stress mo
 CONFIG_METHODSET(JitEmitUnitTests, "JitEmitUnitTests") // Generate emitter unit tests in the specified functions
 CONFIG_STRING(JitEmitUnitTestsSections, "JitEmitUnitTestsSections") // Generate this set of unit tests
 
-///
-/// JIT Hardware Intrinsics
-///
-CONFIG_INTEGER(EnableIncompleteISAClass, "EnableIncompleteISAClass", 0) // Enable testing not-yet-implemented
-
 //
 // JitDisasm
 //
@@ -439,6 +434,7 @@ RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     "EnableEmbeddedBroadcast",  
 RELEASE_CONFIG_INTEGER(EnableEmbeddedMasking,       "EnableEmbeddedMasking",     1) // Allows embedded masking to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxNDD,                "EnableApxNDD",              0) // Allows APX NDD feature to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxConditionalChaining, "EnableApxConditionalChaining",        0) // Allows APX conditional compare chaining
+RELEASE_CONFIG_INTEGER(EnableApxPPX,                "EnableApxPPX",              0) // Allows APX PPX feature to be disabled
 
 // clang-format on
 

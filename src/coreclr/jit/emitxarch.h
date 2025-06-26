@@ -571,6 +571,22 @@ void SetEvexNfIfNeeded(instrDesc* id, insOpts instOptions)
 }
 
 //------------------------------------------------------------------------
+// SetApxPpxIfNeeded: set APX.ppx on instrDesc
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetApxPpxIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_APX_ppx_MASK) != 0)
+    {
+        assert(HasApxPpx(id->idIns()));
+        id->idSetApxPpxContext();
+    }
+}
+
+//------------------------------------------------------------------------
 // SetEvexDFVIfNeeded: set default flag values on an instrDesc
 //
 // Arguments:
@@ -727,9 +743,9 @@ bool isPrefetch(instruction ins)
 /************************************************************************/
 
 void emitDispMask(const instrDesc* id, regNumber reg) const;
-void emitDispReloc(ssize_t value);
-void emitDispAddrMode(instrDesc* id, bool noDetail = false);
-void emitDispShift(instruction ins, int cnt = 0);
+void emitDispReloc(ssize_t value) const;
+void emitDispAddrMode(instrDesc* id, bool noDetail = false) const;
+void emitDispShift(instruction ins, int cnt = 0) const;
 
 const char* emitXMMregName(unsigned reg) const;
 const char* emitYMMregName(unsigned reg) const;
@@ -805,7 +821,7 @@ inline emitter::opSize emitEncodeScale(size_t scale)
     return static_cast<emitter::opSize>(genLog2(static_cast<unsigned>(scale)));
 }
 
-inline emitAttr emitDecodeScale(unsigned ensz)
+inline emitAttr emitDecodeScale(unsigned ensz) const
 {
     assert(ensz < 4);
     return emitter::emitSizeDecode[ensz];
@@ -1001,7 +1017,8 @@ void emitIns_R_R_R_R(instruction ins,
 
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 
-void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
+void emitIns_S_R(
+    instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_R_S(
     instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions = INS_OPTS_NONE);

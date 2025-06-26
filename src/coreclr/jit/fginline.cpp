@@ -712,7 +712,8 @@ private:
                     if (newClass != NO_CLASS_HANDLE)
                     {
                         m_compiler->lvaUpdateClass(lclNum, newClass, isExact);
-                        m_madeChanges = true;
+                        m_madeChanges                    = true;
+                        m_compiler->hasUpdatedTypeLocals = true;
                     }
                 }
             }

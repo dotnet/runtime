@@ -3338,10 +3338,12 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     GenTree* startNonGCNode = nullptr;
     if (!putargs.Empty())
     {
-        GenTree* firstPutargStk = putargs.Bottom(0);
+        GenTree* firstPutargStk   = putargs.Bottom(0);
+        GenTree* firstPutargStkOp = firstPutargStk->gtGetOp1();
         for (int i = 1; i < putargs.Height(); i++)
         {
-            firstPutargStk = LIR::FirstNode(firstPutargStk, putargs.Bottom(i));
+            firstPutargStk   = LIR::FirstNode(firstPutargStk, putargs.Bottom(i));
+            firstPutargStkOp = LIR::FirstNode(firstPutargStkOp, putargs.Bottom(i)->gtGetOp1());
         }
         // Since this is a fast tailcall each PUTARG_STK will place the argument in the
         // _incoming_ arg space area. This will effectively overwrite our already existing
@@ -3389,10 +3391,10 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 GenTree* lookForUsesFrom = put->gtNext;
                 if (overwrittenStart != argStart)
                 {
-                    lookForUsesFrom = firstPutargStk;
+                    lookForUsesFrom = firstPutargStkOp;
                 }
 
-                RehomeArgForFastTailCall(callerArgLclNum, firstPutargStk, lookForUsesFrom, call);
+                RehomeArgForFastTailCall(callerArgLclNum, firstPutargStkOp, lookForUsesFrom, call);
                 // The above call can introduce temps and invalidate the pointer.
                 callerArgDsc = comp->lvaGetDesc(callerArgLclNum);
 
@@ -3406,7 +3408,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 unsigned int fieldsEnd   = fieldsFirst + callerArgDsc->lvFieldCnt;
                 for (unsigned int j = fieldsFirst; j < fieldsEnd; j++)
                 {
-                    RehomeArgForFastTailCall(j, firstPutargStk, lookForUsesFrom, call);
+                    RehomeArgForFastTailCall(j, firstPutargStkOp, lookForUsesFrom, call);
                 }
             }
         }
@@ -6111,22 +6113,9 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
     {
         noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
-        // the convention on getHelperFtn seems to be (it's not documented)
-        // that it returns an address or if it returns null, pAddr is set to
-        // another address, which requires an indirection
-        void* pAddr;
-        addr = comp->info.compCompHnd->getHelperFtn(helperNum, (void**)&pAddr);
-
-        if (addr != nullptr)
-        {
-            assert(pAddr == nullptr);
-            accessType = IAT_VALUE;
-        }
-        else
-        {
-            accessType = IAT_PVALUE;
-            addr       = pAddr;
-        }
+        CORINFO_CONST_LOOKUP addrInfo = comp->compGetHelperFtn(helperNum);
+        addr                          = addrInfo.addr;
+        accessType                    = addrInfo.accessType;
     }
     else
     {
@@ -7932,11 +7921,12 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         }
 
 #ifdef TARGET_XARCH
-        // force input transformation to RAX because the following MULHI will kill RDX:RAX anyway and LSRA often causes
-        // redundant copies otherwise
+        // force input transformation to RAX/RDX because the following MULHI will kill RDX:RAX (RDX if mulx is
+        // available) anyway and LSRA often causes redundant copies otherwise
         if (firstNode && !simpleMul)
         {
-            adjustedDividend->SetRegNum(REG_RAX);
+            regNumber implicitReg = comp->compOpportunisticallyDependsOn(InstructionSet_AVX2) ? REG_RDX : REG_RAX;
+            adjustedDividend->SetRegNum(implicitReg);
         }
 #endif
 

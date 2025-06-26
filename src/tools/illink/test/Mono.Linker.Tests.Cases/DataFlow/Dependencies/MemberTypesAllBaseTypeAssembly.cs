@@ -5,41 +5,41 @@ using System;
 
 namespace Mono.Linker.Tests.Cases.DataFlow.Dependencies
 {
-	public class MemberTypesAllBaseType
-	{
-		static MemberTypesAllBaseType () { }
-		public MemberTypesAllBaseType () { }
-		private MemberTypesAllBaseType (bool _) { }
+    public class MemberTypesAllBaseType
+    {
+        static MemberTypesAllBaseType() { }
+        public MemberTypesAllBaseType() { }
+        private MemberTypesAllBaseType(bool _) { }
 
-		public void PublicMethod () { }
-		private void PrivateMethod () { }
+        public void PublicMethod() { }
+        private void PrivateMethod() { }
 
-		public static void PublicStaticMethod () { }
-		private static void PrivateStaticMethod () { }
+        public static void PublicStaticMethod() { }
+        private static void PrivateStaticMethod() { }
 
-		public int PublicField;
-		private int PrivateField;
-		public static int PublicStaticField;
-		private static int PrivateStaticField;
+        public int PublicField;
+        private int PrivateField;
+        public static int PublicStaticField;
+        private static int PrivateStaticField;
 
-		public bool PublicProperty { get; set; }
-		private bool PrivateProperty { get; set; }
-		public static bool PublicStaticProperty { get; set; }
-		private static bool PrivateStaticProperty { get; set; }
+        public bool PublicProperty { get; set; }
+        private bool PrivateProperty { get; set; }
+        public static bool PublicStaticProperty { get; set; }
+        private static bool PrivateStaticProperty { get; set; }
 
-		public event EventHandler<EventArgs> PublicEvent;
-		private event EventHandler<EventArgs> PrivateEvent;
-		public static event EventHandler<EventArgs> PublicStaticEvent;
-		private static event EventHandler<EventArgs> PrivateStaticEvent;
+        public event EventHandler<EventArgs> PublicEvent;
+        private event EventHandler<EventArgs> PrivateEvent;
+        public static event EventHandler<EventArgs> PublicStaticEvent;
+        private static event EventHandler<EventArgs> PrivateStaticEvent;
 
-		public class PublicNestedType
-		{
-			private void PrivateMethod () { }
-		}
+        public class PublicNestedType
+        {
+            private void PrivateMethod() { }
+        }
 
-		private class PrivateNestedType
-		{
-			private void PrivateMethod () { }
-		}
-	}
+        private class PrivateNestedType
+        {
+            private void PrivateMethod() { }
+        }
+    }
 }
