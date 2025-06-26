@@ -121,7 +121,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 		break;
 	case MONO_TYPE_U:
 	case MONO_TYPE_I:
-		result->data.nati = *(mono_i*)data;
+		result->data.p = *(gpointer*)data;
 		break;
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:

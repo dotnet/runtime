@@ -749,13 +749,13 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 	 	   but in practice it sometimes doesn't (a int32 gets dup'd and stloc'd into
 		   a native int - both by csc and mcs). Not sure what to do about sign extension
 		   as it is outside the spec... doing the obvious */
-		*p = (mono_i)val->data.nati;
+		*p = (mono_i)val->data.p;
 		return MINT_STACK_SLOT_SIZE;
 	}
 	case MONO_TYPE_U: {
 		mono_u *p = (mono_u*)data;
 		/* see above. */
-		*p = (mono_u)val->data.nati;
+		*p = (mono_u)val->data.p;
 		return MINT_STACK_SLOT_SIZE;
 	}
 	case MONO_TYPE_I4:
