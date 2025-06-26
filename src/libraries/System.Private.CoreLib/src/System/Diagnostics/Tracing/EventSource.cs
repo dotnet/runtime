@@ -2834,7 +2834,7 @@ namespace System.Diagnostics.Tracing
             else
             {
                 Debug.Assert(dispatcher.m_EventEnabled != null);
-                if (!dispatcher.m_EventEnabled.TryGetValue(eventId, out _)) return false;
+                if (!dispatcher.m_EventEnabled.ContainsKey(eventId)) return false;
 
                 dispatcher.m_EventEnabled[eventId] = value;
                 if (value)
@@ -3570,9 +3570,14 @@ namespace System.Diagnostics.Tracing
         {
             lock (EventListener.EventListenersLock)
             {
-                Dictionary<int, bool>? enabledDict = null;
+                Dictionary<int, bool> enabledDict = new Dictionary<int, bool>(m_eventData?.Count ?? 0);
                 if (m_eventData != null)
-                    enabledDict = new Dictionary<int, bool>();
+                {
+                    foreach (int eventId in m_eventData.Keys)
+                    {
+                        enabledDict[eventId] = false;
+                    }
+                }
                 m_Dispatchers = new EventDispatcher(m_Dispatchers, enabledDict, listener);
                 listener.OnEventSourceCreated(this);
             }
@@ -3592,7 +3597,7 @@ namespace System.Diagnostics.Tracing
                 manifest.ManifestError(SR.Format(SR.EventSource_MismatchIdToWriteEvent, evtName, evtId, eventArg), true);
             }
 
-            if (eventData.TryGetValue(evtId, out descriptor) && descriptor.EventId != 0)
+            if (eventData.TryGetValue(evtId, out EventMetadata metadata) && metadata.Descriptor.EventId != 0)
             {
                 manifest.ManifestError(SR.Format(SR.EventSource_EventIdReused, evtName, evtId), true);
             }
