@@ -1714,7 +1714,6 @@ enum CorInfoContinuationFlags
     // OSR method saved in the beginning of 'Data', or -1 if the continuation
     // belongs to a tier 0 method.
     CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA = 4,
-    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT = 8,
 };
 
 struct CORINFO_ASYNC_INFO

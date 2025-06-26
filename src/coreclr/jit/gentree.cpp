@@ -1718,8 +1718,8 @@ CallArg* CallArgs::InsertAfterUnchecked(Compiler* comp, CallArg* after, const Ne
 // InsertInstParam: Insert an instantiation parameter/generic context argument.
 //
 // Parameters:
-//   comp - The compiler.
-//   node - The IR node for the instantiation parameter.
+//   comp         - The compiler.
+//   node         - The IR node for the instantiation parameter.
 //
 // Returns:
 //   The created representative for the argument.
@@ -1732,10 +1732,6 @@ CallArg* CallArgs::InsertAfterUnchecked(Compiler* comp, CallArg* after, const Ne
 //
 CallArg* CallArgs::InsertInstParam(Compiler* comp, GenTree* node)
 {
-    // Only ordering with retbuffer and user args is handled, not these
-    assert((FindWellKnownArg(WellKnownArg::AsyncContinuation) == nullptr) &&
-           (FindWellKnownArg(WellKnownArg::VarArgsCookie) == nullptr));
-
     NewCallArg newArg = NewCallArg::Primitive(node).WellKnown(WellKnownArg::InstParam);
 
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
@@ -1749,36 +1745,6 @@ CallArg* CallArgs::InsertInstParam(Compiler* comp, GenTree* node)
         {
             return InsertAfterThisOrFirst(comp, newArg);
         }
-    }
-    else
-    {
-        return PushBack(comp, newArg);
-    }
-}
-
-//---------------------------------------------------------------
-// InsertAsyncContinuation: Insert an async continuation argument.
-//
-// Parameters:
-//   comp - The compiler.
-//   node - The IR node for the async continuation.
-//
-// Returns:
-//   The created representative for the argument.
-//
-CallArg* CallArgs::InsertAsyncContinuation(Compiler* comp, GenTree* node)
-{
-    // Only ordering with user args is handled.
-    assert((FindWellKnownArg(WellKnownArg::AsyncContinuation) == nullptr) &&
-           (FindWellKnownArg(WellKnownArg::VarArgsCookie) == nullptr) &&
-           (FindWellKnownArg(WellKnownArg::InstParam) == nullptr) &&
-           !HasRetBuffer());
-
-    NewCallArg newArg = NewCallArg::Primitive(node).WellKnown(WellKnownArg::InstParam);
-
-    if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
-    {
-        return InsertAfterThisOrFirst(comp, newArg);
     }
     else
     {
@@ -2270,6 +2236,19 @@ bool GenTreeCall::IsAsync() const
     return (gtCallMoreFlags & GTF_CALL_M_ASYNC) != 0;
 }
 
+//-------------------------------------------------------------------------
+// IsAsyncAndAlwaysSavesAndRestoresExecutionContext:
+//   Check if this is an async call that always saves and restores the
+//   ExecutionContext around it.
+//
+// Return Value:
+//   True if so.
+//
+// Remarks:
+//   Normal user await calls have this behavior, while custom awaiters (via
+//   AsyncHelpers.AwaitAwaiter) only saves and restores the ExecutionContext if
+//   actual suspension happens.
+//
 bool GenTreeCall::IsAsyncAndAlwaysSavesAndRestoresExecutionContext() const
 {
     return IsAsync() && (GetAsyncInfo().ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore);

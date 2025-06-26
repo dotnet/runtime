@@ -2392,25 +2392,6 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 //
 void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmtAfter)
 {
-    fgNullOutGcRefLocals(inlineInfo, block, &stmtAfter);
-    fgAsyncSwitchContext(inlineInfo, block, &stmtAfter);
-}
-
-//------------------------------------------------------------------------
-// fgNullOutGcRefLocals: Append IR to null out GC locals after the call.
-//
-// Arguments:
-//    inlineInfo - information about the inline
-//    block      - basic block for the new statements
-//    stmtAfter  - [in, out] insertion point for mid-block cases
-//
-// Notes:
-//    If the call we're inlining is in tail position then
-//    we skip nulling the locals, since it can interfere
-//    with tail calls introduced by the local.
-//
-void Compiler::fgNullOutGcRefLocals(InlineInfo* inlineInfo, BasicBlock* block, Statement** stmtAfter)
-{
     // Null out any gc ref locals
     if (!inlineInfo->HasGcRefLocals())
     {
@@ -2479,89 +2460,26 @@ void Compiler::fgNullOutGcRefLocals(InlineInfo* inlineInfo, BasicBlock* block, S
         GenTree*   nullExpr = gtNewTempStore(tmpNum, gtNewZeroConNode(lclTyp));
         Statement* nullStmt = gtNewStmt(nullExpr, callDI);
 
-        if (*stmtAfter == nullptr)
+        if (stmtAfter == nullptr)
         {
             fgInsertStmtAtBeg(block, nullStmt);
         }
         else
         {
-            fgInsertStmtAfter(block, *stmtAfter, nullStmt);
+            fgInsertStmtAfter(block, stmtAfter, nullStmt);
         }
-        *stmtAfter = nullStmt;
+        stmtAfter = nullStmt;
 
-        DISPSTMT(nullStmt);
+#ifdef DEBUG
+        if (verbose)
+        {
+            gtDispStmt(nullStmt);
+        }
+#endif // DEBUG
     }
 
     // There should not be any GC ref locals left to null out.
     assert(gcRefLclCnt == 0);
-}
-
-//------------------------------------------------------------------------
-// fgAsyncSwitchContext:
-//   Insert IR to potentially switch contexts after an inlined async call.
-//
-// Arguments:
-//    inlineInfo - information about the inline
-//    block      - basic block for the new statements
-//    stmtAfter  - [in, out] insertion point
-//
-void Compiler::fgAsyncSwitchContext(InlineInfo* inlineInfo, BasicBlock* block, Statement** stmtAfter)
-{
-    //bool continueOnCapturedContext = (inlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_ASYNC_CONTINUE_ON_CAPTURED_CONTEXT) != 0;
-    //bool saveAndRestoreContexts = (inlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_ASYNC_SAVE_AND_RESTORE_CONTEXTS) != 0;
-    //if (continueOnCapturedContext)
-    //{
-    //    JITDUMP("Inlining of async call [%06u] requires possible switch back to captured context\n", dspTreeID(inlineInfo->iciCall));
-    //}
-    //else if (saveAndRestoreContexts)
-    //{
-    //    JITDUMP("Inlining of async call [%06u] requires possible switch off thread\n", dspTreeID(inlineInfo->iciCall));
-
-    //    // Continuing on captured context should imply that we are savning and restoring contexts.
-    //    assert(saveAndRestoreContexts);
-    //}
-    //else
-    //{
-    //    return;
-    //}
-
-    //GenTreeCall* call;
-    //if (continueOnCapturedContext)
-    //{
-    //    unsigned syncContextLcl = inlineInfo->iciCall->restoredSyncContextVar;
-    //    call = gtNewCallNode(CT_USER_FUNC, eeGetAsyncInfo()->switchContextMethHnd, TYP_VOID);
-    //    call->SetIsAsync();
-
-    //    call->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(syncContextLcl)));
-    //    call->gtArgs.InsertAsyncContinuation(this, gtNewNull());
-    //}
-    //else
-    //{
-    //    call = gtNewCallNode(CT_USER_FUNC, eeGetAsyncInfo()->switchOffThreadMethHnd, TYP_VOID);
-    //    call->SetIsAsync();
-    //}
-
-    //call->gtInlineContext = compInlineContext;
-
-    //call->restoredSyncContextVar = inlineInfo->iciCall->restoredSyncContextVar;
-
-    //CORINFO_CALL_INFO callInfo = {};
-    //callInfo.hMethod = call->gtCallMethHnd;
-    //callInfo.methodFlags = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-    //impMarkInlineCandidate(call, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
-    //Statement* callStmt = gtNewStmt(call);
-
-    //if (*stmtAfter == nullptr)
-    //{
-    //    fgInsertStmtAtBeg(block, callStmt);
-    //}
-    //else
-    //{
-    //    fgInsertStmtAfter(block, *stmtAfter, callStmt);
-    //}
-    //*stmtAfter = callStmt;
-
-    //DISPSTMT(callStmt);
 }
 
 //------------------------------------------------------------------------

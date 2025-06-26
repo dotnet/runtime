@@ -9113,17 +9113,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     int configVal = -1; // -1 not configured, 0/1 configured to false/true
                     if (compIsAsync() && JitConfig.JitOptimizeAwait())
                     {
-                        isAwait = impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal);
-                        if (isAwait)
+                        if (impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal))
                         {
+                            isAwait = true;
                             prefixFlags |= PREFIX_IS_TASK_AWAIT;
-
-                            // All task awaits continue on captured context unless explicitly
-                            // configured not to
-                            if (configVal != 0)
-                            {
-                                prefixFlags |= PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT;
-                            }
                         }
                     }
 

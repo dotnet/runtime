@@ -44,7 +44,7 @@ namespace System.Runtime.CompilerServices
             if (sentinelContinuation == null)
                 state.SentinelContinuation = sentinelContinuation = new Continuation();
 
-            state.CriticalNotifier = awaiter;
+            state.Notifier = awaiter;
             AsyncSuspend(sentinelContinuation);
         }
 

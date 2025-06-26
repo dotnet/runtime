@@ -4437,8 +4437,6 @@ private:
 #endif
         // This call is a task await
         PREFIX_IS_TASK_AWAIT = 0x00000080,
-        // This call is a task await that should continue on captured synchronization context
-        PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000100,
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
@@ -6882,8 +6880,6 @@ private:
     void fgInsertInlineeArgument(const InlArgInfo& argInfo, BasicBlock* block, Statement** afterStmt, Statement** newStmt, const DebugInfo& callDI);
     Statement* fgInlinePrependStatements(InlineInfo* inlineInfo);
     void fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmt);
-    void fgNullOutGcRefLocals(InlineInfo* inlineInfo, BasicBlock* block, Statement** stmtAfter);
-    void fgAsyncSwitchContext(InlineInfo* inlineInfo, BasicBlock* block, Statement** stmtAfter);
 
 #ifdef DEBUG
     static fgWalkPreFn fgDebugCheckInlineCandidates;

@@ -918,7 +918,6 @@ private:
     InlineObservation      m_Observation;      // what lead to this inline success or failure
     int                    m_CodeSizeEstimate; // in bytes * 10
     unsigned               m_Ordinal;          // Ordinal number of this inline
-    unsigned               m_AsyncSyncContext; // Synchronization context restored around async call
     bool                   m_Success : 1;      // true if this was a successful inline
 
 #if defined(DEBUG)

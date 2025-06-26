@@ -717,16 +717,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             JITDUMP("task await ");
 
             asyncInfo.ExecutionContextHandling = ExecutionContextHandling::SaveAndRestore;
-            asyncInfo.SynchronizationContextHandling = SynchronizationContextHandling::SyncSaveAndRestore;
-
-            if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
-            {
-                JITDUMP("that continues on captured synchronization context\n");
-            }
-            else
-            {
-                JITDUMP("that does not continue on captured synchronization context\n");
-            }
         }
         else
         {

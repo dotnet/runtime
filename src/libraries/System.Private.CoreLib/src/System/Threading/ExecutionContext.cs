@@ -24,7 +24,7 @@ namespace System.Threading
 
         private readonly IAsyncLocalValueMap? m_localValues;
         private readonly IAsyncLocal[]? m_localChangeNotifications;
-        internal readonly bool m_isFlowSuppressed;
+        private readonly bool m_isFlowSuppressed;
         private readonly bool m_isDefault;
 
         private ExecutionContext()

@@ -3,16 +3,24 @@
 
 //
 // This file implements the transformation of C# async methods into state
-// machines. The transformation takes place late in the JIT pipeline, when most
-// optimizations have already been performed, right before lowering.
+// machines. The following key operations are performed:
 //
-// The transformation performs the following key operations:
+// 1. Early, after import but before inlining: for async calls that require
+//    ExecutionContext save/restore semantics, ExecutionContext capture and
+//    restore calls are inserted around the async call site. This ensures proper
+//    context flow across await boundaries when the continuation may run on
+//    different threads or synchronization contexts. The captured ExecutionContext
+//    is stored in a temporary local and restored after the async call completes,
+//    with special handling for calls inside try regions using try-finally blocks.
 //
-// 1. Each async call becomes a suspension point where execution can pause and
+// Later, right before lowering the actual transformation to a state machine is
+// performed:
+//
+// 2. Each async call becomes a suspension point where execution can pause and
 //    return to the caller, accompanied by a resumption point where execution can
 //    continue when the awaited operation completes.
 //
-// 2. When suspending at a suspension point a continuation object is created that contains:
+// 3. When suspending at a suspension point a continuation object is created that contains:
 //    - All live local variables
 //    - State number to identify which await is being resumed
 //    - Return value from the awaited operation (filled in by the callee later)
@@ -20,10 +28,10 @@
 //    - Resumption function pointer
 //    - Flags containing additional information
 //
-// 3. The method entry is modified to include dispatch logic that checks for an
+// 4. The method entry is modified to include dispatch logic that checks for an
 //    incoming continuation and jumps to the appropriate resumption point.
 //
-// 4. Special handling is included for:
+// 5. Special handling is included for:
 //    - Exception propagation across await boundaries
 //    - Return value management for different types (primitives, references, structs)
 //    - Tiered compilation and On-Stack Replacement (OSR)
@@ -37,6 +45,17 @@
 #include "jitstd/algorithm.h"
 #include "async.h"
 
+//------------------------------------------------------------------------
+// Compiler::SaveAsyncContexts:
+//   Insert code to save and restore ExecutionContext around async call sites.
+//
+// Returns:
+//   Suitable phase status.
+//
+// Remarks:
+//   Runs early, after import but before inlining. Thus RET_EXPRs may be
+//   present, and async calls may later be inlined.
+//
 PhaseStatus Compiler::SaveAsyncContexts()
 {
     if (!compMustSaveAsyncContexts)
@@ -155,6 +174,14 @@ PhaseStatus Compiler::SaveAsyncContexts()
     return result;
 }
 
+//------------------------------------------------------------------------
+// Compiler::InsertTryFinallyForContextRestore:
+//   Insert a try-finally around the specified statements in the specified
+//   block.
+//
+// Returns:
+//   Finally block of inserted try-finally.
+//
 BasicBlock* Compiler::InsertTryFinallyForContextRestore(BasicBlock* block, Statement* firstStmt, Statement* lastStmt)
 {
     assert(!block->hasHndIndex());
@@ -260,8 +287,7 @@ public:
     void StartBlock(BasicBlock* block);
     void Update(GenTree* node);
     bool IsLive(unsigned lclNum);
-    template <typename SkipFunctor>
-    void GetLiveLocals(jitstd::vector<LiveLocalInfo>& liveLocals, SkipFunctor shouldSkip);
+    void GetLiveLocals(jitstd::vector<LiveLocalInfo>& liveLocals, unsigned fullyDefinedRetBufLcl);
 
 private:
     bool IsLocalCaptureUnnecessary(unsigned lclNum);
@@ -439,15 +465,14 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
 //   Get live locals that should be captured at this point.
 //
 // Parameters:
-//   liveLocals - Vector to add live local information into
-//   shouldSkip - bool(unsigned) functor to check if we should skip a local
+//   liveLocals            - Vector to add live local information into
+//   fullyDefinedRetBufLcl - Local to skip even if live
 //
-template<typename SkipFunctor>
-void AsyncLiveness::GetLiveLocals(jitstd::vector<LiveLocalInfo>& liveLocals, SkipFunctor shouldSkip)
+void AsyncLiveness::GetLiveLocals(jitstd::vector<LiveLocalInfo>& liveLocals, unsigned fullyDefinedRetBufLcl)
 {
     for (unsigned lclNum = 0; lclNum < m_numVars; lclNum++)
     {
-        if (!shouldSkip(lclNum) && IsLive(lclNum))
+        if ((lclNum != fullyDefinedRetBufLcl) && IsLive(lclNum))
         {
             liveLocals.push_back(LiveLocalInfo(lclNum));
         }
@@ -729,11 +754,7 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
         }
     }
 
-    auto shouldSkip = [=](unsigned lclNum) {
-        return lclNum == fullyDefinedRetBufLcl;
-        };
-
-    life.GetLiveLocals(liveLocals, shouldSkip);
+    life.GetLiveLocals(liveLocals, fullyDefinedRetBufLcl);
     LiftLIREdges(block, defs, liveLocals);
 
 #ifdef DEBUG
@@ -869,7 +890,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
         }
     }
 
-    jitstd::sort(liveLocals.begin(), liveLocals.end(), [=](const LiveLocalInfo& lhs, const LiveLocalInfo& rhs) {
+    jitstd::sort(liveLocals.begin(), liveLocals.end(), [](const LiveLocalInfo& lhs, const LiveLocalInfo& rhs) {
         if (lhs.Alignment == rhs.Alignment)
         {
             // Prefer lowest local num first for same alignment.
@@ -1113,8 +1134,6 @@ BasicBlock* AsyncTransformation::CreateSuspension(BasicBlock*               bloc
         continuationFlags |= CORINFO_CONTINUATION_NEEDS_EXCEPTION;
     if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
         continuationFlags |= CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA;
-    //if ((call->gtCallMoreFlags & GTF_CALL_M_ASYNC_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
-    //    continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNC_CONTEXT;
 
     newContinuation      = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
     unsigned flagsOffset = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
@@ -1486,6 +1505,7 @@ BasicBlock* AsyncTransformation::CreateResumption(BasicBlock*               bloc
     }
 
     unsigned resumeObjectArrLclNum = BAD_VAR_NUM;
+    BasicBlock* storeResultBB = resumeBB;
 
     if (layout.GCRefsCount > 0)
     {
@@ -1498,13 +1518,11 @@ BasicBlock* AsyncTransformation::CreateResumption(BasicBlock*               bloc
         LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeAllocedObjectArr));
 
         RestoreFromGCPointersOnResumption(resumeObjectArrLclNum, layout, resumeBB);
-    }
 
-    BasicBlock* storeResultBB = resumeBB;
-
-    if (layout.ExceptionGCDataIndex != UINT_MAX)
-    {
-        storeResultBB = RethrowExceptionOnResumption(block, remainder, resumeObjectArrLclNum, layout, resumeBB);
+        if (layout.ExceptionGCDataIndex != UINT_MAX)
+        {
+            storeResultBB = RethrowExceptionOnResumption(block, remainder, resumeObjectArrLclNum, layout, resumeBB);
+        }
     }
 
     if ((layout.ReturnSize > 0) && (callDefInfo.DefinitionNode != nullptr))

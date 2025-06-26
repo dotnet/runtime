@@ -4317,21 +4317,10 @@ enum class ExecutionContextHandling
     AsyncSaveAndRestore,
 };
 
-enum class SynchronizationContextHandling
-{
-    // No special handling of synchronization context is required.
-    None,
-    // Save and restore SynchronizationContext around this await but only if it
-    // finishes synchronously.
-    // Used for task awaits.
-    SyncSaveAndRestore,
-};
-
 // Additional async call info.
 struct AsyncCallInfo
 {
     ExecutionContextHandling ExecutionContextHandling = ExecutionContextHandling::None;
-    SynchronizationContextHandling SynchronizationContextHandling = SynchronizationContextHandling::None;
 };
 
 // Return type descriptor of a GT_CALL node.
@@ -4815,7 +4804,6 @@ public:
     CallArg* InsertAfter(Compiler* comp, CallArg* after, const NewCallArg& arg);
     CallArg* InsertAfterUnchecked(Compiler* comp, CallArg* after, const NewCallArg& arg);
     CallArg* InsertInstParam(Compiler* comp, GenTree* node);
-    CallArg* InsertAsyncContinuation(Compiler* comp, GenTree* node);
     CallArg* InsertAfterThisOrFirst(Compiler* comp, const NewCallArg& arg);
     void     PushLateBack(CallArg* arg);
     void     Remove(CallArg* arg);
@@ -4987,10 +4975,11 @@ struct GenTreeCall final : public GenTree
 
     union
     {
+        // Used for explicit tail prefixed calls
         TailCallSiteInfo* tailCallInfo;
         // Only used for unmanaged calls, which cannot be tail-called
         CorInfoCallConvExtension unmgdCallConv;
-        // Immutable since gtCloneExprCallHelper clones this shallowly
+        // Used for async calls
         const AsyncCallInfo* asyncInfo;
     };
 
