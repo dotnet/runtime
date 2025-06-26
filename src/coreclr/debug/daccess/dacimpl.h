@@ -3847,7 +3847,7 @@ public:
             EX_RETHROW; \
         }               \
     }                   \
-    EX_END_CATCH(SwallowAllExceptions) \
+    EX_END_CATCH \
     DAC_LEAVE();
 
 HRESULT DacGetHostVtPtrs(void);

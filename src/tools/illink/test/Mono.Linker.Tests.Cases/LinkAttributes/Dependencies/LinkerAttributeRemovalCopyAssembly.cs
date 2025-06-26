@@ -8,13 +8,13 @@ using Mono.Linker.Tests.Cases.LinkAttributes.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.LinkAttributes.Dependencies
 {
-	[TestAttributeUsedFromCopyAssemblyAttribute (TestAttributeUsedFromCopyAssemblyEnum.None)]
-	[EditorBrowsable (EditorBrowsableState.Never)]
-	public class TypeOnCopyAssemblyWithAttributeUsage
-	{
-		public TypeOnCopyAssemblyWithAttributeUsage ()
-		{
-			typeof (TestAttributeReferencedAsTypeFromCopyAssemblyAttribute).ToString ();
-		}
-	}
+    [TestAttributeUsedFromCopyAssemblyAttribute(TestAttributeUsedFromCopyAssemblyEnum.None)]
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public class TypeOnCopyAssemblyWithAttributeUsage
+    {
+        public TypeOnCopyAssemblyWithAttributeUsage()
+        {
+            typeof(TestAttributeReferencedAsTypeFromCopyAssemblyAttribute).ToString();
+        }
+    }
 }

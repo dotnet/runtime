@@ -132,7 +132,7 @@ namespace System.Security.Cryptography
         {
             if (!_hasSeed)
             {
-                throw new CryptographicException(SR.Cryptography_MLDsaNoSeed);
+                throw new CryptographicException(SR.Cryptography_PqcNoSeed);
             }
 
             ExportKey(
