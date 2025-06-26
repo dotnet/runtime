@@ -78,6 +78,15 @@ namespace System.Net.Http.Headers
 
         internal void Add(HeaderDescriptor descriptor, string? value)
         {
+            if (descriptor.Parser is null)
+            {
+                // If the header has no parser, we only have to check for new lines or null.
+                CheckIsAllowedHeaderName(descriptor);
+                CheckContainsNewLineOrNull(value);
+                TryAddWithoutValidation(descriptor, value);
+                return;
+            }
+
             // We don't use GetOrCreateHeaderInfo() here, since this would create a new header in the store. If parsing
             // the value then throws, we would have to remove the header from the store again. So just get a
             // HeaderStoreItemInfo object and try to parse the value. If it works, we'll add the header.
@@ -106,9 +115,21 @@ namespace System.Net.Http.Headers
             {
                 // Note that if the first couple of values are valid followed by an invalid value, the valid values
                 // will be added to the store before the exception for the invalid value is thrown.
-                foreach (string? value in values)
+                if (descriptor.Parser is null)
                 {
-                    ParseAndAddValue(descriptor, info, value);
+                    foreach (string? value in values)
+                    {
+                        // If the header has no parser, we only have to check for new lines or null.
+                        CheckContainsNewLineOrNull(value);
+                        AddParsedValue(info, value ?? string.Empty);
+                    }
+                }
+                else
+                {
+                    foreach (string? value in values)
+                    {
+                        ParseAndAddValue(descriptor, info, value);
+                    }
                 }
             }
             finally
@@ -252,8 +273,29 @@ namespace System.Net.Http.Headers
 
         internal bool TryGetValues(HeaderDescriptor descriptor, [NotNullWhen(true)] out IEnumerable<string>? values)
         {
-            if (TryGetAndParseHeaderInfo(descriptor, out HeaderStoreItemInfo? info))
+            ref object storeValueRef = ref GetValueRefOrNullRef(descriptor);
+            if (!Unsafe.IsNullRef(ref storeValueRef))
             {
+                object value = storeValueRef;
+                HeaderStoreItemInfo info;
+
+                if (value is HeaderStoreItemInfo hsi)
+                {
+                    info = hsi;
+                }
+                else if (descriptor.Parser is null)
+                {
+                    // If this is a custom header without a known parser, unparsed values won't change.
+                    // Avoid allocating the HeaderStoreItemInfo in this case and just return the raw value as-is.
+                    values = new string[] { (string)value };
+                    return true;
+                }
+                else
+                {
+                    info = ReplaceWithHeaderStoreItemInfo(ref storeValueRef, value);
+                }
+
+                ParseRawHeaderValues(descriptor, info);
                 values = GetStoreValuesAsStringArray(descriptor, info);
                 return true;
             }
@@ -1002,12 +1044,17 @@ namespace System.Net.Http.Headers
 
         internal virtual bool IsAllowedHeaderName(HeaderDescriptor descriptor) => true;
 
-        private void PrepareHeaderInfoForAdd(HeaderDescriptor descriptor, out HeaderStoreItemInfo info, out bool addToStore)
+        private void CheckIsAllowedHeaderName(HeaderDescriptor descriptor)
         {
             if (!IsAllowedHeaderName(descriptor))
             {
                 throw new InvalidOperationException(SR.Format(SR.net_http_headers_not_allowed_header_name, descriptor.Name));
             }
+        }
+
+        private void PrepareHeaderInfoForAdd(HeaderDescriptor descriptor, out HeaderStoreItemInfo info, out bool addToStore)
+        {
+            CheckIsAllowedHeaderName(descriptor);
 
             addToStore = false;
             if (!TryGetAndParseHeaderInfo(descriptor, out info!))
@@ -1020,15 +1067,7 @@ namespace System.Net.Http.Headers
         private static void ParseAndAddValue(HeaderDescriptor descriptor, HeaderStoreItemInfo info, string? value)
         {
             Debug.Assert(info != null);
-
-            if (descriptor.Parser == null)
-            {
-                // If we don't have a parser for the header, we consider the value valid if it doesn't contains
-                // newline or \0 characters. We add the values as "parsed value". Note that we allow empty values.
-                CheckContainsNewLineOrNull(value);
-                AddParsedValue(info, value ?? string.Empty);
-                return;
-            }
+            Debug.Assert(descriptor.Parser != null);
 
             // If the header only supports 1 value, we can add the current value only if there is no
             // value already set.
