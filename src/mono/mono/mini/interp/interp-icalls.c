@@ -96,6 +96,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 	MH_LOG("Converting data to stackval for type %s", mono_type_get_name (type));
 	if (m_type_is_byref (type)) {
 		result->data.p = *(gpointer*)data;
+		MH_LOG_UNINDENT();
 		return;
 	}
 	switch (type->type) {
@@ -184,13 +185,17 @@ static char * log_sig(MonoMethodSignature* sig)
 {
 	char buffer[256];
 	int offset = 0;
+	MH_LOG_INDENT();
 	for (int i = 0; i < sig->param_count; ++i) {
-		MonoType* tp = sig->params[i];
+		MonoType* tp = sig->params[i];		
+		MH_LOG("Param %d: %s", (int)tp->type, mono_type_get_name (tp));
 		if(tp)
 			offset += sprintf(buffer + offset, "%d", interp_type_as_ptr8(tp) ? 8 : interp_type_as_ptr4(tp) ? 4 : 0);
 		else
 			offset += sprintf(buffer + offset, "E");
+		
 	}
+	MH_LOG_UNINDENT();
 	if (!sig->param_count)
 		offset += sprintf(buffer + offset, "V");
 	offset += sprintf(buffer + offset, "_%s", sig->ret->type ==  MONO_TYPE_VOID ? "V" : (interp_type_as_ptr4(sig->ret) ? "4" : "8"));
@@ -743,6 +748,7 @@ do_icall (MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval 
 	}
 	case MINT_ICALLSIG_PPPPP_V:
 	case MINT_ICALLSIG_PPPPP_P: {
+		log_sig(sig);  // just here for a breakpoint
 		if (!strcmp(sigTest,"44444_V")) {
 			typedef void (*T)(I4,I4,I4,I4,I4);
 			T func = (T)ptr;
@@ -1227,6 +1233,7 @@ do_icall (MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval 
 	}
 	case MINT_ICALLSIG_PPPPPP_V:
 	case MINT_ICALLSIG_PPPPPP_P: {
+		log_sig(sig);  // just here for a breakpoint
 		if (!strcmp(sigTest,"444444_V")) {
 			typedef void (*T)(I4,I4,I4,I4,I4,I4);
 			T func = (T)ptr;

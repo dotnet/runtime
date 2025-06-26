@@ -2093,6 +2093,9 @@ interp_entry (InterpEntryData *data)
 	g_assert (context->stack_pointer < context->stack_end);
 
 	MONO_ENTER_GC_UNSAFE;
+	MH_LOG_INDENT();
+	MH_LOG("calling mono_interp_exec_method for %s : %s", method->name, mono_method_full_name (method, TRUE));
+	MH_LOG_UNINDENT();
 	mono_interp_exec_method (&frame, context, NULL);
 	MONO_EXIT_GC_UNSAFE;
 
@@ -7856,13 +7859,8 @@ interp_parse_options (const char *options)
 				opt = INTERP_OPT_TIERING;
 			else if (strncmp (arg, "simd", 4) == 0)
 				opt = INTERP_OPT_SIMD;
-#if HOST_BROWSER
-			else if (strncmp (arg, "jiterp", 6) == 0)
-			{
-				#pragma message ("ENABLING JITERPRETER!!")
-				opt = INTERP_OPT_JITERPRETER;
-			}
-#endif
+			else if (strncmp (arg, "jiterp", 6) == 0)							
+				opt = INTERP_OPT_JITERPRETER;			
 			else if (strncmp (arg, "ssa", 3) == 0)
 				opt = INTERP_OPT_SSA;
 			else if (strncmp (arg, "precise", 7) == 0)

@@ -15,7 +15,8 @@ import {
     set_arg_length, get_arg, get_signature_arg1_type, get_signature_arg2_type, js_to_cs_marshalers,
     get_signature_res_type, bound_js_function_symbol, set_arg_u16, array_element_size,
     get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, set_arg_i64_big, set_arg_intptr,
-    set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol, get_arg_gc_handle, get_arg_type, set_arg_proxy_context, get_arg_intptr
+    set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol, get_arg_gc_handle, get_arg_type, set_arg_proxy_context, get_arg_intptr,
+    add_offset
 } from "./marshal";
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
 import { _zero_region, fixupPointer, localHeapViewF64, localHeapViewI32, localHeapViewU8, malloc } from "./memory";
@@ -82,7 +83,8 @@ export function bind_arg_marshal_to_cs (sig: JSMarshalerType, marshaler_type: Ma
 
     const arg_offset = index * JavaScriptMarshalerArgSize;
     return (args: JSMarshalerArguments, value: any) => {
-        converter(<any>args + arg_offset, value, element_type, res_marshaler, arg1_marshaler, arg2_marshaler, arg3_marshaler);
+        // @ts-expect-error TS2352:
+        converter(add_offset(args, arg_offset) as JSMarshalerArgument, value, element_type, res_marshaler, arg1_marshaler, arg2_marshaler, arg3_marshaler);
     };
 }
 

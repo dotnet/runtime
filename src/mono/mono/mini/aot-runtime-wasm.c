@@ -14,6 +14,12 @@
 #include <mono/metadata/mh_log.h>
 #ifdef HOST_WASM
 
+#if SIZEOF_VOID_P == 4
+static const char ptrChar = 'I';
+#else
+static const char ptrChar = 'L';
+#endif
+
 static char
 type_to_c (MonoType *t, gboolean *is_byref_return)
 {
@@ -22,7 +28,9 @@ type_to_c (MonoType *t, gboolean *is_byref_return)
 	if (is_byref_return)
 		*is_byref_return = 0;
 	if (m_type_is_byref (t))
-		return 'I';
+	{
+		return ptrChar;
+	}
 
 handle_enum:
 	switch (t->type) {		
@@ -34,40 +42,28 @@ handle_enum:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
-#if SIZEOF_VOID_P == 4
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
+		return 'I';
+	case MONO_TYPE_I: 
+	case MONO_TYPE_U:		 
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
-#else
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-#endif
-		return 'I';
+		return ptrChar;
 	case MONO_TYPE_R4:
 		return 'F';
 	case MONO_TYPE_R8:
 		return 'D';
 		break;
-#if SIZEOF_VOID_P == 4
 	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-#else 
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_STRING:
-#endif
+	case MONO_TYPE_U8:	
 		return 'L';
 	case MONO_TYPE_VOID:
 		return 'V';
 	case MONO_TYPE_VALUETYPE: {
+		MH_LOG_INDENT();	
+		MH_LOG("Handling valuetype %s", mono_type_full_name (t));
 		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (t))) {
 			t = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (t));
 			goto handle_enum;
@@ -83,11 +79,7 @@ handle_enum:
 
 		if (is_byref_return)
 			*is_byref_return = 1;
-		#if SIZEOF_VOID_P == 4
-		return 'I';
-		#else
-		return 'L';
-		#endif
+		return ptrChar;		
 	}
 	case MONO_TYPE_GENERICINST: {
 		// This previously erroneously used m_type_data_get_klass which isn't legal for genericinst, we have to use class_from_mono_type_internal
@@ -101,11 +93,7 @@ handle_enum:
 
 			return 'S';
 		}
-		#if SIZEOF_VOID_P == 4
-		return 'I';
-		#else
-		return 'L';
-		#endif
+		return ptrChar;		
 	}
 	default:
 		g_warning ("CANT TRANSLATE %s", mono_type_full_name (t));
@@ -137,7 +125,7 @@ get_long_arg (InterpMethodArguments *margs, int idx)
 	return p.l;
 	#else
 	MH_LOG_INDENT();
-	MH_LOG("Getting long arg [%d]: %ld", idx, (gint64)(gssize)margs->iargs [idx]);
+	MH_LOG("Getting long arg [%d]: %lld", idx, (gint64)(gssize)margs->iargs [idx]);
 	MH_LOG_UNINDENT();
 	return (gint64)(gssize)margs->iargs [idx];
 	#endif
@@ -204,6 +192,8 @@ mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig)
 
 	memset (cookie, 0, 32);
 	cookie [0] = type_to_c (sig->ret, &is_byref_return);
+	MH_LOG_INDENT();
+	MH_LOG("Parameter cookie[0] = %c (from type: %s (enum: %d))\n", cookie [0], mono_type_get_name_full(sig->ret, MONO_TYPE_NAME_FORMAT_FULL_NAME), (int)sig->ret->type);
 
 	c_count = sig->param_count + sig->hasthis + is_byref_return + 1;
 	g_assert (c_count < sizeof (cookie)); //ensure we don't overflow the local
@@ -211,18 +201,28 @@ mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig)
 	if (is_byref_return) {
 		cookie[0] = 'V';
 		// return value address goes in arg0
-		cookie[1] = 'I';
+		cookie[1] = ptrChar;
+		MH_LOG_INDENT();
+		MH_LOG("Return value is byref: cookie[0][1] = %c, %c", cookie [0], cookie [1]);		
+		MH_LOG_UNINDENT();
 		offset += 1;
 	}
 	if (sig->hasthis) {
 		// thisptr goes in arg0/arg1 depending on return type
-		cookie [offset] = 'I';
+		cookie [offset] = ptrChar;
+		MH_LOG_INDENT();
+		MH_LOG("Sig hasthis: value is byref: cookie[%d] = %c", offset, cookie [offset]);		
+		MH_LOG_UNINDENT();
 		offset += 1;
 	}
+	
 	for (int i = 0; i < sig->param_count; ++i) {
 		cookie [offset + i] = type_to_c (sig->params [i], NULL);
+		MH_LOG("Parameter cookie[%d] = %c (from type: %s)\n", offset + i, cookie [offset + i], mono_type_get_name_full(sig->params[i], MONO_TYPE_NAME_FORMAT_FULL_NAME));
 	}
+	MH_LOG_UNINDENT();
 	logCookie(c_count, cookie);
+
 	void *p = mono_wasm_interp_to_native_callback (cookie);
 	if (!p)
 		g_error ("CANNOT HANDLE INTERP ICALL SIG %s\n", cookie);
