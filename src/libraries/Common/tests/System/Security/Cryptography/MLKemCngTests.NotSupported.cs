@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Tests
             // We cannot actually construct a CngKey on non-Windows platforms, so this cheats by just instantiating
             // a bogus object. We don't need the object to do anything. We shouldn't touch it before the platform check.
             CngKey key = (CngKey)RuntimeHelpers.GetUninitializedObject(typeof(CngKey));
-            Assert.Throws<PlatformNotSupportedException>(() => key);
+            Assert.Throws<PlatformNotSupportedException>(() => new MLKemCng(key));
         }
     }
 #endif
