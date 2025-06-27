@@ -139,9 +139,13 @@ PhaseStatus Compiler::SaveAsyncContexts()
 
             if (curBB->hasTryIndex())
             {
+#ifdef FEATURE_EH_WINDOWS_X86
+                IMPL_LIMITATION("Cannot handle insertion of try-finally without funclets");
+#else
                 // Await is inside a try, need to insert try-finally around it.
                 restoreBB        = InsertTryFinallyForContextRestore(curBB, stmt, restoreAfterStmt);
                 restoreAfterStmt = nullptr;
+#endif
             }
 
             GenTreeCall* restore = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreExecutionContextMethHnd, TYP_VOID);
