@@ -4043,8 +4043,16 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
         {
             BasicBlock* const predBlock = predEdge->getSourceBlock();
 
+            // We may see unreachable pred blocks here. If so we will
+            // conservatively fail.
+            //
+            if (!comp->m_dfsTree->Contains(predBlock))
+            {
+                JITDUMP("Unreachable pred block " FMT_BB " for " FMT_BB "\n", predBlock->bbNum, block->bbNum);
+                return false;
+            }
+
             // We should not be able to reach an un-dominated block.
-            // (consider eh paths?)
             //
             assert(comp->m_domTree->Dominates(defBlock, predBlock));
             if (BitVecOps::TryAddElemD(&traits, visitedBlocks, predBlock->bbID))

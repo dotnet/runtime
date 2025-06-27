@@ -2835,7 +2835,8 @@ void Compiler::fgPeelSwitch(BasicBlock* block)
     // The dominant case should not be the default case, as we already peel that one.
     //
     assert(dominantCase < (block->GetSwitchTargets()->bbsCount - 1));
-    BasicBlock* const dominantTarget = block->GetSwitchTargets()->bbsDstTab[dominantCase]->getDestinationBlock();
+    FlowEdge* const   dominantEdge   = block->GetSwitchTargets()->bbsDstTab[dominantCase];
+    BasicBlock* const dominantTarget = dominantEdge->getDestinationBlock();
     Statement* const  switchStmt     = block->lastStmt();
     GenTree* const    switchTree     = switchStmt->GetRootNode();
     assert(switchTree->OperIs(GT_SWITCH));
@@ -2878,23 +2879,32 @@ void Compiler::fgPeelSwitch(BasicBlock* block)
 
     // Wire up the new control flow.
     //
-    FlowEdge* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block);
+    FlowEdge* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block, dominantEdge);
     FlowEdge* const blockToNewBlockEdge = newBlock->bbPreds;
     block->SetCond(blockToTargetEdge, blockToNewBlockEdge);
 
     // Update profile data
     //
-    const weight_t fraction            = newBlock->GetSwitchTargets()->bbsDominantFraction;
+    const weight_t fraction            = dominantEdge->getLikelihood();
     const weight_t blockToTargetWeight = block->bbWeight * fraction;
 
     newBlock->decreaseBBProfileWeight(blockToTargetWeight);
-
-    blockToTargetEdge->setLikelihood(fraction);
     blockToNewBlockEdge->setLikelihood(max(0.0, 1.0 - fraction));
 
-    JITDUMP("fgPeelSwitch: Updated flow into " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
-            newBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
-    fgPgoConsistent = false;
+    // Now that the dominant case has been peeled, set the case's edge likelihood to zero,
+    // and increase all other case likelihoods proportionally.
+    //
+    dominantEdge->setLikelihood(BB_ZERO_WEIGHT);
+    const SwitchUniqueSuccSet uniqueSuccSet = GetDescriptorForSwitch(newBlock);
+    const unsigned            numSucc       = uniqueSuccSet.numDistinctSuccs;
+    FlowEdge** const          jumpTab       = uniqueSuccSet.nonDuplicates;
+    for (unsigned i = 0; i < numSucc; i++)
+    {
+        // If we removed all of the flow out of 'block', distribute flow among the remaining edges evenly.
+        const weight_t currLikelihood = jumpTab[i]->getLikelihood();
+        const weight_t newLikelihood  = (fraction == 1.0) ? (1.0 / numSucc) : (currLikelihood / (1.0 - fraction));
+        jumpTab[i]->setLikelihood(min(1.0, newLikelihood));
+    }
 
     // For now we leave the switch as is, since there's no way
     // to indicate that one of the cases is now unreachable.

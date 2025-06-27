@@ -2272,10 +2272,9 @@ struct BBswtDesc
     FlowEdge** bbsDstTab; // case label table address
     unsigned   bbsCount;  // count of cases (includes 'default' if bbsHasDefault)
 
-    // Case number and likelihood of most likely case
+    // Case number of most likely case
     // (only known with PGO, only valid if bbsHasDominantCase is true)
     unsigned bbsDominantCase;
-    weight_t bbsDominantFraction;
 
     bool bbsHasDefault;      // true if last switch case is a default case
     bool bbsHasDominantCase; // true if switch has a dominant case
