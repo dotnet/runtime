@@ -27,6 +27,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonIgnoreAttributeFullName = "System.Text.Json.Serialization.JsonIgnoreAttribute";
             private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
             private const string JsonIncludeAttributeFullName = "System.Text.Json.Serialization.JsonIncludeAttribute";
+            private const string JsonNamingPolicyAttributeFullName = "System.Text.Json.Serialization.JsonNamingPolicyAttribute";
             private const string JsonNumberHandlingAttributeFullName = "System.Text.Json.Serialization.JsonNumberHandlingAttribute";
             private const string JsonObjectCreationHandlingAttributeFullName = "System.Text.Json.Serialization.JsonObjectCreationHandlingAttribute";
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
@@ -527,6 +528,7 @@ namespace System.Text.Json.SourceGeneration
                 bool implementsIJsonOnSerializing = false;
 
                 ProcessTypeCustomAttributes(typeToGenerate, contextType,
+                    out JsonNamingPolicy? typeNamingPolicy,
                     out JsonNumberHandling? numberHandling,
                     out JsonUnmappedMemberHandling? unmappedMemberHandling,
                     out JsonObjectCreationHandling? preferredPropertyObjectCreationHandling,
@@ -634,7 +636,7 @@ namespace System.Text.Json.SourceGeneration
                     implementsIJsonOnSerialized = _knownSymbols.IJsonOnSerializedType.IsAssignableFrom(type);
 
                     ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, out constructionStrategy, out constructorSetsRequiredMembers);
-                    propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, options, out hasExtensionDataProperty, out fastPathPropertyIndices);
+                    propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, typeNamingPolicy, options, out hasExtensionDataProperty, out fastPathPropertyIndices);
                     propertyInitializerSpecs = ParsePropertyInitializers(ctorParamSpecs, propertySpecs, constructorSetsRequiredMembers, ref constructionStrategy);
                 }
 
@@ -688,6 +690,7 @@ namespace System.Text.Json.SourceGeneration
             private void ProcessTypeCustomAttributes(
                 in TypeToGenerate typeToGenerate,
                 INamedTypeSymbol contextType,
+                out JsonNamingPolicy? namingPolicy,
                 out JsonNumberHandling? numberHandling,
                 out JsonUnmappedMemberHandling? unmappedMemberHandling,
                 out JsonObjectCreationHandling? objectCreationHandling,
@@ -695,6 +698,7 @@ namespace System.Text.Json.SourceGeneration
                 out TypeRef? customConverterType,
                 out bool isPolymorphic)
             {
+                namingPolicy = null;
                 numberHandling = null;
                 unmappedMemberHandling = null;
                 objectCreationHandling = null;
@@ -706,7 +710,12 @@ namespace System.Text.Json.SourceGeneration
                 {
                     INamedTypeSymbol? attributeType = attributeData.AttributeClass;
 
-                    if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonNumberHandlingAttributeType))
+                    if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonNamingPolicyAttributeType))
+                    {
+                        namingPolicy = (JsonNamingPolicy)attributeData.ConstructorArguments[0].Value!;
+                        continue;
+                    }
+                    else if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonNumberHandlingAttributeType))
                     {
                         numberHandling = (JsonNumberHandling)attributeData.ConstructorArguments[0].Value!;
                         continue;
@@ -916,6 +925,7 @@ namespace System.Text.Json.SourceGeneration
             private List<PropertyGenerationSpec> ParsePropertyGenerationSpecs(
                 INamedTypeSymbol contextType,
                 in TypeToGenerate typeToGenerate,
+                JsonNamingPolicy? typeNamingPolicy,
                 SourceGenerationOptionsSpec? options,
                 out bool hasExtensionDataProperty,
                 out List<int>? fastPathPropertyIndices)
@@ -1000,6 +1010,7 @@ namespace System.Text.Json.SourceGeneration
                         memberInfo,
                         ref hasExtensionDataProperty,
                         generationMode,
+                        typeNamingPolicy,
                         options);
 
                     if (propertySpec is null)
@@ -1123,6 +1134,7 @@ namespace System.Text.Json.SourceGeneration
                 ISymbol memberInfo,
                 ref bool typeHasExtensionDataProperty,
                 JsonSourceGenerationMode? generationMode,
+                JsonNamingPolicy? typeNamingPolicy,
                 SourceGenerationOptionsSpec? options)
             {
                 Debug.Assert(memberInfo is IFieldSymbol or IPropertySymbol);
@@ -1133,6 +1145,7 @@ namespace System.Text.Json.SourceGeneration
                     out bool hasJsonInclude,
                     out string? jsonPropertyName,
                     out JsonIgnoreCondition? ignoreCondition,
+                    out JsonNamingPolicy? propertyNamingPolicy,
                     out JsonNumberHandling? numberHandling,
                     out JsonObjectCreationHandling? objectCreationHandling,
                     out TypeRef? converterType,
@@ -1194,7 +1207,7 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
-                string effectiveJsonPropertyName = DetermineEffectiveJsonPropertyName(memberInfo.Name, jsonPropertyName, options);
+                string effectiveJsonPropertyName = DetermineEffectiveJsonPropertyName(memberInfo.Name, jsonPropertyName, propertyNamingPolicy ?? typeNamingPolicy, options);
                 string propertyNameFieldName = DeterminePropertyNameFieldName(effectiveJsonPropertyName);
 
                 // Enqueue the property type for generation, unless the member is ignored.
@@ -1238,6 +1251,7 @@ namespace System.Text.Json.SourceGeneration
                 out bool hasJsonInclude,
                 out string? jsonPropertyName,
                 out JsonIgnoreCondition? ignoreCondition,
+                out JsonNamingPolicy? namingPolicy,
                 out JsonNumberHandling? numberHandling,
                 out JsonObjectCreationHandling? objectCreationHandling,
                 out TypeRef? converterType,
@@ -1250,6 +1264,7 @@ namespace System.Text.Json.SourceGeneration
                 hasJsonInclude = false;
                 jsonPropertyName = null;
                 ignoreCondition = default;
+                namingPolicy = null;
                 numberHandling = default;
                 objectCreationHandling = default;
                 converterType = null;
@@ -1292,6 +1307,13 @@ namespace System.Text.Json.SourceGeneration
                             case JsonIncludeAttributeFullName:
                             {
                                 hasJsonInclude = true;
+                                break;
+                            }
+                            case JsonNamingPolicyAttributeFullName:
+                            {
+                                ImmutableArray<TypedConstant> ctorArgs = attributeData.ConstructorArguments;
+                                namingPolicy = (JsonNamingPolicy)ctorArgs[0].Value!;
+                                // Null check here is done at runtime within JsonSerializer.
                                 break;
                             }
                             case JsonNumberHandlingAttributeFullName:
@@ -1603,14 +1625,14 @@ namespace System.Text.Json.SourceGeneration
                 return new TypeRef(converterType);
             }
 
-            private static string DetermineEffectiveJsonPropertyName(string propertyName, string? jsonPropertyName, SourceGenerationOptionsSpec? options)
+            private static string DetermineEffectiveJsonPropertyName(string propertyName, string? jsonPropertyName, JsonNamingPolicy? namingPolicy, SourceGenerationOptionsSpec? options)
             {
                 if (jsonPropertyName != null)
                 {
                     return jsonPropertyName;
                 }
 
-                JsonNamingPolicy? instance = options?.GetEffectivePropertyNamingPolicy() switch
+                JsonNamingPolicy? instance = namingPolicy ?? options?.GetEffectivePropertyNamingPolicy() switch
                 {
                     JsonKnownNamingPolicy.CamelCase => JsonNamingPolicy.CamelCase,
                     JsonKnownNamingPolicy.SnakeCaseLower => JsonNamingPolicy.SnakeCaseLower,

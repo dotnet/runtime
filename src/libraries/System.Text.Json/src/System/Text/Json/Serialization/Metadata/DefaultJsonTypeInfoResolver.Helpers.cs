@@ -151,6 +151,9 @@ namespace System.Text.Json.Serialization.Metadata
             bool shouldCheckMembersForRequiredMemberAttribute =
                 !constructorHasSetsRequiredMembersAttribute && currentType.HasRequiredMemberAttribute();
 
+            JsonNamingPolicyAttribute? namingPolicyAttribute = currentType.GetCustomAttribute<JsonNamingPolicyAttribute>(inherit: false);
+            JsonNamingPolicy? currentTypeNamingPolicy = namingPolicyAttribute?.NamingPolicy;
+
             foreach (PropertyInfo propertyInfo in currentType.GetProperties(AllInstanceMembers))
             {
                 // Ignore indexers and virtual properties that have overrides that were [JsonIgnore]d.
@@ -174,6 +177,7 @@ namespace System.Text.Json.Serialization.Metadata
                         nullabilityCtx,
                         shouldCheckMembersForRequiredMemberAttribute,
                         hasJsonIncludeAttribute,
+                        currentTypeNamingPolicy,
                         ref state);
                 }
             }
@@ -190,6 +194,7 @@ namespace System.Text.Json.Serialization.Metadata
                         nullabilityCtx,
                         shouldCheckMembersForRequiredMemberAttribute,
                         hasJsonIncludeAttribute,
+                        currentTypeNamingPolicy,
                         ref state);
                 }
             }
@@ -204,9 +209,10 @@ namespace System.Text.Json.Serialization.Metadata
             NullabilityInfoContext nullabilityCtx,
             bool shouldCheckForRequiredKeyword,
             bool hasJsonIncludeAttribute,
+            JsonNamingPolicy? currentTypeNamingPolicy,
             ref JsonTypeInfo.PropertyHierarchyResolutionState state)
         {
-            JsonPropertyInfo? jsonPropertyInfo = CreatePropertyInfo(typeInfo, typeToConvert, memberInfo, nullabilityCtx, typeInfo.Options, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute);
+            JsonPropertyInfo? jsonPropertyInfo = CreatePropertyInfo(typeInfo, typeToConvert, memberInfo, nullabilityCtx, typeInfo.Options, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute, currentTypeNamingPolicy);
             if (jsonPropertyInfo == null)
             {
                 // ignored invalid property
@@ -226,7 +232,8 @@ namespace System.Text.Json.Serialization.Metadata
             NullabilityInfoContext nullabilityCtx,
             JsonSerializerOptions options,
             bool shouldCheckForRequiredKeyword,
-            bool hasJsonIncludeAttribute)
+            bool hasJsonIncludeAttribute,
+            JsonNamingPolicy? currentTypeNamingPolicy)
         {
             JsonIgnoreCondition? ignoreCondition = memberInfo.GetCustomAttribute<JsonIgnoreAttribute>(inherit: false)?.Condition;
 
@@ -251,7 +258,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             JsonPropertyInfo jsonPropertyInfo = typeInfo.CreatePropertyUsingReflection(typeToConvert, declaringType: memberInfo.DeclaringType);
-            PopulatePropertyInfo(jsonPropertyInfo, memberInfo, customConverter, ignoreCondition, nullabilityCtx, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute);
+            PopulatePropertyInfo(jsonPropertyInfo, memberInfo, customConverter, ignoreCondition, nullabilityCtx, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute, currentTypeNamingPolicy);
             return jsonPropertyInfo;
         }
 
@@ -326,7 +333,8 @@ namespace System.Text.Json.Serialization.Metadata
             JsonIgnoreCondition? ignoreCondition,
             NullabilityInfoContext nullabilityCtx,
             bool shouldCheckForRequiredKeyword,
-            bool hasJsonIncludeAttribute)
+            bool hasJsonIncludeAttribute,
+            JsonNamingPolicy? currentTypeNamingPolicy)
         {
             Debug.Assert(jsonPropertyInfo.AttributeProvider == null);
 
@@ -348,7 +356,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             jsonPropertyInfo.CustomConverter = customConverter;
             DeterminePropertyPolicies(jsonPropertyInfo, memberInfo);
-            DeterminePropertyName(jsonPropertyInfo, memberInfo);
+            DeterminePropertyName(jsonPropertyInfo, memberInfo, currentTypeNamingPolicy);
             DeterminePropertyIsRequired(jsonPropertyInfo, memberInfo, shouldCheckForRequiredKeyword);
             DeterminePropertyNullability(jsonPropertyInfo, memberInfo, nullabilityCtx);
 
@@ -373,17 +381,20 @@ namespace System.Text.Json.Serialization.Metadata
             propertyInfo.ObjectCreationHandling = objectCreationHandlingAttr?.Handling;
         }
 
-        private static void DeterminePropertyName(JsonPropertyInfo propertyInfo, MemberInfo memberInfo)
+        private static void DeterminePropertyName(JsonPropertyInfo propertyInfo, MemberInfo memberInfo, JsonNamingPolicy? currentTypeNamingPolicy)
         {
+            JsonNamingPolicyAttribute? namingPolicyAttribute = memberInfo.GetCustomAttribute<JsonNamingPolicyAttribute>(inherit: false);
+            JsonNamingPolicy? namingPolicy = namingPolicyAttribute?.NamingPolicy ??
+                                             currentTypeNamingPolicy ?? propertyInfo.Options.PropertyNamingPolicy;
             JsonPropertyNameAttribute? nameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(inherit: false);
             string? name;
             if (nameAttribute != null)
             {
                 name = nameAttribute.Name;
             }
-            else if (propertyInfo.Options.PropertyNamingPolicy != null)
+            else if (namingPolicy != null)
             {
-                name = propertyInfo.Options.PropertyNamingPolicy.ConvertName(memberInfo.Name);
+                name = namingPolicy.ConvertName(memberInfo.Name);
             }
             else
             {

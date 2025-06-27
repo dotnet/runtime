@@ -52,14 +52,14 @@
     <Project Path="tests/System.Text.Json.Tests/System.Text.Json.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/" />
-  <Folder Name="/tools/gen/">
+  <Folder Name="/tools/gen/" Id="5ad0b2ae-1660-5889-7060-a20f14d475b9">
     <Project Path="../../tools/illink/src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj" />
     <Project Path="../../tools/illink/src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj" />
   </Folder>
-  <Folder Name="/tools/ref/">
+  <Folder Name="/tools/ref/" Id="15076b09-f6db-72ba-9250-bd323f541561">
     <Project Path="../../tools/illink/src/linker/ref/Mono.Linker.csproj" />
   </Folder>
-  <Folder Name="/tools/src/">
+  <Folder Name="/tools/src/" Id="67824254-6371-76fd-c40d-f076954ccde1">
     <Project Path="../../tools/illink/src/ILLink.Tasks/ILLink.Tasks.csproj" />
     <Project Path="../../tools/illink/src/linker/Mono.Linker.csproj" />
   </Folder>
