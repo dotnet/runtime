@@ -627,13 +627,6 @@ void SyncBlockCache::CleanupSyncBlocks()
 
 // create the sync block cache
 /* static */
-void SyncBlockCache::Attach()
-{
-    LIMITED_METHOD_CONTRACT;
-}
-
-// create the sync block cache
-/* static */
 void SyncBlockCache::Start()
 {
     CONTRACTL

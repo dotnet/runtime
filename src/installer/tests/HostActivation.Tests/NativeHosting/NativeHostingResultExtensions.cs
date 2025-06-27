@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 {
-    internal static class FunctionPointerResultExtensions
+    internal static class NativeHostingResultExtensions
     {
         public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteFunctionPointer(this CommandResultAssertions assertion, string methodName, int callCount, int returnValue)
         {
@@ -46,6 +47,22 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteWithLocation(this CommandResultAssertions assertion, string assemblyName, string location)
         {
             return assertion.HaveStdOutContaining($"{assemblyName}: Location = '{location}'");
+        }
+
+        public static FluentAssertions.AndConstraint<CommandResultAssertions> ResolveHostFxr(this CommandResultAssertions assertion, Microsoft.DotNet.Cli.Build.DotNetCli dotnet)
+        {
+            return assertion.HaveStdErrContaining($"Resolved fxr [{dotnet.GreatestVersionHostFxrFilePath}]");
+        }
+
+        public static FluentAssertions.AndConstraint<CommandResultAssertions> ResolveHostPolicy(this CommandResultAssertions assertion, Microsoft.DotNet.Cli.Build.DotNetCli dotnet)
+        {
+            return assertion.HaveStdErrContaining($"{Binaries.HostPolicy.FileName} directory is [{dotnet.GreatestVersionSharedFxPath}]");
+        }
+
+        public static FluentAssertions.AndConstraint<CommandResultAssertions> ResolveCoreClr(this CommandResultAssertions assertion, Microsoft.DotNet.Cli.Build.DotNetCli dotnet)
+        {
+            return assertion.HaveStdErrContaining($"CoreCLR path = '{Path.Combine(dotnet.GreatestVersionSharedFxPath, Binaries.CoreClr.FileName)}'")
+                .And.HaveStdErrContaining($"CoreCLR dir = '{dotnet.GreatestVersionSharedFxPath}{Path.DirectorySeparatorChar}'");
         }
     }
 }
