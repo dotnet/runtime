@@ -34,7 +34,7 @@ namespace System
         /// </summary>
         public static void Register(Func<bool> callback)
         {
-            // Create a unreachable object that remembers the callback function and target object.
+            // Create an unreachable object that remembers the callback function and target object.
             new Gen2GcCallback(callback);
         }
 
@@ -47,7 +47,7 @@ namespace System
         /// </summary>
         public static void Register(Func<object, bool> callback, object targetObj)
         {
-            // Create a unreachable object that remembers the callback function and target object.
+            // Create an unreachable object that remembers the callback function and target object.
             new Gen2GcCallback(callback, targetObj);
         }
 
