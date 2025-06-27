@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void CoseSigner_CoseKey_ECDsa_Success()
         {
-            CoseKey key = CoseKey.FromKey(CoseTestHelpers.ES256, HashAlgorithmName.SHA256);
+            CoseKey key = new CoseKey(CoseTestHelpers.ES256, HashAlgorithmName.SHA256);
             var signer = new CoseSigner(key);
             Assert.NotNull(signer.ProtectedHeaders);
             Assert.NotNull(signer.UnprotectedHeaders);
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         public void CoseSigner_CoseKey_MLDsa_Success()
         {
-            CoseKey key = CoseKey.FromKey(CoseTestHelpers.MLDsa44Key);
+            CoseKey key = new CoseKey(CoseTestHelpers.MLDsa44Key);
             var signer = new CoseSigner(key);
             Assert.NotNull(signer.ProtectedHeaders);
             Assert.NotNull(signer.UnprotectedHeaders);

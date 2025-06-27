@@ -50,10 +50,12 @@ void PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ u
 //
 // This is a simplification of similar code in CLR's GetCodeViewInfo
 // in eventtrace.cpp.
-void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) WCHAR * wszPath, int32_t cchPath)
+void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) WCHAR * wszPath, int32_t cchPath, _Out_ uint32_t * pcbBuildId, _Out_ void ** ppBuildId)
 {
     // Zero-init [out]-params
     ZeroMemory(pGuidSignature, sizeof(*pGuidSignature));
+    *ppBuildId = NULL;
+    *pcbBuildId = 0;
     *pdwAge = 0;
     if (cchPath <= 0)
         return;

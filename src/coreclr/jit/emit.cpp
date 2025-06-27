@@ -4523,7 +4523,7 @@ void emitter::emitRecomputeIGoffsets()
 //    cookie - the cookie stored with the handle
 //    flags  - a flag that the describes the handle
 //
-void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flag)
+void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flag) const
 {
 #ifdef TARGET_XARCH
     const char* commentPrefix = "      ;";
