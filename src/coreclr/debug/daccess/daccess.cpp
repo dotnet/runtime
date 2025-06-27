@@ -7048,8 +7048,12 @@ CLRDataCreateInstance(REFIID iid,
         }
     }
 #endif
-    if (cdacInterface != nullptr)
+    if (enable)
     {
+        if (cdacInterface == nullptr)
+        {
+            return E_NOINTERFACE;
+        }
         hr = cdacInterface->QueryInterface(iid, iface);
     }
     else
