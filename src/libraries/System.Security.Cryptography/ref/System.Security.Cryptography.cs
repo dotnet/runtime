@@ -2942,7 +2942,7 @@ namespace System.Security.Cryptography
         protected abstract bool VerifyPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.ReadOnlySpan<byte> signature);
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
-    public sealed partial class SlhDsaAlgorithm
+    public sealed partial class SlhDsaAlgorithm : System.IEquatable<System.Security.Cryptography.SlhDsaAlgorithm>
     {
         internal SlhDsaAlgorithm() { }
         public string Name { get { throw null; } }
@@ -2961,6 +2961,12 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.SlhDsaAlgorithm SlhDsaShake192s { get { throw null; } }
         public static System.Security.Cryptography.SlhDsaAlgorithm SlhDsaShake256f { get { throw null; } }
         public static System.Security.Cryptography.SlhDsaAlgorithm SlhDsaShake256s { get { throw null; } }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.SlhDsaAlgorithm? other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Security.Cryptography.SlhDsaAlgorithm? left, System.Security.Cryptography.SlhDsaAlgorithm? right) { throw null; }
+        public static bool operator !=(System.Security.Cryptography.SlhDsaAlgorithm? left, System.Security.Cryptography.SlhDsaAlgorithm? right) { throw null; }
+        public override string ToString() { throw null; }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class SlhDsaOpenSsl : System.Security.Cryptography.SlhDsa
