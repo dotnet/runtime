@@ -256,11 +256,15 @@ set DOTNET_EMSCRIPTEN_NODE_JS=%EMSDK_PATH%node\bin\node
 set DOTNET_EMSCRIPTEN_NODE_PATH=%EMSDK_PATH%node\bin\
 set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=%EMSDK_PATH%
 
+echo PAVEL dump env
+set
+echo PAVEL dump env done
 set &quot;TOADD_PATH_PYTHON=%EMSDK_PATH%python\&quot;
 echo PATH += %TOADD_PATH_PYTHON%
 set &quot;PATH=%TOADD_PATH_PYTHON%%3B%PATH%&quot;
 echo PATH = %PATH%
-
+set &quot;PY_HOME=%EMSDK_PATH%python\&quot;
+set &quot;PYTHONPATH=&quot;
       </_EmsdkPaths>
       <_EmscriptenPaths>
 import os
