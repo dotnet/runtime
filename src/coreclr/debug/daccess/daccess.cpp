@@ -7046,6 +7046,12 @@ CLRDataCreateInstance(REFIID iid,
                 // Release the AddRef from the QI.
                 pClrDataAccess->Release();
             }
+
+            if (cdacInterface == nullptr)
+            {
+                // If we requested to use the cDAC, but failed to create the cDAC interface, return failure
+                return E_FAIL;
+            }
         }
     }
 #endif

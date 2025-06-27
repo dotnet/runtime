@@ -27,8 +27,8 @@
   </ItemGroup>
   <ItemGroup>
     <InstallRuntimeComponentDestination Include="." />
-    <!-- TODO: [cdac] Output to sharedFramework and add PlatformManifestFileEntry for Microsoft.NETCore.App once ready to include in shipping package -->
-    <!-- <InstallRuntimeComponentDestination Include="sharedFramework" Condition="'$(RuntimeFlavor)' == 'coreclr'"/> -->
+    <!-- TODO: [cdac] Add PlatformManifestFileEntry for Microsoft.NETCore.App once ready to include in shipping package -->
+    <InstallRuntimeComponentDestination Include="sharedFramework" Condition="'$(RuntimeFlavor)' == 'coreclr'"/>
   </ItemGroup>
 
   <ItemGroup>
