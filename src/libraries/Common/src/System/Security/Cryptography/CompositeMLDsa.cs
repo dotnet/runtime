@@ -136,6 +136,7 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
+            // TODO If we know exact size of signature, then we can allocate instead of renting and copying.
             byte[] rented = CryptoPool.Rent(Algorithm.MaxSignatureSizeInBytes);
 
             try
@@ -1512,7 +1513,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            // TODO Pick a good estimate for the initial size of the buffer.
+            // TODO The private key has a max size so add it as CompositeMLDsaAlgorithm.MaxPrivateKeySize and use it here.
             int initalSize = 1;
 
             return ExportWithCallback(
@@ -1707,7 +1708,8 @@ namespace System.Security.Cryptography
 
         private TResult ExportPublicKeyCallback<TResult>(ProcessExportedContent<TResult> func)
         {
-            // TODO pick a good estimate for the initial size of the buffer.
+            // TODO RSA is the only algo without a strict max size. The exponent can be arbitrarily large,
+            // but in practice it is always 65537. Add an internal CompositeMLDsaAlgorithm.EstimatedMaxPublicKeySizeInBytes and use that here.
             int initialSize = 1;
 
             return ExportWithCallback(
