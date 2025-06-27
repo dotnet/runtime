@@ -323,6 +323,8 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.CngAlgorithm MD5 { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngAlgorithm MLDsa { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public static System.Security.Cryptography.CngAlgorithm MLKem { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm Rsa { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm Sha1 { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm Sha256 { get { throw null; } }
@@ -345,6 +347,8 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.CngAlgorithmGroup ECDsa { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.CngAlgorithmGroup MLDsa { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public static System.Security.Cryptography.CngAlgorithmGroup MLKem { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithmGroup Rsa { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.CngAlgorithmGroup? other) { throw null; }
@@ -420,6 +424,12 @@ namespace System.Security.Cryptography
         public string Format { get { throw null; } }
         public static System.Security.Cryptography.CngKeyBlobFormat GenericPrivateBlob { get { throw null; } }
         public static System.Security.Cryptography.CngKeyBlobFormat GenericPublicBlob { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public static System.Security.Cryptography.CngKeyBlobFormat MLKemPrivateBlob { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public static System.Security.Cryptography.CngKeyBlobFormat MLKemPrivateSeedBlob { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public static System.Security.Cryptography.CngKeyBlobFormat MLKemPublicBlob { get { throw null; } }
         public static System.Security.Cryptography.CngKeyBlobFormat OpaqueTransportBlob { get { throw null; } }
         public static System.Security.Cryptography.CngKeyBlobFormat Pkcs8PrivateBlob { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
@@ -1988,6 +1998,19 @@ namespace System.Security.Cryptography
         public static bool operator ==(System.Security.Cryptography.MLKemAlgorithm? left, System.Security.Cryptography.MLKemAlgorithm? right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.MLKemAlgorithm? left, System.Security.Cryptography.MLKemAlgorithm? right) { throw null; }
         public override string ToString() { throw null; }
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    public sealed partial class MLKemCng : System.Security.Cryptography.MLKem
+    {
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public MLKemCng(System.Security.Cryptography.CngKey key) : base (default(System.Security.Cryptography.MLKemAlgorithm)) { }
+        public System.Security.Cryptography.CngKey Key { get { throw null; } }
+        protected override void DecapsulateCore(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        protected override void EncapsulateCore(System.Span<byte> ciphertext, System.Span<byte> sharedSecret) { }
+        protected override void ExportDecapsulationKeyCore(System.Span<byte> destination) { }
+        protected override void ExportEncapsulationKeyCore(System.Span<byte> destination) { }
+        protected override void ExportPrivateSeedCore(System.Span<byte> destination) { }
+        protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class MLKemOpenSsl : System.Security.Cryptography.MLKem
