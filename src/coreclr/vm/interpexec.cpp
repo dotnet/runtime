@@ -105,10 +105,10 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
     return pHeader;
 }
 
-typedef void* (*HELPER_FTN_PP)(void*);
+typedef void* (*HELPER_FTN_P_P)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t);
-typedef void* (*HELPER_FTN_PP_2)(void*, void*);
+typedef void* (*HELPER_FTN_P_PP)(void*, void*);
 typedef void (*HELPER_FTN_V_PPP)(void*, void*, void*);
 
 
@@ -361,10 +361,6 @@ void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
     }
     return result;
 }
-
-#define DO_GENERIC_LOOKUP(genericVar, lookupIndex) \
-                    InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[lookupIndex]]; \
-                    void* result = DoGenericLookup(LOCAL_VAR(genericVar, void*), pLookup)
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
 {
@@ -1588,97 +1584,84 @@ MAIN_LOOP:
                 }
 
                 case INTOP_CALL_HELPER_P_P:
+                {
+                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod->pDataItems[ip[2]]);
+                    void* helperArg = pMethod->pDataItems[ip[3]];
+
+                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
+                    ip += 4;
+                    break;
+                }
                 case INTOP_CALL_HELPER_P_PP:
                 {
-                    int base = (*ip == INTOP_CALL_HELPER_P_P) ? 2 : 3;
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod->pDataItems[ip[3]]);
+                    void* helperArg = pMethod->pDataItems[ip[4]];
 
-                    HELPER_FTN_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_PP>(pMethod->pDataItems[ip[base]]);
-                    void* helperArg = pMethod->pDataItems[ip[base + 1]];
-
-                    // This can call either native or compiled managed code. For an interpreter
-                    // only configuration, this might be problematic, at least performance wise.
-
-                    if (*ip == INTOP_CALL_HELPER_P_P)
-                    {
-                        LOCAL_VAR(ip[1], void*) = ((HELPER_FTN_PP)helperFtn)(helperArg);
-                        ip += 4;
-                    }
-                    else
-                    {
-                        LOCAL_VAR(ip[1], void*) = ((HELPER_FTN_PP_2)helperFtn)(helperArg, LOCAL_VAR(ip[2], void*));
-                        ip += 5;
-                    }
+                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR(ip[2], void*));
+                    ip += 5;
                     break;
                 }
 
                 case INTOP_CALL_HELPER_P_G:
+                {
+                    InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[4]];
+                    void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
+
+                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod->pDataItems[ip[3]]);
+
+                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
+                    ip += 5;
+                    break;
+                }
+
                 case INTOP_CALL_HELPER_P_GP:
                 {
-                    int base = (*ip == INTOP_CALL_HELPER_P_G) ? 3 : 4;
+                    InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
+                    void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
 
-                    DO_GENERIC_LOOKUP(ip[2], base + 1);
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod->pDataItems[ip[4]]);
 
-                    HELPER_FTN_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_PP>(pMethod->pDataItems[ip[base]]);
-                    void* helperArg = result;
-
-                    // This can call either native or compiled managed code. For an interpreter
-                    // only configuration, this might be problematic, at least performance wise.
-
-                    if (*ip == INTOP_CALL_HELPER_P_G)
-                    {
-                        LOCAL_VAR(ip[1], void*) = ((HELPER_FTN_PP)helperFtn)(helperArg);
-                        ip += 5;
-                    }
-                    else
-                    {
-                        LOCAL_VAR(ip[1], void*) = ((HELPER_FTN_PP_2)helperFtn)(helperArg, LOCAL_VAR(ip[3], void*));
-                        ip += 6;
-                    }
+                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR(ip[3], void*));
+                    ip += 6;
                     break;
                 }
 
                 case INTOP_CALL_HELPER_P_GA:
                 {
-                    int base = 4;
-                    DO_GENERIC_LOOKUP(ip[2], base + 1);
+                    InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
+                    void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
 
-                    HELPER_FTN_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_PP>(pMethod->pDataItems[ip[base]]);
-                    void* helperArg = result;
-                    LOCAL_VAR(ip[1], void*) = ((HELPER_FTN_PP_2)helperFtn)(helperArg, LOCAL_VAR_ADDR(ip[3], void*));
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod->pDataItems[ip[4]]);
+                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR_ADDR(ip[3], void*));
                     ip += 6;
                     break;
                 }
 
                 case INTOP_CALL_HELPER_P_PA:
                 {
-                    int base = 3;
-
-                    HELPER_FTN_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_PP>(pMethod->pDataItems[ip[base]]);
-                    void* helperArg = pMethod->pDataItems[ip[base + 1]];
-                    LOCAL_VAR(ip[1], void*) = ((HELPER_FTN_PP_2)helperFtn)(helperArg, LOCAL_VAR_ADDR(ip[2], void*));
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod->pDataItems[ip[3]]);
+                    void* helperArg = pMethod->pDataItems[ip[4]];
+                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR_ADDR(ip[2], void*));
                     ip += 5;
                     break;
                 }
 
                 case INTOP_CALL_HELPER_V_AGP:
                 {
-                    int base = 4;
-                    DO_GENERIC_LOOKUP(ip[2], base + 1);
+                    InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
+                    void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
 
-                    HELPER_FTN_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_PP>(pMethod->pDataItems[ip[base]]);
-                    void* helperArg = result;
-                    ((HELPER_FTN_V_PPP)helperFtn)(LOCAL_VAR_ADDR(ip[1], void*), helperArg, LOCAL_VAR(ip[3], void*));
+                    HELPER_FTN_V_PPP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PPP>(pMethod->pDataItems[ip[4]]);
+                    helperFtn(LOCAL_VAR_ADDR(ip[1], void*), helperArg, LOCAL_VAR(ip[3], void*));
                     ip += 6;
                     break;
                 }
 
                 case INTOP_CALL_HELPER_V_APP:
                 {
-                    int base = 3;
-
-                    HELPER_FTN_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_PP>(pMethod->pDataItems[ip[base]]);
-                    void* helperArg = pMethod->pDataItems[ip[base + 1]];
-                    ((HELPER_FTN_V_PPP)helperFtn)(LOCAL_VAR_ADDR(ip[1], void*), helperArg, LOCAL_VAR(ip[2], void*));
+                    HELPER_FTN_V_PPP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PPP>(pMethod->pDataItems[ip[3]]);
+                    void* helperArg = pMethod->pDataItems[ip[4]];
+                    helperFtn(LOCAL_VAR_ADDR(ip[1], void*), helperArg, LOCAL_VAR(ip[2], void*));
                     ip += 5;
                     break;
                 }
@@ -1784,9 +1767,8 @@ CALL_INTERP_METHOD:
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[4];
-                    DO_GENERIC_LOOKUP(ip[3], 5);
-
-                    MethodTable *pMTNewObj = (MethodTable*)result; // result comes from the generic lookup
+                    InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
+                    MethodTable *pMTNewObj = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[3], void*), pLookup);
 
                     OBJECTREF objRef = AllocateObject(pMTNewObj);
 
@@ -1822,8 +1804,9 @@ CALL_INTERP_METHOD:
                 }
                 case INTOP_NEWMDARR_GENERIC:
                 {
-                    DO_GENERIC_LOOKUP(ip[3], 4);
-                    MethodTable *pMTArray = (MethodTable*)result; // result comes from the generic lookup
+                    InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[4]];
+                    MethodTable *pMTArray = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[3], void*), pLookup);
+
                     LOCAL_VAR(ip[1], OBJECTREF) = CreateMultiDimArray(pMTArray, stack, ip[2], ip[5]);
                     ip += 6;
                     break;
@@ -1933,8 +1916,9 @@ CALL_INTERP_METHOD:
                     int opcode = *ip;
                     int dreg = ip[1];
                     int sreg = ip[3];
-                    DO_GENERIC_LOOKUP(ip[2], 5);
-                    MethodTable *pMTBoxedObj = (MethodTable*)result; // result comes from the generic lookup
+                    InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
+                    MethodTable *pMTBoxedObj = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
+
                     HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod->pDataItems[ip[4]]);
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
@@ -1966,9 +1950,9 @@ CALL_INTERP_METHOD:
                     if (length < 0)
                         COMPlusThrow(kArgumentOutOfRangeException);
 
-                    DO_GENERIC_LOOKUP(ip[2], 5);
+                    InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
+                    MethodTable *arrayClsHnd = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
 
-                    MethodTable* arrayClsHnd = (MethodTable*)result;
                     HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod->pDataItems[ip[4]]);
 
                     Object* arr = helper(arrayClsHnd, (intptr_t)length);
@@ -2243,7 +2227,8 @@ do {                                                                           \
                 case INTOP_GENERICLOOKUP:
                 {
                     int dreg = ip[1];
-                    DO_GENERIC_LOOKUP(ip[2], 3);
+                    InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[3]];
+                    void* result = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
                     LOCAL_VAR(dreg, void*) = result;
                     ip += 4;
                     break;
