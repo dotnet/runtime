@@ -483,18 +483,18 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE: // This function can be called before import, so we still have BBJ_LEAVE
             assert(block->TargetIs(oldTarget));
-            fgRedirectEdge(block->GetTargetEdgeRef(), newTarget);
+            fgRedirectEdge(block->TargetEdgeRef(), newTarget);
             break;
 
         case BBJ_COND:
             if (block->TrueTargetIs(oldTarget))
             {
-                fgRedirectEdge(block->GetTrueEdgeRef(), newTarget);
+                fgRedirectEdge(block->TrueEdgeRef(), newTarget);
             }
             else
             {
                 assert(block->FalseTargetIs(oldTarget));
-                fgRedirectEdge(block->GetFalseEdgeRef(), newTarget);
+                fgRedirectEdge(block->FalseEdgeRef(), newTarget);
             }
 
             if (block->TrueEdgeIs(block->GetFalseEdge()))
@@ -4119,7 +4119,7 @@ void Compiler::fgFixEntryFlowForOSR()
     fgCreateNewInitBB();
     assert(fgFirstBB->KindIs(BBJ_ALWAYS));
 
-    fgRedirectEdge(fgFirstBB->GetTargetEdgeRef(), fgOSREntryBB);
+    fgRedirectEdge(fgFirstBB->TargetEdgeRef(), fgOSREntryBB);
 
     fgFirstBB->bbWeight = fgCalledCount;
     fgFirstBB->CopyFlags(fgEntryBB, BBF_PROF_WEIGHT);
