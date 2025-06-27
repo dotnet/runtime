@@ -60,6 +60,11 @@ namespace TestUnhandledExceptionTester
                     // Null reference exception code
                     expectedExitCode = unchecked((int)0xC0000005);
                 }
+                else if (unhandledType == "collecteddelegate")
+                {
+                    // Fail fast exit code
+                    expectedExitCode = unchecked((int)0x80131623);
+                }
                 else
                 {
                     expectedExitCode = unchecked((int)0xE0434352);
