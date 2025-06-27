@@ -4,6 +4,7 @@
 #ifndef _COMPILER_H_
 #define _COMPILER_H_
 
+#include "static_assert.h"
 #include "intops.h"
 #include "datastructs.h"
 #include "enum_class_flags.h"
@@ -150,15 +151,15 @@ public:
 
     int32_t GetDataItemIndex(const InterpGenericLookup& lookup)
     {
-        size_t sizeOfFieldsConcatenated = sizeof(InterpGenericLookup::offsets) +
+        const size_t sizeOfFieldsConcatenated = sizeof(InterpGenericLookup::offsets) +
                                           sizeof(InterpGenericLookup::indirections) +
                                           sizeof(InterpGenericLookup::sizeOffset) +
                                           sizeof(InterpGenericLookup::lookupType) +
                                           sizeof(InterpGenericLookup::signature);
 
-        size_t sizeOfStruct = sizeof(InterpGenericLookup);
+        const size_t sizeOfStruct = sizeof(InterpGenericLookup);
 
-        assert(sizeOfFieldsConcatenated == sizeOfStruct); // Assert that there is no padding in the struct, so a fixed size hash unaware of padding is safe to use
+        static_assert_no_msg(sizeOfFieldsConcatenated == sizeOfStruct); // Assert that there is no padding in the struct, so a fixed size hash unaware of padding is safe to use
         return GetDataItemIndexForT(lookup);
     }
 
@@ -539,8 +540,7 @@ private:
     dn_simdhash_ptr_ptr_holder m_pointerToNameMap;
     bool PointerInNameMap(void* ptr)
     {
-        void* result;
-        if (dn_simdhash_ptr_ptr_try_get_value(m_pointerToNameMap.GetValue(), ptr, &result))
+        if (dn_simdhash_ptr_ptr_try_get_value(m_pointerToNameMap.GetValue(), ptr, NULL))
         {
             return true;
         }
@@ -548,10 +548,7 @@ private:
     }
     void AddPointerToNameMap(void* ptr, const char* name)
     {
-        if (!PointerInNameMap(ptr))
-        {
-            dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name);
-        }
+        dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name);
     }
     void PrintNameInPointerMap(void* ptr);
 #endif
@@ -850,9 +847,9 @@ int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)
     }
 
     // Assert that there is no padding in the struct, so a fixed size hash unaware of padding is safe to use
-    assert(sizeof(VarSizedData) == sizeof(void*));
-    assert(sizeof(T) % sizeof(void*) == 0);
-    assert(sizeof(VarSizedDataWithPayload<T>) == sizeof(T) + sizeof(void*));
+    static_assert_no_msg(sizeof(VarSizedData) == sizeof(void*));
+    static_assert_no_msg(sizeof(T) % sizeof(void*) == 0);
+    static_assert_no_msg(sizeof(VarSizedDataWithPayload<T>) == sizeof(T) + sizeof(void*));
 
     void** LookupAsPtrs = (void**)&lookup;
     int32_t dataItemIndex = _dataItems->Add(LookupAsPtrs[0]);
