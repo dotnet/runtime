@@ -134,14 +134,47 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        ///   Gets a <see cref="CngKeyBlobFormat"/> object that specifies a Post-Quantum Digital Signature Algorithm
+        ///   public key BLOB.
+        /// </summary>
+        /// <value>
+        ///   A <see cref="CngKeyBlobFormat"/> object that specifies a Post-Quantum Digital Signature Algorithm
+        ///   public key BLOB.
+        /// </value>
+        /// <remarks>
+        ///   The value identified by this blob format is &quot;PQDSAPUBLICBLOB&quot;.
+        /// </remarks>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngKeyBlobFormat PQDsaPublicBlob =>
             field ??= new CngKeyBlobFormat("PQDSAPUBLICBLOB"); // BCRYPT_PQDSA_PUBLIC_BLOB
 
+        /// <summary>
+        ///   Gets a <see cref="CngKeyBlobFormat"/> object that specifies a Post-Quantum Digital Signature Algorithm
+        ///   private key BLOB.
+        /// </summary>
+        /// <value>
+        ///   A <see cref="CngKeyBlobFormat"/> object that specifies a Post-Quantum Digital Signature Algorithm
+        ///   private key BLOB.
+        /// </value>
+        /// <remarks>
+        ///   The value identified by this blob format is &quot;PQDSAPRIVATEBLOB&quot;.
+        /// </remarks>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngKeyBlobFormat PQDsaPrivateBlob =>
             field ??= new CngKeyBlobFormat("PQDSAPRIVATEBLOB"); // BCRYPT_PQDSA_PRIVATE_BLOB
 
+        /// <summary>
+        ///   Gets a <see cref="CngKeyBlobFormat"/> object that specifies a Post-Quantum Digital Signature Algorithm
+        ///   private seed BLOB.
+        /// </summary>
+        /// <value>
+        ///   A <see cref="CngKeyBlobFormat"/> object that specifies a Post-Quantum Digital Signature Algorithm
+        ///   private seed BLOB.
+        /// </value>
+        /// <remarks>
+        ///   The value identified by this blob format is &quot;PQDSAPRIVATESEEDBLOB&quot;.
+        /// </remarks>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngKeyBlobFormat PQDsaPrivateSeedBlob =>
             field ??= new CngKeyBlobFormat("PQDSAPRIVATESEEDBLOB"); // BCRYPT_PQDSA_PRIVATE_SEED_BLOB
