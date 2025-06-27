@@ -370,32 +370,38 @@ namespace System
 
                 // byteHi hasn't been shifted to the high half yet, so the only way the bitwise or produces this pattern
                 // is if either byteHi or byteLo was not a hex character.
-                if ((byteLo | byteHi) == 0xFF)
+                if ((byteLo | byteHi) < 0)
                     break;
 
                 bytes[j++] = (byte)((byteHi << 4) | byteLo);
                 i += 2;
             }
 
-            if (byteLo == 0xFF)
+            if (byteLo < 0)
                 i++;
 
             charsProcessed = i;
-            return (byteLo | byteHi) != 0xFF;
+            return (byteLo | byteHi) >= 0;
         }
 
+        /// <summary>Converts a hex character to its integer value.</summary>
+        /// <returns>The integer value of the hex character, or -1 if the character is not a valid hex character.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int FromChar(int c)
         {
-            return c >= CharToHexLookup.Length ? 0xFF : CharToHexLookup[c];
+            return CharToHexLookup[Math.Min(c, 0xFF)];
         }
 
+        /// <summary>Converts an upper hex character to its integer value.</summary>
+        /// <returns>The integer value of the upper hex character, or -1 if the character is not a valid upper hex character.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int FromUpperChar(int c)
         {
-            return c > 71 ? 0xFF : CharToHexLookup[c];
+            return CharToHexLookup[Math.Min(c, 'F' + 1)];
         }
 
+        /// <summary>Converts a lower hex character to its integer value.</summary>
+        /// <returns>The integer value of the lower hex character, or -1 if the character is not a valid lower hex character.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int FromLowerChar(int c)
         {
@@ -405,7 +411,7 @@ namespace System
             if ((uint)(c - 'a') <= 'f' - 'a')
                 return c - 'a' + 10;
 
-            return 0xFF;
+            return -1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -436,7 +442,7 @@ namespace System
                 return (long)(shift & mask) < 0 ? true : false;
             }
 
-            return FromChar(c) != 0xFF;
+            return FromChar(c) >= 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -451,25 +457,25 @@ namespace System
             return (uint)(c - '0') <= 9 || (uint)(c - 'a') <= ('f' - 'a');
         }
 
-        /// <summary>Map from an ASCII char to its hex value, e.g. arr['b'] == 11. 0xFF means it's not a hex digit.</summary>
-        public static ReadOnlySpan<byte> CharToHexLookup =>
+        /// <summary>Map from an ASCII char to its hex value, e.g. arr['b'] == 11. -1 means it's not a hex digit.</summary>
+        public static ReadOnlySpan<sbyte> CharToHexLookup =>
         [
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 15
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 31
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 47
-            0x0,  0x1,  0x2,  0x3,  0x4,  0x5,  0x6,  0x7,  0x8,  0x9,  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 63
-            0xFF, 0xA,  0xB,  0xC,  0xD,  0xE,  0xF,  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 79
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 95
-            0xFF, 0xa,  0xb,  0xc,  0xd,  0xe,  0xf,  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 111
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 127
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 143
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 159
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 175
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 191
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 207
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 223
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 239
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF  // 255
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 15
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 31
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 47
+             0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1, // 63
+            -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 79
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 95
+            -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 111
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 127
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 143
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 159
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 175
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 191
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 207
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 223
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 239
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1  // 255
         ];
     }
 }
