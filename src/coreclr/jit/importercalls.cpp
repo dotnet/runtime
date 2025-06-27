@@ -899,16 +899,16 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
         else
         {
-            if (instParam != nullptr)
-            {
-                call->AsCall()->gtArgs.PushBack(this,
-                                                NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
-            }
-
             if (call->AsCall()->IsAsync())
             {
                 call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                           .WellKnown(WellKnownArg::AsyncContinuation));
+            }
+
+            if (instParam != nullptr)
+            {
+                call->AsCall()->gtArgs.PushBack(this,
+                                                NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
             }
 
             if (varArgsCookie != nullptr)
