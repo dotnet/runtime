@@ -10146,10 +10146,7 @@ GenTreeHWIntrinsic* Compiler::fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* n
         return node;
     }
 #elif defined(TARGET_ARM64)
-    // TODO-SVE: This optimisation is too naive. It needs to calculate the full cost of the instruction
-    //           vs using the predicate version, taking into account all input arguements and all uses
-    //           of the result.
-    // return fgMorphTryUseAllMaskVariant(node);
+    return fgMorphTryUseAllMaskVariant(node);
 #else
 #error Unsupported platform
 #endif
@@ -10157,37 +10154,69 @@ GenTreeHWIntrinsic* Compiler::fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* n
 }
 
 #ifdef TARGET_ARM64
-//------------------------------------------------------------------------
-// canMorphVectorOperandToMask: Can this vector operand be converted to a
-//                              node with type TYP_MASK easily?
-//
-bool Compiler::canMorphVectorOperandToMask(GenTree* node)
-{
-    return varTypeIsMask(node) || node->OperIsConvertMaskToVector() || node->IsVectorZero();
-}
+
+// Conversion of mask to vector is one instruction (a mov)
+static constexpr const weight_t costOfConvertMaskToVector = 1.0;
+
+// Conversion of vector to mask is two instructions (a compare and a ptrue)
+static constexpr const weight_t costOfConvertVectorToMask = 2.0;
 
 //------------------------------------------------------------------------
-// canMorphAllVectorOperandsToMasks: Can all vector operands to this node
-//                                   be converted to a node with type
-//                                   TYP_MASK easily?
+// getVectorMaskVariantWeights: Calculate the cost of using the vector
+//                              and mask variants
 //
-bool Compiler::canMorphAllVectorOperandsToMasks(GenTreeHWIntrinsic* node)
+// Arguments:
+//    node              - The node to convert to a mask
+//    parent            - The parent of the node
+//    vectorVariantCost - (IN/OUT) incremented by the cost of using the vector variant
+//    maskVariantCost   - (IN/OUT) incremented by the cost of using the mask variant
+//
+void Compiler::getVectorMaskVariantWeights(GenTree*            node,
+                                           GenTreeHWIntrinsic* parent,
+                                           weight_t*           vectorVariantCost,
+                                           weight_t*           maskVariantCost)
 {
-    bool allMaskConversions = true;
-    for (size_t i = 1; i <= node->GetOperandCount() && allMaskConversions; i++)
+    if (varTypeIsMask(node))
     {
-        allMaskConversions &= canMorphVectorOperandToMask(node->Op(i));
+        // Node is already a mask
+        return;
     }
 
-    return allMaskConversions;
+    if (node->OperIsConvertMaskToVector())
+    {
+        // Currently there is the cost of the convert
+        *vectorVariantCost += costOfConvertMaskToVector;
+        return;
+    }
+
+    if (node->IsCnsVec())
+    {
+        // If the constant vector can be converted to a mask pattern during codegen, then the morph is free.
+        // Otherwise it will cost one vector-to-mask conversion.
+
+        assert(node->TypeGet() == TYP_SIMD16);
+        var_types simdBaseType = parent->GetSimdBaseType();
+
+        if (node->IsVectorZero() ||
+            SveMaskPatternNone != EvaluateSimdVectorToPattern<simd16_t>(simdBaseType, node->AsVecCon()->gtSimd16Val))
+        {
+            return;
+        }
+    }
+
+    // mask variant will require wrapping in a convert vector to mask
+    *maskVariantCost += costOfConvertVectorToMask;
 }
 
 //------------------------------------------------------------------------
-// doMorphVectorOperandToMask: Morph a vector node that is close to a mask
-//                             node into a mask node.
+// doMorphVectorOperandToMask: Morph a vector node into a mask node.
+//
+// Arguments:
+//    node   - The node to convert to a mask
+//    parent - The parent of the node
 //
 // Return value:
-//      The morphed tree, or nullptr if the transform is not applicable.
+//    The morphed tree
 //
 GenTree* Compiler::doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic* parent)
 {
@@ -10196,76 +10225,149 @@ GenTree* Compiler::doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic*
         // Already a mask, nothing to do.
         return node;
     }
-    else if (node->OperIsConvertMaskToVector())
+
+    if (node->OperIsConvertMaskToVector())
     {
         // Replace node with op1.
         return node->AsHWIntrinsic()->Op(1);
     }
-    else if (node->IsVectorZero())
+
+    if (node->IsCnsVec())
     {
-        // Morph the vector of zeroes into mask of zeroes.
-        GenTree* mask = gtNewSimdFalseMaskByteNode();
-        mask->SetMorphed(this);
-        return mask;
+        // Morph the constant vector to mask
+        assert(node->TypeGet() == TYP_SIMD16);
+        var_types simdBaseType = parent->GetSimdBaseType();
+
+        if (node->IsVectorZero())
+        {
+            GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
+            mskCon->gtSimdMaskVal = simdmask_t::Zero();
+            mskCon->SetMorphed(this);
+            return mskCon;
+        }
+        else if (SveMaskPatternNone !=
+                 EvaluateSimdVectorToPattern<simd16_t>(simdBaseType, node->AsVecCon()->gtSimd16Val))
+        {
+            GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
+            EvaluateSimdCvtVectorToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, node->AsVecCon()->gtSimd16Val);
+            mskCon->SetMorphed(this);
+            return mskCon;
+        }
     }
 
-    return nullptr;
+    // Wrap in a convert vector to mask
+    CorInfoType         simdBaseJitType = parent->GetSimdBaseJitType();
+    unsigned            simdSize        = parent->GetSimdSize();
+    GenTreeHWIntrinsic* cvt             = gtNewSimdCvtVectorToMaskNode(TYP_MASK, node, simdBaseJitType, simdSize);
+    cvt->SetMorphed(this);
+    cvt->Op(1)->SetMorphed(this);
+    return cvt;
 }
 
 //-----------------------------------------------------------------------------------------------------
 // fgMorphTryUseAllMaskVariant: For NamedIntrinsics that have a variant where all operands are
-//                              mask nodes. If all operands to this node are 'suggesting' that they
-//                              originate closely from a mask, but are of vector types, then morph the
-//                              operands as appropriate to use mask types instead. 'Suggesting'
-//                              is defined by the canMorphVectorOperandToMask function.
+//                              mask nodes. If the NamedIntrinsic is used by converting it to a mask
+//                              then it can be replaced with the mask variant. Use simple costing to
+//                              decide if the variant is preferred.
+//
+// Notes:
+//    It is not safe to convert to a mask and then back to vector again as information will be lost.
+//    Therefore only consider NamedIntrinsics that operate on masks.
 //
 // Arguments:
-//    tree - The HWIntrinsic to try and optimize.
+//    node - The conversion to mask of the HWIntrinsic to try and optimize.
 //
 // Return Value:
 //    The fully morphed tree if a change was made, else nullptr.
 //
 GenTreeHWIntrinsic* Compiler::fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node)
 {
-    if (HWIntrinsicInfo::HasAllMaskVariant(node->GetHWIntrinsicId()))
+    // We only care about vectors being used as masks.
+    if (!node->OperIsConvertVectorToMask())
     {
-        NamedIntrinsic maskVariant = HWIntrinsicInfo::GetMaskVariant(node->GetHWIntrinsicId());
-
-        // As some intrinsics have many variants, check that the count of operands on the node
-        // matches the number of operands required for the mask variant of the intrinsic. The mask
-        // variant of the intrinsic must have a fixed number of operands.
-        int numArgs = HWIntrinsicInfo::lookupNumArgs(maskVariant);
-        assert(numArgs >= 0);
-        if (node->GetOperandCount() == (size_t)numArgs)
-        {
-            // We're sure it will work at this point, so perform the pattern match on operands.
-            if (canMorphAllVectorOperandsToMasks(node))
-            {
-                switch (node->GetOperandCount())
-                {
-                    case 1:
-                        node->ResetHWIntrinsicId(maskVariant, doMorphVectorOperandToMask(node->Op(1), node));
-                        break;
-                    case 2:
-                        node->ResetHWIntrinsicId(maskVariant, doMorphVectorOperandToMask(node->Op(1), node),
-                                                 doMorphVectorOperandToMask(node->Op(2), node));
-                        break;
-                    case 3:
-                        node->ResetHWIntrinsicId(maskVariant, this, doMorphVectorOperandToMask(node->Op(1), node),
-                                                 doMorphVectorOperandToMask(node->Op(2), node),
-                                                 doMorphVectorOperandToMask(node->Op(3), node));
-                        break;
-                    default:
-                        unreached();
-                }
-
-                node->gtType = TYP_MASK;
-                return node;
-            }
-        }
+        return nullptr;
     }
 
-    return nullptr;
+    // Check the converted node. Is there a masked variant?
+
+    if (!node->Op(2)->OperIsHWIntrinsic())
+    {
+        return nullptr;
+    }
+
+    GenTreeHWIntrinsic* convertedNode = node->Op(2)->AsHWIntrinsic();
+
+    if (!HWIntrinsicInfo::HasAllMaskVariant(convertedNode->GetHWIntrinsicId()))
+    {
+        return nullptr;
+    }
+
+    NamedIntrinsic maskVariant = HWIntrinsicInfo::GetMaskVariant(convertedNode->GetHWIntrinsicId());
+
+    // As some intrinsics have many variants, check that the count of operands on the node
+    // matches the number of operands required for the mask variant of the intrinsic. The mask
+    // variant of the intrinsic must have a fixed number of operands.
+    int numArgs = HWIntrinsicInfo::lookupNumArgs(maskVariant);
+    assert(numArgs >= 0);
+    if (convertedNode->GetOperandCount() != (size_t)numArgs)
+    {
+        return nullptr;
+    }
+
+    weight_t vectorVariantCost = 0.0;
+    weight_t maskVariantCost   = 0.0;
+
+    // Take into account the cost of the conversion of the result
+    vectorVariantCost += costOfConvertVectorToMask;
+
+    // Take into account the cost of the children
+    for (size_t i = 1; i <= convertedNode->GetOperandCount(); i++)
+    {
+        getVectorMaskVariantWeights(convertedNode->Op(i), convertedNode, &vectorVariantCost, &maskVariantCost);
+    }
+
+    JITDUMP("Attempting Mask variant morph for [%06u]. Vector cost: %.2f, Mask cost: %.2f. Will %smorph.\n",
+            dspTreeID(convertedNode), vectorVariantCost, maskVariantCost,
+            (maskVariantCost > vectorVariantCost) ? "not " : "");
+
+    // If the costs are identical, then prefer morphed as it matches the output type.
+    if (maskVariantCost > vectorVariantCost)
+    {
+        return nullptr;
+    }
+
+    // Do the morph
+    switch (convertedNode->GetOperandCount())
+    {
+        case 1:
+            convertedNode->ResetHWIntrinsicId(maskVariant,
+                                              doMorphVectorOperandToMask(convertedNode->Op(1), convertedNode));
+
+            break;
+        case 2:
+            convertedNode->ResetHWIntrinsicId(maskVariant,
+                                              doMorphVectorOperandToMask(convertedNode->Op(1), convertedNode),
+                                              doMorphVectorOperandToMask(convertedNode->Op(2), convertedNode));
+            break;
+        case 3:
+            convertedNode->ResetHWIntrinsicId(maskVariant, this,
+                                              doMorphVectorOperandToMask(convertedNode->Op(1), convertedNode),
+                                              doMorphVectorOperandToMask(convertedNode->Op(2), convertedNode),
+                                              doMorphVectorOperandToMask(convertedNode->Op(3), convertedNode));
+            break;
+        default:
+            unreached();
+    }
+
+    // Morph the new children.
+    for (size_t i = 1; i <= convertedNode->GetOperandCount(); i++)
+    {
+        convertedNode->Op(i) = fgMorphTree(convertedNode->Op(i));
+    }
+
+    convertedNode->gtType = TYP_MASK;
+    DEBUG_DESTROY_NODE(node);
+    return convertedNode;
 }
 #endif // TARGET_ARM64
 
