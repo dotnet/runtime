@@ -243,6 +243,9 @@
   <data name="Cryptography_ArgMLDsaRequiresMLDsaKey" xml:space="preserve">
     <value>Keys used with the MLDsaCng algorithm must have an algorithm group of MLDsa.</value>
   </data>
+  <data name="Cryptography_ArgMLKemRequiresMLKemKey" xml:space="preserve">
+    <value>Keys used with the MLKemCng algorithm must have an algorithm group of MLKem.</value>
+  </data>
   <data name="Cryptography_ArgRSARequiresRSAKey" xml:space="preserve">
     <value>Keys used with the RSACng algorithm must have an algorithm group of RSA.</value>
   </data>

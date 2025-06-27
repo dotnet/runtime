@@ -1739,8 +1739,8 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     {
         if (pStubMD->IsStatic())
         {
-            // This is reverse P/Invoke stub, the argument is UMEntryThunk
-            UMEntryThunk *pEntryThunk = (UMEntryThunk *)arg;
+            // This is reverse P/Invoke stub, the argument is UMEntryThunkData
+            UMEntryThunkData *pEntryThunk = (UMEntryThunkData*)arg;
             target = pEntryThunk->GetManagedTarget();
             LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Reverse P/Invoke case 0x%p\n", target));
         }

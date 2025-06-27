@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.Intrinsics;
+using static System.Numerics.Tensors.TensorOperation;
 
 namespace System.Numerics.Tensors
 {
@@ -26,8 +27,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Cos<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : ITrigonometricFunctions<T> =>
+            where T : ITrigonometricFunctions<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, CosOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, CosOperator<T>>(x, destination);
+        }
 
         /// <summary>T.Cos(x)</summary>
         private readonly struct CosOperator<T> : IUnaryOperator<T, T>

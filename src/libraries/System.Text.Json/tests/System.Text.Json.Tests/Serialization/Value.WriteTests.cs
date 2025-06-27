@@ -187,6 +187,44 @@ namespace System.Text.Json.Serialization.Tests
             string json = JsonSerializer.Serialize(ts);
             Assert.Equal($"\"{expectedValue ?? value}\"", json);
         }
+
+        [Fact]
+        public static void Int128_AsDictionaryKey_SerializesCorrectly()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/116855
+            var dict = new Dictionary<Int128, string>
+            {
+                [0] = "Zero",
+                [1] = "One",
+                [-1] = "MinusOne",
+                [Int128.MaxValue] = "Max",
+                [Int128.MinValue] = "Min"
+            };
+
+            string json = JsonSerializer.Serialize(dict);
+            Assert.Equal("""{"0":"Zero","1":"One","-1":"MinusOne","170141183460469231731687303715884105727":"Max","-170141183460469231731687303715884105728":"Min"}""", json);
+            
+            var deserialized = JsonSerializer.Deserialize<Dictionary<Int128, string>>(json);
+            Assert.Equal(dict, deserialized);
+        }
+
+        [Fact]
+        public static void UInt128_AsDictionaryKey_SerializesCorrectly()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/116855
+            var dict = new Dictionary<UInt128, string>
+            {
+                [0] = "Zero", 
+                [1] = "One",
+                [UInt128.MaxValue] = "Max"
+            };
+
+            string json = JsonSerializer.Serialize(dict);
+            Assert.Equal("""{"0":"Zero","1":"One","340282366920938463463374607431768211455":"Max"}""", json);
+            
+            var deserialized = JsonSerializer.Deserialize<Dictionary<UInt128, string>>(json);
+            Assert.Equal(dict, deserialized);
+        }
 #endif
     }
 }

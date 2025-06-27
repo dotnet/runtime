@@ -95,7 +95,7 @@ LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
 LEAF_END JIT_WriteBarrier_Callable, _TEXT
 
 //
-// x12 = UMEntryThunk*
+// x12 = UMEntryThunkData*
 //
 NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 
