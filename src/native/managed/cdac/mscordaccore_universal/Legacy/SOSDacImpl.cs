@@ -769,7 +769,7 @@ internal sealed unsafe partial class SOSDacImpl
         }
 
         Debug.Assert(false);
-        throw new InvalidOperationException("ISOSDacInterface.GetMethodDescName is not implemented in cDAC. This should never be called.");
+        throw new InvalidOperationException("Expect this to fail.");
     }
 
     int ISOSDacInterface.GetMethodDescPtrFromFrame(ClrDataAddress frameAddr, ClrDataAddress* ppMD)
