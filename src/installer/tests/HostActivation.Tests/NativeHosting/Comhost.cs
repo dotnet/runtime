@@ -117,6 +117,35 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
+        public void ActivateClass_IgnoreWorkingDirectory()
+        {
+            using (TestArtifact cwd = TestArtifact.Create("cwd"))
+            {
+                // Validate that hosting components in the working directory will not be used
+                File.Copy(Binaries.CoreClr.MockPath, Path.Combine(cwd.Location, Binaries.CoreClr.FileName));
+                File.Copy(Binaries.HostFxr.MockPath_5_0, Path.Combine(cwd.Location, Binaries.HostFxr.FileName));
+                File.Copy(Binaries.HostPolicy.MockPath, Path.Combine(cwd.Location, Binaries.HostPolicy.FileName));
+
+                string[] args = {
+                    "comhost",
+                    "synchronous",
+                    "1",
+                    sharedState.ComHostPath,
+                    sharedState.ClsidString
+                };
+                sharedState.CreateNativeHostCommand(args, sharedState.ComLibraryFixture.BuiltDotnet.BinPath)
+                    .WorkingDirectory(cwd.Location)
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("New instance of Server created")
+                    .And.HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.")
+                    .And.ResolveHostFxr(sharedState.ComLibraryFixture.BuiltDotnet)
+                    .And.ResolveHostPolicy(sharedState.ComLibraryFixture.BuiltDotnet)
+                    .And.ResolveCoreClr(sharedState.ComLibraryFixture.BuiltDotnet);
+            }
+        }
+
+        [Fact]
         public void ActivateClass_ValidateIErrorInfoResult()
         {
             using (var fixture = sharedState.ComLibraryFixture.Copy())

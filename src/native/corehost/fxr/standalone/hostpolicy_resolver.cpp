@@ -180,6 +180,10 @@ int hostpolicy_resolver::load(
             return StatusCode::CoreHostLibMissingFailure;
         }
 
+        // We should always be loading hostpolicy from an absolute path
+        if (!pal::is_path_fully_qualified(host_path))
+            return StatusCode::CoreHostLibMissingFailure;
+
         // Load library
         // We expect to leak hostpolicy - just as we do not unload coreclr, we do not unload hostpolicy
         if (!pal::load_library(&host_path, &g_hostpolicy))
