@@ -1906,7 +1906,7 @@ SveMaskPattern EvaluateSimdMaskToPattern(simdmask_t arg0)
     memcpy(&mask, &arg0.u8[0], sizeof(uint64_t));
     uint32_t finalOne = count;
 
-    // A mask pattern starts with zero or more 1s and then the rest of the mask is filled with 0s.
+    // A mask pattern starts with zero of more 1s and then the rest of the mask is filled with 0s.
 
     // Find an unbroken sequence of 1s.
     for (uint32_t i = 0; i < count; i++)
@@ -1985,102 +1985,6 @@ SveMaskPattern EvaluateSimdMaskToPattern(var_types baseType, simdmask_t arg0)
         case TYP_USHORT:
         {
             return EvaluateSimdMaskToPattern<TSimd, uint16_t>(arg0);
-        }
-
-        default:
-        {
-            unreached();
-        }
-    }
-}
-
-template <typename TSimd, typename TBase>
-SveMaskPattern EvaluateSimdVectorToPattern(TSimd arg0)
-{
-    uint32_t count    = sizeof(TSimd) / sizeof(TBase);
-    uint32_t finalOne = count;
-
-    TBase leastSignificantBit = 1;
-
-    // A mask pattern starts with zero or more 1s and then the rest of the mask is filled with 0s.
-    // This pattern is extracted using the least significant bits of the vector elements.
-
-    // For Arm64 we have count total bits to read, but they are sizeof(TBase) bits apart. We set
-    // depending on if the corresponding input element has its least significant bit set
-
-    // Find an unbroken sequence of 1s.
-    for (uint32_t i = 0; i < count; i++)
-    {
-        TBase input0;
-        memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
-
-        bool isSet = (input0 & leastSignificantBit) != 0;
-        if (!isSet)
-        {
-            finalOne = i;
-            break;
-        }
-    }
-
-    // Find an unbroken sequence of 0s.
-    for (uint32_t i = finalOne; i < count; i++)
-    {
-        TBase input0;
-        memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
-
-        bool isSet = (input0 & leastSignificantBit) != 0;
-        if (isSet)
-        {
-            // Invalid sequence
-            return SveMaskPatternNone;
-        }
-    }
-
-    if (finalOne == count)
-    {
-        return SveMaskPatternAll;
-    }
-    else if (finalOne >= SveMaskPatternVectorCount1 && finalOne <= SveMaskPatternVectorCount8)
-    {
-        return (SveMaskPattern)finalOne;
-    }
-    else
-    {
-        // TODO: Add other patterns as required. These probably won't be seen until we get
-        //       to wider vector lengths.
-        return SveMaskPatternNone;
-    }
-}
-
-template <typename TSimd>
-SveMaskPattern EvaluateSimdVectorToPattern(var_types baseType, TSimd arg0)
-{
-    switch (baseType)
-    {
-        case TYP_FLOAT:
-        case TYP_INT:
-        case TYP_UINT:
-        {
-            return EvaluateSimdVectorToPattern<TSimd, uint32_t>(arg0);
-        }
-
-        case TYP_DOUBLE:
-        case TYP_LONG:
-        case TYP_ULONG:
-        {
-            return EvaluateSimdVectorToPattern<TSimd, uint64_t>(arg0);
-        }
-
-        case TYP_BYTE:
-        case TYP_UBYTE:
-        {
-            return EvaluateSimdVectorToPattern<TSimd, uint8_t>(arg0);
-        }
-
-        case TYP_SHORT:
-        case TYP_USHORT:
-        {
-            return EvaluateSimdVectorToPattern<TSimd, uint16_t>(arg0);
         }
 
         default:
