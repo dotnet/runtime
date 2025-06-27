@@ -419,7 +419,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
                 EX_CATCH
                 {
                 }
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
                 if (!resolved)
                     RETURN(FALSE);
             }
@@ -482,7 +482,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
                 EX_CATCH
                 {
                 }
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
                 if (!resolved)
                     RETURN(FALSE);
             }

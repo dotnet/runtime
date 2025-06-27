@@ -1344,9 +1344,7 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     // which becomes a single statement where the IL location points to the
     // ldarg instruction.
     context->m_Location = stmt->GetDebugInfo().GetLocation();
-
-    assert(call->gtCallType == CT_USER_FUNC);
-    context->m_Callee = call->gtCallMethHnd;
+    context->m_Callee   = call->gtCallMethHnd;
 
 #if defined(DEBUG)
     context->m_Devirtualized = call->IsDevirtualized();

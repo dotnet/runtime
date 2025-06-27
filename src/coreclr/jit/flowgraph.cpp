@@ -582,7 +582,7 @@ PhaseStatus Compiler::fgImport()
     }
 
     // Now that we've made it through the importer, we know the IL was valid.
-    // If we synthesized profile data and though it should be consistent,
+    // If we synthesized profile data and thought it should be consistent,
     // but it wasn't, assert now.
     //
     if (fgPgoSynthesized && fgPgoConsistent)

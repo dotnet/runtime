@@ -96,6 +96,8 @@ System.Net.Http.WinHttpHandler</PackageDescription>
     <Compile Include="System\Net\Http\WinHttpTraceHelper.cs" />
     <Compile Include="System\Net\Http\WinHttpTrailersHelper.cs" />
     <Compile Include="System\Net\Http\WinHttpTransportContext.cs" />
+    <Compile Include="$(CommonPath)System\AppContextSwitchHelper.cs"
+             Link="Common\System\AppContextSwitchHelper.cs" />
     <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs"
              Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"

@@ -1477,7 +1477,7 @@ namespace
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (!args.Thread)
         {
@@ -1616,7 +1616,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
         // we're not obligated to provide a name - if it's not valid,
         // just report nullptr as the name.
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     LIMITED_METHOD_CONTRACT;
     if (is_suspendable)
@@ -1765,7 +1765,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
                     GenerateDump (outputPath, 2, GenerateDumpFlagsNone, nullptr, 0);
                 }
                 EX_CATCH {}
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
             }
             gcGenAnalysisState = GcGenAnalysisState::Done;
             EnableFinalization(true);
