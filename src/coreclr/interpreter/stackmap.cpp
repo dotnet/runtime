@@ -3,27 +3,18 @@
 
 #include "gcinfoencoder.h" // for GcSlotFlags
 
-// HACK: debugreturn.h (included by gcinfoencoder.h) breaks constexpr
-#if defined(debug_instrumented_return) || defined(_DEBUGRETURN_H_)
-#undef return
-#endif // debug_instrumented_return
-
 #include "interpreter.h"
 #include "stackmap.h"
 
-extern "C" {
-    #include "../../native/containers/dn-simdhash.h"
-    #include "../../native/containers/dn-simdhash-specializations.h"
+#include "../../native/containers/dn-simdhash.h"
+#include "../../native/containers/dn-simdhash-specializations.h"
+#include "../../native/containers/dn-simdhash-utils.h"
 
-    void assertAbort(const char* why, const char* file, unsigned line);
+extern "C" void assertAbort(const char* why, const char* file, unsigned line);
 
-    void
-    dn_simdhash_assert_fail (const char* file, int line, const char* condition);
-
-    void
-    dn_simdhash_assert_fail (const char* file, int line, const char* condition) {
-        assertAbort(condition, file, line);
-    }
+void
+dn_simdhash_assert_fail (const char* file, int line, const char* condition) {
+    assertAbort(condition, file, line);
 }
 
 thread_local dn_simdhash_ptr_ptr_t *t_sharedStackMapLookup = nullptr;

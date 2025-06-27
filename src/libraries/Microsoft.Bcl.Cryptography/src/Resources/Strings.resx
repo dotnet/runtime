@@ -66,6 +66,9 @@
   <data name="Argument_DestinationTooShort" xml:space="preserve">
     <value>Destination is too short.</value>
   </data>
+  <data name="Argument_HashImprecise" xml:space="preserve">
+    <value>Hash must be exactly {0} bytes.</value>
+  </data>
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
   </data>
@@ -108,6 +111,9 @@
   <data name="Argument_SecretKeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The secret key is not the correct size for the indicated algorithm.</value>
   </data>
+  <data name="Argument_PrivateSeedWrongSizeForAlgorithm" xml:space="preserve">
+    <value>The private seed is not the correct size for the indicated algorithm.</value>
+  </data>
   <data name="Argument_SignatureContextTooLong255" xml:space="preserve">
     <value>The specified signature context exceeds the maximum length of 255 bytes.</value>
   </data>
@@ -132,6 +138,9 @@
   <data name="Cryptography_AlgorithmNotSupported" xml:space="preserve">
     <value>Algorithm '{0}' is not supported on this platform.</value>
   </data>
+  <data name="Cryptography_ArgMLDsaRequiresMLDsaKey" xml:space="preserve">
+    <value>Keys used with the MLDsaCng algorithm must have an algorithm group of MLDsa.</value>
+  </data>
   <data name="Cryptography_AuthTagMismatch" xml:space="preserve">
     <value>The computed authentication tag did not match the input authentication tag.</value>
   </data>
@@ -140,6 +149,9 @@
   </data>
   <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
     <value>The hash algorithm name cannot be null or empty.</value>
+  </data>
+  <data name="Cryptography_HashLengthMismatch" xml:space="preserve">
+    <value>The specified hash is not a valid size for this hash algorithm.</value>
   </data>
   <data name="Cryptography_IncorrectTagLength" xml:space="preserve">
     <value>The size of the specified tag does not match the expected size of {0}.</value>
@@ -153,8 +165,26 @@
   <data name="Cryptography_InvalidNonceLength" xml:space="preserve">
     <value>The specified nonce is not a valid size for this algorithm.</value>
   </data>
+  <data name="Cryptography_InvalidOidFormat" xml:space="preserve">
+    <value>Invalid OID format.</value>
+  </data>
   <data name="Cryptography_KemPkcs8KeyMismatch" xml:space="preserve">
     <value>The specified PKCS#8 key contains a seed that does not match the expanded key.</value>
+  </data>
+  <data name="Cryptography_KemNoDecapsulationKey" xml:space="preserve">
+    <value>The current instance does not contain a decapsulation key.</value>
+  </data>
+  <data name="Cryptography_KeyWrongSizeForAlgorithm" xml:space="preserve">
+    <value>The specified key is not the correct size for the indicated algorithm.</value>
+  </data>
+  <data name="Cryptography_MLDsaNoSecretKey" xml:space="preserve">
+    <value>The current instance does not contain a secret key.</value>
+  </data>
+  <data name="Cryptography_MLDsaPkcs8KeyMismatch" xml:space="preserve">
+    <value>The specified PKCS#8 key contains a seed that does not match the expanded key.</value>
+  </data>
+  <data name="Cryptography_NotValidPrivateKey" xml:space="preserve">
+    <value>Key is not a valid private key.</value>
   </data>
   <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
     <value>Key is not a valid public or private key.</value>
@@ -173,6 +203,9 @@
   </data>
   <data name="Cryptography_PlaintextCiphertextLengthMismatch" xml:space="preserve">
     <value>Plaintext and ciphertext must have the same length.</value>
+  </data>
+  <data name="Cryptography_PqcNoSeed" xml:space="preserve">
+    <value>The current instance does not contain a seed.</value>
   </data>
   <data name="Cryptography_UnknownAlgorithmIdentifier" xml:space="preserve">
     <value>The algorithm identified by '{0}' is unknown, not valid for the requested usage, or was not handled.</value>

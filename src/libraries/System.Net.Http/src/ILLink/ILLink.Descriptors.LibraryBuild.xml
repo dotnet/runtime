@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Net.Http">
+    <type fullname="System.Net.Http.SocketsHttpHandler">
+      <!-- called through reflection by System.Net.HttpWebRequest -->
+      <method name="get_Settings" />
+    </type>
+  </assembly>
+</linker>

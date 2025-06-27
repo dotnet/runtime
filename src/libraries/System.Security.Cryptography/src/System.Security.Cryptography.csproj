@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
+    <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS;SYSTEM_SECURITY_CRYPTOGRAPHY</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <NoWarn>$(NoWarn);CA5350;CA5351;CA5379;CA5384;SYSLIB0026</NoWarn>
     <!-- PasswordDeriveBytes.GetBytes is obsolete but DeriveBytes.GetBytes intentionally isn't. -->
@@ -18,8 +18,6 @@
     <UseAndroidCrypto Condition="'$(TargetPlatformIdentifier)' == 'android'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">true</UseAppleCrypto>
     <UseOpenSsl Condition="'$(TargetPlatformIdentifier)' == 'unix'">true</UseOpenSsl>
-    <UseOpenSslAead Condition="'$(UseOpenSsl)' == 'true' or '$(TargetPlatformIdentifier)' == 'osx'">true</UseOpenSslAead>
-    <NeedOpenSslInitializer Condition="'$(UseOpenSslAead)' == 'true'">true</NeedOpenSslInitializer>
     <DefineConstants Condition="'$(Configuration)' == 'Debug'">$(DefineConstants);DESIGNTIMEINTERFACES</DefineConstants>
   </PropertyGroup>
 
@@ -408,6 +406,8 @@
              Link="Common\System\Security\Cryptography\MLDsa.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaAlgorithm.cs"
              Link="Common\System\Security\Cryptography\MLDsaAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaCng.cs"
+             Link="Common\System\Security\Cryptography\MLDsaCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaPkcs8.cs"
              Link="Common\System\Security\Cryptography\MLDsaPkcs8.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.cs"
@@ -870,18 +870,11 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.NotSupported.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(NeedOpenSslInitializer)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
-             Link="Common\Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(UseOpenSsl)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetEUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
@@ -910,8 +903,12 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Encode.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Encode.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.DigestAlgs.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.DigestAlgs.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Kdf.cs"
@@ -954,6 +951,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Rsa.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Hmac.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Hmac.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.LegacyAlgorithms.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.LegacyAlgorithms.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.LookupFriendlyNameByOid.cs"
@@ -962,6 +961,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.Chain.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.Chain.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslAvailable.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslAvailable.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Pkcs7.cs"
@@ -988,6 +989,8 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeDsaHandle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEvpKdfHandle.Unix.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeEvpKdfHandle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEvpMdCtxHandle.Unix.cs"
@@ -1036,6 +1039,7 @@
              Link="Common\System\Text\UrlBase64Encoding.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
              Link="Common\System\Text\ValueUtf8Converter.cs" />
+    <Compile Include="System\Security\Cryptography\AesCcm.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\AesImplementation.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.OpenSsl.cs" />
@@ -1130,15 +1134,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Persistence.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(UseOpenSslAead)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslAvailable.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslAvailable.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs" />
-    <Compile Include="System\Security\Cryptography\AesCcm.OpenSsl.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
@@ -1416,82 +1411,24 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx'">
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeDsaHandle.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeDsaHandle.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.Nid.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.Nid.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.ImportExport.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.ImportExport.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.DigestAlgs.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.DigestAlgs.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Dsa.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Dsa.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Ecdh.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Ecdh.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcDsa.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcDsa.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcKey.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcKey.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Rsa.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Rsa.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.macOS.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.macOS.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.macOS.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.macOS.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.macOS.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.macOS.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\DSAOpenSsl.cs"
-             Link="Common\System\Security\Cryptography\DSAOpenSsl.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSASecurityTransforms.cs"
              Link="Common\System\Security\Cryptography\DSASecurityTransforms.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSASecurityTransforms.macOS.cs"
              Link="Common\System\Security\Cryptography\DSASecurityTransforms.macOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\EccSecurityTransforms.macOS.cs"
              Link="Common\System\Security\Cryptography\EccSecurityTransforms.macOS.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanOpenSsl.cs"
-             Link="Common\System\Security\Cryptography\ECDiffieHellmanOpenSsl.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanOpenSsl.Derive.cs"
-             Link="Common\System\Security\Cryptography\ECDiffieHellmanOpenSsl.Derive.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanOpenSslPublicKey.cs"
-             Link="Common\System\Security\Cryptography\ECDiffieHellmanOpenSslPublicKey.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaOpenSsl.cs"
-             Link="Common\System\Security\Cryptography\ECDsaOpenSsl.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECOpenSsl.cs"
-             Link="Common\System\Security\Cryptography\ECOpenSsl.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECOpenSsl.ImportExport.cs"
-             Link="Common\System\Security\Cryptography\ECOpenSsl.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSASecurityTransforms.macOS.cs"
              Link="Common\System\Security\Cryptography\RSASecurityTransforms.macOS.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\RSAOpenSsl.cs"
-             Link="Common\System\Security\Cryptography\RSAOpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\AesCcm.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\DSA.Create.SecurityTransforms.cs" />
     <Compile Include="System\Security\Cryptography\DSACryptoServiceProvider.Unix.cs" />
-    <Compile Include="System\Security\Cryptography\DSAOpenSsl.cs" />
-    <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
-    <Compile Include="System\Security\Cryptography\ECDiffieHellmanOpenSsl.cs" />
-    <Compile Include="System\Security\Cryptography\RSAOpenSsl.cs" />
-    <Compile Include="System\Security\Cryptography\SafeEvpPKeyHandle.OpenSsl.cs" />
-    <Compile Include="System\Security\Cryptography\SafeEvpPKeyHandle.OpenSsl.macOS.cs" />
+    <Compile Include="System\Security\Cryptography\OpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.ImportExport.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Keys.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Pkcs12.macOS.cs" />
@@ -1595,6 +1532,8 @@
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDecapsulateEncapsulate.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDecapsulateEncapsulate.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDeriveKeyPBKDF2.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDeriveKeyPBKDF2.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs"
@@ -1635,6 +1574,8 @@
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptSetProperty.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptSetProperty.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptSignHash.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptSignHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptVerifySignature.cs"
@@ -1883,8 +1824,14 @@
              Link="Common\System\Security\Cryptography\AeadCommon.Windows" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\AesGcm.Windows.cs"
              Link="Common\System\Security\Cryptography\AesGcm.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CngHelpers.cs"
+             Link="Common\System\Security\Cryptography\CngHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CngHelpers.SignVerify.cs"
+             Link="Common\System\Security\Cryptography\CngHelpers.SignVerify.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.cs"
              Link="Common\System\Security\Cryptography\CngPkcs8.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.Shared.cs"
+             Link="Common\System\Security\Cryptography\CngPkcs8.Shared.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoThrowHelper.Windows.cs"
              Link="Common\System\Security\Cryptography\CryptoThrowHelper.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSACng.cs"
@@ -1907,12 +1854,22 @@
              Link="Common\System\Security\Cryptography\ECDsaCng.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaCng.SignVerify.cs"
              Link="Common\System\Security\Cryptography\ECDsaCng.SignVerify.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\KeyPropertyName.cs"
+             Link="Common\System\Security\Cryptography\KeyPropertyName.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaCng.Windows.cs"
+             Link="Common\System\Security\Cryptography\MLDsaCng.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.Windows.cs"
              Link="Common\System\Security\Cryptography\MLDsaImplementation.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.CreateCng.cs"
+             Link="Common\System\Security\Cryptography\MLDsaImplementation.CreateCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemImplementation.cs"
              Link="Common\System\Security\Cryptography\MLKemImplementation.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemImplementation.NotSupported.cs"
-            Link="Common\System\Security\Cryptography\MLKemImplementation.NotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemImplementation.Windows.cs"
+            Link="Common\System\Security\Cryptography\MLKemImplementation.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PqcBlobHelpers.cs"
+             Link="Common\System\Security\Cryptography\PqcBlobHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PqcBlobHelpers.MLKem.cs"
+             Link="Common\System\Security\Cryptography\PqcBlobHelpers.MLKem.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSACng.cs"
              Link="Common\System\Security\Cryptography\RSACng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSACng.EncryptDecrypt.cs"
@@ -1945,7 +1902,6 @@
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.Windows.cs" />
     <Compile Include="System\Security\Cryptography\CngAlgorithmCore.cs" />
     <Compile Include="System\Security\Cryptography\CngAsnFormatter.cs" />
-    <Compile Include="System\Security\Cryptography\CngCommon.SignVerify.cs" />
     <Compile Include="System\Security\Cryptography\CngHelpers.cs" />
     <Compile Include="System\Security\Cryptography\CngKey.cs" />
     <Compile Include="System\Security\Cryptography\CngKey.Create.cs" />
@@ -1985,7 +1941,6 @@
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Windows.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.Managed.cs" />
     <Compile Include="System\Security\Cryptography\ICngSymmetricAlgorithm.cs" />
-    <Compile Include="System\Security\Cryptography\KeyPropertyName.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Windows.cs" />
     <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\MLKemOpenSsl.NotSupported.cs" />

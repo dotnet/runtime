@@ -720,7 +720,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                 if (entryJumpTarget != osrEntry)
                 {
-                    fgRedirectTargetEdge(fgFirstBB, entryJumpTarget);
+                    fgRedirectEdge(fgFirstBB->GetTargetEdgeRef(), entryJumpTarget);
 
                     JITDUMP("OSR: redirecting flow from method entry " FMT_BB " to OSR entry " FMT_BB
                             " via step blocks.\n",
@@ -1298,6 +1298,17 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
     assert(bDest->isEmpty());
     assert(bDest->KindIs(BBJ_ALWAYS));
 
+    BasicBlock* const bDestTarget = bDest->GetTarget();
+
+    // Don't redirect 'block' to 'bDestTarget' if the latter jumps to 'bDest'.
+    // This will lead the JIT to consider optimizing 'block' -> 'bDestTarget' -> 'bDest',
+    // entering an infinite loop.
+    //
+    if (bDestTarget->GetUniqueSucc() == bDest)
+    {
+        optimizeJump = false;
+    }
+
     // We do not optimize jumps between two different try regions.
     // However jumping to a block that is not in any try region is OK
     //
@@ -1307,7 +1318,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
     }
 
     // Don't optimize a jump to a removed block
-    if (bDest->GetTarget()->HasFlag(BBF_REMOVED))
+    if (bDestTarget->HasFlag(BBF_REMOVED))
     {
         optimizeJump = false;
     }
@@ -1344,7 +1355,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
             case BBJ_CALLFINALLYRET:
             {
                 removedWeight = block->bbWeight;
-                fgRedirectTargetEdge(block, bDest->GetTarget());
+                fgRedirectEdge(block->GetTargetEdgeRef(), bDest->GetTarget());
                 break;
             }
 
@@ -1353,13 +1364,13 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 {
                     assert(!block->FalseTargetIs(bDest));
                     removedWeight = block->GetTrueEdge()->getLikelyWeight();
-                    fgRedirectTrueEdge(block, bDest->GetTarget());
+                    fgRedirectEdge(block->GetTrueEdgeRef(), bDest->GetTarget());
                 }
                 else
                 {
                     assert(block->FalseTargetIs(bDest));
                     removedWeight = block->GetFalseEdge()->getLikelyWeight();
-                    fgRedirectFalseEdge(block, bDest->GetTarget());
+                    fgRedirectEdge(block->GetFalseEdgeRef(), bDest->GetTarget());
                 }
                 break;
 
@@ -2245,8 +2256,9 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // Fix up block's flow.
     // Assume edge likelihoods transfer over.
     //
-    fgRedirectTargetEdge(block, target->GetTrueTarget());
+    fgRedirectEdge(block->GetTargetEdgeRef(), target->GetTrueTarget());
     block->GetTargetEdge()->setLikelihood(target->GetTrueEdge()->getLikelihood());
+    block->GetTargetEdge()->setHeuristicBased(target->GetTrueEdge()->isHeuristicBased());
 
     FlowEdge* const falseEdge = fgAddRefPred(target->GetFalseTarget(), block, target->GetFalseEdge());
     block->SetCond(block->GetTargetEdge(), falseEdge);
@@ -2739,8 +2751,9 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     FlowEdge* const falseEdge = bDest->GetFalseEdge();
     FlowEdge* const trueEdge  = bDest->GetTrueEdge();
 
-    fgRedirectTargetEdge(bJump, falseTarget);
+    fgRedirectEdge(bJump->GetTargetEdgeRef(), falseTarget);
     bJump->GetTargetEdge()->setLikelihood(falseEdge->getLikelihood());
+    bJump->GetTargetEdge()->setHeuristicBased(falseEdge->isHeuristicBased());
 
     FlowEdge* const newTrueEdge = fgAddRefPred(trueTarget, bJump, trueEdge);
 
@@ -2822,7 +2835,8 @@ void Compiler::fgPeelSwitch(BasicBlock* block)
     // The dominant case should not be the default case, as we already peel that one.
     //
     assert(dominantCase < (block->GetSwitchTargets()->bbsCount - 1));
-    BasicBlock* const dominantTarget = block->GetSwitchTargets()->bbsDstTab[dominantCase]->getDestinationBlock();
+    FlowEdge* const   dominantEdge   = block->GetSwitchTargets()->bbsDstTab[dominantCase];
+    BasicBlock* const dominantTarget = dominantEdge->getDestinationBlock();
     Statement* const  switchStmt     = block->lastStmt();
     GenTree* const    switchTree     = switchStmt->GetRootNode();
     assert(switchTree->OperIs(GT_SWITCH));
@@ -2865,23 +2879,32 @@ void Compiler::fgPeelSwitch(BasicBlock* block)
 
     // Wire up the new control flow.
     //
-    FlowEdge* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block);
+    FlowEdge* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block, dominantEdge);
     FlowEdge* const blockToNewBlockEdge = newBlock->bbPreds;
     block->SetCond(blockToTargetEdge, blockToNewBlockEdge);
 
     // Update profile data
     //
-    const weight_t fraction            = newBlock->GetSwitchTargets()->bbsDominantFraction;
+    const weight_t fraction            = dominantEdge->getLikelihood();
     const weight_t blockToTargetWeight = block->bbWeight * fraction;
 
     newBlock->decreaseBBProfileWeight(blockToTargetWeight);
-
-    blockToTargetEdge->setLikelihood(fraction);
     blockToNewBlockEdge->setLikelihood(max(0.0, 1.0 - fraction));
 
-    JITDUMP("fgPeelSwitch: Updated flow into " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
-            newBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
-    fgPgoConsistent = false;
+    // Now that the dominant case has been peeled, set the case's edge likelihood to zero,
+    // and increase all other case likelihoods proportionally.
+    //
+    dominantEdge->setLikelihood(BB_ZERO_WEIGHT);
+    const SwitchUniqueSuccSet uniqueSuccSet = GetDescriptorForSwitch(newBlock);
+    const unsigned            numSucc       = uniqueSuccSet.numDistinctSuccs;
+    FlowEdge** const          jumpTab       = uniqueSuccSet.nonDuplicates;
+    for (unsigned i = 0; i < numSucc; i++)
+    {
+        // If we removed all of the flow out of 'block', distribute flow among the remaining edges evenly.
+        const weight_t currLikelihood = jumpTab[i]->getLikelihood();
+        const weight_t newLikelihood  = (fraction == 1.0) ? (1.0 / numSucc) : (currLikelihood / (1.0 - fraction));
+        jumpTab[i]->setLikelihood(min(1.0, newLikelihood));
+    }
 
     // For now we leave the switch as is, since there's no way
     // to indicate that one of the cases is now unreachable.
@@ -4586,21 +4609,14 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                             gtReverseCond(test);
                         }
 
-                        // Optimize the Conditional JUMP to go to the new target
+                        // Rewire flow from block
                         //
-                        FlowEdge* const oldFalseEdge = block->GetFalseEdge();
-                        FlowEdge* const oldTrueEdge  = block->GetTrueEdge();
-                        FlowEdge* const oldNextEdge  = bNext->GetTargetEdge();
+                        std::swap(block->GetTrueEdgeRef(), block->GetFalseEdgeRef());
+                        fgRedirectEdge(block->GetTrueEdgeRef(), bNext->GetTarget());
 
                         // bNext no longer flows to target
                         //
-                        fgRemoveRefPred(oldNextEdge);
-
-                        // Rewire flow from block
-                        //
-                        block->SetFalseEdge(oldTrueEdge);
-                        block->SetTrueEdge(oldFalseEdge);
-                        fgRedirectTrueEdge(block, bNext->GetTarget());
+                        fgRemoveRefPred(bNext->GetTargetEdge());
 
                         /*
                           Unlink bNext from the BasicBlock list; note that we can
@@ -5304,7 +5320,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 if (commSucc != nullptr)
                 {
                     assert(predBlock->KindIs(BBJ_ALWAYS));
-                    fgRedirectTargetEdge(predBlock, crossJumpTarget);
+                    fgRedirectEdge(predBlock->GetTargetEdgeRef(), crossJumpTarget);
                 }
                 else
                 {
@@ -5780,4 +5796,69 @@ bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt,
     }
 
     return true;
+}
+
+//-------------------------------------------------------------
+// fgResolveGDVs: Try and resolve GDV checks
+//
+// Returns:
+//    Suitable phase status.
+//
+PhaseStatus Compiler::fgResolveGDVs()
+{
+    if (!opts.OptimizationEnabled())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (!doesMethodHaveGuardedDevirtualization())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (!hasUpdatedTypeLocals)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    bool madeChanges = false;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        if (!block->KindIs(BBJ_COND))
+        {
+            continue;
+        }
+
+        GuardInfo info;
+        if (ObjectAllocator::IsGuard(block, &info))
+        {
+            assert(block == info.m_block);
+            LclVarDsc* const lclDsc = lvaGetDesc(info.m_local);
+
+            if (lclDsc->lvClassIsExact && lclDsc->lvSingleDef && (lclDsc->lvClassHnd == info.m_type))
+            {
+                JITDUMP("GDV in " FMT_BB " can be resolved; type is now known exactly\n", block->bbNum);
+
+                bool const      isCondTrue   = info.m_relop->OperIs(GT_EQ);
+                FlowEdge* const retainedEdge = isCondTrue ? block->GetTrueEdge() : block->GetFalseEdge();
+                FlowEdge* const removedEdge  = isCondTrue ? block->GetFalseEdge() : block->GetTrueEdge();
+
+                JITDUMP("The conditional jump becomes an unconditional jump to " FMT_BB "\n",
+                        retainedEdge->getDestinationBlock()->bbNum);
+
+                fgRemoveRefPred(removedEdge);
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+                fgRepairProfileCondToUncond(block, retainedEdge, removedEdge);
+
+                // The GDV relop will typically be side effecting so just
+                // leave it in place for later cleanup.
+                //
+                info.m_stmt->SetRootNode(info.m_relop);
+                madeChanges = true;
+            }
+        }
+    }
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
