@@ -216,6 +216,8 @@ internal static partial class Interop
                     throw CreateSslException(SR.net_allocate_ssl_context_failed);
                 }
 
+                Ssl.SslCtxSetCertVerifyCallback(sslCtx, &Ssl.CertVerifyCallback);
+
                 Ssl.SslCtxSetProtocolOptions(sslCtx, protocols);
 
                 if (sslAuthenticationOptions.EncryptionPolicy != EncryptionPolicy.RequireEncryption)
@@ -250,7 +252,7 @@ internal static partial class Interop
                 // If you find yourself wanting to remove this line to enable bidirectional
                 // close-notify, you'll probably need to rewrite SafeSslHandle.Disconnect().
                 // https://www.openssl.org/docs/manmaster/ssl/SSL_shutdown.html
-                Ssl.SslCtxSetQuietShutdown(sslCtx);
+                // Ssl.SslCtxSetQuietShutdown(sslCtx);
 
                 if (enableResume)
                 {
@@ -442,6 +444,9 @@ internal static partial class Interop
 
                 if (sslAuthenticationOptions.IsClient)
                 {
+                    // Client side always verifies the server's certificate.
+                    Ssl.SslSetVerifyPeer(sslHandle);
+
                     if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !IPAddress.IsValid(sslAuthenticationOptions.TargetHost))
                     {
                         // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
