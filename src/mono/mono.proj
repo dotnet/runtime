@@ -264,7 +264,8 @@ echo PATH += %TOADD_PATH_PYTHON%
 set &quot;PATH=%TOADD_PATH_PYTHON%%3B%PATH%&quot;
 echo PATH = %PATH%
 set &quot;PY_HOME=%EMSDK_PATH%python\&quot;
-set &quot;PYTHONPATH=&quot;
+set &quot;Python3_ROOT=%EMSDK_PATH%python\&quot;
+
       </_EmsdkPaths>
       <_EmscriptenPaths>
 import os
