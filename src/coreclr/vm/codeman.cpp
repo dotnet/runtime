@@ -6367,10 +6367,10 @@ BOOL ReadyToRunJitManager::GetBoundariesAndVars(
         return FALSE;
 
     // Uncompress. This allocates memory and may throw.
-#ifdef USE_V2_BOUNDS_COMPRESSION_FOR_READYTORUN
-    CompressDebugInfo::RestoreBoundariesAndVars_V2(
-#else
+#ifdef USE_V1_BOUNDS_COMPRESSION_FOR_READYTORUN
     CompressDebugInfo::RestoreBoundariesAndVars(
+#else
+    CompressDebugInfo::RestoreBoundariesAndVars_V2(
 #endif
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
@@ -6404,7 +6404,11 @@ size_t ReadyToRunJitManager::WalkILOffsets(
         return FALSE;
 
     // Uncompress. This allocates memory and may throw.
+#ifdef USE_V1_BOUNDS_COMPRESSION_FOR_READYTORUN
     return CompressDebugInfo::WalkILOffsets(
+#else
+    return CompressDebugInfo::WalkILOffsets_V2(
+#endif
         pDebugInfo,      // input
         FALSE, // no patchpoint info
         pContext, pfnWalkILOffsets);
