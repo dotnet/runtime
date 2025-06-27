@@ -6,7 +6,7 @@
 #include "asmconstants.h"
 
 //
-// eax = UMEntryThunk*
+// eax = UMEntryThunkData*
 //
 NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 #define STK_ALIGN_PADDING 8
