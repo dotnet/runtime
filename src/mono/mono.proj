@@ -265,6 +265,7 @@ set &quot;PATH=%TOADD_PATH_PYTHON%%3B%PATH%&quot;
 echo PATH = %PATH%
 set &quot;PY_HOME=%EMSDK_PATH%python\&quot;
 set &quot;Python3_ROOT=%EMSDK_PATH%python\&quot;
+set &quot;Python_ROOT_DIR=%EMSDK_PATH%python\&quot;
 
       </_EmsdkPaths>
       <_EmscriptenPaths>
