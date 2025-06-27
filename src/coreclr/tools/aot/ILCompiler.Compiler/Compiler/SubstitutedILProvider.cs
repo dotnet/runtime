@@ -709,8 +709,8 @@ namespace ILCompiler
                         if (!stack.TryPop(out int? val) || !val.HasValue)
                             return Fail(out constant);
 
-                        bool taken = (opcode is ILOpcode.brtrue or ILOpcode.brtrue_s && val.Value != 0)
-                            || (opcode is ILOpcode.brfalse or ILOpcode.brfalse_s && val.Value == 0);
+                        bool taken = ((opcode is ILOpcode.brtrue or ILOpcode.brtrue_s) && val.Value != 0)
+                            || ((opcode is ILOpcode.brfalse or ILOpcode.brfalse_s) && val.Value == 0);
 
                         int destOffset = reader.ReadBranchDestination(opcode);
                         if (taken)
@@ -720,7 +720,8 @@ namespace ILCompiler
 
                     case ILOpcode.br:
                     case ILOpcode.br_s:
-                        reader.Seek(reader.ReadBranchDestination(opcode)); break;
+                        reader.Seek(reader.ReadBranchDestination(opcode));
+                        break;
 
                     // Callvirt could trigger a NullRef. We ignore that here. It is fine because we only need to know
                     // what the method would return if it didn't throw. If it throws, it doesn't matter because
