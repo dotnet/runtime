@@ -1134,6 +1134,79 @@ void Lowering::LowerModPow2(GenTree* node)
     ContainCheckNode(mod);
 }
 
+//------------------------------------------------------------------------
+// LowerCnsMask: Lower GT_CNS_MSK. Ensure the mask matches a known pattern.
+//               If not then lower to a constant vector.
+//
+// Arguments:
+//    mask - the node to lower
+//
+GenTree* Lowering::LowerCnsMask(GenTreeMskCon* mask)
+{
+    // Try every type until a match is found
+
+    if (mask->IsZero())
+    {
+        return mask->gtNext;
+    }
+
+    if (EvaluateSimdMaskToPattern<simd16_t>(TYP_BYTE, mask->gtSimdMaskVal) != SveMaskPatternNone)
+    {
+        return mask->gtNext;
+    }
+
+    if (EvaluateSimdMaskToPattern<simd16_t>(TYP_SHORT, mask->gtSimdMaskVal) != SveMaskPatternNone)
+    {
+        return mask->gtNext;
+    }
+
+    if (EvaluateSimdMaskToPattern<simd16_t>(TYP_INT, mask->gtSimdMaskVal) != SveMaskPatternNone)
+    {
+        return mask->gtNext;
+    }
+
+    if (EvaluateSimdMaskToPattern<simd16_t>(TYP_LONG, mask->gtSimdMaskVal) != SveMaskPatternNone)
+    {
+        return mask->gtNext;
+    }
+
+    // Not a valid pattern, so cannot be created using ptrue/pfalse. Instead the mask will require
+    // loading from memory. There is no way to load to a predicate from memory using a PC relative
+    // address, so instead use a constant vector plus conversion to mask.
+
+    LABELEDDISPTREERANGE("lowering cns mask to cns vector (before)", BlockRange(), mask);
+
+    LIR::Use use;
+    if (!BlockRange().TryGetUse(mask, &use))
+    {
+        unreached();
+    }
+    assert(use.User()->OperIsHWIntrinsic());
+    GenTreeHWIntrinsic *parent = use.User()->AsHWIntrinsic();
+
+    var_types parentBaseType    = parent->GetSimdBaseType();
+    CorInfoType    parentSimdBaseJitType = parent->GetSimdBaseJitType();
+    unsigned  parentSimdSize     = parent->GetSimdSize();
+    assert(parent->GetSimdSize() == 16);
+
+    GenTreeVecCon* vecCon = comp->gtNewVconNode(TYP_SIMD16);
+    EvaluateSimdCvtMaskToVector<simd16_t>(parentBaseType, &vecCon->gtSimdVal, mask->gtSimdMaskVal);
+    BlockRange().InsertBefore(mask, vecCon);
+
+    GenTreeHWIntrinsic *convertedVec = comp->gtNewSimdCvtVectorToMaskNode(TYP_MASK, vecCon, parentSimdBaseJitType, parentSimdSize);
+    BlockRange().InsertBefore(mask, convertedVec->Op(1));
+    BlockRange().InsertBefore(mask, convertedVec);
+
+    use.ReplaceWith(convertedVec);
+
+    BlockRange().Remove(mask);
+
+    LABELEDDISPTREERANGE("lowering cns mask to cns vector (after)", BlockRange(), vecCon);
+
+    return vecCon->gtNext;
+}
+
+
 const int POST_INDEXED_ADDRESSING_MAX_DISTANCE = 16;
 
 //------------------------------------------------------------------------

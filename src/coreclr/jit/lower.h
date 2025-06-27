@@ -454,6 +454,7 @@ private:
     bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
     void LowerModPow2(GenTree* node);
+    GenTree* LowerCnsMask(GenTreeMskCon* mask);
     bool TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
     void StoreFFRValue(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
