@@ -16,7 +16,7 @@ class AsmOffsets
     // Debug build offsets
 #if TARGET_AMD64
 #if TARGET_UNIX
-    public const int SIZEOF__REGDISPLAY = 0x1b90;
+    public const int SIZEOF__REGDISPLAY = 0x1c10;
     public const int OFFSETOF__REGDISPLAY__SP = 0x1b78;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x1b80;
 #else // TARGET_UNIX
@@ -82,7 +82,7 @@ class AsmOffsets
     // Release build offsets
 #if TARGET_AMD64
 #if TARGET_UNIX
-    public const int SIZEOF__REGDISPLAY = 0x1b80;
+    public const int SIZEOF__REGDISPLAY = 0x1c00;
     public const int OFFSETOF__REGDISPLAY__SP = 0x1b70;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x1b78;
 #else // TARGET_UNIX
