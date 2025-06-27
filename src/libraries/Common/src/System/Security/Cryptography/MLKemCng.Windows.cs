@@ -221,6 +221,8 @@ namespace System.Security.Cryptography
                 _key.Dispose();
                 _key = null!;
             }
+
+            base.Dispose(disposing);
         }
 
         private void ExportKey(KeyBlobMagicNumber kind, Span<byte> destination)
