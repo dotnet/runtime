@@ -388,7 +388,7 @@ void CordbAppDomain::AssemblyEnumerationCallback(VMPTR_DomainAssembly vmDomainAs
 // Cache a new assembly
 //
 // Arguments:
-//      vmDomainAssembly - new assembly to add to cache
+//      vmAssembly - new assembly to add to cache
 //
 // Return Value:
 //    Pointer to Assembly in cache.
@@ -398,20 +398,6 @@ void CordbAppDomain::AssemblyEnumerationCallback(VMPTR_DomainAssembly vmDomainAs
 //    Caller guarantees assembly is not already added.
 //    Called under the stop-go lock.
 //
-// Notes:
-//
-CordbAssembly * CordbAppDomain::CacheAssembly(VMPTR_DomainAssembly vmDomainAssembly)
-{
-    INTERNAL_API_ENTRY(GetProcess());
-
-    VMPTR_Assembly vmAssembly;
-    GetProcess()->GetDAC()->GetAssemblyFromDomainAssembly(vmDomainAssembly, &vmAssembly);
-
-    RSInitHolder<CordbAssembly> pAssembly(new CordbAssembly(this, vmAssembly, vmDomainAssembly));
-
-    return pAssembly.TransferOwnershipToHash(&m_assemblies);
-}
-
 CordbAssembly * CordbAppDomain::CacheAssembly(VMPTR_Assembly vmAssembly)
 {
     INTERNAL_API_ENTRY(GetProcess());
@@ -801,14 +787,10 @@ void CordbAppDomain::RemoveAssemblyFromCache(VMPTR_DomainAssembly vmDomainAssemb
 //
 CordbAssembly * CordbAppDomain::LookupOrCreateAssembly(VMPTR_DomainAssembly vmDomainAssembly)
 {
-    CordbAssembly * pAssembly = m_assemblies.GetBase(VmPtrToCookie(vmDomainAssembly));
-    if (pAssembly != NULL)
-    {
-        return pAssembly;
-    }
-    return CacheAssembly(vmDomainAssembly);
+    VMPTR_Assembly vmAssembly;
+    GetProcess()->GetDAC()->GetAssemblyFromDomainAssembly(vmDomainAssembly, &vmAssembly);
+    return LookupOrCreateAssembly(vmAssembly);
 }
-
 
 //
 CordbAssembly * CordbAppDomain::LookupOrCreateAssembly(VMPTR_Assembly vmAssembly)

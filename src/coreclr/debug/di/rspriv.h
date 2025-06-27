@@ -2530,7 +2530,6 @@ public:
                                          // them as special cases.
     CordbSafeHashTable<CordbType>        m_sharedtypes;
 
-    CordbAssembly * CacheAssembly(VMPTR_DomainAssembly vmDomainAssembly);
     CordbAssembly * CacheAssembly(VMPTR_Assembly vmAssembly);
 
 
@@ -2543,7 +2542,7 @@ public:
     CordbSafeHashTable<CordbModule>      m_modules;
 private:
     // Cache of assemblies in this appdomain.
-    // This is indexed by VMPTR_DomainAssembly, which has appdomain affinity.
+    // This is indexed by VMPTR_Assembly.
     // This is populated by code:CordbAppDomain::LookupOrCreateAssembly (which may be invoked
     // anytime the RS gets hold of a VMPTR), and are removed at the unload event.
     CordbSafeHashTable<CordbAssembly>    m_assemblies;
