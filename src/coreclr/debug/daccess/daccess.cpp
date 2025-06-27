@@ -7048,7 +7048,7 @@ CLRDataCreateInstance(REFIID iid,
         }
     }
 #endif
-    if (enable)
+    if (enable.IsSet())
     {
         if (cdacInterface == nullptr)
         {
