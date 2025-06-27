@@ -672,111 +672,85 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
         {
             assert(dstType == TYP_LONG);
 
-            // The logic for floating->signed long casts is similar to the AVX-512 implementation
-            // in LowerCast, except that all operations must be done in SIMD registers.
-
-            if (srcType == TYP_FLOAT)
-            {
-                // For float->long, the result will be twice as wide as the input. Broadcasting the
-                // input allows us to use two adjacent elements when creating the fixup mask later.
-
-                srcVector = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector,
-                                                                 NI_AVX2_BroadcastScalarToVector128, srcBaseType, 16);
-                castRange.InsertAtEnd(srcVector);
-            }
-
             // We will use the input value multiple times, so we replace it with a lclVar.
             LIR::Use srcUse;
             LIR::Use::MakeDummyUse(castRange, srcVector, &srcUse);
             srcUse.ReplaceWithLclVar(m_compiler);
             srcVector = srcUse.Def();
 
-            // Fix up NaN values before conversion. Saturation is handled after conversion,
+            // We fix up NaN values by masking in zero during conversion. Negative saturation is handled
+            // correctly by the conversion instructions. Positive saturation is handled after conversion,
             // because MaxValue is not precisely representable in the floating format.
             //
-            // This creates the equivalent of the following C# code:
-            //   var nanMask = Sse.CompareScalarOrdered(srcVec, srcVec);
-            //   var fixupVal = Sse.And(srcVec, nanMask);
-            //   convertResult = Avx512DQ.VL.ConvertToVector128Int64WithTruncation(fixupVal);
+            // This creates roughly the equivalent of the following C# code:
+            //   var nanMask = Avx.CompareScalar(srcVec, srcVec, FloatComparisonMode.OrderedNonSignaling);
+            //   var convert = Avx512DQ.VL.ConvertToVector128Int64WithTruncation(fixupVal);
+            //   convertResult = Vector128.ConditionalSelect(nanMask, convert, Vector128<long>.Zero);
 
             GenTree* srcClone = m_compiler->gtClone(srcVector);
-            GenTree* nanMask  = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, srcClone,
-                                                                     NI_X86Base_CompareScalarOrdered, srcBaseType, 16);
+            GenTree* compareMode =
+                m_compiler->gtNewIconNode(static_cast<int32_t>(FloatComparisonMode::OrderedNonSignaling));
+            GenTree* nanMask = m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, srcVector, srcClone, compareMode,
+                                                                    NI_AVX512_CompareScalarMask, srcBaseType, 16);
 
             castRange.InsertAtEnd(srcClone);
+            castRange.InsertAtEnd(compareMode);
             castRange.InsertAtEnd(nanMask);
 
-            srcClone          = m_compiler->gtClone(srcVector);
-            GenTree* fixupVal = m_compiler->gtNewSimdBinOpNode(GT_AND, TYP_SIMD16, nanMask, srcClone, srcBaseType, 16);
-
-            castRange.InsertAtEnd(srcClone);
-            castRange.InsertAtEnd(fixupVal);
-
+            srcClone = m_compiler->gtClone(srcVector);
             GenTree* convertResult =
-                m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, fixupVal,
+                m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcClone,
                                                      NI_AVX512_ConvertToVector128Int64WithTruncation, srcBaseType, 16);
 
+            castRange.InsertAtEnd(srcClone);
+            castRange.InsertAtEnd(convertResult);
+
+            nanMask       = m_compiler->gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, nanMask, dstBaseType, 16);
+            GenTree* zero = m_compiler->gtNewZeroConNode(TYP_SIMD16);
+            convertResult = m_compiler->gtNewSimdCndSelNode(TYP_SIMD16, nanMask, convertResult, zero, dstBaseType, 16);
+
+            castRange.InsertAtEnd(nanMask);
+            castRange.InsertAtEnd(zero);
             castRange.InsertAtEnd(convertResult);
 
             // Now we handle saturation of the result for positive overflow.
             //
-            // This creates the equivalent of the following C# code:
-            //   var maxFloatingValue = Vector128.Create(9223372036854775808.0);
+            // This creates roughly the equivalent of the following C# code:
             //   var compareMode = FloatComparisonMode.OrderedGreaterThanOrEqualNonSignaling;
+            //   var maxFloatingValue = Vector128.Create(9223372036854775808.0);
             //   var compareMax = Avx.CompareScalar(srcVec, maxFloatingValue, compareMode);
+            //   var maxLong = Vector128<long>.AllOnes >>> 1;
+            //   castResult = Vector128.ConditionalSelect(compareMax, maxLong, convertResult);
 
-            NamedIntrinsic compareIntrinsic = (srcType == TYP_FLOAT) ? NI_AVX_Compare : NI_AVX_CompareScalar;
-            GenTreeVecCon* maxFloatingValue = m_compiler->gtNewVconNode(TYP_SIMD16);
-
-            if (srcType == TYP_FLOAT)
-            {
-                // For float->long, we broadcast the comparison value, same as we broadcast the input.
-                for (uint32_t index = 0; index < 4; index++)
-                {
-                    maxFloatingValue->gtSimdVal.f32[index] = 9223372036854775808.0f;
-                }
-            }
-            else
-            {
-                maxFloatingValue->gtSimdVal.f64[0] = 9223372036854775808.0;
-            }
-
-            castRange.InsertAtEnd(maxFloatingValue);
-
-            srcClone             = m_compiler->gtClone(srcVector);
-            GenTree* compareMode = m_compiler->gtNewIconNode(
+            compareMode = m_compiler->gtNewIconNode(
                 static_cast<int32_t>(FloatComparisonMode::OrderedGreaterThanOrEqualNonSignaling));
-            GenTree* compareMax = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcClone, maxFloatingValue,
-                                                                       compareMode, compareIntrinsic, srcBaseType, 16);
+
+            GenTreeVecCon* maxFloatingValue = m_compiler->gtNewVconNode(TYP_SIMD16);
+            maxFloatingValue->EvaluateBroadcastInPlace(srcType, 9223372036854775808.0);
+
+            srcClone = m_compiler->gtClone(srcVector);
+            GenTree* compareMax =
+                m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, srcClone, maxFloatingValue, compareMode,
+                                                     NI_AVX512_CompareScalarMask, srcBaseType, 16);
 
             castRange.InsertAtEnd(srcClone);
+            castRange.InsertAtEnd(maxFloatingValue);
             castRange.InsertAtEnd(compareMode);
             castRange.InsertAtEnd(compareMax);
 
-            // We will use the compare mask multiple times, so we replace it with a lclVar.
-            LIR::Use cmpUse;
-            LIR::Use::MakeDummyUse(castRange, compareMax, &cmpUse);
-            cmpUse.ReplaceWithLclVar(m_compiler);
-            compareMax = cmpUse.Def();
+            GenTree* allOnes = m_compiler->gtNewAllBitsSetConNode(TYP_SIMD16);
+            GenTree* one     = m_compiler->gtNewIconNode(1);
+            GenTree* maxLong = m_compiler->gtNewSimdBinOpNode(GT_RSZ, TYP_SIMD16, allOnes, one, dstBaseType, 16);
 
-            // Mask in long.MaxValue for positive saturation. In the case of overflow, the compare
-            // mask will be all ones. We shift that value right by one to create the MaxValue vector.
-            // This is where we treat two adjacent elements from a float compare as one 64-bit mask.
-            //
-            // This creates the equivalent of the following C# code:
-            //   var maxLong = Sse2.ShiftRightLogical(compareMax, 1);
-            //   castResult = Vector128.ConditionalSelect(compareMax, maxLong, convertResult);
-
-            GenTree* cmpClone = m_compiler->gtClone(compareMax);
-            GenTree* one      = m_compiler->gtNewIconNode(1);
-            GenTree* maxLong  = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, compareMax, one,
-                                                                     NI_X86Base_ShiftRightLogical, dstBaseType, 16);
-
+            castRange.InsertAtEnd(allOnes);
             castRange.InsertAtEnd(one);
             castRange.InsertAtEnd(maxLong);
-            castRange.InsertAtEnd(cmpClone);
 
-            castResult = m_compiler->gtNewSimdCndSelNode(TYP_SIMD16, cmpClone, maxLong, convertResult, dstBaseType, 16);
+            compareMax = m_compiler->gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, compareMax, dstBaseType, 16);
+            castResult =
+                m_compiler->gtNewSimdCndSelNode(TYP_SIMD16, compareMax, maxLong, convertResult, dstBaseType, 16);
+
+            castRange.InsertAtEnd(compareMax);
         }
 
         // Because the results are in a SIMD register, we need to ToScalar() them out.

@@ -10990,6 +10990,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512_Shuffle:
                         case NI_AVX512_SumAbsoluteDifferencesInBlock32:
                         case NI_AVX512_CompareMask:
+                        case NI_AVX512_CompareScalarMask:
                         case NI_AES_CarrylessMultiply:
                         case NI_AES_V256_CarrylessMultiply:
                         case NI_AES_V512_CarrylessMultiply:
