@@ -705,7 +705,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
         {
-            JITDUMP("task await ");
+            JITDUMP("task await\n");
 
             asyncInfo.ExecutionContextHandling = ExecutionContextHandling::SaveAndRestore;
         }
