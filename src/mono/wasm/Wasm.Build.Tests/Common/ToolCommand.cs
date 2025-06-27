@@ -13,6 +13,8 @@ namespace Wasm.Build.Tests
 {
     public class ToolCommand : IDisposable
     {
+        private bool isDisposed = false;
+        private readonly object _lock = new object();
         private string _label;
         protected ITestOutputHelper _testOutput;
 
@@ -93,11 +95,17 @@ namespace Wasm.Build.Tests
 
         public virtual void Dispose()
         {
-            if (CurrentProcess is not null && !CurrentProcess.HasExited)
+            lock (_lock)
             {
-                CurrentProcess.Kill(entireProcessTree: true);
-                CurrentProcess.Dispose();
-                CurrentProcess = null;
+                if (isDisposed)
+                    return;
+                if (CurrentProcess is not null && !CurrentProcess.HasExited)
+                {
+                    CurrentProcess.Kill(entireProcessTree: true);
+                    CurrentProcess.Dispose();
+                    CurrentProcess = null;
+                }
+                isDisposed = true;
             }
         }
 
@@ -109,24 +117,33 @@ namespace Wasm.Build.Tests
             CurrentProcess = CreateProcess(executable, args);
             DataReceivedEventHandler errorHandler = (s, e) =>
             {
-                if (e.Data == null)
+                if (e.Data == null || isDisposed)
                     return;
 
-                string msg = $"[{_label}] {e.Data}";
-                output.Add(msg);
-                _testOutput.WriteLine(msg);
-                ErrorDataReceived?.Invoke(s, e);
+                lock (_lock)
+                {
+                    if (e.Data == null || isDisposed)
+                        return;
+
+                    string msg = $"[{_label}] {e.Data}";
+                    output.Add(msg);
+                    _testOutput.WriteLine(msg);
+                    ErrorDataReceived?.Invoke(s, e);
+                }
             };
 
             DataReceivedEventHandler outputHandler = (s, e) =>
             {
-                if (e.Data == null)
-                    return;
+                lock (_lock)
+                {
+                    if (e.Data == null || isDisposed)
+                        return;
 
-                string msg = $"[{_label}] {e.Data}";
-                output.Add(msg);
-                _testOutput.WriteLine(msg);
-                OutputDataReceived?.Invoke(s, e);
+                    string msg = $"[{_label}] {e.Data}";
+                    output.Add(msg);
+                    _testOutput.WriteLine(msg);
+                    OutputDataReceived?.Invoke(s, e);
+                }
             };
 
             CurrentProcess.ErrorDataReceived += errorHandler;
