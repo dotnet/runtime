@@ -835,53 +835,48 @@ bool CoffNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
 bool CoffNativeCodeManager::IsPacPresent(MethodInfo *    pMethodInfo,
                                          REGDISPLAY *    pRegisterSet)
 {
-#if defined(HOST_WINDOWS)
-    return false;
-#else
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
     size_t unwindDataBlobSize;
-    SIZE_T  EstablisherFrame;
-    PVOID   HandlerData;
-    CONTEXT context;
 
     PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->runtimeFunction, &unwindDataBlobSize);
 
-    PTR_uint8_t p = dac_cast<PTR_uint8_t>(pUnwindDataBlob) + unwindDataBlobSize;
+    PTR_uint8_t UnwindCodePtr = dac_cast<PTR_uint8_t>(pUnwindDataBlob);
+    PTR_uint8_t UnwindCodesEndPtr = dac_cast<PTR_uint8_t>(pUnwindDataBlob) + unwindDataBlobSize;
 
-    uint8_t unwindBlockFlags = *p++;
+     while (UnwindCodePtr < UnwindCodesEndPtr)
+    {
+        uint8_t CurCode = * UnwindCodePtr;
+        if ((CurCode & 0xfe) == 0xe4)   // The last unwind code
+        {
+            break;
+        }
 
-    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
-        p += sizeof(int32_t);
+        if (CurCode == 0xFC) // Unwind code for PAC (pac_sign_lr)
+        {
+            return true;
+        }
 
-    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
-        p += sizeof(int32_t);
+        if (CurCode < 0xC0)
+        {
+            UnwindCodePtr += 1;
+        }
+        else if (CurCode < 0xE0)
+        {
+            UnwindCodePtr += 2;
+        }
+        else
+        {
+            static const BYTE UnwindCodeSizeTable[32] =
+            {
+                4,1,2,1,1,1,1,3, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 2,3,4,5,1,1,1,1
+            };
 
-    context.Sp = pRegisterSet->GetSP();
-    context.Fp = pRegisterSet->GetFP();
-    context.Pc = pRegisterSet->GetIP();
-    context.Lr = *pRegisterSet->pLR;
+            UnwindCodePtr += UnwindCodeSizeTable[CurCode - 0xE0];
+        }
+    }
 
-    KNONVOLATILE_CONTEXT_POINTERS contextPointers;
-#ifdef _DEBUG
-    memset(&contextPointers, 0xDD, sizeof(contextPointers));
-#endif
-    contextPointers.Lr = pRegisterSet->pLR;
-
-    EstablisherFrame = 0;
-    HandlerData = NULL;
-
-    return RtlpUnwindIsPacPresent (
-    dac_cast<TADDR>(m_moduleBase),
-    pRegisterSet->IP,
-    (PRUNTIME_FUNCTION)pNativeMethodInfo->runtimeFunction,
-    &HandlerData,
-    &contextPointers,
-    &EstablisherFrame,
-    NULL,
-    NULL,
-    0);
-#endif //HOST_WINDOWS
+    return false;
 }
 #endif //TARGET_ARM64
 

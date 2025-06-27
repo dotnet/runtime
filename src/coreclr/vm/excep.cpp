@@ -6934,47 +6934,73 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
 // This function is used to check if Pointer Authentication (PAC) is enabled for this stack frame or not.
 bool IsPacPresent(EECodeInfo *pCodeInfo)
 {
-#if defined(HOST_WINDOWS)
-    return false;
-#else
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    TADDR ControlPc = pCodeInfo->GetCodeAddress();
-
     _ASSERTE(pCodeInfo->IsValid());
-
-    DWORD_PTR EstablisherFrame = 0;
-    DWORD_PTR ImageBase = 0;
-    PVOID HandlerData = NULL;
 
     // Lookup the function entry for the IP
     PTR_RUNTIME_FUNCTION FunctionEntry = pCodeInfo->GetFunctionEntry();
 
     // We should always get a function entry for a managed method
     _ASSERTE(FunctionEntry != NULL);
+    DWORD_PTR ImageBase = pCodeInfo->GetModuleBase();
+    ULONG_PTR UnwindDataPtr = (ULONG_PTR)(ImageBase + FunctionEntry->UnwindData);
 
-    ImageBase = pCodeInfo->GetModuleBase();
+    // Read the header word. For unwind info layout details refer https://learn.microsoft.com/en-us/cpp/build/arm64-exception-handling?view=msvc-170#arm64-exception-handling-information
+    DWORD HeaderWord = *(DWORD*)UnwindDataPtr;
+    UnwindDataPtr += 4;
 
-    KNONVOLATILE_CONTEXT_POINTERS ContextPointers;
-    ZeroMemory(&ContextPointers, sizeof(ContextPointers));
+    _ASSERTE(((HeaderWord >> 18) & 3) == 0); // Version 0 is the only supported version.
 
-    return RtlpUnwindIsPacPresent (
-    ImageBase,
-    ControlPc,
-    (PIMAGE_ARM64_RUNTIME_FUNCTION_ENTRY)FunctionEntry,
-    &HandlerData,
-    &ContextPointers,
-    &EstablisherFrame,
-    NULL,
-    NULL,
-    0);
-#endif // HOST_WINDOWS
+    ULONG UnwindWords = (HeaderWord >> 27) & 31;
+    ULONG EpilogScopeCount = (HeaderWord >> 22) & 31;
+    if (EpilogScopeCount == 0 && UnwindWords == 0)
+    {
+        EpilogScopeCount = *(DWORD*)UnwindDataPtr;
+        UnwindDataPtr += 4;
+        UnwindWords = (EpilogScopeCount >> 16) & 0xff;
+        EpilogScopeCount &= 0xffff;
+    }
+
+    if ((HeaderWord & (1 << 21)) != 0)
+    {
+        EpilogScopeCount = 0;
+    }
+
+    ULONG_PTR UnwindCodePtr = UnwindDataPtr + 4 * EpilogScopeCount;
+    ULONG_PTR UnwindCodesEndPtr = UnwindCodePtr + 4 * UnwindWords;
+
+    while (UnwindCodePtr < UnwindCodesEndPtr)
+    {
+        ULONG CurCode = *(BYTE*)UnwindCodePtr;
+        if ((CurCode & 0xfe) == 0xe4)   // The last unwind code
+        {
+            break;
+        }
+
+        if (CurCode == 0xFC) // Unwind code for PAC (pac_sign_lr)
+        {
+            return true;
+        }
+
+        if (CurCode < 0xC0)
+        {
+            UnwindCodePtr += 1;
+        }
+        else if (CurCode < 0xE0)
+        {
+            UnwindCodePtr += 2;
+        }
+        else
+        {
+            static const BYTE UnwindCodeSizeTable[32] =
+            {
+                4,1,2,1,1,1,1,3, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 2,3,4,5,1,1,1,1
+            };
+
+            UnwindCodePtr += UnwindCodeSizeTable[CurCode - 0xE0];
+        }
+    }
+
+    return false;
 }
 #endif // TARGET_ARM64
 

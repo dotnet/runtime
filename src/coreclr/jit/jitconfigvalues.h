@@ -125,7 +125,7 @@ CONFIG_STRING(JitInlineMethodsWithEHRange, "JitInlineMethodsWithEHRange")
 
 CONFIG_INTEGER(JitLongAddress, "JitLongAddress", 0) // Force using the large pseudo instruction form for long address
 CONFIG_INTEGER(JitMaxUncheckedOffset, "JitMaxUncheckedOffset", 8)
-RELEASE_CONFIG_INTEGER(JitPacEnabled, "JitPacEnabled", 0)
+RELEASE_CONFIG_INTEGER(JitPacEnabled, "JitPacEnabled", 1)
 
 //
 // MinOpts
