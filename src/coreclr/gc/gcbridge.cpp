@@ -1045,14 +1045,6 @@ static void ResetXRefs(ColorData* color)
     }
 }
 
-static double g_QPFus = 0.0;
-static uint64_t GetHighPrecisionTimeStamp()
-{
-    if (g_QPFus == 0.0)
-        g_QPFus = 1000.0 * 1000.0 / (double)GCToOSInterface::QueryPerformanceFrequency();
-    return (uint64_t)((double)GCToOSInterface::QueryPerformanceCounter() * g_QPFus);
-}
-
 static uint64_t g_startTime;
 static uint64_t g_afterTarjanTime;
 
