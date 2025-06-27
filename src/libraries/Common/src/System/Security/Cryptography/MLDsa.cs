@@ -140,6 +140,9 @@ namespace System.Security.Cryptography
         ///   An optional context-specific value to limit the scope of the signature.
         ///   The default value is <see langword="null" />.
         /// </param>
+        /// <returns>
+        ///   ML-DSA signature for the specified data.
+        /// </returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="data"/> is <see langword="null"/>.
         /// </exception>

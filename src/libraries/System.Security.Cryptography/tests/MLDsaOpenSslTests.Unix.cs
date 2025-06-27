@@ -117,10 +117,10 @@ namespace System.Security.Cryptography.Tests
         private static void VerifyInstanceIsUsable(MLDsaOpenSsl mldsa)
         {
             byte[] seed = mldsa.ExportMLDsaPrivateSeed();
-            Assert.NotEqual(0, seed.Length); // does not throw
+            Assert.Equal(mldsa.Algorithm.PrivateSeedSizeInBytes, seed.Length); // does not throw
 
             byte[] secretKey = mldsa.ExportMLDsaSecretKey();
-            Assert.NotEqual(0, secretKey.Length); // does not throw
+            Assert.Equal(mldsa.Algorithm.SecretKeySizeInBytes, secretKey.Length); // does not throw
 
             // usable
             byte[] data = [ 1, 2, 3 ];

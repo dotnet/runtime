@@ -237,15 +237,15 @@ namespace System.Security.Cryptography.Tests
             AssertExpectedFill(exported, fillElement: 1);
 
             // Span overload
-            byte[] secretKey = CreatePaddedFilledArray(privateSeedSize, 42);
+            byte[] privateSeed = CreatePaddedFilledArray(privateSeedSize, 42);
 
             // Extra bytes in destination buffer should not be touched
-            Memory<byte> destination = secretKey.AsMemory(PaddingSize, privateSeedSize);
+            Memory<byte> destination = privateSeed.AsMemory(PaddingSize, privateSeedSize);
             mldsa.AddDestinationBufferIsSameAssertion(destination);
 
             mldsa.ExportMLDsaPrivateSeed(destination.Span);
             Assert.Equal(2, mldsa.ExportMLDsaPrivateSeedCoreCallCount);
-            AssertExpectedFill(secretKey, fillElement: 1, paddingElement: 42, PaddingSize, privateSeedSize);
+            AssertExpectedFill(privateSeed, fillElement: 1, paddingElement: 42, PaddingSize, privateSeedSize);
         }
 
         [Theory]
