@@ -768,6 +768,9 @@ internal sealed unsafe partial class SOSDacImpl
             hr = ex.HResult;
         }
 
+        Debug.Assert(false);
+        throw new InvalidOperationException("ISOSDacInterface.GetMethodDescName is not implemented in cDAC. This should never be called.");
+
 #if DEBUG
         if (_legacyImpl is not null)
         {
