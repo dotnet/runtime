@@ -6,36 +6,36 @@ using Mono.Linker.Tests.Cases.TestFramework.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.TestFramework.Dependencies
 {
-	public class VerifyAttributesInAssemblyWorks_Lib
-	{
-		[VerifyAttributesInAssemblyWorks_Base.ForAssertingKept]
-		public static class TypeWithKeptAttribute
-		{
-			[VerifyAttributesInAssemblyWorks_Base.ForAssertingKept]
-			public static int Field;
+    public class VerifyAttributesInAssemblyWorks_Lib
+    {
+        [VerifyAttributesInAssemblyWorks_Base.ForAssertingKept]
+        public static class TypeWithKeptAttribute
+        {
+            [VerifyAttributesInAssemblyWorks_Base.ForAssertingKept]
+            public static int Field;
 
-			[VerifyAttributesInAssemblyWorks_Base.ForAssertingKept]
-			public static void Method ()
-			{
-			}
+            [VerifyAttributesInAssemblyWorks_Base.ForAssertingKept]
+            public static void Method()
+            {
+            }
 
-			[VerifyAttributesInAssemblyWorks_Base.ForAssertingKept]
-			public static int Property { get; set; }
-		}
+            [VerifyAttributesInAssemblyWorks_Base.ForAssertingKept]
+            public static int Property { get; set; }
+        }
 
-		[VerifyAttributesInAssemblyWorks_Base.ForAssertingRemove]
-		public class TypeWithRemovedAttribute
-		{
-			[VerifyAttributesInAssemblyWorks_Base.ForAssertingRemove]
-			public static int Field;
+        [VerifyAttributesInAssemblyWorks_Base.ForAssertingRemove]
+        public class TypeWithRemovedAttribute
+        {
+            [VerifyAttributesInAssemblyWorks_Base.ForAssertingRemove]
+            public static int Field;
 
-			[VerifyAttributesInAssemblyWorks_Base.ForAssertingRemove]
-			public static void Method ()
-			{
-			}
+            [VerifyAttributesInAssemblyWorks_Base.ForAssertingRemove]
+            public static void Method()
+            {
+            }
 
-			[VerifyAttributesInAssemblyWorks_Base.ForAssertingRemove]
-			public static int Property { get; set; }
-		}
-	}
+            [VerifyAttributesInAssemblyWorks_Base.ForAssertingRemove]
+            public static int Property { get; set; }
+        }
+    }
 }

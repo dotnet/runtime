@@ -92,9 +92,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (section.Value is string value && !string.IsNullOrEmpty(value))
+                if (TryGetConfigurationValue(section, key: null, out string? value))
                 {
-                    instance.Add(ParseInt(value, section.Path));
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        instance.Add(ParseInt(value, section.Path));
+                    }
                 }
             }
         }
@@ -103,7 +106,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             ValidateConfigurationKeys(typeof(global::Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
 
-            if (configuration["MyString"] is string value1)
+            if (TryGetConfigurationValue(configuration, key: "MyString", out string? value1))
             {
                 instance.MyString = value1;
             }
@@ -116,26 +119,42 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            if (configuration["MyInt"] is string value2 && !string.IsNullOrEmpty(value2))
+            if (TryGetConfigurationValue(configuration, key: "MyInt", out string? value2))
             {
-                instance.MyInt = ParseInt(value2, configuration.GetSection("MyInt").Path);
+                if (!string.IsNullOrEmpty(value2))
+                {
+                    instance.MyInt = ParseInt(value2, configuration.GetSection("MyInt").Path);
+                }
             }
             else if (defaultValueIfNotFound)
             {
                 instance.MyInt = instance.MyInt;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section3)
+            var value3 = configuration.GetSection("MyList");
+            if (AsConfigWithChildren(value3) is IConfigurationSection section4)
             {
-                global::System.Collections.Generic.List<int>? temp5 = instance.MyList;
-                temp5 ??= new global::System.Collections.Generic.List<int>();
-                BindCore(section3, ref temp5, defaultValueIfNotFound: false, binderOptions);
-                instance.MyList = temp5;
+                global::System.Collections.Generic.List<int>? temp6 = instance.MyList;
+                temp6 ??= new global::System.Collections.Generic.List<int>();
+                BindCore(section4, ref temp6, defaultValueIfNotFound: false, binderOptions);
+                instance.MyList = temp6;
             }
             else
             {
                 instance.MyList = instance.MyList;
             }
+        }
+
+        /// <summary>Tries to get the configuration value for the specified key.</summary>
+        public static bool TryGetConfigurationValue(IConfiguration configuration, string key, out string? value)
+        {
+            if (configuration is ConfigurationSection section)
+            {
+                return section.TryGetValue(key, out value);
+            }
+        
+            value = key != null ? configuration[key] : configuration is IConfigurationSection sec ? sec.Value : null;
+            return value != null;
         }
 
 
@@ -205,7 +224,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
         #endregion Core binding extensions.

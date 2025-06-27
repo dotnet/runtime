@@ -30,8 +30,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Sinh<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IHyperbolicFunctions<T> =>
+            where T : IHyperbolicFunctions<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, SinhOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, SinhOperator<T>>(x, destination);
+        }
 
         /// <summary>T.Sinh(x)</summary>
         internal readonly struct SinhOperator<T> : IUnaryOperator<T, T>

@@ -5,11 +5,11 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 {
-	[SetupLinkerArgument ("--skip-unresolved", "true")]
-	[TestCaseRequirements (TestRunCharacteristics.SupportsDefaultInterfaceMethods, "Requires support for default interface methods")]
-	[Define ("IL_ASSEMBLY_AVAILABLE")]
-	[SetupCompileBefore ("library.dll", new[] { "Dependencies/DimProvidedByRecursiveInterface.il" })]
-	[SkipILVerify]
+    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [TestCaseRequirements(TestRunCharacteristics.SupportsDefaultInterfaceMethods, "Requires support for default interface methods")]
+    [Define("IL_ASSEMBLY_AVAILABLE")]
+    [SetupCompileBefore("library.dll", new[] { "Dependencies/DimProvidedByRecursiveInterface.il" })]
+    [SkipILVerify]
 
 #if IL_ASSEMBLY_AVAILABLE
 	[KeptMemberInAssembly ("library.dll", typeof(Program.IFoo), "Method()")]
@@ -21,16 +21,16 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.IBaz), "library.dll", typeof (Program.IBar))]
 	[KeptMemberInAssembly ("library.dll", typeof(Program), "CallMethod(Program/IFoo)")]
 #endif
-	class DimProvidedByRecursiveInterface
-	{
-		static void Main ()
-		{
+    class DimProvidedByRecursiveInterface
+    {
+        static void Main()
+        {
 #if IL_ASSEMBLY_AVAILABLE
 			Program.IFoo foo = new Program.MyFoo ();
 			Program.CallMethod(foo);
 #endif
-		}
-	}
+        }
+    }
 }
 
 

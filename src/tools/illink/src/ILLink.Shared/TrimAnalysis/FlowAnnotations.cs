@@ -9,30 +9,30 @@ using ILLink.Shared.TypeSystemProxy;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	// Shared helpers to go from MethodProxy to dataflow values.
+    // Shared helpers to go from MethodProxy to dataflow values.
 #if ILLINK
-	internal
+    internal
 #else
-	public
+    public
 #endif
-	partial class FlowAnnotations
-	{
-		internal partial bool MethodRequiresDataFlowAnalysis (MethodProxy method);
+    partial class FlowAnnotations
+    {
+        internal partial bool MethodRequiresDataFlowAnalysis(MethodProxy method);
 
-		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
+        internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 
-		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj);
+        internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method, bool isNewObj);
 
-		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter);
+        internal partial GenericParameterValue GetGenericParameterValue(GenericParameterProxy genericParameter);
 
-		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
+        internal partial GenericParameterValue GetGenericParameterValue(GenericParameterProxy genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 
-		internal partial MethodParameterValue GetMethodThisParameterValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
+        internal partial MethodParameterValue GetMethodThisParameterValue(MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 
-		internal partial MethodParameterValue GetMethodThisParameterValue (MethodProxy method);
+        internal partial MethodParameterValue GetMethodThisParameterValue(MethodProxy method);
 
-		internal partial MethodParameterValue GetMethodParameterValue (ParameterProxy param, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
+        internal partial MethodParameterValue GetMethodParameterValue(ParameterProxy param, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 
-		internal partial MethodParameterValue GetMethodParameterValue (ParameterProxy param);
-	}
+        internal partial MethodParameterValue GetMethodParameterValue(ParameterProxy param);
+    }
 }

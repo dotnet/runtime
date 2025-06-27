@@ -73,7 +73,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             Span<byte> buffer = stackalloc byte[MaxFormatLength];
             Format(buffer, value, out int written);
-            writer.WritePropertyName(buffer);
+            writer.WritePropertyName(buffer.Slice(0, written));
         }
 
         internal override Int128 ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)

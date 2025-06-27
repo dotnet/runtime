@@ -75,7 +75,7 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // can't access SafePipeHandle on Unix until after connection created
         public static void CreateWithNegativeOneServerInstances_DefaultsToMaxServerInstances()
         {
-            // When passed -1 as the maxnumberofserverisntances, the NamedPipeServerStream.Windows class
+            // When passed -1 as the maxNumberOfServerInstances, the NamedPipeServerStream.Windows class
             // will translate that to the platform specific maximum number (255)
             using (var server = new NamedPipeServerStream(PipeStreamConformanceTests.GetUniquePipeName(), PipeDirection.InOut, -1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             using (var server2 = new NamedPipeServerStream(PipeDirection.InOut, false, true, server.SafePipeHandle))

@@ -138,6 +138,9 @@
   <data name="net_WebSockets_ArgumentOutOfRange" xml:space="preserve">
     <value>The argument must be a value between {0} and {1}.</value>
   </data>
+  <data name="net_WebSockets_TimeoutOutOfRange" xml:space="preserve">
+    <value>The timeout must be a value between non-negative or Timeout.InfiniteTimeSpan.</value>
+  </data>
   <data name="net_Websockets_KeepAlivePingTimeout" xml:space="preserve">
     <value>The WebSocket didn't recieve a Pong frame in response to a Ping frame within the configured KeepAliveTimeout.</value>
   </data>

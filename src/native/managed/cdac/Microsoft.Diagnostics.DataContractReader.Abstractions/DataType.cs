@@ -108,6 +108,7 @@ public enum DataType
 
     TransitionBlock,
     DebuggerEval,
+    ArgumentRegisters,
     CalleeSavedRegisters,
     HijackArgs,
 

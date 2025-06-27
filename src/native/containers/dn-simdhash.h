@@ -8,6 +8,10 @@
 #include "dn-utils.h"
 #include "dn-allocator.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 // We reserve the last two bytes of each suffix vector to store data
 #define DN_SIMDHASH_MAX_BUCKET_CAPACITY 14
 // The ideal capacity depends on the size of your keys. For 4-byte keys, it is 12.
@@ -160,5 +164,9 @@ dn_simdhash_overflow_count (dn_simdhash_t *hash);
 //  of items. Will not shrink the table if it is already bigger.
 void
 dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity);
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 
 #endif // __DN_SIMDHASH_H__

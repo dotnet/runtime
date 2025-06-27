@@ -1550,14 +1550,13 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
 #endif
 
     //
-    // Rewire the blocks as needed.
+    // Set successor edge dup counts to 1 each
     //
 
-    comp->fgRemoveAllRefPreds(bbCase1, bbSwitch);
-    comp->fgRemoveAllRefPreds(bbCase0, bbSwitch);
-
-    case0Edge = comp->fgAddRefPred(bbCase0, bbSwitch, case0Edge);
-    case1Edge = comp->fgAddRefPred(bbCase1, bbSwitch, case1Edge);
+    bbCase0->bbRefs -= (case0Edge->getDupCount() - 1);
+    bbCase1->bbRefs -= (case1Edge->getDupCount() - 1);
+    case0Edge->decrementDupCount(case0Edge->getDupCount() - 1);
+    case1Edge->decrementDupCount(case1Edge->getDupCount() - 1);
 
     // If defaultLikelihood is not ~ 1.0
     //   up-scale case likelihoods by 1.0 / (1.0 - defaultLikelihood)

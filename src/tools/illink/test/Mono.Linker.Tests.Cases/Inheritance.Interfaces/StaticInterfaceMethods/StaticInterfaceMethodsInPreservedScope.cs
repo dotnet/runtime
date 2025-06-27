@@ -7,62 +7,64 @@ using Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods.Depe
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 {
-	[SetupCompileBefore ("library.dll", new[] { "Dependencies/Library.cs" })]
-	[SetupLinkerAction ("skip", "library")]
-	public static class StaticInterfaceMethodsInPreservedScope
-	{
-		[Kept]
-		public static void Main ()
-		{
-			var x = typeof (VirtualInterfaceMethods);
-			x = typeof (AbstractInterfaceMethods);
-			x = typeof (IStaticInterfaceWithDefaultImpls);
-			x = typeof (IStaticAbstractMethods);
-		}
+    [SetupCompileBefore("library.dll", new[] { "Dependencies/Library.cs" })]
+    [SetupLinkerAction("skip", "library")]
+    public static class StaticInterfaceMethodsInPreservedScope
+    {
+        [Kept]
+        public static void Main()
+        {
+            var x = typeof(VirtualInterfaceMethods);
+            x = typeof(AbstractInterfaceMethods);
+            x = typeof(IStaticInterfaceWithDefaultImpls);
+            x = typeof(IStaticAbstractMethods);
+        }
 
-		[Kept]
-		[KeptInterface (typeof (IStaticInterfaceWithDefaultImpls))]
-		public class VirtualInterfaceMethods : IStaticInterfaceWithDefaultImpls
-		{
-			[Kept]
-			static int IStaticInterfaceWithDefaultImpls.Property {
-				[Kept]
-				[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-				get => 1;
-				[Kept]
-				[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-				set => _ = value;
-			}
+        [Kept]
+        [KeptInterface(typeof(IStaticInterfaceWithDefaultImpls))]
+        public class VirtualInterfaceMethods : IStaticInterfaceWithDefaultImpls
+        {
+            [Kept]
+            static int IStaticInterfaceWithDefaultImpls.Property
+            {
+                [Kept]
+                [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+                get => 1;
+                [Kept]
+                [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+                set => _ = value;
+            }
 
-			[Kept]
-			[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-			static int IStaticInterfaceWithDefaultImpls.Method () => 1;
+            [Kept]
+            [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+            static int IStaticInterfaceWithDefaultImpls.Method() => 1;
 
-			// There is a default implementation and the type isn't instantiated, so we don't need this
-			int IStaticInterfaceWithDefaultImpls.InstanceMethod () => 0;
-		}
+            // There is a default implementation and the type isn't instantiated, so we don't need this
+            int IStaticInterfaceWithDefaultImpls.InstanceMethod() => 0;
+        }
 
-		[Kept]
-		[KeptInterface (typeof (IStaticAbstractMethods))]
-		public class AbstractInterfaceMethods : IStaticAbstractMethods
-		{
-			[Kept]
-			static int IStaticAbstractMethods.Property {
-				[Kept]
-				[KeptOverride (typeof (IStaticAbstractMethods))]
-				get => 1; [Kept]
-				[KeptOverride (typeof (IStaticAbstractMethods))]
-				set => _ = value;
-			}
+        [Kept]
+        [KeptInterface(typeof(IStaticAbstractMethods))]
+        public class AbstractInterfaceMethods : IStaticAbstractMethods
+        {
+            [Kept]
+            static int IStaticAbstractMethods.Property
+            {
+                [Kept]
+                [KeptOverride(typeof(IStaticAbstractMethods))]
+                get => 1; [Kept]
+                [KeptOverride(typeof(IStaticAbstractMethods))]
+                set => _ = value;
+            }
 
-			[Kept]
-			[KeptOverride (typeof (IStaticAbstractMethods))]
-			static int IStaticAbstractMethods.Method () => 1;
+            [Kept]
+            [KeptOverride(typeof(IStaticAbstractMethods))]
+            static int IStaticAbstractMethods.Method() => 1;
 
-			[Kept]
-			[KeptOverride (typeof (IStaticAbstractMethods))]
-			int IStaticAbstractMethods.InstanceMethod () => 0;
-		}
-	}
+            [Kept]
+            [KeptOverride(typeof(IStaticAbstractMethods))]
+            int IStaticAbstractMethods.InstanceMethod() => 0;
+        }
+    }
 }
 

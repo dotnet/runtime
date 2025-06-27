@@ -26,8 +26,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void AddMultiply<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, ReadOnlySpan<T> multiplier, Span<T> destination)
-            where T : IAdditionOperators<T, T, T>, IMultiplyOperators<T, T, T> =>
+            where T : IAdditionOperators<T, T, T>, IMultiplyOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, AddMultiplyOperator<float>>(x, y, multiplier, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanSpanIntoSpan<T, AddMultiplyOperator<T>>(x, y, multiplier, destination);
+        }
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> + <paramref name="y" />) * <paramref name="multiplier" /></c> for the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -47,8 +54,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void AddMultiply<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, T multiplier, Span<T> destination)
-            where T : IAdditionOperators<T, T, T>, IMultiplyOperators<T, T, T> =>
+            where T : IAdditionOperators<T, T, T>, IMultiplyOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, AddMultiplyOperator<float>>(x, y, multiplier, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanScalarIntoSpan<T, AddMultiplyOperator<T>>(x, y, multiplier, destination);
+        }
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> + <paramref name="y" />) * <paramref name="multiplier" /></c> for the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -68,12 +82,20 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void AddMultiply<T>(ReadOnlySpan<T> x, T y, ReadOnlySpan<T> multiplier, Span<T> destination)
-            where T : IAdditionOperators<T, T, T>, IMultiplyOperators<T, T, T> =>
+            where T : IAdditionOperators<T, T, T>, IMultiplyOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, AddMultiplyOperator<float>>(x, y, multiplier, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarSpanIntoSpan<T, AddMultiplyOperator<T>>(x, y, multiplier, destination);
+        }
 
         /// <summary>(x + y) * z</summary>
         internal readonly struct AddMultiplyOperator<T> : ITernaryOperator<T> where T : IAdditionOperators<T, T, T>, IMultiplyOperators<T, T, T>
         {
+            public static bool Vectorizable => true;
             public static T Invoke(T x, T y, T z) => (x + y) * z;
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z) => (x + y) * z;
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z) => (x + y) * z;

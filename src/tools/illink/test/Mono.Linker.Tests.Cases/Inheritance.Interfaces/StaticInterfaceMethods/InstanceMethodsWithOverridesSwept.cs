@@ -12,15 +12,15 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 {
-	/// <summary>
-	/// This test exercises the case where a public instance method has a .override directive pointing to an interface method when the interface method is not directly used for the type
-	/// Currently, the linker will always mark the .override method for instance methods, so there is not much testing required here.
-	/// However, if that were to change, this test should be updated to verify that the .override is removed if the .interfaceImpl is kept.
-	/// </summary>
-	[SetupLinkerArgument ("--skip-unresolved", "true")]
-	[Define ("IL_ASSEMBLY_AVAILABLE")]
-	[SetupCompileBefore ("library.dll", new string[] { "Dependencies/InstanceMethods.il" })]
-	[Kept]
+    /// <summary>
+    /// This test exercises the case where a public instance method has a .override directive pointing to an interface method when the interface method is not directly used for the type
+    /// Currently, the linker will always mark the .override method for instance methods, so there is not much testing required here.
+    /// However, if that were to change, this test should be updated to verify that the .override is removed if the .interfaceImpl is kept.
+    /// </summary>
+    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [Define("IL_ASSEMBLY_AVAILABLE")]
+    [SetupCompileBefore("library.dll", new string[] { "Dependencies/InstanceMethods.il" })]
+    [Kept]
 #if IL_ASSEMBLY_AVAILABLE
 	[KeptTypeInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodAccessedViaInterface))]
 	[KeptTypeInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodAccessedDirectly))]
@@ -55,11 +55,11 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 	[KeptInterfaceOnTypeInAssembly ("library.dll", "InstanceMethods/TypeWithMethodCalledDirectlyAndTwoGenericInterfacesUnreferenced", "library.dll", "InstanceMethods/IGeneric`1<System.Int32>")]
 	[KeptInterfaceOnTypeInAssembly ("library.dll", "InstanceMethods/TypeWithMethodCalledDirectlyAndTwoGenericInterfacesUnreferenced", "library.dll", "InstanceMethods/IGeneric`1<System.Single>")]
 #endif
-	public class InstanceMethodsWithOverridesSwept
-	{
-		[Kept]
-		public static void Main ()
-		{
+    public class InstanceMethodsWithOverridesSwept
+    {
+        [Kept]
+        public static void Main()
+        {
 #if IL_ASSEMBLY_AVAILABLE
 			InstanceMethods.Test ();
 			typeof (InstanceMethods.TypeWithMethodAccessedViaReflection).GetMethod ("GetInt").Invoke (null, null);
@@ -67,14 +67,14 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 			new InstanceMethods.TypeWithMethodCalledDirectlyAndRecursiveInterfaceUnreferenced ().GetInt ();
 			new InstanceMethods.TypeWithMethodCalledDirectlyAndTwoGenericInterfacesUnreferenced ().GetIntInt ();
 #endif
-			KeepTypeThroughDynamicDependency ();
-		}
+            KeepTypeThroughDynamicDependency();
+        }
 
 #if IL_ASSEMBLY_AVAILABLE
 		[DynamicDependency ("GetInt()", typeof (InstanceMethods.TypeWithMethodKeptByDynamicDependency))]
 #endif
-		[Kept]
-		public static void KeepTypeThroughDynamicDependency ()
-		{ }
-	}
+        [Kept]
+        public static void KeepTypeThroughDynamicDependency()
+        { }
+    }
 }

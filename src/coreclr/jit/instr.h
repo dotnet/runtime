@@ -295,6 +295,10 @@ enum insOpts: unsigned
 
     INS_OPTS_EVEX_NoApxPromotion = 1 << 12,    // Do not promote to APX-EVEX
 
+    INS_OPTS_APX_ppx = 1 << 13,      // PPX hint for APX-EVEX
+    // One-bit:  0b10_0000_0000_0000
+    INS_OPTS_APX_ppx_MASK = 0x2000,   // mask for APX-EVEX.ppx feature.
+
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)

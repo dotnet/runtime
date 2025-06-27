@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
     /// </summary>
     [DebuggerDisplay("{Name,nq}")]
     [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-    public sealed class SlhDsaAlgorithm
+    public sealed class SlhDsaAlgorithm : IEquatable<SlhDsaAlgorithm>
     {
         /// <summary>
         ///   Gets the underlying string representation of the algorithm name.
@@ -199,6 +199,61 @@ namespace System.Security.Cryptography
 
                 _ => null,
             };
+        }
+
+        /// <summary>
+        ///   Compares two <see cref="SlhDsaAlgorithm" /> objects.
+        /// </summary>
+        /// <param name="other">
+        ///   An object to be compared to the current <see cref="SlhDsaAlgorithm"/> object.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if the objects are considered equal; otherwise, <see langword="false" />.
+        /// </returns>
+        // This is a closed type, so all we need to compare are the names.
+        public bool Equals([NotNullWhen(true)] SlhDsaAlgorithm? other) => other is not null && other.Name == Name;
+
+        /// <inheritdoc />
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is SlhDsaAlgorithm alg && alg.Name == Name;
+
+        /// <inheritdoc />
+        public override int GetHashCode() => Name.GetHashCode();
+
+        /// <inheritdoc />
+        public override string ToString() => Name;
+
+        /// <summary>
+        ///   Determines whether two <see cref="SlhDsaAlgorithm" /> objects specify the same algorithm name.
+        /// </summary>
+        /// <param name="left">
+        ///   An object that specifies an algorithm name.
+        /// </param>
+        /// <param name="right">
+        ///   A second object, to be compared to the object that is identified by the <paramref name="left" /> parameter.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if the objects are considered equal; otherwise, <see langword="false" />.
+        /// </returns>
+        public static bool operator ==(SlhDsaAlgorithm? left, SlhDsaAlgorithm? right)
+        {
+            return left is null ? right is null : left.Equals(right);
+        }
+
+        /// <summary>
+        ///   Determines whether two <see cref="SlhDsaAlgorithm" /> objects do not specify the same algorithm name.
+        /// </summary>
+        /// <param name="left">
+        ///   An object that specifies an algorithm name.
+        /// </param>
+        /// <param name="right">
+        ///   A second object, to be compared to the object that is identified by the <paramref name="left" /> parameter.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if the objects are not considered equal; otherwise, <see langword="false" />.
+        /// </returns>
+        public static bool operator !=(SlhDsaAlgorithm? left, SlhDsaAlgorithm? right)
+        {
+            return !(left == right);
         }
 
         [DoesNotReturn]

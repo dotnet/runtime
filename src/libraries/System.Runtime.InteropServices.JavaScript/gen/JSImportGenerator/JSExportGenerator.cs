@@ -430,7 +430,7 @@ namespace Microsoft.Interop.JavaScript
             return LocalFunctionStatement(
                 returnType,
                 innerFunctionName)
-                .WithBody(stubGenerator.GenerateStubBody(IdentifierName(context.SignatureContext.MethodName)))
+                .WithBody(stubGenerator.GenerateStubBody(IdentifierName(TypeNames.GlobalAlias + context.SignatureContext.MethodName)))
                 .WithParameterList(parameters)
                 .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
                     Attribute(IdentifierName(Constants.DebuggerNonUserCodeAttribute))))));

@@ -7,7 +7,7 @@ using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
 namespace System.Security.Cryptography.Cose.Tests
 {
-    public abstract class CoseSign1MessageTests_Sign<T> : CoseMessageTests_Sign<T> where T : AsymmetricAlgorithm
+    public abstract class CoseSign1MessageTests_Sign<T> : CoseMessageTests_Sign<T> where T : IDisposable
     {
         internal override CoseMessageKind MessageKind => CoseMessageKind.Sign1;
 
@@ -35,6 +35,23 @@ namespace System.Security.Cryptography.Cose.Tests
     public class CoseSign1MessageTests_Sign_RSA : CoseSign1MessageTests_Sign<RSA>
     {
         internal override List<CoseAlgorithm> CoseAlgorithms => new() { CoseAlgorithm.PS256, CoseAlgorithm.PS384, CoseAlgorithm.PS512 };
+
+        internal override CoseMessage Decode(ReadOnlySpan<byte> cborPayload)
+            => CoseMessage.DecodeSign1(cborPayload);
+
+        internal override byte[] Sign(byte[] content, CoseSigner signer, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, byte[]? associatedData = null, bool isDetached = false)
+        {
+            return isDetached ?
+                CoseSign1Message.SignDetached(content, signer, associatedData) :
+                CoseSign1Message.SignEmbedded(content, signer, associatedData);
+        }
+    }
+
+    [ConditionalClass(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+    public class CoseSign1MessageTests_Sign_MLDsa : CoseSign1MessageTests_Sign<MLDsa>
+    {
+        internal override bool SupportsHashAlgorithm => false;
+        internal override List<CoseAlgorithm> CoseAlgorithms => new() { CoseAlgorithm.MLDsa44, CoseAlgorithm.MLDsa65, CoseAlgorithm.MLDsa87 };
 
         internal override CoseMessage Decode(ReadOnlySpan<byte> cborPayload)
             => CoseMessage.DecodeSign1(cborPayload);

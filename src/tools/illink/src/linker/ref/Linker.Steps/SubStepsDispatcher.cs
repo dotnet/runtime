@@ -5,14 +5,14 @@ using System.Collections.Generic;
 
 namespace Mono.Linker.Steps
 {
-	public abstract class SubStepsDispatcher : IStep
-	{
-		protected SubStepsDispatcher () => throw null;
+    public abstract class SubStepsDispatcher : IStep
+    {
+        protected SubStepsDispatcher() => throw null;
 
-		protected SubStepsDispatcher (IEnumerable<ISubStep> subSteps) => throw null;
+        protected SubStepsDispatcher(IEnumerable<ISubStep> subSteps) => throw null;
 
-		public void Add (ISubStep substep) => throw null;
+        public void Add(ISubStep substep) => throw null;
 
-		void IStep.Process (LinkContext context) => throw null;
-	}
+        void IStep.Process(LinkContext context) => throw null;
+    }
 }

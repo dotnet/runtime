@@ -1916,11 +1916,8 @@ void AsyncTransformation::CreateResumptionSwitch()
                 checkILOffsetBB->bbNum);
 
         // Redirect newEntryBB -> onContinuationBB into newEntryBB -> checkILOffsetBB -> onContinuationBB
-        m_comp->fgRemoveRefPred(newEntryBB->GetTrueEdge());
-
-        FlowEdge* toCheckILOffsetBB = m_comp->fgAddRefPred(checkILOffsetBB, newEntryBB);
-        newEntryBB->SetTrueEdge(toCheckILOffsetBB);
-        toCheckILOffsetBB->setLikelihood(0);
+        m_comp->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkILOffsetBB);
+        newEntryBB->GetTrueEdge()->setLikelihood(0);
         checkILOffsetBB->inheritWeightPercentage(newEntryBB, 0);
 
         FlowEdge* toOnContinuationBB = m_comp->fgAddRefPred(onContinuationBB, checkILOffsetBB);
@@ -1969,10 +1966,8 @@ void AsyncTransformation::CreateResumptionSwitch()
         BasicBlock* checkILOffsetBB    = m_comp->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
 
         // Switch newEntryBB -> onContinuationBB into newEntryBB -> checkILOffsetBB
-        m_comp->fgRemoveRefPred(newEntryBB->GetTrueEdge());
-        FlowEdge* toCheckILOffset = m_comp->fgAddRefPred(checkILOffsetBB, newEntryBB);
-        newEntryBB->SetTrueEdge(toCheckILOffset);
-        toCheckILOffset->setLikelihood(0);
+        m_comp->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkILOffsetBB);
+        newEntryBB->GetTrueEdge()->setLikelihood(0);
         checkILOffsetBB->inheritWeightPercentage(newEntryBB, 0);
 
         // Make checkILOffsetBB ->(true)  onNoContinuationBB

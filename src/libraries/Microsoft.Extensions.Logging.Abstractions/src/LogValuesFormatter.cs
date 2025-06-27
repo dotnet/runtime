@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.Logging
                     formatDelimiterIndex = formatDelimiterIndex < 0 ? closeBraceIndex : formatDelimiterIndex + openBraceIndex;
 
                     vsb.Append(format.AsSpan(scanIndex, openBraceIndex - scanIndex + 1));
-                    vsb.Append(_valueNames.Count.ToString());
+                    vsb.Append(_valueNames.Count.ToString(CultureInfo.InvariantCulture));
                     _valueNames.Add(format.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1));
                     vsb.Append(format.AsSpan(formatDelimiterIndex, closeBraceIndex - formatDelimiterIndex + 1));
 
@@ -270,7 +270,10 @@ namespace Microsoft.Extensions.Logging
                         vsb.Append(", ");
                     }
 
-                    vsb.Append(e != null ? e.ToString() : NullValue);
+                    vsb.Append(
+                        e is IFormattable f ? f.ToString(null, CultureInfo.InvariantCulture) :
+                        e is not null ? e.ToString() :
+                        NullValue);
                     first = false;
                 }
                 stringValue = vsb.ToString();

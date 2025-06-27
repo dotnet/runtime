@@ -6,14 +6,14 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.RecursiveInterfaces
 {
-	/// <summary>
-	/// This tests that when a type implements an interface recursively (via implementations on implemented interfaces),
-	/// the interface implementations kept are in type declaration order according to ECMA-335 12.2
-	/// </summary>
-	[TestCaseRequirements (TestRunCharacteristics.SupportsDefaultInterfaceMethods, "Requires support for default interface methods")]
-	[Define ("IL_ASSEMBLY_AVAILABLE")]
-	[SetupCompileBefore ("library.dll", new[] { "Dependencies/RecursiveInterfaceTwoImplementationPaths.il" })]
-	[SkipILVerify]
+    /// <summary>
+    /// This tests that when a type implements an interface recursively (via implementations on implemented interfaces),
+    /// the interface implementations kept are in type declaration order according to ECMA-335 12.2
+    /// </summary>
+    [TestCaseRequirements(TestRunCharacteristics.SupportsDefaultInterfaceMethods, "Requires support for default interface methods")]
+    [Define("IL_ASSEMBLY_AVAILABLE")]
+    [SetupCompileBefore("library.dll", new[] { "Dependencies/RecursiveInterfaceTwoImplementationPaths.il" })]
+    [SkipILVerify]
 #if IL_ASSEMBLY_AVAILABLE
 	[KeptTypeInAssembly ("library.dll", typeof(Library.MyClass))]
 	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Library.MyClass), "library.dll", typeof (Library.I0100))]
@@ -24,13 +24,13 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.RecursiveInterfaces
 	[RemovedTypeInAssembly("library.dll", typeof(Library.I000))]
 	[RemovedInterfaceOnTypeInAssembly("library.dll", typeof (Library.MyClass), "library.dll", typeof (Library.I000))]
 #endif
-	public class RecursiveInterfaceKept
-	{
-		public static void Main()
-		{
+    public class RecursiveInterfaceKept
+    {
+        public static void Main()
+        {
 #if IL_ASSEMBLY_AVAILABLE
 			Library.I0 _ = new Library.MyClass();
 #endif
-		}
-	}
+        }
+    }
 }

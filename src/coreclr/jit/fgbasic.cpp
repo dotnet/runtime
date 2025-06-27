@@ -481,6 +481,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
 {
     assert(block != nullptr);
     assert(fgPredsComputed);
+    assert(fgGetPredForBlock(oldTarget, block) != nullptr);
 
     switch (block->GetKind())
     {
@@ -491,36 +492,21 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE: // This function can be called before import, so we still have BBJ_LEAVE
             assert(block->TargetIs(oldTarget));
-            fgRedirectTargetEdge(block, newTarget);
+            fgRedirectEdge(block->TargetEdgeRef(), newTarget);
             break;
 
         case BBJ_COND:
             if (block->TrueTargetIs(oldTarget))
             {
-                if (block->FalseEdgeIs(block->GetTrueEdge()))
-                {
-                    // Branch was degenerate, simplify it first
-                    //
-                    fgRemoveConditionalJump(block);
-                    assert(block->KindIs(BBJ_ALWAYS));
-                    assert(block->TargetIs(oldTarget));
-                    fgRedirectTargetEdge(block, newTarget);
-                }
-                else
-                {
-                    fgRedirectTrueEdge(block, newTarget);
-                }
+                fgRedirectEdge(block->TrueEdgeRef(), newTarget);
             }
             else
             {
-                // Already degenerate cases should have taken the true path above
-                //
                 assert(block->FalseTargetIs(oldTarget));
-                assert(!block->TrueEdgeIs(block->GetFalseEdge()));
-                fgRedirectFalseEdge(block, newTarget);
+                fgRedirectEdge(block->FalseEdgeRef(), newTarget);
             }
 
-            if (block->KindIs(BBJ_COND) && block->TrueEdgeIs(block->GetFalseEdge()))
+            if (block->TrueEdgeIs(block->GetFalseEdge()))
             {
                 // Block became degenerate, simplify
                 //
@@ -4132,7 +4118,7 @@ void Compiler::fgFixEntryFlowForOSR()
     fgCreateNewInitBB();
     assert(fgFirstBB->KindIs(BBJ_ALWAYS));
 
-    fgRedirectTargetEdge(fgFirstBB, fgOSREntryBB);
+    fgRedirectEdge(fgFirstBB->TargetEdgeRef(), fgOSREntryBB);
 
     fgFirstBB->bbWeight = fgCalledCount;
     fgFirstBB->CopyFlags(fgEntryBB, BBF_PROF_WEIGHT);

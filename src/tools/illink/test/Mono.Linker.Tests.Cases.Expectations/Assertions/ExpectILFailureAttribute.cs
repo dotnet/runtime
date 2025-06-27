@@ -5,10 +5,10 @@ using System;
 
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-[AttributeUsage (AttributeTargets.Class, AllowMultiple = true)]
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 public class ExpectILFailureAttribute : BaseExpectedLinkedBehaviorAttribute
 {
-	public ExpectILFailureAttribute (params string[] messageContains)
-	{
-	}
+    public ExpectILFailureAttribute(params string[] messageContains)
+    {
+    }
 }

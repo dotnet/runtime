@@ -4492,9 +4492,9 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                     printf("EH#%u: Updating target for filter ret block: " FMT_BB " => " FMT_BB "\n", ehGetIndex(HBtab),
                            bFilterLast->bbNum, bPrev->bbNum);
                 }
-#endif // DEBUG
-       // Change the target for bFilterLast from the old first 'block' to the new first 'bPrev'
-                fgRedirectTargetEdge(bFilterLast, bPrev);
+#endif
+                // Change the target for bFilterLast from the old first 'block' to the new first 'bPrev'
+                fgRedirectEdge(bFilterLast->TargetEdgeRef(), bPrev);
             }
         }
 

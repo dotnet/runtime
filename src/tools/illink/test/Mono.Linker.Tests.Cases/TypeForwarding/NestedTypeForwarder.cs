@@ -6,9 +6,9 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.TypeForwarding;
 
-[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/ForwardedNestedTypeLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
-[SetupCompileBefore ("Implementation.dll", new[] { "Dependencies/ForwardedNestedTypeLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
-[SetupCompileAfter ("Forwarder.dll", new[] { "Dependencies/ForwardedNestedTypeLibrary.cs" }, references: new[] { "Implementation.dll" }, defines: new[] { "INCLUDE_FORWARDERS" })]
+[SetupCompileBefore("Forwarder.dll", new[] { "Dependencies/ForwardedNestedTypeLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
+[SetupCompileBefore("Implementation.dll", new[] { "Dependencies/ForwardedNestedTypeLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
+[SetupCompileAfter("Forwarder.dll", new[] { "Dependencies/ForwardedNestedTypeLibrary.cs" }, references: new[] { "Implementation.dll" }, defines: new[] { "INCLUDE_FORWARDERS" })]
 [SetupLinkerDescriptorFile("NestedTypeForwarder.xml")]
 [KeptAssembly("Forwarder.dll")]
 [KeptTypeInAssembly("Forwarder.dll", "Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.ForwardedNestedTypeLibrary")]
@@ -17,8 +17,8 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding;
 [KeptTypeInAssembly("Forwarder.dll", "Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.ForwardedNestedTypeLibrary/NestedOne/NestedTwo/NestedThree")]
 public class NestedTypeForwarder
 {
-	public static void Main ()
-	{
+    public static void Main()
+    {
 
-	}
+    }
 }

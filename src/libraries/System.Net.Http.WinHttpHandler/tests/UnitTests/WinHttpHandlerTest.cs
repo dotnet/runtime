@@ -121,7 +121,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 
             SendRequestHelper.Send(
                 handler,
-                () => handler.TcpKeepAliveEnabled = false );
+                () => handler.TcpKeepAliveEnabled = false);
             Assert.Null(APICallHistory.WinHttpOptionTcpKeepAlive);
         }
 

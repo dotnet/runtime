@@ -21,8 +21,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void CopySign<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> sign, Span<T> destination)
-            where T : INumber<T> =>
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, CopySignOperator<float>>(x, sign, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, CopySignOperator<T>>(x, sign, destination);
+        }
 
         /// <summary>Computes the element-wise result of copying the sign from one number to another number in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -36,8 +43,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void CopySign<T>(ReadOnlySpan<T> x, T sign, Span<T> destination)
-            where T : INumber<T> =>
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, CopySignOperator<float>>(x, sign, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarIntoSpan<T, CopySignOperator<T>>(x, sign, destination);
+        }
 
         private readonly struct CopySignOperator<T> : IBinaryOperator<T> where T : INumber<T>
         {

@@ -449,6 +449,8 @@ namespace System.Threading
         /// </remarks>
         [System.Runtime.BypassReadyToRunAttribute]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         internal static unsafe StaticsHelpers.ThreadLocalData* GetThreadStaticsBase()
         {
             return (StaticsHelpers.ThreadLocalData*)(((byte*)Unsafe.AsPointer(ref DirectOnThreadLocalData.pNativeThread)) - sizeof(StaticsHelpers.ThreadLocalData));

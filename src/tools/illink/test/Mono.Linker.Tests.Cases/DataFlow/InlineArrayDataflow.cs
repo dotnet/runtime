@@ -10,67 +10,67 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[SkipKeptItemsValidation]
-	[ExpectedNoWarnings]
-	public class InlineArrayDataflow
-	{
-		public static void Main ()
-		{
-			AccessPrimitiveTypeArray ();
-			AccessUnannotatedTypeArray ();
-			AccessAnnotatedTypeArray ();
-		}
+    [SkipKeptItemsValidation]
+    [ExpectedNoWarnings]
+    public class InlineArrayDataflow
+    {
+        public static void Main()
+        {
+            AccessPrimitiveTypeArray();
+            AccessUnannotatedTypeArray();
+            AccessAnnotatedTypeArray();
+        }
 
-		public int TestProperty { get; set; }
+        public int TestProperty { get; set; }
 
-		[InlineArray (5)]
-		struct PrimitiveTypeArray
-		{
-			public BindingFlags value;
-		}
+        [InlineArray(5)]
+        struct PrimitiveTypeArray
+        {
+            public BindingFlags value;
+        }
 
-		// This case will fallback to not understanding the binding flags and will end up marking all properties
-		static void AccessPrimitiveTypeArray ()
-		{
-			PrimitiveTypeArray a = new PrimitiveTypeArray ();
-			ref var item = ref a[1];
-			item = BindingFlags.Public;
+        // This case will fallback to not understanding the binding flags and will end up marking all properties
+        static void AccessPrimitiveTypeArray()
+        {
+            PrimitiveTypeArray a = new PrimitiveTypeArray();
+            ref var item = ref a[1];
+            item = BindingFlags.Public;
 
-			typeof (InlineArrayDataflow).GetProperty (nameof (TestProperty), a[1]);
-		}
+            typeof(InlineArrayDataflow).GetProperty(nameof(TestProperty), a[1]);
+        }
 
-		[InlineArray (5)]
-		struct UnannotatedTypeArray
-		{
-			public Type value;
-		}
+        [InlineArray(5)]
+        struct UnannotatedTypeArray
+        {
+            public Type value;
+        }
 
-		[ExpectedWarning ("IL2065", "GetProperty")]
-		static void AccessUnannotatedTypeArray ()
-		{
-			UnannotatedTypeArray a = new UnannotatedTypeArray ();
-			ref var item = ref a[2];
-			item = typeof (InlineArrayDataflow);
+        [ExpectedWarning("IL2065", "GetProperty")]
+        static void AccessUnannotatedTypeArray()
+        {
+            UnannotatedTypeArray a = new UnannotatedTypeArray();
+            ref var item = ref a[2];
+            item = typeof(InlineArrayDataflow);
 
-			a[2].GetProperty (nameof (TestProperty));
-		}
+            a[2].GetProperty(nameof(TestProperty));
+        }
 
-		[InlineArray (5)]
-		struct AnnotatedTypeArray
-		{
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
-			public Type value;
-		}
+        [InlineArray(5)]
+        struct AnnotatedTypeArray
+        {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+            public Type value;
+        }
 
-		// Currently tracking of annotations on inline array values is not implemented
-		[ExpectedWarning ("IL2065", "GetProperty")]
-		static void AccessAnnotatedTypeArray ()
-		{
-			AnnotatedTypeArray a = new AnnotatedTypeArray ();
-			ref var item = ref a[3];
-			item = typeof (InlineArrayDataflow);
+        // Currently tracking of annotations on inline array values is not implemented
+        [ExpectedWarning("IL2065", "GetProperty")]
+        static void AccessAnnotatedTypeArray()
+        {
+            AnnotatedTypeArray a = new AnnotatedTypeArray();
+            ref var item = ref a[3];
+            item = typeof(InlineArrayDataflow);
 
-			a[3].GetProperty (nameof (TestProperty));
-		}
-	}
+            a[3].GetProperty(nameof(TestProperty));
+        }
+    }
 }

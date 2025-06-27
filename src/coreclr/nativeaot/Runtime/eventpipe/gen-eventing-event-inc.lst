@@ -83,8 +83,8 @@ GenAwareBegin
 GenAwareEnd
 IncreaseMemoryPressure
 LockCreated
-ModuleDCEnd_V2
-ModuleLoad_V2
+ModuleDCEnd_V3
+ModuleLoad_V3
 PinObjectAtGCTime
 PinPlugAtGCTime
 PrvDestroyGCHandle

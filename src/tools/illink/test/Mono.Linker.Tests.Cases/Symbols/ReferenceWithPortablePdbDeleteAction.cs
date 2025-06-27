@@ -4,23 +4,23 @@ using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Symbols
 {
-	[SetupCompileBefore ("LibraryWithPortablePdbSymbols.dll", new[] { "Dependencies/LibraryWithPortablePdbSymbols.cs" }, additionalArguments: new[] { "/debug:portable" }, compilerToUse: "csc")]
-	[SetupLinkerLinkSymbols ("false")]
+    [SetupCompileBefore("LibraryWithPortablePdbSymbols.dll", new[] { "Dependencies/LibraryWithPortablePdbSymbols.cs" }, additionalArguments: new[] { "/debug:portable" }, compilerToUse: "csc")]
+    [SetupLinkerLinkSymbols("false")]
 
-	[RemovedAssembly ("LibraryWithPortablePdbSymbols.dll")]
-	[RemovedSymbols ("LibraryWithPortablePdbSymbols.dll")]
-	public class ReferenceWithPortablePdbDeleteAction
-	{
-		static void Main ()
-		{
-		}
+    [RemovedAssembly("LibraryWithPortablePdbSymbols.dll")]
+    [RemovedSymbols("LibraryWithPortablePdbSymbols.dll")]
+    public class ReferenceWithPortablePdbDeleteAction
+    {
+        static void Main()
+        {
+        }
 
-		/// <summary>
-		/// By not using this method we will cause the trimmer to delete the reference
-		/// </summary>
-		static void UnusedCodePath ()
-		{
-			LibraryWithPortablePdbSymbols.SomeMethod ();
-		}
-	}
+        /// <summary>
+        /// By not using this method we will cause the trimmer to delete the reference
+        /// </summary>
+        static void UnusedCodePath()
+        {
+            LibraryWithPortablePdbSymbols.SomeMethod();
+        }
+    }
 }

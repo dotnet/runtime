@@ -4412,6 +4412,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Try and resolve GDV checks if improved types were found during inlining
+        //
+        DoPhase(this, PHASE_RESOLVE_GDVS, &Compiler::fgResolveGDVs);
+
         // Build post-order and remove dead blocks
         //
         DoPhase(this, PHASE_DFS_BLOCKS1, &Compiler::fgDfsBlocksAndRemove);

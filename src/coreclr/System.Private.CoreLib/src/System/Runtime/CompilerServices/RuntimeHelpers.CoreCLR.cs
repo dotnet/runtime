@@ -385,7 +385,8 @@ namespace System.Runtime.CompilerServices
             throw new InvalidOperationException();
         }
 #endif
-
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
 
@@ -625,6 +626,8 @@ namespace System.Runtime.CompilerServices
         public IntPtr CodeData;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         private MethodDescChunk* GetMethodDescChunk() => (MethodDescChunk*)(((byte*)Unsafe.AsPointer<MethodDesc>(ref this)) - (sizeof(MethodDescChunk) + ChunkIndex * sizeof(IntPtr)));
 
         public MethodTable* MethodTable => GetMethodDescChunk()->MethodTable;
@@ -962,6 +965,8 @@ namespace System.Runtime.CompilerServices
         /// Given a statics pointer in the DynamicStaticsInfo, get the actual statics pointer.
         /// If the class it initialized, this mask is not necessary
         /// </summary>
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         internal static ref byte MaskStaticsPointer(ref byte staticsPtr)
         {
             fixed (byte* p = &staticsPtr)
@@ -1052,12 +1057,16 @@ namespace System.Runtime.CompilerServices
         public bool IsClassInitedAndActive => (Volatile.Read(ref Flags) & (enum_flag_Initialized | enum_flag_EnsuredInstanceActive)) == (enum_flag_Initialized | enum_flag_EnsuredInstanceActive);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public ref DynamicStaticsInfo GetDynamicStaticsInfo()
         {
             return ref Unsafe.Subtract(ref Unsafe.As<MethodTableAuxiliaryData, DynamicStaticsInfo>(ref this), 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public ref ThreadStaticsInfo GetThreadStaticsInfo()
         {
             return ref Unsafe.Subtract(ref Unsafe.As<MethodTableAuxiliaryData, ThreadStaticsInfo>(ref this), 1);

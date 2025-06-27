@@ -1,21 +1,21 @@
 ﻿namespace Mono.Linker.Tests.Cases.References.Individual.Dependencies
 {
-	public class CanSkipUnresolved_Library
-	{
-		public class TypeWithMissingMethod
-		{
+    public class CanSkipUnresolved_Library
+    {
+        public class TypeWithMissingMethod
+        {
 #if !EXCLUDE_STUFF
-			public void GoingToBeMissing ()
-			{
+            public void GoingToBeMissing()
+            {
 
-			}
+            }
 #endif
-		}
+        }
 
 #if !EXCLUDE_STUFF
-		public class TypeThatWillBeMissing
-		{
-		}
+        public class TypeThatWillBeMissing
+        {
+        }
 #endif
-	}
+    }
 }

@@ -5,15 +5,14 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal class HijackArgsARM64 : IData<HijackArgsARM64>
+internal class ArgumentRegisters : IData<ArgumentRegisters>
 {
-    static HijackArgsARM64 IData<HijackArgsARM64>.Create(Target target, TargetPointer address)
-        => new HijackArgsARM64(target, address);
+    static ArgumentRegisters IData<ArgumentRegisters>.Create(Target target, TargetPointer address)
+        => new ArgumentRegisters(target, address);
 
-    public HijackArgsARM64(Target target, TargetPointer address)
+    public ArgumentRegisters(Target target, TargetPointer address)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.HijackArgs);
-
+        Target.TypeInfo type = target.GetTypeInfo(DataType.ArgumentRegisters);
         Dictionary<string, TargetNUInt> registers = new Dictionary<string, TargetNUInt>(type.Fields.Count);
         foreach ((string name, Target.FieldInfo field) in type.Fields)
         {

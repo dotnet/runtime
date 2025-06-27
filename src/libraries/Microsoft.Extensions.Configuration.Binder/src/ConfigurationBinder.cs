@@ -311,7 +311,8 @@ namespace Microsoft.Extensions.Configuration
             // For property binding, there are some cases when HasNewValue is not set in BindingPoint while a non-null Value inside that object can be retrieved from the property getter.
             // As example, when binding a property which not having a configuration entry matching this property and the getter can initialize the Value.
             // It is important to call the property setter as the setters can have a logic adjusting the Value.
-            if (!propertyBindingPoint.IsReadOnly && propertyBindingPoint.Value is not null)
+            // Otherwise, if the HasNewValue set to true, it means that the property setter should be called anyway as encountering a new value.
+            if (!propertyBindingPoint.IsReadOnly && (propertyBindingPoint.Value is not null || propertyBindingPoint.HasNewValue))
             {
                 property.SetValue(instance, propertyBindingPoint.Value);
             }
@@ -338,13 +339,39 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            var section = config as IConfigurationSection;
-            string? configValue = section?.Value;
-            if (configValue != null && TryConvertValue(type, configValue, section?.Path, out object? convertedValue, out Exception? error))
+            IConfigurationSection? section;
+            string? configValue;
+            bool isConfigurationExist;
+
+            if (config is ConfigurationSection configSection)
+            {
+                section = configSection;
+                isConfigurationExist = configSection.TryGetValue(key:null, out configValue);
+            }
+            else
+            {
+                section = config as IConfigurationSection;
+                configValue = section?.Value;
+                isConfigurationExist = configValue != null;
+            }
+
+            if (isConfigurationExist && TryConvertValue(type, configValue, section?.Path, out object? convertedValue, out Exception? error))
             {
                 if (error != null)
                 {
                     throw error;
+                }
+
+                if (type == typeof(byte[]) && bindingPoint.Value is byte[] byteArray && byteArray.Length > 0)
+                {
+                    if (convertedValue is byte[] convertedByteArray && convertedByteArray.Length > 0)
+                    {
+                        Array a = Array.CreateInstance(type.GetElementType()!, byteArray.Length + convertedByteArray.Length);
+                        Array.Copy(byteArray, a, byteArray.Length);
+                        Array.Copy(convertedByteArray, 0, a, byteArray.Length, convertedByteArray.Length);
+                        bindingPoint.TrySetValue(a);
+                    }
+                    return;
                 }
 
                 // Leaf nodes are always reinitialized
@@ -476,13 +503,29 @@ namespace Microsoft.Extensions.Configuration
                     if (options.ErrorOnUnknownConfiguration)
                     {
                         Debug.Assert(section is not null);
-                        throw new InvalidOperationException(SR.Format(SR.Error_FailedBinding, section.Path, type));
+                        throw new InvalidOperationException(SR.Format(SR.Error_FailedBinding, configValue, section.Path, type));
                     }
                 }
-                else if (isParentCollection && bindingPoint.Value is null)
+                else
                 {
-                    // Try to create the default instance of the type
-                    bindingPoint.TrySetValue(CreateInstance(type, config, options, out _));
+                    if (isParentCollection && bindingPoint.Value is null)
+                    {
+                        // Try to create the default instance of the type
+                        bindingPoint.TrySetValue(CreateInstance(type, config, options, out _));
+                    }
+                    else if (isConfigurationExist && bindingPoint.Value is null)
+                    {
+                        // Don't override the existing array in bindingPoint.Value if it is already set.
+                        if (type.IsArray || IsImmutableArrayCompatibleInterface(type))
+                        {
+                            // When having configuration value set to empty string, we create an empty array
+                            bindingPoint.TrySetValue(configValue is null ? null : Array.CreateInstance(type.GetElementType()!, 0));
+                        }
+                        else
+                        {
+                            bindingPoint.TrySetValue(bindingPoint.Value); // force setting null value
+                        }
+                    }
                 }
             }
         }
@@ -930,7 +973,7 @@ namespace Microsoft.Extensions.Configuration
         private static bool TryConvertValue(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
-            string value, string? path, out object? result, out Exception? error)
+            string? value, string? path, out object? result, out Exception? error)
         {
             error = null;
             result = null;
@@ -954,11 +997,14 @@ namespace Microsoft.Extensions.Configuration
             {
                 try
                 {
-                    result = converter.ConvertFromInvariantString(value);
+                    if (value is not null)
+                    {
+                        result = converter.ConvertFromInvariantString(value);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    error = new InvalidOperationException(SR.Format(SR.Error_FailedBinding, path, type), ex);
+                    error = new InvalidOperationException(SR.Format(SR.Error_FailedBinding, value, path, type), ex);
                 }
                 return true;
             }
@@ -967,11 +1013,14 @@ namespace Microsoft.Extensions.Configuration
             {
                 try
                 {
-                    result = Convert.FromBase64String(value);
+                    if (value is not null )
+                    {
+                        result = value == string.Empty ? Array.Empty<byte>() : Convert.FromBase64String(value);
+                    }
                 }
                 catch (FormatException ex)
                 {
-                    error = new InvalidOperationException(SR.Format(SR.Error_FailedBinding, path, type), ex);
+                    error = new InvalidOperationException(SR.Format(SR.Error_FailedBinding, value, path, type), ex);
                 }
                 return true;
             }

@@ -11,19 +11,9 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
 {
     private readonly ContextHolder<X86Context> _context = contextHolder;
 
-
-    public void HandleFaultingExceptionFrame(FaultingExceptionFrame frame)
-    {
-        _context.ReadFromAddress(_target, frame.TargetContext);
-
-        // Clear the CONTEXT_XSTATE, since the X86Context contains just plain CONTEXT structure
-        // that does not support holding any extended state.
-        _context.Context.ContextFlags &= ~(uint)(ContextFlagsValues.CONTEXT_XSTATE & ContextFlagsValues.CONTEXT_AREA_MASK);
-    }
-
     public void HandleHijackFrame(HijackFrame frame)
     {
-        HijackArgsX86 args = _target.ProcessedData.GetOrAdd<HijackArgsX86>(frame.HijackArgsPtr);
+        HijackArgs args = _target.ProcessedData.GetOrAdd<HijackArgs>(frame.HijackArgsPtr);
 
         // The stack pointer is the address immediately following HijackArgs
         uint hijackArgsSize = _target.GetTypeInfo(DataType.HijackArgs).Size ?? throw new InvalidOperationException("HijackArgs size is not set");
@@ -45,6 +35,15 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
 
         CalleeSavedRegisters calleeSavedRegisters = _target.ProcessedData.GetOrAdd<Data.CalleeSavedRegisters>(frame.CalleeSavedRegisters);
         UpdateFromRegisterDict(calleeSavedRegisters.Registers);
+    }
+
+    public override void HandleFaultingExceptionFrame(FaultingExceptionFrame frame)
+    {
+        base.HandleFaultingExceptionFrame(frame);
+
+        // Clear the CONTEXT_XSTATE, since the X86Context contains just plain CONTEXT structure
+        // that does not support holding any extended state.
+        _context.Context.ContextFlags &= ~(uint)(ContextFlagsValues.CONTEXT_XSTATE & ContextFlagsValues.CONTEXT_AREA_MASK);
     }
 
     public override void HandleFuncEvalFrame(FuncEvalFrame funcEvalFrame)

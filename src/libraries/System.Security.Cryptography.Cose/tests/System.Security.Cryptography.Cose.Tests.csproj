@@ -3,6 +3,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
+    <DefineConstants>$(DefineConstants);EXCLUDE_PEM_ENCODING_FROM_TEST_DATA</DefineConstants>
+    <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +16,12 @@
     </Compile>
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs">
       <Link>CommonTest\System\Security\Cryptography\CngKeyWrapper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Experimentals.cs">
       <Link>Common\Experimentals.cs</Link>
@@ -41,10 +49,6 @@
     <Compile Include="CoseSign1MessageTests.Verify.cs" />
     <Compile Include="CoseSignerTests.cs" />
     <Compile Include="CoseTestHelpers.cs" />
-    <Compile Include="CoseTestKey.cs" />
-    <Compile Include="CoseTestKeyManager.cs" />
-    <Compile Include="CoseTestMultiSign.cs" />
-    <Compile Include="CoseTestSign1.cs" />
     <Compile Include="CoseKeyTests.SignVerify.cs" />
   </ItemGroup>
 

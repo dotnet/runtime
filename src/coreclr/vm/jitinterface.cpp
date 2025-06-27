@@ -11725,16 +11725,24 @@ void CEEJitInfo::recordRelocation(void * location,
                 }
                 else
                 {
-                    //
-                    // When m_fAllowRel32 == FALSE, the JIT will use a REL32s for direct code targets only.
-                    // Use jump stub.
-                    //
-                    delta = rel32UsingJumpStub(fixupLocation, (PCODE)target, m_pMethodBeingCompiled, NULL, false /* throwOnOutOfMemoryWithinRange */);
-                    if (delta == 0)
+                    if (m_fJumpStubOverflow)
                     {
-                        // This forces the JIT to retry the method, which allows us to reserve more space for jump stubs and have a higher chance that
-                        // we will find space for them.
-                        m_fJumpStubOverflow = TRUE;
+                        // Do not attempt to allocate more jump stubs. We are going to throw away the code and retry anyway.
+                        delta = 0;
+                    }
+                    else
+                    {
+                        //
+                        // When m_fAllowRel32 == FALSE, the JIT will use a REL32s for direct code targets only.
+                        // Use jump stub.
+                        //
+                        delta = rel32UsingJumpStub(fixupLocation, (PCODE)target, m_pMethodBeingCompiled, NULL, false /* throwOnOutOfMemoryWithinRange */);
+                        if (delta == 0)
+                        {
+                            // This forces the JIT to retry the method, which allows us to reserve more space for jump stubs and have a higher chance that
+                            // we will find space for them.
+                            m_fJumpStubOverflow = TRUE;
+                        }
                     }
 
                     // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it to reserve extra memory
@@ -11777,24 +11785,35 @@ void CEEJitInfo::recordRelocation(void * location,
             //
             if (!FitsInRel28(delta))
             {
-                // Use jump stub.
-                //
-                TADDR baseAddr = (TADDR)fixupLocation;
-                TADDR loAddr   = baseAddr - 0x08000000;   // -2^27
-                TADDR hiAddr   = baseAddr + 0x07FFFFFF;   // +2^27-1
+                TADDR jumpStubAddr;
 
-                // Check for the wrap around cases
-                if (loAddr > baseAddr)
-                    loAddr = UINT64_MIN; // overflow
-                if (hiAddr < baseAddr)
-                    hiAddr = UINT64_MAX; // overflow
+                if (m_fJumpStubOverflow)
+                {
+                    // Do not attempt to allocate more jump stubs. We are going to throw away the code and retry anyway.
+                    jumpStubAddr = 0;
+                }
+                else
+                {
 
-                PCODE jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled,
-                                                                (PCODE)  target,
-                                                                (BYTE *) loAddr,
-                                                                (BYTE *) hiAddr,
-                                                                NULL,
-                                                                false);
+                    // Use jump stub.
+                    //
+                    TADDR baseAddr = (TADDR)fixupLocation;
+                    TADDR loAddr   = baseAddr - 0x08000000;   // -2^27
+                    TADDR hiAddr   = baseAddr + 0x07FFFFFF;   // +2^27-1
+
+                    // Check for the wrap around cases
+                    if (loAddr > baseAddr)
+                        loAddr = UINT64_MIN; // overflow
+                    if (hiAddr < baseAddr)
+                        hiAddr = UINT64_MAX; // overflow
+
+                    jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled,
+                                                              (PCODE)  target,
+                                                              (BYTE *) loAddr,
+                                                              (BYTE *) hiAddr,
+                                                              NULL,
+                                                              false);
+                }
 
                 // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it to reserve extra memory
                 // on retry to increase chances that the retry succeeds.

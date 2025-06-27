@@ -13,192 +13,207 @@ using Mono.Linker.Tests.TestCases;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class TestCaseMetadataProvider : BaseMetadataProvider
-	{
-		public TestCaseMetadataProvider (TestCase testCase, AssemblyDefinition fullTestCaseAssemblyDefinition)
-			: base (testCase, fullTestCaseAssemblyDefinition)
-		{
-		}
+    public class TestCaseMetadataProvider : BaseMetadataProvider
+    {
+        public TestCaseMetadataProvider(TestCase testCase, AssemblyDefinition fullTestCaseAssemblyDefinition)
+            : base(testCase, fullTestCaseAssemblyDefinition)
+        {
+        }
 
-		public virtual TestCaseLinkerOptions GetLinkerOptions (NPath inputPath)
-		{
-			var tclo = new TestCaseLinkerOptions {
-				Il8n = GetOptionAttributeValue (nameof (Il8nAttribute), "none"),
-				IgnoreDescriptors = GetOptionAttributeValue (nameof (IgnoreDescriptorsAttribute), true),
-				IgnoreSubstitutions = GetOptionAttributeValue (nameof (IgnoreSubstitutionsAttribute), true),
-				IgnoreLinkAttributes = GetOptionAttributeValue (nameof (IgnoreLinkAttributesAttribute), true),
-				LinkSymbols = GetOptionAttributeValue (nameof (SetupLinkerLinkSymbolsAttribute), string.Empty),
-				TrimMode = GetOptionAttributeValue<string> (nameof (SetupLinkerTrimModeAttribute), null),
-				DefaultAssembliesAction = GetOptionAttributeValue<string> (nameof (SetupLinkerDefaultActionAttribute), null),
-				SkipUnresolved = GetOptionAttributeValue (nameof (SkipUnresolvedAttribute), false),
-				StripDescriptors = GetOptionAttributeValue (nameof (StripDescriptorsAttribute), true),
-				StripSubstitutions = GetOptionAttributeValue (nameof (StripSubstitutionsAttribute), true),
-				StripLinkAttributes = GetOptionAttributeValue (nameof (StripLinkAttributesAttribute), true),
-				DumpDependencies = GetOptionAttribute (nameof (DumpDependenciesAttribute)),
-			};
+        public virtual TestCaseLinkerOptions GetLinkerOptions(NPath inputPath)
+        {
+            var tclo = new TestCaseLinkerOptions
+            {
+                Il8n = GetOptionAttributeValue(nameof(Il8nAttribute), "none"),
+                IgnoreDescriptors = GetOptionAttributeValue(nameof(IgnoreDescriptorsAttribute), true),
+                IgnoreSubstitutions = GetOptionAttributeValue(nameof(IgnoreSubstitutionsAttribute), true),
+                IgnoreLinkAttributes = GetOptionAttributeValue(nameof(IgnoreLinkAttributesAttribute), true),
+                LinkSymbols = GetOptionAttributeValue(nameof(SetupLinkerLinkSymbolsAttribute), string.Empty),
+                TrimMode = GetOptionAttributeValue<string>(nameof(SetupLinkerTrimModeAttribute), null),
+                DefaultAssembliesAction = GetOptionAttributeValue<string>(nameof(SetupLinkerDefaultActionAttribute), null),
+                SkipUnresolved = GetOptionAttributeValue(nameof(SkipUnresolvedAttribute), false),
+                StripDescriptors = GetOptionAttributeValue(nameof(StripDescriptorsAttribute), true),
+                StripSubstitutions = GetOptionAttributeValue(nameof(StripSubstitutionsAttribute), true),
+                StripLinkAttributes = GetOptionAttributeValue(nameof(StripLinkAttributesAttribute), true),
+                DumpDependencies = GetOptionAttribute(nameof(DumpDependenciesAttribute)),
+            };
 
-			foreach (var assemblyAction in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerActionAttribute))) {
-				var ca = assemblyAction.ConstructorArguments;
-				tclo.AssembliesAction.Add (new KeyValuePair<string, string> ((string) ca[0].Value, (string) ca[1].Value));
-			}
+            foreach (var assemblyAction in _testCaseTypeDefinition.CustomAttributes.Where(attr => attr.AttributeType.Name == nameof(SetupLinkerActionAttribute)))
+            {
+                var ca = assemblyAction.ConstructorArguments;
+                tclo.AssembliesAction.Add(new KeyValuePair<string, string>((string)ca[0].Value, (string)ca[1].Value));
+            }
 
-			foreach (var descFile in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerDescriptorFile))) {
-				var ca = descFile.ConstructorArguments;
-				var file = (string) ca[0].Value;
-				tclo.Descriptors.Add (Path.Combine (inputPath, file));
-			}
+            foreach (var descFile in _testCaseTypeDefinition.CustomAttributes.Where(attr => attr.AttributeType.Name == nameof(SetupLinkerDescriptorFile)))
+            {
+                var ca = descFile.ConstructorArguments;
+                var file = (string)ca[0].Value;
+                tclo.Descriptors.Add(Path.Combine(inputPath, file));
+            }
 
-			foreach (var subsFile in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerSubstitutionFileAttribute))) {
-				var ca = subsFile.ConstructorArguments;
-				var file = (string) ca[0].Value;
-				tclo.Substitutions.Add (Path.Combine (inputPath, file));
-			}
+            foreach (var subsFile in _testCaseTypeDefinition.CustomAttributes.Where(attr => attr.AttributeType.Name == nameof(SetupLinkerSubstitutionFileAttribute)))
+            {
+                var ca = subsFile.ConstructorArguments;
+                var file = (string)ca[0].Value;
+                tclo.Substitutions.Add(Path.Combine(inputPath, file));
+            }
 
-			foreach (var linkAttrFile in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkAttributesFile))) {
-				var ca = linkAttrFile.ConstructorArguments;
-				var file = (string) ca[0].Value;
-				tclo.LinkAttributes.Add (Path.Combine (inputPath, file));
-			}
+            foreach (var linkAttrFile in _testCaseTypeDefinition.CustomAttributes.Where(attr => attr.AttributeType.Name == nameof(SetupLinkAttributesFile)))
+            {
+                var ca = linkAttrFile.ConstructorArguments;
+                var file = (string)ca[0].Value;
+                tclo.LinkAttributes.Add(Path.Combine(inputPath, file));
+            }
 
-			foreach (var additionalArgumentAttr in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerArgumentAttribute))) {
-				var ca = additionalArgumentAttr.ConstructorArguments;
-				var values = ((CustomAttributeArgument[]) ca[1].Value)?.Select (arg => arg.Value.ToString ()).ToArray ();
-				// Since custom attribute arguments need to be constant expressions, we need to add
-				// the path to the temp directory (where the custom assembly is located) here.
-				switch ((string) ca[0].Value) {
-				case "--custom-step":
-					int pos = values[0].IndexOf (",");
-					if (pos != -1) {
-						string custom_assembly_path = values[0].Substring (pos + 1);
-						if (!Path.IsPathRooted (custom_assembly_path))
-							values[0] = string.Concat (values[0].AsSpan (0, pos + 1), Path.Combine (inputPath, custom_assembly_path));
-					}
-					break;
-				case "-a":
-					if (!Path.IsPathRooted (values[0]))
-						values[0] = Path.Combine (inputPath, values[0]);
+            foreach (var additionalArgumentAttr in _testCaseTypeDefinition.CustomAttributes.Where(attr => attr.AttributeType.Name == nameof(SetupLinkerArgumentAttribute)))
+            {
+                var ca = additionalArgumentAttr.ConstructorArguments;
+                var values = ((CustomAttributeArgument[])ca[1].Value)?.Select(arg => arg.Value.ToString()).ToArray();
+                // Since custom attribute arguments need to be constant expressions, we need to add
+                // the path to the temp directory (where the custom assembly is located) here.
+                switch ((string)ca[0].Value)
+                {
+                    case "--custom-step":
+                        int pos = values[0].IndexOf(",");
+                        if (pos != -1)
+                        {
+                            string custom_assembly_path = values[0].Substring(pos + 1);
+                            if (!Path.IsPathRooted(custom_assembly_path))
+                                values[0] = string.Concat(values[0].AsSpan(0, pos + 1), Path.Combine(inputPath, custom_assembly_path));
+                        }
+                        break;
+                    case "-a":
+                        if (!Path.IsPathRooted(values[0]))
+                            values[0] = Path.Combine(inputPath, values[0]);
 
-					break;
-				}
+                        break;
+                }
 
-				tclo.AdditionalArguments.Add (new KeyValuePair<string, string[]> ((string) ca[0].Value, values));
-			}
+                tclo.AdditionalArguments.Add(new KeyValuePair<string, string[]>((string)ca[0].Value, values));
+            }
 
-			return tclo;
-		}
+            return tclo;
+        }
 
-		public virtual void CustomizeTrimming (TrimmingDriver linker, TrimmingCustomizations customizations)
-		{
-			if (!_testCaseTypeDefinition.CustomAttributes.Any (a => a.AttributeType.IsTypeOf<SkipKeptItemsValidationAttribute> ())
-				|| _testCaseTypeDefinition.CustomAttributes.Any (attr =>
-				attr.AttributeType.Name == nameof (DependencyRecordedAttribute)
-				|| attr.AttributeType.Name == nameof (KeptByAttribute))) {
-				customizations.DependencyRecorder = new TestDependencyRecorder ();
-				customizations.CustomizeContext += context => {
-					context.Tracer.AddRecorder (customizations.DependencyRecorder);
-				};
-			}
+        public virtual void CustomizeTrimming(TrimmingDriver linker, TrimmingCustomizations customizations)
+        {
+            if (!_testCaseTypeDefinition.CustomAttributes.Any(a => a.AttributeType.IsTypeOf<SkipKeptItemsValidationAttribute>())
+                || _testCaseTypeDefinition.CustomAttributes.Any(attr =>
+                attr.AttributeType.Name == nameof(DependencyRecordedAttribute)
+                || attr.AttributeType.Name == nameof(KeptByAttribute)))
+            {
+                customizations.DependencyRecorder = new TestDependencyRecorder();
+                customizations.CustomizeContext += context =>
+                {
+                    context.Tracer.AddRecorder(customizations.DependencyRecorder);
+                };
+            }
 
-			if (ValidatesLogMessages (_testCaseTypeDefinition)) {
-				customizations.CustomizeContext += context => {
-					context.LogMessages = true;
-				};
-			}
-		}
+            if (ValidatesLogMessages(_testCaseTypeDefinition))
+            {
+                customizations.CustomizeContext += context =>
+                {
+                    context.LogMessages = true;
+                };
+            }
+        }
 
-		bool ValidatesLogMessages (TypeDefinition testCaseTypeDefinition)
-		{
-			if (testCaseTypeDefinition.HasNestedTypes) {
-				var nestedTypes = new Queue<TypeDefinition> (testCaseTypeDefinition.NestedTypes.ToList ());
-				while (nestedTypes.Count > 0) {
-					if (ValidatesLogMessages (nestedTypes.Dequeue ()))
-						return true;
-				}
-			}
+        bool ValidatesLogMessages(TypeDefinition testCaseTypeDefinition)
+        {
+            if (testCaseTypeDefinition.HasNestedTypes)
+            {
+                var nestedTypes = new Queue<TypeDefinition>(testCaseTypeDefinition.NestedTypes.ToList());
+                while (nestedTypes.Count > 0)
+                {
+                    if (ValidatesLogMessages(nestedTypes.Dequeue()))
+                        return true;
+                }
+            }
 
-			if (testCaseTypeDefinition.AllMembers ().Concat (testCaseTypeDefinition.AllDefinedTypes ()).Append (testCaseTypeDefinition)
-				.Any (m => m.CustomAttributes.Any (attr =>
-					attr.AttributeType.Name == nameof (LogContainsAttribute) ||
-					attr.AttributeType.Name == nameof (LogDoesNotContainAttribute))))
-				return true;
+            if (testCaseTypeDefinition.AllMembers().Concat(testCaseTypeDefinition.AllDefinedTypes()).Append(testCaseTypeDefinition)
+                .Any(m => m.CustomAttributes.Any(attr =>
+                    attr.AttributeType.Name == nameof(LogContainsAttribute) ||
+                    attr.AttributeType.Name == nameof(LogDoesNotContainAttribute))))
+                return true;
 
-			return false;
-		}
+            return false;
+        }
 
-		public virtual IEnumerable<SourceAndDestinationPair> GetResponseFiles ()
-		{
-			return _testCaseTypeDefinition.CustomAttributes
-				.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerResponseFileAttribute))
-				.Select (GetSourceAndRelativeDestinationValue);
-		}
+        public virtual IEnumerable<SourceAndDestinationPair> GetResponseFiles()
+        {
+            return _testCaseTypeDefinition.CustomAttributes
+                .Where(attr => attr.AttributeType.Name == nameof(SetupLinkerResponseFileAttribute))
+                .Select(GetSourceAndRelativeDestinationValue);
+        }
 
-		public virtual IEnumerable<SourceAndDestinationPair> GetDescriptorFiles ()
-		{
-			return _testCaseTypeDefinition.CustomAttributes
-				.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerDescriptorFile))
-				.Select (GetSourceAndRelativeDestinationValue);
-		}
+        public virtual IEnumerable<SourceAndDestinationPair> GetDescriptorFiles()
+        {
+            return _testCaseTypeDefinition.CustomAttributes
+                .Where(attr => attr.AttributeType.Name == nameof(SetupLinkerDescriptorFile))
+                .Select(GetSourceAndRelativeDestinationValue);
+        }
 
-		public virtual IEnumerable<SourceAndDestinationPair> GetSubstitutionFiles ()
-		{
-			return _testCaseTypeDefinition.CustomAttributes
-				.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerSubstitutionFileAttribute))
-				.Select (GetSourceAndRelativeDestinationValue);
-		}
+        public virtual IEnumerable<SourceAndDestinationPair> GetSubstitutionFiles()
+        {
+            return _testCaseTypeDefinition.CustomAttributes
+                .Where(attr => attr.AttributeType.Name == nameof(SetupLinkerSubstitutionFileAttribute))
+                .Select(GetSourceAndRelativeDestinationValue);
+        }
 
-		public virtual IEnumerable<SourceAndDestinationPair> GetLinkAttributesFiles ()
-		{
-			return _testCaseTypeDefinition.CustomAttributes
-				.Where (attr => attr.AttributeType.Name == nameof (SetupLinkAttributesFile))
-				.Select (GetSourceAndRelativeDestinationValue);
-		}
+        public virtual IEnumerable<SourceAndDestinationPair> GetLinkAttributesFiles()
+        {
+            return _testCaseTypeDefinition.CustomAttributes
+                .Where(attr => attr.AttributeType.Name == nameof(SetupLinkAttributesFile))
+                .Select(GetSourceAndRelativeDestinationValue);
+        }
 
-		public IEnumerable<string> GetDeleteBefore ()
-		{
-			return _testCaseTypeDefinition.CustomAttributes
-				.Where (attr => attr.AttributeType.Name == nameof (DeleteBeforeAttribute))
-				.Select (attr => (string)attr.ConstructorArguments[0].Value);
-		}
+        public IEnumerable<string> GetDeleteBefore()
+        {
+            return _testCaseTypeDefinition.CustomAttributes
+                .Where(attr => attr.AttributeType.Name == nameof(DeleteBeforeAttribute))
+                .Select(attr => (string)attr.ConstructorArguments[0].Value);
+        }
 
-		public virtual IEnumerable<NPath> GetExtraLinkerReferences ()
-		{
-			var netcoreappDir = Path.GetDirectoryName (typeof (object).Assembly.Location);
-			foreach (var assembly in Directory.EnumerateFiles (netcoreappDir)) {
-				if (Path.GetExtension (assembly) != ".dll")
-					continue;
-				var assemblyName = Path.GetFileNameWithoutExtension (assembly);
-				if (assemblyName.Contains ("Native"))
-					continue;
-				if (assemblyName.StartsWith ("Microsoft") ||
-					assemblyName.StartsWith ("System") ||
-					assemblyName == "mscorlib" || assemblyName == "netstandard")
-					yield return assembly.ToNPath ();
-			}
-		}
+        public virtual IEnumerable<NPath> GetExtraLinkerReferences()
+        {
+            var netcoreappDir = Path.GetDirectoryName(typeof(object).Assembly.Location);
+            foreach (var assembly in Directory.EnumerateFiles(netcoreappDir))
+            {
+                if (Path.GetExtension(assembly) != ".dll")
+                    continue;
+                var assemblyName = Path.GetFileNameWithoutExtension(assembly);
+                if (assemblyName.Contains("Native"))
+                    continue;
+                if (assemblyName.StartsWith("Microsoft") ||
+                    assemblyName.StartsWith("System") ||
+                    assemblyName == "mscorlib" || assemblyName == "netstandard")
+                    yield return assembly.ToNPath();
+            }
+        }
 
-		public virtual bool LinkPublicAndFamily ()
-		{
-			return _testCaseTypeDefinition.CustomAttributes
-				.FirstOrDefault (attr => attr.AttributeType.Name == nameof (SetupLinkerLinkPublicAndFamilyAttribute)) != null;
-		}
+        public virtual bool LinkPublicAndFamily()
+        {
+            return _testCaseTypeDefinition.CustomAttributes
+                .FirstOrDefault(attr => attr.AttributeType.Name == nameof(SetupLinkerLinkPublicAndFamilyAttribute)) != null;
+        }
 
-		public virtual bool LinkAll ()
-		{
-			return _testCaseTypeDefinition.CustomAttributes
-				.FirstOrDefault (attr => attr.AttributeType.Name == nameof (SetupLinkerLinkAllAttribute)) != null;
-		}
+        public virtual bool LinkAll()
+        {
+            return _testCaseTypeDefinition.CustomAttributes
+                .FirstOrDefault(attr => attr.AttributeType.Name == nameof(SetupLinkerLinkAllAttribute)) != null;
+        }
 
-		public virtual NPath GetExpectedDependencyTrace ()
-		{
-			var traceFileName = _testCase.SourceFile
-				.ChangeExtension ("linker-dependencies.xml")
-				.RelativeTo (_testCase.TestSuiteDirectory)
-				.ToString ()
-				.Replace (Path.DirectorySeparatorChar, '.');
-			var testName = _testCase.SourceFile.FileNameWithoutExtension;
-			return _testCase.TestSuiteDirectory
-				.Combine("Dependencies")
-				.Combine(traceFileName);
-		}
-	}
+        public virtual NPath GetExpectedDependencyTrace()
+        {
+            var traceFileName = _testCase.SourceFile
+                .ChangeExtension("linker-dependencies.xml")
+                .RelativeTo(_testCase.TestSuiteDirectory)
+                .ToString()
+                .Replace(Path.DirectorySeparatorChar, '.');
+            var testName = _testCase.SourceFile.FileNameWithoutExtension;
+            return _testCase.TestSuiteDirectory
+                .Combine("Dependencies")
+                .Combine(traceFileName);
+        }
+    }
 }

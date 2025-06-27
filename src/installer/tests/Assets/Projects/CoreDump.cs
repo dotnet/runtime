@@ -34,6 +34,11 @@ namespace Utilities
                     throw new InvalidOperationException($"Failed to disable core dump. Error: {Marshal.GetLastPInvokeError()}.");
                 }
             }
+            else if (OperatingSystem.IsWindows())
+            {
+                uint errorMode = GetErrorMode();
+                SetErrorMode(errorMode | NOGPFAULTERRORBOX);
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -55,5 +60,13 @@ namespace Utilities
 
         [DllImport("libc", SetLastError = true)]
         private static extern int prctl(int option, int arg2);
+
+        private const uint NOGPFAULTERRORBOX = 0x0002;
+
+        [DllImport("kernel32", ExactSpelling = true)]
+        static extern uint GetErrorMode();
+
+        [DllImport("kernel32", ExactSpelling = true)]
+        static extern uint SetErrorMode(uint uMode);
     }
 }

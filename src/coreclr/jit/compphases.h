@@ -31,6 +31,7 @@ CompPhaseNameMacro(PHASE_POST_IMPORT,                "Post-import",             
 CompPhaseNameMacro(PHASE_IBCPREP,                    "Profile instrumentation prep",   false, -1, false)
 CompPhaseNameMacro(PHASE_IBCINSTR,                   "Profile instrumentation",        false, -1, false)
 CompPhaseNameMacro(PHASE_INCPROFILE,                 "Profile incorporation",          false, -1, false)
+CompPhaseNameMacro(PHASE_RESOLVE_GDVS,               "Resolve GDV Checks",             false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_INIT,                 "Morph - Init",                   false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_INLINE,               "Morph - Inlining",               false, -1, true)
 CompPhaseNameMacro(PHASE_MORPH_ADD_INTERNAL,         "Morph - Add internal blocks",    false, -1, true)

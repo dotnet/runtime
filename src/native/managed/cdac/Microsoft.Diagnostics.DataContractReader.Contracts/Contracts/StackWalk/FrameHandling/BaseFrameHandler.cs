@@ -72,6 +72,11 @@ internal abstract class BaseFrameHandler(Target target, IPlatformAgnosticContext
         _context.ReadFromAddress(_target, frame.TargetContextPtr);
     }
 
+    public virtual void HandleFaultingExceptionFrame(FaultingExceptionFrame frame)
+    {
+        _context.ReadFromAddress(_target, frame.TargetContext);
+    }
+
     public virtual void HandleTailCallFrame(TailCallFrame tailCallFrame)
     {
         throw new InvalidOperationException("TailCallFrame handling is not implemented on the target platform.");

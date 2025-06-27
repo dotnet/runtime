@@ -6,10 +6,10 @@ using System.Reflection;
 
 namespace Mono.Linker.Tests.Cases.Reflection.Dependencies
 {
-	public class CoreLibEmulator
-	{
-		public static void Test ()
-		{
+    public class CoreLibEmulator
+    {
+        public static void Test()
+        {
 #if INCLUDE_CORELIB_IMPL
 			Type t = new Type();
 			t.GetConstructor (BindingFlags.Default, null, new Type[] {}, null);
@@ -18,8 +18,8 @@ namespace Mono.Linker.Tests.Cases.Reflection.Dependencies
 			t.GetField ("name");
 			t.GetEvent ("name");
 #endif
-		}
-	}
+        }
+    }
 }
 
 #if INCLUDE_CORELIB_IMPL
