@@ -728,7 +728,7 @@ namespace ILCompiler
                     case ILOpcode.call:
                     {
                         MethodDesc callee = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
-                        if (opcode == ILOpcode.callvirt && method.IsVirtual)
+                        if (opcode == ILOpcode.callvirt && callee.IsVirtual)
                             return Fail(out constant);
 
                         for (int i = 0; i < callee.Signature.Length + (callee.Signature.IsStatic ? 0 : 1); i++)
