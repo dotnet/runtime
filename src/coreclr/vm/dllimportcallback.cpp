@@ -227,7 +227,7 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunkData)
         ReversePInvokeBadTransition();
 
     if (pUMEntryThunkData->IsCollectedDelegate())
-        CallbackOnCollectedDelegate(pUMEntryThunkData)
+        CallbackOnCollectedDelegate(pUMEntryThunkData);
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     // this method is called by stubs which are called by managed code,
