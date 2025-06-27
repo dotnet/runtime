@@ -1415,12 +1415,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         delayFreeOp = getDelayFreeOperand(embeddedOp, /* embedded */ true);
     }
 
-    if (intrin.id == NI_Sve_ConvertVectorToMask)
-    {
-        // Need an extra temp to test LSB of source vector
-        buildInternalFloatRegisterDefForNode(intrinsicTree);
-    }
-
     // Build any immediates
     BuildHWIntrinsicImmediate(intrinsicTree, intrin);
 

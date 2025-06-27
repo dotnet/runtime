@@ -20,8 +20,8 @@ struct MaskConversionsWeight
     static constexpr const weight_t costOfConvertMaskToVector = 1.0;
 
 #if defined(TARGET_ARM64)
-    // Conversion of vector to mask is three instructions.
-    static constexpr const weight_t costOfConvertVectorToMask = 3.0;
+    // Conversion of vector to mask is two instructions.
+    static constexpr const weight_t costOfConvertVectorToMask = 2.0;
 #else
     // Conversion of vector to mask is one instructions.
     static constexpr const weight_t costOfConvertVectorToMask = 1.0;
