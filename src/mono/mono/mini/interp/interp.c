@@ -3469,6 +3469,14 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 		MonoMethod *orig_method = info->d.native_to_managed.method;
+		if (!orig_method) {
+			char *s = mono_method_get_full_name (method);
+			char *msg = g_strdup_printf ("No native to managed transition for method '%s', missing [UnmanagedCallersOnly] attribute.", s);
+			mono_error_set_platform_not_supported (error, msg);
+			g_free (s);
+			g_free (msg);
+			return NULL;
+		}
 
 		/*
 		 * These are called from native code. Ask the host app for a trampoline.

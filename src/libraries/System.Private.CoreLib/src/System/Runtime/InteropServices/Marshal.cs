@@ -1137,15 +1137,21 @@ namespace System.Runtime.InteropServices
 
         [RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetFunctionPointerForDelegate<TDelegate> overload instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("wasi")]
         public static IntPtr GetFunctionPointerForDelegate(Delegate d)
         {
             ArgumentNullException.ThrowIfNull(d);
+
+            if (OperatingSystem.IsWasi() || OperatingSystem.IsBrowser()) throw new PlatformNotSupportedException(SR.PlatformNotSupported_DynamicEntrypoint);
 
             return GetFunctionPointerForDelegateInternal(d);
         }
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
             Justification = "AOT compilers can see the T.")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("wasi")]
         public static IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d) where TDelegate : notnull
         {
             return GetFunctionPointerForDelegate((Delegate)(object)d);
