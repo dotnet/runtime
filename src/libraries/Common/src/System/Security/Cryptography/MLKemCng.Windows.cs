@@ -218,7 +218,7 @@ namespace System.Security.Cryptography
         {
             if (disposing)
             {
-                _key.Dispose();
+                _key?.Dispose();
                 _key = null!;
             }
 
