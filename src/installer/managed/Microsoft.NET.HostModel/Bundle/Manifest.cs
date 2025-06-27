@@ -7,6 +7,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+#if NET
+using Base64Url = System.Buffers.Text.Base64Url;
+#else
+using Base64Url = Microsoft.NET.HostModel.Base64Url;
+#endif
 
 namespace Microsoft.NET.HostModel.Bundle
 {
@@ -68,7 +73,7 @@ namespace Microsoft.NET.HostModel.Bundle
         // with path-names so that the AppHost can use it in
         // extraction path.
         public string BundleID { get; private set; }
-        private const int BundleIdLength = 32;
+        private const int BundleIdLength = 12;
         private SHA256 bundleHash = SHA256.Create();
         public readonly uint BundleMajorVersion;
         // The Minor version is currently unused, and is always zero
@@ -133,10 +138,11 @@ namespace Microsoft.NET.HostModel.Bundle
             byte[] manifestHash = bundleHash.Hash;
             bundleHash.Dispose();
             bundleHash = null;
-            string id = Convert.ToBase64String(manifestHash).Substring(0, BundleIdLength).Replace('/', '_');
+            string id = Base64Url.EncodeToString(manifestHash).Substring(0, BundleIdLength);
             Debug.Assert(id.Length == BundleIdLength);
             return id;
         }
+
 
         public long Write(BinaryWriter writer)
         {

@@ -1305,7 +1305,7 @@ private:
             // Rewire the cold block to jump to the else block,
             // not fall through to the check block.
             //
-            compiler->fgRedirectTargetEdge(coldBlock, elseBlock);
+            compiler->fgRedirectEdge(coldBlock->GetTargetEdgeRef(), elseBlock);
 
             // Update the profile data
             //

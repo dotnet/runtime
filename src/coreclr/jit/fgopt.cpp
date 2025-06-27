@@ -720,7 +720,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                 if (entryJumpTarget != osrEntry)
                 {
-                    fgRedirectTargetEdge(fgFirstBB, entryJumpTarget);
+                    fgRedirectEdge(fgFirstBB->GetTargetEdgeRef(), entryJumpTarget);
 
                     JITDUMP("OSR: redirecting flow from method entry " FMT_BB " to OSR entry " FMT_BB
                             " via step blocks.\n",
@@ -1355,7 +1355,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
             case BBJ_CALLFINALLYRET:
             {
                 removedWeight = block->bbWeight;
-                fgRedirectTargetEdge(block, bDest->GetTarget());
+                fgRedirectEdge(block->GetTargetEdgeRef(), bDest->GetTarget());
                 break;
             }
 
@@ -1364,13 +1364,13 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 {
                     assert(!block->FalseTargetIs(bDest));
                     removedWeight = block->GetTrueEdge()->getLikelyWeight();
-                    fgRedirectTrueEdge(block, bDest->GetTarget());
+                    fgRedirectEdge(block->GetTrueEdgeRef(), bDest->GetTarget());
                 }
                 else
                 {
                     assert(block->FalseTargetIs(bDest));
                     removedWeight = block->GetFalseEdge()->getLikelyWeight();
-                    fgRedirectFalseEdge(block, bDest->GetTarget());
+                    fgRedirectEdge(block->GetFalseEdgeRef(), bDest->GetTarget());
                 }
                 break;
 
@@ -2256,7 +2256,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // Fix up block's flow.
     // Assume edge likelihoods transfer over.
     //
-    fgRedirectTargetEdge(block, target->GetTrueTarget());
+    fgRedirectEdge(block->GetTargetEdgeRef(), target->GetTrueTarget());
     block->GetTargetEdge()->setLikelihood(target->GetTrueEdge()->getLikelihood());
     block->GetTargetEdge()->setHeuristicBased(target->GetTrueEdge()->isHeuristicBased());
 
@@ -2751,7 +2751,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     FlowEdge* const falseEdge = bDest->GetFalseEdge();
     FlowEdge* const trueEdge  = bDest->GetTrueEdge();
 
-    fgRedirectTargetEdge(bJump, falseTarget);
+    fgRedirectEdge(bJump->GetTargetEdgeRef(), falseTarget);
     bJump->GetTargetEdge()->setLikelihood(falseEdge->getLikelihood());
     bJump->GetTargetEdge()->setHeuristicBased(falseEdge->isHeuristicBased());
 
@@ -2835,7 +2835,8 @@ void Compiler::fgPeelSwitch(BasicBlock* block)
     // The dominant case should not be the default case, as we already peel that one.
     //
     assert(dominantCase < (block->GetSwitchTargets()->bbsCount - 1));
-    BasicBlock* const dominantTarget = block->GetSwitchTargets()->bbsDstTab[dominantCase]->getDestinationBlock();
+    FlowEdge* const   dominantEdge   = block->GetSwitchTargets()->bbsDstTab[dominantCase];
+    BasicBlock* const dominantTarget = dominantEdge->getDestinationBlock();
     Statement* const  switchStmt     = block->lastStmt();
     GenTree* const    switchTree     = switchStmt->GetRootNode();
     assert(switchTree->OperIs(GT_SWITCH));
@@ -2878,23 +2879,32 @@ void Compiler::fgPeelSwitch(BasicBlock* block)
 
     // Wire up the new control flow.
     //
-    FlowEdge* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block);
+    FlowEdge* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block, dominantEdge);
     FlowEdge* const blockToNewBlockEdge = newBlock->bbPreds;
     block->SetCond(blockToTargetEdge, blockToNewBlockEdge);
 
     // Update profile data
     //
-    const weight_t fraction            = newBlock->GetSwitchTargets()->bbsDominantFraction;
+    const weight_t fraction            = dominantEdge->getLikelihood();
     const weight_t blockToTargetWeight = block->bbWeight * fraction;
 
     newBlock->decreaseBBProfileWeight(blockToTargetWeight);
-
-    blockToTargetEdge->setLikelihood(fraction);
     blockToNewBlockEdge->setLikelihood(max(0.0, 1.0 - fraction));
 
-    JITDUMP("fgPeelSwitch: Updated flow into " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
-            newBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
-    fgPgoConsistent = false;
+    // Now that the dominant case has been peeled, set the case's edge likelihood to zero,
+    // and increase all other case likelihoods proportionally.
+    //
+    dominantEdge->setLikelihood(BB_ZERO_WEIGHT);
+    const SwitchUniqueSuccSet uniqueSuccSet = GetDescriptorForSwitch(newBlock);
+    const unsigned            numSucc       = uniqueSuccSet.numDistinctSuccs;
+    FlowEdge** const          jumpTab       = uniqueSuccSet.nonDuplicates;
+    for (unsigned i = 0; i < numSucc; i++)
+    {
+        // If we removed all of the flow out of 'block', distribute flow among the remaining edges evenly.
+        const weight_t currLikelihood = jumpTab[i]->getLikelihood();
+        const weight_t newLikelihood  = (fraction == 1.0) ? (1.0 / numSucc) : (currLikelihood / (1.0 - fraction));
+        jumpTab[i]->setLikelihood(min(1.0, newLikelihood));
+    }
 
     // For now we leave the switch as is, since there's no way
     // to indicate that one of the cases is now unreachable.
@@ -4599,21 +4609,14 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                             gtReverseCond(test);
                         }
 
-                        // Optimize the Conditional JUMP to go to the new target
+                        // Rewire flow from block
                         //
-                        FlowEdge* const oldFalseEdge = block->GetFalseEdge();
-                        FlowEdge* const oldTrueEdge  = block->GetTrueEdge();
-                        FlowEdge* const oldNextEdge  = bNext->GetTargetEdge();
+                        std::swap(block->GetTrueEdgeRef(), block->GetFalseEdgeRef());
+                        fgRedirectEdge(block->GetTrueEdgeRef(), bNext->GetTarget());
 
                         // bNext no longer flows to target
                         //
-                        fgRemoveRefPred(oldNextEdge);
-
-                        // Rewire flow from block
-                        //
-                        block->SetFalseEdge(oldTrueEdge);
-                        block->SetTrueEdge(oldFalseEdge);
-                        fgRedirectTrueEdge(block, bNext->GetTarget());
+                        fgRemoveRefPred(bNext->GetTargetEdge());
 
                         /*
                           Unlink bNext from the BasicBlock list; note that we can
@@ -5317,7 +5320,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 if (commSucc != nullptr)
                 {
                     assert(predBlock->KindIs(BBJ_ALWAYS));
-                    fgRedirectTargetEdge(predBlock, crossJumpTarget);
+                    fgRedirectEdge(predBlock->GetTargetEdgeRef(), crossJumpTarget);
                 }
                 else
                 {

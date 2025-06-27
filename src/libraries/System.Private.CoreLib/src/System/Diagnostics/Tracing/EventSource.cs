@@ -2834,6 +2834,7 @@ namespace System.Diagnostics.Tracing
             else
             {
                 Debug.Assert(dispatcher.m_EventEnabled != null);
+
                 if (!dispatcher.m_EventEnabled.ContainsKey(eventId))
                     return false;
 

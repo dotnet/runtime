@@ -4043,8 +4043,16 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
         {
             BasicBlock* const predBlock = predEdge->getSourceBlock();
 
+            // We may see unreachable pred blocks here. If so we will
+            // conservatively fail.
+            //
+            if (!comp->m_dfsTree->Contains(predBlock))
+            {
+                JITDUMP("Unreachable pred block " FMT_BB " for " FMT_BB "\n", predBlock->bbNum, block->bbNum);
+                return false;
+            }
+
             // We should not be able to reach an un-dominated block.
-            // (consider eh paths?)
             //
             assert(comp->m_domTree->Dominates(defBlock, predBlock));
             if (BitVecOps::TryAddElemD(&traits, visitedBlocks, predBlock->bbID))
@@ -4527,7 +4535,7 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
     BasicBlock*       firstClonedBlock = nullptr;
     bool const        firstFound       = map.Lookup(firstBlock, &firstClonedBlock);
     assert(firstFound);
-    comp->fgRedirectTargetEdge(info->m_allocBlock, firstClonedBlock);
+    comp->fgRedirectEdge(info->m_allocBlock->GetTargetEdgeRef(), firstClonedBlock);
 
     // If we are subsequently going to do the "empty collection static enumerator" opt,
     // then our profile is now consistent.
