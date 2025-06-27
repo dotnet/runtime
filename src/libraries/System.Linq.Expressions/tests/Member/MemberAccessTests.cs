@@ -588,7 +588,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void UpdateSameResturnsSame()
         {
-            var exp = Expression.Constant(new PS {II = 42});
+            var exp = Expression.Constant(new PS { II = 42 });
             var pro = Expression.Property(exp, nameof(PS.II));
             Assert.Same(pro, pro.Update(exp));
         }
@@ -603,15 +603,15 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void UpdateDifferentResturnsDifferent()
         {
-            var pro = Expression.Property(Expression.Constant(new PS {II = 42}), nameof(PS.II));
-            Assert.NotSame(pro, pro.Update(Expression.Constant(new PS {II = 42})));
+            var pro = Expression.Property(Expression.Constant(new PS { II = 42 }), nameof(PS.II));
+            Assert.NotSame(pro, pro.Update(Expression.Constant(new PS { II = 42 })));
         }
 
         class Class<T>
             where T : new()
         {
             public Class(T value) => Item = value;
-            public Class() : this(new T()) {}
+            public Class() : this(new T()) { }
 
             public T Item;
         }
@@ -622,7 +622,7 @@ namespace System.Linq.Expressions.Tests
             public static ConstructorInfo GetConstructorInfo() => typeof(Struct<T>).GetConstructor([typeof(T)])!;
 
             public Struct(T value) => Item = value;
-            public Struct() : this(new T()) {}
+            public Struct() : this(new T()) { }
 
             public T Item;
         }
@@ -888,6 +888,119 @@ namespace System.Linq.Expressions.Tests
             f(src);
 
             Assert.Equal(42, src.Item.Item.Item.Item);
+        }
+
+        class PassStructMembersMemberToRefFunctionClass
+        {
+            public (int, int) Tuple2Ints;
+
+            public static void SetIntToFortyTwo(ref int value) => value = 42;
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void PassStructMembersMemberToRefFunction(bool useInterpreter)
+        {
+            ParameterExpression p = Expression.Parameter(typeof(PassStructMembersMemberToRefFunctionClass));
+
+            MethodInfo m = typeof(PassStructMembersMemberToRefFunctionClass).GetMethod(nameof(PassStructMembersMemberToRefFunctionClass.SetIntToFortyTwo));
+
+            Expression<Action<PassStructMembersMemberToRefFunctionClass>> e =
+                Expression.Lambda<Action<PassStructMembersMemberToRefFunctionClass>>(
+                    Expression.Call(
+                        m!,
+                        Expression.Field(
+                            Expression.Field(
+                                p,
+                                nameof(PassStructMembersMemberToRefFunctionClass.Tuple2Ints)),
+                            "Item1")
+                    ),
+                    p
+                );
+
+            Action<PassStructMembersMemberToRefFunctionClass> f = e.Compile(useInterpreter);
+
+            PassStructMembersMemberToRefFunctionClass src = new PassStructMembersMemberToRefFunctionClass { Tuple2Ints = (0, 0) };
+
+            Assert.Equal(0, src.Tuple2Ints.Item1);
+
+            f(src);
+
+            Assert.Equal(42, src.Tuple2Ints.Item1);
+        }
+
+        delegate void SetIntToFortyTwo(ref int value);
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void PassStructMembersMemberToRefDelegate(bool useInterpreter)
+        {
+            ParameterExpression p = Expression.Parameter(typeof(PassStructMembersMemberToRefFunctionClass));
+
+            SetIntToFortyTwo d = (ref int value) => value = 42;
+
+            Expression<Action<PassStructMembersMemberToRefFunctionClass>> e =
+                Expression.Lambda<Action<PassStructMembersMemberToRefFunctionClass>>(
+                    Expression.Invoke(
+                        Expression.Constant(d),
+                        Expression.Field(
+                            Expression.Field(
+                                p,
+                                nameof(PassStructMembersMemberToRefFunctionClass.Tuple2Ints)),
+                            "Item1")
+                    ),
+                    p
+                );
+
+            Action<PassStructMembersMemberToRefFunctionClass> f = e.Compile(useInterpreter);
+
+            PassStructMembersMemberToRefFunctionClass src = new PassStructMembersMemberToRefFunctionClass { Tuple2Ints = (0, 0) };
+
+            Assert.Equal(0, src.Tuple2Ints.Item1);
+
+            f(src);
+
+            Assert.Equal(42, src.Tuple2Ints.Item1);
+        }
+
+        class SetIntToFortyTwoOnConstructor
+        {
+            public SetIntToFortyTwoOnConstructor(ref int value)
+            {
+                value = 42;
+            }
+        }
+        
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void PassStructMembersMemberToRefConstructor(bool useInterpreter)
+        {
+            ParameterExpression p = Expression.Parameter(typeof(PassStructMembersMemberToRefFunctionClass));
+
+            System.Reflection.ConstructorInfo c = typeof(SetIntToFortyTwoOnConstructor).GetConstructor([typeof(int).MakeByRefType()])!;
+
+            Expression<Action<PassStructMembersMemberToRefFunctionClass>> e =
+                Expression.Lambda<Action<PassStructMembersMemberToRefFunctionClass>>(
+                    Expression.New(
+                        c,
+                        Expression.Field(
+                            Expression.Field(
+                                p,
+                                nameof(PassStructMembersMemberToRefFunctionClass.Tuple2Ints)),
+                            "Item1")
+                    ),
+                    p
+                );
+
+            Action<PassStructMembersMemberToRefFunctionClass> f = e.Compile(useInterpreter);
+
+            PassStructMembersMemberToRefFunctionClass src = new PassStructMembersMemberToRefFunctionClass { Tuple2Ints = (0, 0) };
+
+            Assert.Equal(0, src.Tuple2Ints.Item1);
+
+            f(src);
+
+            Assert.Equal(42, src.Tuple2Ints.Item1);
         }
     }
 }
