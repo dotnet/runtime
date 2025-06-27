@@ -25,7 +25,7 @@ namespace System.Security.Cryptography
     ///   </para>
     /// </remarks>
     [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-    public abstract class MLKem : IDisposable
+    public abstract partial class MLKem : IDisposable
     {
         private static readonly string[] s_knownOids = [Oids.MlKem512, Oids.MlKem768, Oids.MlKem1024];
 
