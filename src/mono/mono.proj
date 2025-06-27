@@ -258,7 +258,7 @@ set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=%EMSDK_PATH%
 
 set &quot;TOADD_PATH_PYTHON=%EMSDK_PATH%python\&quot;
 echo PATH += %TOADD_PATH_PYTHON%
-set &quot;PATH=%TOADD_PATH_PYTHON%;%PATH%&quot;
+set &quot;PATH=%TOADD_PATH_PYTHON%%3B%PATH%&quot;
 
       </_EmsdkPaths>
       <_EmscriptenPaths>
