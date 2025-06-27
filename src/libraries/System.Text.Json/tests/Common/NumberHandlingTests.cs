@@ -1950,5 +1950,56 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
         }
+
+        [Theory]
+        // -2 for Quotes
+        [InlineData(32 - 2)] // Common ArrayPool buffer size for numbers
+        [InlineData(256 - 2)] // Common stackalloc constant
+        [InlineData(512 - 2)] // Less common stackalloc constant
+        [InlineData(700)] // Random large number
+        public async Task JsonExceptionForVariousSizedValues(int size)
+        {
+            await DeserializeWithInvalidValue<byte>(size);
+            await DeserializeWithInvalidValue<sbyte>(size);
+            await DeserializeWithInvalidValue<short>(size);
+            await DeserializeWithInvalidValue<int>(size);
+            await DeserializeWithInvalidValue<long>(size);
+            await DeserializeWithInvalidValue<ushort>(size);
+            await DeserializeWithInvalidValue<uint>(size);
+            await DeserializeWithInvalidValue<ulong>(size);
+            await DeserializeWithInvalidValue<float>(size);
+            await DeserializeWithInvalidValue<decimal>(size);
+            await DeserializeWithInvalidValue<byte?>(size);
+            await DeserializeWithInvalidValue<sbyte?>(size);
+            await DeserializeWithInvalidValue<short?>(size);
+            await DeserializeWithInvalidValue<int?>(size);
+            await DeserializeWithInvalidValue<long?>(size);
+            await DeserializeWithInvalidValue<ushort?>(size);
+            await DeserializeWithInvalidValue<uint?>(size);
+            await DeserializeWithInvalidValue<ulong?>(size);
+            await DeserializeWithInvalidValue<float?>(size);
+            await DeserializeWithInvalidValue<decimal?>(size);
+#if NET
+            await DeserializeWithInvalidValue<Int128>(size);
+            await DeserializeWithInvalidValue<UInt128>(size);
+            await DeserializeWithInvalidValue<Half>(size);
+            await DeserializeWithInvalidValue<Int128?>(size);
+            await DeserializeWithInvalidValue<UInt128?>(size);
+            await DeserializeWithInvalidValue<Half?>(size);
+#endif
+        }
+
+        private async Task DeserializeWithInvalidValue<T>(int size)
+        {
+            await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<T>(
+                    $"\"{string.Concat(Enumerable.Repeat("\\uFFFF", size / 6))}\"",
+                    s_optionReadFromStr));
+
+            await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<T>(
+                    $"\"{string.Concat(Enumerable.Repeat("a", size))}\"",
+                    s_optionReadFromStr));
+        }
     }
 }
