@@ -4,8 +4,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
+using System.Tests;
 using Microsoft.Extensions.Logging.Testing;
 using Xunit;
 
@@ -139,31 +139,22 @@ namespace Microsoft.Extensions.Logging.Test
         public void FormatMessage_UsesInvariantCulture()
         {
             // Arrange
+            using ThreadCultureChange _ = new("fr-FR");
             var sink = new TestSink();
             var logger = SetUp(sink);
 
-            CultureInfo existing = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = new CultureInfo("fr-FR");
+            logger.Log(LogLevel.Trace, "{0}", new object[] { 1.23 });
+            logger.Log(LogLevel.Information, "{0}", new object[] { new object[] { 1.23f } });
 
-                logger.Log(LogLevel.Trace, "{0}", new object[] { 1.23 });
-                logger.Log(LogLevel.Information, "{0}", new object[] { new object[] { 1.23f } });
+            Assert.Equal(2, sink.Writes.Count());
 
-                Assert.Equal(2, sink.Writes.Count());
+            Assert.True(sink.Writes.TryTake(out var trace));
+            Assert.Equal(LogLevel.Trace, trace.LogLevel);
+            Assert.Equal("1.23", trace.State?.ToString());
 
-                Assert.True(sink.Writes.TryTake(out var trace));
-                Assert.Equal(LogLevel.Trace, trace.LogLevel);
-                Assert.Equal("1.23", trace.State?.ToString());
-
-                Assert.True(sink.Writes.TryTake(out var info));
-                Assert.Equal(LogLevel.Information, info.LogLevel);
-                Assert.Equal("1.23", info.State?.ToString());
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = existing;
-            }
+            Assert.True(sink.Writes.TryTake(out var info));
+            Assert.Equal(LogLevel.Information, info.LogLevel);
+            Assert.Equal("1.23", info.State?.ToString());
         }
 
         [Fact]
