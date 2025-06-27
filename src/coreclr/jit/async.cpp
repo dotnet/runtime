@@ -129,7 +129,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
             BasicBlock* restoreBB        = curBB;
             Statement*  restoreAfterStmt = stmt;
 
-            if (call->IsInlineCandidate() && !call->TypeIs(TYP_VOID))
+            if (call->IsInlineCandidate() && (call->gtReturnType != TYP_VOID))
             {
                 restoreAfterStmt = stmt->GetNextStmt();
                 assert(restoreAfterStmt->GetRootNode()->OperIs(GT_RET_EXPR) ||
