@@ -126,6 +126,13 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        ///   Gets a <see cref="CngAlgorithmGroup" /> object that specifies the Module-Lattice-Based Digital Signature
+        ///   Algorithm (ML-DSA) family of algorithms.
+        /// </summary>
+        /// <value>
+        ///   An object that specifies the ML-DSA family of algorithms.
+        /// </value>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngAlgorithmGroup MLDsa =>
             field ??= new CngAlgorithmGroup("MLDSA"); // NCRYPT_MLDSA_ALGORITHM_GROUP
