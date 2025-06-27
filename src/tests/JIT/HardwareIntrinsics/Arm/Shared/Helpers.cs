@@ -12,6 +12,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
+using System.Reflection;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
@@ -10737,5 +10738,208 @@ namespace JIT.HardwareIntrinsics.Arm
         public static uint SveShiftLogicalRoundedSaturate(uint op1, int op2) => UnsignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
 
         public static ulong SveShiftLogicalRoundedSaturate(ulong op1, long op2) => UnsignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static int NarrowIdx(int i)
+        {
+            return (i - i % 2) / 2;
+        }
+
+        public static T Even<T>(T val, int idx) where T : IBinaryInteger<T>, new()
+        {
+            if (idx % 2 == 0)
+            {
+                return val;
+            }
+            else
+            {
+                return new T();
+            }
+        }
+
+        public static T Odd<T>(T even, T odd, int idx) where T : IBinaryInteger<T>
+        {
+            if (idx % 2 != 0)
+            {
+                return odd;
+            }
+            else
+            {
+                return even;
+            }
+        }
+
+        public static U ArithmeticShift<T, U>(T value, int count, bool rounding = false, bool saturate = false)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>
+        {
+            dynamic v = value;
+            dynamic shifted;
+            if (count > 0)
+            {
+                if (rounding)
+                {
+                    dynamic bias = 1L << (count - 1);
+                    shifted = v >= 0 ? (v + bias) >> count
+                                     : (v - bias) >> count;
+                }
+                else
+                {
+                    shifted = v >> count;
+                }
+            }
+            else if (count < 0)
+            {
+                shifted = v << -count;
+            }
+            else
+            {
+                shifted = v;
+            }
+
+            if (saturate)
+            {
+                dynamic min = typeof(U).GetField("MinValue", BindingFlags.Static | BindingFlags.Public).GetValue(null);
+                dynamic max = typeof(U).GetField("MaxValue", BindingFlags.Static | BindingFlags.Public).GetValue(null);
+                if (shifted < min) shifted = min;
+                if (shifted > max) shifted = max;
+            }
+
+            return (U)shifted;
+        }
+
+        public static U LogicalShift<T, U>(T value, int count, bool rounding = false, bool saturate = false)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>
+        {
+            ulong v = Convert.ToUInt64(value);
+            dynamic shifted;
+            if (count > 0)
+            {
+                if (rounding)
+                {
+                    ulong bias = 1UL << (count - 1);
+                    shifted = v >= 0 ? (v + bias) >>> count
+                                     : (v - bias) >>> count;
+                }
+                else
+                {
+                    shifted = v >>> count;
+                }
+            }
+            else if (count < 0)
+            {
+                shifted = v << -count;
+            }
+            else
+            {
+                shifted = v;
+            }
+
+            if (saturate)
+            {
+                dynamic max = typeof(U).GetField("MaxValue", BindingFlags.Static | BindingFlags.Public).GetValue(null);
+                if (shifted > max) shifted = max;
+            }
+
+            return (U)shifted;
+        }
+
+        public static U ShiftRightArithmeticNarrowingSaturateEven<T, U>(T op1, byte op2, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, new()
+        {
+            return Even<U>(ArithmeticShift<T, U>(op1, op2, saturate: true), i);
+        }
+
+        public static U ShiftRightArithmeticNarrowingSaturateOdd<T, U>(U op0, T op1, byte op2, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>
+        {
+            return Odd<U>(op0, ArithmeticShift<T, U>(op1, op2, saturate: true), i);
+        }
+
+        public static U ShiftRightArithmeticNarrowingSaturateUnsignedEven<T, U>(T op1, byte op2, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, new()
+        {
+            return ShiftRightArithmeticNarrowingSaturateEven<T, U>(op1, op2, i);
+        }
+
+        public static U ShiftRightArithmeticNarrowingSaturateUnsignedOdd<T, U>(U op0, T op1, byte op2, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>
+        {
+            return ShiftRightArithmeticNarrowingSaturateOdd<T, U>(op0, op1, op2, i);
+        }
+
+        public static U ShiftRightArithmeticRoundedNarrowingSaturateEven<T, U>(T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, new()
+        {
+            return Even<U>(ArithmeticShift<T, U>(val, shift, rounding: true, saturate: true), i);
+        }
+
+        public static U ShiftRightArithmeticRoundedNarrowingSaturateOdd<T, U>(U even, T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>
+        {
+            return Odd<U>(even, ArithmeticShift<T, U>(val, shift, rounding: true, saturate: true), i);
+        }
+
+        public static U ShiftRightArithmeticRoundedNarrowingSaturateUnsignedEven<T, U>(T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, new()
+        {
+            return ShiftRightArithmeticRoundedNarrowingSaturateEven<T, U>(val, shift, i);
+        }
+
+        public static U ShiftRightArithmeticRoundedNarrowingSaturateUnsignedOdd<T, U>(U even, T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, new()
+        {
+            return ShiftRightArithmeticRoundedNarrowingSaturateOdd<T, U>(even, val, shift, i);
+        }
+
+        public static U ShiftRightLogicalNarrowingEven<T, U>(T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, new()
+        {
+            return Even<U>(LogicalShift<T, U>(val, shift), i);
+        }
+
+        public static U ShiftRightLogicalNarrowingOdd<T, U>(U even, T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>
+        {
+            return Odd<U>(even, LogicalShift<T, U>(val, shift), i);
+        }
+
+        public static U ShiftRightLogicalRoundedNarrowingEven<T, U>(T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, new()
+        {
+            return Even<U>(LogicalShift<T, U>(val, shift, rounding: true), i);
+        }
+
+        public static U ShiftRightLogicalRoundedNarrowingOdd<T, U>(U even, T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>
+        {
+            return Odd<U>(even, LogicalShift<T, U>(val, shift, rounding: true), i);
+        }
+
+        public static U ShiftRightLogicalRoundedNarrowingSaturateEven<T, U>(T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, new()
+        {
+            return Even<U>(LogicalShift<T, U>(val, shift, rounding: true, saturate: true), i);
+        }
+
+        public static U ShiftRightLogicalRoundedNarrowingSaturateOdd<T, U>(U even, T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>
+        {
+            return Odd<U>(even, LogicalShift<T, U>(val, shift, rounding: true, saturate: true), i);
+        }
     }
 }

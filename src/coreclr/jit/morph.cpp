@@ -14453,7 +14453,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     BasicBlock* elseBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
 
     // Update flowgraph
-    fgRedirectTargetEdge(block, condBlock);
+    fgRedirectEdge(block->GetTargetEdgeRef(), condBlock);
     condBlock->SetTargetEdge(fgAddRefPred(elseBlock, condBlock));
     elseBlock->SetTargetEdge(fgAddRefPred(remainderBlock, elseBlock));
 

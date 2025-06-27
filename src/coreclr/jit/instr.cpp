@@ -113,18 +113,145 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     const char* insName = genInsName(ins);
 
 #ifdef TARGET_XARCH
-    const int       TEMP_BUFFER_LEN = 40;
-    static unsigned curBuf          = 0;
-    static char     buf[4][TEMP_BUFFER_LEN];
-    const char*     retbuf;
+    const emitter* emit      = GetEmitter();
+    const char*    vexPrefix = emit->UseVEXEncoding() ? "v" : "";
 
-    const emitter* emit = GetEmitter();
+    auto AddPrefixAndSuffix = [&](const char* prefix, const char* insName, const char* suffix1,
+                                  const char* suffix2) -> const char* {
+        const int       TEMP_BUFFER_LEN = 40;
+        static unsigned curBuf          = 0;
+        static char     buf[4][TEMP_BUFFER_LEN];
+        const char*     retbuf;
+
+        sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "%s%s%s%s", prefix, insName, suffix1, suffix2);
+        retbuf = buf[curBuf];
+        curBuf = (curBuf + 1) % 4;
+        return retbuf;
+    };
+
+    auto GetFltCmpOpName = [&](emitter::instrDesc* id, const char* suffix) -> const char* {
+        static const char* const fltCmpOpNames[] = {
+            "eq",    "lt",     "le",     "unord",    "neq",    "nlt",    "nle",    "ord",
+            "eq_uq", "nge",    "ngt",    "false",    "neq_oq", "ge",     "gt",     "true",
+            "eq_os", "lt_oq",  "le_oq",  "unord_s",  "neq_us", "nlt_uq", "nle_uq", "ord_s",
+            "eq_us", "nge_uq", "ngt_uq", "false_os", "neq_os", "ge_oq",  "gt_oq",  "true_us",
+        };
+
+        uint8_t control = static_cast<uint8_t>(emit->emitGetInsSC(id));
+        assert(control < ArrLen(fltCmpOpNames));
+
+        const char* pseudoName = fltCmpOpNames[control];
+        return AddPrefixAndSuffix(vexPrefix, "cmp", pseudoName, suffix);
+    };
+
+    auto GetIntCmpOpName = [&](emitter::instrDesc* id, const char* suffix) -> const char* {
+        static const char* const intCmpOpNames[] = {
+            "eq", "lt", "le", "neq", "false", "ge", "gt", "true",
+        };
+
+        uint8_t control = static_cast<uint8_t>(emit->emitGetInsSC(id));
+        assert(control < ArrLen(intCmpOpNames));
+
+        const char* pseudoName = intCmpOpNames[control];
+        return AddPrefixAndSuffix(vexPrefix, "pcmp", pseudoName, suffix);
+    };
+
+    // Some instructions have different mnemonics depending on the immediate.
+    switch (ins)
+    {
+        case INS_cmppd:
+        {
+            return GetFltCmpOpName(id, "pd");
+        }
+
+        case INS_cmpps:
+        {
+            return GetFltCmpOpName(id, "ps");
+        }
+
+        case INS_cmpsd:
+        {
+            return GetFltCmpOpName(id, "sd");
+        }
+
+        case INS_cmpss:
+        {
+            return GetFltCmpOpName(id, "ss");
+        }
+
+        case INS_pclmulqdq:
+        {
+            uint8_t control = static_cast<uint8_t>(emit->emitGetInsSC(id)) & 0x11;
+
+            if (control == 0x00)
+            {
+                insName = "lqlq";
+            }
+            else if (control == 0x01)
+            {
+                insName = "hqlq";
+            }
+            else if (control == 0x10)
+            {
+                insName = "lqhq";
+            }
+            else
+            {
+                insName = "hqhq";
+            }
+
+            return AddPrefixAndSuffix(vexPrefix, "pclmul", insName, "dq");
+        }
+
+        case INS_vpcmpb:
+        {
+            return GetIntCmpOpName(id, "b");
+        }
+
+        case INS_vpcmpd:
+        {
+            return GetIntCmpOpName(id, "d");
+        }
+
+        case INS_vpcmpq:
+        {
+            return GetIntCmpOpName(id, "q");
+        }
+
+        case INS_vpcmpub:
+        {
+            return GetIntCmpOpName(id, "ub");
+        }
+
+        case INS_vpcmpud:
+        {
+            return GetIntCmpOpName(id, "ud");
+        }
+
+        case INS_vpcmpuq:
+        {
+            return GetIntCmpOpName(id, "uq");
+        }
+
+        case INS_vpcmpuw:
+        {
+            return GetIntCmpOpName(id, "uw");
+        }
+
+        case INS_vpcmpw:
+        {
+            return GetIntCmpOpName(id, "w");
+        }
+
+        default:
+        {
+            break;
+        }
+    }
 
     if (id->idIsApxPpxContextSet())
     {
-        sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "%sp", insName);
-        retbuf = buf[curBuf];
-        return retbuf;
+        return AddPrefixAndSuffix("", insName, "p", "");
     }
 
     if (emit->IsVexOrEvexEncodableInstruction(ins))
@@ -222,10 +349,7 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
                 }
             }
 
-            sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);
-            retbuf = buf[curBuf];
-            curBuf = (curBuf + 1) % 4;
-            return retbuf;
+            return AddPrefixAndSuffix("v", insName, "", "");
         }
     }
 

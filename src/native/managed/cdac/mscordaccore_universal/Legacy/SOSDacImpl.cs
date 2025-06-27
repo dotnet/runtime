@@ -785,7 +785,7 @@ internal sealed unsafe partial class SOSDacImpl
             if (hr == HResults.S_OK)
             {
                 Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
-                Debug.Assert(name == null || new ReadOnlySpan<char>(nameLocal, 0, (int)neededLocal - 1).SequenceEqual(new string(name)));
+                Debug.Assert(name == null || new ReadOnlySpan<char>(nameLocal, 0, (int)neededLocal - 1).SequenceEqual(new string(name)), $"cDAC: {new string(name)}, DAC: {new string(nameLocal, 0, (int)neededLocal - 1)}");
             }
         }
 #endif
