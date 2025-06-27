@@ -1047,5 +1047,16 @@ namespace System.Diagnostics.Tests
                 return process.StandardOutput.ReadToEnd();
             }
         }
+
+        private static void SendSignal(PosixSignal signal, int processId)
+        {
+            int result = kill(processId, Interop.Sys.GetPlatformSignalNumber(signal));
+            if (result != 0)
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error(), $"Failed to send signal {signal} to process {processId}");
+            }
+        }
+
+        private static unsafe void ReEnableCtrlCHandlerIfNeeded(PosixSignal signal) { }
     }
 }

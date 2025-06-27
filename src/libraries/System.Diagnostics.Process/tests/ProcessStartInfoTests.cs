@@ -905,6 +905,29 @@ namespace System.Diagnostics.Tests
             });
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CreateNewProcessGroup_SetWindows_GetReturnsExpected()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo();
+            Assert.False(psi.CreateNewProcessGroup);
+
+            psi.CreateNewProcessGroup = true;
+            Assert.True(psi.CreateNewProcessGroup);
+
+            psi.CreateNewProcessGroup = false;
+            Assert.False(psi.CreateNewProcessGroup);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void CreateNewProcessGroup_GetSetUnix_ThrowsPlatformNotSupportedException()
+        {
+            var info = new ProcessStartInfo();
+            Assert.Throws<PlatformNotSupportedException>(() => info.CreateNewProcessGroup);
+            Assert.Throws<PlatformNotSupportedException>(() => info.CreateNewProcessGroup = true);
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]

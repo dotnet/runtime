@@ -219,6 +219,8 @@ namespace System.Diagnostics
         public System.Collections.ObjectModel.Collection<string> ArgumentList { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Arguments { get { throw null; } set { } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public bool CreateNewProcessGroup { get { throw null; } set { } }
         public bool CreateNoWindow { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
