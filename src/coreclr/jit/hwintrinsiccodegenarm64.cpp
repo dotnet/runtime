@@ -2010,10 +2010,19 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case NI_Sve_ConvertVectorToMask:
+            {
                 // PMOV would be ideal here, but it is in SVE2.1.
-                // Instead, use a compare: CMPNE <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #0
-                GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, 0, opt);
+                //
+                // Instead, to test if lowest bit is set, we LSL elementWidthInBits - 1
+                // and then compare: CMPNE <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #0
+
+                int       elementWidthInBits = 8 * genTypeSize(intrin.baseType);
+                regNumber ztemp              = internalRegisters.GetSingle(node);
+
+                GetEmitter()->emitIns_R_R_I(INS_sve_lsl, emitSize, ztemp, op2Reg, elementWidthInBits - 1, opt);
+                GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, ztemp, 0, opt);
                 break;
+            }
 
             case NI_Sve_Count16BitElements:
             case NI_Sve_Count32BitElements:
