@@ -178,6 +178,38 @@ extern "C" VOID STDCALL ReversePInvokeBadTransition()
                                             );
 }
 
+//-------------------------------------------------------------------------
+// This function is used to report error when we call collected delegate.
+// But memory that was allocated for thunk can be reused, due to it this
+// function will not be called in all cases of the collected delegate call,
+// also it may crash while trying to report the problem.
+//-------------------------------------------------------------------------
+VOID CallbackOnCollectedDelegate(UMEntryThunkData* pEntryThunkData)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pEntryThunkData));
+    }
+    CONTRACTL_END;
+
+    MethodDesc* pMethodDesc = pEntryThunkData->GetMethod();
+
+    SString namespaceOrClassName;
+    SString methodName;
+    pMethodDesc->GetMethodInfoNoSig(namespaceOrClassName, methodName);
+
+    SString message;
+    message.Printf("A callback was made on a garbage collected delegate of type '%s!%s::%s'.",
+        pMethodDesc->GetModule()->GetSimpleName(),
+        namespaceOrClassName.GetUTF8(),
+        methodName.GetUTF8());
+
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, message.GetUnicode());
+}
+
 PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunkData)
 {
     STATIC_CONTRACT_THROWS;
@@ -193,6 +225,9 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunkData)
     // Verify the current thread isn't in COOP mode.
     if (pThread->PreemptiveGCDisabled())
         ReversePInvokeBadTransition();
+
+    if (pUMEntryThunkData->IsCollectedDelegate())
+        CallbackOnCollectedDelegate(pUMEntryThunkData)
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     // this method is called by stubs which are called by managed code,
@@ -251,12 +286,17 @@ void UMEntryThunkData::Terminate()
     }
     CONTRACTL_END;
 
-    m_pUMEntryThunk->SetTargetUnconditional((TADDR)UMEntryThunkData::ReportViolation);
+    // TheUMEntryPrestub includes diagnostic for collected delegates
+    m_pUMEntryThunk->SetTargetUnconditional(TheUMThunkPreStub());
 
-    if (GetObjectHandle())
+    OBJECTHANDLE pObjectHandle = m_pObjectHandle;
+
+    // Set m_pObjectHandle indicate the collected state
+    m_pObjectHandle = (OBJECTHANDLE)-1;
+
+    if (pObjectHandle != NULL)
     {
-        DestroyLongWeakHandle(GetObjectHandle());
-        m_pObjectHandle = 0;
+        DestroyLongWeakHandle(pObjectHandle);
     }
 
     s_thunkFreeList.AddToList(this);
@@ -274,39 +314,6 @@ VOID UMEntryThunkData::FreeUMEntryThunk(UMEntryThunkData* p)
     CONTRACTL_END;
 
     p->Terminate();
-}
-
-
-//-------------------------------------------------------------------------
-// This function is used to report error when we call collected delegate.
-// But memory that was allocated for thunk can be reused, due to it this
-// function will not be called in all cases of the collected delegate call,
-// also it may crash while trying to report the problem.
-//-------------------------------------------------------------------------
-VOID __fastcall UMEntryThunkData::ReportViolation(UMEntryThunkData* pEntryThunkData)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pEntryThunkData));
-    }
-    CONTRACTL_END;
-
-    MethodDesc* pMethodDesc = pEntryThunkData->GetMethod();
-
-    SString namespaceOrClassName;
-    SString methodName;
-    pMethodDesc->GetMethodInfoNoSig(namespaceOrClassName, methodName);
-
-    SString message;
-    message.Printf("A callback was made on a garbage collected delegate of type '%s!%s::%s'.",
-        pMethodDesc->GetModule()->GetSimpleName(),
-        namespaceOrClassName.GetUTF8(),
-        methodName.GetUTF8());
-
-    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, message.GetUnicode());
 }
 
 UMThunkMarshInfo::~UMThunkMarshInfo()

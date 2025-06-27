@@ -154,6 +154,7 @@ class UMEntryThunkData
 
     // Object handle holding "this" reference. May be a strong or weak handle.
     // Field is NULL for a static method.
+    // Field is (OBJECHANDLE)-1 for collected delegates
     OBJECTHANDLE            m_pObjectHandle;
 
     union
@@ -290,6 +291,13 @@ public:
         RETURN m_pObjectHandle;
     }
 
+    bool IsCollectedDelegate() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_pObjectHandle == (OBJECTHANDLE)-1;
+    }
+
     UMThunkMarshInfo* GetUMThunkMarshInfo() const
     {
         CONTRACT (UMThunkMarshInfo*)
@@ -335,8 +343,6 @@ public:
 
         RETURN m_pMD;
     }
-
-    static VOID __fastcall ReportViolation(UMEntryThunkData* pEntryThunkData);
 };
 
 // Cache to hold UMEntryThunk/UMThunkMarshInfo instances associated with MethodDescs.
