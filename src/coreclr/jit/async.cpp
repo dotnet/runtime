@@ -211,6 +211,11 @@ BasicBlock* Compiler::InsertTryFinallyForContextRestore(BasicBlock* block, State
     BasicBlock* finallyRet     = fgNewBBafter(BBJ_EHFINALLYRET, callFinallyRet, false);
     BasicBlock* goToTailBlock  = fgNewBBafter(BBJ_ALWAYS, finallyRet, false);
 
+    callFinally->inheritWeight(block);
+    callFinallyRet->inheritWeight(block);
+    finallyRet->inheritWeight(block);
+    goToTailBlock->inheritWeight(block);
+
     // Set some info the starting blocks like fgFindBasicBlocks does
     block->SetFlags(BBF_DONT_REMOVE);
     finallyRet->SetFlags(BBF_DONT_REMOVE);
