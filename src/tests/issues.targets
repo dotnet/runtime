@@ -1072,6 +1072,10 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/CustomAttributes/**">
             <Issue>Dynamic code generation is not supported on this platform</Issue>
         </ExcludeList>
+
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/FatalErrorHandler/**">
+            <Issue>NYI on NativeAOT</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- NativeAOT arm32 specific -->
@@ -1782,7 +1786,10 @@
             <Issue>https://github.com/dotnet/runtime/issues/98628</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/UnhandledExceptionHandler/**">
-          <Issue>NYI on Mono</Issue>
+            <Issue>NYI on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/FatalErrorHandler/**">
+            <Issue>NYI on Mono</Issue>
         </ExcludeList>
     </ItemGroup>
 

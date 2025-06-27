@@ -43,6 +43,8 @@ public:
     static FCDECL0(FC_BOOL_RET, IsServerGC);
 };
 
+extern "C" void QCALLTYPE ExceptionHandling_SetFatalErrorHandler(PVOID handler);
+
 extern "C" void QCALLTYPE Environment_Exit(INT32 exitcode);
 
 extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, PCWSTR message, QCall::ObjectHandleOnStack exception, PCWSTR errorSource);
