@@ -1089,7 +1089,7 @@ void CompressDebugInfo::RestoreBoundariesAndVars_V2(
                 bound.nativeOffset = currentNativeOffset;
 
                 mappingDataEncoded = mappingDataEncoded >> bitsForNativeDelta; // Remove native offset delta bits
-                bound.ilOffset = (uint32_t)((int32_t)mappingDataEncoded + (int32_t)ICorDebugInfo::MAX_MAPPING_VALUE);
+                bound.ilOffset = (uint32_t)((uint32_t)mappingDataEncoded + (uint32_t)ICorDebugInfo::MAX_MAPPING_VALUE);
                 pMap[iEntry] = bound;
             }
         }

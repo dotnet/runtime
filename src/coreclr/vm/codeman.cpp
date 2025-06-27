@@ -6367,7 +6367,11 @@ BOOL ReadyToRunJitManager::GetBoundariesAndVars(
         return FALSE;
 
     // Uncompress. This allocates memory and may throw.
+#ifdef USE_V2_BOUNDS_COMPRESSION_FOR_READYTORUN
+    CompressDebugInfo::RestoreBoundariesAndVars_V2(
+#else
     CompressDebugInfo::RestoreBoundariesAndVars(
+#endif
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
         pcMap, ppMap,    // output
