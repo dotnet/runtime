@@ -22,13 +22,13 @@ namespace System.Security.Cryptography
         internal static CompositeMLDsa GenerateKeyImpl(CompositeMLDsaAlgorithm algorithm) =>
             throw new PlatformNotSupportedException();
 
-        internal static CompositeMLDsa ImportPublicKeyImpl(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        internal static CompositeMLDsa ImportCompositeMLDsaPublicKeyImpl(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static CompositeMLDsa ImportPrivateKeyImpl(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        internal static CompositeMLDsa ImportCompositeMLDsaPrivateKeyImpl(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        protected override int SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
+        protected override bool TrySignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination, out int bytesWritten) =>
             throw new PlatformNotSupportedException();
 
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
@@ -37,10 +37,10 @@ namespace System.Security.Cryptography
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
             throw new PlatformNotSupportedException();
 
-        protected override bool TryExportPublicKeyCore(ReadOnlySpan<byte> destination, out int bytesWritten) =>
+        protected override bool TryExportCompositeMLDsaPublicKeyCore(ReadOnlySpan<byte> destination, out int bytesWritten) =>
             throw new PlatformNotSupportedException();
 
-        protected override bool TryExportPrivateKeyCore(ReadOnlySpan<byte> destination, out int bytesWritten) =>
+        protected override bool TryExportCompositeMLDsaPrivateKeyCore(ReadOnlySpan<byte> destination, out int bytesWritten) =>
             throw new PlatformNotSupportedException();
     }
 }

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
@@ -141,10 +140,13 @@ namespace System.Security.Cryptography
 
             try
             {
-                int written = SignDataCore(new ReadOnlySpan<byte>(data), new ReadOnlySpan<byte>(context), rented);
-                byte[] signature = new byte[written];
-                rented.AsSpan(0, written).CopyTo(signature);
-                return signature;
+                if (!TrySignDataCore(new ReadOnlySpan<byte>(data), new ReadOnlySpan<byte>(context), rented, out int written))
+                {
+                    Debug.Fail($"Signature exceeds {nameof(Algorithm.MaxSignatureSizeInBytes)} ({Algorithm.MaxSignatureSizeInBytes}).");
+                    throw new CryptographicException();
+                }
+
+                return rented.AsSpan(0, written).ToArray();
             }
             finally
             {
@@ -166,12 +168,14 @@ namespace System.Security.Cryptography
         ///   An optional context-specific value to limit the scope of the signature.
         ///   The default value is an empty buffer.
         /// </param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
         /// <returns>
-        ///   The total number of bytes written to <paramref name="destination"/>.
+        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
+        ///   otherwise, <see langword="false" />.
         /// </returns>
-        /// <exception cref="ArgumentException">
-        ///   The buffer in <paramref name="destination"/> is too small to hold the signature.
-        /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
         ///   255 bytes.
@@ -187,13 +191,8 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   The signature will be at most <see cref="CompositeMLDsaAlgorithm.MaxSignatureSizeInBytes"/> in length.
         /// </remarks>
-        public int SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
+        public bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, out int bytesWritten, ReadOnlySpan<byte> context = default)
         {
-            if (destination.Length < Algorithm.MLDsaAlgorithm.SignatureSizeInBytes)
-            {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-            }
-
             if (context.Length > MaxContextLength)
             {
                 throw new ArgumentOutOfRangeException(
@@ -204,7 +203,13 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            return SignDataCore(data, context, destination);
+            if (destination.Length < Algorithm.MLDsaAlgorithm.SignatureSizeInBytes)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            return TrySignDataCore(data, context, destination, out bytesWritten);
         }
 
         /// <summary>
@@ -220,10 +225,18 @@ namespace System.Security.Cryptography
         /// <param name="destination">
         ///   The buffer to receive the signature, whose length will be at least the ML-DSA component's signature size.
         /// </param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
+        ///   otherwise, <see langword="false" />.
+        /// </returns>
         /// <exception cref="CryptographicException">
         ///   An error occurred while signing the data.
         /// </exception>
-        protected abstract int SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination);
+        protected abstract bool TrySignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination, out int bytesWritten);
 
         /// <summary>
         ///   Verifies that the specified signature is valid for this key and the provided data.
@@ -343,16 +356,16 @@ namespace System.Security.Cryptography
         ///   <paramref name="algorithm" /> is <see langword="null" />
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   An error occured generating the Composite ML-DSA key.
+        ///   An error occurred generating the Composite ML-DSA key.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
-        ///   The platform does not support Composite ML-DSA. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports Composite ML-DSA.
+        ///   The platform does not support the specified Composite ML-DSA algorithm. Callers can use <see cref="IsAlgorithmSupported" />
+        ///   to determine if the algorithm is supported.
         /// </exception>
         public static CompositeMLDsa GenerateKey(CompositeMLDsaAlgorithm algorithm)
         {
             ArgumentNullException.ThrowIfNull(algorithm);
-            ThrowIfNotSupported();
+            ThrowIfNotSupported(algorithm);
 
             return CompositeMLDsaImplementation.GenerateKeyImpl(algorithm);
         }
@@ -410,6 +423,10 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>
         ///     An error occurred while importing the key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The specified Composite ML-DSA algorithm is not supported.
         ///   </para>
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
@@ -494,6 +511,10 @@ namespace System.Security.Cryptography
         ///   <para>
         ///     An error occurred while importing the key.
         ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The specified Composite ML-DSA algorithm is not supported.
+        ///   </para>
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support Composite ML-DSA. Callers can use the <see cref="IsSupported" /> property
@@ -546,7 +567,9 @@ namespace System.Security.Cryptography
         ///   <para><paramref name="source" /> contains no PEM-encoded Composite ML-DSA keys.</para>
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   An error occurred while importing the key.
+        ///   <para>An error occurred while importing the key.</para>
+        ///   <para>-or-</para>
+        ///   <para>The specified Composite ML-DSA algorithm is not supported.</para>
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support Composite ML-DSA. Callers can use the <see cref="IsSupported" /> property
@@ -614,6 +637,10 @@ namespace System.Security.Cryptography
         ///   <para>
         ///     The algorithm-specific import failed.
         ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The specified Composite ML-DSA algorithm is not supported.
+        ///   </para>
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support Composite ML-DSA. Callers can use the <see cref="IsSupported" /> property
@@ -637,7 +664,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Argument_PublicKeyTooShortForAlgorithm);
                 }
 
-                dsa = CompositeMLDsaImplementation.ImportPublicKeyImpl(algorithm, key.Span);
+                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPublicKeyImpl(algorithm, key.Span);
             }
         }
 
@@ -684,6 +711,10 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>
         ///     The algorithm-specific import failed.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The specified Composite ML-DSA algorithm is not supported.
         ///   </para>
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
@@ -739,6 +770,10 @@ namespace System.Security.Cryptography
         ///   <para>
         ///     The algorithm-specific import failed.
         ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The specified Composite ML-DSA algorithm is not supported.
+        ///   </para>
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support Composite ML-DSA. Callers can use the <see cref="IsSupported" /> property
@@ -792,6 +827,10 @@ namespace System.Security.Cryptography
         ///   <para>
         ///     The algorithm-specific import failed.
         ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The specified Composite ML-DSA algorithm is not supported.
+        ///   </para>
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support Composite ML-DSA. Callers can use the <see cref="IsSupported" /> property
@@ -824,27 +863,23 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Argument_PrivateKeyTooShortForAlgorithm);
                 }
 
-                dsa = CompositeMLDsaImplementation.ImportPrivateKeyImpl(algorithm, key);
+                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPrivateKeyImpl(algorithm, key);
             }
         }
 
         /// <summary>
-        ///   Imports a Composite ML-DSA public key from its private seed value.
+        ///   Imports a Composite ML-DSA public key.
         /// </summary>
         /// <param name="algorithm">
         ///   The specific Composite ML-DSA algorithm for this key.
         /// </param>
         /// <param name="source">
-        ///   The bytes the key seed.
+        ///   The bytes of the public key.
         /// </param>
         /// <returns>
         ///   The imported key.
         /// </returns>
         /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     <paramref name="algorithm"/> is not a valid Composite ML-DSA algorithm identifier.
-        ///   </para>
-        ///   <para>-or-</para>
         ///   <para>
         ///     <paramref name="source"/> length is too small for the specified algorithm.
         ///   </para>
@@ -853,34 +888,34 @@ namespace System.Security.Cryptography
         ///     An error occurred while importing the key.
         ///   </para>
         /// </exception>
-        public static CompositeMLDsa ImportPublicKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support the specified Composite ML-DSA algorithm. Callers can use <see cref="IsAlgorithmSupported" />
+        ///   to determine if the algorithm is supported.
+        /// </exception>
+        public static CompositeMLDsa ImportCompositeMLDsaPublicKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNotSupported();
+            ThrowIfNotSupported(algorithm);
 
             if (source.Length < algorithm.MLDsaAlgorithm.PublicKeySizeInBytes)
             {
                 throw new CryptographicException(SR.Argument_PublicKeyTooShortForAlgorithm);
             }
 
-            return CompositeMLDsaImplementation.ImportPublicKeyImpl(algorithm, source);
+            return CompositeMLDsaImplementation.ImportCompositeMLDsaPublicKeyImpl(algorithm, source);
         }
         /// <summary>
-        ///   Imports a Composite ML-DSA private key from its private seed value.
+        ///   Imports a Composite ML-DSA private key.
         /// </summary>
         /// <param name="algorithm">
         ///   The specific Composite ML-DSA algorithm for this key.
         /// </param>
         /// <param name="source">
-        ///   The bytes the key seed.
+        ///   The bytes of the public key.
         /// </param>
         /// <returns>
         ///   The imported key.
         /// </returns>
         /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     <paramref name="algorithm"/> is not a valid Composite ML-DSA algorithm identifier.
-        ///   </para>
-        ///   <para>-or-</para>
         ///   <para>
         ///     <paramref name="source"/> length is too small for the specified algorithm.
         ///   </para>
@@ -889,16 +924,20 @@ namespace System.Security.Cryptography
         ///     An error occurred while importing the key.
         ///   </para>
         /// </exception>
-        public static CompositeMLDsa ImportPrivateKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support the specified Composite ML-DSA algorithm. Callers can use <see cref="IsAlgorithmSupported" />
+        ///   to determine if the algorithm is supported.
+        /// </exception>
+        public static CompositeMLDsa ImportCompositeMLDsaPrivateKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNotSupported();
+            ThrowIfNotSupported(algorithm);
 
             if (source.Length < algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes)
             {
                 throw new CryptographicException(SR.Argument_PrivateKeyTooShortForAlgorithm);
             }
 
-            return CompositeMLDsaImplementation.ImportPrivateKeyImpl(algorithm, source);
+            return CompositeMLDsaImplementation.ImportCompositeMLDsaPrivateKeyImpl(algorithm, source);
         }
 
         /// <inheritdoc cref="ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan{char}, PbeParameters)"/>
@@ -950,7 +989,7 @@ namespace System.Security.Cryptography
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
             ThrowIfDisposed();
 
-            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(password, pbeParameters);
+            AsnWriter writer = WriteEncryptedPkcs8PrivateKeyToAsnWriter(password, pbeParameters);
 
             // Skip clear since the data is already encrypted.
             return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
@@ -994,7 +1033,7 @@ namespace System.Security.Cryptography
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
             ThrowIfDisposed();
 
-            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(passwordBytes, pbeParameters);
+            AsnWriter writer = WriteEncryptedPkcs8PrivateKeyToAsnWriter(passwordBytes, pbeParameters);
 
             // Skip clear since the data is already encrypted.
             return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
@@ -1046,7 +1085,7 @@ namespace System.Security.Cryptography
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
             ThrowIfDisposed();
 
-            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(passwordBytes, pbeParameters);
+            AsnWriter writer = WriteEncryptedPkcs8PrivateKeyToAsnWriter(passwordBytes, pbeParameters);
 
             try
             {
@@ -1091,7 +1130,7 @@ namespace System.Security.Cryptography
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
             ThrowIfDisposed();
 
-            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(password, pbeParameters);
+            AsnWriter writer = WriteEncryptedPkcs8PrivateKeyToAsnWriter(password, pbeParameters);
 
             try
             {
@@ -1164,7 +1203,7 @@ namespace System.Security.Cryptography
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
             ThrowIfDisposed();
 
-            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(password, pbeParameters);
+            AsnWriter writer = WriteEncryptedPkcs8PrivateKeyToAsnWriter(password, pbeParameters);
 
             try
             {
@@ -1224,7 +1263,7 @@ namespace System.Security.Cryptography
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
             ThrowIfDisposed();
 
-            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(passwordBytes, pbeParameters);
+            AsnWriter writer = WriteEncryptedPkcs8PrivateKeyToAsnWriter(passwordBytes, pbeParameters);
 
             try
             {
@@ -1304,9 +1343,9 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            // TODO Use a more accurate minimum size for the PKCS#8 PrivateKeyInfo format.
-
-            int minimumPossiblePkcs8Key = int.MaxValue;
+            // The bound can be tightened but private key length of some traditional algorithms,
+            // can vary and aren't worth the complex calculation.
+            int minimumPossiblePkcs8Key = Algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes;
 
             if (destination.Length < minimumPossiblePkcs8Key)
             {
@@ -1357,7 +1396,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            AsnWriter writer = ExportSubjectPublicKeyInfoCore();
+            AsnWriter writer = WriteSubjectPublicKeyToAsnWriter();
 
             // SPKI does not contain sensitive data.
             return EncodeAsnWriterToPem(PemLabels.SpkiPublicKey, writer, clear: false);
@@ -1379,8 +1418,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            AsnWriter writer = ExportSubjectPublicKeyInfoCore();
-            return writer.Encode();
+            return WriteSubjectPublicKeyToAsnWriter().Encode();
         }
 
         /// <summary>
@@ -1408,33 +1446,25 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            AsnWriter writer = ExportSubjectPublicKeyInfoCore();
+            AsnWriter writer = WriteSubjectPublicKeyToAsnWriter();
             return writer.TryEncode(destination, out bytesWritten);
         }
 
-        // TODO Determine whether the raw key methods are necessary.
-
         /// <summary>
-        ///   Exports the public-key portion of the current key in the FIPS 205 public key format.
+        ///   Exports the public-key portion of the current key.
         /// </summary>
         /// <returns>
-        ///   The FIPS 205 public key.
+        ///   The Composite ML-DSA public key.
         /// </returns>
         /// <exception cref="CryptographicException">
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public byte[] ExportPublicKey()
+        public byte[] ExportCompositeMLDsaPublicKey()
         {
             ThrowIfDisposed();
 
-            // TODO Pick a good estimate for the initial size of the buffer.
-            int initalSize = 1;
-
-            return ExportWithCallback(
-                initalSize,
-                static (key, dest, out written) => key.TryExportPublicKeyCore(dest, out written),
-                publicKey => publicKey.ToArray());
+            return ExportPublicKeyCallback(static publicKey => publicKey.ToArray());
         }
 
         /// <summary>
@@ -1457,28 +1487,28 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        public bool TryExportPublicKey(Span<byte> destination, out int bytesWritten)
+        public bool TryExportCompositeMLDsaPublicKey(Span<byte> destination, out int bytesWritten)
         {
             ThrowIfDisposed();
 
             // TODO short-circuit based on known required length lower bounds
 
-            return TryExportPublicKeyCore(destination, out bytesWritten);
+            return TryExportCompositeMLDsaPublicKeyCore(destination, out bytesWritten);
         }
 
         /// <summary>
-        ///   Exports the current key in the FIPS 205 secret key format.
+        ///   Exports the private-key portion of the current key.
         /// </summary>
         /// <returns>
-        ///   The FIPS 205 secret key.
+        ///   The Composite ML-DSA private key.
         /// </returns>
         /// <exception cref="CryptographicException">
-        ///   <para>The current instance cannot export a secret key.</para>
+        ///   <para>The current instance cannot export a private key.</para>
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public byte[] ExportPrivateKey()
+        public byte[] ExportCompositeMLDsaPrivateKey()
         {
             ThrowIfDisposed();
 
@@ -1487,8 +1517,8 @@ namespace System.Security.Cryptography
 
             return ExportWithCallback(
                 initalSize,
-                static (key, dest, out written) => key.TryExportPrivateKeyCore(dest, out written),
-                privateKey => privateKey.ToArray());
+                static (key, dest, out written) => key.TryExportCompositeMLDsaPrivateKeyCore(dest, out written),
+                static privateKey => privateKey.ToArray());
         }
 
         /// <summary>
@@ -1511,13 +1541,13 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        public bool TryExportPrivateKey(Span<byte> destination, out int bytesWritten)
+        public bool TryExportCompositeMLDsaPrivateKey(Span<byte> destination, out int bytesWritten)
         {
             ThrowIfDisposed();
 
             // TODO short-circuit based on known required length lower bounds
 
-            return TryExportPrivateKeyCore(destination, out bytesWritten);
+            return TryExportCompositeMLDsaPrivateKeyCore(destination, out bytesWritten);
         }
 
         /// <summary>
@@ -1539,7 +1569,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        protected abstract bool TryExportPublicKeyCore(ReadOnlySpan<byte> destination, out int bytesWritten);
+        protected abstract bool TryExportCompositeMLDsaPublicKeyCore(ReadOnlySpan<byte> destination, out int bytesWritten);
 
         /// <summary>
         ///   When overridden in a derived class, attempts to export the private key portion of the current key.
@@ -1560,7 +1590,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        protected abstract bool TryExportPrivateKeyCore(ReadOnlySpan<byte> destination, out int bytesWritten);
+        protected abstract bool TryExportCompositeMLDsaPrivateKeyCore(ReadOnlySpan<byte> destination, out int bytesWritten);
 
         /// <summary>
         ///   Releases all resources used by the <see cref="CompositeMLDsa"/> class.
@@ -1587,7 +1617,7 @@ namespace System.Security.Cryptography
         {
         }
 
-        private AsnWriter ExportEncryptedPkcs8PrivateKeyCore(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
+        private AsnWriter WriteEncryptedPkcs8PrivateKeyToAsnWriter(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
             AsnWriter? tmp = null;
 
@@ -1602,7 +1632,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private AsnWriter ExportEncryptedPkcs8PrivateKeyCore(ReadOnlySpan<char> password, PbeParameters pbeParameters)
+        private AsnWriter WriteEncryptedPkcs8PrivateKeyToAsnWriter(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
             AsnWriter? tmp = null;
 
@@ -1637,25 +1667,62 @@ namespace System.Security.Cryptography
             });
         }
 
-        private delegate TResult ExportPkcs8PrivateKeyFunc<TResult>(ReadOnlySpan<byte> pkcs8);
-
-        private TResult ExportPkcs8PrivateKeyCallback<TResult>(ExportPkcs8PrivateKeyFunc<TResult> func)
+        private TResult ExportPkcs8PrivateKeyCallback<TResult>(ProcessExportedContent<TResult> func)
         {
             // TODO Pick a good estimate for the initial size of the buffer.
-            int size = 1;
+            int initialSize = 1;
 
             return ExportWithCallback(
-                size,
+                initialSize,
                 static (key, dest, out written) => key.TryExportPkcs8PrivateKeyCore(dest, out written),
                 func);
         }
 
+        private AsnWriter WriteSubjectPublicKeyToAsnWriter()
+        {
+            return ExportPublicKeyCallback(publicKey =>
+            {
+                // TODO verify overhead
+
+                // TODO: The ASN.1 overhead of a SubjectPublicKeyInfo encoding a public key is ___ bytes.
+                // Round it off to 32. This checked operation should never throw because the inputs are not
+                // user provided.
+                int capacity = checked(32 + publicKey.Length);
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, capacity);
+
+                using (writer.PushSequence())
+                {
+                    using (writer.PushSequence())
+                    {
+                        writer.WriteObjectIdentifier(Algorithm.Oid);
+                    }
+
+                    writer.WriteBitString(publicKey);
+                }
+
+                Debug.Assert(writer.GetEncodedLength() <= capacity);
+                return writer;
+            });
+        }
+
+        private TResult ExportPublicKeyCallback<TResult>(ProcessExportedContent<TResult> func)
+        {
+            // TODO pick a good estimate for the initial size of the buffer.
+            int initialSize = 1;
+
+            return ExportWithCallback(
+                initialSize,
+                static (key, dest, out written) => key.TryExportCompositeMLDsaPublicKeyCore(dest, out written),
+                func);
+        }
+
         private delegate bool TryExportFunc(CompositeMLDsa compositeMLDsa, Span<byte> destination, out int written);
+        private delegate TResult ProcessExportedContent<TResult>(ReadOnlySpan<byte> exportedContent);
 
         private TResult ExportWithCallback<TResult>(
             int initialSize,
             TryExportFunc tryExportFunc,
-            ExportPkcs8PrivateKeyFunc<TResult> callbackFunc)
+            ProcessExportedContent<TResult> callbackFunc)
         {
             Debug.Assert(initialSize > 0);
 
@@ -1684,48 +1751,6 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptoPool.Return(buffer, written);
-            }
-        }
-
-        private AsnWriter ExportSubjectPublicKeyInfoCore()
-        {
-            // TODO pick a good estimate for the initial size of the buffer.
-            int estimatedMaxPublicKeySizeInBytes = 1;
-            byte[] rented = CryptoPool.Rent(estimatedMaxPublicKeySizeInBytes);
-
-            try
-            {
-                if (!TryExportPublicKeyCore(rented, out int written))
-                {
-                    Debug.Fail("Public key size exceeded the maximum allowed size.");
-                    throw new CryptographicException();
-                }
-
-                // TODO verify overhead
-
-                // TODO: The ASN.1 overhead of a SubjectPublicKeyInfo encoding a public key is ___ bytes.
-                // Round it off to 32. This checked operation should never throw because the inputs are not
-                // user provided.
-                int capacity = checked(32 + written);
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, capacity);
-
-                using (writer.PushSequence())
-                {
-                    using (writer.PushSequence())
-                    {
-                        writer.WriteObjectIdentifier(Algorithm.Oid);
-                    }
-
-                    writer.WriteBitString(rented.AsSpan(0, written));
-                }
-
-                Debug.Assert(writer.GetEncodedLength() <= capacity);
-                return writer;
-            }
-            finally
-            {
-                // Public key does not contain sensitive information.
-                CryptoPool.Return(rented, clearSize: 0);
             }
         }
 
@@ -1787,6 +1812,14 @@ namespace System.Security.Cryptography
         internal static void ThrowIfNotSupported()
         {
             if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLDsa)));
+            }
+        }
+
+        internal static void ThrowIfNotSupported(CompositeMLDsaAlgorithm algorithm)
+        {
+            if (!IsSupported || !IsAlgorithmSupported(algorithm))
             {
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLDsa)));
             }

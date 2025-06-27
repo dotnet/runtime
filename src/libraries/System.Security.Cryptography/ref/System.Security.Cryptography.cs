@@ -546,6 +546,8 @@ namespace System.Security.Cryptography
         public static bool IsSupported { get { throw null; } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public byte[] ExportCompositeMLDsaPrivateKey() { throw null; }
+        public byte[] ExportCompositeMLDsaPublicKey() { throw null; }
         public byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
         public byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
         public byte[] ExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
@@ -554,11 +556,11 @@ namespace System.Security.Cryptography
         public string ExportEncryptedPkcs8PrivateKeyPem(string password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
         public byte[] ExportPkcs8PrivateKey() { throw null; }
         public string ExportPkcs8PrivateKeyPem() { throw null; }
-        public byte[] ExportPrivateKey() { throw null; }
-        public byte[] ExportPublicKey() { throw null; }
         public byte[] ExportSubjectPublicKeyInfo() { throw null; }
         public string ExportSubjectPublicKeyInfoPem() { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa GenerateKey(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm) { throw null; }
+        public static System.Security.Cryptography.CompositeMLDsa ImportCompositeMLDsaPrivateKey(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.CompositeMLDsa ImportCompositeMLDsaPublicKey(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa ImportEncryptedPkcs8PrivateKey(string password, byte[] source) { throw null; }
@@ -570,24 +572,22 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.CompositeMLDsa ImportFromPem(string source) { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa ImportPkcs8PrivateKey(byte[] source) { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa ImportPkcs8PrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
-        public static System.Security.Cryptography.CompositeMLDsa ImportPrivateKey(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
-        public static System.Security.Cryptography.CompositeMLDsa ImportPublicKey(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa ImportSubjectPublicKeyInfo(byte[] source) { throw null; }
         public static System.Security.Cryptography.CompositeMLDsa ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) { throw null; }
         public static bool IsAlgorithmSupported(System.Security.Cryptography.CompositeMLDsaAlgorithm algorithm) { throw null; }
         public byte[] SignData(byte[] data, byte[]? context = null) { throw null; }
-        public int SignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { throw null; }
-        protected abstract int SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination);
+        public bool TryExportCompositeMLDsaPrivateKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        protected abstract bool TryExportCompositeMLDsaPrivateKeyCore(System.ReadOnlySpan<byte> destination, out int bytesWritten);
+        public bool TryExportCompositeMLDsaPublicKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        protected abstract bool TryExportCompositeMLDsaPublicKeyCore(System.ReadOnlySpan<byte> destination, out int bytesWritten);
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryExportPkcs8PrivateKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected abstract bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten);
-        public bool TryExportPrivateKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
-        protected abstract bool TryExportPrivateKeyCore(System.ReadOnlySpan<byte> destination, out int bytesWritten);
-        public bool TryExportPublicKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
-        protected abstract bool TryExportPublicKeyCore(System.ReadOnlySpan<byte> destination, out int bytesWritten);
         public bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool TrySignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination, out int bytesWritten, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected abstract bool TrySignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination, out int bytesWritten);
         public bool VerifyData(byte[] data, byte[] signature, byte[]? context = null) { throw null; }
         public bool VerifyData(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { throw null; }
         protected abstract bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.ReadOnlySpan<byte> signature);
@@ -596,25 +596,25 @@ namespace System.Security.Cryptography
     public sealed partial class CompositeMLDsaAlgorithm : System.IEquatable<System.Security.Cryptography.CompositeMLDsaAlgorithm>
     {
         internal CompositeMLDsaAlgorithm() { }
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa44WithECDsaP256;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa44WithEd25519;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa44WithRSA2048Pkcs15;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa44WithRSA2048Pss;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa65WithECDsaBrainpoolP256r1;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa65WithECDsaP256;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa65WithECDsaP384;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa65WithEd25519;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa65WithRSA3072Pkcs15;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa65WithRSA3072Pss;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa65WithRSA4096Pkcs15;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa65WithRSA4096Pss;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa87WithECDsaBrainpoolP384r1;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa87WithECDsaP384;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa87WithECDsaP521;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa87WithEd448;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa87WithRSA3072Pss;
-        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa87WithRSA4096Pss;
         public int MaxSignatureSizeInBytes { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa44WithECDsaP256 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa44WithEd25519 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa44WithRSA2048Pkcs15 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa44WithRSA2048Pss { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa65WithECDsaBrainpoolP256r1 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa65WithECDsaP256 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa65WithECDsaP384 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa65WithEd25519 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa65WithRSA3072Pkcs15 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa65WithRSA3072Pss { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa65WithRSA4096Pkcs15 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa65WithRSA4096Pss { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa87WithECDsaBrainpoolP384r1 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa87WithECDsaP384 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa87WithECDsaP521 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa87WithEd448 { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa87WithRSA3072Pss { get { throw null; } }
+        public static System.Security.Cryptography.CompositeMLDsaAlgorithm MLDsa87WithRSA4096Pss { get { throw null; } }
         public string Name { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.CompositeMLDsaAlgorithm? other) { throw null; }

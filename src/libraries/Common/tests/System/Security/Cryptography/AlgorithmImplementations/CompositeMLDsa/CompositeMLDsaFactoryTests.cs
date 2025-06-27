@@ -14,8 +14,8 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.FalseExpression(CompositeMLDsa.IsAlgorithmSupported(CompositeMLDsaAlgorithm.MLDsa44WithRSA2048Pss));
 
             Assert.Throws<PlatformNotSupportedException>(() => CompositeMLDsa.GenerateKey(CompositeMLDsaAlgorithm.MLDsa44WithRSA2048Pss));
-            Assert.Throws<PlatformNotSupportedException>(() => CompositeMLDsa.ImportPrivateKey(CompositeMLDsaAlgorithm.MLDsa44WithRSA2048Pss, new byte[MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes]));
-            Assert.Throws<PlatformNotSupportedException>(() => CompositeMLDsa.ImportPublicKey(CompositeMLDsaAlgorithm.MLDsa44WithRSA2048Pss, new byte[MLDsaAlgorithm.MLDsa44.PublicKeySizeInBytes]));
+            Assert.Throws<PlatformNotSupportedException>(() => CompositeMLDsa.ImportCompositeMLDsaPrivateKey(CompositeMLDsaAlgorithm.MLDsa44WithRSA2048Pss, new byte[MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes]));
+            Assert.Throws<PlatformNotSupportedException>(() => CompositeMLDsa.ImportCompositeMLDsaPublicKey(CompositeMLDsaAlgorithm.MLDsa44WithRSA2048Pss, new byte[MLDsaAlgorithm.MLDsa44.PublicKeySizeInBytes]));
         }
     }
 }
