@@ -504,7 +504,7 @@ void CodeGen::inst_SET(emitJumpKind condition, regNumber reg, insOpts instOption
     // If using ZU feature, we need to promote the SETcc to the new instruction.
     if ((instOptions & INS_OPTS_EVEX_zu_MASK) != 0)
     {
-        ins = (instruction)(ins + 8);
+        ins = (instruction)(ins + 16);
     }
 #endif
 

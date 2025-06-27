@@ -16672,9 +16672,9 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
             assert(TakesApxExtendedEvexPrefix(id));
             assert(size == EA_1BYTE);
 
-            code = insEncodeMRreg(id, reg, size, insCodeMR(ins));
+            code = insCodeMR(ins);
             code = AddEvexPrefix(id, code, size);
-            unsigned regcode = insEncodeReg012(id, reg, size, &code);
+            code = insEncodeMRreg(id, reg, EA_1BYTE, code);
             dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
             dst += emitOutputWord(dst, code & 0x0000FFFF);
             break;

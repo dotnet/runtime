@@ -1808,12 +1808,12 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
     assert(genIsValidIntReg(dstReg) && isByteReg(dstReg));
 
     const GenConditionDesc& desc = GenConditionDesc::Get(condition);
-
-    inst_SET(desc.jumpKind1, dstReg);
-
-
-    const bool useZU = compiler->canUseApxEncoding() && compiler->canUseEvexEncoding() && JitConfig.EnableApxZU();
+    const bool useZU = compiler->canUseApxEncoding() && compiler->canUseEvexEncoding() && JitConfig.EnableApxZU() && !varTypeIsByte(type);
     insOpts instOptions = useZU ? INS_OPTS_EVEX_zu : INS_OPTS_NONE;
+
+    inst_SET(desc.jumpKind1, dstReg, instOptions);
+
+
     if (desc.oper != GT_NONE)
     {
         BasicBlock* labelNext = genCreateTempLabel();
@@ -1823,7 +1823,7 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
     }
 
     // TODO-XArch-Apx: we can apply EVEX.ZU to avoid this movzx.
-    if (!varTypeIsByte(type) && !useZU)
+    if (!useZU)
     {
         GetEmitter()->emitIns_Mov(INS_movzx, EA_1BYTE, dstReg, dstReg, /* canSkip */ false);
     }

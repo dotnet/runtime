@@ -1279,14 +1279,14 @@ INST1(sets,             "sets",             IUM_WR, 0x0F0098,                   
 INST1(setns,            "setns",            IUM_WR, 0x0F0099,                                                            INS_TT_NONE,    Reads_SF | Encoding_REX2)
 INST1(setp,             "setp",             IUM_WR, 0x0F009A,                                                            INS_TT_NONE,    Reads_PF | Encoding_REX2)
 INST1(setnp,            "setnp",            IUM_WR, 0x0F009B,                                                            INS_TT_NONE,    Reads_PF | Encoding_REX2)
-INST1(setl,             "setl",             IUM_WR, 0x0F009C,                                                            INS_TT_NONE,    Reads_OF       | Reads_SF | Encoding_REX2)
-INST1(setge,            "setge",            IUM_WR, 0x0F009D,                                                            INS_TT_NONE,    Reads_OF       | Reads_SF | Encoding_REX2)
-INST1(setle,            "setle",            IUM_WR, 0x0F009E,                                                            INS_TT_NONE,    Reads_OF       | Reads_SF      | Reads_ZF | Encoding_REX2)
-INST1(setg,             "setg",             IUM_WR, 0x0F009F,                                                            INS_TT_NONE,    Reads_OF       | Reads_SF      | Reads_ZF | Encoding_REX2)
+INST1(setl,             "setl",             IUM_WR, 0x0F009C,                                                            INS_TT_NONE,    Reads_OF | Reads_SF | Encoding_REX2)
+INST1(setge,            "setge",            IUM_WR, 0x0F009D,                                                            INS_TT_NONE,    Reads_OF | Reads_SF | Encoding_REX2)
+INST1(setle,            "setle",            IUM_WR, 0x0F009E,                                                            INS_TT_NONE,    Reads_OF | Reads_SF      | Reads_ZF | Encoding_REX2)
+INST1(setg,             "setg",             IUM_WR, 0x0F009F,                                                            INS_TT_NONE,    Reads_OF | Reads_SF      | Reads_ZF | Encoding_REX2)
 
 #ifdef TARGET_AMD64
 INST1(setzuo,             "setzuo",         IUM_WR, 0x40,                                                                INS_TT_NONE,    Reads_OF)
-INST1(setzuno,           "setzuno",         IUM_WR, 0x41,                                                                INS_TT_NONE,    Reads_OF)
+INST1(setzuno,            "setzuno",        IUM_WR, 0x41,                                                                INS_TT_NONE,    Reads_OF)
 INST1(setzub,             "setzub",         IUM_WR, 0x42,                                                                INS_TT_NONE,    Reads_CF)
 INST1(setzuae,            "setzuae",        IUM_WR, 0x43,                                                                INS_TT_NONE,    Reads_CF)
 INST1(setzue,             "setzue",         IUM_WR, 0x44,                                                                INS_TT_NONE,    Reads_ZF)
@@ -1297,10 +1297,10 @@ INST1(setzus,             "setzus",         IUM_WR, 0x48,                       
 INST1(setzuns,            "setzuns",        IUM_WR, 0x49,                                                                INS_TT_NONE,    Reads_SF)
 INST1(setzup,             "setzup",         IUM_WR, 0x4A,                                                                INS_TT_NONE,    Reads_PF)
 INST1(setzunp,            "setzunp",        IUM_WR, 0x4B,                                                                INS_TT_NONE,    Reads_PF)
-INST1(setzul,             "setzul",         IUM_WR, 0x4C,                                                                INS_TT_NONE,    Reads_OF       | Reads_SF)
-INST1(setzuge,            "setzuge",        IUM_WR, 0x4D,                                                                INS_TT_NONE,    Reads_OF       | Reads_SF)
-INST1(setzule,            "setzule",        IUM_WR, 0x4E,                                                                INS_TT_NONE,    Reads_OF       | Reads_SF      | Reads_ZF)
-INST1(setzug,             "setzug",         IUM_WR, 0x4F,                                                                INS_TT_NONE,    Reads_OF       | Reads_SF      | Reads_ZF)
+INST1(setzul,             "setzul",         IUM_WR, 0x4C,                                                                INS_TT_NONE,    Reads_OF | Reads_SF)
+INST1(setzuge,            "setzuge",        IUM_WR, 0x4D,                                                                INS_TT_NONE,    Reads_OF | Reads_SF)
+INST1(setzule,            "setzule",        IUM_WR, 0x4E,                                                                INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF)
+INST1(setzug,             "setzug",         IUM_WR, 0x4F,                                                                INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF)
 #endif
 
 // Indirect jump used for tailcalls. We differentiate between func-internal
