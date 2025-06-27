@@ -4494,7 +4494,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                 }
 #endif
                 // Change the target for bFilterLast from the old first 'block' to the new first 'bPrev'
-                fgRedirectEdge(bFilterLast->GetTargetEdgeRef(), bPrev);
+                fgRedirectEdge(bFilterLast->TargetEdgeRef(), bPrev);
             }
         }
 

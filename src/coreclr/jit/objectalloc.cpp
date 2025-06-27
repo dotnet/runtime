@@ -4535,7 +4535,7 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
     BasicBlock*       firstClonedBlock = nullptr;
     bool const        firstFound       = map.Lookup(firstBlock, &firstClonedBlock);
     assert(firstFound);
-    comp->fgRedirectEdge(info->m_allocBlock->GetTargetEdgeRef(), firstClonedBlock);
+    comp->fgRedirectEdge(info->m_allocBlock->TargetEdgeRef(), firstClonedBlock);
 
     // If we are subsequently going to do the "empty collection static enumerator" opt,
     // then our profile is now consistent.
