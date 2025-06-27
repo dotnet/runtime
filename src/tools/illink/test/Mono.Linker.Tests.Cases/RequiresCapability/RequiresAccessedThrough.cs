@@ -132,8 +132,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
             [ExpectedWarning("IL2026", "--NewConstraintTestType.ctor--")]
             [ExpectedWarning("IL2026", "--NewConstraintTestAnnotatedType--")]
-            [ExpectedWarning("IL3002", "--NewConstraintTestType.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--NewConstraintTestType.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--NewConstraintTestType.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--NewConstraintTestType.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public static void Test<T>() where T : new()
             {
                 GenericMethod<NewConstraintTestType>();
@@ -152,8 +152,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
             [ExpectedWarning("IL2026", "--NewConstraintTestType.ctor--")]
             [ExpectedWarning("IL2026", "--NewConstraintTestAnnotatedType--")]
-            [ExpectedWarning("IL3002", "--NewConstraintTestType.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--NewConstraintTestType.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--NewConstraintTestType.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--NewConstraintTestType.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public static void TestNewConstraintOnTypeParameter<T>() where T : new()
             {
                 _ = new NewConstraintOnTypeParameter<NewConstraintTestType>();
@@ -162,8 +162,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--AnnotatedMethod--")]
-            [ExpectedWarning("IL3002", "--AnnotatedMethod--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--AnnotatedMethod--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--AnnotatedMethod--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--AnnotatedMethod--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public static void TestNewConstraintOnTypeParameterInAnnotatedMethod()
             {
                 AnnotatedMethod();
@@ -187,8 +187,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [RequiresUnreferencedCode("--AnnotatedType--")]
             class AnnotatedType
             {
-                [ExpectedWarning("IL3002", "--NewConstraintTestType.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL3050", "--NewConstraintTestType.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3002", "--NewConstraintTestType.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+                [ExpectedWarning("IL3050", "--NewConstraintTestType.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 public static void Method()
                 {
                     _ = new NewConstraintOnTypeParameter<NewConstraintTestType>();
@@ -198,8 +198,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
             [ExpectedWarning("IL2026", "--NewConstraintTestType.ctor--")]
             [ExpectedWarning("IL2026", "--NewConstraintTestAnnotatedType--")]
-            [ExpectedWarning("IL3002", "--NewConstraintTestType.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--NewConstraintTestType.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--NewConstraintTestType.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--NewConstraintTestType.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public static void TestNewConstraintOnTypeParameterOfStaticType<T>() where T : new()
             {
                 NewConstraintOnTypeParameterOfStaticType<NewConstraintTestType>.DoNothing();
@@ -223,9 +223,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
             [ExpectedWarning("IL2026", "--PropertyWithLdToken.get--")]
             [ExpectedWarning("IL2026", "--PropertyWithLdToken.get--", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3002", "--PropertyWithLdToken.get--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--PropertyWithLdToken.get--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             [ExpectedWarning("IL3002", "--PropertyWithLdToken.get--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--PropertyWithLdToken.get--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3050", "--PropertyWithLdToken.get--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             [ExpectedWarning("IL3050", "--PropertyWithLdToken.get--", Tool.NativeAot, "")]
             static void TestPropertyLdToken()
             {
@@ -240,8 +240,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--MethodWithLdToken--")]
-            [ExpectedWarning("IL3002", "--MethodWithLdToken--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--MethodWithLdToken--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--MethodWithLdToken--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--MethodWithLdToken--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             static void TestMethodLdToken()
             {
                 Expression<Action> e = () => MethodWithLdToken();
@@ -255,7 +255,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--FieldWithLdToken--")]
-            [ExpectedWarning("IL3050", "--FieldWithLdToken--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3050", "--FieldWithLdToken--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             static void TestFieldLdToken()
             {
                 Expression<Func<int>> f = () => FieldWithLdTokenType.Field;
@@ -279,16 +279,16 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--MethodWithDelegate--")]
-            [ExpectedWarning("IL3002", "--MethodWithDelegate--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--MethodWithDelegate--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--MethodWithDelegate--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--MethodWithDelegate--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             static void TestMethodWithDelegate()
             {
                 Action a = MethodWithDelegate;
             }
 
             [ExpectedWarning("IL2026", "--LambdaThroughDelegate--")]
-            [ExpectedWarning("IL3002", "--LambdaThroughDelegate--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--LambdaThroughDelegate--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--LambdaThroughDelegate--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--LambdaThroughDelegate--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             static void LambdaThroughDelegate()
             {
                 Action a =
@@ -302,8 +302,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--LocalFunctionThroughDelegate--")]
-            [ExpectedWarning("IL3002", "--LocalFunctionThroughDelegate--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--LocalFunctionThroughDelegate--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--LocalFunctionThroughDelegate--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--LocalFunctionThroughDelegate--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             static void LocalFunctionThroughDelegate()
             {
                 Action a = Local;
