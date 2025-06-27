@@ -673,7 +673,8 @@ namespace ILCompiler
                 || method.IsIntrinsic
                 || method.IsNoInlining
                 || method.IsNoOptimization
-                || _nestedILProvider.GetMethodIL(method) is not MethodIL methodIL)
+                || _nestedILProvider.GetMethodIL(method) is not MethodIL methodIL
+                || methodIL.GetExceptionRegions().Length > 0)
             {
                 return Fail(out constant);
             }
