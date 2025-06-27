@@ -606,7 +606,13 @@ namespace ILCompiler
 
         protected override ComputedInstanceFieldLayout ComputeInstanceFieldLayout(MetadataType type, int numInstanceFields)
         {
-            if (type.IsExplicitLayout)
+            ClassLayoutMetadata layoutMetadata = type.GetClassLayout();
+            MetadataLayoutKind layoutKind = layoutMetadata.Kind;
+            if (layoutKind == MetadataLayoutKind.CStruct)
+            {
+                return ComputeCStructFieldLayout(type, numInstanceFields);
+            }
+            else if (layoutKind == MetadataLayoutKind.Explicit)
             {
                 // Works around https://github.com/dotnet/runtime/issues/102868
                 if (!type.IsValueType &&
@@ -615,9 +621,9 @@ namespace ILCompiler
                     ThrowHelper.ThrowTypeLoadException(type);
                 }
 
-                return ComputeExplicitFieldLayout(type, numInstanceFields);
+                return ComputeExplicitFieldLayout(type, numInstanceFields, layoutMetadata);
             }
-            else if (type.IsSequentialLayout && !type.ContainsGCPointers)
+            else if (layoutKind == MetadataLayoutKind.Sequential && !type.ContainsGCPointers)
             {
                 // Works around https://github.com/dotnet/runtime/issues/102868
                 if (!type.IsValueType &&
@@ -626,11 +632,11 @@ namespace ILCompiler
                     ThrowHelper.ThrowTypeLoadException(type);
                 }
 
-                return ComputeSequentialFieldLayout(type, numInstanceFields);
+                return ComputeSequentialFieldLayout(type, numInstanceFields, layoutMetadata);
             }
             else
             {
-                return ComputeAutoFieldLayout(type, numInstanceFields);
+                return ComputeAutoFieldLayout(type, numInstanceFields, layoutMetadata);
             }
         }
 
