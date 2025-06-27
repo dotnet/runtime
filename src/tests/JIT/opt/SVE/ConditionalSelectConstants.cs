@@ -53,6 +53,13 @@ public class ConditionalSelectConstants
             {
                 fail = true;
             }
+
+            var r6 = ConditionalSelectConstsNoMaskPattern();
+            Console.WriteLine(r6);
+            if (r6 != false)
+            {
+                fail = true;
+            }
         }
 
         if (fail)
@@ -102,6 +109,8 @@ public class ConditionalSelectConstants
         );
     }
 
+    // Valuenum will optimise away the ConditionalSelect.
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static sbyte ConditionalSelectConsts()
     {
@@ -109,5 +118,19 @@ public class ConditionalSelectConstants
                                         Vector128.CreateScalar((sbyte)0).AsVector(),
                                         Vector.Create<sbyte>(107));
         return Sve.ConditionalExtractLastActiveElement(Vector128.CreateScalar((sbyte)0).AsVector(), 5, vec);
+    }
+
+    // Valuenum will optimise away the ConditionalSelect.
+    // vr0 is a constant mask, but is not a known pattern.
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool ConditionalSelectConstsNoMaskPattern()
+    {
+        var vr2 = Vector128.CreateScalar(5653592783208606001L).AsVector();
+        var vr3 = Vector128.CreateScalar(6475288982576452694L).AsVector();
+        var vr4 = Vector.Create<long>(1);
+        var vr0 = Sve.ConditionalSelect(vr2, vr3, vr4);
+        var vr5 = Vector128.CreateScalar((long)0).AsVector();
+        return Sve.TestFirstTrue(vr0, vr5);
     }
 }
