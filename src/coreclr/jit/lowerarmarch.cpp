@@ -1182,18 +1182,19 @@ GenTree* Lowering::LowerCnsMask(GenTreeMskCon* mask)
         unreached();
     }
     assert(use.User()->OperIsHWIntrinsic());
-    GenTreeHWIntrinsic *parent = use.User()->AsHWIntrinsic();
+    GenTreeHWIntrinsic* parent = use.User()->AsHWIntrinsic();
 
-    var_types parentBaseType    = parent->GetSimdBaseType();
-    CorInfoType    parentSimdBaseJitType = parent->GetSimdBaseJitType();
-    unsigned  parentSimdSize     = parent->GetSimdSize();
+    var_types   parentBaseType        = parent->GetSimdBaseType();
+    CorInfoType parentSimdBaseJitType = parent->GetSimdBaseJitType();
+    unsigned    parentSimdSize        = parent->GetSimdSize();
     assert(parent->GetSimdSize() == 16);
 
     GenTreeVecCon* vecCon = comp->gtNewVconNode(TYP_SIMD16);
     EvaluateSimdCvtMaskToVector<simd16_t>(parentBaseType, &vecCon->gtSimdVal, mask->gtSimdMaskVal);
     BlockRange().InsertBefore(mask, vecCon);
 
-    GenTreeHWIntrinsic *convertedVec = comp->gtNewSimdCvtVectorToMaskNode(TYP_MASK, vecCon, parentSimdBaseJitType, parentSimdSize);
+    GenTreeHWIntrinsic* convertedVec =
+        comp->gtNewSimdCvtVectorToMaskNode(TYP_MASK, vecCon, parentSimdBaseJitType, parentSimdSize);
     BlockRange().InsertBefore(mask, convertedVec->Op(1));
     BlockRange().InsertBefore(mask, convertedVec);
 
@@ -1205,7 +1206,6 @@ GenTree* Lowering::LowerCnsMask(GenTreeMskCon* mask)
 
     return vecCon->gtNext;
 }
-
 
 const int POST_INDEXED_ADDRESSING_MAX_DISTANCE = 16;
 
