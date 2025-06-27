@@ -11,51 +11,6 @@ extends:
       jobs:
 
       #
-      # Debug builds
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: debug
-          platforms:
-          - linux_arm64
-          - linux_musl_arm64
-          - linux_musl_x64
-          - linux_x64
-          - osx_arm64
-          - osx_x64
-          - windows_arm64
-          jobParameters:
-            buildArgs: -s clr -c $(_BuildConfig)
-            postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-                parameters:
-                  testGroup: outerloop
-
-      #
-      # Release builds
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - linux_musl_arm64
-          - linux_x64
-          - osx_arm64
-          - osx_x64
-          jobParameters:
-            buildArgs: -s clr -c $(_BuildConfig)
-            postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-                parameters:
-                  testGroup: outerloop
-
-      #
       # Checked builds
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -65,8 +20,6 @@ extends:
           platforms:
           - linux_x64
           - linux_arm64
-          - linux_musl_x64
-          - linux_musl_arm64
           - windows_x64
           - windows_arm64
           - osx_x64
@@ -110,8 +63,6 @@ extends:
           platforms:
           - linux_x64
           - linux_arm64
-          - linux_musl_x64
-          - linux_musl_arm64
           - windows_x64
           - windows_arm64
           - osx_x64
