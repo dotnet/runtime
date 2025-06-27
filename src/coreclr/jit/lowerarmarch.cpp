@@ -1187,7 +1187,7 @@ GenTree* Lowering::LowerCnsMask(GenTreeMskCon* mask)
     var_types   parentBaseType        = parent->GetSimdBaseType();
     CorInfoType parentSimdBaseJitType = parent->GetSimdBaseJitType();
     unsigned    parentSimdSize        = parent->GetSimdSize();
-    assert(parent->GetSimdSize() == 16);
+    assert(parentSimdSize == 16 || parentSimdSize == 0);
 
     GenTreeVecCon* vecCon = comp->gtNewVconNode(TYP_SIMD16);
     EvaluateSimdCvtMaskToVector<simd16_t>(parentBaseType, &vecCon->gtSimdVal, mask->gtSimdMaskVal);

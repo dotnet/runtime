@@ -60,6 +60,13 @@ public class ConditionalSelectConstants
             {
                 fail = true;
             }
+
+            var r7 = ConditionalSelectConstsNoMaskPattern2();
+            Console.WriteLine(r7);
+            if (r7 != 0)
+            {
+                fail = true;
+            }
         }
 
         if (fail)
@@ -132,5 +139,12 @@ public class ConditionalSelectConstants
         var vr0 = Sve.ConditionalSelect(vr2, vr3, vr4);
         var vr5 = Vector128.CreateScalar((long)0).AsVector();
         return Sve.TestFirstTrue(vr0, vr5);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int ConditionalSelectConstsNoMaskPattern2()
+    {
+        var vr0 = Sve.ConditionalSelect(Vector128.CreateScalar((short)1).AsVector(), Vector.Create<short>(0), Vector.Create<short>(1));
+        return Sve.ConditionalExtractAfterLastActiveElement(vr0, 1, Vector.Create<short>(0));
     }
 }
