@@ -720,7 +720,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                 if (entryJumpTarget != osrEntry)
                 {
-                    fgRedirectEdge(fgFirstBB->GetTargetEdgeRef(), entryJumpTarget);
+                    fgRedirectEdge(fgFirstBB->TargetEdgeRef(), entryJumpTarget);
 
                     JITDUMP("OSR: redirecting flow from method entry " FMT_BB " to OSR entry " FMT_BB
                             " via step blocks.\n",
@@ -1355,7 +1355,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
             case BBJ_CALLFINALLYRET:
             {
                 removedWeight = block->bbWeight;
-                fgRedirectEdge(block->GetTargetEdgeRef(), bDest->GetTarget());
+                fgRedirectEdge(block->TargetEdgeRef(), bDest->GetTarget());
                 break;
             }
 
@@ -1364,13 +1364,13 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 {
                     assert(!block->FalseTargetIs(bDest));
                     removedWeight = block->GetTrueEdge()->getLikelyWeight();
-                    fgRedirectEdge(block->GetTrueEdgeRef(), bDest->GetTarget());
+                    fgRedirectEdge(block->TrueEdgeRef(), bDest->GetTarget());
                 }
                 else
                 {
                     assert(block->FalseTargetIs(bDest));
                     removedWeight = block->GetFalseEdge()->getLikelyWeight();
-                    fgRedirectEdge(block->GetFalseEdgeRef(), bDest->GetTarget());
+                    fgRedirectEdge(block->FalseEdgeRef(), bDest->GetTarget());
                 }
                 break;
 
@@ -2256,7 +2256,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // Fix up block's flow.
     // Assume edge likelihoods transfer over.
     //
-    fgRedirectEdge(block->GetTargetEdgeRef(), target->GetTrueTarget());
+    fgRedirectEdge(block->TargetEdgeRef(), target->GetTrueTarget());
     block->GetTargetEdge()->setLikelihood(target->GetTrueEdge()->getLikelihood());
     block->GetTargetEdge()->setHeuristicBased(target->GetTrueEdge()->isHeuristicBased());
 
@@ -2751,7 +2751,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     FlowEdge* const falseEdge = bDest->GetFalseEdge();
     FlowEdge* const trueEdge  = bDest->GetTrueEdge();
 
-    fgRedirectEdge(bJump->GetTargetEdgeRef(), falseTarget);
+    fgRedirectEdge(bJump->TargetEdgeRef(), falseTarget);
     bJump->GetTargetEdge()->setLikelihood(falseEdge->getLikelihood());
     bJump->GetTargetEdge()->setHeuristicBased(falseEdge->isHeuristicBased());
 
@@ -4611,8 +4611,8 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
                         // Rewire flow from block
                         //
-                        std::swap(block->GetTrueEdgeRef(), block->GetFalseEdgeRef());
-                        fgRedirectEdge(block->GetTrueEdgeRef(), bNext->GetTarget());
+                        std::swap(block->TrueEdgeRef(), block->FalseEdgeRef());
+                        fgRedirectEdge(block->TrueEdgeRef(), bNext->GetTarget());
 
                         // bNext no longer flows to target
                         //
@@ -5320,7 +5320,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 if (commSucc != nullptr)
                 {
                     assert(predBlock->KindIs(BBJ_ALWAYS));
-                    fgRedirectEdge(predBlock->GetTargetEdgeRef(), crossJumpTarget);
+                    fgRedirectEdge(predBlock->TargetEdgeRef(), crossJumpTarget);
                 }
                 else
                 {

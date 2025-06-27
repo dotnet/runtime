@@ -861,7 +861,7 @@ public:
         return bbTargetEdge;
     }
 
-    FlowEdge*& GetTargetEdgeRef()
+    FlowEdge*& TargetEdgeRef()
     {
         assert(HasInitializedTarget());
         assert(bbTargetEdge->getSourceBlock() == this);
@@ -896,7 +896,7 @@ public:
         return bbTrueEdge;
     }
 
-    FlowEdge*& GetTrueEdgeRef()
+    FlowEdge*& TrueEdgeRef()
     {
         assert(KindIs(BBJ_COND));
         assert(bbTrueEdge != nullptr);
@@ -938,7 +938,7 @@ public:
         return bbFalseEdge;
     }
 
-    FlowEdge*& GetFalseEdgeRef()
+    FlowEdge*& FalseEdgeRef()
     {
         assert(KindIs(BBJ_COND));
         assert(bbFalseEdge != nullptr);
