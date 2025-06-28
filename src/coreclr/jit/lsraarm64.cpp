@@ -2400,6 +2400,7 @@ GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bo
     {
         case NI_AdvSimd_Arm64_VectorTableLookup:
         case NI_AdvSimd_VectorTableLookup:
+        case NI_Sve2_VectorTableLookup:
             consecutiveOp = intrin.op1;
             assert(consecutiveOp != nullptr);
             break;

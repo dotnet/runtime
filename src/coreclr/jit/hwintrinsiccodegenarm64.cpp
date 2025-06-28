@@ -1722,6 +1722,30 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve2_VectorTableLookup:
+            {
+                assert(intrin.op1->OperIsFieldList());
+                GenTreeFieldList* fieldList  = intrin.op1->AsFieldList();
+                GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                op1Reg                       = firstField->GetRegNum();
+#ifdef DEBUG
+                unsigned  regCount = 0;
+                regNumber argReg   = op1Reg;
+                for (GenTreeFieldList::Use& use : fieldList->Uses())
+                {
+                    regCount++;
+
+                    GenTree* argNode = use.GetNode();
+                    assert(argReg == argNode->GetRegNum());
+                    argReg = getNextSIMDRegWithWraparound(argReg);
+                }
+                assert(regCount == 2);
+#endif
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
+                                               INS_SCALABLE_OPTS_WITH_VECTOR_PAIR);
+                break;
+            }
+
             case NI_Sve_StoreAndZipx2:
             case NI_Sve_StoreAndZipx3:
             case NI_Sve_StoreAndZipx4:
