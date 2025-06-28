@@ -587,6 +587,23 @@ namespace System.Security.Cryptography.Tests
                 }, validPasswordTypes), validPasswordTypes);
         }
 
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public static void SignData_WithPublicKey_ThrowsCryptographicException(MLDsaAlgorithm algorithm)
+        {
+            AssertThrowIfNotSupported(() =>
+            {
+                using MLDsa full = MLDsa.GenerateKey(algorithm);
+                using MLDsa pub = MLDsa.ImportSubjectPublicKeyInfo(full.ExportSubjectPublicKeyInfo());
+                
+                byte[] data = new byte[1];
+                byte[] signature = new byte[algorithm.SignatureSizeInBytes];
+                
+                CryptographicException ex = Assert.Throws<CryptographicException>(() => pub.SignData(data, signature));
+                Assert.Equal("The current instance does not contain a secret key.", ex.Message);
+            });
+        }
+
         /// <summary>
         /// Asserts that on platforms that do not support ML-DSA, the input test throws PlatformNotSupportedException.
         /// If the test does pass, it implies that the test is validating code after the platform check.

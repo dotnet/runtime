@@ -234,5 +234,19 @@ namespace System.Security.Cryptography.Tests
                 key.Delete();
             }
         }
+
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void SignData_WithPublicKey_ThrowsCryptographicException(MLDsaAlgorithm algorithm)
+        {
+            using MLDsa full = MLDsa.GenerateKey(algorithm);
+            using MLDsa pub = MLDsa.ImportSubjectPublicKeyInfo(full.ExportSubjectPublicKeyInfo());
+            
+            byte[] data = new byte[1];
+            byte[] signature = new byte[algorithm.SignatureSizeInBytes];
+            
+            CryptographicException ex = Assert.Throws<CryptographicException>(() => pub.SignData(data, signature));
+            Assert.Equal("The current instance does not contain a secret key.", ex.Message);
+        }
     }
 }
