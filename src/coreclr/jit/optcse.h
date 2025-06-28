@@ -30,12 +30,27 @@ protected:
     jitstd::vector<unsigned>* m_sequence;
 #endif
 #if defined(TARGET_AMD64)
-    unsigned             cntCalleeTrashInt;
+    unsigned cntCalleeTrashInt;
+    unsigned cntCalleeTrashFlt;
+
     FORCEINLINE unsigned get_CNT_CALLEE_TRASH_INT() const
     {
         return this->cntCalleeTrashInt;
     }
+
+    FORCEINLINE unsigned get_CNT_CALLEE_TRASH_FLOAT() const
+    {
+        return this->cntCalleeTrashFlt;
+    }
 #endif // TARGET_AMD64
+#if defined(TARGET_XARCH)
+    unsigned cntCalleeTrashMsk;
+
+    FORCEINLINE unsigned get_CNT_CALLEE_TRASH_MASK() const
+    {
+        return this->cntCalleeTrashMsk;
+    }
+#endif // TARGET_XARCH
 
 public:
     virtual void Initialize()
@@ -254,6 +269,7 @@ private:
         rlHookTypeDouble = 4,
         rlHookTypeStruct = 5,
         rlHookTypeSimd   = 6,
+        rlHookTypeMask   = 7,
     };
 
 public:
@@ -316,7 +332,9 @@ class CSE_Heuristic : public CSE_HeuristicCommon
 private:
     weight_t aggressiveRefCnt;
     weight_t moderateRefCnt;
-    unsigned enregCount; // count of the number of predicted enregistered variables
+    unsigned enregCountInt;
+    unsigned enregCountFlt;
+    unsigned enregCountMsk;
     bool     largeFrame;
     bool     hugeFrame;
 
