@@ -24,7 +24,7 @@ namespace System.Linq.Expressions.Interpreter
                 set => objects[index] = value;
             }
 
-            public int Length => objects.Length;
+            public object? GetRaw(int index) => objects[index];
         }
 
         [ThreadStatic]
@@ -138,7 +138,7 @@ namespace System.Linq.Expressions.Interpreter
         public void Dup()
         {
             int i = StackIndex;
-            Data[i] = Data[i - 1];
+            Data[i] = Data.GetRaw(i - 1);
             StackIndex = i + 1;
         }
 

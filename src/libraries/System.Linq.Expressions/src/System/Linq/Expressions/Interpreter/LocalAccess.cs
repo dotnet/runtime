@@ -149,7 +149,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            frame.Data[_index] = frame.Pop();
+            frame.Data[_index] = frame.PopRaw();
             return 1;
         }
 
