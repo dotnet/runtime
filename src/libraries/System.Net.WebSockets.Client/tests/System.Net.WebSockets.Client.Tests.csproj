@@ -6,6 +6,8 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
+    <!-- error xUnit1015: MemberData must reference an existing member '{MemberName}' on type '{TypeName}'. Fix the member reference, or add the missing data member.-->
+    <NoWarn>$(NoWarn);xUnit1015</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
@@ -66,6 +68,7 @@
     <Compile Include="ConnectTest.Http2.cs" />
     <Compile Include="ConnectTest.cs" />
     <Compile Include="ConnectTest.Loopback.cs" />
+    <Compile Include="ConnectTest.SharedHandler.cs" />
     <Compile Include="KeepAliveTest.cs" />
     <Compile Include="KeepAliveTest.Loopback.cs" />
     <Compile Include="LoopbackHelper.cs" />

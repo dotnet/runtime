@@ -5,12 +5,13 @@ using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
     public static partial class LoopbackWebSocketServer
     {
-        public static Task RunEchoAsync(Func<Uri, Task> loopbackClientFunc, Version httpVersion, bool useSsl, int timeOutMilliseconds)
+        public static Task RunEchoAsync(Func<Uri, Task> loopbackClientFunc, Version httpVersion, bool useSsl, int timeOutMilliseconds, ITestOutputHelper output)
         {
             var timeoutCts = new CancellationTokenSource(timeOutMilliseconds);
             var options = new Options
@@ -20,8 +21,11 @@ namespace System.Net.WebSockets.Client.Tests
                 SkipServerHandshakeResponse = true, // to negotiate subprotocols and extensions
                 IgnoreServerErrors = true,
                 AbortServerOnClientExit = true,
-                ParseEchoOptions = true
+                ParseEchoOptions = true,
+                Output = output
             };
+
+            output.WriteLine("RunEchoAsync called with options: " + options);
 
             return RunAsyncPrivate(
                 loopbackClientFunc,
@@ -43,6 +47,8 @@ namespace System.Net.WebSockets.Client.Tests
 
             await SendNegotiatedServerResponseAsync(data, options, cancellationToken).ConfigureAwait(false);
 
+            options.Output?.WriteLine("EchoServer: connection established");
+
             await RunServerWebSocketAsync(
                 data,
                 (serverWebSocket, token) => WebSocketEchoHelper.RunEchoAll(
@@ -52,6 +58,8 @@ namespace System.Net.WebSockets.Client.Tests
                     token),
                 options,
                 cancellationToken).ConfigureAwait(false);
+
+            options.Output?.WriteLine("EchoServer: server function completed");
         }
     }
 }

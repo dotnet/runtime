@@ -9,24 +9,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class InvokerCancelTest : CancelTest
+    public abstract class CancelTestBase(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
-        public InvokerCancelTest(ITestOutputHelper output) : base(output) { }
-
-        protected override bool UseCustomInvoker => true;
-    }
-
-    public sealed class HttpClientCancelTest : CancelTest
-    {
-        public HttpClientCancelTest(ITestOutputHelper output) : base(output) { }
-
-        protected override bool UseHttpClient => true;
-    }
-
-    public abstract class CancelTestBase : ClientWebSocketTestBase
-    {
-        public CancelTestBase(ITestOutputHelper output) : base(output) { }
-
         protected async Task RunClient_ConnectAsync_Cancel_ThrowsCancellationException(Uri server)
         {
             using (var cws = new ClientWebSocket())
@@ -166,10 +150,8 @@ namespace System.Net.WebSockets.Client.Tests
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
-    public class CancelTest : CancelTestBase
+    public class CancelTest_External(ITestOutputHelper output) : CancelTestBase(output)
     {
-        public CancelTest(ITestOutputHelper output) : base(output) { }
-
         [ActiveIssue("https://github.com/dotnet/runtime/issues/83579", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         [Theory, MemberData(nameof(EchoServers))]
         public Task ConnectAsync_Cancel_ThrowsCancellationException(Uri server)
@@ -202,5 +184,17 @@ namespace System.Net.WebSockets.Client.Tests
         [Theory, MemberData(nameof(EchoServers))]
         public Task ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(Uri server)
             => RunClient_ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(server);
+    }
+
+    public sealed class CancelTest_SharedHandler_External(ITestOutputHelper output) : CancelTest_External(output) { }
+
+    public sealed class CancelTest_Invoker_External(ITestOutputHelper output) : CancelTest_External(output)
+    {
+        protected override bool UseCustomInvoker => true;
+    }
+
+    public sealed class CancelTest_HttpClient_External(ITestOutputHelper output) : CancelTest_External(output)
+    {
+        protected override bool UseHttpClient => true;
     }
 }

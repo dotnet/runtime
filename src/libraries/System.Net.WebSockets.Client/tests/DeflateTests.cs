@@ -14,27 +14,19 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class InvokerDeflateTests : DeflateTests
+    public sealed class InvokerDeflateTests(ITestOutputHelper output) : DeflateTests(output)
     {
-        public InvokerDeflateTests(ITestOutputHelper output) : base(output) { }
-
         protected override bool UseCustomInvoker => true;
     }
 
-    public sealed class HttpClientDeflateTests : DeflateTests
+    public sealed class HttpClientDeflateTests(ITestOutputHelper output) : DeflateTests(output)
     {
-        public HttpClientDeflateTests(ITestOutputHelper output) : base(output) { }
-
         protected override bool UseHttpClient => true;
     }
 
     [PlatformSpecific(~TestPlatforms.Browser)]
-    public class DeflateTests : ClientWebSocketTestBase
+    public class DeflateTests(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
-        public DeflateTests(ITestOutputHelper output) : base(output)
-        {
-        }
-
         [ConditionalTheory(nameof(WebSocketsSupported))]
         [InlineData(15, true, 15, true, "permessage-deflate; client_max_window_bits")]
         [InlineData(14, true, 15, true, "permessage-deflate; client_max_window_bits=14")]

@@ -14,10 +14,8 @@ using static System.Net.Test.Common.Configuration.WebSockets;
 namespace System.Net.WebSockets.Client.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "KeepAlive not supported on browser")]
-    public class KeepAliveTest : ClientWebSocketTestBase
+    public class KeepAliveTest(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
-        public KeepAliveTest(ITestOutputHelper output) : base(output) { }
-
         [ConditionalFact(nameof(WebSocketsSupported))]
         [OuterLoop("Uses Task.Delay")]
         public async Task KeepAlive_LongDelayBetweenSendReceives_Succeeds()

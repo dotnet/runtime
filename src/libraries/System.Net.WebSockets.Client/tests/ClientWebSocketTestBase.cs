@@ -27,8 +27,8 @@ namespace System.Net.WebSockets.Client.Tests
             new object[] { o[0], true }
         }).ToArray();
 
-        public static readonly bool[] Bool_Values = new[] { false, true };
-        public static readonly bool[] UseSsl_Values = PlatformDetection.SupportsAlpn ? Bool_Values : new[] { false };
+        public static readonly bool[] Bool_Values = [ false, true ];
+        public static readonly bool[] UseSsl_Values = PlatformDetection.SupportsAlpn ? Bool_Values : [ false ];
         public static readonly object[][] UseSsl_MemberData = ToMemberData(UseSsl_Values);
         public static readonly object[][] UseSslAndBoolean = ToMemberData(UseSsl_Values, Bool_Values);
 
@@ -121,23 +121,6 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        /*private TestConfig? _config = null!;
-        protected TestConfig Config => _config ??= new TestConfig
-            {
-                InvokerType = InvokerType,
-                ConfigureHttpHandler = ConfigureCustomHandler,
-                HttpVersion = HttpVersion,
-            };*/
-
-        /*protected bool? UseSsl { get; set; }
-        protected Uri? ServerUri { get; set; }
-
-        protected HttpInvokerType InvokerType => UseCustomInvoker
-            ? HttpInvokerType.HttpMessageInvoker
-            : UseHttpClient
-                ? HttpInvokerType.HttpClient
-                : HttpInvokerType.Shared;*/
-
         protected virtual bool UseCustomInvoker => false;
 
         protected virtual bool UseHttpClient => false;
@@ -187,7 +170,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         protected Task TestEcho(Uri uri, WebSocketMessageType type)
-            => WebSocketHelper.TestEcho(uri, type, TimeOutMilliseconds, _output,o => ConfigureHttpVersion(o, uri), GetInvoker());
+            => WebSocketHelper.TestEcho(uri, type, TimeOutMilliseconds, _output, o => ConfigureHttpVersion(o, uri), GetInvoker());
 
         protected void ConfigureHttpVersion(ClientWebSocketOptions options, Uri uri)
         {
@@ -222,58 +205,26 @@ namespace System.Net.WebSockets.Client.Tests
 
         public static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }
 
-        /*public record class TestConfig
-        {
-            public HttpInvokerType InvokerType { get; set; }
-            public Action<HttpClientHandler>? ConfigureHttpHandler { get; set; }
-
-            private HttpMessageInvoker? _invoker = null;
-            public HttpMessageInvoker? Invoker => _invoker ??= CreateInvoker();
-
-            public Version HttpVersion { get; set; }
-            public bool? UseSsl { get; set; }
-            public Uri? Uri { get; set; }
-
-            private HttpMessageInvoker? CreateInvoker()
-            {
-                if (InvokerType == HttpInvokerType.Shared)
-                {
-                    return null;
-                }
-
-                var handler = new HttpClientHandler();
-
-                if (PlatformDetection.IsNotBrowser)
-                {
-                    handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-                }
-
-                ConfigureHttpHandler?.Invoke(handler);
-
-                return InvokerType switch
-                {
-                    HttpInvokerType.HttpClient => new HttpClient(handler),
-                    HttpInvokerType.HttpMessageInvoker => new HttpMessageInvoker(handler),
-                    _ => throw new NotImplementedException()
-                };
-            }
-
-        }
-
-        public enum HttpInvokerType
-        {
-            Shared = 0,
-            HttpClient,
-            HttpMessageInvoker
-        }*/
-
 #if !TARGET_BROWSER
         // Loopback server related functions
+        protected virtual bool SkipIfUseSsl => false;
+
         protected Task RunEchoAsync(Func<Uri, Task> clientFunc, bool useSsl)
-            => LoopbackWebSocketServer.RunEchoAsync(clientFunc, HttpVersion, useSsl, TimeOutMilliseconds);
+        {
+            if (SkipIfUseSsl && useSsl)
+            {
+                throw new SkipTestException("SSL is not supported in this test.");
+            }
+            return LoopbackWebSocketServer.RunEchoAsync(clientFunc, HttpVersion, useSsl, TimeOutMilliseconds, _output);
+        }
 
         protected Task RunEchoHeadersAsync(Func<Uri, Task> clientFunc, bool useSsl)
         {
+            if (SkipIfUseSsl && useSsl)
+            {
+                throw new SkipTestException("SSL is not supported in this test.");
+            }
+
             var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
             var options = new LoopbackWebSocketServer.Options
             {

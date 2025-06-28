@@ -8,122 +8,14 @@ using System.Net.Test.Common;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class InvokerConnectTest : ConnectTest
+    public abstract class ConnectTestBase(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
-        public InvokerConnectTest(ITestOutputHelper output) : base(output) { }
-
-        protected override bool UseCustomInvoker => true;
-
-        public static IEnumerable<object[]> ConnectAsync_CustomInvokerWithIncompatibleWebSocketOptions_ThrowsArgumentException_MemberData()
-        {
-            yield return Throw(options => options.UseDefaultCredentials = true);
-            yield return NoThrow(options => options.UseDefaultCredentials = false);
-            yield return Throw(options => options.Credentials = new NetworkCredential());
-            yield return Throw(options => options.Proxy = new WebProxy());
-
-            // Will result in an exception on apple mobile platforms
-            // and crash the test.
-            if (PlatformDetection.IsNotAppleMobile)
-            {
-                yield return Throw(options => options.ClientCertificates.Add(Test.Common.Configuration.Certificates.GetClientCertificate()));
-            }
-
-            yield return NoThrow(options => options.ClientCertificates = new X509CertificateCollection());
-            yield return Throw(options => options.RemoteCertificateValidationCallback = delegate { return true; });
-            yield return Throw(options => options.Cookies = new CookieContainer());
-
-            // We allow no proxy or the default proxy to be used
-            yield return NoThrow(options => { });
-            yield return NoThrow(options => options.Proxy = null);
-
-            // These options don't conflict with the custom invoker
-            yield return NoThrow(options => options.HttpVersion = new Version(2, 0));
-            yield return NoThrow(options => options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher);
-            yield return NoThrow(options => options.SetRequestHeader("foo", "bar"));
-            yield return NoThrow(options => options.AddSubProtocol("foo"));
-            yield return NoThrow(options => options.KeepAliveInterval = TimeSpan.FromSeconds(42));
-            yield return NoThrow(options => options.DangerousDeflateOptions = new WebSocketDeflateOptions());
-            yield return NoThrow(options => options.CollectHttpResponseDetails = true);
-
-            static object[] Throw(Action<ClientWebSocketOptions> configureOptions) =>
-                new object[] { configureOptions, true };
-
-            static object[] NoThrow(Action<ClientWebSocketOptions> configureOptions) =>
-                new object[] { configureOptions, false };
-        }
-
-        [Theory]
-        [MemberData(nameof(ConnectAsync_CustomInvokerWithIncompatibleWebSocketOptions_ThrowsArgumentException_MemberData))]
-        [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
-        public async Task ConnectAsync_CustomInvokerWithIncompatibleWebSocketOptions_ThrowsArgumentException(Action<ClientWebSocketOptions> configureOptions, bool shouldThrow)
-        {
-            using var invoker = new HttpMessageInvoker(new SocketsHttpHandler
-            {
-                ConnectCallback = (_, _) => ValueTask.FromException<Stream>(new Exception("ConnectCallback"))
-            });
-
-            using var ws = new ClientWebSocket();
-            configureOptions(ws.Options);
-
-            Task connectTask = ws.ConnectAsync(new Uri("wss://dummy"), invoker, CancellationToken.None);
-            if (shouldThrow)
-            {
-                Assert.Equal(TaskStatus.Faulted, connectTask.Status);
-                await Assert.ThrowsAsync<ArgumentException>("options", () => connectTask);
-            }
-            else
-            {
-                WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() => connectTask);
-                Assert.NotNull(ex.InnerException);
-                Assert.Contains("ConnectCallback", ex.InnerException.Message);
-            }
-
-            foreach (X509Certificate cert in ws.Options.ClientCertificates)
-            {
-                cert.Dispose();
-            }
-        }
-    }
-
-    public sealed class HttpClientConnectTest : ConnectTest
-    {
-        public HttpClientConnectTest(ITestOutputHelper output) : base(output) { }
-
-        protected override bool UseHttpClient => true;
-    }
-
-    public abstract class ConnectTestBase : ClientWebSocketTestBase
-    {
-        public ConnectTestBase(ITestOutputHelper output) : base(output) { }
-
-        protected async Task RunClient_ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server, string exceptionMessage, WebSocketError errorCode)
-        {
-            using (var cws = new ClientWebSocket())
-            {
-                var cts = new CancellationTokenSource(TimeOutMilliseconds);
-                WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
-                    ConnectAsync(cws, server, cts.Token));
-
-                if (!PlatformDetection.IsInAppContainer) // bug fix in netcoreapp: https://github.com/dotnet/corefx/pull/35960
-                {
-                    Assert.Equal(errorCode, ex.WebSocketErrorCode);
-                }
-                Assert.Equal(WebSocketState.Closed, cws.State);
-                Assert.Equal(exceptionMessage, ex.Message);
-
-                // Other operations throw after failed connect
-                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.ReceiveAsync(new byte[1], default));
-                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.SendAsync(new byte[1], WebSocketMessageType.Binary, true, default));
-                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, default));
-                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, default));
-            }
-        }
-
         protected async Task RunClient_EchoBinaryMessage_Success(Uri server)
         {
             await TestEcho(server, WebSocketMessageType.Binary);
@@ -270,6 +162,11 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState(Uri server)
         {
+            if (HttpVersion != Net.HttpVersion.Version11)
+            {
+                throw new SkipTestException("LoopbackProxyServer is HTTP/1.1 only");
+            }
+
             using (var cws = new ClientWebSocket())
             using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create())
@@ -292,43 +189,12 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(1, proxyServer.Connections);
             }
         }
-
-        [ConditionalFact(nameof(WebSocketsSupported))]
-        public async Task ConnectAsync_CancellationRequestedBeforeConnect_ThrowsOperationCanceledException()
-        {
-            using (var clientSocket = new ClientWebSocket())
-            {
-                var cts = new CancellationTokenSource();
-                cts.Cancel();
-                Task t = ConnectAsync(clientSocket, new Uri($"ws://{Guid.NewGuid():N}"), cts.Token);
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
-            }
-        }
-
-        [ConditionalFact(nameof(WebSocketsSupported))]
-        public async Task ConnectAsync_CancellationRequestedInflightConnect_ThrowsOperationCanceledException()
-        {
-            using (var clientSocket = new ClientWebSocket())
-            {
-                var cts = new CancellationTokenSource();
-                Task t = ConnectAsync(clientSocket, new Uri($"ws://{Guid.NewGuid():N}"), cts.Token);
-                cts.Cancel();
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
-            }
-        }
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
-    public class ConnectTest : ConnectTestBase
+    public abstract class ConnectTest_External(ITestOutputHelper output) : ConnectTestBase(output)
     {
-        public ConnectTest(ITestOutputHelper output) : base(output) { }
-
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1895")]
-        [Theory, MemberData(nameof(UnavailableWebSocketServers))]
-        public Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server, string exceptionMessage, WebSocketError errorCode)
-            => RunClient_ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(server, exceptionMessage, errorCode);
-
         [Theory, MemberData(nameof(EchoServers))]
         public Task EchoBinaryMessage_Success(Uri server)
             => RunClient_EchoBinaryMessage_Success(server);
@@ -360,5 +226,44 @@ namespace System.Net.WebSockets.Client.Tests
         [Theory, MemberData(nameof(EchoServers))]
         public Task ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState(Uri server)
             => RunClient_ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState(server);
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1895")]
+        [Theory, MemberData(nameof(UnavailableWebSocketServers))]
+        public async Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server, string exceptionMessage, WebSocketError errorCode)
+        {
+            using (var cws = new ClientWebSocket())
+            {
+                var cts = new CancellationTokenSource(TimeOutMilliseconds);
+                WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
+                    ConnectAsync(cws, server, cts.Token));
+
+                if (!PlatformDetection.IsInAppContainer) // bug fix in netcoreapp: https://github.com/dotnet/corefx/pull/35960
+                {
+                    Assert.Equal(errorCode, ex.WebSocketErrorCode);
+                }
+                Assert.Equal(WebSocketState.Closed, cws.State);
+                Assert.Equal(exceptionMessage, ex.Message);
+
+                // Other operations throw after failed connect
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.ReceiveAsync(new byte[1], default));
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.SendAsync(new byte[1], WebSocketMessageType.Binary, true, default));
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, default));
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, default));
+            }
+        }
+    }
+
+    public sealed class ConnectTest_SharedHandler_External(ITestOutputHelper output) : ConnectTest_External(output)
+    {
+    }
+
+    public sealed class ConnectTest_Invoker_External(ITestOutputHelper output) : ConnectTest_External(output)
+    {
+        protected override bool UseCustomInvoker => true;
+    }
+
+    public sealed class ConnectTest_HttpClient_External(ITestOutputHelper output) : ConnectTest_External(output)
+    {
+        protected override bool UseHttpClient => true;
     }
 }

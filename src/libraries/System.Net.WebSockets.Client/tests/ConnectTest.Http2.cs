@@ -12,53 +12,11 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class InvokerConnectTest_Http2 : ConnectTest_Http2
+    // --- HTTP/2 WebSocket loopback tests ---
+
+    public abstract class ConnectTest_Http2Loopback(ITestOutputHelper output) : ConnectTest_Loopback(output)
     {
-        public InvokerConnectTest_Http2(ITestOutputHelper output) : base(output) { }
-
-        protected override bool UseCustomInvoker => true;
-    }
-
-    public sealed class HttpClientConnectTest_Http2 : ConnectTest_Http2
-    {
-        public HttpClientConnectTest_Http2(ITestOutputHelper output) : base(output) { }
-
-        protected override bool UseHttpClient => true;
-    }
-
-    public sealed class HttpClientConnectTest_Http2_NoInvoker : ClientWebSocketTestBase
-    {
-        public HttpClientConnectTest_Http2_NoInvoker(ITestOutputHelper output) : base(output) { }
-
-        public static IEnumerable<object[]> ConnectAsync_Http2WithNoInvoker_ThrowsArgumentException_MemberData()
-        {
-            yield return Options(options => options.HttpVersion = Net.HttpVersion.Version20);
-            yield return Options(options => options.HttpVersion = Net.HttpVersion.Version30);
-            yield return Options(options => options.HttpVersion = new Version(2, 1));
-            yield return Options(options => options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher);
-
-            static object[] Options(Action<ClientWebSocketOptions> configureOptions) =>
-                new object[] { configureOptions };
-        }
-
-        [Theory]
-        [MemberData(nameof(ConnectAsync_Http2WithNoInvoker_ThrowsArgumentException_MemberData))]
-        [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets aren't supported on Browser")]
-        public async Task ConnectAsync_Http2WithNoInvoker_ThrowsArgumentException(Action<ClientWebSocketOptions> configureOptions)
-        {
-            using var ws = new ClientWebSocket();
-            configureOptions(ws.Options);
-
-            Task connectTask = ws.ConnectAsync(new Uri("wss://dummy"), CancellationToken.None);
-
-            Assert.Equal(TaskStatus.Faulted, connectTask.Status);
-            await Assert.ThrowsAsync<ArgumentException>("options", () => connectTask);
-        }
-    }
-
-    public abstract class ConnectTest_Http2 : ClientWebSocketTestBase
-    {
-        public ConnectTest_Http2(ITestOutputHelper output) : base(output) { }
+        internal override Version HttpVersion => Net.HttpVersion.Version20;
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
@@ -110,46 +68,6 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 0 });
             }, new Http2Options() { WebSocketEndpoint = true });
-        }
-
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
-        public async Task ConnectAsync_Http11Server_DowngradeFail()
-        {
-            using (var cws = new ClientWebSocket())
-            using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
-            {
-                cws.Options.HttpVersion = Net.HttpVersion.Version20;
-                cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-
-                Task t = cws.ConnectAsync(Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, GetInvoker(), cts.Token);
-
-                var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
-                Assert.True(ex.InnerException.Data.Contains("HTTP2_ENABLED"));
-                HttpRequestException inner = Assert.IsType<HttpRequestException>(ex.InnerException);
-                HttpRequestError expectedError = PlatformDetection.SupportsAlpn ?
-                    HttpRequestError.SecureConnectionError :
-                    HttpRequestError.VersionNegotiationError;
-                Assert.Equal(expectedError, inner.HttpRequestError);
-                Assert.Equal(WebSocketState.Closed, cws.State);
-            }
-        }
-
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [Theory]
-        [MemberData(nameof(EchoServers))]
-        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
-        public async Task ConnectAsync_Http11Server_DowngradeSuccess(Uri server)
-        {
-            using (var cws = new ClientWebSocket())
-            using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
-            {
-                cws.Options.HttpVersion = Net.HttpVersion.Version20;
-                cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
-                await cws.ConnectAsync(server, GetInvoker(), cts.Token);
-                Assert.Equal(WebSocketState.Open, cws.State);
-            }
         }
 
         [Fact]
@@ -229,6 +147,46 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
+        public async Task ConnectAsync_Http11Server_DowngradeFail()
+        {
+            using (var cws = new ClientWebSocket())
+            using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+            {
+                cws.Options.HttpVersion = Net.HttpVersion.Version20;
+                cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+                Task t = cws.ConnectAsync(Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, GetInvoker(), cts.Token);
+
+                var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
+                Assert.True(ex.InnerException.Data.Contains("HTTP2_ENABLED"));
+                HttpRequestException inner = Assert.IsType<HttpRequestException>(ex.InnerException);
+                HttpRequestError expectedError = PlatformDetection.SupportsAlpn ?
+                    HttpRequestError.SecureConnectionError :
+                    HttpRequestError.VersionNegotiationError;
+                Assert.Equal(expectedError, inner.HttpRequestError);
+                Assert.Equal(WebSocketState.Closed, cws.State);
+            }
+        }
+
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+        [Theory]
+        [MemberData(nameof(EchoServers))]
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
+        public async Task ConnectAsync_Http11Server_DowngradeSuccess(Uri server)
+        {
+            using (var cws = new ClientWebSocket())
+            using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+            {
+                cws.Options.HttpVersion = Net.HttpVersion.Version20;
+                cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+                await cws.ConnectAsync(server, GetInvoker(), cts.Token);
+                Assert.Equal(WebSocketState.Open, cws.State);
+            }
+        }
+
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory]
         [MemberData(nameof(EchoServers))]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
@@ -246,7 +204,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
-        public async Task ConnectAsync_Http11WithRequestVersionOrHigher_Loopback_Success()
+        public async Task ConnectAsync_Http11WithRequestVersionOrHigher_Loopback_DowngradeSuccess()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
@@ -267,6 +225,44 @@ namespace System.Net.WebSockets.Client.Tests
                     Assert.Equal(WebSocketState.Open, cws.State);
                 }
             }, new LoopbackServer.Options { UseSsl = true, WebSocketEndpoint = true });
+        }
+    }
+
+    public sealed class ConnectTest_Invoker_Http2Loopback(ITestOutputHelper output) : ConnectTest_Http2Loopback(output)
+    {
+        protected override bool UseCustomInvoker => true;
+    }
+
+    public sealed class ConnectTest_HttpClient_Http2Loopback(ITestOutputHelper output) : ConnectTest_Http2Loopback(output)
+    {
+        protected override bool UseHttpClient => true;
+    }
+
+    public sealed class ConnectTest_SharedHandler_Http2(ITestOutputHelper output) : ClientWebSocketTestBase(output)
+    {
+        public static IEnumerable<object[]> ConnectAsync_Http2WithNoInvoker_ThrowsArgumentException_MemberData()
+        {
+            yield return Options(options => options.HttpVersion = Net.HttpVersion.Version20);
+            yield return Options(options => options.HttpVersion = Net.HttpVersion.Version30);
+            yield return Options(options => options.HttpVersion = new Version(2, 1));
+            yield return Options(options => options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher);
+
+            static object[] Options(Action<ClientWebSocketOptions> configureOptions) =>
+                new object[] { configureOptions };
+        }
+
+        [Theory]
+        [MemberData(nameof(ConnectAsync_Http2WithNoInvoker_ThrowsArgumentException_MemberData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets aren't supported on Browser")]
+        public async Task ConnectAsync_Http2WithNoInvoker_ThrowsArgumentException(Action<ClientWebSocketOptions> configureOptions)
+        {
+            using var ws = new ClientWebSocket();
+            configureOptions(ws.Options);
+
+            Task connectTask = ws.ConnectAsync(new Uri("wss://dummy"), CancellationToken.None);
+
+            Assert.Equal(TaskStatus.Faulted, connectTask.Status);
+            await Assert.ThrowsAsync<ArgumentException>("options", () => connectTask);
         }
     }
 }

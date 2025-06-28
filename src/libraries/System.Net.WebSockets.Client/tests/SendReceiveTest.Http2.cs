@@ -12,24 +12,18 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class HttpClientSendReceiveTest_Http2 : SendReceiveTest_Http2
+    public sealed class HttpClientSendReceiveTest_Http2(ITestOutputHelper output) : SendReceiveTest_Http2(output)
     {
-        public HttpClientSendReceiveTest_Http2(ITestOutputHelper output) : base(output) { }
-
         protected override bool UseHttpClient => true;
     }
 
-    public sealed class InvokerSendReceiveTest_Http2 : SendReceiveTest_Http2
+    public sealed class InvokerSendReceiveTest_Http2(ITestOutputHelper output) : SendReceiveTest_Http2(output)
     {
-        public InvokerSendReceiveTest_Http2(ITestOutputHelper output) : base(output) { }
-
         protected override bool UseCustomInvoker => true;
     }
 
-    public abstract class SendReceiveTest_Http2 : ClientWebSocketTestBase
+    public abstract class SendReceiveTest_Http2(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
-        public SendReceiveTest_Http2(ITestOutputHelper output) : base(output) { }
-
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
         public async Task ReceiveNoThrowAfterSend_NoSsl()

@@ -12,37 +12,28 @@ using Xunit.Abstractions;
 namespace System.Net.WebSockets.Client.Tests
 {
 
-    public sealed class InvokerMemorySendReceiveTest : MemorySendReceiveTest
+    public sealed class InvokerMemorySendReceiveTest(ITestOutputHelper output) : MemorySendReceiveTest(output)
     {
-        public InvokerMemorySendReceiveTest(ITestOutputHelper output) : base(output) { }
-
         protected override bool UseCustomInvoker => true;
     }
 
-    public sealed class HttpClientMemorySendReceiveTest : MemorySendReceiveTest
+    public sealed class HttpClientMemorySendReceiveTest(ITestOutputHelper output) : MemorySendReceiveTest(output)
     {
-        public HttpClientMemorySendReceiveTest(ITestOutputHelper output) : base(output) { }
-
         protected override bool UseHttpClient => true;
     }
 
-    public sealed class InvokerArraySegmentSendReceiveTest : ArraySegmentSendReceiveTest
+    public sealed class InvokerArraySegmentSendReceiveTest(ITestOutputHelper output) : ArraySegmentSendReceiveTest(output)
     {
-        public InvokerArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
-
         protected override bool UseCustomInvoker => true;
     }
 
-    public sealed class HttpClientArraySegmentSendReceiveTest : ArraySegmentSendReceiveTest
+    public sealed class HttpClientArraySegmentSendReceiveTest(ITestOutputHelper output) : ArraySegmentSendReceiveTest(output)
     {
-        public HttpClientArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
-
         protected override bool UseHttpClient => true;
     }
 
-    public class MemorySendReceiveTest : SendReceiveTest
+    public class MemorySendReceiveTest(ITestOutputHelper output) : SendReceiveTest(output)
     {
-        public MemorySendReceiveTest(ITestOutputHelper output) : base(output) { }
 
         protected override async Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken)
         {
@@ -60,10 +51,8 @@ namespace System.Net.WebSockets.Client.Tests
                 cancellationToken).AsTask();
     }
 
-    public class ArraySegmentSendReceiveTest : SendReceiveTest
+    public class ArraySegmentSendReceiveTest(ITestOutputHelper output) : SendReceiveTest(output)
     {
-        public ArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
-
         protected override Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken) =>
             ws.ReceiveAsync(arraySegment, cancellationToken);
 
@@ -71,12 +60,10 @@ namespace System.Net.WebSockets.Client.Tests
             ws.SendAsync(arraySegment, messageType, endOfMessage, cancellationToken);
     }
 
-    public abstract class SendReceiveTestBase : ClientWebSocketTestBase
+    public abstract class SendReceiveTestBase(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
         protected abstract Task SendAsync(WebSocket ws, ArraySegment<byte> arraySegment, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken);
         protected abstract Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken);
-
-        public SendReceiveTestBase(ITestOutputHelper output) : base(output) { }
 
         protected async Task RunClient_SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(Uri server)
         {
@@ -508,10 +495,8 @@ namespace System.Net.WebSockets.Client.Tests
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
-    public abstract class SendReceiveTest : SendReceiveTestBase
+    public abstract class SendReceiveTest(ITestOutputHelper output) : SendReceiveTestBase(output)
     {
-        public SendReceiveTest(ITestOutputHelper output) : base(output) { }
-
         [Theory, MemberData(nameof(EchoServers))]
         public Task SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(Uri server)
             => RunClient_SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(server);

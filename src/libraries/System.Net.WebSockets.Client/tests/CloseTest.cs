@@ -9,29 +9,13 @@ using System.Threading.Tasks;
 
 using Xunit;
 using Xunit.Abstractions;
-using Microsoft.DotNet.RemoteExecutor;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class InvokerCloseTest : CloseTest
+    public abstract class CloseTestBase(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
-        public InvokerCloseTest(ITestOutputHelper output) : base(output) { }
-
-        protected override bool UseCustomInvoker => true;
-    }
-
-    public sealed class HttpClientCloseTest : CloseTest
-    {
-        public HttpClientCloseTest(ITestOutputHelper output) : base(output) { }
-
-        protected override bool UseHttpClient => true;
-    }
-
-    public abstract class CloseTestBase : ClientWebSocketTestBase
-    {
-        public CloseTestBase(ITestOutputHelper output) : base(output) { }
-
-        protected async Task RunClient_CloseAsync_ServerInitiatedClose_Success(Uri server, bool useCloseOutputAsync)
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        protected async Task RunClient_CloseAsync_ServerInitiatedClose_Success(Uri server, bool useCloseOutputAsync) // -- TO MOVE to loopback and close issue
         {
             const string shutdownWebSocketMetaCommand = ".shutdown";
 
@@ -240,6 +224,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] -- TO MOVE to loopback and close issue
         protected async Task RunClient_CloseOutputAsync_ServerInitiated_CanReceive(Uri server, bool delayReceiving)
         {
             var expectedCloseStatus = WebSocketCloseStatus.NormalClosure;
@@ -294,6 +279,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] -- TO MOVE to loopback and close issue
         protected async Task RunClient_CloseOutputAsync_ServerInitiated_CanSend(Uri server)
         {
             string message = "Hello WebSockets!";
@@ -339,6 +325,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] -- TO MOVE to loopback and close issue
         protected async Task RunClient_CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(Uri server, bool syncState)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server))
@@ -380,6 +367,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/22000", TargetFrameworkMonikers.Netcoreapp)]
         protected async Task RunClient_CloseOutputAsync_DuringConcurrentReceiveAsync_ExpectedStates(Uri server)
         {
             var receiveBuffer = new byte[1024];
@@ -443,15 +431,8 @@ namespace System.Net.WebSockets.Client.Tests
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
-    public class CloseTest : CloseTestBase
+    public abstract class CloseTest_External(ITestOutputHelper output) : CloseTestBase(output)
     {
-        public CloseTest(ITestOutputHelper output) : base(output) { }
-
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [Theory, MemberData(nameof(EchoServersAndBoolean))]
-        public Task CloseAsync_ServerInitiatedClose_Success(Uri server, bool useCloseOutputAsync)
-            => RunClient_CloseAsync_ServerInitiatedClose_Success(server, useCloseOutputAsync);
-
         [Theory, MemberData(nameof(EchoServers))]
         public Task CloseAsync_ClientInitiatedClose_Success(Uri server)
             => RunClient_CloseAsync_ClientInitiatedClose_Success(server);
@@ -484,21 +465,6 @@ namespace System.Net.WebSockets.Client.Tests
         public Task CloseOutputAsync_ClientInitiated_CanReceive_CanClose(Uri server)
             => RunClient_CloseOutputAsync_ClientInitiated_CanReceive_CanClose(server);
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [Theory, MemberData(nameof(EchoServersAndBoolean))]
-        public Task CloseOutputAsync_ServerInitiated_CanReceive(Uri server, bool delayReceiving)
-            => RunClient_CloseOutputAsync_ServerInitiated_CanReceive(server, delayReceiving);
-
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [Theory, MemberData(nameof(EchoServers))]
-        public Task CloseOutputAsync_ServerInitiated_CanSend(Uri server)
-            => RunClient_CloseOutputAsync_ServerInitiated_CanSend(server);
-
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [Theory, MemberData(nameof(EchoServersAndBoolean))]
-        public Task CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(Uri server, bool syncState)
-            => RunClient_CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(server, syncState);
-
         [Theory, MemberData(nameof(EchoServers))]
         public Task CloseOutputAsync_CloseDescriptionIsNull_Success(Uri server)
             => RunClient_CloseOutputAsync_CloseDescriptionIsNull_Success(server);
@@ -511,42 +477,17 @@ namespace System.Net.WebSockets.Client.Tests
         [Theory, MemberData(nameof(EchoServers))]
         public Task CloseAsync_DuringConcurrentReceiveAsync_ExpectedStates(Uri server)
             => RunClient_CloseAsync_DuringConcurrentReceiveAsync_ExpectedStates(server);
+    }
 
-        // Regression test for https://github.com/dotnet/runtime/issues/80116.
-        [OuterLoop("Uses Task.Delay")]
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task CloseHandshake_ExceptionsAreObserved()
-        {
-            await RemoteExecutor.Invoke(static (typeName) =>
-            {
-                CloseTest test = (CloseTest)Activator.CreateInstance(typeof(CloseTest).Assembly.GetType(typeName), new object[] { null });
-                using CancellationTokenSource timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
+    public sealed class CloseTest_SharedHandler_External(ITestOutputHelper output) : CloseTest_External(output) { }
 
-                Exception unobserved = null;
-                TaskScheduler.UnobservedTaskException += (obj, args) =>
-                {
-                    unobserved = args.Exception;
-                };
+    public sealed class CloseTest_Invoker_External(ITestOutputHelper output) : CloseTest_External(output)
+    {
+        protected override bool UseCustomInvoker => true;
+    }
 
-                TaskCompletionSource clientCompleted = new TaskCompletionSource();
-
-                return LoopbackWebSocketServer.RunAsync(async (clientWs, ct) =>
-                {
-                    await clientWs.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", ct);
-                    await clientWs.ReceiveAsync(new byte[16], ct);
-                    await Task.Delay(1500);
-                    GC.Collect(2);
-                    GC.WaitForPendingFinalizers();
-                    clientCompleted.SetResult();
-                    Assert.Null(unobserved);
-                },
-                async (serverWs, ct) =>
-                {
-                    await serverWs.ReceiveAsync(new byte[16], ct);
-                    await serverWs.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", ct);
-                    await clientCompleted.Task;
-                }, new LoopbackWebSocketServer.Options{ HttpVersion = Net.HttpVersion.Version11, UseSsl = true, HttpInvoker = test.GetInvoker() }, timeoutCts.Token);
-            }, GetType().FullName).DisposeAsync();
-        }
+    public sealed class CloseTest_HttpClient_External(ITestOutputHelper output) : CloseTest_External(output)
+    {
+        protected override bool UseHttpClient => true;
     }
 }

@@ -12,10 +12,8 @@ namespace System.Net.WebSockets.Client.Tests
 
     [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
     [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets are not supported on browser")]
-    public abstract class CancelTest_Loopback : CancelTestBase
+    public abstract class CancelTest_Loopback(ITestOutputHelper output) : CancelTestBase(output)
     {
-        public CancelTest_Loopback(ITestOutputHelper output) : base(output) { }
-
         [Theory, MemberData(nameof(UseSsl_MemberData))]
         public Task ConnectAsync_Cancel_ThrowsCancellationException(bool useSsl) => RunEchoAsync(
             RunClient_ConnectAsync_Cancel_ThrowsCancellationException, useSsl);
@@ -51,69 +49,32 @@ namespace System.Net.WebSockets.Client.Tests
 
     // --- HTTP/1.1 WebSocket loopback tests ---
 
-    public sealed class CancelTest_Invoker_Loopback : CancelTest_Loopback
+    public sealed class CancelTest_SharedHandler_Loopback(ITestOutputHelper output) : CancelTest_Loopback(output) { }
+
+    public sealed class CancelTest_Invoker_Loopback(ITestOutputHelper output) : CancelTest_Loopback(output)
     {
-        public CancelTest_Invoker_Loopback(ITestOutputHelper output) : base(output) { }
         protected override bool UseCustomInvoker => true;
     }
 
-    public sealed class CancelTest_HttpClient_Loopback : CancelTest_Loopback
+    public sealed class CancelTest_HttpClient_Loopback(ITestOutputHelper output) : CancelTest_Loopback(output)
     {
-        public CancelTest_HttpClient_Loopback(ITestOutputHelper output) : base(output) { }
         protected override bool UseHttpClient => true;
-    }
-
-    // TODO
-    public sealed class CancelTest_SharedHandler_Loopback : CancelTestBase //!
-    {
-        public CancelTest_SharedHandler_Loopback(ITestOutputHelper output) : base(output) { }
-
-        [Fact]
-        public Task ConnectAsync_Cancel_ThrowsCancellationException() => RunEchoAsync(
-            RunClient_ConnectAsync_Cancel_ThrowsCancellationException, useSsl: false);
-
-        [Fact]
-        public Task SendAsync_Cancel_Success() => RunEchoAsync(
-            RunClient_SendAsync_Cancel_Success, useSsl: false);
-
-        [Fact]
-        public Task ReceiveAsync_Cancel_Success() => RunEchoAsync(
-            RunClient_ReceiveAsync_Cancel_Success, useSsl: false);
-
-        [Fact]
-        public Task CloseAsync_Cancel_Success() => RunEchoAsync(
-            RunClient_CloseAsync_Cancel_Success, useSsl: false);
-
-        [Fact]
-        public Task CloseOutputAsync_Cancel_Success() => RunEchoAsync(
-            RunClient_CloseOutputAsync_Cancel_Success, useSsl: false);
-
-        [Fact]
-        public Task ReceiveAsync_CancelThenReceive_ThrowsOperationCanceledException() => RunEchoAsync(
-            RunClient_ReceiveAsync_CancelThenReceive_ThrowsOperationCanceledException, useSsl: false);
-
-        [Fact]
-        public Task ReceiveAsync_ReceiveThenCancel_ThrowsOperationCanceledException() => RunEchoAsync(
-            RunClient_ReceiveAsync_ReceiveThenCancel_ThrowsOperationCanceledException, useSsl: false);
-
-        [Fact]
-        public Task ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException() => RunEchoAsync(
-            RunClient_ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException, useSsl: false);
     }
 
     // --- HTTP/2 WebSocket loopback tests ---
 
-    public sealed class CancelTest_Invoker_Http2Loopback : CancelTest_Loopback
+    public abstract class CancelTest_Http2Loopback(ITestOutputHelper output) : CancelTest_Loopback(output)
     {
-        public CancelTest_Invoker_Http2Loopback(ITestOutputHelper output) : base(output) { }
-        protected override bool UseCustomInvoker => true;
         internal override Version HttpVersion => Net.HttpVersion.Version20;
     }
 
-    public sealed class CancelTest_HttpClient_Http2Loopback : CancelTest_Loopback
+    public sealed class CancelTest_Invoker_Http2Loopback(ITestOutputHelper output) : CancelTest_Http2Loopback(output)
     {
-        public CancelTest_HttpClient_Http2Loopback(ITestOutputHelper output) : base(output) { }
+        protected override bool UseCustomInvoker => true;
+    }
+
+    public sealed class CancelTest_HttpClient_Http2Loopback(ITestOutputHelper output) : CancelTest_Http2Loopback(output)
+    {
         protected override bool UseHttpClient => true;
-        internal override Version HttpVersion => Net.HttpVersion.Version20;
     }
 }

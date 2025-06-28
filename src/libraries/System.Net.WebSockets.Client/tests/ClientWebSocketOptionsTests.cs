@@ -13,10 +13,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public class ClientWebSocketOptionsTests : ClientWebSocketTestBase
+    public class ClientWebSocketOptionsTests(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
-        public ClientWebSocketOptionsTests(ITestOutputHelper output) : base(output) { }
-
         [ConditionalFact(nameof(WebSocketsSupported))]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials not supported on browser")]
         public static void UseDefaultCredentials_Roundtrips()

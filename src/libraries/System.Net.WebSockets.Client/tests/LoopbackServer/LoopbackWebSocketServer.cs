@@ -6,6 +6,7 @@ using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
@@ -59,10 +60,13 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     try
                     {
+                        options.Output?.WriteLine("RunAsyncPrivate: starting client function");
                         await loopbackClientFunc(uri);
+                        options.Output?.WriteLine("RunAsyncPrivate: client function completed");
                     }
                     finally
                     {
+                        options.Output?.WriteLine("RunAsyncPrivate: cancelling client exit token");
                         clientExitCts.Cancel();
                     }
                 },
@@ -81,12 +85,20 @@ namespace System.Net.WebSockets.Client.Tests
             var wsOptions = new WebSocketCreationOptions { IsServer = true, SubProtocol = options.ServerSubProtocol };
 
             var serverWebSocket = WebSocket.CreateFromStream(requestData.TransportStream, wsOptions);
-            using var registration = cancellationToken.Register(serverWebSocket.Abort);
+            using var registration = cancellationToken.Register(() => {
+                options.Output?.WriteLine("RunServerWebSocketAsync: aborting server on cancellation");
+                serverWebSocket.Abort();
+            });
+
+            options.Output?.WriteLine("RunServerWebSocketAsync: starting server function");
 
             await serverWebSocketFunc(serverWebSocket, cancellationToken).ConfigureAwait(false);
 
+            options.Output?.WriteLine("RunServerWebSocketAsync: server function completed");
+
             if (options.DisposeServerWebSocket)
             {
+                options.Output?.WriteLine("RunServerWebSocketAsync: disposing server WebSocket");
                 serverWebSocket.Dispose();
             }
         }
@@ -148,6 +160,8 @@ namespace System.Net.WebSockets.Client.Tests
             public bool DisposeClientWebSocket { get; set; }
             public bool DisposeHttpInvoker { get; set; }
             public Action<ClientWebSocketOptions>? ConfigureClientOptions { get; set; }
+
+            public ITestOutputHelper? Output { get; set; }
         }
     }
 }

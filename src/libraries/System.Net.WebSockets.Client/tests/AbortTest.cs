@@ -9,24 +9,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class InvokerAbortTest : AbortTest
+    public abstract class AbortTestBase(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
-        public InvokerAbortTest(ITestOutputHelper output) : base(output) { }
-
-        protected override bool UseCustomInvoker => true;
-    }
-
-    public sealed class HttpClientAbortTest : AbortTest
-    {
-        public HttpClientAbortTest(ITestOutputHelper output) : base(output) { }
-
-        protected override bool UseHttpClient => true;
-    }
-
-    public abstract class AbortTestBase : ClientWebSocketTestBase
-    {
-        public AbortTestBase(ITestOutputHelper output) : base(output) { }
-
         protected async Task RunClient_Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithMessage(Uri server)
         {
             using (var cws = new ClientWebSocket())
@@ -134,14 +118,10 @@ namespace System.Net.WebSockets.Client.Tests
         }
     }
 
-    // --- External Echo Server "overrides" ---
-
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
-    public class AbortTest : AbortTestBase
+    public abstract class AbortTest_External(ITestOutputHelper output) : AbortTestBase(output)
     {
-        public AbortTest(ITestOutputHelper output) : base(output) { }
-
         [Theory, MemberData(nameof(EchoServers))]
         public Task Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithMessage(Uri server)
             => RunClient_Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithMessage(server);
@@ -161,5 +141,17 @@ namespace System.Net.WebSockets.Client.Tests
         [Theory, MemberData(nameof(EchoServers))]
         public Task ClientWebSocket_Abort_CloseOutputAsync(Uri server)
             => RunClient_ClientWebSocket_Abort_CloseOutputAsync(server);
+    }
+
+    public sealed class AbortTest_SharedHandler_External(ITestOutputHelper output) : AbortTest_External(output) { }
+
+    public sealed class AbortTest_Invoker_External(ITestOutputHelper output) : AbortTest_External(output)
+    {
+        protected override bool UseCustomInvoker => true;
+    }
+
+    public sealed class AbortTest_HttpClient_External(ITestOutputHelper output) : AbortTest_External(output)
+    {
+        protected override bool UseHttpClient => true;
     }
 }

@@ -13,10 +13,8 @@ namespace System.Net.WebSockets.Client.Tests
 {
     [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
     [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets are not supported on browser")]
-    public abstract class SendReceiveTest_Loopback : SendReceiveTestBase
+    public abstract class SendReceiveTest_Loopback(ITestOutputHelper output) : SendReceiveTestBase(output)
     {
-        public SendReceiveTest(ITestOutputHelper output) : base(output) { }
-
         [Theory, MemberData(nameof(UseSsl_MemberData))]
         public Task SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(Uri server)
             => RunClient_SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(server);
@@ -58,11 +56,9 @@ namespace System.Net.WebSockets.Client.Tests
             => RunClient_ZeroByteReceive_CompletesWhenDataAvailable(server);
     }
 
-        public class MemorySendReceiveTest : SendReceiveTest
-    {
-        public MemorySendReceiveTest(ITestOutputHelper output) : base(output) { }
-
-        protected override async Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken)
+        public class MemorySendReceiveTest(ITestOutputHelper output) : SendReceiveTest(output)
+        {
+            protected override async Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken)
         {
             ValueWebSocketReceiveResult r = await ws.ReceiveAsync(
                 (Memory<byte>)arraySegment,
@@ -78,10 +74,8 @@ namespace System.Net.WebSockets.Client.Tests
                 cancellationToken).AsTask();
     }
 
-    public class ArraySegmentSendReceiveTest : SendReceiveTest
+    public class ArraySegmentSendReceiveTest(ITestOutputHelper output) : SendReceiveTest(output)
     {
-        public ArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
-
         protected override Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken) =>
             ws.ReceiveAsync(arraySegment, cancellationToken);
 

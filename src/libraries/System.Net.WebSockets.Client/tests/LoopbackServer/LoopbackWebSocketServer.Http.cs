@@ -30,7 +30,7 @@ namespace System.Net.WebSockets.Client.Tests
 
             if (options.HttpVersion == HttpVersion.Version20)
             {
-                var http2Options = new Http2Options { WebSocketEndpoint = true, UseSsl = options.UseSsl };
+                var http2Options = new Http2Options { WebSocketEndpoint = true, UseSsl = options.UseSsl, EnsureThreadSafeIO = true };
                 options.ConfigureHttp2Options?.Invoke(http2Options);
 
                 return Http2LoopbackServer.CreateClientAndServerAsync(
