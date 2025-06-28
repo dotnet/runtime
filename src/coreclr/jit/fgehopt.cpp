@@ -171,7 +171,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                     fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
                     // Ref count updates.
-                    fgRedirectTargetEdge(currentBlock, postTryFinallyBlock);
+                    fgRedirectEdge(currentBlock->TargetEdgeRef(), postTryFinallyBlock);
                     currentBlock->SetKind(BBJ_ALWAYS);
                     currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
 
@@ -1565,7 +1565,7 @@ PhaseStatus Compiler::fgCloneFinally()
                     fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
                     // Ref count updates.
-                    fgRedirectTargetEdge(currentBlock, firstCloneBlock);
+                    fgRedirectEdge(currentBlock->TargetEdgeRef(), firstCloneBlock);
 
                     // This call returns to the expected spot, so retarget it to branch to the clone.
                     currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
@@ -2197,7 +2197,7 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
             canonicalCallFinally->bbNum);
 
     assert(callFinally->bbRefs > 0);
-    fgRedirectTargetEdge(block, canonicalCallFinally);
+    fgRedirectEdge(block->TargetEdgeRef(), canonicalCallFinally);
 
     // Update profile counts
     //

@@ -24,6 +24,9 @@ namespace System.Net.Http
         private Func<HttpConnectionSettings, HttpMessageHandlerStage, HttpMessageHandlerStage>? _decompressionHandlerFactory;
         private bool _disposed;
 
+        // Accessed via UnsafeAccessor from HttpWebRequest.
+        internal HttpConnectionSettings Settings => _settings;
+
         private void CheckDisposedOrStarted()
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -518,17 +521,7 @@ namespace System.Net.Http
             HttpConnectionSettings settings = _settings.CloneAndNormalize();
 
             HttpConnectionPoolManager poolManager = new HttpConnectionPoolManager(settings);
-
-            HttpMessageHandlerStage handler;
-
-            if (settings._credentials == null)
-            {
-                handler = new HttpConnectionHandler(poolManager);
-            }
-            else
-            {
-                handler = new HttpAuthenticatedConnectionHandler(poolManager);
-            }
+            HttpMessageHandlerStage handler = new HttpConnectionHandler(poolManager, doRequestAuth: settings._credentials is { });
 
             // MetricsHandler should be descendant of DiagnosticsHandler in the handler chain to make sure the 'http.request.duration'
             // metric is recorded before stopping the request Activity. This is needed to make sure that our telemetry supports Exemplars.
@@ -549,12 +542,7 @@ namespace System.Net.Http
                 // Just as with WinHttpHandler, for security reasons, we do not support authentication on redirects
                 // if the credential is anything other than a CredentialCache.
                 // We allow credentials in a CredentialCache since they are specifically tied to URIs.
-                HttpMessageHandlerStage redirectHandler =
-                    (settings._credentials == null || settings._credentials is CredentialCache) ?
-                    handler :
-                    new HttpConnectionHandler(poolManager);        // will not authenticate
-
-                handler = new RedirectHandler(settings._maxAutomaticRedirections, handler, redirectHandler);
+                handler = new RedirectHandler(settings._maxAutomaticRedirections, handler, disableAuthOnRedirect: settings._credentials is not CredentialCache);
             }
 
             if (settings._automaticDecompression != DecompressionMethods.None)

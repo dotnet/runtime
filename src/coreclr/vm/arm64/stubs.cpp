@@ -19,67 +19,6 @@
 
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------
-// InstructionFormat for B.cond
-//-----------------------------------------------------------------------
-class ConditionalBranchInstructionFormat : public InstructionFormat
-{
-
-    public:
-        ConditionalBranchInstructionFormat() : InstructionFormat(InstructionFormat::k32)
-        {
-            LIMITED_METHOD_CONTRACT;
-        }
-
-        virtual UINT GetSizeOfInstruction(UINT refsize, UINT variationCode)
-        {
-            LIMITED_METHOD_CONTRACT;
-
-            _ASSERTE(refsize == InstructionFormat::k32);
-
-            return 4;
-        }
-
-        virtual UINT GetHotSpotOffset(UINT refsize, UINT variationCode)
-        {
-            WRAPPER_NO_CONTRACT;
-            return 0;
-        }
-
-
-        virtual BOOL CanReach(UINT refSize, UINT variationCode, BOOL fExternal, INT_PTR offset)
-        {
-            _ASSERTE(!fExternal || "ARM64:NYI - CompareAndBranchInstructionFormat::CanReach external");
-            if (fExternal)
-                return false;
-
-            if (offset < -1048576 || offset > 1048572)
-                return false;
-            return true;
-        }
-        // B.<cond> <label>
-        // Encoding 0|1|0|1|0|1|0|0|imm19|0|cond
-        // cond = Bits3-0(variation)
-        // imm19 = bits19-0(fixedUpReference/4), will be SignExtended
-        virtual VOID EmitInstruction(UINT refSize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
-        {
-            LIMITED_METHOD_CONTRACT;
-
-            _ASSERTE(refSize == InstructionFormat::k32);
-
-            if (fixedUpReference < -1048576 || fixedUpReference > 1048572)
-                COMPlusThrow(kNotSupportedException);
-
-            _ASSERTE((fixedUpReference & 0x3) == 0);
-            DWORD imm19 = (DWORD)(0x7FFFF & (fixedUpReference >> 2));
-
-            pOutBufferRW[0] = static_cast<BYTE>((0x7 & imm19 /* Bits2-0(imm19) */) << 5  | (0xF & variationCode /* cond */));
-            pOutBufferRW[1] = static_cast<BYTE>((0x7F8 & imm19 /* Bits10-3(imm19) */) >> 3);
-            pOutBufferRW[2] = static_cast<BYTE>((0x7F800 & imm19 /* Bits19-11(imm19) */) >> 11);
-            pOutBufferRW[3] = static_cast<BYTE>(0x54);
-        }
-};
-
-//-----------------------------------------------------------------------
 // InstructionFormat for B(L)(R) (unconditional branch)
 //-----------------------------------------------------------------------
 class BranchInstructionFormat : public InstructionFormat
@@ -212,61 +151,7 @@ class BranchInstructionFormat : public InstructionFormat
 
 };
 
-//-----------------------------------------------------------------------
-// InstructionFormat for loading a label to the register (ADRP/ADR)
-//-----------------------------------------------------------------------
-class LoadFromLabelInstructionFormat : public InstructionFormat
-{
-    public:
-        LoadFromLabelInstructionFormat() : InstructionFormat( InstructionFormat::k32)
-        {
-            LIMITED_METHOD_CONTRACT;
-        }
-
-        virtual UINT GetSizeOfInstruction(UINT refSize, UINT variationCode)
-        {
-            WRAPPER_NO_CONTRACT;
-            return 8;
-
-        }
-
-        virtual UINT GetHotSpotOffset(UINT refsize, UINT variationCode)
-        {
-            WRAPPER_NO_CONTRACT;
-            return 0;
-        }
-
-        virtual BOOL CanReach(UINT refSize, UINT variationCode, BOOL fExternal, INT_PTR offset)
-        {
-            return fExternal;
-        }
-
-        virtual VOID EmitInstruction(UINT refSize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
-        {
-            LIMITED_METHOD_CONTRACT;
-            // VariationCode is used to indicate the register the label is going to be loaded
-
-            DWORD imm =(DWORD)(fixedUpReference>>12);
-            if (imm>>21)
-                COMPlusThrow(kNotSupportedException);
-
-            // Can't use SP or XZR
-            _ASSERTE((variationCode & 0x1F) != 31);
-
-            // adrp Xt, #Page_of_fixedUpReference
-            *((DWORD*)pOutBufferRW) = ((9<<28) | ((imm & 3)<<29) | (imm>>2)<<5 | (variationCode&0x1F));
-
-            // ldr Xt, [Xt, #offset_of_fixedUpReference_to_its_page]
-            UINT64 target = (UINT64)(fixedUpReference + pOutBufferRX)>>3;
-            *((DWORD*)(pOutBufferRW+4)) = ( 0xF9400000 | ((target & 0x1FF)<<10) | (variationCode & 0x1F)<<5 | (variationCode & 0x1F));
-        }
-};
-
-
-
-static BYTE gConditionalBranchIF[sizeof(ConditionalBranchInstructionFormat)];
 static BYTE gBranchIF[sizeof(BranchInstructionFormat)];
-static BYTE gLoadFromLabelIF[sizeof(LoadFromLabelInstructionFormat)];
 
 #endif
 
@@ -728,40 +613,6 @@ void StubLinkerCPU::EmitMovConstant(IntReg target, UINT64 constant)
 #undef WORD_MASK
 }
 
-void StubLinkerCPU::EmitCmpImm(IntReg reg, int imm)
-{
-
-    if (0 <= imm && imm < 4096)
-    {
-        // CMP <Xn|SP>, #<imm>{, <shift>}
-        // Encoding: 1|1|1|1|0|0|0|0|shift(2)|imm(12)|Rn|Rt
-        // Where I encode shift as 0 and Rt has to be 1F
-        Emit32((DWORD) ((0xF1<<24) | ((0xFFF & imm)<<10) | (reg<<5) | (0x1F)) );
-
-    }
-    else
-        _ASSERTE(!"ARM64: NYI");
-}
-
-void StubLinkerCPU::EmitCmpReg(IntReg Xn, IntReg Xm)
-{
-
-    // Encoding for CMP (shifted register)
-    // sf|1|1|0|1|0|1|1|shift(2)|0|Xm(5)|imm(6)|Xn(5)|XZR(5)
-    // where
-    //    sf = 1 for 64-bit variant,
-    //    shift will be set to 00 (LSL)
-    //    imm(6), which is the shift amount, will be set to 0
-
-    Emit32((DWORD) (0xEB<<24) | (Xm<<16) | (Xn<<5) | 0x1F);
-}
-
-void StubLinkerCPU::EmitCondFlagJump(CodeLabel * target, UINT cond)
-{
-    WRAPPER_NO_CONTRACT;
-    EmitLabelRef(target, reinterpret_cast<ConditionalBranchInstructionFormat&>(gConditionalBranchIF), cond);
-}
-
 void StubLinkerCPU::EmitJumpRegister(IntReg regTarget)
 {
     // br regTarget
@@ -773,43 +624,6 @@ void StubLinkerCPU::EmitRet(IntReg Xn)
     // Encoding: 1101011001011111000000| Rn |00000
     Emit32((DWORD)(0xD65F0000 | (Xn << 5)));
 }
-
-void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, IntReg Xt1, IntReg Xt2, IntReg Xn, int offset)
-{
-    EmitLoadStoreRegPairImm(flags, (int)Xt1, (int)Xt2, Xn, offset, FALSE);
-}
-
-void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, VecReg Vt1, VecReg Vt2, IntReg Xn, int offset)
-{
-    EmitLoadStoreRegPairImm(flags, (int)Vt1, (int)Vt2, Xn, offset, TRUE);
-}
-
-void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, int regNum1, int regNum2, IntReg Xn, int offset, BOOL isVec)
-{
-    // Encoding:
-    // [opc(2)] | 1 | 0 | 1 | [IsVec(1)] | 0 | [!postIndex(1)] | [writeBack(1)] | [isLoad(1)] | [imm(7)] | [Xt2(5)] | [Xn(5)] | [Xt1(5)]
-    // where opc=01 and if isVec==1, opc=10 otherwise
-
-    BOOL isLoad    = flags & 1;
-    BOOL writeBack = flags & 2;
-    BOOL postIndex = flags & 4;
-    _ASSERTE((-512 <= offset) && (offset <= 504));
-    _ASSERTE((offset & 7) == 0);
-    int opc = isVec ? 1 : 2;
-    Emit32((DWORD) ( (opc<<30) | // opc
-                     (0x5<<27) |
-                     (!!isVec<<26) |
-                     (!postIndex<<24) |
-                     (!!writeBack<<23) |
-                     (!!isLoad<<22) |
-                     ((0x7F & (offset >> 3)) << 15) |
-                     (regNum2 << 10) |
-                     (Xn << 5) |
-                     (regNum1)
-                   ));
-
-}
-
 
 void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset, int log2Size)
 {
@@ -863,22 +677,8 @@ void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int 
                          (regNum))
               );
     }
-
-
-
 }
 
-// Load Register (Register Offset)
-void StubLinkerCPU::EmitLoadRegReg(IntReg Xt, IntReg Xn, IntReg Xm, DWORD option)
-{
-    Emit32((DWORD) ( (0xF8600800) |
-                     (option << 12) |
-                     (Xm << 16) |
-                     (Xn << 5) |
-                     (Xt)
-                ));
-
-}
 
 void StubLinkerCPU::EmitMovReg(IntReg Xd, IntReg Xm)
 {
@@ -922,18 +722,9 @@ void StubLinkerCPU::EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value)
     Emit32((DWORD) ((0x91 << 24) | (value << 10) | (Xn << 5) | Xd));
 }
 
-void StubLinkerCPU::EmitCallRegister(IntReg reg)
-{
-    // blr Xn
-    // Encoding: 1|1|0|1|0|1|1|0|0|0|1|1|1|1|1|1|0|0|0|0|0|Rn|0|0|0|0|0
-    Emit32((DWORD) (0xD63F0000 | (reg << 5)));
-}
-
 void StubLinkerCPU::Init()
 {
-    new (gConditionalBranchIF) ConditionalBranchInstructionFormat();
     new (gBranchIF) BranchInstructionFormat();
-    new (gLoadFromLabelIF) LoadFromLabelInstructionFormat();
 }
 
 // Emits code to adjust arguments for static delegate target.

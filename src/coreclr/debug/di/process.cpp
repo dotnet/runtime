@@ -26,7 +26,6 @@
 // @dbgtodo shim: process has some private hooks into the shim.
 #include "shimpriv.h"
 
-#include "metadataexports.h"
 #include "readonlydatatargetfacade.h"
 #include "metahost.h"
 
@@ -1740,7 +1739,7 @@ HRESULT CordbProcess::Init()
         hr = m_pDACDataTarget->QueryInterface(IID_ICorDebugMetaDataLocator, reinterpret_cast<void **>(&m_pMetaDataLocator));
 
         // Get the metadata dispenser.
-        hr = InternalCreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void **)&m_pMetaDispenser);
+        hr = CreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void **)&m_pMetaDispenser);
 
         // We statically link in the dispenser. We expect it to succeed, except for OOM, which
         // debugger doesn't yet handle.
@@ -2634,7 +2633,7 @@ void CordbRefEnum::Neuter()
     {
         _ASSERTE(!"Hit an error freeing a ref walk.");
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     CordbBase::Neuter();
 }
@@ -2850,7 +2849,7 @@ void CordbHeapEnum::Clear()
     {
         _ASSERTE(!"Hit an error freeing the heap walk.");
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 HRESULT CordbHeapEnum::Clone(ICorDebugEnum **ppEnum)
@@ -6579,7 +6578,7 @@ HRESULT CordbProcess::SetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
         {
             hr = E_FAIL;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
 
     }
@@ -8539,7 +8538,7 @@ void CordbProcess::UnrecoverableError(HRESULT errorHR,
         {
             _ASSERTE(!"Writing process memory failed, perhaps due to an unexpected disconnection from the target.");
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
     //
@@ -14281,7 +14280,7 @@ void CordbProcess::CleanupHalfBakedLeftSide()
         {
             _ASSERTE(!"Writing process memory failed, perhaps due to an unexpected disconnection from the target.");
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
     // Close and null out the various handles and events, including our process handle m_handle.

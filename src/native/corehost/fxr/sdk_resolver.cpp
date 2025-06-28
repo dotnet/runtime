@@ -128,7 +128,7 @@ std::vector<pal::string_t> sdk_resolver::get_search_paths(const pal::string_t& d
             {
                 locations.push_back(dotnet_root);
             }
-            else if (pal::is_path_rooted(path))
+            else if (pal::is_path_fully_qualified(path))
             {
                 locations.push_back(path);
             }
