@@ -633,9 +633,9 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
         if ((int)node <= g_highestNumaNode)
         {
             int usedNodeMaskBits = g_highestNumaNode + 1;
-            int nodeMaskLength = (usedNodeMaskBits + sizeof(unsigned long) - 1) / sizeof(unsigned long);
-            unsigned long nodeMask[nodeMaskLength];
-            memset(nodeMask, 0, sizeof(nodeMask));
+            int nodeMaskLength = usedNodeMaskBits + sizeof(unsigned long) - 1;
+            unsigned long* nodeMask = (unsigned long*)alloca(nodeMaskLength);
+            memset(nodeMask, 0, nodeMaskLength);
 
             int index = node / sizeof(unsigned long);
             nodeMask[index] = ((unsigned long)1) << (node & (sizeof(unsigned long) - 1));
