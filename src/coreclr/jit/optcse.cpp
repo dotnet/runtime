@@ -40,6 +40,25 @@ const size_t Compiler::s_optCSEhashSizeInitial  = EXPSET_SZ * 2;
 const size_t Compiler::s_optCSEhashGrowthFactor = 2;
 const size_t Compiler::s_optCSEhashBucketSize   = 4;
 
+// Set the cut off values to use for deciding when we want to use aggressive, moderate or conservative
+//
+// The value of aggressiveRefCnt and moderateRefCnt start off as zero and
+// when enregCount reached a certain value we assign the current LclVar
+// (weighted) ref count to aggressiveRefCnt or moderateRefCnt.
+//
+//
+// On Windows x64 this yields:
+// CNT_AGGRESSIVE_ENREG == 12 and CNT_MODERATE_ENREG == 38
+// Thus we will typically set the cutoff values for
+//   aggressiveRefCnt based upon the weight of T13 (the 13th tracked LclVar)
+//   moderateRefCnt based upon the weight of T39 (the 39th tracked LclVar)
+//
+// For other architecture and platforms these values dynamically change
+// based upon the number of callee saved and callee scratch registers.
+//
+#define CNT_AGGRESSIVE_ENREG ((CNT_CALLEE_ENREG * 3) / 2)
+#define CNT_MODERATE_ENREG   ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2))
+
 /*****************************************************************************
  *
  *  We've found all the candidates, build the index for easy access.
@@ -2373,7 +2392,7 @@ void CSE_HeuristicParameterized::CaptureLocalWeights()
 
         // Only consider for integral types
         //
-        if (varTypeIsFloating(varDsc->TypeGet()) || varTypeIsMask(varDsc->TypeGet()))
+        if (!varTypeUsesIntReg(varDsc->TypeGet()))
         {
             continue;
         }
@@ -3129,7 +3148,7 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
             continue;
         }
 
-        if (!varTypeIsFloating(varTyp))
+        if (varTypeUsesIntReg(varTyp))
         {
             enregCount++; // The primitive types, including TYP_SIMD types use one register
 
@@ -3139,6 +3158,10 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
                 enregCount++; // on 32-bit targets longs use two registers
             }
 #endif
+        }
+        else
+        {
+            assert(varTypeUsesFloatReg(varTyp) || varTypeUsesMaskReg(varTyp));
         }
     }
 
@@ -3977,7 +4000,7 @@ void CSE_Heuristic::Initialize()
     // Record the weighted ref count of the last "for sure" callee saved LclVar
 
     unsigned   frameSize        = 0;
-    unsigned   regAvailEstimate = ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2) + 1);
+    unsigned   regAvailEstimate = CNT_MODERATE_ENREG + 1;
     unsigned   lclNum;
     LclVarDsc* varDsc;
 
@@ -4136,7 +4159,7 @@ void CSE_Heuristic::Initialize()
         // but it isn't worth the additional complexity as floating point CSEs
         // are rare and we typically have plenty of floating point register available.
         //
-        if (!varTypeIsFloating(varTyp))
+        if (varTypeUsesIntReg(varTyp))
         {
             enregCount++; // The primitive types, including TYP_SIMD types use one register
 
@@ -4147,26 +4170,12 @@ void CSE_Heuristic::Initialize()
             }
 #endif
         }
+        else
+        {
+            assert(varTypeUsesFloatReg(varTyp) || varTypeUsesMaskReg(varTyp));
+        }
 
-        // Set the cut off values to use for deciding when we want to use aggressive, moderate or conservative
-        //
-        // The value of aggressiveRefCnt and moderateRefCnt start off as zero and
-        // when enregCount reached a certain value we assign the current LclVar
-        // (weighted) ref count to aggressiveRefCnt or moderateRefCnt.
-        //
-        const unsigned aggressiveEnregNum = (CNT_CALLEE_ENREG * 3 / 2);
-        const unsigned moderateEnregNum   = ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2));
-        //
-        // On Windows x64 this yields:
-        // aggressiveEnregNum == 12 and moderateEnregNum == 38
-        // Thus we will typically set the cutoff values for
-        //   aggressiveRefCnt based upon the weight of T13 (the 13th tracked LclVar)
-        //   moderateRefCnt based upon the weight of T39 (the 39th tracked LclVar)
-        //
-        // For other architecture and platforms these values dynamically change
-        // based upon the number of callee saved and callee scratch registers.
-        //
-        if ((aggressiveRefCnt == 0) && (enregCount > aggressiveEnregNum))
+        if ((aggressiveRefCnt == 0) && (enregCount > CNT_AGGRESSIVE_ENREG))
         {
             if (CodeOptKind() == Compiler::SMALL_CODE)
             {
@@ -4178,7 +4187,7 @@ void CSE_Heuristic::Initialize()
             }
             aggressiveRefCnt += BB_UNITY_WEIGHT;
         }
-        if ((moderateRefCnt == 0) && (enregCount > ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2))))
+        if ((moderateRefCnt == 0) && (enregCount > CNT_MODERATE_ENREG))
         {
             if (CodeOptKind() == Compiler::SMALL_CODE)
             {
@@ -4526,7 +4535,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
                 cse_def_cost = 2;
                 if (canEnregister)
                 {
-                    if (enregCount < (CNT_CALLEE_ENREG * 3 / 2))
+                    if (enregCount < CNT_AGGRESSIVE_ENREG)
                     {
                         cse_use_cost = 1;
                     }
@@ -4603,7 +4612,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
         // If we don't have a lot of variables to enregister or we have a floating point type
         // then we will likely need to spill an additional caller save register.
         //
-        if ((enregCount < (CNT_CALLEE_ENREG * 3 / 2)) || varTypeIsFloating(candidate->Expr()))
+        if ((enregCount < CNT_AGGRESSIVE_ENREG) || varTypeIsFloating(candidate->Expr()))
         {
             // Extra cost in case we have to spill/restore a caller saved register
             extra_yes_cost = BB_UNITY_WEIGHT_UNSIGNED;
