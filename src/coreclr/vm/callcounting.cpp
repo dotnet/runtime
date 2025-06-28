@@ -960,8 +960,9 @@ void CallCountingManager::CompleteCallCounting()
                 STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "CallCountingManager::CompleteCallCounting: "
                     "Exception, hr=0x%x\n",
                     GET_EXCEPTION()->GetHR());
+                RethrowTerminalExceptions();
             }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_END_CATCH
         }
 
         callCountingInfosPendingCompletion.Clear();
@@ -972,10 +973,7 @@ void CallCountingManager::CompleteCallCounting()
             {
                 callCountingInfosPendingCompletion.Preallocate(64);
             }
-            EX_CATCH
-            {
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_SWALLOW_NONTERMINAL;
         }
     }
 }
@@ -1103,10 +1101,7 @@ void CallCountingManager::StopAllCallCounting(TieredCompilationManager *tieredCo
                 {
                     callCountingInfosPendingCompletion.Preallocate(64);
                 }
-                EX_CATCH
-                {
-                }
-                EX_END_CATCH(RethrowTerminalExceptions);
+                EX_SWALLOW_NONTERMINAL;
             }
         }
 
@@ -1225,10 +1220,7 @@ void CallCountingManager::TrimCollections()
         {
             m_callCountingInfoByCodeVersionHash.Reallocate(count * 2);
         }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_SWALLOW_NONTERMINAL
     }
 
     count = m_methodDescForwarderStubHash.GetCount();
@@ -1246,10 +1238,7 @@ void CallCountingManager::TrimCollections()
         {
             m_methodDescForwarderStubHash.Reallocate(count * 2);
         }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_SWALLOW_NONTERMINAL
     }
 }
 

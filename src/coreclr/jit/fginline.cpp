@@ -712,7 +712,8 @@ private:
                     if (newClass != NO_CLASS_HANDLE)
                     {
                         m_compiler->lvaUpdateClass(lclNum, newClass, isExact);
-                        m_madeChanges = true;
+                        m_madeChanges                    = true;
+                        m_compiler->hasUpdatedTypeLocals = true;
                     }
                 }
             }
@@ -1851,7 +1852,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         // Insert inlinee's blocks into inliner's block list.
         assert(topBlock->KindIs(BBJ_ALWAYS));
         assert(topBlock->TargetIs(bottomBlock));
-        fgRedirectTargetEdge(topBlock, InlineeCompiler->fgFirstBB);
+        fgRedirectEdge(topBlock->TargetEdgeRef(), InlineeCompiler->fgFirstBB);
 
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
         InlineeCompiler->fgLastBB->SetNext(bottomBlock);

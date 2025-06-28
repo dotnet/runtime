@@ -140,7 +140,6 @@ LEAF_END RhpGcPoll, _TEXT
 
 NESTED_ENTRY RhpGcPollRare, _TEXT
         PUSH_COOP_PINVOKE_FRAME rcx
-        END_PROLOGUE
         call        RhpGcPoll2
         POP_COOP_PINVOKE_FRAME
         ret

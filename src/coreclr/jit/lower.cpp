@@ -1550,14 +1550,13 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
 #endif
 
     //
-    // Rewire the blocks as needed.
+    // Set successor edge dup counts to 1 each
     //
 
-    comp->fgRemoveAllRefPreds(bbCase1, bbSwitch);
-    comp->fgRemoveAllRefPreds(bbCase0, bbSwitch);
-
-    case0Edge = comp->fgAddRefPred(bbCase0, bbSwitch, case0Edge);
-    case1Edge = comp->fgAddRefPred(bbCase1, bbSwitch, case1Edge);
+    bbCase0->bbRefs -= (case0Edge->getDupCount() - 1);
+    bbCase1->bbRefs -= (case1Edge->getDupCount() - 1);
+    case0Edge->decrementDupCount(case0Edge->getDupCount() - 1);
+    case1Edge->decrementDupCount(case1Edge->getDupCount() - 1);
 
     // If defaultLikelihood is not ~ 1.0
     //   up-scale case likelihoods by 1.0 / (1.0 - defaultLikelihood)
@@ -2648,9 +2647,10 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
             GenTree* lArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
             GenTree* rArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
-            ssize_t MaxUnrollSize = comp->IsBaselineSimdIsaSupported() ? 32 : 16;
+            ssize_t MaxUnrollSize = 16;
 
-#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+#ifdef FEATURE_SIMD
+#ifdef TARGET_XARCH
             if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
             {
                 MaxUnrollSize = 128;
@@ -2660,7 +2660,12 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
                 // We need AVX2 for NI_Vector256_op_Equality, fallback to Vector128 if only AVX is available
                 MaxUnrollSize = 64;
             }
-#endif
+            else
+#endif // TARGET_XARCH
+            {
+                MaxUnrollSize = 32;
+            }
+#endif // FEATURE_SIMD
 
             if (cnsSize <= MaxUnrollSize)
             {
@@ -3332,10 +3337,12 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     GenTree* startNonGCNode = nullptr;
     if (!putargs.Empty())
     {
-        GenTree* firstPutargStk = putargs.Bottom(0);
+        GenTree* firstPutargStk   = putargs.Bottom(0);
+        GenTree* firstPutargStkOp = firstPutargStk->gtGetOp1();
         for (int i = 1; i < putargs.Height(); i++)
         {
-            firstPutargStk = LIR::FirstNode(firstPutargStk, putargs.Bottom(i));
+            firstPutargStk   = LIR::FirstNode(firstPutargStk, putargs.Bottom(i));
+            firstPutargStkOp = LIR::FirstNode(firstPutargStkOp, putargs.Bottom(i)->gtGetOp1());
         }
         // Since this is a fast tailcall each PUTARG_STK will place the argument in the
         // _incoming_ arg space area. This will effectively overwrite our already existing
@@ -3383,10 +3390,10 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 GenTree* lookForUsesFrom = put->gtNext;
                 if (overwrittenStart != argStart)
                 {
-                    lookForUsesFrom = firstPutargStk;
+                    lookForUsesFrom = firstPutargStkOp;
                 }
 
-                RehomeArgForFastTailCall(callerArgLclNum, firstPutargStk, lookForUsesFrom, call);
+                RehomeArgForFastTailCall(callerArgLclNum, firstPutargStkOp, lookForUsesFrom, call);
                 // The above call can introduce temps and invalidate the pointer.
                 callerArgDsc = comp->lvaGetDesc(callerArgLclNum);
 
@@ -3400,7 +3407,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 unsigned int fieldsEnd   = fieldsFirst + callerArgDsc->lvFieldCnt;
                 for (unsigned int j = fieldsFirst; j < fieldsEnd; j++)
                 {
-                    RehomeArgForFastTailCall(j, firstPutargStk, lookForUsesFrom, call);
+                    RehomeArgForFastTailCall(j, firstPutargStkOp, lookForUsesFrom, call);
                 }
             }
         }
@@ -6105,22 +6112,9 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
     {
         noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
-        // the convention on getHelperFtn seems to be (it's not documented)
-        // that it returns an address or if it returns null, pAddr is set to
-        // another address, which requires an indirection
-        void* pAddr;
-        addr = comp->info.compCompHnd->getHelperFtn(helperNum, (void**)&pAddr);
-
-        if (addr != nullptr)
-        {
-            assert(pAddr == nullptr);
-            accessType = IAT_VALUE;
-        }
-        else
-        {
-            accessType = IAT_PVALUE;
-            addr       = pAddr;
-        }
+        CORINFO_CONST_LOOKUP addrInfo = comp->compGetHelperFtn(helperNum);
+        addr                          = addrInfo.addr;
+        accessType                    = addrInfo.accessType;
     }
     else
     {
@@ -7926,11 +7920,12 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         }
 
 #ifdef TARGET_XARCH
-        // force input transformation to RAX because the following MULHI will kill RDX:RAX anyway and LSRA often causes
-        // redundant copies otherwise
+        // force input transformation to RAX/RDX because the following MULHI will kill RDX:RAX (RDX if mulx is
+        // available) anyway and LSRA often causes redundant copies otherwise
         if (firstNode && !simpleMul)
         {
-            adjustedDividend->SetRegNum(REG_RAX);
+            regNumber implicitReg = comp->compOpportunisticallyDependsOn(InstructionSet_AVX2) ? REG_RDX : REG_RAX;
+            adjustedDividend->SetRegNum(implicitReg);
         }
 #endif
 
@@ -10273,29 +10268,25 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 #if defined(FEATURE_HW_INTRINSICS)
             case TYP_LONG:
             case TYP_REF:
-                if (comp->IsBaselineSimdIsaSupported())
+                // TLDR: we should be here only if one of the conditions is true:
+                // 1) Both GT_INDs have GTF_IND_ALLOW_NON_ATOMIC flag
+                // 2) ARM64: Data is at least 8-byte aligned
+                // 3) AMD64: Data is at least 16-byte aligned on AMD/Intel with AVX+
+                //
+                newType = TYP_SIMD16;
+                if ((oldType == TYP_REF) &&
+                    (!currData.value->IsIntegralConst(0) || !prevData.value->IsIntegralConst(0)))
                 {
-                    // TLDR: we should be here only if one of the conditions is true:
-                    // 1) Both GT_INDs have GTF_IND_ALLOW_NON_ATOMIC flag
-                    // 2) ARM64: Data is at least 8-byte aligned
-                    // 3) AMD64: Data is at least 16-byte aligned on AMD/Intel with AVX+
+                    // For TYP_REF we only support null values. In theory, we can also support frozen handles, e.g.:
                     //
-                    newType = TYP_SIMD16;
-                    if ((oldType == TYP_REF) &&
-                        (!currData.value->IsIntegralConst(0) || !prevData.value->IsIntegralConst(0)))
-                    {
-                        // For TYP_REF we only support null values. In theory, we can also support frozen handles, e.g.:
-                        //
-                        //   arr[1] = "hello";
-                        //   arr[0] = "world";
-                        //
-                        // but we don't want to load managed references into SIMD registers (we can only do so
-                        // when we can issue a nongc region for a block)
-                        return;
-                    }
-                    break;
+                    //   arr[1] = "hello";
+                    //   arr[0] = "world";
+                    //
+                    // but we don't want to load managed references into SIMD registers (we can only do so
+                    // when we can issue a nongc region for a block)
+                    return;
                 }
-                return;
+                break;
 
 #if defined(TARGET_AMD64)
             case TYP_SIMD16:

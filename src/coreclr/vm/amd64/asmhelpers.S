@@ -2,8 +2,8 @@
 # The .NET Foundation licenses this file to you under the MIT license.
 
 .intel_syntax noprefix
-#include "unixasmmacros.inc"
 #include "asmconstants.h"
+#include "unixasmmacros.inc"
 
 #define real4 dword
 #define real8 qword
@@ -432,22 +432,712 @@ NESTED_END CallEHFilterFunclet, _TEXT
 
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
-        PROLOG_WITH_TRANSITION_BLOCK 8, 0, 0, 0, 0
-        mov             [rsp], rax // Return buffer in Swift calling convention
+        PROLOG_WITH_TRANSITION_BLOCK
 
-        #
-        # call ExecuteInterpretedMethod
-        #
-        lea             rdi, [rsp + __PWTB_TransitionBlock]     // pTransitionBlock*
-        mov             rsi, METHODDESC_REGISTER
-        call            C_FUNC(ExecuteInterpretedMethod)
+        __InterpreterStubStackArgumentsOffset = __PWTB_TransitionBlock + SIZEOF__TransitionBlock
+        __InterpreterStubArgumentRegistersOffset = __PWTB_TransitionBlock
 
-        mov             rax, [rsp]
+        // IR bytecode address
+        mov             rbx, METHODDESC_REGISTER
+
+        INLINE_GETTHREAD // result in rax, it can thrash all argument registers as it can call a helper
+        mov             r10, rax
+
+        // Load the InterpMethod pointer from the IR bytecode
+        mov             rax, qword ptr [rbx]
+        mov             rax, qword ptr [rax + OFFSETOF__InterpMethod__pCallStub]
+        // Reload the argument registers, the macro to get the thread have likely overwritten them
+        mov             rdi, qword ptr [rsp + __InterpreterStubArgumentRegistersOffset]
+        mov             rsi, qword ptr [rsp + __InterpreterStubArgumentRegistersOffset + 8]
+        mov             rdx, qword ptr [rsp + __InterpreterStubArgumentRegistersOffset + 0x10]
+        mov             rcx, qword ptr [rsp + __InterpreterStubArgumentRegistersOffset + 0x18]
+        mov             r8, qword ptr [rsp + __InterpreterStubArgumentRegistersOffset + 0x20]
+        mov             r9, qword ptr [rsp + __InterpreterStubArgumentRegistersOffset + 0x28]
+        movsd           xmm0, real8 ptr [rsp + __PWTB_FloatArgumentRegisters]
+        movsd           xmm1, real8 ptr [rsp + __PWTB_FloatArgumentRegisters + 0x10]
+        movsd           xmm2, real8 ptr [rsp + __PWTB_FloatArgumentRegisters + 0x20]
+        movsd           xmm3, real8 ptr [rsp + __PWTB_FloatArgumentRegisters + 0x30]
+        movsd           xmm4, real8 ptr [rsp + __PWTB_FloatArgumentRegisters + 0x40]
+        movsd           xmm5, real8 ptr [rsp + __PWTB_FloatArgumentRegisters + 0x50]
+        movsd           xmm6, real8 ptr [rsp + __PWTB_FloatArgumentRegisters + 0x60]
+        movsd           xmm7, real8 ptr [rsp + __PWTB_FloatArgumentRegisters + 0x70]
+        lea             r11, qword ptr [rax + OFFSETOF__CallStubHeader__Routines]
+        mov             r10, qword ptr [r10 + OFFSETOF__Thread__m_pInterpThreadContext]
+        mov             r10, qword ptr [r10 + OFFSETOF__InterpThreadContext__pStackPointer]
+        lea             rax, [rsp + __PWTB_TransitionBlock]
+        // rbx contains IR bytecode address
+        // Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
+        call            qword ptr [r11]
+
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
 NESTED_END InterpreterStub, _TEXT
 
-// Copy arguments from the interpreter stack to the processor stack.
+NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
+        push_register   rcx // stack alignment
+END_PROLOGUE
+        mov             rdi, rax // pTransitionBlock*
+        mov             rsi, rbx // the IR bytecode pointer
+        xor             rdx, rdx
+        call            C_FUNC(ExecuteInterpretedMethod)
+        pop_register    rcx
+        ret
+NESTED_END InterpreterStubRetVoid, _TEXT
+
+NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
+        push_register   rcx // stack alignment
+END_PROLOGUE
+        mov             rdi, rax // pTransitionBlock*
+        mov             rsi, rbx // the IR bytecode pointer
+        xor             rdx, rdx
+        call            C_FUNC(ExecuteInterpretedMethod)
+        mov             rax, qword ptr [rax]
+        pop_register    rcx
+        ret
+NESTED_END InterpreterStubRetI8, _TEXT
+
+NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
+        push_register   rcx // stack alignment
+END_PROLOGUE
+        mov             rdi, rax // pTransitionBlock*
+        mov             rsi, rbx // the IR bytecode pointer
+        xor             rdx, rdx
+        call            C_FUNC(ExecuteInterpretedMethod)
+        movsd           xmm0, real8 ptr [rax]
+        pop_register    rcx
+        ret
+NESTED_END InterpreterStubRetDouble, _TEXT
+
+NESTED_ENTRY InterpreterStubRetI8I8, _TEXT, NoHandler
+        push_register   rcx // stack alignment
+END_PROLOGUE
+        mov             rdi, rax // pTransitionBlock*
+        mov             rsi, rbx // the IR bytecode pointer
+        xor             rdx, rdx
+        call            C_FUNC(ExecuteInterpretedMethod)
+        mov             rdx, qword ptr [rax + 8]
+        mov             rax, qword ptr [rax]
+        pop_register    rcx
+        ret
+NESTED_END InterpreterStubRetI8I8, _TEXT
+
+NESTED_ENTRY InterpreterStubRetDoubleDouble, _TEXT, NoHandler
+        push_register   rcx // stack alignment
+END_PROLOGUE
+        mov             rdi, rax // pTransitionBlock*
+        mov             rsi, rbx // the IR bytecode pointer
+        xor             rdx, rdx
+        call            C_FUNC(ExecuteInterpretedMethod)
+        movsd           xmm0, real8 ptr [rax]
+        movsd           xmm1, real8 ptr [rax + 8]
+        pop_register    rcx
+        ret
+NESTED_END InterpreterStubRetDoubleDouble, _TEXT
+
+NESTED_ENTRY InterpreterStubRetI8Double, _TEXT, NoHandler
+        push_register   rcx // stack alignment
+END_PROLOGUE
+        mov             rdi, rax // pTransitionBlock*
+        mov             rsi, rbx // the IR bytecode pointer
+        xor             rdx, rdx
+        call            C_FUNC(ExecuteInterpretedMethod)
+        movsd           xmm0, real8 ptr [rax + 8]
+        mov             rax, qword ptr [rax]
+        pop_register    rcx
+        ret
+NESTED_END InterpreterStubRetI8Double, _TEXT
+
+NESTED_ENTRY InterpreterStubRetDoubleI8, _TEXT, NoHandler
+        push_register   rcx // stack alignment
+END_PROLOGUE
+        mov             rdi, rax // pTransitionBlock*
+        mov             rsi, rbx // the IR bytecode pointer
+        xor             rdx, rdx
+        call            C_FUNC(ExecuteInterpretedMethod)
+        movsd           xmm0, real8 ptr [rax]
+        mov             rax, qword ptr [rax + 8]
+        pop_register    rcx
+        ret
+NESTED_END InterpreterStubRetDoubleI8, _TEXT
+
+NESTED_ENTRY InterpreterStubRetBuff, _TEXT, NoHandler
+        push_register   rax // stack alignment
+END_PROLOGUE
+        mov             rdi, rax // pTransitionBlock*
+        mov             rsi, rbx // the IR bytecode pointer
+        // Load the return buffer address
+        // The 8 + 8 is for the push and the return address slot
+        mov             rdx, qword ptr [rsp + 8 + 8 + __InterpreterStubArgumentRegistersOffset]
+        call            C_FUNC(ExecuteInterpretedMethod)
+        mov             rax, qword ptr [rsp + 8 + 8 + __InterpreterStubArgumentRegistersOffset]
+        pop_register    rcx
+        ret
+NESTED_END InterpreterStubRetBuff, _TEXT
+
+// Routines for passing value type arguments by reference in general purpose registers RDI, RSI, RDX, RCX, R8, R9
+// from native code to the interpreter
+
+// Copy arguments from the the processor stack to the interpreter stack.
+// The CPU stack slots are aligned to pointer size.
+LEAF_ENTRY Store_Stack, _TEXT
+        push_nonvol_reg rdi
+        push_nonvol_reg rsi
+        push_register rcx
+        mov esi, dword ptr [r11 + 8]  // SP offset
+        mov ecx, dword ptr [r11 + 12] // number of stack slots
+        // load the caller Rsp as a based for the stack arguments
+        // The 4 * 8 represent the three pushes above and the return address slot
+        lea rsi, [rsp + rsi + 4 * 8 + __InterpreterStubStackArgumentsOffset]
+        mov rdi, r10
+        shr rcx, 3
+        rep movsq
+        mov r10, rdi
+        pop_register rcx
+        pop_nonvol_reg rsi
+        pop_nonvol_reg rdi
+        add r11, 16
+        jmp qword ptr [r11]
+LEAF_END Store_Stack, _TEXT
+
+LEAF_ENTRY Store_RDI, _TEXT
+        mov [r10], rdi
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RDI, _TEXT
+
+LEAF_ENTRY Store_RDI_RSI, _TEXT
+        mov [r10], rdi
+        mov [r10 + 8], rsi
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RDI_RSI, _TEXT
+
+LEAF_ENTRY Store_RDI_RSI_RDX, _TEXT
+        mov [r10], rdi
+        mov [r10 + 8], rsi
+        mov [r10 + 16], rdx
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RDI_RSI_RDX, _TEXT
+
+LEAF_ENTRY Store_RDI_RSI_RDX_RCX, _TEXT
+        mov [r10], rdi
+        mov [r10 + 8], rsi
+        mov [r10 + 16], rdx
+        mov [r10 + 24], rcx
+        add r10, 32
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RDI_RSI_RDX_RCX, _TEXT
+
+LEAF_ENTRY Store_RDI_RSI_RDX_RCX_R8, _TEXT
+        mov [r10], rdi
+        mov [r10 + 8], rsi
+        mov [r10 + 16], rdx
+        mov [r10 + 24], rcx
+        mov [r10 + 32], r8
+        add r10, 40
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RDI_RSI_RDX_RCX_R8, _TEXT
+
+LEAF_ENTRY Store_RDI_RSI_RDX_RCX_R8_R9, _TEXT
+        mov [r10], rdi
+        mov [r10 + 8], rsi
+        mov [r10 + 16], rdx
+        mov [r10 + 24], rcx
+        mov [r10 + 32], r8
+        mov [r10 + 40], r9
+        add r10, 48
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RDI_RSI_RDX_RCX_R8_R9, _TEXT
+
+LEAF_ENTRY Store_RSI, _TEXT
+        mov [r10], rsi
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RSI, _TEXT
+
+LEAF_ENTRY Store_RSI_RDX, _TEXT
+        mov [r10], rsi
+        mov [r10 + 8], rdx
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RSI_RDX, _TEXT
+
+LEAF_ENTRY Store_RSI_RDX_RCX, _TEXT
+        mov [r10], rsi
+        mov [r10 + 8], rdx
+        mov [r10 + 16], rcx
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RSI_RDX_RCX, _TEXT
+
+LEAF_ENTRY Store_RSI_RDX_RCX_R8, _TEXT
+        mov [r10], rsi
+        mov [r10 + 8], rdx
+        mov [r10 + 16], rcx
+        mov [r10 + 24], r8
+        add r10, 32
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RSI_RDX_RCX_R8, _TEXT
+
+LEAF_ENTRY Store_RSI_RDX_RCX_R8_R9, _TEXT
+        mov [r10], rsi
+        mov [r10 + 8], rdx
+        mov [r10 + 16], rcx
+        mov [r10 + 24], r8
+        mov [r10 + 32], r9
+        add r10, 40
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RSI_RDX_RCX_R8_R9, _TEXT
+
+LEAF_ENTRY Store_RDX, _TEXT
+        mov [r10], rdx
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RDX, _TEXT
+
+LEAF_ENTRY Store_RDX_RCX, _TEXT
+        mov [r10], rdx
+        mov [r10 + 8], rcx
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RDX_RCX, _TEXT
+
+LEAF_ENTRY Store_RDX_RCX_R8, _TEXT
+        mov [r10], rdx
+        mov [r10 + 8], rcx
+        mov [r10 + 16], r8
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RDX_RCX_R8, _TEXT
+
+LEAF_ENTRY Store_RDX_RCX_R8_R9, _TEXT
+        mov [r10], rdx
+        mov [r10 + 8], rcx
+        mov [r10 + 16], r8
+        mov [r10 + 24], r9
+        add r10, 32
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RDX_RCX_R8_R9, _TEXT
+
+LEAF_ENTRY Store_RCX, _TEXT
+        mov [r10], rcx
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RCX, _TEXT
+
+LEAF_ENTRY Store_RCX_R8, _TEXT
+        mov [r10], rcx
+        mov [r10 + 8], r8
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RCX_R8, _TEXT
+
+LEAF_ENTRY Store_RCX_R8_R9, _TEXT
+        mov [r10], rcx
+        mov [r10 + 8], r8
+        mov [r10 + 16], r9
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RCX_R8_R9, _TEXT
+
+LEAF_ENTRY Store_RDX_R8, _TEXT
+        mov [r10], rdx
+        mov [r10 + 8], r8
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RDX_R8, _TEXT
+
+LEAF_ENTRY Store_RDX_R8_R9, _TEXT
+        mov [r10], rdx
+        mov [r10 + 8], r8
+        mov [r10 + 16], r9
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_RDX_R8_R9, _TEXT
+
+LEAF_ENTRY Store_R8, _TEXT
+        mov [r10], r8
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_R8, _TEXT
+
+LEAF_ENTRY Store_R8_R9, _TEXT
+        mov [r10], r8
+        mov [r10 + 8], r9
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_R8_R9, _TEXT
+
+LEAF_ENTRY Store_R9, _TEXT
+        mov [r10], r9
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_R9, _TEXT
+
+LEAF_ENTRY Store_XMM0, _TEXT
+        movsd real8 ptr [r10], xmm0
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM0, _TEXT
+
+LEAF_ENTRY Store_XMM0_XMM1, _TEXT
+        movsd real8 ptr [r10], xmm0
+        movsd real8 ptr [r10 + 8], xmm1
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM0_XMM1, _TEXT
+
+LEAF_ENTRY Store_XMM0_XMM1_XMM2, _TEXT
+        movsd real8 ptr [r10], xmm0
+        movsd real8 ptr [r10 + 8], xmm1
+        movsd real8 ptr [r10 + 16], xmm2
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM0_XMM1_XMM2, _TEXT
+
+LEAF_ENTRY Store_XMM0_XMM1_XMM2_XMM3, _TEXT
+        movsd real8 ptr [r10], xmm0
+        movsd real8 ptr [r10 + 8], xmm1
+        movsd real8 ptr [r10 + 16], xmm2
+        movsd real8 ptr [r10 + 24], xmm3
+        add r10, 32
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM0_XMM1_XMM2_XMM3, _TEXT
+
+LEAF_ENTRY Store_XMM0_XMM1_XMM2_XMM3_XMM4, _TEXT
+        movsd real8 ptr [r10], xmm0
+        movsd real8 ptr [r10 + 8], xmm1
+        movsd real8 ptr [r10 + 16], xmm2
+        movsd real8 ptr [r10 + 24], xmm3
+        movsd real8 ptr [r10 + 32], xmm4
+        add r10, 40
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM0_XMM1_XMM2_XMM3_XMM4, _TEXT
+
+LEAF_ENTRY Store_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5, _TEXT
+        movsd real8 ptr [r10], xmm0
+        movsd real8 ptr [r10 + 8], xmm1
+        movsd real8 ptr [r10 + 16], xmm2
+        movsd real8 ptr [r10 + 24], xmm3
+        movsd real8 ptr [r10 + 32], xmm4
+        movsd real8 ptr [r10 + 40], xmm5
+        add r10, 48
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5, _TEXT
+
+LEAF_ENTRY Store_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6, _TEXT
+        movsd real8 ptr [r10], xmm0
+        movsd real8 ptr [r10 + 8], xmm1
+        movsd real8 ptr [r10 + 16], xmm2
+        movsd real8 ptr [r10 + 24], xmm3
+        movsd real8 ptr [r10 + 32], xmm4
+        movsd real8 ptr [r10 + 40], xmm5
+        movsd real8 ptr [r10 + 48], xmm6
+        add r10, 56
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6, _TEXT
+
+LEAF_ENTRY Store_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7, _TEXT
+        movsd real8 ptr [r10], xmm0
+        movsd real8 ptr [r10 + 8], xmm1
+        movsd real8 ptr [r10 + 16], xmm2
+        movsd real8 ptr [r10 + 24], xmm3
+        movsd real8 ptr [r10 + 32], xmm4
+        movsd real8 ptr [r10 + 40], xmm5
+        movsd real8 ptr [r10 + 48], xmm6
+        movsd real8 ptr [r10 + 56], xmm7
+        add r10, 64
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7, _TEXT
+
+LEAF_ENTRY Store_XMM1, _TEXT
+        movsd real8 ptr [r10], xmm1
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM1, _TEXT
+
+LEAF_ENTRY Store_XMM1_XMM2, _TEXT
+        movsd real8 ptr [r10], xmm1
+        movsd real8 ptr [r10 + 8], xmm2
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM1_XMM2, _TEXT
+
+LEAF_ENTRY Store_XMM1_XMM2_XMM3, _TEXT
+        movsd real8 ptr [r10], xmm1
+        movsd real8 ptr [r10 + 8], xmm2
+        movsd real8 ptr [r10 + 16], xmm3
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM1_XMM2_XMM3, _TEXT
+
+LEAF_ENTRY Store_XMM1_XMM2_XMM3_XMM4, _TEXT
+        movsd real8 ptr [r10], xmm1
+        movsd real8 ptr [r10 + 8], xmm2
+        movsd real8 ptr [r10 + 16], xmm3
+        movsd real8 ptr [r10 + 24], xmm4
+        add r10, 32
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM1_XMM2_XMM3_XMM4, _TEXT
+
+LEAF_ENTRY Store_XMM1_XMM2_XMM3_XMM4_XMM5, _TEXT
+        movsd real8 ptr [r10], xmm1
+        movsd real8 ptr [r10 + 8], xmm2
+        movsd real8 ptr [r10 + 16], xmm3
+        movsd real8 ptr [r10 + 24], xmm4
+        movsd real8 ptr [r10 + 32], xmm5
+        add r10, 40
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM1_XMM2_XMM3_XMM4_XMM5, _TEXT
+
+LEAF_ENTRY Store_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6, _TEXT
+        movsd real8 ptr [r10], xmm1
+        movsd real8 ptr [r10 + 8], xmm2
+        movsd real8 ptr [r10 + 16], xmm3
+        movsd real8 ptr [r10 + 24], xmm4
+        movsd real8 ptr [r10 + 32], xmm5
+        movsd real8 ptr [r10 + 40], xmm6
+        add r10, 48
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6, _TEXT
+
+LEAF_ENTRY Store_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7, _TEXT
+        movsd real8 ptr [r10], xmm1
+        movsd real8 ptr [r10 + 8], xmm2
+        movsd real8 ptr [r10 + 16], xmm3
+        movsd real8 ptr [r10 + 24], xmm4
+        movsd real8 ptr [r10 + 32], xmm5
+        movsd real8 ptr [r10 + 40], xmm6
+        movsd real8 ptr [r10 + 48], xmm7
+        add r10, 56
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7, _TEXT
+
+LEAF_ENTRY Store_XMM2, _TEXT
+        movsd real8 ptr [r10], xmm2
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM2, _TEXT
+
+LEAF_ENTRY Store_XMM2_XMM3, _TEXT
+        movsd real8 ptr [r10], xmm2
+        movsd real8 ptr [r10 + 8], xmm3
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM2_XMM3, _TEXT
+
+LEAF_ENTRY Store_XMM2_XMM3_XMM4, _TEXT
+        movsd real8 ptr [r10], xmm2
+        movsd real8 ptr [r10 + 8], xmm3
+        movsd real8 ptr [r10 + 16], xmm4
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM2_XMM3_XMM4, _TEXT
+
+LEAF_ENTRY Store_XMM2_XMM3_XMM4_XMM5, _TEXT
+        movsd real8 ptr [r10], xmm2
+        movsd real8 ptr [r10 + 8], xmm3
+        movsd real8 ptr [r10 + 16], xmm4
+        movsd real8 ptr [r10 + 24], xmm5
+        add r10, 32
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM2_XMM3_XMM4_XMM5, _TEXT
+
+LEAF_ENTRY Store_XMM2_XMM3_XMM4_XMM5_XMM6, _TEXT
+        movsd real8 ptr [r10], xmm2
+        movsd real8 ptr [r10 + 8], xmm3
+        movsd real8 ptr [r10 + 16], xmm4
+        movsd real8 ptr [r10 + 24], xmm5
+        movsd real8 ptr [r10 + 32], xmm6
+        add r10, 40
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM2_XMM3_XMM4_XMM5_XMM6, _TEXT
+
+LEAF_ENTRY Store_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7, _TEXT
+        movsd real8 ptr [r10], xmm2
+        movsd real8 ptr [r10 + 8], xmm3
+        movsd real8 ptr [r10 + 16], xmm4
+        movsd real8 ptr [r10 + 24], xmm5
+        movsd real8 ptr [r10 + 32], xmm6
+        movsd real8 ptr [r10 + 40], xmm7
+        add r10, 48
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7, _TEXT
+
+LEAF_ENTRY Store_XMM3, _TEXT
+        movsd real8 ptr [r10], xmm3
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM3, _TEXT
+
+LEAF_ENTRY Store_XMM3_XMM4, _TEXT
+        movsd real8 ptr [r10], xmm3
+        movsd real8 ptr [r10 + 8], xmm4
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM3_XMM4, _TEXT
+
+LEAF_ENTRY Store_XMM3_XMM4_XMM5, _TEXT
+        movsd real8 ptr [r10], xmm3
+        movsd real8 ptr [r10 + 8], xmm4
+        movsd real8 ptr [r10 + 16], xmm5
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM3_XMM4_XMM5, _TEXT
+
+LEAF_ENTRY Store_XMM3_XMM4_XMM5_XMM6, _TEXT
+        movsd real8 ptr [r10], xmm3
+        movsd real8 ptr [r10 + 8], xmm4
+        movsd real8 ptr [r10 + 16], xmm5
+        movsd real8 ptr [r10 + 24], xmm6
+        add r10, 32
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM3_XMM4_XMM5_XMM6, _TEXT
+
+LEAF_ENTRY Store_XMM3_XMM4_XMM5_XMM6_XMM7, _TEXT
+        movsd real8 ptr [r10], xmm3
+        movsd real8 ptr [r10 + 8], xmm4
+        movsd real8 ptr [r10 + 16], xmm5
+        movsd real8 ptr [r10 + 24], xmm6
+        movsd real8 ptr [r10 + 32], xmm7
+        add r10, 40
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM3_XMM4_XMM5_XMM6_XMM7, _TEXT
+
+LEAF_ENTRY Store_XMM4, _TEXT
+        movsd real8 ptr [r10], xmm4
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM4, _TEXT
+
+LEAF_ENTRY Store_XMM4_XMM5, _TEXT
+        movsd real8 ptr [r10], xmm4
+        movsd real8 ptr [r10 + 8], xmm5
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM4_XMM5, _TEXT
+
+LEAF_ENTRY Store_XMM4_XMM5_XMM6, _TEXT
+        movsd real8 ptr [r10], xmm4
+        movsd real8 ptr [r10 + 8], xmm5
+        movsd real8 ptr [r10 + 16], xmm6
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM4_XMM5_XMM6, _TEXT
+
+LEAF_ENTRY Store_XMM4_XMM5_XMM6_XMM7, _TEXT
+        movsd real8 ptr [r10], xmm4
+        movsd real8 ptr [r10 + 8], xmm5
+        movsd real8 ptr [r10 + 16], xmm6
+        movsd real8 ptr [r10 + 24], xmm7
+        add r10, 32
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM4_XMM5_XMM6_XMM7, _TEXT
+
+LEAF_ENTRY Store_XMM5, _TEXT
+        movsd real8 ptr [r10], xmm5
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM5, _TEXT
+
+LEAF_ENTRY Store_XMM5_XMM6, _TEXT
+        movsd real8 ptr [r10], xmm5
+        movsd real8 ptr [r10 + 8], xmm6
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM5_XMM6, _TEXT
+
+LEAF_ENTRY Store_XMM5_XMM6_XMM7, _TEXT
+        movsd real8 ptr [r10], xmm5
+        movsd real8 ptr [r10 + 8], xmm6
+        movsd real8 ptr [r10 + 16], xmm7
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM5_XMM6_XMM7, _TEXT
+
+LEAF_ENTRY Store_XMM6, _TEXT
+        movsd real8 ptr [r10], xmm6
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM6, _TEXT
+
+LEAF_ENTRY Store_XMM6_XMM7, _TEXT
+        movsd real8 ptr [r10], xmm6
+        movsd real8 ptr [r10 + 8], xmm7
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM6_XMM7, _TEXT
+
+LEAF_ENTRY Store_XMM7, _TEXT
+        movsd real8 ptr [r10], xmm7
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Store_XMM7, _TEXT
+
+// Routines for passing value type arguments by reference in general purpose registers RDI, RSI, RDX, RCX, R8, R9
+// from the interpreter to native code
+
+// Copy arguments from the the interpreter stack to the CPU stack.
 // The CPU stack slots are aligned to pointer size.
 LEAF_ENTRY Load_Stack, _TEXT
         push rdi
@@ -467,8 +1157,6 @@ LEAF_ENTRY Load_Stack, _TEXT
         add r11, 16
         jmp qword ptr [r11]
 LEAF_END Load_Stack, _TEXT
-
-// Routines for passing arguments by value in general purpose registers RDI, RSI, RDX, RCX, R8, R9
 
 LEAF_ENTRY Load_RDI, _TEXT
         mov rdi, [r10]

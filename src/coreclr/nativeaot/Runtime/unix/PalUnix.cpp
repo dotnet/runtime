@@ -44,6 +44,8 @@
 
 #ifdef TARGET_LINUX
 #include <sys/syscall.h>
+#include <link.h>
+#include <elf.h>
 #endif
 
 #if HAVE_PTHREAD_GETTHREADID_NP
@@ -93,6 +95,98 @@ void RhFailFast()
 
     // Aborts the process
     abort();
+}
+
+#if TARGET_LINUX
+
+struct PalGetPDBInfoPhdrCallbackData
+{
+    void* Base;
+    void* BuildID;
+    uint32_t BuildIDLength;
+};
+
+static int PalGetPDBInfoPhdrCallback(struct dl_phdr_info *info, size_t size, void* pData)
+{
+    struct PalGetPDBInfoPhdrCallbackData* pCallbackData = (struct PalGetPDBInfoPhdrCallbackData*)pData;
+
+    // Find the module of interest
+    void* loadAddress = NULL;
+    for (ElfW(Half) i = 0; i < info->dlpi_phnum; i++)
+    {
+        if (info->dlpi_phdr[i].p_type == PT_LOAD)
+        {
+            loadAddress = (void*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
+            if (loadAddress == pCallbackData->Base)
+                break;
+        }
+    }
+
+    if (loadAddress != pCallbackData->Base)
+    {
+        return 0;
+    }
+
+    // Got the module of interest. Now iterate program headers and try to find the GNU build ID note
+    for (ElfW(Half) i = 0; i < info->dlpi_phnum; i++)
+    {
+        // Must be a note section. We don't check the name because while there's a convention for the name,
+        // the convention is not mandatory.
+        if (info->dlpi_phdr[i].p_type != PT_NOTE)
+            continue;
+
+        // Got a note section, iterate over the contents and find the GNU build id one
+        ElfW(Nhdr) *note = (ElfW(Nhdr)*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
+        ElfW(Addr) align = info->dlpi_phdr[i].p_align;
+        ElfW(Addr) size = info->dlpi_phdr[i].p_memsz;
+        ElfW(Addr) start = (ElfW(Addr))note;
+
+        while ((ElfW(Addr)) (note + 1) - start < size)
+        {
+            if (note->n_namesz == 4
+                && note->n_type == NT_GNU_BUILD_ID
+                && memcmp(note + 1, "GNU", 4) == 0)
+            {
+                // Got the note, fill out the callback data and return.
+                pCallbackData->BuildID = (uint8_t*)note + sizeof(ElfW(Nhdr)) + ALIGN_UP(note->n_namesz, align);
+                pCallbackData->BuildIDLength = note->n_descsz;
+                return 1;
+            }
+
+            // Skip over the note. Size of the note is determined by the header and payload (aligned)
+            size_t offset = sizeof(ElfW(Nhdr))
+                + ALIGN_UP(note->n_namesz, align)
+                + ALIGN_UP(note->n_descsz, align);
+            note = (ElfW(Nhdr)*)((uint8_t*)note + offset);
+        }
+    }
+
+    return 0;
+}
+#endif
+
+void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) WCHAR * wszPath, int32_t cchPath, _Out_ uint32_t * pcbBuildId, _Out_ void ** ppBuildId)
+{
+    memset(pGuidSignature, 0, sizeof(*pGuidSignature));
+    *pdwAge = 0;
+    *ppBuildId = NULL;
+    *pcbBuildId = 0;
+    if (cchPath <= 0)
+        return;
+    wszPath[0] = L'\0';
+
+#if TARGET_LINUX
+    struct PalGetPDBInfoPhdrCallbackData data;
+    data.Base = hOsHandle;
+
+    if (!dl_iterate_phdr(&PalGetPDBInfoPhdrCallback, &data))
+    {
+        return;
+    }
+
+    *pcbBuildId = data.BuildIDLength;
+    *ppBuildId = data.BuildID;
+#endif
 }
 
 static void UnmaskActivationSignal()
@@ -481,7 +575,7 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 #endif
 
 // This thread local variable is used for delegate marshalling
-DECLSPEC_THREAD intptr_t tls_thunkData;
+PLATFORM_THREAD_LOCAL intptr_t tls_thunkData;
 
 #ifdef FEATURE_EMULATED_TLS
 EXTERN_C intptr_t* RhpGetThunkData()
@@ -1061,48 +1155,45 @@ int32_t PalGetProcessCpuCount()
     return g_RhNumberOfProcessors;
 }
 
-__thread void* pStackHighOut = NULL;
-__thread void* pStackLowOut = NULL;
-
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than
 // the maximum bounds.
 bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
 {
-    if (pStackHighOut == NULL)
-    {
+    void* pStackHighOut = NULL;
+    void* pStackLowOut = NULL;
+
 #ifdef __APPLE__
-        // This is a Mac specific method
-        pStackHighOut = pthread_get_stackaddr_np(pthread_self());
-        pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));
+    // This is a Mac specific method
+    pStackHighOut = pthread_get_stackaddr_np(pthread_self());
+    pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));
 #else // __APPLE__
-        pthread_attr_t attr;
-        size_t stackSize;
-        int status;
+    pthread_attr_t attr;
+    size_t stackSize;
+    int status;
 
-        pthread_t thread = pthread_self();
+    pthread_t thread = pthread_self();
 
-        status = pthread_attr_init(&attr);
-        ASSERT_MSG(status == 0, "pthread_attr_init call failed");
+    status = pthread_attr_init(&attr);
+    ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
 #if HAVE_PTHREAD_ATTR_GET_NP
-        status = pthread_attr_get_np(thread, &attr);
+    status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
-        status = pthread_getattr_np(thread, &attr);
+    status = pthread_getattr_np(thread, &attr);
 #else
 #error Dont know how to get thread attributes on this platform!
 #endif
-        ASSERT_MSG(status == 0, "pthread_getattr_np call failed");
+    ASSERT_MSG(status == 0, "pthread_getattr_np call failed");
 
-        status = pthread_attr_getstack(&attr, &pStackLowOut, &stackSize);
-        ASSERT_MSG(status == 0, "pthread_attr_getstack call failed");
+    status = pthread_attr_getstack(&attr, &pStackLowOut, &stackSize);
+    ASSERT_MSG(status == 0, "pthread_attr_getstack call failed");
 
-        status = pthread_attr_destroy(&attr);
-        ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
+    status = pthread_attr_destroy(&attr);
+    ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
 
-        pStackHighOut = (uint8_t*)pStackLowOut + stackSize;
+    pStackHighOut = (uint8_t*)pStackLowOut + stackSize;
 #endif // __APPLE__
-    }
 
     *ppStackLowOut = pStackLowOut;
     *ppStackHighOut = pStackHighOut;
