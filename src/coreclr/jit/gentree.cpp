@@ -31072,47 +31072,9 @@ var_types GenTreeHWIntrinsic::GetLookupTypeForCmpOp(
     var_types lookupType = type;
 
 #if defined(TARGET_XARCH)
-    if (reverseCond)
+    if ((simdSize == 64) || comp->canUseEvexEncoding())
     {
-        oper = ReverseRelop(oper);
-    }
-
-    switch (oper)
-    {
-        case GT_EQ:
-        {
-            if (simdSize == 64)
-            {
-                lookupType = TYP_MASK;
-            }
-            break;
-        }
-
-        case GT_GE:
-        case GT_LE:
-        case GT_NE:
-        {
-            if ((simdSize == 64) || (varTypeIsIntegral(simdBaseType) && comp->canUseEvexEncoding()))
-            {
-                lookupType = TYP_MASK;
-            }
-            break;
-        }
-
-        case GT_GT:
-        case GT_LT:
-        {
-            if ((simdSize == 64) || (varTypeIsUnsigned(simdBaseType) && comp->canUseEvexEncoding()))
-            {
-                lookupType = TYP_MASK;
-            }
-            break;
-        }
-
-        default:
-        {
-            unreached();
-        }
+        lookupType = TYP_MASK;
     }
 #endif // TARGET_XARCH
 
@@ -33237,6 +33199,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             case GT_DIV:
             {
+                assert(!varTypeIsMask(retType));
+
                 if (varTypeIsFloating(simdBaseType))
                 {
                     // Handle `x / NaN == NaN` and `NaN / x == NaN`
@@ -33395,6 +33359,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             case GT_MUL:
             {
+                assert(!varTypeIsMask(retType));
+
                 if (!varTypeIsFloating(simdBaseType))
                 {
                     // Handle `x * 0 == 0` and `0 * x == 0`
@@ -33539,6 +33505,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             case GT_SUB:
             {
+                assert(!varTypeIsMask(retType));
+
                 if (varTypeIsFloating(simdBaseType))
                 {
                     // Handle `x - NaN == NaN` and `NaN - x == NaN`
