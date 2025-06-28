@@ -644,6 +644,13 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
         {
             return useType;
         }
+#ifdef TARGET_ARM64
+        if (SizeMatchesVectorTLength(structSize))
+        {
+            var_types hfaType = GetHfaType(clsHnd);
+            return UseSveForType(hfaType) ? hfaType : TYP_UNKNOWN;
+        }
+#endif
     }
 
     // Now deal with non-HFA/HVA structs.
@@ -869,7 +876,12 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     // The largest "primitive type" is MAX_PASS_SINGLEREG_BYTES
     // so we can skip calling getPrimitiveTypeForStruct when we
     // have a struct that is larger than that.
-    if (canReturnInRegister && (useType == TYP_UNKNOWN) && (structSize <= MAX_PASS_SINGLEREG_BYTES))
+    if (canReturnInRegister && (useType == TYP_UNKNOWN) &&
+        ((structSize <= MAX_PASS_SINGLEREG_BYTES)
+#ifdef TARGET_ARM64
+         || SizeMatchesVectorTLength(structSize)
+#endif
+             ))
     {
         // We set the "primitive" useType based upon the structSize
         // and also examine the clsHnd to see if it is an HFA of count one
@@ -1990,6 +2002,10 @@ void Compiler::compSetProcessor()
     // Add virtual vector ISAs. These are both supported as part of the required baseline.
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_Sve))
+    {
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector);
+    }
 #endif // TARGET_ARM64
 
     assert(instructionSetFlags.Equals(EnsureInstructionSetFlagsAreValid(instructionSetFlags)));
@@ -2076,6 +2092,12 @@ unsigned ReinterpretHexAsDecimal(unsigned in)
     }
     return result;
 }
+
+#ifdef TARGET_ARM64
+unsigned Compiler::compVectorTLength = 0;
+// unsigned Compiler::compMinVectorTLengthForSve = 0;
+bool Compiler::compUseSveForVectorT = false;
+#endif
 
 void Compiler::compInitOptions(JitFlags* jitFlags)
 {
@@ -2521,6 +2543,79 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             assert(fgPgoSchema == nullptr);
         }
     }
+
+#if defined(TARGET_ARM64)
+
+    /*
+     * #ifdef DEBUG
+     * if (matched)
+     * {
+     *   compVectorTLength    = getTargetLength();
+     *   compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256) && ((compVectorTLength &
+     *  (compVectorTLength - 1)) == 0); compUseSveForVectorT |= JitConfig.UseSveForVectorT();
+     * }
+     * else
+     * {
+     *   compVectorTLength    = 16;
+     *   compUseSveForVectorT = JitConfig.UseSveForVectorT();
+     * }
+     * #else
+     * if (matched)
+     * {
+     *   compVectorTLength    = getTargetLength();
+     *   compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256) && ((compVectorTLength &
+     * (compVectorTLength - 1)) == 0);
+     * }
+     * else
+     * {
+     *   compVectorTLength    = 0;
+     *   compUseSveForVectorT = false;
+     * }
+     * #endif
+     *
+     */
+
+    if (info.compMatchedVM)
+    {
+        compVectorTLength = info.compCompHnd->getTargetVectorLength();
+
+        if (compExactlyDependsOn(InstructionSet_Sve_Arm64))
+        {
+            compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256) &&
+                                   ((compVectorTLength & (compVectorTLength - 1)) == 0);
+#ifdef DEBUG
+            compUseSveForVectorT |= (bool)JitConfig.UseSveForVectorT();
+#endif // DEBUG
+        }
+    }
+    else
+    {
+        // altjit
+#ifdef DEBUG
+        compUseSveForVectorT = JitConfig.UseSveForVectorT();
+        // In test mode, if UseSveForVectorT=1, then mimic that
+        // we are generating for VL > 16B
+        compVectorTLength = 16; // 32;
+#else
+        compVectorTLength = 0;
+#endif // DEBUG
+    }
+
+// #ifdef DEBUG
+//     compUseSveForVectorT = JitConfig.UseSveForVectorT();
+//     if (compUseSveForVectorT)
+//     {
+//         // In test mode, if UseSveForVectorT=1, then mimic that
+//         // we are generating for VL > 16B
+//         compVectorTLength = 16; //32;
+//     }
+//     else
+// #endif // DEBUG
+//     {
+//         compVectorTLength    = info.compCompHnd->getTargetVectorLength();
+//         compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256);
+//     }
+#endif // TARGET_ARM64
 
     bool enableInliningMethodsWithEH = JitConfig.JitInlineMethodsWithEH() > 0;
 

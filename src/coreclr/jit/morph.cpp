@@ -9284,7 +9284,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 //    and if the call is one of these, attempt to optimize.
 //    This is post-order, meaning that it will not morph the children.
 //
-GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
+GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node ARM64_ARG(bool isScalable))
 {
     assert(opts.OptimizationEnabled());
 
@@ -9314,6 +9314,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
     switch (intrinsicId)
     {
 #if defined(TARGET_ARM64)
+        case NI_Vector_Create:
         case NI_Vector64_Create:
 #endif // TARGET_ARM64
         case NI_Vector128_Create:
@@ -9558,7 +9559,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     NamedIntrinsic subIntrinsic =
                         GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, GT_SUB, op2, op1, simdBaseType, simdSize,
-                                                                     isScalar);
+                                                                     isScalar ARM64_ARG(isScalable));
 
                     node->ChangeHWIntrinsicId(subIntrinsic, op2, op1);
                     return fgMorphHWIntrinsicRequired(node);
@@ -9590,7 +9591,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     DEBUG_DESTROY_NODE(op2);
                     DEBUG_DESTROY_NODE(node);
 
-                    node = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseJitType, simdSize)->AsHWIntrinsic();
+                    node = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseJitType, simdSize ARM64_ARG(isScalable))
+                               ->AsHWIntrinsic();
 
 #if defined(TARGET_XARCH)
                     if (varTypeIsFloating(simdBaseType))
@@ -9632,7 +9634,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 NamedIntrinsic subIntrinsic =
                     GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, GT_SUB, op1, op2, simdBaseType, simdSize,
-                                                                 isScalar);
+                                                                 isScalar ARM64_ARG(isScalable));
 
                 node->ChangeHWIntrinsicId(subIntrinsic, op1, op2);
                 return fgMorphHWIntrinsicRequired(node);
@@ -9872,12 +9874,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 const bool reverseCond = true;
 
                 var_types lookupType =
-                    GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, op1Oper, op1RetType, op1SimdBaseType, op1SimdSize,
-                                                              reverseCond);
+                    GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, op1Oper, op1RetType, op1SimdBaseType,
+                                                              op1SimdSize ARM64_ARG(isScalable), reverseCond);
                 NamedIntrinsic newId =
                     GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, op1Oper, lookupType, cmpOp1, cmpOp2,
-                                                                 op1SimdBaseType, op1SimdSize, op1IsScalar,
-                                                                 reverseCond);
+                                                                 op1SimdBaseType, op1SimdSize,
+                                                                 op1IsScalar ARM64_ARG(isScalable), reverseCond);
 
                 if (newId != NI_Illegal)
                 {
@@ -9965,7 +9967,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             NamedIntrinsic addIntrinsic =
-                GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, GT_ADD, op1, op2, simdBaseType, simdSize, isScalar);
+                GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, GT_ADD, op1, op2, simdBaseType, simdSize,
+                                                             isScalar ARM64_ARG(isScalable));
 
             node->ChangeHWIntrinsicId(addIntrinsic, op1, op2);
             return fgMorphHWIntrinsicRequired(node);
@@ -11527,6 +11530,11 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
     CorInfoType simdBaseJitType = tree->GetSimdBaseJitType();
     var_types   simdBaseType    = tree->GetSimdBaseType();
     unsigned    simdSize        = tree->GetSimdSize();
+#if defined(TARGET_ARM64)
+    bool isScalable =
+        (((FIRST_NI_Vector <= tree->GetHWIntrinsicId()) && (tree->GetHWIntrinsicId() <= LAST_NI_Vector)) ||
+         ((FIRST_NI_Sve <= tree->GetHWIntrinsicId()) && (tree->GetHWIntrinsicId() <= LAST_NI_Sve)));
+#endif
 
     bool       isScalar = false;
     genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
@@ -11553,12 +11561,12 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
         {
             // Move constant vectors from op1 to op2 for comparison operations
             // Noting that we can't handle scalar operations since they can copy upper bits from op1
-
-            genTreeOps newOper = GenTree::SwapRelop(oper);
-            var_types  lookupType =
-                GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, newOper, retType, simdBaseType, simdSize);
-            NamedIntrinsic newId = GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, lookupType, op2, op1,
-                                                                                simdBaseType, simdSize, isScalar);
+            genTreeOps     newOper    = GenTree::SwapRelop(oper);
+            var_types      lookupType = GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, newOper, retType, simdBaseType,
+                                                                                  simdSize ARM64_ARG(isScalable));
+            NamedIntrinsic newId =
+                GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, lookupType, op2, op1, simdBaseType,
+                                                             simdSize, isScalar ARM64_ARG(isScalable));
 
             if (newId != NI_Illegal)
             {
@@ -11605,7 +11613,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 
                 NamedIntrinsic addIntrinsic =
                     GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, GT_ADD, op1, op2, simdBaseType, simdSize,
-                                                                 isScalar);
+                                                                 isScalar ARM64_ARG(isScalable));
 
                 tree->ChangeHWIntrinsicId(addIntrinsic, op1, op2);
                 return fgMorphHWIntrinsicRequired(tree);
@@ -11616,7 +11624,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                 {
 #if defined(TARGET_ARM64)
                     // xarch doesn't have a native GT_NEG representation for integers and itself uses (Zero - v1)
-                    op2 = gtNewSimdUnOpNode(GT_NEG, retType, op2, simdBaseJitType, simdSize);
+                    op2 = gtNewSimdUnOpNode(GT_NEG, retType, op2, simdBaseJitType, simdSize ARM64_ARG(isScalable));
 
                     DEBUG_DESTROY_NODE(op1);
                     DEBUG_DESTROY_NODE(tree);
@@ -11626,7 +11634,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                 }
                 else
                 {
-                    op2 = gtNewSimdUnOpNode(GT_NEG, retType, op2, simdBaseJitType, simdSize);
+                    op2 = gtNewSimdUnOpNode(GT_NEG, retType, op2, simdBaseJitType, simdSize ARM64_ARG(isScalable));
 
 #if defined(TARGET_XARCH)
                     if (varTypeIsFloating(simdBaseType))
@@ -11641,7 +11649,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 
                     NamedIntrinsic addIntrinsic =
                         GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, GT_ADD, op2, op1, simdBaseType, simdSize,
-                                                                     isScalar);
+                                                                     isScalar ARM64_ARG(isScalable));
 
                     tree->ChangeHWIntrinsicId(addIntrinsic, op2, op1);
 
@@ -11667,7 +11675,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
             if (op2->IsVectorAllBitsSet())
             {
                 // xarch doesn't have a native GT_NOT representation and itself uses (v1 ^ AllBitsSet)
-                op1 = gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize);
+                op1 = gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize ARM64_ARG(isScalable));
 
                 DEBUG_DESTROY_NODE(op2);
                 DEBUG_DESTROY_NODE(tree);
@@ -11678,7 +11686,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
             if (varTypeIsFloating(simdBaseType) && op2->IsVectorNegativeZero(simdBaseType))
             {
                 // xarch doesn't have a native GT_NEG representation for floating-point and itself uses (v1 ^ -0.0)
-                op1 = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseJitType, simdSize);
+                op1 = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseJitType, simdSize ARM64_ARG(isScalable));
 
                 DEBUG_DESTROY_NODE(op2);
                 DEBUG_DESTROY_NODE(tree);
@@ -11697,7 +11705,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 
     if (opts.OptimizationEnabled())
     {
-        return fgOptimizeHWIntrinsic(tree);
+        return fgOptimizeHWIntrinsic(tree ARM64_ARG(isScalable));
     }
     return tree;
 }

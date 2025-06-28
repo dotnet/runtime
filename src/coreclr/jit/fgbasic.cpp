@@ -1225,6 +1225,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_ArmBase_Arm64_ReverseElementBits:
                             case NI_ArmBase_LeadingZeroCount:
                             case NI_ArmBase_ReverseElementBits:
+                            case NI_Vector_Create:
                             case NI_Vector64_Create:
                             case NI_Vector64_CreateScalar:
                             case NI_Vector64_CreateScalarUnsafe:
@@ -1456,6 +1457,19 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_ARM64)
+                            case NI_Vector_As:
+                            case NI_Vector_AsVectorByte:
+                            case NI_Vector_AsVectorDouble:
+                            case NI_Vector_AsVectorInt16:
+                            case NI_Vector_AsVectorInt32:
+                            case NI_Vector_AsVectorInt64:
+                            case NI_Vector_AsVectorNInt:
+                            case NI_Vector_AsVectorNUInt:
+                            case NI_Vector_AsVectorSByte:
+                            case NI_Vector_AsVectorSingle:
+                            case NI_Vector_AsVectorUInt16:
+                            case NI_Vector_AsVectorUInt32:
+                            case NI_Vector_AsVectorUInt64:
                             case NI_Vector64_As:
                             case NI_Vector64_AsByte:
                             case NI_Vector64_AsDouble:
@@ -1470,7 +1484,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector64_AsUInt32:
                             case NI_Vector64_AsUInt64:
                             case NI_Vector64_op_UnaryPlus:
-#endif // TARGET_XARCH
+                            case NI_Vector_op_UnaryPlus:
+#endif // TARGET_ARM64
                             case NI_Vector128_As:
                             case NI_Vector128_AsByte:
                             case NI_Vector128_AsDouble:
@@ -1533,6 +1548,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_ARM64)
+                            case NI_Vector_get_AllBitsSet:
+                            case NI_Vector_get_One:
+                            case NI_Vector_get_Zero:
                             case NI_Vector64_get_AllBitsSet:
                             case NI_Vector64_get_One:
                             case NI_Vector64_get_Zero:

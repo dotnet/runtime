@@ -3253,7 +3253,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             // handled by the AltJit, so limit only the platform specific intrinsics
             assert((LAST_NI_Vector128 + 1) == FIRST_NI_AdvSimd);
 
-            if (ni < LAST_NI_Vector128)
+            if ((ni < LAST_NI_Vector128) || ((ni >= FIRST_NI_Vector) && (ni < LAST_NI_Vector)))
 #else
 #error Unsupported platform
 #endif
@@ -4952,11 +4952,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 if (isNative)
                 {
                     assert(!isMagnitude && !isNumber);
-                    retNode = gtNewSimdMinMaxNativeNode(callType, op1, op2, callJitType, 0, isMax);
+                    retNode = gtNewSimdMinMaxNativeNode(callType, op1, op2, callJitType, 0, isMax ARM64_ARG(false));
                 }
                 else
                 {
-                    retNode = gtNewSimdMinMaxNode(callType, op1, op2, callJitType, 0, isMax, isMagnitude, isNumber);
+                    retNode = gtNewSimdMinMaxNode(callType, op1, op2, callJitType, 0, isMax, isMagnitude,
+                                                  isNumber ARM64_ARG(false));
                 }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -10384,38 +10385,46 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                             uint32_t size = getVectorTByteLength();
                             assert((size == 16) || (size == 32) || (size == 64));
+                            bool useSizeAgnosticVector = false;
+#ifdef TARGET_ARM64
+                            useSizeAgnosticVector = compExactlyDependsOn(InstructionSet_Sve) && UseSveForVectorT();
+#endif
 
                             const char* lookupClassName = className;
 
-                            switch (size)
+                            if (!useSizeAgnosticVector)
                             {
-                                case 16:
+                                switch (size)
                                 {
-                                    lookupClassName = isVectorT ? "Vector128`1" : "Vector128";
-                                    break;
-                                }
+                                    case 16:
+                                    {
+                                        lookupClassName = isVectorT ? "Vector128`1" : "Vector128";
+                                        break;
+                                    }
 
-                                case 32:
-                                {
-                                    lookupClassName = isVectorT ? "Vector256`1" : "Vector256";
-                                    break;
-                                }
+                                    case 32:
+                                    {
+                                        lookupClassName = isVectorT ? "Vector256`1" : "Vector256";
+                                        break;
+                                    }
 
-                                case 64:
-                                {
-                                    lookupClassName = isVectorT ? "Vector512`1" : "Vector512";
-                                    break;
-                                }
+                                    case 64:
+                                    {
+                                        lookupClassName = isVectorT ? "Vector512`1" : "Vector512";
+                                        break;
+                                    }
 
-                                default:
-                                {
-                                    unreached();
+                                    default:
+                                    {
+                                        unreached();
+                                    }
                                 }
                             }
 
                             const char* lookupMethodName = methodName;
 
-                            if ((strncmp(methodName, "As", 2) == 0) && (methodName[2] != '\0'))
+                            if (!useSizeAgnosticVector &&
+                                ((strncmp(methodName, "As", 2) == 0) && (methodName[2] != '\0')))
                             {
                                 if (strncmp(methodName + 2, "Vector", 6) == 0)
                                 {
