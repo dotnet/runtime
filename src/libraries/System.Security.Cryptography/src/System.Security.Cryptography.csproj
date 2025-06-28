@@ -374,8 +374,16 @@
              Link="Common\System\Security\Cryptography\AesGcm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\AesAEAD.cs"
              Link="Common\System\Security\Cryptography\AesAEAD.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AsymmetricAlgorithmHelpers.Der.cs"
+             Link="Common\System\Security\Cryptography\AsymmetricAlgorithmHelpers.Der.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\AuthenticationTagMismatchException.cs"
              Link="Common\System\Security\Cryptography\AuthenticationTagMismatchException.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsa.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsa.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaAlgorithm.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptographicAttributeObject.cs"
              Link="Common\System\Security\Cryptography\CryptographicAttributeObject.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptographicAttributeObjectCollection.cs"
