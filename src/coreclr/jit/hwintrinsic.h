@@ -549,12 +549,11 @@ struct HWIntrinsicInfo
     static bool isImmOp(NamedIntrinsic id, const GenTree* op);
 
 #ifdef TARGET_XARCH
-    static bool                isAVX2GatherIntrinsic(NamedIntrinsic id);
-    static FloatComparisonMode lookupFloatComparisonModeForSwappedArgs(FloatComparisonMode comparison);
-    static NamedIntrinsic      lookupIdForFloatComparisonMode(NamedIntrinsic      intrinsic,
-                                                              FloatComparisonMode comparison,
-                                                              var_types           simdBaseType,
-                                                              unsigned            simdSize);
+    static bool           isAVX2GatherIntrinsic(NamedIntrinsic id);
+    static NamedIntrinsic lookupIdForFloatComparisonMode(NamedIntrinsic      intrinsic,
+                                                         FloatComparisonMode comparison,
+                                                         var_types           simdBaseType,
+                                                         unsigned            simdSize);
 
     //------------------------------------------------------------------------
     // genIsTableDrivenHWIntrinsic:

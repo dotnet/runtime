@@ -3942,7 +3942,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 GenTree* op3 = intrin.op3;
 
                 // Handle op1
-                if (op1->IsFalseMask())
+                if (op1->IsMaskZero())
                 {
                     // When we are merging with zero, we can specialize
                     // and avoid instantiating the vector constant.
@@ -3955,7 +3955,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     const GenTreeHWIntrinsic* embOp = op2->AsHWIntrinsic();
 
-                    if (IsInvariantInRange(op2, node) && op2->isEmbeddedMaskingCompatibleHWIntrinsic())
+                    if (IsInvariantInRange(op2, node) && op2->isEmbeddedMaskingCompatible())
                     {
                         bool     contain  = false;
                         uint32_t maskSize = genTypeSize(node->GetSimdBaseType());
