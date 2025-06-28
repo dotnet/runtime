@@ -166,6 +166,7 @@ bool operator ==(const ICorDebugInfo::VarLoc &varLoc1,
     switch(varLoc1.vlType)
     {
     case ICorDebugInfo::VLT_REG:
+    case ICorDebugInfo::VLT_REG_FP:
     case ICorDebugInfo::VLT_REG_BYREF:
         return varLoc1.vlReg.vlrReg == varLoc2.vlReg.vlrReg;
 

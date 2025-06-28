@@ -129,19 +129,79 @@ namespace ILCompiler.Reflection.ReadyToRun
             // - IL offsets aren't sorted, but they should be close to each other (so a signed delta encoding)
             //   They may also include a sentinel value from MappingTypes.
             // - flags is 3 independent bits.
-            NibbleReader reader = new NibbleReader(image, offset);
-            uint boundsEntryCount = reader.ReadUInt();
-            Debug.Assert(boundsEntryCount > 0);
-
-            uint previousNativeOffset = 0;
-            for (int i = 0; i < boundsEntryCount; ++i)
+            if (_runtimeFunction.ReadyToRunReader.ReadyToRunHeader.MajorVersion >= 16)
             {
-                var entry = new DebugInfoBoundsEntry();
-                previousNativeOffset += reader.ReadUInt();
-                entry.NativeOffset = previousNativeOffset;
-                entry.ILOffset = reader.ReadUInt() + (uint)DebugInfoBoundsType.MaxMappingValue;
-                entry.SourceTypes = (SourceTypes)reader.ReadUInt();
-                _boundsList.Add(entry);
+                NibbleReader reader = new NibbleReader(image, offset);
+                uint boundsEntryCount = reader.ReadUInt();
+                Debug.Assert(boundsEntryCount > 0);
+                uint bitsForNativeDelta = reader.ReadUInt() + 1; // Number of bits needed for native deltas
+                uint bitsForILOffsets = reader.ReadUInt() + 1; // Number of bits needed for IL offsets
+
+                uint bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + 2; // 2 bits for source type
+                ulong bitsMeaningfulMask = (1UL << ((int)bitsPerEntry)) - 1;
+                int offsetOfActualBoundsData = reader.GetNextByteOffset();
+
+                uint bitsCollected = 0;
+                ulong bitTemp = 0;
+                uint curBoundsProcessed = 0;
+                
+                uint previousNativeOffset = 0;
+
+                while (curBoundsProcessed < boundsEntryCount)
+                {
+                    bitTemp <<= 8;
+                    bitTemp |= image[offsetOfActualBoundsData++];
+                    bitsCollected += 8;
+                    if (bitsCollected >= bitsPerEntry)
+                    {
+                        ulong mappingDataEncoded = bitsMeaningfulMask & bitTemp;
+                        bitTemp >>= (int)bitsPerEntry;
+                        bitsCollected -= bitsPerEntry;
+
+                        var entry = new DebugInfoBoundsEntry();
+                        switch (mappingDataEncoded & 0x3)
+                        {
+                            case 0:
+                                entry.SourceTypes = SourceTypes.SourceTypeInvalid;
+                                break;
+                            case 1:
+                                entry.SourceTypes = SourceTypes.CallInstruction;
+                                break;
+                            case 2:
+                                entry.SourceTypes = SourceTypes.StackEmpty;
+                                break;
+                            case 3:
+                                entry.SourceTypes = SourceTypes.StackEmpty | SourceTypes.CallInstruction;
+                                break;
+                        }
+                        mappingDataEncoded >>= 2;
+                        uint nativeOffsetDelta = (uint)(mappingDataEncoded & ((1UL << (int)bitsForNativeDelta) - 1));
+                        previousNativeOffset += nativeOffsetDelta;
+                        entry.NativeOffset = previousNativeOffset;
+
+                        mappingDataEncoded >>= (int)bitsForNativeDelta;
+                        entry.ILOffset = (uint)(mappingDataEncoded) + (uint)DebugInfoBoundsType.MaxMappingValue;
+
+                        _boundsList.Add(entry);
+                    }
+                }
+            }
+            else
+            {
+                NibbleReader reader = new NibbleReader(image, offset);
+                uint boundsEntryCount = reader.ReadUInt();
+                Debug.Assert(boundsEntryCount > 0);
+
+                uint previousNativeOffset = 0;
+                for (int i = 0; i < boundsEntryCount; ++i)
+                {
+                    var entry = new DebugInfoBoundsEntry();
+                    previousNativeOffset += reader.ReadUInt();
+                    entry.NativeOffset = previousNativeOffset;
+                    entry.ILOffset = reader.ReadUInt() + (uint)DebugInfoBoundsType.MaxMappingValue;
+                    entry.SourceTypes = (SourceTypes)reader.ReadUInt();
+                    _boundsList.Add(entry);
+                }
             }
         }
 
