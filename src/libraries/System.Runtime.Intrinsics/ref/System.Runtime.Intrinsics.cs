@@ -4582,6 +4582,14 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> AndAcross(System.Numerics.Vector<ushort> value) { throw null; }
         public static System.Numerics.Vector<uint> AndAcross(System.Numerics.Vector<uint> value) { throw null; }
         public static System.Numerics.Vector<ulong> AndAcross(System.Numerics.Vector<ulong> value) { throw null; }
+        public static System.Numerics.Vector<byte> AndNot(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> AndNot(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> AndNot(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> AndNot(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> AndNot(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AndNot(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> AndNot(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AndNot(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<byte> BitwiseClear(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> BitwiseClear(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> BitwiseClear(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -5591,6 +5599,14 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> OrAcross(System.Numerics.Vector<ushort> value) { throw null; }
         public static System.Numerics.Vector<uint> OrAcross(System.Numerics.Vector<uint> value) { throw null; }
         public static System.Numerics.Vector<ulong> OrAcross(System.Numerics.Vector<ulong> value) { throw null; }
+        public static System.Numerics.Vector<byte> OrNot(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> OrNot(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> OrNot(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> OrNot(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> OrNot(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> OrNot(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> OrNot(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> OrNot(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<byte> PopCount(System.Numerics.Vector<sbyte> value) { throw null; }
         public static System.Numerics.Vector<byte> PopCount(System.Numerics.Vector<byte> value) { throw null; }
         public static System.Numerics.Vector<ushort> PopCount(System.Numerics.Vector<short> value) { throw null; }
