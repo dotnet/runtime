@@ -264,8 +264,7 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
 //     casts for all targets.
 //  2. Morphs casts not supported by the target directly into helpers.
 //     These mostly have to do with casts from and to floating point
-//     types, especially checked ones. Refer to the implementation for
-//     what specific casts need to be handled - it is a complex matrix.
+//     types, especially checked ones.
 //  3. "Casts away" the GC-ness of a tree (for CAST(nint <- byref)) via
 //     storing the GC tree to an inline non-GC temporary.
 //  3. "Pushes down" truncating long -> int casts for some operations:
@@ -288,27 +287,11 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     GenTree*  oper    = tree->CastOp();
     var_types srcType = genActualType(oper);
     var_types dstType = tree->CastToType();
-    unsigned  dstSize = genTypeSize(dstType);
 
-    // See if the cast has to be done in two steps.  R -> I
     if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType))
     {
-        if (srcType == TYP_FLOAT
-#ifdef TARGET_64BIT
-            // 64-bit: src = float, dst is overflow conversion.
-            // This goes through helper and hence src needs to be converted to double.
-            && tree->gtOverflow()
-#else
-            // 32-bit: src = float, dst = int64/uint64 or overflow conversion.
-            && (tree->gtOverflow() || varTypeIsLong(dstType))
-#endif // TARGET_64BIT
-        )
-        {
-            oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
-        }
-
         // Do we need to do it in two steps R -> I -> smallType?
-        if (dstSize < genTypeSize(TYP_INT))
+        if (varTypeIsSmall(dstType))
         {
             oper = gtNewCastNodeL(TYP_INT, oper, /* fromUnsigned */ false, TYP_INT);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
@@ -318,47 +301,69 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // CAST_OVF(BYTE <- INT) != CAST_OVF(BYTE <- UINT).
             assert(!tree->IsUnsigned());
         }
-        else
+        else if (fgCastRequiresHelper(srcType, dstType, tree->gtOverflow()))
         {
-            if (!tree->gtOverflow())
-            {
-#ifdef TARGET_64BIT
-                return nullptr;
-#else
-                if (!varTypeIsLong(dstType))
-                {
-                    return nullptr;
-                }
+            CorInfoHelpFunc helper = CORINFO_HELP_UNDEF;
 
+            if (srcType == TYP_FLOAT)
+            {
+                oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
+            }
+
+            if (tree->gtOverflow())
+            {
                 switch (dstType)
                 {
+                    case TYP_INT:
+                        helper = CORINFO_HELP_DBL2INT_OVF;
+                        break;
+                    case TYP_UINT:
+                        helper = CORINFO_HELP_DBL2UINT_OVF;
+                        break;
                     case TYP_LONG:
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
+                        helper = CORINFO_HELP_DBL2LNG_OVF;
+                        break;
                     case TYP_ULONG:
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2ULNG, oper);
+                        helper = CORINFO_HELP_DBL2ULNG_OVF;
+                        break;
                     default:
                         unreached();
                 }
-#endif // TARGET_64BIT
             }
             else
             {
                 switch (dstType)
                 {
-                    case TYP_INT:
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT_OVF, oper);
-                    case TYP_UINT:
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT_OVF, oper);
                     case TYP_LONG:
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG_OVF, oper);
+                        helper = CORINFO_HELP_DBL2LNG;
+                        break;
                     case TYP_ULONG:
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2ULNG_OVF, oper);
+                        helper = CORINFO_HELP_DBL2ULNG;
+                        break;
                     default:
                         unreached();
                 }
             }
+
+            return fgMorphCastIntoHelper(tree, helper, oper);
         }
     }
+
+    // If we have a double->float cast, and the double node is itself a cast,
+    // look through it and see if we can cast directly to float. This is valid
+    // only if the cast to double would have been lossless.
+    //
+    // This pattern most often appears as CAST(float <- CAST(double <- float)),
+    // which is reduced to CAST(float <- float) and handled in codegen as an optional mov.
+    else if ((srcType == TYP_DOUBLE) && (dstType == TYP_FLOAT) && oper->OperIs(GT_CAST) &&
+             !varTypeIsLong(oper->AsCast()->CastOp()))
+    {
+        oper->gtType       = TYP_FLOAT;
+        oper->CastToType() = TYP_FLOAT;
+
+        return fgMorphTree(oper);
+    }
+
 #ifndef TARGET_64BIT
     // The code generation phase (for x86 & ARM32) does not handle casts
     // directly from [u]long to anything other than [u]int. Insert an
@@ -370,43 +375,12 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         tree->ClearUnsigned();
         tree->AsCast()->CastOp() = oper;
     }
-#endif //! TARGET_64BIT
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_XARCH)
-    // Because there is no IL instruction conv.r4.un, uint/ulong -> float
-    // casts are always imported as CAST(float <- CAST(double <- uint/ulong)).
-    // We can usually eliminate the redundant intermediate cast as an optimization.
-    //
-    // AArch and xarch+EVEX have instructions that can cast directly from
-    // all integers (except for longs on ARM32) to floats.
-    // On x64, we also have the option of widening uint -> long and
-    // using the signed conversion instructions, and ulong -> float/double
-    // is handled directly in codegen, so we can allow all casts.
-    //
-    // This logic will also catch CAST(float <- CAST(double <- float))
-    // and reduce it to CAST(float <- float), which is handled in codegen as
-    // an optional mov.
-    else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && oper->OperIs(GT_CAST)
-#ifndef TARGET_64BIT
-             && !varTypeIsLong(oper->AsCast()->CastOp())
-#endif // !TARGET_64BIT
-#ifdef TARGET_X86
-             && canUseEvexEncoding()
-#endif // TARGET_X86
-    )
-    {
-        oper->gtType       = TYP_FLOAT;
-        oper->CastToType() = TYP_FLOAT;
-
-        return fgMorphTree(oper);
-    }
-#endif // TARGET_ARMARCH || TARGET_XARCH
-
-#ifdef TARGET_ARM
-    // converts long/ulong --> float/double casts into helper calls.
-    else if (varTypeIsFloating(dstType) && varTypeIsLong(srcType))
+    // Convert long/ulong --> float/double casts into helper calls if necessary.
+    else if (varTypeIsLong(srcType) && varTypeIsFloating(dstType) && fgCastRequiresHelper(srcType, dstType))
     {
         CorInfoHelpFunc helper = CORINFO_HELP_UNDEF;
+
         if (dstType == TYP_FLOAT)
         {
             helper = tree->IsUnsigned() ? CORINFO_HELP_ULNG2FLT : CORINFO_HELP_LNG2FLT;
@@ -415,65 +389,25 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         {
             helper = tree->IsUnsigned() ? CORINFO_HELP_ULNG2DBL : CORINFO_HELP_LNG2DBL;
         }
+
         return fgMorphCastIntoHelper(tree, helper, oper);
     }
-#endif // TARGET_ARM
+#endif // !TARGET_64BIT
 
 #ifdef TARGET_AMD64
     // Do we have to do two step U4 -> R4/8 ?
     // If we don't have the EVEX unsigned conversion instructions available,
     // we will widen to long and use signed conversion: U4 -> Long -> R4/8.
-    // U8 -> R4/R8 is handled directly in codegen, so we ignore it here.
-    else if (tree->IsUnsigned() && varTypeIsFloating(dstType))
+    else if (tree->IsUnsigned() && varTypeIsInt(srcType) && varTypeIsFloating(dstType) &&
+             !compOpportunisticallyDependsOn(InstructionSet_AVX512))
     {
-        srcType = varTypeToUnsigned(srcType);
-
-        if (srcType == TYP_UINT && !canUseEvexEncoding())
-        {
-            oper = gtNewCastNode(TYP_LONG, oper, true, TYP_LONG);
-            oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-            tree->ClearUnsigned();
-            tree->CastOp() = oper;
-        }
+        oper = gtNewCastNode(TYP_LONG, oper, true, TYP_LONG);
+        oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
+        tree->ClearUnsigned();
+        tree->CastOp() = oper;
     }
 #endif // TARGET_AMD64
 
-#ifdef TARGET_X86
-#ifdef FEATURE_HW_INTRINSICS
-    else if (varTypeIsLong(srcType) && varTypeIsFloating(dstType) && canUseEvexEncoding())
-    {
-        // We can handle these casts directly using SIMD instructions.
-        // The transform to SIMD is done in DecomposeLongs.
-        return nullptr;
-    }
-#endif // FEATURE_HW_INTRINSICS
-
-    // Do we have to do two step U4/8 -> R4/8 ?
-    else if (tree->IsUnsigned() && varTypeIsFloating(dstType))
-    {
-        srcType = varTypeToUnsigned(srcType);
-
-        if (srcType == TYP_ULONG)
-        {
-            CorInfoHelpFunc helper = (dstType == TYP_FLOAT) ? CORINFO_HELP_ULNG2FLT : CORINFO_HELP_ULNG2DBL;
-            return fgMorphCastIntoHelper(tree, helper, oper);
-        }
-        else if (srcType == TYP_UINT && !canUseEvexEncoding())
-        {
-            oper = gtNewCastNode(TYP_LONG, oper, true, TYP_LONG);
-            oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-            tree->ClearUnsigned();
-
-            CorInfoHelpFunc helper = (dstType == TYP_FLOAT) ? CORINFO_HELP_LNG2FLT : CORINFO_HELP_LNG2DBL;
-            return fgMorphCastIntoHelper(tree, helper, oper);
-        }
-    }
-    else if (!tree->IsUnsigned() && (srcType == TYP_LONG) && varTypeIsFloating(dstType))
-    {
-        CorInfoHelpFunc helper = (dstType == TYP_FLOAT) ? CORINFO_HELP_LNG2FLT : CORINFO_HELP_LNG2DBL;
-        return fgMorphCastIntoHelper(tree, helper, oper);
-    }
-#endif // TARGET_X86
     else if (varTypeIsGC(srcType) != varTypeIsGC(dstType))
     {
         // We are casting away GC information.  we would like to just
