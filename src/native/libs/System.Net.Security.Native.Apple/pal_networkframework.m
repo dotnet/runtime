@@ -3,6 +3,7 @@
 
 #include "pal_networkframework.h"
 #include <Foundation/Foundation.h>
+#include <Network/Network.h>
 
 static WriteCallback _writeFunc;
 static ReadCallback _readFunc;
@@ -17,7 +18,7 @@ static dispatch_queue_t _inputQueue;
 
 PALEXPORT nw_connection_t AppleNetNative_NwCreateContext(int32_t isServer)
 {
-    if (isServer != 0)  // only client supported at this point.
+    if (isServer != 0)  // the current implementation only supports client
         return NULL;
 
     nw_parameters_t nw_parameters = nw_parameters_create_secure_udp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
@@ -60,20 +61,16 @@ static nw_framer_output_handler_t framer_output_handler = ^(nw_framer_t framer, 
 };
 
 static nw_framer_stop_handler_t framer_stop_handler = ^bool(nw_framer_t framer) {
-    if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4, watchOS 2.0, *))
+    if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4, watchOS 8.4, *))
     {
-        size_t gcHandle = 0;
+        size_t state = 0;
         nw_protocol_options_t framer_options = nw_framer_copy_options(framer);
         NSNumber* num = nw_framer_options_copy_object_value(framer_options, "GCHANDLE");
         if (num != NULL)
         {
-            [num getValue:&gcHandle];
-            (_statusFunc)(gcHandle, PAL_NwStatusUpdates_FramerStop, 0, 0);
+            [num getValue:&state];
+            (_statusFunc)(state, PAL_NwStatusUpdates_FramerStop, 0, 0);
         }
-    }
-    else
-    {
-        assert(0);
     }
 
     return TRUE;
@@ -88,16 +85,16 @@ static nw_framer_cleanup_handler_t framer_cleanup_handler = ^(nw_framer_t framer
 static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_framer_t framer)
 {
     assert(_statusFunc != NULL);
-    size_t gcHandle = 0;
+    size_t state = 0;
 
     nw_protocol_options_t framer_options = nw_framer_copy_options(framer);
     NSNumber* num = nw_framer_options_copy_object_value(framer_options, "GCHANDLE");
     assert(num != NULL);
 
-    [num getValue:&gcHandle];
+    [num getValue:&state];
 
     // Notify SafeHandle with framer instance so we can submit to it directly.
-    (_statusFunc)(gcHandle, PAL_NwStatusUpdates_FramerStart, (size_t)framer, 0);
+    (_statusFunc)(state, PAL_NwStatusUpdates_FramerStart, (size_t)framer, 0);
 
     nw_framer_set_output_handler(framer, framer_output_handler);
 
@@ -127,6 +124,10 @@ PALEXPORT int32_t AppleNetNative_NwProcessInputData(nw_connection_t connection, 
     if (bufferLength > 0)
     {
         copy = malloc((size_t)bufferLength);
+        if (copy == NULL)
+        {
+            return -1;
+        }
         memcpy(copy, buffer, bufferLength);
         nw_framer_message_set_value(message, "DATA", copy,  ^(void* ptr) {
             free(ptr);
@@ -146,28 +147,40 @@ PALEXPORT int32_t AppleNetNative_NwProcessInputData(nw_connection_t connection, 
 
 // This starts TLS handshake. For client, it will produce ClientHello and call output handler (on thread pool)
 // important part here is the state handler that will get asynchronous n=notifications about progress.
-PALEXPORT int AppleNetNative_NwStartTlsHandshake(nw_connection_t connection, size_t gcHandle)
+PALEXPORT int AppleNetNative_NwStartTlsHandshake(nw_connection_t connection, size_t state)
 {
     if (connection == NULL)
         return -1;
 
-    nw_connection_set_state_changed_handler(connection, ^(nw_connection_state_t state, nw_error_t error) {
+    nw_connection_set_state_changed_handler(connection, ^(nw_connection_state_t status, nw_error_t error) {
         int errorCode  = error ? nw_error_get_error_code(error) : 0;
-
-        if (state == nw_connection_state_waiting) {
-            if (error != NULL)
+        switch (status)
+        {
+            case nw_connection_state_preparing:
+            case nw_connection_state_waiting:
+            case nw_connection_state_failed:
             {
-                (_statusFunc)(gcHandle, PAL_NwStatusUpdates_HandshakeFailed, (size_t)errorCode, 0);
+                if (errorCode != 0 || status == nw_connection_state_failed)
+                {
+                    (_statusFunc)(state, PAL_NwStatusUpdates_HandshakeFailed, (size_t)errorCode, 0);
+                }
             }
-        } else if (state == nw_connection_state_failed) {
-                (_statusFunc)(gcHandle, PAL_NwStatusUpdates_HandshakeFailed, (size_t)errorCode, 0);
-        } else if (state == nw_connection_state_ready) {
-                (_statusFunc)(gcHandle, PAL_NwStatusUpdates_HandshakeFinished, 0, 0);
-        }
-        else if (state == nw_connection_state_cancelled) {
-            // Release the primary reference on the connection
-            // that was taken at creation time
-            (_statusFunc)(gcHandle, PAL_NwStatusUpdates_ConnectionCancelled, 0, 0);
+            break;
+            case nw_connection_state_ready:
+            {
+                (_statusFunc)(state, PAL_NwStatusUpdates_HandshakeFinished, 0, 0);
+            }
+            break;
+            case nw_connection_state_cancelled:
+            {
+                (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionCancelled, 0, 0);
+            }
+            break;
+            case nw_connection_state_invalid:
+            {
+                (_statusFunc)(state, PAL_NwStatusUpdates_UnknownError, 0, 0);
+            }
+            break;
         }
     });
 
@@ -185,7 +198,7 @@ PALEXPORT int32_t AppleNetNative_NwCancelConnection(nw_connection_t connection)
 }
 
 // this is used by encrypt. We write plain text to the connection and it will be handound out encrypted via output handler
-PALEXPORT int32_t AppleNetNative_NwSendToConnection(nw_connection_t connection,  size_t gcHandle,  uint8_t* buffer, int length)
+PALEXPORT int32_t AppleNetNative_NwSendToConnection(nw_connection_t connection,  size_t state,  uint8_t* buffer, int length)
 {
     dispatch_data_t data = dispatch_data_create(buffer, (size_t)length, _inputQueue, ^{ printf("%s:%d: dispatch destructor called!!!\n", __func__, __LINE__);});
 
@@ -193,11 +206,11 @@ PALEXPORT int32_t AppleNetNative_NwSendToConnection(nw_connection_t connection, 
         if (error != NULL)
         {
             int errorCode  = nw_error_get_error_code(error);
-            (_statusFunc)(gcHandle, PAL_NwStatusUpdates_ConnectionWriteFailed, (size_t)errorCode, 0);
+            (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionWriteFailed, (size_t)errorCode, 0);
         }
         else
         {
-            (_statusFunc)(gcHandle, PAL_NwStatusUpdates_ConnectionWriteFinished, 0, 0);
+            (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionWriteFinished, 0, 0);
         }
      });
 
@@ -205,7 +218,7 @@ PALEXPORT int32_t AppleNetNative_NwSendToConnection(nw_connection_t connection, 
 }
 
 // This is used by decrypt. We feed data in via AppleNetNative_NwProcessInputData and we try to read from the connection.
-PALEXPORT int32_t AppleNetNative_NwReadFromConnection(nw_connection_t connection, size_t gcHandle)
+PALEXPORT int32_t AppleNetNative_NwReadFromConnection(nw_connection_t connection, size_t state)
 {
     nw_connection_receive(connection, 1, 65536, ^(dispatch_data_t content, nw_content_context_t context, bool is_complete, nw_error_t error) {
         int errorCode  = error ? nw_error_get_error_code(error) : 0;
@@ -221,13 +234,13 @@ PALEXPORT int32_t AppleNetNative_NwReadFromConnection(nw_connection_t connection
             const void *buffer;
             size_t bufferLength;
             dispatch_data_t tmp = dispatch_data_create_map(content, &buffer, &bufferLength);
-            (_statusFunc)(gcHandle, PAL_NwStatusUpdates_ConnectionReadFinished, bufferLength, (size_t)buffer);
+            (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionReadFinished, bufferLength, (size_t)buffer);
             dispatch_release(tmp);
          }
 
          if (is_complete || content == NULL)
          {
-             (_statusFunc)(gcHandle, PAL_NwStatusUpdates_ConnectionReadFinished, 0, 0);
+             (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionReadFinished, 0, 0);
          }
         (void*)context;
     });
@@ -259,7 +272,7 @@ static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol
 }
 
 // This configures TLS properties
-PALEXPORT int32_t AppleNetNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHandle, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol)
+PALEXPORT int32_t AppleNetNative_NwSetTlsOptions(nw_connection_t connection, size_t state, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol)
 {
     nw_protocol_options_t tlsOptions = nw_tls_create_options();
     sec_protocol_options_t sec_options = nw_tls_copy_sec_protocol_options(tlsOptions);
@@ -302,7 +315,7 @@ PALEXPORT int32_t AppleNetNative_NwSetTlsOptions(nw_connection_t connection, siz
     nw_protocol_options_t framer_options = nw_framer_create_options(_framerDefinition);
     if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4.0, watchOS 8.4, *))
     {
-        NSNumber *ref = [NSNumber numberWithLong:(long)gcHandle];
+        NSNumber *ref = [NSNumber numberWithLong:(long)state];
         nw_framer_options_set_object_value(framer_options, "GCHANDLE", ref);
     }
 
@@ -315,7 +328,7 @@ PALEXPORT int32_t AppleNetNative_NwSetTlsOptions(nw_connection_t connection, siz
 }
 
 // This wil get TLS details after handshake is finished
-PALEXPORT int32_t AppleNetNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, const char** negotiatedAlpn, uint32_t* alpnLength)
+PALEXPORT int32_t AppleNetNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, const char** negotiatedAlpn, int32_t* negotiatedAlpnLength)
 {
     nw_protocol_metadata_t meta = nw_connection_copy_protocol_metadata(connection, _tlsDefinition);
     if (meta != NULL)
@@ -325,12 +338,12 @@ PALEXPORT int32_t AppleNetNative_NwGetConnectionInfo(nw_connection_t connection,
         if (alpn != NULL)
         {
             *negotiatedAlpn = alpn;
-            *alpnLength= (uint32_t)strlen(alpn);
+            *negotiatedAlpnLength = (int32_t)strlen(alpn);
         }
         else
         {
             *negotiatedAlpn = NULL;
-            *alpnLength = 0;
+            *negotiatedAlpnLength = 0;
         }
 
         tls_protocol_version_t version = sec_protocol_metadata_get_negotiated_tls_protocol_version(secMeta);

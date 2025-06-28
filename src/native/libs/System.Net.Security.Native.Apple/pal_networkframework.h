@@ -59,7 +59,7 @@ PALEXPORT int32_t AppleNetNative_NwSendToConnection(nw_connection_t connection, 
 PALEXPORT int32_t AppleNetNative_NwReadFromConnection(nw_connection_t connection, size_t gcHandle);
 PALEXPORT int32_t AppleNetNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * data, int dataLength);
 PALEXPORT int32_t AppleNetNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHandle, char* targetName, const uint8_t* alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol);
-PALEXPORT int32_t AppleNetNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* pProtocol, uint16_t* pCipherSuiteOut, const char** negotiatedAlpn, uint32_t* alpnLength);
+PALEXPORT int32_t AppleNetNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* pProtocol, uint16_t* pCipherSuiteOut, const char** negotiatedAlpn, int32_t* negotiatedAlpnLength);
 PALEXPORT int32_t AppleNetNative_NwCopyCertChain(nw_connection_t connection, CFArrayRef* certificates, int* count);
 PALEXPORT int32_t AppleNetNative_NwCancelConnection(nw_connection_t connection);
 
