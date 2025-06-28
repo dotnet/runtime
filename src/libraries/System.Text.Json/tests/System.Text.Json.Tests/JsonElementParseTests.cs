@@ -287,32 +287,47 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, reader.BytesConsumed);
         }
 
+        public static IEnumerable<object[]> JsonMarshal_GetRawUtf8Value_TestData()
+        {
+            yield return new object[] { "null" };
+            yield return new object[] { "\r\n    null " };
+            yield return new object[] { "false" };
+            yield return new object[] { "true " };
+            yield return new object[] { "   42.0 " };
+            yield return new object[] { " \"str\" \r\n" };
+            yield return new object[] { " \"string with escaping: \\u0041\\u0042\\u0043\" \r\n" };
+            yield return new object[] { " [     ]" };
+            yield return new object[] { " [null, true, 42.0, \"str\", [], {}, ]" };
+            yield return new object[] { " {  } " };
+            yield return new object[] { """
+                {
+                    /* I am a comment */
+                    "key1" : 1,
+                    "key2" : null,
+                    "key3" : true,
+                }
+                """ };
+        }
+
         [Theory]
-        [InlineData("null")]
-        [InlineData("\r\n    null ")]
-        [InlineData("false")]
-        [InlineData("true ")]
-        [InlineData("   42.0 ")]
-        [InlineData(" \"str\" \r\n")]
-        [InlineData(" \"string with escaping: \\u0041\\u0042\\u0043\" \r\n")]
-        [InlineData(" [     ]")]
-        [InlineData(" [null, true, 42.0, \"str\", [], {}, ]")]
-        [InlineData(" {  } ")]
-        [InlineData("""
-
-            {
-                /* I am a comment */
-                "key1" : 1,
-                "key2" : null,
-                "key3" : true,
-            }
-
-            """)]
+        [MemberData(nameof(JsonMarshal_GetRawUtf8Value_TestData))]
         public static void JsonMarshal_GetRawUtf8Value_RootValue_ReturnsFullValue(string json)
         {
             JsonDocumentOptions options = new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
             using JsonDocument jDoc = JsonDocument.Parse(json, options);
             JsonElement element = jDoc.RootElement;
+
+            ReadOnlySpan<byte> rawValue = JsonMarshal.GetRawUtf8Value(element);
+            Assert.Equal(json.Trim(), Encoding.UTF8.GetString(rawValue.ToArray()));
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonMarshal_GetRawUtf8Value_TestData))]
+        public static void JsonMarshal_GetRawUtf8Value_JsonElement_ParseValue_ReturnsFullValue(string json)
+        {
+            JsonReaderOptions options = new() { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
+            Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json), isFinalBlock: true, new JsonReaderState(options));
+            JsonElement element = JsonElement.ParseValue(ref reader);
 
             ReadOnlySpan<byte> rawValue = JsonMarshal.GetRawUtf8Value(element);
             Assert.Equal(json.Trim(), Encoding.UTF8.GetString(rawValue.ToArray()));
