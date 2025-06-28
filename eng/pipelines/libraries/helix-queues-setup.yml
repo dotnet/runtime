@@ -50,7 +50,7 @@ jobs:
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
       - ${{ if or(eq(parameters.jobParameters.interpreter, 'true'), eq(parameters.jobParameters.isSingleFile, true)) }}:
         # Limiting interp runs as we don't need as much coverage.
-        - (Debian.13.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64
+        - (Debian.12.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-amd64
 
       - ${{ else }}:
         - ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
