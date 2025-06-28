@@ -101,10 +101,8 @@ jobs:
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - AzureLinux.3.Amd64.Open
-        - (Ubuntu.2204.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-amd64
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - AzureLinux.3.Amd64
-        - (Ubuntu.2204.Amd64)AzureLinux.3.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-amd64
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
