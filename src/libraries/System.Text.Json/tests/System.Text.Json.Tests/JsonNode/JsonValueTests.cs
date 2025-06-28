@@ -801,5 +801,23 @@ namespace System.Text.Json.Nodes.Tests
 
             public override string ToString() => Value?.ToString();
         }
+
+        [Theory]
+        [InlineData("null", "null")]
+        [InlineData("\r\n    null ", "null")]
+        [InlineData("false", "false")]
+        [InlineData("true ", "true")]
+        [InlineData("   42.0 ", "42.0")]
+        [InlineData(" \"str\" \r\n", "\"str\"")]
+        [InlineData(" \"str\" \r\n// comment", "\"str\"")]
+        [InlineData("// comment\r\n \"str\" ", "\"str\"")]
+        [InlineData(" \"string with escaping: \\u0041\\u0042\\u0043\" \r\n", "\"string with escaping: ABC\"")]
+        public static void IgnoreLeadingAndTrailingTrivia(string json, string expectedRoundtripValue)
+        {
+            JsonDocumentOptions docOptions = new() { CommentHandling = JsonCommentHandling.Skip };
+            JsonValue? value = JsonNode.Parse(json, default(JsonNodeOptions), docOptions)?.AsValue();
+            string actualRoundtripValue = value?.ToJsonString() ?? "null";
+            Assert.Equal(expectedRoundtripValue, actualRoundtripValue);
+        }
     }
 }
