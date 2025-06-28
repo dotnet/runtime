@@ -44,12 +44,10 @@ namespace System.Runtime
         GetSystemArrayEEType = 5,
         OnFirstChance = 6,
         OnUnhandledException = 7,
-        IDynamicCastableIsInterfaceImplemented = 8,
-        IDynamicCastableGetInterfaceImplementation = 9,
-        ObjectiveCMarshalTryGetTaggedMemory = 10,
-        ObjectiveCMarshalGetIsTrackedReferenceCallback = 11,
-        ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback = 12,
-        ObjectiveCMarshalGetUnhandledExceptionPropagationHandler = 13,
+        ObjectiveCMarshalTryGetTaggedMemory = 8,
+        ObjectiveCMarshalGetIsTrackedReferenceCallback = 9,
+        ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback = 10,
+        ObjectiveCMarshalGetUnhandledExceptionPropagationHandler = 11,
     }
 
     internal static class InternalCalls
