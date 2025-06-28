@@ -21,9 +21,19 @@ PALEXPORT nw_connection_t AppleNetNative_NwCreateContext(int32_t isServer)
     if (isServer != 0)  // the current implementation only supports client
         return NULL;
 
+    // Network.framework requires an underlying network connection for TLS operations,
+    // but we need to perform TLS without an actual connection. This implementation
+    // uses a workaround: we create a dummy UDP connection that will never be used.
+    // 
+    // The trick works by layering a custom framer on top of this dummy connection,
+    // then adding TLS on top of the framer. The framer intercepts the raw TLS data
+    // and exposes it to SslStream, preventing it from ever reaching the underlying
+    // connection.
+    //
+    // The endpoint values (127.0.0.1:42) are arbitrary - they just need to be
+    // syntactically and semantically valid since the connection is never established.
     nw_parameters_t nw_parameters = nw_parameters_create_secure_udp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
     nw_endpoint_t nw_endpoint = nw_endpoint_create_host("127.0.0.1", "42");
-
     nw_connection_t connection = nw_connection_create(nw_endpoint, nw_parameters);
 
     return connection;
@@ -57,7 +67,7 @@ static nw_framer_output_handler_t framer_output_handler = ^(nw_framer_t framer, 
     {
         assert(0);
     }
-    (int)is_complete;
+    (void)is_complete;
 };
 
 static nw_framer_stop_handler_t framer_stop_handler = ^bool(nw_framer_t framer) {
@@ -191,14 +201,13 @@ PALEXPORT int AppleNetNative_NwStartTlsHandshake(nw_connection_t connection, siz
 }
 
 // This will start connection cleanup
-PALEXPORT int32_t AppleNetNative_NwCancelConnection(nw_connection_t connection)
+PALEXPORT void AppleNetNative_NwCancelConnection(nw_connection_t connection)
 {
     nw_connection_cancel(connection);
-    return 0;
 }
 
 // this is used by encrypt. We write plain text to the connection and it will be handound out encrypted via output handler
-PALEXPORT int32_t AppleNetNative_NwSendToConnection(nw_connection_t connection,  size_t state,  uint8_t* buffer, int length)
+PALEXPORT void AppleNetNative_NwSendToConnection(nw_connection_t connection,  size_t state,  uint8_t* buffer, int length)
 {
     dispatch_data_t data = dispatch_data_create(buffer, (size_t)length, _inputQueue, ^{ printf("%s:%d: dispatch destructor called!!!\n", __func__, __LINE__);});
 
@@ -213,12 +222,10 @@ PALEXPORT int32_t AppleNetNative_NwSendToConnection(nw_connection_t connection, 
             (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionWriteFinished, 0, 0);
         }
      });
-
-    return 0;
 }
 
 // This is used by decrypt. We feed data in via AppleNetNative_NwProcessInputData and we try to read from the connection.
-PALEXPORT int32_t AppleNetNative_NwReadFromConnection(nw_connection_t connection, size_t state)
+PALEXPORT void AppleNetNative_NwReadFromConnection(nw_connection_t connection, size_t state)
 {
     nw_connection_receive(connection, 1, 65536, ^(dispatch_data_t content, nw_content_context_t context, bool is_complete, nw_error_t error) {
         int errorCode  = error ? nw_error_get_error_code(error) : 0;
@@ -242,10 +249,8 @@ PALEXPORT int32_t AppleNetNative_NwReadFromConnection(nw_connection_t connection
          {
              (_statusFunc)(state, PAL_NwStatusUpdates_ConnectionReadFinished, 0, 0);
          }
-        (void*)context;
+        (void)context;
     });
-
-    return  0;
 }
 
 static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol palProtocolId)
@@ -272,7 +277,7 @@ static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol
 }
 
 // This configures TLS properties
-PALEXPORT int32_t AppleNetNative_NwSetTlsOptions(nw_connection_t connection, size_t state, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol)
+PALEXPORT void AppleNetNative_NwSetTlsOptions(nw_connection_t connection, size_t state, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol)
 {
     nw_protocol_options_t tlsOptions = nw_tls_create_options();
     sec_protocol_options_t sec_options = nw_tls_copy_sec_protocol_options(tlsOptions);
@@ -323,8 +328,6 @@ PALEXPORT int32_t AppleNetNative_NwSetTlsOptions(nw_connection_t connection, siz
     nw_protocol_stack_t protocol_stack = nw_parameters_copy_default_protocol_stack(parameters);
     nw_protocol_stack_prepend_application_protocol(protocol_stack, framer_options);
     nw_protocol_stack_prepend_application_protocol(protocol_stack, tlsOptions);
-
-    return 0;
 }
 
 // This wil get TLS details after handshake is finished
@@ -378,7 +381,7 @@ PALEXPORT int32_t AppleNetNative_NwGetConnectionInfo(nw_connection_t connection,
     return -1;
 }
 
-PALEXPORT int32_t AppleNetNative_NwCopyCertChain(nw_connection_t connection, CFArrayRef* certificates, int* certificateCount)
+PALEXPORT void AppleNetNative_NwCopyCertChain(nw_connection_t connection, CFArrayRef* certificates, int* certificateCount)
 {
     CFMutableArrayRef certs = NULL;
     __block int count = 0;
@@ -417,8 +420,6 @@ PALEXPORT int32_t AppleNetNative_NwCopyCertChain(nw_connection_t connection, CFA
         *certificateCount = 0;
         *certificates = NULL;
     }
-
-    return 0;
 }
 #pragma clang diagnostic pop
 
