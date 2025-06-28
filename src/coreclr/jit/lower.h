@@ -21,6 +21,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 class Lowering final : public Phase
 {
+    friend class Rationalizer;
+
 public:
     inline Lowering(Compiler* compiler, LinearScanInterface* lsra)
         : Phase(compiler, PHASE_LOWERING)
@@ -550,12 +552,16 @@ private:
     // Checks and makes 'childNode' contained in the 'parentNode'
     bool CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNode);
 
-    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive) const;
-    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const;
-    bool IsRangeInvariantInRange(GenTree* rangeStart,
-                                 GenTree* rangeEnd,
-                                 GenTree* endExclusive,
-                                 GenTree* ignoreNode) const;
+    static bool IsInvariantInRange(GenTree*       node,
+                                   GenTree*       endExclusive,
+                                   Compiler*      comp,
+                                   SideEffectSet& scratchSideEffects);
+    bool        IsInvariantInRange(GenTree* node, GenTree* endExclusive) const;
+    bool        IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const;
+    bool        IsRangeInvariantInRange(GenTree* rangeStart,
+                                        GenTree* rangeEnd,
+                                        GenTree* endExclusive,
+                                        GenTree* ignoreNode) const;
 
     // Check if marking an operand of a node as reg-optional is safe.
     bool IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* node) const;

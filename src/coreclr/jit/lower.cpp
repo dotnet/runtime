@@ -140,15 +140,20 @@ bool Lowering::CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNod
 // computation changing values?
 //
 // Arguments:
-//    node         -  The node.
-//    endExclusive -  The exclusive end of the range to check invariance for.
+//    node               - The node.
+//    endExclusive       - The exclusive end of the range to check invariance for.
+//    comp               - The compiler
+//    scratchSideEffects - A SideEffectSet used for interference checks.
 //
 // Returns:
 //    True if 'node' can be evaluated at any point between its current
 //    location and 'endExclusive' without giving a different result; otherwise
 //    false.
 //
-bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
+bool Lowering::IsInvariantInRange(GenTree*       node,
+                                  GenTree*       endExclusive,
+                                  Compiler*      comp,
+                                  SideEffectSet& scratchSideEffects)
 {
     assert((node != nullptr) && (endExclusive != nullptr));
 
@@ -164,20 +169,39 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
         return false;
     }
 
-    m_scratchSideEffects.Clear();
-    m_scratchSideEffects.AddNode(comp, node);
+    scratchSideEffects.Clear();
+    scratchSideEffects.AddNode(comp, node);
 
     for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
     {
         assert((cur != nullptr) && "Expected first node to precede end node");
         const bool strict = true;
-        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
+        if (scratchSideEffects.InterferesWith(comp, cur, strict))
         {
             return false;
         }
     }
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// IsInvariantInRange: Check if a node is invariant in the specified range. In
+// other words, can 'node' be moved to right before 'endExclusive' without its
+// computation changing values?
+//
+// Arguments:
+//    node         -  The node.
+//    endExclusive -  The exclusive end of the range to check invariance for.
+//
+// Returns:
+//    True if 'node' can be evaluated at any point between its current
+//    location and 'endExclusive' without giving a different result; otherwise
+//    false.
+//
+bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
+{
+    return IsInvariantInRange(node, endExclusive, comp, m_scratchSideEffects);
 }
 
 //------------------------------------------------------------------------
