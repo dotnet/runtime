@@ -2164,6 +2164,26 @@ namespace JIT.HardwareIntrinsics.Arm
             return (sbyte)(((ushort)op1 + roundConst) >> (8 * sizeof(sbyte)));
         }
 
+        public static sbyte AddHighNarrowingEven(short[] op1, short[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (sbyte) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(sbyte)));
+            }
+
+            return 0;
+        }
+
+        public static sbyte AddHighNarrowingOdd(sbyte[] even, short[] op1, short[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (sbyte) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(sbyte)));
+            }
+
+            return even[i];
+        }
+
         public static sbyte AddHighNarrowing(short op1, short op2) => HighNarrowing((short)(op1 + op2), round: false);
 
         public static sbyte AddHighNarrowingUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
@@ -2377,6 +2397,26 @@ namespace JIT.HardwareIntrinsics.Arm
             return (short)(((uint)op1 + roundConst) >> (8 * sizeof(short)));
         }
 
+        public static short AddHighNarrowingEven(int[] op1, int[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (short) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(short)));
+            }
+
+            return 0;
+        }
+
+        public static short AddHighNarrowingOdd(short[] even, int[] op1, int[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (short) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(short)));
+            }
+
+            return even[i];
+        }
+
         public static short AddHighNarrowing(int op1, int op2) => HighNarrowing((int)(op1 + op2), round: false);
 
         public static short AddHighNarrowingUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
@@ -2581,6 +2621,26 @@ namespace JIT.HardwareIntrinsics.Arm
             return (int)(((ulong)op1 + roundConst) >> (8 * sizeof(int)));
         }
 
+        public static int AddHighNarrowingEven(long[] op1, long[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (int) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(int)));
+            }
+
+            return 0;
+        }
+
+        public static int AddHighNarrowingOdd(int[] even, long[] op1, long[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (int) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(int)));
+            }
+
+            return even[i];
+        }
+
         public static int AddHighNarrowing(long op1, long op2) => HighNarrowing((long)(op1 + op2), round: false);
 
         public static int AddHighNarrowingUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
@@ -2736,6 +2796,26 @@ namespace JIT.HardwareIntrinsics.Arm
             return (byte)(((ushort)op1 + roundConst) >> (8 * sizeof(byte)));
         }
 
+        public static byte AddHighNarrowingEven(ushort[] op1, ushort[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (byte) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(byte)));
+            }
+
+            return 0;
+        }
+
+        public static byte AddHighNarrowingOdd(byte[] even, ushort[] op1, ushort[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (byte) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(byte)));
+            }
+
+            return even[i];
+        }
+
         public static byte AddHighNarrowing(ushort op1, ushort op2) => HighNarrowing((ushort)(op1 + op2), round: false);
 
         public static byte AddHighNarrowingUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
@@ -2860,6 +2940,26 @@ namespace JIT.HardwareIntrinsics.Arm
             return (ushort)(((uint)op1 + roundConst) >> (8 * sizeof(ushort)));
         }
 
+        public static ushort AddHighNarrowingEven(uint[] op1, uint[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (ushort) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(ushort)));
+            }
+
+            return 0;
+        }
+
+        public static ushort AddHighNarrowingOdd(ushort[] even, uint[] op1, uint[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (ushort) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(ushort)));
+            }
+
+            return even[i];
+        }
+
         public static ushort AddHighNarrowing(uint op1, uint op2) => HighNarrowing((uint)(op1 + op2), round: false);
 
         public static ushort AddHighNarrowingUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
@@ -2980,6 +3080,26 @@ namespace JIT.HardwareIntrinsics.Arm
                 roundConst = (ulong)1 << (8 * sizeof(uint) - 1);
             }
             return (uint)(((ulong)op1 + roundConst) >> (8 * sizeof(uint)));
+        }
+
+        public static uint AddHighNarrowingEven(ulong[] op1, ulong[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (uint) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(uint)));
+            }
+
+            return 0;
+        }
+
+        public static uint AddHighNarrowingOdd(uint[] even, ulong[] op1, ulong[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (uint) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(uint)));
+            }
+
+            return even[i];
         }
 
         public static uint AddHighNarrowing(ulong op1, ulong op2) => HighNarrowing((ulong)(op1 + op2), round: false);
