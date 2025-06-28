@@ -197,6 +197,33 @@ typedef struct _Arm64VolatileContextPointer
 } Arm64VolatileContextPointer;
 #endif //TARGET_ARM64
 
+#if defined(TARGET_AMD64)
+typedef struct _Amd64VolatileContextPointer
+{
+    union {
+        struct {
+            PDWORD64 R16;
+            PDWORD64 R17;
+            PDWORD64 R18;
+            PDWORD64 R19;
+            PDWORD64 R20;
+            PDWORD64 R21;
+            PDWORD64 R22;
+            PDWORD64 R23;
+            PDWORD64 R24;
+            PDWORD64 R25;
+            PDWORD64 R26;
+            PDWORD64 R27;
+            PDWORD64 R28;
+            PDWORD64 R29;
+            PDWORD64 R30;
+            PDWORD64 R31;
+        };
+        PDWORD64 R[16];
+    };
+} Amd64VolatileContextPointer;
+#endif //TARGET_AMD64
+
 #if defined(TARGET_LOONGARCH64)
 typedef struct _LoongArch64VolatileContextPointer
 {
@@ -251,6 +278,10 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
 
 #ifdef TARGET_LOONGARCH64
     LoongArch64VolatileContextPointer    volatileCurrContextPointers;
+#endif
+
+#if defined(TARGET_AMD64) && defined(TARGET_UNIX)
+    Amd64VolatileContextPointer    volatileCurrContextPointers;
 #endif
 
 #ifdef TARGET_RISCV64
@@ -563,7 +594,11 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
     // Fill volatile context pointers. They can be used by GC in the case of the leaf frame
     for (int i=0; i < 18; i++)
         pRD->volatileCurrContextPointers.X[i] = &pctx->X[i];
-#elif defined(TARGET_LOONGARCH64) // TARGET_ARM64
+#elif defined(TARGET_AMD64) && defined(TARGET_UNIX) // TARGET_ARM64
+    // Fill volatile context pointers. They can be used by GC in the case of the leaf frame
+    for (int i=0; i < 16; i++)
+        pRD->volatileCurrContextPointers.R[i] = &pctx->R[i];
+#elif defined(TARGET_LOONGARCH64) // TARGET_ADM64 && TARGET_UNIX
     pRD->volatileCurrContextPointers.A0 = &pctx->A0;
     pRD->volatileCurrContextPointers.A1 = &pctx->A1;
     pRD->volatileCurrContextPointers.A2 = &pctx->A2;
@@ -664,7 +699,7 @@ inline size_t * getRegAddr (unsigned regNum, PTR_CONTEXT regs)
 
     return (PTR_size_t)(PTR_BYTE(regs) + OFFSET_OF_REGISTERS[regNum]);
 #elif defined(TARGET_AMD64)
-    _ASSERTE(regNum < 16);
+    _ASSERTE(regNum < 32);
     return (size_t *)&regs->Rax + regNum;
 #elif defined(TARGET_ARM)
         _ASSERTE(regNum < 16);

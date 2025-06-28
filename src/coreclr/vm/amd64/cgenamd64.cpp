@@ -59,6 +59,11 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
     pContextPointers->R9  = NULL;
     pContextPointers->R10 = NULL;
     pContextPointers->R11 = NULL;
+
+#if defined(TARGET_UNIX)
+    for (int i=0; i < 16; i++)
+        pRD->volatileCurrContextPointers.R[i] = NULL;
+#endif // TARGET_UNIX
 }
 
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -174,6 +179,22 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->pCurrentContextPointers->R13 = &m_ctx.R13;
     pRD->pCurrentContextPointers->R14 = &m_ctx.R14;
     pRD->pCurrentContextPointers->R15 = &m_ctx.R15;
+    // pRD->pCurrentContextPointers->R16 = &m_ctx.R16;
+    // pRD->pCurrentContextPointers->R17 = &m_ctx.R17;
+    // pRD->pCurrentContextPointers->R18 = &m_ctx.R18;
+    // pRD->pCurrentContextPointers->R19 = &m_ctx.R19;
+    // pRD->pCurrentContextPointers->R20 = &m_ctx.R20;
+    // pRD->pCurrentContextPointers->R21 = &m_ctx.R21;
+    // pRD->pCurrentContextPointers->R22 = &m_ctx.R22;
+    // pRD->pCurrentContextPointers->R23 = &m_ctx.R23;
+    // pRD->pCurrentContextPointers->R24 = &m_ctx.R24;
+    // pRD->pCurrentContextPointers->R25 = &m_ctx.R25;
+    // pRD->pCurrentContextPointers->R26 = &m_ctx.R26;
+    // pRD->pCurrentContextPointers->R27 = &m_ctx.R27;
+    // pRD->pCurrentContextPointers->R28 = &m_ctx.R28;
+    // pRD->pCurrentContextPointers->R29 = &m_ctx.R29;
+    // pRD->pCurrentContextPointers->R30 = &m_ctx.R30;
+    // pRD->pCurrentContextPointers->R31 = &m_ctx.R31;
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
@@ -219,6 +240,11 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
     pRD->pCurrentContextPointers->R14 = &m_Regs->R14;
     pRD->pCurrentContextPointers->R15 = &m_Regs->R15;
 
+#if defined(TARGET_UNIX)
+    for (int i = 0; i < 16; i++)
+        pRD->volatileCurrContextPointers.R[i] = &m_Regs->R[i];
+#endif // TARGET_UNIX
+
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
@@ -226,6 +252,7 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
 }
 
 // The HijackFrame has to know the registers that are pushed by OnHijackTripThread
+// TBD APX: How to check for APX registers here?
 void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL {
