@@ -361,19 +361,29 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal(0, Pipe.Writer.UnflushedBytes);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.Is64BitProcess))]
-        public void UnflushedBytes_HandlesLargeValues()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.Is64BitProcess))]
+        public async Task UnflushedBytes_HandlesLargeValues()
         {
             PipeWriter writer = PipeWriter.Create(Stream.Null);
-            int bufferSize = 10000;
 
-            while (writer.UnflushedBytes >= 0 && writer.UnflushedBytes <= int.MaxValue)
+            try
             {
-                writer.GetMemory(bufferSize);
-                writer.Advance(bufferSize);
-            }
+                int bufferSize = 10000;
 
-            Assert.Equal(2147490000, writer.UnflushedBytes);
+                while (writer.UnflushedBytes >= 0 && writer.UnflushedBytes <= int.MaxValue)
+                {
+                    writer.GetMemory(bufferSize);
+                    writer.Advance(bufferSize);
+                }
+
+                Assert.Equal(2147490000, writer.UnflushedBytes);
+            }
+            finally
+            {
+                await writer.FlushAsync();
+                await writer.CompleteAsync();
+                GC.Collect(2, GCCollectionMode.Forced, true, true);
+            }
         }
     }
 }
