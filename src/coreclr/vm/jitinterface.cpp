@@ -8609,23 +8609,29 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // We must ensure that pObjMT actually implements the
         // interface corresponding to pBaseMD.
         //
+        bool isArrayImplicitInterface = false;
+
         if (pObjMT->IsArray())
         {
-            // If we're in a shared context we'll devirt to a shared
-            // generic method and won't be able to inline, so just bail.
+            // Does the array implicitly implement this interface?
             //
-            if (pBaseMT->IsSharedByGenericInstantiations())
-            {
-                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                return false;
-            }
+            isArrayImplicitInterface = pBaseMT->HasInstantiation() && IsImplicitInterfaceOfSZArray(pBaseMT);
 
-            // Ensure we can cast the array to the interface type
-            //
-            if (!TypeHandle(pObjMT).CanCastTo(TypeHandle(pBaseMT)))
+            if (!isArrayImplicitInterface)
             {
-                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
-                return false;
+                if (pBaseMT->IsSharedByGenericInstantiations())
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+
+                // Ensure we can cast the array to the interface type
+                //
+                if (!TypeHandle(pObjMT).CanCastTo(TypeHandle(pBaseMT)))
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
+                    return false;
+                }
             }
         }
         else if (!pBaseMT->IsSharedByGenericInstantiations() && !pObjMT->CanCastToInterface(pBaseMT))
@@ -8640,7 +8646,21 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         {
             MethodTable* interfaceMT = nullptr;
 
-            if (pObjMT->IsSharedByGenericInstantiations() || pBaseMT->IsSharedByGenericInstantiations())
+            if (isArrayImplicitInterface)
+            {
+                _ASSERTE(pObjMT->IsArray());
+
+                // We cannot devirtualize unless we know the exact array element type
+                //
+                TypeHandle elemType = pObjMT->GetArrayElementTypeHandle();
+                if (elemType.IsCanonicalSubtype())
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
+                    return false;
+                }
+                pDevirtMD = GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(pBaseMD, elemType);
+            }
+            else if (pObjMT->IsSharedByGenericInstantiations() || pBaseMT->IsSharedByGenericInstantiations())
             {
                 MethodTable* pCanonBaseMT = pBaseMT->GetCanonicalMethodTable();
                 

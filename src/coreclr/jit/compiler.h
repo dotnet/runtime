@@ -4503,6 +4503,8 @@ protected:
         return compiler->impEnumeratorGdvLocalMap;
     }
 
+    bool hasUpdatedTypeLocals = false;
+
 #define SMALL_STACK_SIZE 16 // number of elements in impSmallStack
 
     struct SavedStack // used to save/restore stack contents.
@@ -5339,6 +5341,8 @@ public:
 
     PhaseStatus fgInline();
 
+    PhaseStatus fgResolveGDVs();
+
     PhaseStatus fgRemoveEmptyTry();
 
     PhaseStatus fgRemoveEmptyTryCatchOrTryFault();
@@ -6097,11 +6101,7 @@ private:
     FlowEdge** fgGetPredInsertPoint(BasicBlock* blockPred, BasicBlock* newTarget);
 
 public:
-    void fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget);
-
-    void fgRedirectTrueEdge(BasicBlock* block, BasicBlock* newTarget);
-
-    void fgRedirectFalseEdge(BasicBlock* block, BasicBlock* newTarget);
+    void fgRedirectEdge(FlowEdge*& edgeRef, BasicBlock* newTarget);
 
     void fgFindBasicBlocks();
 
@@ -7551,6 +7551,7 @@ public:
                                              unsigned               likelihood,
                                              bool                   arrayInterface,
                                              bool                   instantiatingStub,
+                                             CORINFO_METHOD_HANDLE  originalMethodHandle,
                                              CORINFO_CONTEXT_HANDLE originalContextHandle);
 
     int getGDVMaxTypeChecks()
