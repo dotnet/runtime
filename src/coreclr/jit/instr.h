@@ -236,6 +236,9 @@ enum insFlags : uint64_t
     KMask_Base16   = 1ULL << 51,
     KMask_BaseMask = (0x1FULL) << 47,
 
+    // The instruction has a pseudo name that should be used for disasm display
+    INS_FLAGS_HasPseudoName = 1ULL << 52,
+
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
 };
