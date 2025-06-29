@@ -3228,6 +3228,11 @@ private:
     instrDescAlign* emitNewInstrAlign();
 #endif
 
+#if defined(TARGET_ARM64)
+    void emitPacInProlog();
+    void emitPacInEpilog();
+#endif
+
     instrDesc* emitNewInstrSmall(emitAttr attr);
     instrDesc* emitNewInstr(emitAttr attr = EA_4BYTE);
     instrDesc* emitNewInstrSC(emitAttr attr, cnsval_ssize_t cns);

@@ -163,6 +163,11 @@ public:
 
     virtual bool IsUnwindable(PTR_VOID pvAddress) PURE_VIRTUAL
 
+#ifdef TARGET_ARM64
+    virtual bool IsPacPresent(MethodInfo *    pMethodInfo,
+                              REGDISPLAY *    pRegisterSet ) PURE_VIRTUAL
+#endif
+
     virtual bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                             REGDISPLAY *    pRegisterSet,          // in
                                             PTR_PTR_VOID *  ppvRetAddrLocation     // out
