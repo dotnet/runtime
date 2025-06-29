@@ -74,6 +74,8 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public AesCng() { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public AesCng(System.Security.Cryptography.CngKey key) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public AesCng(string keyName) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public AesCng(string keyName, System.Security.Cryptography.CngProvider provider) { }
