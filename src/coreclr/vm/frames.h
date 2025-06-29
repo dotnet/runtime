@@ -2343,7 +2343,17 @@ public:
     }
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats = false);
+
+    friend struct cdac_data<TailCallFrame>;
 };
+
+template<>
+struct cdac_data<TailCallFrame>
+{
+    static constexpr size_t CalleeSavedRegisters = offsetof(TailCallFrame, m_regs);
+    static constexpr size_t ReturnAddress = offsetof(TailCallFrame, m_ReturnAddress);
+};
+
 #endif // TARGET_X86 && !UNIX_X86_ABI
 
 //------------------------------------------------------------------------

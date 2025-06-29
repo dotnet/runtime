@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable SYSLIB5006
-
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -14,17 +12,8 @@ using System.Linq;
 
 namespace System.Security.Cryptography.Cose.Tests
 {
-    public partial class CoseKeyTests : IClassFixture<CoseTestKeyManager.TestFixture>
+    public partial class CoseKeyTests
     {
-        private CoseTestKeyManager.TestFixture _keyManagerFixture;
-        private CoseTestKeyManager KeyManager => _keyManagerFixture.KeyManager;
-        private CoseTestKeyManager BadKeyManager => _keyManagerFixture.BadKeyManager;
-
-        public CoseKeyTests(CoseTestKeyManager.TestFixture keyManagerFixture)
-        {
-            _keyManagerFixture = keyManagerFixture;
-        }
-
         [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         [MemberData(nameof(AllMLDsaCoseDraftExamples))]
         public static void DecodeSign1MLDsaCoseDraftExamples(MLDsaAlgorithm algorithm, byte[] mldsaPk, byte[] sign1)
@@ -33,7 +22,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
             CoseSign1Message msg = CoseMessage.DecodeSign1(sign1);
             Assert.NotNull(msg.Content);
-            Assert.True(msg.VerifyEmbedded(CoseKey.FromKey(pubKey)));
+            Assert.True(msg.VerifyEmbedded(new CoseKey(pubKey)));
 
             Assert.Equal(2, msg.ProtectedHeaders.Count);
             Assert.Equal(0, msg.UnprotectedHeaders.Count);
@@ -68,94 +57,6 @@ namespace System.Security.Cryptography.Cose.Tests
             {
                 Assert.Fail($"Unrecognized MLDsa algorithm: {algorithm.Name}");
                 return 0;
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(AllKeysAndSign1Implementations))]
-        public void TestSignVerifySingleSignerAllAlgorithms(string keyId, CoseTestSign1 signerImplementation)
-        {
-            byte[] payload = Encoding.UTF8.GetBytes("Hello World");
-            byte[] signature = signerImplementation.Sign(KeyManager, keyId, payload);
-            Assert.NotNull(signature);
-            Assert.True(signature.Length > 0);
-            Assert.True(signerImplementation.Verify(KeyManager, keyId, payload, signature));
-
-            // we try different key
-            CoseTestKey differentKey = KeyManager.GetDifferentKey(keyId);
-            Assert.False(signerImplementation.Verify(KeyManager, differentKey.Id, payload, signature));
-
-            // we try bad signature (or bad key with good signature, same thing)
-            Assert.False(signerImplementation.Verify(BadKeyManager, keyId, payload, signature));
-
-            // we try fake payload
-            if (!signerImplementation.IsEmbedded)
-            {
-                // embedded ignore payload arg
-                byte[] fakePayload = Encoding.UTF8.GetBytes("Hello World 2");
-                Assert.False(signerImplementation.Verify(KeyManager, keyId, fakePayload, signature));
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(AllKeysAndMultiSignImplementations))]
-        public void TestSignVerifyMultiSignerAllAlgorithms(string[] keyIds, CoseTestMultiSign signerImplementation)
-        {
-            byte[] payload = Encoding.UTF8.GetBytes("Hello World");
-            byte[] signature = signerImplementation.Sign(KeyManager, keyIds, payload);
-            Assert.NotNull(signature);
-            Assert.True(signature.Length > 0);
-            Assert.True(signerImplementation.Verify(KeyManager, keyIds, payload, signature));
-
-            // we try fake signature
-            Assert.False(signerImplementation.Verify(BadKeyManager, keyIds, payload, signature));
-
-            // we try fake payload
-            if (!signerImplementation.IsEmbedded)
-            {
-                byte[] fakePayload = Encoding.UTF8.GetBytes("Hello World 2");
-                Assert.False(signerImplementation.Verify(KeyManager, keyIds, fakePayload, signature));
-            }
-        }
-
-        public static IEnumerable<object[]> AllKeysAndSign1Implementations()
-        {
-            foreach (string keyId in CoseTestKeyManager.GetAllKeyIds())
-            {
-                foreach (CoseTestSign1 sign1 in CoseTestSign1.GetImplementations())
-                {
-                    yield return [keyId, sign1];
-                }
-            }
-        }
-
-        public static IEnumerable<object[]> AllKeysAndMultiSignImplementations()
-        {
-            string[] keyIds = CoseTestKeyManager.GetAllKeyIds();
-            int[] nrOfKeys = [1, 2, 3, 3, 5];
-
-            for (int i = 0; i < keyIds.Length; i++)
-            {
-                string[] keysToTest = PickNKeys(nrOfKeys[i % nrOfKeys.Length], i, keyIds);
-                foreach (CoseTestMultiSign multiSign in CoseTestMultiSign.GetImplementations())
-                {
-                    yield return [keysToTest, multiSign];
-                }
-            }
-
-            static string[] PickNKeys(int n, int atIndex, string[] keys)
-            {
-                Assert.True(keys.Length >= 1);
-
-                // If n is larger than the number of keys, we just wrap around and use same key multiple times.
-
-                string[] ret = new string[n];
-                for (int i = 0; i < n; i++)
-                {
-                    ret[i] = keys[(atIndex + i) % keys.Length];
-                }
-
-                return ret;
             }
         }
 

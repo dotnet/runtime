@@ -469,7 +469,7 @@ NESTED_END StubDispatchFixupStub, _TEXT
 #endif
 
 //
-// $t2 = UMEntryThunk*
+// $t2 = UMEntryThunkData*
 //
 NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 
@@ -631,11 +631,6 @@ NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
 //     |f13  |
 //     |f12  |
 //
-//#define UMThunkStub_Offset_t9    0x50
-#define UMThunkStub_Offset_Entry 0x58   // offset of saved UMEntryThunk *
-#define UMThunkStub_Offset_s0    0x60
-#define UMThunkStub_StackArgs    0x70   // Frame size.
-
 
 // ------------------------------------------------------------------
 // void ResolveWorkerAsmStub(args in regs $a0-$a7 & stack, t8:IndirectionCellAndFlags, $t2:DispatchToken)

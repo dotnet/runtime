@@ -36,12 +36,12 @@ const char* CodeGen::genInsName(instruction ins)
     const char * const insNames[] =
     {
 #if defined(TARGET_XARCH)
-        #define INST0(id, nm, um, mr,                 tt, flags) nm,
-        #define INST1(id, nm, um, mr,                 tt, flags) nm,
-        #define INST2(id, nm, um, mr, mi,             tt, flags) nm,
-        #define INST3(id, nm, um, mr, mi, rm,         tt, flags) nm,
-        #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) nm,
-        #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) nm,
+        #define INST0(id, nm, um, mr,                 lat, tp, tt, flags) nm,
+        #define INST1(id, nm, um, mr,                 lat, tp, tt, flags) nm,
+        #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags) nm,
+        #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags) nm,
+        #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags) nm,
+        #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) nm,
         #include "instrs.h"
 
 #elif defined(TARGET_ARM)
@@ -113,12 +113,146 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     const char* insName = genInsName(ins);
 
 #ifdef TARGET_XARCH
-    const int       TEMP_BUFFER_LEN = 40;
-    static unsigned curBuf          = 0;
-    static char     buf[4][TEMP_BUFFER_LEN];
-    const char*     retbuf;
+    const emitter* emit      = GetEmitter();
+    const char*    vexPrefix = emit->UseVEXEncoding() ? "v" : "";
 
-    const emitter* emit = GetEmitter();
+    auto AddPrefixAndSuffix = [&](const char* prefix, const char* insName, const char* suffix1,
+                                  const char* suffix2) -> const char* {
+        const int       TEMP_BUFFER_LEN = 40;
+        static unsigned curBuf          = 0;
+        static char     buf[4][TEMP_BUFFER_LEN];
+        const char*     retbuf;
+
+        sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "%s%s%s%s", prefix, insName, suffix1, suffix2);
+        retbuf = buf[curBuf];
+        curBuf = (curBuf + 1) % 4;
+        return retbuf;
+    };
+
+    auto GetFltCmpOpName = [&](emitter::instrDesc* id, const char* suffix) -> const char* {
+        static const char* const fltCmpOpNames[] = {
+            "eq",    "lt",     "le",     "unord",    "neq",    "nlt",    "nle",    "ord",
+            "eq_uq", "nge",    "ngt",    "false",    "neq_oq", "ge",     "gt",     "true",
+            "eq_os", "lt_oq",  "le_oq",  "unord_s",  "neq_us", "nlt_uq", "nle_uq", "ord_s",
+            "eq_us", "nge_uq", "ngt_uq", "false_os", "neq_os", "ge_oq",  "gt_oq",  "true_us",
+        };
+
+        uint8_t control = static_cast<uint8_t>(emit->emitGetInsSC(id));
+        assert(control < ArrLen(fltCmpOpNames));
+
+        const char* pseudoName = fltCmpOpNames[control];
+        return AddPrefixAndSuffix(vexPrefix, "cmp", pseudoName, suffix);
+    };
+
+    auto GetIntCmpOpName = [&](emitter::instrDesc* id, const char* suffix) -> const char* {
+        static const char* const intCmpOpNames[] = {
+            "eq", "lt", "le", "neq", "false", "ge", "gt", "true",
+        };
+
+        uint8_t control = static_cast<uint8_t>(emit->emitGetInsSC(id));
+        assert(control < ArrLen(intCmpOpNames));
+
+        const char* pseudoName = intCmpOpNames[control];
+        return AddPrefixAndSuffix(vexPrefix, "pcmp", pseudoName, suffix);
+    };
+
+    // Some instructions have different mnemonics depending on the immediate.
+    switch (ins)
+    {
+        case INS_cmppd:
+        {
+            return GetFltCmpOpName(id, "pd");
+        }
+
+        case INS_cmpps:
+        {
+            return GetFltCmpOpName(id, "ps");
+        }
+
+        case INS_cmpsd:
+        {
+            return GetFltCmpOpName(id, "sd");
+        }
+
+        case INS_cmpss:
+        {
+            return GetFltCmpOpName(id, "ss");
+        }
+
+        case INS_pclmulqdq:
+        {
+            uint8_t control = static_cast<uint8_t>(emit->emitGetInsSC(id)) & 0x11;
+
+            if (control == 0x00)
+            {
+                insName = "lqlq";
+            }
+            else if (control == 0x01)
+            {
+                insName = "hqlq";
+            }
+            else if (control == 0x10)
+            {
+                insName = "lqhq";
+            }
+            else
+            {
+                insName = "hqhq";
+            }
+
+            return AddPrefixAndSuffix(vexPrefix, "pclmul", insName, "dq");
+        }
+
+        case INS_vpcmpb:
+        {
+            return GetIntCmpOpName(id, "b");
+        }
+
+        case INS_vpcmpd:
+        {
+            return GetIntCmpOpName(id, "d");
+        }
+
+        case INS_vpcmpq:
+        {
+            return GetIntCmpOpName(id, "q");
+        }
+
+        case INS_vpcmpub:
+        {
+            return GetIntCmpOpName(id, "ub");
+        }
+
+        case INS_vpcmpud:
+        {
+            return GetIntCmpOpName(id, "ud");
+        }
+
+        case INS_vpcmpuq:
+        {
+            return GetIntCmpOpName(id, "uq");
+        }
+
+        case INS_vpcmpuw:
+        {
+            return GetIntCmpOpName(id, "uw");
+        }
+
+        case INS_vpcmpw:
+        {
+            return GetIntCmpOpName(id, "w");
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    if (id->idIsApxPpxContextSet())
+    {
+        return AddPrefixAndSuffix("", insName, "p", "");
+    }
 
     if (emit->IsVexOrEvexEncodableInstruction(ins))
     {
@@ -215,10 +349,7 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
                 }
             }
 
-            sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);
-            retbuf = buf[curBuf];
-            curBuf = (curBuf + 1) % 4;
-            return retbuf;
+            return AddPrefixAndSuffix("v", insName, "", "");
         }
     }
 
@@ -2709,6 +2840,21 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
 
     regSet.verifyRegUsed(reg);
 }
+
+#if defined(TARGET_AMD64)
+//------------------------------------------------------------------------
+// instGen_Push2Pop2Ppx: Generate push2/pop2 with ppx hint on.
+//
+// Arguments:
+//    ins - The instruction to generate (push or pop).
+//    reg1 - The first register to push/pop.
+//    reg2 - The second register to push/pop.
+//
+void CodeGen::instGen_Push2Pop2Ppx(instruction ins, regNumber reg1, regNumber reg2)
+{
+    GetEmitter()->emitIns_R_R(ins, EA_PTRSIZE, reg1, reg2, (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
+}
+#endif // defined(TARGET_AMD64)
 
 /*****************************************************************************/
 /*****************************************************************************/
