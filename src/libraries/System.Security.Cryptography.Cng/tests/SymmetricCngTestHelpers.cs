@@ -55,7 +55,8 @@ namespace System.Security.Cryptography.Cng.Tests
                         ephemeralFunc,
                         cipherMode,
                         paddingMode,
-                        feedbackSizeInBits);
+                        feedbackSizeInBits,
+                        disposeKey: false);
                 }
             }
             finally
@@ -72,11 +73,17 @@ namespace System.Security.Cryptography.Cng.Tests
             Func<SymmetricAlgorithm> ephemeralFunc,
             CipherMode cipherMode,
             PaddingMode paddingMode,
-            int feedbackSizeInBits)
+            int feedbackSizeInBits,
+            bool disposeKey)
         {
             using (SymmetricAlgorithm persisted = cngKeyAlgFunc(key))
             using (SymmetricAlgorithm ephemeral = ephemeralFunc())
             {
+                if (disposeKey)
+                {
+                    key.Dispose();
+                }
+
                 VerifyAlgorithms(plainBytesCount, persisted, ephemeral, cipherMode, paddingMode, feedbackSizeInBits);
             }
         }
@@ -97,7 +104,7 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
-        private static void VerifyAlgorithms(
+        internal static void VerifyAlgorithms(
             int plainBytesCount,
             SymmetricAlgorithm persisted,
             SymmetricAlgorithm ephemeral,
@@ -367,7 +374,8 @@ namespace System.Security.Cryptography.Cng.Tests
                         ephemeralFunc,
                         CipherMode.CBC,
                         PaddingMode.PKCS7,
-                        feedbackSizeInBits: 0);
+                        feedbackSizeInBits: 0,
+                        disposeKey: false);
                 }
             }
             finally

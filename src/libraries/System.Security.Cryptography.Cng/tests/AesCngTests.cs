@@ -50,7 +50,6 @@ namespace System.Security.Cryptography.Cng.Tests
                 cipherMode,
                 paddingMode,
                 feedbackSizeInBits);
-
         }
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
@@ -141,6 +140,32 @@ namespace System.Security.Cryptography.Cng.Tests
             SymmetricCngTestHelpers.VerifyMismatchAlgorithmFails(
                 s_cngAlgorithm,
                 cngKey => new TripleDESCng(cngKey.KeyName, CngProvider.MicrosoftSoftwareKeyStorageProvider));
+        }
+
+        [OuterLoop("Creates/Deletes a persisted key, limit exposure to key leaking")]
+        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        public static void VerifyCngKeyIndependentLifetime()
+        {
+            CngKeyCreationParameters creationParameters = new CngKeyCreationParameters
+            {
+                Provider = CngProvider.MicrosoftSoftwareKeyStorageProvider,
+                ExportPolicy = CngExportPolicies.AllowPlaintextExport,
+            };
+
+            CngKey cngKey = CngKey.Create(new CngAlgorithm("AES"), keyName: null, creationParameters);
+
+            SymmetricCngTestHelpers.VerifyPersistedKey(
+                cngKey,
+                plainBytesCount: 64,
+                cngKey => new AesCng(cngKey),
+                () => new AesCng(),
+                CipherMode.CBC,
+                PaddingMode.PKCS7,
+                feedbackSizeInBits: 0,
+                disposeKey: true);
+
+            // VerifyPersistedKey should have disposed of the CngKey.
+            Assert.Throws<ObjectDisposedException>(() => cngKey.KeySize);
         }
 
         public static bool SupportsPersistedSymmetricKeys
