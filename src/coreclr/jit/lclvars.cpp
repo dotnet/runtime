@@ -387,11 +387,11 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
     //-------------------------------------------------------------------------
     lvaInitUserArgs(&varNum, numUserArgsToSkip, numUserArgs);
 #if !USER_ARGS_COME_LAST
+    lvaInitAsyncContinuation(&varNum);
+
     //@GENERICS: final instantiation-info argument for shared generic methods
     // and shared generic struct instance methods
     lvaInitGenericsCtxt(&varNum);
-
-    lvaInitAsyncContinuation(&varNum);
 
     /* If the method is varargs, process the varargs cookie */
     lvaInitVarArgsHandle(&varNum);
