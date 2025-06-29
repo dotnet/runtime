@@ -1333,10 +1333,6 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         LIR::Range& switchBlockRange = LIR::AsRange(afterDefaultCondBlock);
         switchBlockRange.InsertAtEnd(switchValue);
 
-        // We are going to modify the switch, invalidate any desc map.
-        //
-        comp->fgInvalidateSwitchDescMapEntry(afterDefaultCondBlock);
-
         // Try generating a bit test based switch first,
         // if that's not possible a jump table based switch will be generated.
         if (!TryLowerSwitchToBitTest(jumpTab, jumpCnt, targetCnt, afterDefaultCondBlock, switchValue,
@@ -1358,7 +1354,13 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             GenTree* switchJump  = comp->gtNewOperNode(GT_SWITCH_TABLE, TYP_VOID, switchValue, switchTable);
             switchBlockRange.InsertAfter(switchValue, switchTable, switchJump);
 
-            // this block no longer branches to the default block
+            // This block no longer has a default switch case.
+            // If no other cases branch to this successor, remove it from the switch map entry.
+            if (defaultEdge->getDupCount() == 0)
+            {
+                comp->fgRemoveSuccFromSwitchDescMapEntry(afterDefaultCondBlock, defaultEdge);
+            }
+
             afterDefaultCondBlock->GetSwitchTargets()->removeDefault();
 
             // We need to scale up the likelihood of the remaining switch edges, now that we've peeled off
@@ -1419,6 +1421,11 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                     edge->setLikelihood(newLikelihood);
                 }
             }
+        }
+        else
+        {
+            // 'afterDefaultCondBlock' is no longer a switch block. Remove its switch map entry.
+            comp->fgInvalidateSwitchDescMapEntry(afterDefaultCondBlock);
         }
     }
 
