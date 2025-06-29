@@ -2709,16 +2709,14 @@ void LinearScan::buildIntervals()
                     {
                         calleeSaveCount = CNT_CALLEE_ENREG;
                     }
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
                     else if (varTypeUsesMaskReg(interval->registerType))
                     {
-                        calleeSaveCount = CNT_CALLEE_SAVED_MASK;
+                        calleeSaveCount = CNT_CALLEE_ENREG_MASK;
                     }
-#endif // FEATURE_MASKED_HW_INTRINSICS
                     else
                     {
                         assert(varTypeUsesFloatReg(interval->registerType));
-                        calleeSaveCount = CNT_CALLEE_SAVED_FLOAT;
+                        calleeSaveCount = CNT_CALLEE_ENREG_FLOAT;
                     }
 
                     if ((weight <= (BB_UNITY_WEIGHT * 7)) || varDsc->lvVarIndex >= calleeSaveCount)

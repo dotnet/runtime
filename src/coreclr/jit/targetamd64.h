@@ -304,9 +304,11 @@
   #define CNT_CALLEE_TRASH_INT_INIT   (9)
   #define CNT_CALLEE_TRASH_HIGHINT    (16)
 
-  #define CNT_CALLEE_SAVED_FLOAT   (0)
+  #define CNT_CALLEE_SAVED_FLOAT      (0)
+  #define CNT_CALLEE_ENREG_FLOAT      (CNT_CALLEE_SAVED_FLOAT)
+
   #define CNT_CALLEE_TRASH_FLOAT_INIT (16)
-  #define CNT_CALLEE_TRASH_HIGHFLOAT    (16)
+  #define CNT_CALLEE_TRASH_HIGHFLOAT  (16)
 
   // For SysV we have more volatile registers so we do not save any callee saves for EnC.
   #define RBM_ENC_CALLEE_SAVED     0
@@ -317,8 +319,9 @@
   #define CNT_CALLEE_TRASH_INT_INIT   (7)
   #define CNT_CALLEE_TRASH_HIGHINT    (16)
 
-
   #define CNT_CALLEE_SAVED_FLOAT        (10)
+  #define CNT_CALLEE_ENREG_FLOAT        (CNT_CALLEE_SAVED_FLOAT)
+
   #define CNT_CALLEE_TRASH_FLOAT_INIT   (6)
   #define CNT_CALLEE_TRASH_HIGHFLOAT    (16)
 
@@ -330,6 +333,7 @@
   #define CNT_CALLEE_TRASH         get_CNT_CALLEE_TRASH_INT()
 
   #define CNT_CALLEE_SAVED_MASK      (0)
+  #define CNT_CALLEE_ENREG_MASK      (CNT_CALLEE_SAVED_MASK)
 
   #define CNT_CALLEE_TRASH_MASK_INIT (0)
   #define CNT_CALLEE_TRASH_MASK_EVEX (7)
