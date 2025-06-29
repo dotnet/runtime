@@ -146,26 +146,36 @@ namespace System.Security.Cryptography.Cng.Tests
         [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
         public static void VerifyCngKeyIndependentLifetime()
         {
+            string keyName = Guid.NewGuid().ToString();
             CngKeyCreationParameters creationParameters = new CngKeyCreationParameters
             {
                 Provider = CngProvider.MicrosoftSoftwareKeyStorageProvider,
                 ExportPolicy = CngExportPolicies.AllowPlaintextExport,
             };
 
-            CngKey cngKey = CngKey.Create(new CngAlgorithm("AES"), keyName: null, creationParameters);
+            CngKey cngKey = CngKey.Create(new CngAlgorithm("AES"), keyName, creationParameters);
+            CngKey openedKey = CngKey.Open(keyName, creationParameters.Provider, CngKeyOpenOptions.Silent);
 
-            SymmetricCngTestHelpers.VerifyPersistedKey(
-                cngKey,
-                plainBytesCount: 64,
-                cngKey => new AesCng(cngKey),
-                () => new AesCng(),
-                CipherMode.CBC,
-                PaddingMode.PKCS7,
-                feedbackSizeInBits: 0,
-                disposeKey: true);
+            try
+            {
+                SymmetricCngTestHelpers.VerifyPersistedKey(
+                    cngKey,
+                    plainBytesCount: 64,
+                    cngKey => new AesCng(cngKey),
+                    () => new AesCng(),
+                    CipherMode.CBC,
+                    PaddingMode.PKCS7,
+                    feedbackSizeInBits: 0,
+                    disposeKey: true);
 
-            // VerifyPersistedKey should have disposed of the CngKey.
-            Assert.Throws<ObjectDisposedException>(() => cngKey.KeySize);
+                // VerifyPersistedKey should have disposed of the CngKey.
+                Assert.Throws<ObjectDisposedException>(() => cngKey.KeySize);
+            }
+            finally
+            {
+                // Now we need to delete the persisted key.
+                openedKey.Delete();
+            }
         }
 
         public static bool SupportsPersistedSymmetricKeys
