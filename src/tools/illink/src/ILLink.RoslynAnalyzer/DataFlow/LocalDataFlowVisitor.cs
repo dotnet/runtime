@@ -129,7 +129,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             IOperation branchValueOperation,
             LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state);
 
-        public abstract TValue GetFieldTargetValue(IFieldSymbol field, IFieldReferenceOperation fieldReferenceOperation, in TContext context);
+        public abstract TValue GetFieldTargetValue(IFieldReferenceOperation fieldReference, in TContext context);
+
+        public abstract TValue GetBackingFieldTargetValue(IPropertyReferenceOperation propertyReference, in TContext context);
 
         public abstract TValue GetParameterTargetValue(IParameterSymbol parameter);
 
@@ -247,7 +249,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     var current = state.Current;
                     TValue targetValue = targetOperation switch
                     {
-                        IFieldReferenceOperation fieldRef => GetFieldTargetValue(fieldRef.Field, fieldRef, in current.Context),
+                        IFieldReferenceOperation fieldRef => GetFieldTargetValue(fieldRef, in current.Context),
                         IParameterReferenceOperation parameterRef => GetParameterTargetValue(parameterRef.Parameter),
                         _ => throw new InvalidOperationException()
                     };
@@ -266,19 +268,28 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     TValue instanceValue = Visit(propertyRef.Instance, state);
                     TValue value = Visit(operation.Value, state);
                     IMethodSymbol? setMethod = propertyRef.Property.GetSetMethod();
-                    if (setMethod == null)
+
+                    if (setMethod == null ||
+                        (OwningSymbol is IPropertySymbol && (ControlFlowGraph.OriginalOperation is not IAttributeOperation)))
                     {
+                        // This can be a write to a byref return of a property getter.
+                        // Skip for now: https://github.com/dotnet/linker/issues/2158
+                        if (propertyRef.Property.RefKind is not RefKind.None)
+                            break;
+
                         // This can happen in a constructor - there it is possible to assign to a property
                         // without a setter. This turns into an assignment to the compiler-generated backing field.
-                        // To match the linker, this should warn about the compiler-generated backing field.
-                        // For now, just don't warn. https://github.com/dotnet/runtime/issues/93277
-                        break;
+                        // Handle this similarly to field assignments.
+
+                        // Even if the property has a set method, if the assignment takes place in a property initializer,
+                        // the write becomes a direct write to the underlying field. This should be treated the same as
+                        // the case where there is no set method.
+
+                        var current = state.Current;
+                        TValue targetValue = GetBackingFieldTargetValue(propertyRef, in current.Context);
+                        HandleAssignment(value, targetValue, operation, in current.Context);
+                        return value;
                     }
-                    // Even if the property has a set method, if the assignment takes place in a property initializer,
-                    // the write becomes a direct write to the underlying field. This should be treated the same as
-                    // the case where there is no set method.
-                    if (OwningSymbol is IPropertySymbol && (ControlFlowGraph.OriginalOperation is not IAttributeOperation))
-                        break;
 
                     // Property may be an indexer, in which case there will be one or more index arguments followed by a value argument
                     ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue>();

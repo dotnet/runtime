@@ -120,6 +120,14 @@ namespace ILLink.Shared.TrimAnalysis
             return field.GetDynamicallyAccessedMemberTypes();
         }
 
+        internal static DynamicallyAccessedMemberTypes GetBackingFieldAnnotation(IPropertySymbol property)
+        {
+            if (!property.OriginalDefinition.Type.IsTypeInterestingForDataflow(isByRef: false))
+                return DynamicallyAccessedMemberTypes.None;
+
+            return property.GetDynamicallyAccessedMemberTypes();
+        }
+
         internal static DynamicallyAccessedMemberTypes GetTypeAnnotations(INamedTypeSymbol type)
         {
             DynamicallyAccessedMemberTypes typeAnnotation = type.GetDynamicallyAccessedMemberTypes();
