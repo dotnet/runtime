@@ -422,13 +422,13 @@ namespace ILLink.Shared.TrimAnalysis
                 // static System.Runtime.InteropServices.TypeMapping.GetOrCreateExternalTypeMapping<T> ()
                 "GetOrCreateExternalTypeMapping" when calledMethod.IsDeclaredOnType("System.Runtime.InteropServices.TypeMapping")
                     && calledMethod.IsStatic()
-                    && calledMethod.HasGenericParametersCount(1)
+                    && calledMethod.HasGenericArgumentsCount(1)
                     => IntrinsicId.TypeMapping_GetOrCreateExternalTypeMapping,
 
                 // static System.Runtime.InteropServices.TypeMapping.GetOrCreateProxyTypeMapping<T> ()
                 "GetOrCreateProxyTypeMapping" when calledMethod.IsDeclaredOnType("System.Runtime.InteropServices.TypeMapping")
                     && calledMethod.IsStatic()
-                    && calledMethod.HasGenericParametersCount(1)
+                    && calledMethod.HasGenericArgumentsCount(1)
                     => IntrinsicId.TypeMapping_GetOrCreateProxyTypeMapping,
 
                 _ => IntrinsicId.None,

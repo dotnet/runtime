@@ -71,6 +71,7 @@ namespace Mono.Linker
         protected readonly HashSet<MethodDefinition> indirectly_called = new HashSet<MethodDefinition>();
         protected readonly HashSet<TypeDefinition> types_relevant_to_variant_casting = new HashSet<TypeDefinition>();
         readonly HashSet<IMemberDefinition> reflection_used = new();
+        AssemblyDefinition? entry_assembly;
 
         public AnnotationStore(LinkContext context)
         {
@@ -599,6 +600,17 @@ namespace Mono.Linker
             // This should only be called for attribute types which don't allow multiple attributes.
             attribute = attributes.SingleOrDefault();
             return attribute != null;
+        }
+
+        public AssemblyDefinition? GetEntryPointAssembly()
+        {
+            return entry_assembly;
+        }
+
+        public void SetEntryPointAssembly(AssemblyDefinition asmDef)
+        {
+            Debug.Assert(entry_assembly is null);
+            entry_assembly = asmDef;
         }
 
         /// <summary>
