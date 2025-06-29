@@ -10,6 +10,7 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -78,6 +79,69 @@ namespace System.Diagnostics.Tests
             {
                 Assert.NotEqual(0, value);
             }
+        }
+
+        [ConditionalTheory]
+        [InlineData(PosixSignal.SIGTSTP)]
+        [InlineData(PosixSignal.SIGTTOU)]
+        [InlineData(PosixSignal.SIGTTIN)]
+        [InlineData(PosixSignal.SIGWINCH)]
+        [InlineData(PosixSignal.SIGCONT)]
+        [InlineData(PosixSignal.SIGCHLD)]
+        [InlineData(PosixSignal.SIGTERM)]
+        [InlineData(PosixSignal.SIGQUIT)]
+        [InlineData(PosixSignal.SIGINT)]
+        [InlineData(PosixSignal.SIGHUP)]
+        [InlineData((PosixSignal)3)] // SIGQUIT
+        [InlineData((PosixSignal)15)] // SIGTERM
+        public void TestCreateNewProcessGroup_HandlerReceivesExpectedSignal(PosixSignal signal)
+        {
+            const string PosixSignalRegistrationCreatedMessage = "PosixSignalRegistration created...";
+
+            if (OperatingSystem.IsWindows() && signal is not (PosixSignal.SIGINT or PosixSignal.SIGQUIT))
+            {
+                throw new SkipTestException("GenerateConsoleCtrlEvent does not support sending this signal.");
+            }
+
+            var remoteInvokeOptions = new RemoteInvokeOptions { CheckExitCode = false };
+            remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
+            if (OperatingSystem.IsWindows())
+            {
+                remoteInvokeOptions.StartInfo.CreateNewProcessGroup = true;
+            }
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
+                (signalStr) =>
+                {
+                    PosixSignal expectedSignal = Enum.Parse<PosixSignal>(signalStr);
+                    bool receivedSignal = false;
+                    ReEnableCtrlCHandlerIfNeeded(expectedSignal);
+
+                    using PosixSignalRegistration p = PosixSignalRegistration.Create(expectedSignal, (ctx) =>
+                    {
+                        Assert.Equal(expectedSignal, ctx.Signal);
+                        receivedSignal = true;
+                        ctx.Cancel = true;
+                    });
+
+                    Console.WriteLine(PosixSignalRegistrationCreatedMessage);
+
+                    while (!receivedSignal) ;
+
+                    return 0;
+                },
+                arg: $"{signal}",
+                remoteInvokeOptions);
+
+            while (!remoteHandle.Process.StandardOutput.ReadLine().EndsWith(PosixSignalRegistrationCreatedMessage))
+            {
+                Thread.Sleep(20);
+            }
+
+            SendSignal(signal, remoteHandle.Process.Id);
+
+            Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
+            Assert.Equal(0, remoteHandle.Process.ExitCode);
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
