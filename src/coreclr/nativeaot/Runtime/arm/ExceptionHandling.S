@@ -17,7 +17,7 @@
         // Setup a PAL_LIMITED_CONTEXT on the stack {
         PROLOG_VPUSH {d8-d15}
         push         {r0,lr}    // Reserve space for SP (or store SP if it is in R0) and store LR
-        .pad 8
+        .pad #8
         PROLOG_PUSH "{r0,r4-r11,lr}"
         // } end PAL_LIMITED_CONTEXT
 
