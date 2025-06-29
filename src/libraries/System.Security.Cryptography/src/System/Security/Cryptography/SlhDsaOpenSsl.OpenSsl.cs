@@ -72,12 +72,12 @@ namespace System.Security.Cryptography
         /// <inheritdoc />
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
-
             if (disposing)
             {
                 _key.Dispose();
             }
+
+            base.Dispose(disposing);
         }
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
