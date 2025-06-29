@@ -2187,16 +2187,25 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     regNumber idxReg  = treeNode->AsOp()->gtOp1->GetRegNum();
     regNumber baseReg = treeNode->AsOp()->gtOp2->GetRegNum();
 
-    regNumber tmpReg = internalRegisters.GetSingle(treeNode);
-
     // load the ip-relative offset (which is relative to start of fgFirstBB)
-    GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpReg, idxReg, 2);
-    GetEmitter()->emitIns_R_R_R(INS_add, EA_8BYTE, baseReg, baseReg, tmpReg);
+    assert(treeNode->gtGetOp2()->TypeIs(TYP_I_IMPL));
+    if (compiler->compOpportunisticallyDependsOn(InstructionSet_Zba))
+    {
+        emitAttr    idxSize = emitTypeSize(treeNode->gtGetOp1());
+        instruction sh2add  = (idxSize == EA_4BYTE) ? INS_sh2add_uw : INS_sh2add;
+        GetEmitter()->emitIns_R_R_R(sh2add, idxSize, baseReg, idxReg, baseReg);
+    }
+    else
+    {
+        assert(treeNode->gtGetOp1()->TypeIs(TYP_I_IMPL));
+        GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, idxReg, idxReg, 2);
+        GetEmitter()->emitIns_R_R_R(INS_add, EA_8BYTE, baseReg, baseReg, idxReg);
+    }
     GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, baseReg, baseReg, 0);
 
     // add it to the absolute address of fgFirstBB
-    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, compiler->fgFirstBB, tmpReg);
-    GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, baseReg, baseReg, tmpReg);
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, compiler->fgFirstBB, idxReg);
+    GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, baseReg, baseReg, idxReg);
 
     // jr baseReg
     GetEmitter()->emitIns_R_R_I(INS_jalr, emitActualTypeSize(TYP_I_IMPL), REG_R0, baseReg, 0);

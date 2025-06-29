@@ -226,7 +226,6 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_SWITCH_TABLE:
-            buildInternalIntRegisterDefForNode(tree);
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 0);
             break;
