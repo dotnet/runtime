@@ -3556,9 +3556,9 @@ void DacDbiInterfaceImpl::EnumerateMemRangesForJitCodeHeaps(CQuickArrayList<COR_
 {
     // We should always have a valid EEJitManager with at least one code heap.
     EEJitManager *pEM = ExecutionManager::GetEEJitManager();
-    _ASSERTE(pEM != NULL && pEM->m_pCodeHeap.IsValid());
+    _ASSERTE(pEM != NULL && pEM->m_pAllCodeHeaps.IsValid());
 
-    PTR_HeapList pHeapList = pEM->m_pCodeHeap;
+    PTR_HeapList pHeapList = pEM->m_pAllCodeHeaps;
     while (pHeapList != NULL)
     {
         CodeHeap *pHeap = pHeapList->pHeap;

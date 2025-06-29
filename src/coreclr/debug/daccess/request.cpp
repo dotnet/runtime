@@ -362,7 +362,7 @@ ClrDataAccess::GetJitManagerList(unsigned int count, struct DacpJitManagerInfo m
             currentPtr->codeType = managerPtr->GetCodeType();
 
             EEJitManager *eeJitManager = PTR_EEJitManager(PTR_HOST_TO_TADDR(managerPtr));
-            currentPtr->ptrHeapList = HOST_CDADDR(eeJitManager->m_pCodeHeap);
+            currentPtr->ptrHeapList = HOST_CDADDR(eeJitManager->m_pAllCodeHeaps);
         }
     }
     else if (pNeeded)
@@ -528,7 +528,7 @@ ClrDataAccess::GetCodeHeapList(CLRDATA_ADDRESS jitManager, unsigned int count, s
     SOSDacEnter();
 
     EEJitManager *pJitManager = PTR_EEJitManager(TO_TADDR(jitManager));
-    HeapList *heapList = pJitManager->m_pCodeHeap;
+    HeapList *heapList = pJitManager->m_pAllCodeHeaps;
 
     if (codeHeaps)
     {

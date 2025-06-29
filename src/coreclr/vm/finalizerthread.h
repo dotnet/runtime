@@ -42,11 +42,14 @@ public:
         return g_pFinalizerThread;
     }
 
-    static BOOL IsCurrentThreadFinalizer();
+    static bool IsCurrentThreadFinalizer();
 
     static void EnableFinalization();
 
-    static BOOL HaveExtraWorkForFinalizer();
+    static void DelayDestroyDynamicMethodDesc(DynamicMethodDesc* pDMD);
+
+    // returns if there is some extra work for the finalizer thread.
+    static bool HaveExtraWorkForFinalizer();
 
     static OBJECTREF GetNextFinalizableObject();
 

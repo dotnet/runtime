@@ -501,9 +501,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(pOriginalLoaderAllocator != NULL);
         PRECONDITION(pOriginalLoaderAllocator->IsCollectible());
         PRECONDITION(pOriginalLoaderAllocator->Id()->GetType() == LAT_Assembly);
