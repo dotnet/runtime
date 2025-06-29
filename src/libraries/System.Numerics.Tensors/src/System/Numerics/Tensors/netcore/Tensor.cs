@@ -2262,8 +2262,13 @@ namespace System.Numerics.Tensors
             tensor.Lengths.CopyTo(lengths);
             tensor.Strides.CopyTo(strides);
 
-            (lengths[^1], lengths[^2]) = (lengths[^2], lengths[^1]);
-            (strides[^1], strides[^2]) = (strides[^2], strides[^1]);
+            nint temp = lengths[^1];
+            lengths[^1] = lengths[^2];
+            lengths[^2] = temp;
+
+            temp = strides[^1];
+            strides[^1] = strides[^2];
+            strides[^2] = temp;
 
             Tensor<T> output = new Tensor<T>(tensor._values, tensor._start, lengths, strides);
 
