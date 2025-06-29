@@ -26,6 +26,8 @@ public class BringUpTest
 
     public static int Main()
     {
+        if (Environment.TickCount != 0) throw new Exception():
+
         // This test also doubles as server GC test
         if (!System.Runtime.GCSettings.IsServerGC)
             return 42;
