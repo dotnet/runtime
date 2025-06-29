@@ -12,6 +12,18 @@
 #define rsp_offsetof_ExInfo  0
 #define rsp_offsetof_Context STACKSIZEOF_ExInfo
 
+.macro PUSH_THROW_FRAME
+
+        // Setup a PAL_LIMITED_CONTEXT on the stack {
+        PROLOG_VPUSH {d8-d15}
+        push         {r0,lr}    // Reserve space for SP (or store SP if it is in R0) and store LR
+        .pad 8
+        PROLOG_PUSH "{r0,r4-r11,lr}"
+        // } end PAL_LIMITED_CONTEXT
+
+        PROLOG_STACK_ALLOC STACKSIZEOF_ExInfo
+.endm
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // RhpThrowHwEx
@@ -29,13 +41,7 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
 
         mov         lr, r1         // set IP of fault site
 
-        // Setup a PAL_LIMITED_CONTEXT on the stack {
-        PROLOG_VPUSH {d8-d15}
-        PROLOG_PUSH "{r0,lr}"        // push {sp, pc} of fault site
-        PROLOG_PUSH "{r0,r4-r11,lr}"
-        // } end PAL_LIMITED_CONTEXT
-
-        PROLOG_STACK_ALLOC STACKSIZEOF_ExInfo
+        PUSH_THROW_FRAME
 
         // r0: SP of fault site
         // r1: IP of fault site
@@ -90,13 +96,7 @@ NESTED_END RhpThrowHwEx
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
 
-        // Setup a PAL_LIMITED_CONTEXT on the stack {
-        PROLOG_VPUSH {d8-d15}
-        PROLOG_PUSH "{r0,lr}"        	// Reserve space for SP and store LR
-        PROLOG_PUSH "{r0,r4-r11,lr}"
-        // } end PAL_LIMITED_CONTEXT
-
-        PROLOG_STACK_ALLOC STACKSIZEOF_ExInfo
+        PUSH_THROW_FRAME
 
         // Calculate  SP at callsite and save into the PAL_LIMITED_CONTEXT
         add         r4, sp, #(STACKSIZEOF_ExInfo + SIZEOF__PAL_LIMITED_CONTEXT)
@@ -197,13 +197,7 @@ NESTED_END RhpThrowEx, _TEXT
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
 
-        // Setup a PAL_LIMITED_CONTEXT on the stack {
-        PROLOG_VPUSH {d8-d15}
-        PROLOG_PUSH "{r0,lr}"         // Reserve space for SP and store LR
-        PROLOG_PUSH "{r0,r4-r11,lr}"
-        // } end PAL_LIMITED_CONTEXT
-
-        PROLOG_STACK_ALLOC STACKSIZEOF_ExInfo
+        PUSH_THROW_FRAME
 
         // Compute and save SP at callsite.
         add         r1, sp, #(STACKSIZEOF_ExInfo + SIZEOF__PAL_LIMITED_CONTEXT)
