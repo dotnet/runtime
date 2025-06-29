@@ -25,6 +25,9 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Gets the maximum signature size in bytes for the composite algorithm.
         /// </summary>
+        /// <value>
+        ///   The maximum signature size in bytes for the composite algorithm.
+        /// </value>
         public int MaxSignatureSizeInBytes { get; }
 
         internal MLDsaAlgorithm MLDsaAlgorithm { get; }
