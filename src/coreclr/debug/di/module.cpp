@@ -65,12 +65,12 @@ CordbModule::CordbModule(
         pProcess->GetDAC()->GetDomainAssemblyData(vmDomainAssembly, &dfInfo); // throws
 
         m_pAppDomain = pProcess->LookupOrCreateAppDomain(dfInfo.vmAppDomain);
+        _ASSERTE(m_pAppDomain == pProcess->GetAppDomain());
         m_pAssembly  = m_pAppDomain->LookupOrCreateAssembly(dfInfo.vmDomainAssembly);
     }
     else
     {
-        // Not yet implemented
-        m_pAppDomain = pProcess->GetSharedAppDomain();
+        m_pAppDomain = pProcess->GetAppDomain();
         m_pAssembly = m_pAppDomain->LookupOrCreateAssembly(modInfo.vmAssembly);
     }
 #ifdef _DEBUG

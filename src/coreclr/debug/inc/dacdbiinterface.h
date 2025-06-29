@@ -1212,20 +1212,17 @@ public:
 
 
     //
-    // Return the current appdomain the specified thread is in.
-    //
-    // Arguments:
-    //    vmThread - the specified thread
+    // Return the current appdomain.
     //
     // Return Value:
-    //    the current appdomain of the specified thread
+    //    the current appdomain
     //
     // Notes:
     //    This function throws if the current appdomain is NULL for whatever reason.
     //
 
     virtual
-    VMPTR_AppDomain GetCurrentAppDomain(VMPTR_Thread vmThread) = 0;
+    VMPTR_AppDomain GetCurrentAppDomain() = 0;
 
 
     //
