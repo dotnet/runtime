@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser;$(NetFrameworkCurrent)</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <NoWarn>NU1511</NoWarn>
+    <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- Enable diagnostic features. They will add appropriate RuntimeHostConfigurationOption values to runtime config and ILLink.
