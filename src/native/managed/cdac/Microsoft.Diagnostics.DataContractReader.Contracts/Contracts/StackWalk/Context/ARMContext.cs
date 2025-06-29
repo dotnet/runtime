@@ -29,7 +29,7 @@ internal struct ARMContext : IPlatformContext
     }
 
     public readonly uint Size => 0x1a0;
-    public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
+    public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
 
     public TargetPointer StackPointer
     {
