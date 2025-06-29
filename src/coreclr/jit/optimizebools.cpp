@@ -1581,6 +1581,8 @@ PhaseStatus Compiler::optOptimizeBools()
     unsigned numCond   = 0;
     unsigned numPasses = 0;
     unsigned stress    = false;
+    ccmp_traits = new BitVecTraits(fgBBNumMax + 1, this);
+    ccmp_vec = BitVecOps::MakeEmpty(ccmp_traits);
 
     do
     {
