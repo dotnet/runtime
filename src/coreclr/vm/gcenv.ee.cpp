@@ -402,6 +402,20 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     return false;
 }
 
+void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_JAVAMARSHAL
+    Interop::TriggerClientBridgeProcessing(args);
+#endif // FEATURE_JAVAMARSHAL
+}
+
 void GCToEEInterface::SyncBlockCacheDemote(int max_gen)
 {
     CONTRACTL

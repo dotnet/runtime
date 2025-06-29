@@ -3914,6 +3914,12 @@
   <data name="InvalidOperation_ObjectiveCTypeNoFinalizer" xml:space="preserve">
     <value>Attempt to track an Objective-C Type without a finalizer.</value>
   </data>
+  <data name="InvalidOperation_ReinitializeJavaMarshal" xml:space="preserve">
+    <value>Attempt to reinitialize JavaMarshal.</value>
+  </data>
+  <data name="InvalidOperation_IncorrectGCHandleType" xml:space="preserve">
+    <value>Attempt to get context from an unsupport GCHandle type.</value>
+  </data>
   <data name="InvalidOperation_SuppliedInnerMustBeMarkedAggregation" xml:space="preserve">
     <value>Supplying a non-null inner should also be marked as Aggregated.</value>
   </data>
