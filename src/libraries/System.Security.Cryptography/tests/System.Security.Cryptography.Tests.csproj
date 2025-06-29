@@ -223,6 +223,8 @@
              Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs"
              Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\CompositeMLDsaAlgorithmTests.cs"
+             Link="CommonTest\System\Security\Cryptography\CompositeMLDsaAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLDsaAlgorithmTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLDsaAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemAlgorithmTests.cs"
