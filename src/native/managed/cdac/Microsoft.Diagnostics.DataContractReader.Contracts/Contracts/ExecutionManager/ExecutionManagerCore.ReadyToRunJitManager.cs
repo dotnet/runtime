@@ -70,6 +70,12 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return _runtimeFunctions.GetRuntimeFunctionAddress(r2rInfo.RuntimeFunctions, index);
         }
 
+        public override TargetPointer GetDebugInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out bool hasFlagByte)
+        {
+            hasFlagByte = false;
+            throw new NotImplementedException();
+        }
+
         public override void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion)
         {
             gcInfo = TargetPointer.Null;
