@@ -18,7 +18,7 @@ namespace System.Security.Cryptography
         ///   Gets the name of the algorithm.
         /// </summary>
         /// <value>
-        ///   An a string representing the algorithm name.
+        ///   A string representing the algorithm name.
         /// </value>
         public string Name { get; }
 
