@@ -158,6 +158,7 @@
       System.Text.Json;
       System.Text.RegularExpressions;
       System.Threading;
+      System.Threading.AccessControl;
       System.Threading.Channels;
       System.Threading.Overlapped;
       System.Threading.Tasks;
@@ -225,7 +226,6 @@
       System.Diagnostics.EventLog;
       System.Formats.Cbor;
       System.Security.Cryptography.Xml;
-      System.Threading.AccessControl;
       System.Threading.RateLimiting;
     </AspNetCoreAppLibrary>
     <WindowsDesktopCoreAppLibrary>
@@ -243,7 +243,6 @@
       System.Security.Cryptography.ProtectedData;
       System.Security.Cryptography.Xml;
       System.Security.Permissions;
-      System.Threading.AccessControl;
       System.Windows.Extensions;
     </WindowsDesktopCoreAppLibrary>
   </PropertyGroup>
