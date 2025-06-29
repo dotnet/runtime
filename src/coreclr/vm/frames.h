@@ -2417,7 +2417,8 @@ public:
 #ifndef DACCESS_COMPILE
     InterpreterFrame(TransitionBlock* pTransitionBlock, InterpMethodContextFrame* pContextFrame)
         : FramedMethodFrame(FrameIdentifier::InterpreterFrame, pTransitionBlock, NULL),
-        m_pTopInterpMethodContextFrame(pContextFrame)
+        m_pTopInterpMethodContextFrame(pContextFrame),
+        m_isFaulting(false)
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
         , m_SSP(0)
 #endif
@@ -2471,10 +2472,18 @@ public:
     }
 #endif // HOST_AMD64 && HOST_WINDOWS
 
+    void SetIsFaulting(bool isFaulting)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_isFaulting = isFaulting;
+    }
+
 private:
     // The last known topmost interpreter frame in the InterpExecMethod belonging to
     // this InterpreterFrame.
     PTR_InterpMethodContextFrame m_pTopInterpMethodContextFrame;
+    // Set to true to indicate that the topmost interpreted frame has thrown an exception
+    bool m_isFaulting;
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     // Saved SSP of the InterpExecMethod for resuming after catch into interpreter frames.
     TADDR m_SSP;

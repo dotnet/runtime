@@ -1878,12 +1878,14 @@ CALL_INTERP_METHOD:
                     {
                         throwable = LOCAL_VAR(ip[1], OBJECTREF);
                     }
+                    pInterpreterFrame->SetIsFaulting(true);
                     DispatchManagedException(throwable);
                     UNREACHABLE();
                     break;
                 }
                 case INTOP_RETHROW:
                 {
+                    pInterpreterFrame->SetIsFaulting(true);
                     DispatchRethrownManagedException();
                     UNREACHABLE();
                     break;
@@ -2300,6 +2302,8 @@ do {                                                                           \
         pMethod = pFrame->startIp->Method;
         assert(pMethod->CheckIntegrity());
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
+
+        pInterpreterFrame->SetIsFaulting(false);
         goto MAIN_LOOP;
     }
 
