@@ -64,7 +64,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- Runtime feature defaults to trim unnecessary code -->
     <InvariantTimezone Condition="'$(BlazorEnableTimeZoneSupport)' == 'false'">true</InvariantTimezone>
-    <BlazorCacheBootResources Condition="'$(BlazorCacheBootResources)' == ''">true</BlazorCacheBootResources>
 
     <!-- Turn off parts of the build that do not apply to WASM projects -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
@@ -176,6 +175,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_TargetingNET90OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '9.0'))">true</_TargetingNET90OrLater>
       <_TargetingNET100OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '10.0'))">true</_TargetingNET100OrLater>
 
+      <_BlazorCacheBootResources>$(BlazorCacheBootResources)</_BlazorCacheBootResources>
+      <_BlazorCacheBootResources Condition="'$(_BlazorCacheBootResources)' == '' and '$(_TargetingNET100OrLater)' != 'true'">true</_BlazorCacheBootResources>
+      <_BlazorCacheBootResources Condition="'$(_BlazorCacheBootResources)' == ''">false</_BlazorCacheBootResources>
       <_BlazorEnableTimeZoneSupport>$(BlazorEnableTimeZoneSupport)</_BlazorEnableTimeZoneSupport>
       <_BlazorEnableTimeZoneSupport Condition="'$(_BlazorEnableTimeZoneSupport)' == ''">true</_BlazorEnableTimeZoneSupport>
       <_WasmInvariantGlobalization>$(InvariantGlobalization)</_WasmInvariantGlobalization>
@@ -213,10 +215,14 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">false</_WasmFingerprintBootConfig>
       <_WasmPreloadAssets>$(WasmPreloadAssets)</_WasmPreloadAssets>
       <_WasmPreloadAssets Condition="'$(_WasmPreloadAssets)' == ''">true</_WasmPreloadAssets>
+      
+      <_WasmBundlerFriendlyBootConfig>$(WasmBundlerFriendlyBootConfig)</_WasmBundlerFriendlyBootConfig>
+      <_WasmBundlerFriendlyBootConfig Condition="'$(_WasmBundlerFriendlyBootConfig)' == ''">false</_WasmBundlerFriendlyBootConfig>
 
       <!-- Workaround for https://github.com/dotnet/sdk/issues/12114-->
       <PublishDir Condition="'$(AppendRuntimeIdentifierToOutputPath)' != 'true' AND '$(PublishDir)' == '$(OutputPath)$(RuntimeIdentifier)\$(PublishDirName)\'">$(OutputPath)$(PublishDirName)\</PublishDir>
     </PropertyGroup>
+    <Warning Text="Custom Blazor cache has been removed and setting 'BlazorCacheBootResources' has no effect. Follow a migration path at TODO: PLACEHOLDER FOR LINK" Condition="'$(_BlazorCacheBootResources)' != 'false' and '$(_TargetingNET100OrLater)' == 'true'" />
   </Target>
 
   <Target Name="ResolveWasmOutputs" DependsOnTargets="_ResolveWasmOutputs" />
@@ -259,7 +265,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopySymbols="$(_WasmCopyOutputSymbolsToOutputDirectory)"
       OutputPath="$(OutputPath)"
       EnableThreads="$(_WasmEnableThreads)"
-      WasmPerfTracing="$(WasmPerfTracing)"
+      EnableDiagnostics="$(EnableDiagnostics)"
       EmitSourceMap="$(_WasmEmitSourceMapBuild)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       FingerprintDotnetJs="$(_WasmFingerprintDotnetJs)"
@@ -389,7 +395,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       DebugBuild="true"
       DebugLevel="$(WasmDebugLevel)"
       LinkerEnabled="false"
-      CacheBootResources="$(BlazorCacheBootResources)"
+      CacheBootResources="$(_BlazorCacheBootResources)"
       MergeWith="@(_WasmDotnetJsForBuild)"
       OutputPath="$(_WasmBuildBootJsonPath)"
       ConfigurationFiles="@(_WasmJsConfigStaticWebAsset)"
@@ -401,7 +407,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
       Extensions="@(WasmBootConfigExtension)"
       EnvVariables="@(WasmEnvironmentVariable)"
-      Profilers="$(_WasmProfilers)"
+      Profilers="$(WasmProfilers)"
       RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
@@ -409,7 +415,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsPublish="false"
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
-      FingerprintAssets="$(_WasmFingerprintAssets)" />
+      FingerprintAssets="$(_WasmFingerprintAssets)"
+      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
@@ -609,7 +616,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopySymbols="$(CopyOutputSymbolsToPublishDirectory)"
       ExistingAssets="@(_WasmPublishPrefilteredAssets)"
       EnableThreads="$(_WasmEnableThreads)"
-      WasmPerfTracing="$(WasmPerfTracing)"
+      EnableDiagnostics="$(EnableDiagnostics)"
       EmitSourceMap="$(_WasmEmitSourceMapPublish)"
       IsWebCilEnabled="$(_WasmEnableWebcil)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
@@ -797,7 +804,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       DebugBuild="false"
       DebugLevel="$(WasmDebugLevel)"
       LinkerEnabled="$(PublishTrimmed)"
-      CacheBootResources="$(BlazorCacheBootResources)"
+      CacheBootResources="$(_BlazorCacheBootResources)"
       MergeWith="@(_WasmDotnetJsForPublish)"
       OutputPath="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)"
       ConfigurationFiles="@(_WasmPublishConfigFile)"
@@ -808,7 +815,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
       EnvVariables="@(WasmEnvironmentVariable)"
-      Profilers="$(_WasmProfilers)"
+      Profilers="$(WasmProfilers)"
       RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
       Extensions="@(WasmBootConfigExtension)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
@@ -817,7 +824,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsPublish="true"
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
-      FingerprintAssets="$(_WasmFingerprintAssets)" />
+      FingerprintAssets="$(_WasmFingerprintAssets)"
+      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)" />
 
     <ItemGroup>
       <FileWrites Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />

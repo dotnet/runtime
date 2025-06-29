@@ -22,6 +22,13 @@ typedef enum
     InterpOpSwitch,
     InterpOpMethodHandle,
     InterpOpClassHandle,
+    InterpOpGenericLookup,
+    InterpOpGenericHelperFtn,
+    InterpOpLdPtr,
+    InterpOpHelperFtn,
+    InterpOpPointerHelperFtn,
+    InterpOpPointerInt,
+    InterpOpGenericLookupInt,
 } InterpOpArgType;
 
 extern const uint8_t g_interpOpLen[];
@@ -98,7 +105,7 @@ inline int32_t getI4LittleEndian(const uint8_t* ptr)
 
 inline int64_t getI8LittleEndian(const uint8_t* ptr)
 {
-    return (int64_t)getI4LittleEndian(ptr) | ((int64_t)getI4LittleEndian(ptr + 4)) << 32;
+    return (int64_t)getU4LittleEndian(ptr) | ((int64_t)getI4LittleEndian(ptr + 4)) << 32;
 }
 
 inline float getR4LittleEndian(const uint8_t* ptr)

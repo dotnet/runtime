@@ -60,7 +60,7 @@ PhaseStatus Compiler::fgMorphInit()
     {
         for (unsigned i = 0; i < info.compArgsCount; i++)
         {
-            if (lvaGetDesc(i)->TypeGet() == TYP_REF)
+            if (lvaGetDesc(i)->TypeIs(TYP_REF))
             {
                 // confirm that the argument is a GC pointer (for debugging (GC stress))
                 GenTree* op = gtNewLclvNode(i, TYP_REF);
@@ -128,7 +128,7 @@ GenTree* Compiler::fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* ope
 
         // assert that oper is unchanged and that it is still a GT_CAST node
         noway_assert(tree->AsCast()->CastOp() == oper);
-        noway_assert(tree->gtOper == GT_CAST);
+        noway_assert(tree->OperIs(GT_CAST));
     }
     result = fgMorphIntoHelperCall(tree, helper, true /* morphArgs */, oper);
     assert(result == tree);
@@ -294,20 +294,14 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType))
     {
         if (srcType == TYP_FLOAT
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // Arm64: src = float, dst is overflow conversion.
+#ifdef TARGET_64BIT
+            // 64-bit: src = float, dst is overflow conversion.
             // This goes through helper and hence src needs to be converted to double.
             && tree->gtOverflow()
-#elif defined(TARGET_AMD64)
-            // Amd64: src = float, dst = overflow conversion or SSE2 is not enabled
-            && (tree->gtOverflow() || !IsBaselineSimdIsaSupported())
-#elif defined(TARGET_ARM)
-            // Arm: src = float, dst = int64/uint64 or overflow conversion.
-            && (tree->gtOverflow() || varTypeIsLong(dstType))
 #else
-            // x86: src = float, dst = int64/uint64 or overflow conversion or SSE2 is not enabled
-            && (tree->gtOverflow() || varTypeIsLong(dstType) || !IsBaselineSimdIsaSupported())
-#endif
+            // 32-bit: src = float, dst = int64/uint64 or overflow conversion.
+            && (tree->gtOverflow() || varTypeIsLong(dstType))
+#endif // TARGET_64BIT
         )
         {
             oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
@@ -328,39 +322,24 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         {
             if (!tree->gtOverflow())
             {
-// ARM64 and LoongArch64 optimize all non-overflow checking conversions
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#ifdef TARGET_64BIT
                 return nullptr;
 #else
-#if defined(TARGET_XARCH)
-                if (IsBaselineSimdIsaSupported() && (!varTypeIsLong(dstType) || TargetArchitecture::Is64Bit))
+                if (!varTypeIsLong(dstType))
                 {
                     return nullptr;
                 }
-#endif // TARGET_XARCH
+
                 switch (dstType)
                 {
-                    case TYP_INT:
-#ifdef TARGET_XARCH
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT, oper);
-#endif // TARGET_XARCH
-                        return nullptr;
-
-                    case TYP_UINT:
-#if defined(TARGET_ARM)
-                        return nullptr;
-#endif
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT, oper);
-
                     case TYP_LONG:
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
-
                     case TYP_ULONG:
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2ULNG, oper);
                     default:
                         unreached();
                 }
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_64BIT
             }
             else
             {
@@ -645,7 +624,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 }
 
                 // Clear the GT_MUL_64RSLT if it is set.
-                if (oper->gtOper == GT_MUL && (oper->gtFlags & GTF_MUL_64RSLT))
+                if (oper->OperIs(GT_MUL) && (oper->gtFlags & GTF_MUL_64RSLT))
                 {
                     oper->gtFlags &= ~GTF_MUL_64RSLT;
                 }
@@ -711,6 +690,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "X86TailCallSpecialArg";
         case WellKnownArg::StackArrayLocal:
             return "StackArrayLocal";
+        case WellKnownArg::RuntimeMethodHandle:
+            return "RuntimeMethodHandle";
     }
 
     return "N/A";
@@ -877,7 +858,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 {
                     SetNeedsTemp(&arg);
                 }
-                else if (varTypeIsFloating(argx->TypeGet()) && (argx->OperGet() == GT_CALL))
+                else if (varTypeIsFloating(argx->TypeGet()) && argx->OperIs(GT_CALL))
                 {
                     // Spill all arguments that are floating point calls
                     SetNeedsTemp(&arg);
@@ -1143,7 +1124,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
             assert(argx != nullptr);
             // put constants at the end of the table
             //
-            if (argx->gtOper == GT_CNS_INT)
+            if (argx->OperIs(GT_CNS_INT))
             {
                 noway_assert(curInx <= endTab);
 
@@ -1792,7 +1773,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // add as a non-standard arg.
         }
     }
-    else if (call->gtCallType == CT_INDIRECT && (call->gtCallCookie != nullptr))
+    else if ((call->gtCallType == CT_INDIRECT) && !call->IsVirtualStub() && (call->gtCallCookie != nullptr))
     {
         assert(!call->IsUnmanaged());
 
@@ -2219,11 +2200,11 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 //   False if the argument cannot be put into a shape supported by the backend.
 //
 // Remarks:
-//   The backend requires register-passed arguments to be of FIELD_LIST shape
-//   with one primitive node for each register. If the argument is passed in
-//   only one register, then the FIELD_LIST should be directly replaced by its
-//   operand. For stack-passed arguments the backend supports struct-typed
-//   arguments directly.
+//   The backend requires register-passed arguments to be of FIELD_LIST shape.
+//   For split arguments it is additionally required that registers and stack
+//   slots have clean mappings to fields.
+//   For stack-passed arguments the backend supports struct-typed arguments
+//   directly.
 //
 bool Compiler::fgTryMorphStructArg(CallArg* arg)
 {
@@ -2299,49 +2280,20 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
         JITDUMP("Struct argument V%02u: ", lclNum);
         JITDUMPEXEC(arg->Dump(this));
 
-        // Try to see if we can use the promoted fields to pass this argument.
+        // Try to see if we can and should use promoted fields to pass this
+        // argument.
         //
-        if (varDsc->lvPromoted && !varDsc->lvDoNotEnregister &&
-            (varDsc->lvFieldCnt == arg->AbiInfo.CountRegsAndStackSlots()))
+        if (varDsc->lvPromoted && !varDsc->lvDoNotEnregister && (!isSplit || FieldsMatchAbi(varDsc, arg->AbiInfo)))
         {
-            bool fieldsMatch = true;
-
-            for (const ABIPassingSegment& seg : arg->AbiInfo.Segments())
-            {
-                if (seg.IsPassedInRegister())
-                {
-                    unsigned fieldLclNum = lvaGetFieldLocal(varDsc, seg.Offset);
-                    if (fieldLclNum == BAD_VAR_NUM)
-                    {
-                        fieldsMatch = false;
-                        break;
-                    }
-                }
-                else
-                {
-                    for (unsigned offset = 0; offset < seg.Size; offset += TARGET_POINTER_SIZE)
-                    {
-                        if (lvaGetFieldLocal(varDsc, seg.Offset + offset) == BAD_VAR_NUM)
-                        {
-                            fieldsMatch = false;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (fieldsMatch)
-            {
-                newArg = fgMorphLclToFieldList(lclNode)->SoleFieldOrThis();
-                newArg = fgMorphTree(newArg);
-            }
+            newArg = fgMorphLclToFieldList(lclNode)->SoleFieldOrThis();
+            newArg = fgMorphTree(newArg);
         }
     }
     else if (argNode->OperIsFieldList())
     {
         // We can already see a field list here if physical promotion created it.
         // Physical promotion will also create single-field field lists which
-        // the backend does not expect, so fix that here.
+        // not everything treats the same as a single node, so fix that here.
         newArg = argNode->AsFieldList()->SoleFieldOrThis();
         if (newArg == argNode)
         {
@@ -2353,20 +2305,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
     //
     if (newArg == nullptr)
     {
-        bool isUseOfIndependentlyPromotedStruct =
-            argNode->OperIs(GT_LCL_VAR) &&
-            (lvaGetPromotionType(argNode->AsLclVarCommon()->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT);
-        if (isUseOfIndependentlyPromotedStruct)
-        {
-            if (arg->AbiInfo.HasExactlyOneRegisterSegment())
-            {
-                // We already tried to use the fields above, but that failed.
-                // Here we prefer to create a copy to avoid DNER'ing the local.
-                // That turns out to be profitable mostly for single-register arguments.
-                return false;
-            }
-        }
-        else if (!argNode->TypeIs(TYP_STRUCT) && arg->AbiInfo.HasExactlyOneRegisterSegment())
+        if (!argNode->TypeIs(TYP_STRUCT) && arg->AbiInfo.HasExactlyOneRegisterSegment())
         {
             // This can be treated primitively. Leave it alone.
             return true;
@@ -2541,6 +2480,51 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
     *use = newArg;
     // Potentially update commas
     arg->GetNode()->ChangeType((*use)->TypeGet());
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+// FieldsMatchAbi:
+//   Check if the fields of a local map cleanly (in terms of offsets) to the
+//   specified ABI info.
+//
+// Arguments:
+//   varDsc  - promoted local
+//   abiInfo - ABI information
+//
+// Returns:
+//   True if it does. In that case FIELD_LIST usage is allowed for split args
+//   by the backend.
+//
+bool Compiler::FieldsMatchAbi(LclVarDsc* varDsc, const ABIPassingInformation& abiInfo)
+{
+    if (varDsc->lvFieldCnt != abiInfo.CountRegsAndStackSlots())
+    {
+        return false;
+    }
+
+    for (const ABIPassingSegment& seg : abiInfo.Segments())
+    {
+        if (seg.IsPassedInRegister())
+        {
+            unsigned fieldLclNum = lvaGetFieldLocal(varDsc, seg.Offset);
+            if (fieldLclNum == BAD_VAR_NUM)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            for (unsigned offset = 0; offset < seg.Size; offset += TARGET_POINTER_SIZE)
+            {
+                if (lvaGetFieldLocal(varDsc, seg.Offset + offset) == BAD_VAR_NUM)
+                {
+                    return false;
+                }
+            }
+        }
+    }
+
     return true;
 }
 
@@ -2835,7 +2819,7 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
         // is negative. It also requires the address generation be in a fully-interruptible
         // code region.
         //
-        if (varTypeIsGC(op1->TypeGet()) && op2->TypeGet() == TYP_I_IMPL)
+        if (varTypeIsGC(op1->TypeGet()) && op2->TypeIs(TYP_I_IMPL))
         {
             assert(varTypeIsGC(tree->TypeGet()) && (oper == GT_ADD));
             break;
@@ -2865,17 +2849,17 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
 
         if (varTypeIsGC(op1->TypeGet()))
         {
-            noway_assert((varTypeIsGC(tree->TypeGet()) && op2->TypeGet() == TYP_I_IMPL &&
-                          oper == GT_ADD) || // byref(ref + (int+int))
-                         (varTypeIsI(tree->TypeGet()) && op2->TypeGet() == TYP_I_IMPL &&
-                          oper == GT_OR)); // int(gcref | int(gcref|intval))
+            noway_assert(
+                (varTypeIsGC(tree->TypeGet()) && op2->TypeIs(TYP_I_IMPL) && oper == GT_ADD) || // byref(ref + (int+int))
+                (varTypeIsI(tree->TypeGet()) && op2->TypeIs(TYP_I_IMPL) && oper == GT_OR));    // int(gcref |
+                                                                                               // int(gcref|intval))
 
             new_op1->gtType = tree->gtType;
         }
         else if (varTypeIsGC(ad2->TypeGet()))
         {
             // Neither ad1 nor op1 are GC. So new_op1 isnt either
-            noway_assert(op1->gtType == TYP_I_IMPL && ad1->gtType == TYP_I_IMPL);
+            noway_assert(op1->TypeIs(TYP_I_IMPL) && ad1->TypeIs(TYP_I_IMPL));
             new_op1->gtType = TYP_I_IMPL;
         }
 
@@ -3053,7 +3037,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         // The CLI Spec allows an array to be indexed by either an int32 or a native int.  In the case
         // of a 64 bit architecture this means the array index can potentially be a TYP_LONG, so for this case,
         // the comparison will have to be widened to 64 bits.
-        if (index->TypeGet() == TYP_I_IMPL)
+        if (index->TypeIs(TYP_I_IMPL))
         {
             bndsChkType = TYP_I_IMPL;
         }
@@ -3080,9 +3064,9 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
 
 #ifdef TARGET_64BIT
     // Widen 'index' on 64-bit targets
-    if (index->TypeGet() != TYP_I_IMPL)
+    if (!index->TypeIs(TYP_I_IMPL))
     {
-        if (index->OperGet() == GT_CNS_INT)
+        if (index->OperIs(GT_CNS_INT))
         {
             index->gtType = TYP_I_IMPL;
         }
@@ -4487,10 +4471,10 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     // result. TODO-CQ: Fix this.
     if (info.compRetBuffArg != BAD_VAR_NUM)
     {
-        noway_assert(call->TypeGet() == TYP_VOID);
+        noway_assert(call->TypeIs(TYP_VOID));
         noway_assert(call->gtArgs.HasRetBuffer());
         GenTree* retValBuf = call->gtArgs.GetRetBufferArg()->GetNode();
-        if (retValBuf->gtOper != GT_LCL_VAR || retValBuf->AsLclVarCommon()->GetLclNum() != info.compRetBuffArg)
+        if (!retValBuf->OperIs(GT_LCL_VAR) || retValBuf->AsLclVarCommon()->GetLclNum() != info.compRetBuffArg)
         {
             failTailCall("Need to copy return buffer");
             return nullptr;
@@ -4878,7 +4862,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         }
 
         // Peel off casts
-        while (treeWithCall->gtOper == GT_CAST)
+        while (treeWithCall->OperIs(GT_CAST))
         {
             assert(!treeWithCall->gtOverflow());
             treeWithCall = treeWithCall->gtGetOp1();
@@ -5107,6 +5091,10 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             {
                 assert(ValidateUse(tree) && "Expected use of local to be tailcall value");
             }
+            else if (IsCommaNop(tree))
+            {
+                // COMMA(NOP,NOP)
+            }
             else
             {
                 DISPTREE(tree);
@@ -5114,6 +5102,16 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             }
 
             return WALK_CONTINUE;
+        }
+
+        bool IsCommaNop(GenTree* node)
+        {
+            if (!node->OperIs(GT_COMMA))
+            {
+                return false;
+            }
+
+            return node->AsOp()->gtGetOp1()->OperIs(GT_NOP) && node->AsOp()->gtGetOp2()->OperIs(GT_NOP);
         }
 
         bool ValidateUse(GenTree* node)
@@ -5450,12 +5448,12 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 
         retValArg = retBufArg;
 
-        if (origCall->gtType != TYP_VOID)
+        if (!origCall->TypeIs(TYP_VOID))
         {
             retVal = gtClone(retBufArg);
         }
     }
-    else if (origCall->gtType != TYP_VOID)
+    else if (!origCall->TypeIs(TYP_VOID))
     {
         JITDUMP("Creating a new temp for the return value\n");
         newRetLcl = lvaGrabTemp(false DEBUGARG("Return value for tail call dispatcher"));
@@ -5505,7 +5503,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
     NewCallArg retValCallArg  = NewCallArg::Primitive(retValArg);
     callDispatcherNode->gtArgs.PushFront(this, retAddrSlotArg, callTargetArg, retValCallArg);
 
-    if (origCall->gtType == TYP_VOID)
+    if (origCall->TypeIs(TYP_VOID))
     {
         return callDispatcherNode;
     }
@@ -6365,7 +6363,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         return fgMorphTree(nullCheck);
     }
 
-    noway_assert(call->gtOper == GT_CALL);
+    noway_assert(call->OperIs(GT_CALL));
 
     //
     // Only count calls once (only in the global morph phase)
@@ -6376,6 +6374,11 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         {
             optCallCount++;
             optIndirectCallCount++;
+            if (call->IsFastTailCall())
+            {
+                optFastTailCallCount++;
+                optIndirectFastTailCallCount++;
+            }
         }
         else if (call->gtCallType == CT_USER_FUNC)
         {
@@ -6383,6 +6386,14 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             if (call->IsVirtual())
             {
                 optIndirectCallCount++;
+            }
+            if (call->IsFastTailCall())
+            {
+                optFastTailCallCount++;
+                if (call->IsVirtual())
+                {
+                    optIndirectFastTailCallCount++;
+                }
             }
         }
     }
@@ -6445,7 +6456,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     // Process the "normal" argument list
     call = fgMorphArgs(call);
-    noway_assert(call->gtOper == GT_CALL);
+    noway_assert(call->OperIs(GT_CALL));
 
     // Try to replace CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE with a constant gc handle
     // pointing to a frozen segment
@@ -6458,8 +6469,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(hClass);
             if (ptr != NULL)
             {
-                GenTree* retNode = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-                return fgMorphTree(retNode);
+                return fgMorphTree(gtNewIconEmbObjHndNode(ptr));
             }
         }
     }
@@ -7071,8 +7081,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             else
             {
                 GenTree* effOp1 = op1->gtEffectiveVal();
-                noway_assert((effOp1->gtOper == GT_CNS_INT) &&
-                             (effOp1->IsIntegralConst(0) || effOp1->IsIntegralConst(1)));
+                noway_assert(effOp1->OperIs(GT_CNS_INT) && (effOp1->IsIntegralConst(0) || effOp1->IsIntegralConst(1)));
             }
             break;
 
@@ -7257,9 +7266,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             {
                 helper = CORINFO_HELP_DBLREM;
                 noway_assert(op2);
-                if (op1->TypeGet() == TYP_FLOAT)
+                if (op1->TypeIs(TYP_FLOAT))
                 {
-                    if (op2->TypeGet() == TYP_FLOAT)
+                    if (op2->TypeIs(TYP_FLOAT))
                     {
                         helper = CORINFO_HELP_FLTREM;
                     }
@@ -7268,7 +7277,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                         tree->AsOp()->gtOp1 = op1 = gtNewCastNode(TYP_DOUBLE, op1, false, TYP_DOUBLE);
                     }
                 }
-                else if (op2->TypeGet() == TYP_FLOAT)
+                else if (op2->TypeIs(TYP_FLOAT))
                 {
                     tree->AsOp()->gtOp2 = op2 = gtNewCastNode(TYP_DOUBLE, op2, false, TYP_DOUBLE);
                 }
@@ -7431,7 +7440,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             }
 
             // Did we fold it into a comma node with throw?
-            if (tree->gtOper == GT_COMMA)
+            if (tree->OperIs(GT_COMMA))
             {
                 noway_assert(fgIsCommaThrow(tree));
                 return fgMorphTree(tree);
@@ -7569,7 +7578,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             return fgMorphTree(op1);
 
         case GT_COMMA:
-            if (op2->OperIsStore() || (op2->OperGet() == GT_COMMA && op2->TypeGet() == TYP_VOID) || fgIsThrow(op2))
+            if (op2->OperIsStore() || (op2->OperIs(GT_COMMA) && op2->TypeIs(TYP_VOID)) || fgIsThrow(op2))
             {
                 typ = tree->gtType = TYP_VOID;
             }
@@ -7700,7 +7709,7 @@ DONE_MORPHING_CHILDREN:
         // children have been unmarked, unmark the tree too.
 
         // Remember that GT_COMMA inherits it's type only from op2
-        if (tree->gtOper == GT_COMMA)
+        if (tree->OperIs(GT_COMMA))
         {
             tree->gtType = genActualType(op2->TypeGet());
         }
@@ -7715,7 +7724,7 @@ DONE_MORPHING_CHILDREN:
     GenTree* qmarkOp1 = nullptr;
     GenTree* qmarkOp2 = nullptr;
 
-    if ((tree->OperGet() == GT_QMARK) && (tree->AsOp()->gtOp2->OperGet() == GT_COLON))
+    if (tree->OperIs(GT_QMARK) && (tree->AsOp()->gtOp2->OperIs(GT_COLON)))
     {
         qmarkOp1 = oldTree->AsOp()->gtOp2->AsOp()->gtOp1;
         qmarkOp2 = oldTree->AsOp()->gtOp2->AsOp()->gtOp2;
@@ -7930,7 +7939,12 @@ DONE_MORPHING_CHILDREN:
                 goto CM_OVF_OP;
             }
 
-            if (fgGlobalMorph && !op2->TypeIs(TYP_BYREF))
+            if (!fgGlobalMorph)
+            {
+                break;
+            }
+
+            if (!op2->TypeIs(TYP_BYREF))
             {
                 /* Check for "op1 - cns2" , we change it to "op1 + (-cns2)" */
 
@@ -7941,7 +7955,9 @@ DONE_MORPHING_CHILDREN:
 
                     op2->AsIntConCommon()->SetIconValue(-op2->AsIntConCommon()->IconValue());
                     op2->AsIntConRef().gtFieldSeq = nullptr;
-                    oper                          = GT_ADD;
+                    fgUpdateConstTreeValueNumber(op2);
+
+                    oper = GT_ADD;
                     tree->ChangeOper(oper);
                     goto CM_ADD_OP;
                 }
@@ -7977,37 +7993,22 @@ DONE_MORPHING_CHILDREN:
                     tree->ChangeOper(oper);
                     goto CM_ADD_OP;
                 }
-
-                /* No match - exit */
             }
 
             // Skip optimization if non-NEG operand is constant.
             // Both op1 and op2 are not constant because it was already checked above.
-            if (opts.OptimizationEnabled() && fgGlobalMorph)
+            if (opts.OptimizationEnabled())
             {
-                // a - -b = > a + b
-                // SUB(a, (NEG(b)) => ADD(a, b)
-
-                if (!op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
+                if (!op2->OperIs(GT_NEG))
                 {
-                    // tree: SUB
-                    // op1: a
-                    // op2: NEG
-                    // op2Child: b
-
-                    GenTree* op2Child = op2->AsOp()->gtOp1; // b
-                    oper              = GT_ADD;
-                    tree->SetOper(oper, GenTree::PRESERVE_VN);
-                    tree->AsOp()->gtOp2 = op2Child;
-
-                    DEBUG_DESTROY_NODE(op2);
-
-                    op2 = op2Child;
+                    break;
                 }
-                // -a - -b = > b - a
-                // SUB(NEG(a), (NEG(b)) => SUB(b, a)
-                else if (op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG) && gtCanSwapOrder(op1, op2))
+
+                if (op1->OperIs(GT_NEG) && gtCanSwapOrder(op1, op2))
                 {
+                    // -a - -b = > b - a
+                    // SUB(NEG(a), NEG(b)) => SUB(b, a)
+
                     // tree: SUB
                     // op1: NEG
                     // op1Child: a
@@ -8025,27 +8026,51 @@ DONE_MORPHING_CHILDREN:
                     op1 = op2Child;
                     op2 = op1Child;
                 }
+                else
+                {
+                    // a - -b = > a + b
+                    // SUB(a, NEG(b)) => ADD(a, b)
+
+                    // tree: SUB
+                    // op1: a
+                    // op2: NEG
+                    // op2Child: b
+
+                    GenTree* op2Child = op2->AsOp()->gtOp1; // b
+                    oper              = GT_ADD;
+                    tree->SetOper(oper, GenTree::PRESERVE_VN);
+                    tree->AsOp()->gtOp2 = op2Child;
+
+                    DEBUG_DESTROY_NODE(op2);
+
+                    op2 = op2Child;
+                }
             }
 
             break;
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         case GT_DIV:
+        case GT_UDIV:
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         case GT_MOD:
-#endif
+        case GT_UMOD:
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
         {
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if (!varTypeIsFloating(tree->gtType))
             {
                 ExceptionSetFlags exSetFlags = tree->OperExceptions(this);
 
-                if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
+                if ((oper == GT_DIV) || (oper == GT_MOD))
                 {
-                    fgAddCodeRef(compCurBB, SCK_OVERFLOW);
-                }
-                else
-                {
-                    tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
+                    if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
+                    {
+                        fgAddCodeRef(compCurBB, SCK_OVERFLOW);
+                    }
+                    else
+                    {
+                        tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
+                    }
                 }
 
                 if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
@@ -8057,25 +8082,31 @@ DONE_MORPHING_CHILDREN:
                     tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
                 }
             }
-        }
-        break;
-        case GT_UDIV:
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        case GT_UMOD:
-#endif
-        {
-            ExceptionSetFlags exSetFlags = tree->OperExceptions(this);
-            if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+
+            if (opts.OptimizationDisabled())
             {
-                fgAddCodeRef(compCurBB, SCK_DIV_BY_ZERO);
+                break;
             }
-            else
+
+            if (!op1->OperIs(GT_NEG))
             {
-                tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
+                break;
             }
+
+            if (op2->IsCnsFltOrDbl())
+            {
+                // DIV(NEG(a), C) => DIV(a, NEG(C)); for floating-point
+                tree->AsOp()->gtOp1 = op1->gtGetOp1();
+
+                op2->AsDblCon()->SetDconValue(-op2->AsDblCon()->DconValue());
+                fgUpdateConstTreeValueNumber(op2);
+
+                DEBUG_DESTROY_NODE(op1);
+                op1 = tree->AsOp()->gtOp1;
+            }
+            break;
         }
-        break;
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
         case GT_ADD:
 
@@ -8111,8 +8142,14 @@ DONE_MORPHING_CHILDREN:
 
         case GT_NOT:
         case GT_NEG:
+        {
+            if (opts.OptimizationDisabled())
+            {
+                break;
+            }
+
             // Remove double negation/not.
-            if (op1->OperIs(oper) && opts.OptimizationEnabled())
+            if (op1->OperIs(oper))
             {
                 JITDUMP("Remove double negation/not\n")
                 GenTree* op1op1 = op1->gtGetOp1();
@@ -8122,38 +8159,57 @@ DONE_MORPHING_CHILDREN:
             }
 
             // Distribute negation over simple multiplication/division expressions
-            if (opts.OptimizationEnabled() && tree->OperIs(GT_NEG) && op1->OperIs(GT_MUL, GT_DIV))
+            if (tree->OperIs(GT_NEG) && op1->OperIs(GT_MUL, GT_DIV))
             {
                 GenTreeOp* mulOrDiv = op1->AsOp();
                 GenTree*   op1op1   = mulOrDiv->gtGetOp1();
                 GenTree*   op1op2   = mulOrDiv->gtGetOp2();
 
-                if (!op1op1->IsCnsIntOrI() && op1op2->IsCnsIntOrI() && !op1op2->IsIconHandle())
+                if ((op1op2->IsCnsIntOrI() && !op1op2->IsIconHandle()) || op1op2->IsCnsFltOrDbl())
                 {
-                    // NEG(MUL(a, C)) => MUL(a, -C)
-                    // NEG(DIV(a, C)) => DIV(a, -C), except when C = {-1, 1}
-                    ssize_t constVal = op1op2->AsIntCon()->IconValue();
-                    if ((mulOrDiv->OperIs(GT_DIV) && (constVal != -1) && (constVal != 1)) ||
-                        (mulOrDiv->OperIs(GT_MUL) && !mulOrDiv->gtOverflow()))
+                    // NEG(MUL(a, C)) => MUL(a, NEG(C))
+                    // NEG(DIV(a, C)) => DIV(a, NEG(C)), except when C = {-1, 1} for integral
+
+                    bool canTransform = true;
+
+                    if (op1op2->IsCnsIntOrI())
                     {
-                        GenTree* newOp1 = op1op1;                                                  // a
-                        GenTree* newOp2 = gtNewIconNodeWithVN(this, -constVal, op1op2->TypeGet()); // -C
-                        newOp2->SetMorphed(this);
-                        mulOrDiv->gtOp1 = newOp1;
-                        mulOrDiv->gtOp2 = newOp2;
+                        if (mulOrDiv->OperIs(GT_DIV))
+                        {
+                            ssize_t constVal = op1op2->AsIntCon()->IconValue();
+                            canTransform     = (constVal != -1) && (constVal != 1);
+                        }
+                        else
+                        {
+                            canTransform = !mulOrDiv->gtOverflow();
+                        }
+
+                        if (canTransform)
+                        {
+                            op1op2->AsIntConCommon()->SetIconValue(-op1op2->AsIntConCommon()->IconValue());
+                            op1op2->AsIntConRef().gtFieldSeq = nullptr;
+                        }
+                    }
+                    else
+                    {
+                        assert(op1op2->IsCnsFltOrDbl());
+                        op1op2->AsDblCon()->SetDconValue(-op1op2->AsDblCon()->DconValue());
+                    }
+                    fgUpdateConstTreeValueNumber(op1op2);
+
+                    if (canTransform)
+                    {
                         mulOrDiv->SetVNsFromNode(tree);
-
                         DEBUG_DESTROY_NODE(tree);
-                        DEBUG_DESTROY_NODE(op1op2);
-
                         return mulOrDiv;
                     }
                 }
             }
 
-            /* Any constant cases should have been folded earlier */
-            noway_assert(!op1->OperIsConst() || op1->IsIconHandle() || opts.OptimizationDisabled());
+            // Any constant cases should have been folded earlier
+            noway_assert(!op1->OperIsConst() || op1->IsIconHandle());
             break;
+        }
 
         case GT_CKFINITE:
 
@@ -8201,7 +8257,7 @@ DONE_MORPHING_CHILDREN:
                                                                          // least.
                 commaNode->SetMorphed(this);
 
-                while (commaNode->AsOp()->gtOp2->gtOper == GT_COMMA)
+                while (commaNode->AsOp()->gtOp2->OperIs(GT_COMMA))
                 {
                     commaNode         = commaNode->AsOp()->gtOp2;
                     commaNode->gtType = typ;
@@ -8274,7 +8330,7 @@ DONE_MORPHING_CHILDREN:
         case GT_COMMA:
         {
             /* Special case: trees that don't produce a value */
-            if (op2->OperIsStore() || (op2->OperGet() == GT_COMMA && op2->TypeGet() == TYP_VOID) || fgIsThrow(op2))
+            if (op2->OperIsStore() || (op2->OperIs(GT_COMMA) && op2->TypeIs(TYP_VOID)) || fgIsThrow(op2))
             {
                 typ = tree->gtType = TYP_VOID;
             }
@@ -8804,7 +8860,7 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
 
             // Here we reverse the RELOP if necessary.
 
-            bool reverse = ((op2Value == 0) == (cmp->OperIs(GT_EQ)));
+            bool reverse = ((op2Value == 0) == cmp->OperIs(GT_EQ));
 
             if (reverse)
             {
@@ -9372,185 +9428,547 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
         default:
         {
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-            GenTreeHWIntrinsic* maskedIntrinsic = fgOptimizeForMaskedIntrinsic(node);
-            if (maskedIntrinsic != nullptr)
-            {
-                node = maskedIntrinsic;
-                node->SetMorphed(this);
-            }
-#endif // FEATURE_MASKED_HW_INTRINSICS
             break;
         }
     }
 
     bool       isScalar = false;
-    genTreeOps oper     = node->GetOperForHWIntrinsicId(&isScalar);
+    genTreeOps oper     = node->GetOperForHWIntrinsicId(&isScalar, /* getEffectiveOp */ true);
+
+    auto ExtractEffectiveOp = [&](genTreeOps oper, GenTreeHWIntrinsic* node, bool destroyNodes) -> GenTree* {
+        GenTree* result = nullptr;
+
+        switch (oper)
+        {
+            case GT_NEG:
+            {
+                if (node->GetOperandCount() == 2)
+                {
+                    if (varTypeIsFloating(node->GetSimdBaseType()))
+                    {
+                        // v1 ^ -0.0
+                        result = node->Op(1);
+
+                        if (destroyNodes)
+                        {
+                            DEBUG_DESTROY_NODE(node->Op(2));
+                        }
+                    }
+                    else
+                    {
+                        // 0 - v2
+                        result = node->Op(2);
+
+                        if (destroyNodes)
+                        {
+                            DEBUG_DESTROY_NODE(node->Op(1));
+                        }
+                    }
+                }
+                else
+                {
+                    // -v1
+                    result = node->Op(1);
+                }
+                break;
+            }
+
+            case GT_NOT:
+            {
+                if (node->GetOperandCount() == 2)
+                {
+                    // v1 ^ AllBitsSet
+                    result = node->Op(1);
+
+                    if (destroyNodes)
+                    {
+                        DEBUG_DESTROY_NODE(node->Op(2));
+                    }
+                }
+                else
+                {
+                    // ~v1
+                    result = node->Op(1);
+                }
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        if (destroyNodes)
+        {
+            DEBUG_DESTROY_NODE(node);
+        }
+        return result;
+    };
 
     if (isScalar)
     {
+        // scalar operations zero or copy the upper bits
         return node;
     }
 
     switch (oper)
     {
-#if defined(TARGET_ARM64)
         // Transforms:
-        // 1. -(-v1) to v1
-        case GT_NEG:
-        {
-            GenTree* op1 = node->Op(1);
-
-            if (op1->OperIsHWIntrinsic())
-            {
-                GenTreeHWIntrinsic* hw     = op1->AsHWIntrinsic();
-                genTreeOps          hwOper = hw->GetOperForHWIntrinsicId(&isScalar);
-
-                if (isScalar)
-                {
-                    return node;
-                }
-
-                if (varTypeToSigned(simdBaseType) != varTypeToSigned(hw->GetSimdBaseType()))
-                {
-                    // We need the base types to be of the same kind and size
-                    // that is, we can't mix floating-point and integers or int and long
-                    // but we can mix int and uint or long and ulong.
-                    return node;
-                }
-
-                if (hwOper == GT_NEG)
-                {
-                    GenTree* result = hw->Op(1);
-                    DEBUG_DESTROY_NODE(hw);
-                    DEBUG_DESTROY_NODE(node);
-                    return result;
-                }
-            }
-            break;
-        }
-#endif // TARGET_ARM64
-
-#if defined(TARGET_ARM64)
-        // Transforms:
-        // 1. ~(~v1) to v1
-        case GT_NOT:
-        {
-            GenTree* op1 = node->Op(1);
-
-            if (op1->OperIsHWIntrinsic())
-            {
-                GenTreeHWIntrinsic* hw     = op1->AsHWIntrinsic();
-                genTreeOps          hwOper = hw->GetOperForHWIntrinsicId(&isScalar);
-
-                if (isScalar)
-                {
-                    return node;
-                }
-
-                if (hwOper == GT_NOT)
-                {
-                    GenTree* result = hw->Op(1);
-                    DEBUG_DESTROY_NODE(hw);
-                    DEBUG_DESTROY_NODE(node);
-                    return result;
-                }
-            }
-            break;
-        }
-#endif // TARGET_ARM64
-
-        // Transforms:
-        // 1. (Zero - v1) to VectorXxx.Negate(v1); for integers
-        // 2. (Zero - (Zero - v1)) to v1; for integers
-        case GT_SUB:
+        // 1. (-v1) + v2 to v2 - v1; except for integrals when v2 is a constant
+        // 2. (~v1) + 1 to -v1; for integral
+        // 3. v1 + (-v2) to v1 - v2
+        case GT_ADD:
         {
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
 
-            if (varTypeIsIntegral(simdBaseType) && op1->IsVectorZero())
+            if (op1->OperIsHWIntrinsic())
             {
-#if defined(TARGET_ARM64)
-                // xarch doesn't have a native GT_NEG representation for integers and itself uses (Zero - v1)
-                GenTree* negNode = gtNewSimdUnOpNode(GT_NEG, retType, op2, simdBaseJitType, simdSize);
+                GenTreeHWIntrinsic* op1Intrin = op1->AsHWIntrinsic();
 
-                DEBUG_DESTROY_NODE(op1);
-                DEBUG_DESTROY_NODE(node);
-                negNode->SetMorphed(this);
+                bool       op1IsScalar = false;
+                genTreeOps op1Oper     = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar, /* getEffectiveOp */ true);
+                var_types  op1SimdBaseType = op1Intrin->GetSimdBaseType();
 
-                return negNode;
-#elif defined(TARGET_XARCH)
-                if (op2->OperIsHWIntrinsic())
+                if (op1IsScalar)
                 {
-                    GenTreeHWIntrinsic* hw             = op2->AsHWIntrinsic();
-                    genTreeOps          hwOper         = hw->GetOperForHWIntrinsicId(&isScalar);
-                    var_types           hwSimdBaseType = hw->GetSimdBaseType();
+                    // scalar operations zero or copy the upper bits
+                    break;
+                }
 
-                    if (isScalar)
+                if (op1Oper == GT_NEG)
+                {
+                    if (varTypeIsIntegral(simdBaseType) && op2->IsCnsVec())
                     {
-                        return node;
+                        // We don't handle this case because we are
+                        // treating (-v1) + cns1 as the canonical form
+                        break;
                     }
 
-                    if (varTypeToSigned(simdBaseType) != varTypeToSigned(hwSimdBaseType))
+                    if (varTypeToSigned(simdBaseType) != varTypeToSigned(op1SimdBaseType))
                     {
                         // We need the base types to be of the same kind and size
                         // that is, we can't mix floating-point and integers or int and long
                         // but we can mix int and uint or long and ulong.
-                        return node;
+                        break;
                     }
 
-                    if (hwOper == GT_SUB)
-                    {
-                        if (varTypeIsIntegral(hwSimdBaseType) && hw->Op(1)->IsVectorZero())
-                        {
-                            GenTree* result = hw->Op(2);
-                            DEBUG_DESTROY_NODE(hw->Op(1));
-                            DEBUG_DESTROY_NODE(hw);
-                            DEBUG_DESTROY_NODE(op1);
-                            DEBUG_DESTROY_NODE(node);
-                            return result;
-                        }
-                    }
+                    op1 = ExtractEffectiveOp(GT_NEG, op1Intrin, /* destroyNodes */ true);
+
+                    NamedIntrinsic subIntrinsic =
+                        GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, GT_SUB, op2, op1, simdBaseType, simdSize,
+                                                                     isScalar);
+
+                    node->ChangeHWIntrinsicId(subIntrinsic, op2, op1);
+                    return fgMorphHWIntrinsicRequired(node);
                 }
-#endif // !TARGET_ARM64 && !TARGET_XARCH
+                else if (op1Oper == GT_NOT)
+                {
+                    if (varTypeIsIntegral(simdBaseType))
+                    {
+                        break;
+                    }
+
+                    if (!op2->IsCnsVec())
+                    {
+                        break;
+                    }
+
+                    if (!op2->AsVecCon()->IsBroadcast(simdBaseType))
+                    {
+                        break;
+                    }
+
+                    if (!op2->AsVecCon()->IsScalarOne(simdBaseType))
+                    {
+                        break;
+                    }
+
+                    op1 = ExtractEffectiveOp(GT_NOT, op1Intrin, /* destroyNodes */ true);
+
+                    DEBUG_DESTROY_NODE(op2);
+                    DEBUG_DESTROY_NODE(node);
+
+                    node = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseJitType, simdSize)->AsHWIntrinsic();
+
+#if defined(TARGET_XARCH)
+                    if (varTypeIsFloating(simdBaseType))
+                    {
+                        node->AsHWIntrinsic()->Op(2)->SetMorphed(this);
+                    }
+                    else
+                    {
+                        node->AsHWIntrinsic()->Op(1)->SetMorphed(this);
+                    }
+#endif // TARGET_XARCH
+
+                    return fgMorphHWIntrinsicRequired(node);
+                }
+            }
+            else if (op2->OperIsHWIntrinsic())
+            {
+                GenTreeHWIntrinsic* op2Intrin = op2->AsHWIntrinsic();
+
+                bool       op2IsScalar = false;
+                genTreeOps op2Oper     = op2Intrin->GetOperForHWIntrinsicId(&op2IsScalar, /* getEffectiveOp */ true);
+                var_types  op2SimdBaseType = op2Intrin->GetSimdBaseType();
+
+                if ((op2Oper != GT_NEG) || op2IsScalar)
+                {
+                    // scalar operations zero or copy the upper bits
+                    break;
+                }
+
+                if (varTypeToSigned(simdBaseType) != varTypeToSigned(op2SimdBaseType))
+                {
+                    // We need the base types to be of the same kind and size
+                    // that is, we can't mix floating-point and integers or int and long
+                    // but we can mix int and uint or long and ulong.
+                    break;
+                }
+
+                op2 = ExtractEffectiveOp(GT_NEG, op2Intrin, /* destroyNodes */ true);
+
+                NamedIntrinsic subIntrinsic =
+                    GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, GT_SUB, op1, op2, simdBaseType, simdSize,
+                                                                 isScalar);
+
+                node->ChangeHWIntrinsicId(subIntrinsic, op1, op2);
+                return fgMorphHWIntrinsicRequired(node);
             }
             break;
         }
 
         // Transforms:
-        // 1. (v1 ^ AllBitsSet) to VectorXxx.OnesComplement(v1)
-        // 2. (v1 ^ -0.0) to VectorXxx.Negate(v1); for floating-point
-        case GT_XOR:
+        // 1. (-v1) / cns2 to v1 / (-cns2); for floating-point
+        case GT_DIV:
+        {
+            if (varTypeIsIntegral(simdBaseType))
+            {
+                break;
+            }
+
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            if (!op1->OperIsHWIntrinsic())
+            {
+                break;
+            }
+
+            GenTreeHWIntrinsic* op1Intrin = op1->AsHWIntrinsic();
+
+            bool       op1IsScalar     = false;
+            genTreeOps op1Oper         = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar, /* getEffectiveOp */ true);
+            var_types  op1SimdBaseType = op1Intrin->GetSimdBaseType();
+
+            if ((op1Oper != GT_NEG) || op1IsScalar)
+            {
+                // scalar operations zero or copy the upper bits
+                break;
+            }
+
+            if (varTypeToSigned(simdBaseType) != varTypeToSigned(op1SimdBaseType))
+            {
+                // We need the base types to be of the same kind and size
+                // that is, we can't mix floating-point and integers or int and long
+                // but we can mix int and uint or long and ulong.
+                break;
+            }
+
+            if (!op2->IsCnsVec())
+            {
+                break;
+            }
+
+            op2->AsVecCon()->EvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType);
+            fgUpdateConstTreeValueNumber(op2);
+
+            op1         = ExtractEffectiveOp(GT_NEG, op1Intrin, /* destroyNodes */ true);
+            node->Op(1) = op1;
+
+            return node;
+        }
+
+        // Transforms:
+        // 1. (-v1) * cns2 to v1 * (-cns2)
+        case GT_MUL:
         {
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
 
-#if defined(TARGET_ARM64)
-            if (op2->IsVectorAllBitsSet())
+            if (!op1->OperIsHWIntrinsic())
             {
-                // xarch doesn't have a native GT_NOT representation and itself uses (v1 ^ AllBitsSet)
-                GenTree* notNode = gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize);
-
-                DEBUG_DESTROY_NODE(op2);
-                DEBUG_DESTROY_NODE(node);
-                notNode->SetMorphed(this);
-
-                return notNode;
+                break;
             }
 
-            if (varTypeIsFloating(simdBaseType) && op2->IsVectorNegativeZero(simdBaseType))
+            GenTreeHWIntrinsic* op1Intrin = op1->AsHWIntrinsic();
+
+            bool       op1IsScalar     = false;
+            genTreeOps op1Oper         = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar, /* getEffectiveOp */ true);
+            var_types  op1SimdBaseType = op1Intrin->GetSimdBaseType();
+
+            if ((op1Oper != GT_NEG) || op1IsScalar)
             {
-                // xarch doesn't have a native GT_NEG representation for floating-point and itself uses (v1 ^ -0.0)
-                GenTree* negNode = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseJitType, simdSize);
-
-                DEBUG_DESTROY_NODE(op2);
-                DEBUG_DESTROY_NODE(node);
-                negNode->SetMorphed(this);
-
-                return negNode;
+                // scalar operations zero or copy the upper bits
+                break;
             }
-#endif // TARGET_ARM64
+
+            if (varTypeToSigned(simdBaseType) != varTypeToSigned(op1SimdBaseType))
+            {
+                // We need the base types to be of the same kind and size
+                // that is, we can't mix floating-point and integers or int and long
+                // but we can mix int and uint or long and ulong.
+                break;
+            }
+
+            if (!op2->IsCnsVec())
+            {
+                break;
+            }
+
+            op2->AsVecCon()->EvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType);
+            fgUpdateConstTreeValueNumber(op2);
+
+            op1         = ExtractEffectiveOp(GT_NEG, op1Intrin, /* destroyNodes */ true);
+            node->Op(1) = op1;
+
+            return node;
+        }
+
+        // Transforms:
+        // 1. -(-v1) to v1
+        // 2. -(v1 * cns2) to v1 * (-cns2)
+        // 3. -(v1 / cns2) to v1 / (-cns2); except when any element of cns2 is 1 or -1 for integral
+        case GT_NEG:
+        {
+            GenTree* op1 = ExtractEffectiveOp(GT_NEG, node, /* destroyNodes */ false);
+
+            if (!op1->OperIsHWIntrinsic())
+            {
+                break;
+            }
+
+            GenTreeHWIntrinsic* op1Intrin = op1->AsHWIntrinsic();
+
+            bool       op1IsScalar     = false;
+            genTreeOps op1Oper         = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar, /* getEffectiveOp */ true);
+            var_types  op1SimdBaseType = op1Intrin->GetSimdBaseType();
+
+            if (op1IsScalar)
+            {
+                // scalar operations zero or copy the upper bits
+                break;
+            }
+
+            if (varTypeToSigned(simdBaseType) != varTypeToSigned(op1SimdBaseType))
+            {
+                // We need the base types to be of the same kind and size
+                // that is, we can't mix floating-point and integers or int and long
+                // but we can mix int and uint or long and ulong.
+                break;
+            }
+
+            if (op1Oper == GT_NEG)
+            {
+                GenTree* result = ExtractEffectiveOp(GT_NEG, op1Intrin, /* destroyNodes */ true);
+                ExtractEffectiveOp(GT_NEG, node, /* destroyNodes */ true);
+                return result;
+            }
+            else if ((op1Oper == GT_MUL) || (op1Oper == GT_DIV))
+            {
+                GenTree* op2 = op1Intrin->Op(2);
+
+                if (!op2->IsCnsVec())
+                {
+                    break;
+                }
+
+                if ((op1Oper == GT_DIV) && varTypeIsIntegral(simdBaseType))
+                {
+                    bool     canTransform = true;
+                    unsigned elementCount = GenTreeVecCon::ElementCount(simdSize, simdBaseType);
+
+                    for (unsigned i = 0; i < elementCount; i++)
+                    {
+                        int64_t element = op2->AsVecCon()->GetElementIntegral(simdBaseType, i);
+
+                        if ((element == 1) || (element == -1))
+                        {
+                            canTransform = false;
+                            break;
+                        }
+                    }
+
+                    if (!canTransform)
+                    {
+                        break;
+                    }
+                }
+
+                op2->AsVecCon()->EvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType);
+                fgUpdateConstTreeValueNumber(op2);
+
+                ExtractEffectiveOp(GT_NEG, node, /* destroyNodes */ true);
+                return op1Intrin;
+            }
             break;
+        }
+
+        // Transforms:
+        // 1. ~(~v1) to v1
+        // 2. ~(v1 cmp v2) to v1 cmp* v2
+        case GT_NOT:
+        {
+            GenTree* op1 = ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ false);
+
+            if (!op1->OperIsHWIntrinsic())
+            {
+                break;
+            }
+
+            GenTreeHWIntrinsic* op1Intrin = op1->AsHWIntrinsic();
+            GenTreeHWIntrinsic* cvtIntrin = nullptr;
+
+            if (op1Intrin->OperIsConvertMaskToVector())
+            {
+                // If we have a ConvertMaskToVector, then we
+                // need to get its op1 to check for a compare
+
+                cvtIntrin = op1Intrin;
+                op1       = op1Intrin->Op(1);
+
+                if (!op1->OperIsHWIntrinsic())
+                {
+                    break;
+                }
+
+                op1Intrin = op1->AsHWIntrinsic();
+            }
+
+            bool        op1IsScalar = false;
+            genTreeOps  op1Oper     = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar, /* getEffectiveOp */ true);
+            var_types   op1RetType  = op1Intrin->TypeGet();
+            CorInfoType op1SimdBaseJitType = op1Intrin->GetSimdBaseJitType();
+            var_types   op1SimdBaseType    = op1Intrin->GetSimdBaseType();
+            unsigned    op1SimdSize        = op1Intrin->GetSimdSize();
+
+            if (op1Oper == GT_NOT)
+            {
+                // The simdBaseTypes can differ for GT_NOT since its a bitwise operation
+                GenTree* result = ExtractEffectiveOp(GT_NOT, op1Intrin, /* destroyNodes */ true);
+                ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ true);
+                return result;
+            }
+
+            if (GenTree::OperIsCompare(op1Oper))
+            {
+                assert(op1Intrin->GetOperandCount() == 2);
+
+                GenTree* cmpOp1 = op1Intrin->Op(1);
+                GenTree* cmpOp2 = op1Intrin->Op(2);
+
+                const bool reverseCond = true;
+
+                var_types lookupType =
+                    GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, op1Oper, op1RetType, op1SimdBaseType, op1SimdSize,
+                                                              reverseCond);
+                NamedIntrinsic newId =
+                    GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, op1Oper, lookupType, cmpOp1, cmpOp2,
+                                                                 op1SimdBaseType, op1SimdSize, op1IsScalar,
+                                                                 reverseCond);
+
+                if (newId != NI_Illegal)
+                {
+                    op1Intrin->ResetHWIntrinsicId(newId, cmpOp1, cmpOp2);
+                    ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ true);
+
+                    if (lookupType != op1RetType)
+                    {
+                        assert(cvtIntrin == nullptr);
+                        assert(varTypeIsSIMD(op1RetType));
+                        assert(varTypeIsMask(lookupType));
+
+                        op1Intrin->gtType = lookupType;
+                        op1Intrin = gtNewSimdCvtMaskToVectorNode(retType, op1Intrin, op1SimdBaseJitType, op1SimdSize)
+                                        ->AsHWIntrinsic();
+                    }
+                    else if (cvtIntrin != nullptr)
+                    {
+                        cvtIntrin->Op(1) = op1Intrin;
+                        op1Intrin        = cvtIntrin;
+                    }
+                    return fgMorphHWIntrinsicRequired(op1Intrin);
+                }
+            }
+            break;
+        }
+
+        // Transforms:
+        // 1. (-v1) - (-v2) to v2 - v1
+        // 2. v1 - (-v2) to v1 + v2
+        case GT_SUB:
+        {
+            if (!fgGlobalMorph)
+            {
+                break;
+            }
+
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            if (!op2->OperIsHWIntrinsic())
+            {
+                break;
+            }
+
+            GenTreeHWIntrinsic* op2Intrin = op2->AsHWIntrinsic();
+
+            bool       op2IsScalar     = false;
+            genTreeOps op2Oper         = op2Intrin->GetOperForHWIntrinsicId(&op2IsScalar, /* getEffectiveOp */ true);
+            var_types  op2SimdBaseType = op2Intrin->GetSimdBaseType();
+
+            if ((op2Oper != GT_NEG) || op2IsScalar)
+            {
+                break;
+            }
+
+            if (varTypeToSigned(simdBaseType) != varTypeToSigned(op2SimdBaseType))
+            {
+                // We need the base types to be of the same kind and size
+                // that is, we can't mix floating-point and integers or int and long
+                // but we can mix int and uint or long and ulong.
+                break;
+            }
+
+            op2 = ExtractEffectiveOp(GT_NEG, op2Intrin, /* destroyNodes */ true);
+
+            if (op1->OperIsHWIntrinsic())
+            {
+                GenTreeHWIntrinsic* op1Intrin = op1->AsHWIntrinsic();
+
+                bool       op1IsScalar = false;
+                genTreeOps op1Oper     = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar, /* getEffectiveOp */ true);
+                var_types  op1SimdBaseType = op1Intrin->GetSimdBaseType();
+
+                if ((op1Oper == GT_NEG) && !op1IsScalar &&
+                    (varTypeToSigned(simdBaseType) == varTypeToSigned(op1SimdBaseType)))
+                {
+                    op1 = ExtractEffectiveOp(GT_NEG, op1Intrin, /* destroyNodes */ true);
+
+                    node->Op(1) = op2;
+                    node->Op(2) = op1;
+
+                    break;
+                }
+            }
+
+            NamedIntrinsic addIntrinsic =
+                GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, GT_ADD, op1, op2, simdBaseType, simdSize, isScalar);
+
+            node->ChangeHWIntrinsicId(addIntrinsic, op1, op2);
+            return fgMorphHWIntrinsicRequired(node);
         }
 
         default:
@@ -9558,6 +9976,16 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
     }
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    GenTreeHWIntrinsic* maskedIntrinsic = fgOptimizeForMaskedIntrinsic(node);
+
+    if (maskedIntrinsic != nullptr)
+    {
+        node = maskedIntrinsic;
+        node->SetMorphed(this);
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     return node;
 }
@@ -9653,25 +10081,25 @@ GenTreeHWIntrinsic* Compiler::fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* n
         {
             case GT_AND:
             {
-                maskIntrinsicId = NI_EVEX_AndMask;
+                maskIntrinsicId = NI_AVX512_AndMask;
                 break;
             }
 
             case GT_NOT:
             {
-                maskIntrinsicId = NI_EVEX_NotMask;
+                maskIntrinsicId = NI_AVX512_NotMask;
                 break;
             }
 
             case GT_OR:
             {
-                maskIntrinsicId = NI_EVEX_OrMask;
+                maskIntrinsicId = NI_AVX512_OrMask;
                 break;
             }
 
             case GT_XOR:
             {
-                maskIntrinsicId = NI_EVEX_XorMask;
+                maskIntrinsicId = NI_AVX512_XorMask;
                 break;
             }
 
@@ -9718,7 +10146,10 @@ GenTreeHWIntrinsic* Compiler::fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* n
         return node;
     }
 #elif defined(TARGET_ARM64)
-    return fgMorphTryUseAllMaskVariant(node);
+    // TODO-SVE: This optimisation is too naive. It needs to calculate the full cost of the instruction
+    //           vs using the predicate version, taking into account all input arguements and all uses
+    //           of the result.
+    // return fgMorphTryUseAllMaskVariant(node);
 #else
 #error Unsupported platform
 #endif
@@ -9773,7 +10204,7 @@ GenTree* Compiler::doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic*
     else if (node->IsVectorZero())
     {
         // Morph the vector of zeroes into mask of zeroes.
-        GenTree* mask = gtNewSimdFalseMaskByteNode(parent->GetSimdSize());
+        GenTree* mask = gtNewSimdFalseMaskByteNode();
         mask->SetMorphed(this);
         return mask;
     }
@@ -10130,7 +10561,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         }
 
         // - a + b = > b - a
-        // ADD((NEG(a), b) => SUB(b, a)
+        // ADD(NEG(a), b) => SUB(b, a)
 
         // Do not do this if "op2" is constant for canonicalization purposes.
         if (op1->OperIs(GT_NEG) && !op2->OperIs(GT_NEG) && !op2->IsIntegralConst() && gtCanSwapOrder(op1, op2))
@@ -10145,7 +10576,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         }
 
         // a + -b = > a - b
-        // ADD(a, (NEG(b)) => SUB(a, b)
+        // ADD(a, NEG(b)) => SUB(a, b)
         if (!op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
         {
             add->SetOper(GT_SUB);
@@ -10219,21 +10650,34 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         }
     }
 
+    if (op1->OperIs(GT_NEG) && opts.OptimizationEnabled())
+    {
+        if ((op2->IsCnsIntOrI() && !op2->IsIconHandle()) || op2->IsCnsFltOrDbl())
+        {
+            // MUL(NEG(a), C) => MUL(a, NEG(C))
+            mul->gtOp1 = op1->AsUnOp()->gtGetOp1();
+
+            if (op2->IsCnsIntOrI())
+            {
+                op2->AsIntConCommon()->SetIconValue(-op2->AsIntConCommon()->IconValue());
+                op2->AsIntConRef().gtFieldSeq = nullptr;
+            }
+            else
+            {
+                assert(op2->IsCnsFltOrDbl());
+                op2->AsDblCon()->SetDconValue(-op2->AsDblCon()->DconValue());
+            }
+            fgUpdateConstTreeValueNumber(op2);
+
+            DEBUG_DESTROY_NODE(op1);
+            op1 = mul->gtOp1;
+        }
+    }
+
     if (op2->IsIntegralConst())
     {
         // We should not get here for 64-bit multiplications on 32-bit.
         assert(op2->IsCnsIntOrI());
-
-        // MUL(NEG(a), C) => MUL(a, NEG(C))
-        if (opts.OptimizationEnabled() && op1->OperIs(GT_NEG) && !op2->IsIconHandle())
-        {
-            mul->gtOp1                 = op1->AsUnOp()->gtGetOp1();
-            op2->AsIntCon()->gtIconVal = -op2->AsIntCon()->gtIconVal;
-            fgUpdateConstTreeValueNumber(op2);
-            DEBUG_DESTROY_NODE(op1);
-
-            op1 = mul->gtOp1;
-        }
 
         ssize_t mult = op2->AsIntConCommon()->IconValue();
 
@@ -10709,7 +11153,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
     /* Change "((x+icon)+y)" to "((x+y)+icon)"
        Don't reorder floating-point operations */
 
-    if (fgGlobalMorph && (oper == GT_ADD) && !tree->gtOverflow() && (op1->gtOper == GT_ADD) && !op1->gtOverflow() &&
+    if (fgGlobalMorph && (oper == GT_ADD) && !tree->gtOverflow() && op1->OperIs(GT_ADD) && !op1->gtOverflow() &&
         varTypeIsIntegralOrI(typ))
     {
         GenTree* ad1 = op1->AsOp()->gtOp1;
@@ -10800,7 +11244,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                     break;
                 }
 
-                if (op2->gtOper == GT_CAST && !op2->gtOverflow())
+                if (op2->OperIs(GT_CAST) && !op2->gtOverflow())
                 {
                     var_types srct;
                     var_types cast;
@@ -10824,7 +11268,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 
             /* Check for the case "(val + icon) * icon" */
 
-            if (op2->gtOper == GT_CNS_INT && op1->gtOper == GT_ADD)
+            if (op2->OperIs(GT_CNS_INT) && op1->OperIs(GT_ADD))
             {
                 GenTree* add = op1->AsOp()->gtOp2;
 
@@ -10873,7 +11317,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 
             /* Check for the case "(val + icon) << icon" */
 
-            if (op2->IsCnsIntOrI() && op1->gtOper == GT_ADD && !op1->gtOverflow())
+            if (op2->IsCnsIntOrI() && op1->OperIs(GT_ADD) && !op1->gtOverflow())
             {
                 GenTree* cns = op1->AsOp()->gtOp2;
 
@@ -10926,6 +11370,20 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 //
 GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
+    // It is important that this follows the general flow of fgMorphSmpOp
+    // * Perform required preorder processing
+    // * Process the operands, in order, if any
+    // * Perform required postorder morphing
+    // * Perform optional postorder morphing if optimizing
+    //
+    // It is also important that similar checks be done where relevant, so
+    // if fgMorphSmpOp does a check for fgGlobalMorph or OptimizationEnabled
+    // so should this method.
+
+    // ------------------------------------------------------------------------
+    // First do any PRE-ORDER processing
+    //
+
     bool allArgsAreConst            = true;
     bool canBenefitFromConstantProp = false;
     bool hasImmediateOperand        = false;
@@ -10942,6 +11400,18 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
     {
         hasImmediateOperand = true;
     }
+
+#ifdef TARGET_XARCH
+    if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division)
+    {
+        fgAddCodeRef(compCurBB, SCK_DIV_BY_ZERO);
+        fgAddCodeRef(compCurBB, SCK_OVERFLOW);
+    }
+#endif // TARGET_XARCH
+
+    // ------------------------------------------------------------------------
+    // Process the operands, if any
+    //
 
     for (GenTree** use : tree->UseEdges())
     {
@@ -10992,102 +11462,257 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
         tree->AddAllEffectsFlags(operand);
     }
 
-#ifdef TARGET_XARCH
-    if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division)
+    // ------------------------------------------------------------------------
+    // Now do POST-ORDER processing
+    //
+
+    var_types   retType         = tree->TypeGet();
+    CorInfoType simdBaseJitType = tree->GetSimdBaseJitType();
+    var_types   simdBaseType    = tree->GetSimdBaseType();
+    unsigned    simdSize        = tree->GetSimdSize();
+
+    // Try to fold it, maybe we get lucky,
+    GenTree* morphedTree = gtFoldExpr(tree);
+
+    if (morphedTree->OperIsHWIntrinsic())
     {
-        fgAddCodeRef(compCurBB, SCK_DIV_BY_ZERO);
-        fgAddCodeRef(compCurBB, SCK_OVERFLOW);
+        tree = morphedTree->AsHWIntrinsic();
+
+        if (allArgsAreConst && tree->IsVectorCreate())
+        {
+            // Avoid unexpected CSE for constant arguments for Vector_.Create
+            // but only if all arguments are constants.
+
+            for (GenTree* arg : tree->Operands())
+            {
+                arg->SetDoNotCSE();
+            }
+        }
+
+        // ------------------------------------------------------------------------
+        // Perform the required oper-specific postorder morphing
+        //
+
+        morphedTree = fgMorphHWIntrinsicRequired(tree);
+
+        if (morphedTree->OperIsHWIntrinsic())
+        {
+            tree = morphedTree->AsHWIntrinsic();
+
+            // ------------------------------------------------------------------------
+            // Optional morphing is done if tree transformations is permitted
+            //
+
+            morphedTree = fgMorphHWIntrinsicOptional(tree);
+        }
     }
+
+    assert(retType == morphedTree->TypeGet());
+    morphedTree->SetMorphed(this);
+    return morphedTree;
+}
+
+//------------------------------------------------------------------------
+// fgMorphHWIntrinsicRequired: Perform required postorder morphing of a GenTreeHWIntrinsic tree.
+//
+// Arguments:
+//    tree - The tree to morph
+//
+// Return Value:
+//    The morphed tree.
+//
+GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
+{
+    var_types   retType         = tree->TypeGet();
+    CorInfoType simdBaseJitType = tree->GetSimdBaseJitType();
+    var_types   simdBaseType    = tree->GetSimdBaseType();
+    unsigned    simdSize        = tree->GetSimdSize();
+
+    bool       isScalar = false;
+    genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
+
+    if (tree->isCommutativeHWIntrinsic())
+    {
+        assert(tree->GetOperandCount() == 2);
+        GenTree*& op1 = tree->Op(1);
+
+        if (op1->OperIsConst())
+        {
+            // Move constants from op1 to op2 for commutative operations
+            std::swap(op1, tree->Op(2));
+        }
+    }
+    else if (GenTree::OperIsCompare(oper))
+    {
+        assert(tree->GetOperandCount() == 2);
+
+        GenTree* op1 = tree->Op(1);
+        GenTree* op2 = tree->Op(2);
+
+        if (!isScalar && op1->IsCnsVec())
+        {
+            // Move constant vectors from op1 to op2 for comparison operations
+            // Noting that we can't handle scalar operations since they can copy upper bits from op1
+
+            genTreeOps newOper = GenTree::SwapRelop(oper);
+            var_types  lookupType =
+                GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, newOper, retType, simdBaseType, simdSize);
+            NamedIntrinsic newId = GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, lookupType, op2, op1,
+                                                                                simdBaseType, simdSize, isScalar);
+
+            if (newId != NI_Illegal)
+            {
+                tree->ResetHWIntrinsicId(newId, op2, op1);
+
+                if (lookupType != retType)
+                {
+                    assert(varTypeIsSIMD(retType));
+                    assert(varTypeIsMask(lookupType));
+
+                    tree->gtType = lookupType;
+                    tree = gtNewSimdCvtMaskToVectorNode(retType, tree, simdBaseJitType, simdSize)->AsHWIntrinsic();
+                    return fgMorphHWIntrinsicRequired(tree);
+                }
+            }
+        }
+    }
+
+    switch (oper)
+    {
+        // Transforms:
+        // 1. v1 - cns2 to v1 + (-cns2); for integers
+        // 2. 0 - v1 to -v1; for integers on supported platforms
+        // 3. cns1 - v2 to (-v2) + cns1; for integers
+        case GT_SUB:
+        {
+            if (!fgGlobalMorph)
+            {
+                break;
+            }
+
+            if (!varTypeIsIntegral(simdBaseType))
+            {
+                break;
+            }
+
+            GenTree* op1 = tree->Op(1);
+            GenTree* op2 = tree->Op(2);
+
+            if (op2->IsCnsVec())
+            {
+                op2->AsVecCon()->EvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType);
+                fgUpdateConstTreeValueNumber(op2);
+
+                NamedIntrinsic addIntrinsic =
+                    GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, GT_ADD, op1, op2, simdBaseType, simdSize,
+                                                                 isScalar);
+
+                tree->ChangeHWIntrinsicId(addIntrinsic, op1, op2);
+                return fgMorphHWIntrinsicRequired(tree);
+            }
+            else if (op1->IsCnsVec())
+            {
+                if (op1->IsVectorZero())
+                {
+#if defined(TARGET_ARM64)
+                    // xarch doesn't have a native GT_NEG representation for integers and itself uses (Zero - v1)
+                    op2 = gtNewSimdUnOpNode(GT_NEG, retType, op2, simdBaseJitType, simdSize);
+
+                    DEBUG_DESTROY_NODE(op1);
+                    DEBUG_DESTROY_NODE(tree);
+
+                    return fgMorphHWIntrinsicRequired(op2->AsHWIntrinsic());
+#endif // TARGET_ARM64
+                }
+                else
+                {
+                    op2 = gtNewSimdUnOpNode(GT_NEG, retType, op2, simdBaseJitType, simdSize);
+
+#if defined(TARGET_XARCH)
+                    if (varTypeIsFloating(simdBaseType))
+                    {
+                        op2->AsHWIntrinsic()->Op(2)->SetMorphed(this);
+                    }
+                    else
+                    {
+                        op2->AsHWIntrinsic()->Op(1)->SetMorphed(this);
+                    }
 #endif // TARGET_XARCH
+
+                    NamedIntrinsic addIntrinsic =
+                        GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, GT_ADD, op2, op1, simdBaseType, simdSize,
+                                                                     isScalar);
+
+                    tree->ChangeHWIntrinsicId(addIntrinsic, op2, op1);
+
+                    op2 = fgMorphHWIntrinsicRequired(op2->AsHWIntrinsic());
+                    op2->SetMorphed(this);
+                    tree->Op(1) = op2;
+
+                    return fgMorphHWIntrinsicRequired(tree);
+                }
+            }
+            break;
+        }
+
+#if defined(TARGET_ARM64)
+        // Transforms:
+        // 1. (v1 ^ AllBitsSet) to ~v1; on supported platforms
+        // 2. (v1 ^ -0.0) to -v1; for floating-point on supported platforms
+        case GT_XOR:
+        {
+            GenTree* op1 = tree->Op(1);
+            GenTree* op2 = tree->Op(2);
+
+            if (op2->IsVectorAllBitsSet())
+            {
+                // xarch doesn't have a native GT_NOT representation and itself uses (v1 ^ AllBitsSet)
+                op1 = gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize);
+
+                DEBUG_DESTROY_NODE(op2);
+                DEBUG_DESTROY_NODE(tree);
+
+                return fgMorphHWIntrinsicRequired(op1->AsHWIntrinsic());
+            }
+
+            if (varTypeIsFloating(simdBaseType) && op2->IsVectorNegativeZero(simdBaseType))
+            {
+                // xarch doesn't have a native GT_NEG representation for floating-point and itself uses (v1 ^ -0.0)
+                op1 = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseJitType, simdSize);
+
+                DEBUG_DESTROY_NODE(op2);
+                DEBUG_DESTROY_NODE(tree);
+
+                return fgMorphHWIntrinsicRequired(op1->AsHWIntrinsic());
+            }
+            break;
+        }
+#endif // TARGET_ARM64
+
+        default:
+        {
+            break;
+        }
+    }
 
     if (opts.OptimizationEnabled())
     {
-        var_types   retType         = tree->TypeGet();
-        CorInfoType simdBaseJitType = tree->GetSimdBaseJitType();
-        var_types   simdBaseType    = tree->GetSimdBaseType();
-        unsigned    simdSize        = tree->GetSimdSize();
-
-        if (tree->isCommutativeHWIntrinsic())
-        {
-            assert(tree->GetOperandCount() == 2);
-            GenTree*& op1 = tree->Op(1);
-
-            if (op1->IsCnsVec())
-            {
-                // Move constant vectors from op1 to op2 for commutative operations
-                std::swap(op1, tree->Op(2));
-            }
-        }
-        else
-        {
-            bool       isScalar = false;
-            genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
-
-            // We can't handle scalar operations since they can copy upper bits from op1
-            if (GenTree::OperIsCompare(oper) && !isScalar)
-            {
-                assert(tree->GetOperandCount() == 2);
-
-                GenTree* op1 = tree->Op(1);
-                GenTree* op2 = tree->Op(2);
-
-                if (op1->IsCnsVec())
-                {
-                    // Move constant vectors from op1 to op2 for comparison operations
-
-                    genTreeOps newOper = GenTree::SwapRelop(oper);
-                    var_types  lookupType =
-                        GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, newOper, retType, simdBaseType, simdSize);
-                    NamedIntrinsic newId =
-                        GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, retType, op2, op1, simdBaseType,
-                                                                     simdSize, false);
-
-                    if (newId != NI_Illegal)
-                    {
-                        tree->ResetHWIntrinsicId(newId, op2, op1);
-
-                        if (lookupType != retType)
-                        {
-                            assert(varTypeIsMask(lookupType));
-                            tree->gtType = lookupType;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Try to fold it, maybe we get lucky,
-        GenTree* morphedTree = gtFoldExpr(tree);
-
-        if ((morphedTree != tree) || !morphedTree->OperIsHWIntrinsic())
-        {
-            morphedTree->SetMorphed(this);
-        }
-        else
-        {
-            if (allArgsAreConst && tree->IsVectorCreate())
-            {
-                // Avoid unexpected CSE for constant arguments for Vector_.Create
-                // but only if all arguments are constants.
-
-                for (GenTree* arg : tree->Operands())
-                {
-                    arg->SetDoNotCSE();
-                }
-            }
-
-            morphedTree = fgOptimizeHWIntrinsic(tree);
-        }
-
-        if (retType != morphedTree->TypeGet())
-        {
-            assert(varTypeIsMask(morphedTree));
-            morphedTree = gtNewSimdCvtMaskToVectorNode(retType, morphedTree, simdBaseJitType, simdSize);
-            morphedTree = gtFoldExpr(morphedTree);
-        }
-        return morphedTree;
+        return fgOptimizeHWIntrinsic(tree);
     }
+    return tree;
+}
 
+//------------------------------------------------------------------------
+// fgMorphHWIntrinsicOptional: Perform optional postorder morphing of a GenTreeHWIntrinsic tree.
+//
+// Arguments:
+//    tree                 - The tree to morph
+//
+// Return Value:
+//    The morphed tree.
+//
+GenTree* Compiler::fgMorphHWIntrinsicOptional(GenTreeHWIntrinsic* tree)
+{
     return tree;
 }
 #endif // FEATURE_HW_INTRINSICS
@@ -11184,11 +11809,11 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
 {
     JITDUMP("\nMorphing MOD/UMOD [%06u] to Sub/Mul/Div\n", dspTreeID(tree));
 
-    if (tree->OperGet() == GT_MOD)
+    if (tree->OperIs(GT_MOD))
     {
         tree->SetOper(GT_DIV);
     }
-    else if (tree->OperGet() == GT_UMOD)
+    else if (tree->OperIs(GT_UMOD))
     {
         tree->SetOper(GT_UDIV);
     }
@@ -11387,12 +12012,12 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
     GenTree* op2            = tree->gtGetOp2();
     GenTree* leftShiftTree  = nullptr;
     GenTree* rightShiftTree = nullptr;
-    if ((op1->OperGet() == GT_LSH) && (op2->OperGet() == GT_RSZ))
+    if (op1->OperIs(GT_LSH) && op2->OperIs(GT_RSZ))
     {
         leftShiftTree  = op1;
         rightShiftTree = op2;
     }
-    else if ((op1->OperGet() == GT_RSZ) && (op2->OperGet() == GT_LSH))
+    else if (op1->OperIs(GT_RSZ) && op2->OperIs(GT_LSH))
     {
         leftShiftTree  = op2;
         rightShiftTree = op1;
@@ -11422,7 +12047,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         ssize_t leftShiftMask  = -1;
         ssize_t rightShiftMask = -1;
 
-        if ((leftShiftIndex->OperGet() == GT_AND))
+        if (leftShiftIndex->OperIs(GT_AND))
         {
             if (leftShiftIndex->gtGetOp2()->IsCnsIntOrI())
             {
@@ -11435,7 +12060,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
             }
         }
 
-        if ((rightShiftIndex->OperGet() == GT_AND))
+        if (rightShiftIndex->OperIs(GT_AND))
         {
             if (rightShiftIndex->gtGetOp2()->IsCnsIntOrI())
             {
@@ -11462,13 +12087,13 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         genTreeOps rotateOp             = GT_NONE;
         GenTree*   rotateIndex          = nullptr;
 
-        if (leftShiftIndex->OperGet() == GT_ADD)
+        if (leftShiftIndex->OperIs(GT_ADD))
         {
             shiftIndexWithAdd    = leftShiftIndex;
             shiftIndexWithoutAdd = rightShiftIndex;
             rotateOp             = GT_ROR;
         }
-        else if (rightShiftIndex->OperGet() == GT_ADD)
+        else if (rightShiftIndex->OperIs(GT_ADD))
         {
             shiftIndexWithAdd    = rightShiftIndex;
             shiftIndexWithoutAdd = leftShiftIndex;
@@ -12205,7 +12830,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
         noway_assert(lastStmt->GetNextStmt() == nullptr);
 
-        if (lastStmt->GetRootNode()->gtOper == GT_CALL)
+        if (lastStmt->GetRootNode()->OperIs(GT_CALL))
         {
             noway_assert(fgRemoveRestOfBlock);
 
@@ -12219,7 +12844,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             return result;
         }
 
-        noway_assert(lastStmt->GetRootNode()->gtOper == GT_JTRUE);
+        noway_assert(lastStmt->GetRootNode()->OperIs(GT_JTRUE));
 
         /* Did we fold the conditional */
 
@@ -12234,7 +12859,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             /* Yupee - we folded the conditional!
              * Remove the conditional statement */
 
-            noway_assert(cond->gtOper == GT_CNS_INT);
+            noway_assert(cond->OperIs(GT_CNS_INT));
             noway_assert((block->GetFalseTarget()->countOfInEdges() > 0) &&
                          (block->GetTrueTarget()->countOfInEdges() > 0));
 
@@ -12288,7 +12913,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
         noway_assert(lastStmt->GetNextStmt() == nullptr);
 
-        if (lastStmt->GetRootNode()->gtOper == GT_CALL)
+        if (lastStmt->GetRootNode()->OperIs(GT_CALL))
         {
             noway_assert(fgRemoveRestOfBlock);
 
@@ -12302,7 +12927,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             return result;
         }
 
-        noway_assert(lastStmt->GetRootNode()->gtOper == GT_SWITCH);
+        noway_assert(lastStmt->GetRootNode()->OperIs(GT_SWITCH));
 
         // Did we fold the conditional
 
@@ -12315,7 +12940,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             // Yupee - we folded the conditional!
             // Remove the conditional statement
 
-            noway_assert(cond->gtOper == GT_CNS_INT);
+            noway_assert(cond->OperIs(GT_CNS_INT));
 
             if (condTree != cond)
             {
@@ -12443,7 +13068,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock*     block,
 #endif
         // Use the call as the new stmt
         morph = morph->AsOp()->gtOp1;
-        noway_assert(morph->gtOper == GT_CALL);
+        noway_assert(morph->OperIs(GT_CALL));
     }
 
     // we can get a throw as a statement root
@@ -12641,7 +13266,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             }
 
             noway_assert(compTailCallUsed);
-            noway_assert(morphedTree->gtOper == GT_CALL);
+            noway_assert(morphedTree->OperIs(GT_CALL));
             GenTreeCall* call = morphedTree->AsCall();
             // Could be
             //   - a fast call made as jmp in which case block will be ending with
@@ -12695,7 +13320,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
         {
             /* Use the call as the new stmt */
             morphedTree = morphedTree->AsOp()->gtOp1;
-            noway_assert(morphedTree->gtOper == GT_CALL);
+            noway_assert(morphedTree->OperIs(GT_CALL));
             noway_assert((morphedTree->gtFlags & GTF_COLON_COND) == 0);
 
             fgRemoveRestOfBlock = true;
@@ -12749,8 +13374,8 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             noway_assert(lastStmt && lastStmt->GetNextStmt() == nullptr);
             GenTree* last = lastStmt->GetRootNode();
 
-            if ((block->KindIs(BBJ_COND) && (last->gtOper == GT_JTRUE)) ||
-                (block->KindIs(BBJ_SWITCH) && (last->gtOper == GT_SWITCH)))
+            if ((block->KindIs(BBJ_COND) && last->OperIs(GT_JTRUE)) ||
+                (block->KindIs(BBJ_SWITCH) && last->OperIs(GT_SWITCH)))
             {
                 GenTree* op1 = last->AsOp()->gtOp1;
 
@@ -13490,7 +14115,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             // Must be a void return node with null operand; delete it as this block branches to
             // oneReturn block
             GenTree* const retVal = ret->AsOp()->GetReturnValue();
-            noway_assert(ret->TypeGet() == TYP_VOID);
+            noway_assert(ret->TypeIs(TYP_VOID));
             noway_assert(retVal == nullptr);
 
             if (opts.compDbgCode && lastStmt->GetDebugInfo().IsValid())
@@ -13769,7 +14394,7 @@ GenTreeQmark* Compiler::fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst /* = N
 
     GenTreeQmark* topQmark = nullptr;
 
-    if (expr->gtOper == GT_QMARK)
+    if (expr->OperIs(GT_QMARK))
     {
         topQmark = expr->AsQmark();
     }
@@ -13874,8 +14499,8 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
     assert(!varTypeIsFloating(condExpr->TypeGet()));
 
-    bool hasTrueExpr  = (trueExpr->OperGet() != GT_NOP);
-    bool hasFalseExpr = (falseExpr->OperGet() != GT_NOP);
+    bool hasTrueExpr  = !trueExpr->OperIs(GT_NOP);
+    bool hasFalseExpr = !falseExpr->OperIs(GT_NOP);
     assert(hasTrueExpr || hasFalseExpr); // We expect to have at least one arm of the qmark!
 
     // Create remainder, cond and "else" blocks. After this, the blocks are in this order:
@@ -13894,7 +14519,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     BasicBlock* elseBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
 
     // Update flowgraph
-    fgRedirectTargetEdge(block, condBlock);
+    fgRedirectEdge(block->TargetEdgeRef(), condBlock);
     condBlock->SetTargetEdge(fgAddRefPred(elseBlock, condBlock));
     elseBlock->SetTargetEdge(fgAddRefPred(remainderBlock, elseBlock));
 
@@ -14021,7 +14646,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     }
     else
     {
-        assert(qmark->TypeGet() == TYP_VOID);
+        assert(qmark->TypeIs(TYP_VOID));
     }
 
     if (hasTrueExpr)
@@ -14479,8 +15104,8 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                     // which is a precondition for this phase when optimizing.
                     assert(fgFirstBB->bbPreds == nullptr);
                     GenTree* addr  = gtNewLclvNode(lclNum, TYP_BYREF);
-                    GenTree* data  = (varDsc->TypeGet() == TYP_STRUCT) ? gtNewBlkIndir(varDsc->GetLayout(), addr)
-                                                                       : gtNewIndir(varDsc->TypeGet(), addr);
+                    GenTree* data  = varDsc->TypeIs(TYP_STRUCT) ? gtNewBlkIndir(varDsc->GetLayout(), addr)
+                                                                : gtNewIndir(varDsc->TypeGet(), addr);
                     GenTree* store = gtNewStoreLclVarNode(newLclNum, data);
                     fgNewStmtAtBeg(fgFirstBB, store);
                 }
@@ -14713,7 +15338,7 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
 #ifndef TARGET_64BIT
     // Transforming 64-bit ADD to 64-bit MUL on 32-bit system results in replacing
     // ADD ops with a helper function call. Don't apply optimization in that case.
-    if (tree->TypeGet() == TYP_LONG)
+    if (tree->TypeIs(TYP_LONG))
     {
         return tree;
     }

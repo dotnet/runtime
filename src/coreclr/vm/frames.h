@@ -49,24 +49,11 @@
 //    |                           a JIT'ted caller, the calling method keeps
 //    |                           this frame linked throughout its activation.
 //    |
-//    +-HelperMethodFrame       - frame used allow stack crawling inside jit helpers and fcalls
-//    | |
-//    + +-HelperMethodFrame_1OBJ- reports additional object references
-//    | |
-//    + +-HelperMethodFrame_2OBJ- reports additional object references
-//    | |
-//    + +-HelperMethodFrame_3OBJ- reports additional object references
-//    | |
-//    + +-HelperMethodFrame_PROTECTOBJ - reports additional object references
-//    |
 //    +-TransitionFrame         - this abstract frame represents a transition from
 //    | |                         one or more nested frameless method calls
 //    | |                         to either a EE runtime helper function or
 //    | |                         a framed method.
 //    | |
-//    | +-MulticastFrame        - this frame protects arguments to a MulticastDelegate
-//    |                           Invoke() call while calling each subscriber.
-//    |
 //    | +-FramedMethodFrame     - this abstract frame represents a call to a method
 //    |   |                       that generates a full-fledged frame.
 //    |   |
@@ -86,9 +73,7 @@
 //    |   +-CallCountingHelperFrame - represents a call into the call counting helper when the
 //    |   |                           call count threshold is reached
 //    |   |
-//    |   +-ExternalMethodFrame  - represents a call from an ExternalMethdThunk
-//    |   |
-//    |   +-TPMethodFrame       - for calls on transparent proxy
+//    |   +-ExternalMethodFrame  - represents a call from an ExternalMethodThunk
 //    |
 #ifdef FEATURE_COMINTEROP
 //    +-UnmanagedToManagedFrame - this frame represents a transition from
@@ -106,8 +91,6 @@
 //    +-TailCallFrame           - padding for tailcalls
 //    |
 #endif
-//    +-ProtectByRefsFrame
-//    |
 //    +-ProtectValueClassFrame
 //    |
 //    +-DebuggerClassInitMarkFrame - marker frame to indicate that "class init" code is running
@@ -194,7 +177,6 @@ Prestub:
 #include "method.hpp"
 #include "stackwalk.h"
 #include "stubmgr.h"
-#include "gms.h"
 #include "threads.h"
 #include "callingconvention.h"
 
@@ -325,9 +307,6 @@ public:
         FRAME_ATTR_EXCEPTION = 1,           // This frame caused an exception
         FRAME_ATTR_FAULTED = 4,             // Exception caused by Win32 fault
         FRAME_ATTR_RESUMABLE = 8,           // We may resume from this frame
-        FRAME_ATTR_CAPTURE_DEPTH_2 = 0x10,  // This is a helperMethodFrame and the capture occurred at depth 2
-        FRAME_ATTR_EXACT_DEPTH = 0x20,      // This is a helperMethodFrame and a jit helper, but only crawl to the given depth
-        FRAME_ATTR_NO_THREAD_ABORT = 0x40,  // This is a helperMethodFrame that should not trigger thread aborts on entry
     };
     unsigned GetFrameAttribs_Impl()
     {
@@ -430,7 +409,6 @@ public:
     // Debugger support
     //------------------------------------------------------------------------
 
-
 public:
     // Get the type of transition.
     // M-->U, U-->M
@@ -445,15 +423,9 @@ public:
         TYPE_INTERNAL,
         TYPE_ENTRY,
         TYPE_EXIT,
-        TYPE_CONTEXT_CROSS,
         TYPE_INTERCEPTION,
-        TYPE_SECURITY,
         TYPE_CALL,
         TYPE_FUNC_EVAL,
-
-        // HMFs and derived classes should use this so the profiling API knows it needs
-        // to ensure HMF-specific lazy initialization gets done w/out re-entering to the host.
-        TYPE_HELPER_METHOD_FRAME,
 
         TYPE_COUNT
     };
@@ -1194,424 +1166,6 @@ struct cdac_data<FuncEvalFrame>
 typedef DPTR(FuncEvalFrame) PTR_FuncEvalFrame;
 #endif // DEBUGGING_SUPPORTED
 
-//----------------------------------------------------------------------------------------------
-// A HelperMethodFrame is created by jit helper (Modified slightly it could be used
-// for native routines).   This frame just does the callee saved register fixup.
-// It does NOT protect arguments; you must use GCPROTECT or one of the HelperMethodFrame
-// subclases. (see JitInterface for sample use, YOU CAN'T RETURN WHILE IN THE PROTECTED STATE!)
-//----------------------------------------------------------------------------------------------
-
-typedef DPTR(class HelperMethodFrame) PTR_HelperMethodFrame;
-
-class HelperMethodFrame : public Frame
-{
-public:
-#ifndef DACCESS_COMPILE
-    // Lazy initialization of HelperMethodFrame.  Need to
-    // call EnsureInit to complete initialization
-    // If this is an FCall, the first param is the entry point for the FCALL.
-    // The MethodDesc will be looked up form this (lazily), and this method
-    // will be used in stack reporting, if this is not an FCall pass a 0
-    FORCEINLINE HelperMethodFrame(void* fCallFtnEntry, unsigned attribs = 0, FrameIdentifier frameIdentifier = FrameIdentifier::HelperMethodFrame) : Frame(frameIdentifier)
-    {
-        WRAPPER_NO_CONTRACT;
-        // Most of the initialization is actually done in HelperMethodFrame::Push()
-        INDEBUG(memset(&m_Attribs, 0xCC, sizeof(HelperMethodFrame) - offsetof(HelperMethodFrame, m_Attribs));)
-        m_Attribs = attribs;
-        m_FCallEntry = (TADDR)fCallFtnEntry;
-    }
-#endif // DACCESS_COMPILE
-
-    int GetFrameType_Impl()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TYPE_HELPER_METHOD_FRAME;
-    };
-
-    PCODE GetReturnAddress_Impl()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        if (!m_MachState.isValid())
-        {
-#if defined(DACCESS_COMPILE)
-            MachState unwoundState;
-            EnsureInit(&unwoundState);
-            return unwoundState.GetRetAddr();
-#else  // !DACCESS_COMPILE
-            _ASSERTE(!"HMF's should always be initialized in the non-DAC world.");
-            return 0;
-
-#endif // !DACCESS_COMPILE
-        }
-
-        return m_MachState.GetRetAddr();
-    }
-
-    MethodDesc* GetFunction_Impl();
-
-    BOOL NeedsUpdateRegDisplay_Impl()
-    {
-        return TRUE;
-    }
-
-    void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
-
-    Interception GetInterception_Impl()
-    {
-        WRAPPER_NO_CONTRACT;
-        LIMITED_METHOD_DAC_CONTRACT;
-        if (GetFrameAttribs() & FRAME_ATTR_EXCEPTION)
-            return(INTERCEPTION_EXCEPTION);
-        return(INTERCEPTION_NONE);
-    }
-
-    ETransitionType GetTransitionType_Impl()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TT_InternalCall;
-    }
-
-#ifdef _DEBUG
-    void SetAddrOfHaveCheckedRestoreState(BOOL* pDoneCheck)
-    {
-        m_pDoneCheck = pDoneCheck;
-    }
-
-    BOOL HaveDoneConfirmStateCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_pDoneCheck != NULL);
-        return *m_pDoneCheck;
-    }
-
-    void SetHaveDoneConfirmStateCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_pDoneCheck != NULL);
-        *m_pDoneCheck = TRUE;
-    }
-#endif
-
-    unsigned GetFrameAttribs_Impl()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return(m_Attribs);
-    }
-
-#ifdef DACCESS_COMPILE
-    void EnumMemoryRegions_Impl(CLRDataEnumMemoryFlags flags)
-    {
-        WRAPPER_NO_CONTRACT;
-        Frame::EnumMemoryRegions_Impl(flags);
-    }
-#endif
-
-#ifndef DACCESS_COMPILE
-    void Push();
-    void Pop();
-
-    FORCEINLINE void Poll()
-    {
-        WRAPPER_NO_CONTRACT;
-        if (m_pThread->CatchAtSafePoint())
-            CommonTripThread();
-    }
-#endif // DACCESS_COMPILE
-
-    BOOL EnsureInit(struct MachState* unwindState);
-
-    LazyMachState * MachineState() {
-        LIMITED_METHOD_CONTRACT;
-        return &m_MachState;
-    }
-
-    Thread * GetThread() {
-        LIMITED_METHOD_CONTRACT;
-        return m_pThread;
-    }
-
-private:
-    // Slow paths of Push/Pop are factored into a separate functions for better perf.
-    NOINLINE void PushSlowHelper();
-    NOINLINE void PopSlowHelper();
-
-protected:
-    PTR_MethodDesc m_pMD;
-    unsigned m_Attribs;
-    INDEBUG(BOOL* m_pDoneCheck;)
-    PTR_Thread m_pThread;
-    TADDR m_FCallEntry;              // used to determine our identity for stack traces
-
-    LazyMachState m_MachState;       // pRetAddr points to the return address and the stack arguments
-};
-
-// Restores registers saved in m_MachState
-EXTERN_C int __fastcall HelperMethodFrameRestoreState(
-        INDEBUG_COMMA(HelperMethodFrame *pFrame)
-        MachState *pState
-    );
-
-
-// workhorse for our promotion efforts
-inline void DoPromote(promote_func *fn, ScanContext* sc, OBJECTREF *address, BOOL interior)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // We use OBJECTREF_TO_UNCHECKED_OBJECTREF since address may be an interior pointer
-    LOG((LF_GC, INFO3,
-         "    Promoting pointer argument at" FMT_ADDR "from" FMT_ADDR "to ",
-         DBG_ADDR(address), DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(*address)) ));
-
-    if (interior)
-        PromoteCarefully(fn, PTR_PTR_Object(address), sc);
-    else
-        (*fn) (PTR_PTR_Object(address), sc, 0);
-
-    LOG((LF_GC, INFO3, "    " FMT_ADDR "\n", DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(*address)) ));
-}
-
-
-//-----------------------------------------------------------------------------
-// a HelplerMethodFrames that also report additional object references
-//-----------------------------------------------------------------------------
-
-typedef DPTR(class HelperMethodFrame_1OBJ) PTR_HelperMethodFrame_1OBJ;
-
-class HelperMethodFrame_1OBJ : public HelperMethodFrame
-{
-public:
-#if !defined(DACCESS_COMPILE)
-    HelperMethodFrame_1OBJ(void* fCallFtnEntry, unsigned attribs, OBJECTREF* aGCPtr1)
-        : HelperMethodFrame(fCallFtnEntry, attribs, FrameIdentifier::HelperMethodFrame_1OBJ)
-    {
-            LIMITED_METHOD_CONTRACT;
-            gcPtrs[0] = aGCPtr1;
-            INDEBUG(Thread::ObjectRefProtected(aGCPtr1);)
-            INDEBUG((*aGCPtr1).Validate ();)
-    }
-#endif
-
-    void SetProtectedObject(PTR_OBJECTREF objPtr)
-    {
-        LIMITED_METHOD_CONTRACT;
-        gcPtrs[0] = objPtr;
-        INDEBUG(Thread::ObjectRefProtected(objPtr);)
-        }
-
-    void GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
-    {
-        WRAPPER_NO_CONTRACT;
-        DoPromote(fn, sc, gcPtrs[0], FALSE);
-        HelperMethodFrame::GcScanRoots_Impl(fn, sc);
-    }
-
-#ifdef _DEBUG
-#ifndef DACCESS_COMPILE
-    void Pop()
-    {
-        WRAPPER_NO_CONTRACT;
-        HelperMethodFrame::Pop();
-        Thread::ObjectRefNew(gcPtrs[0]);
-    }
-#endif // DACCESS_COMPILE
-
-    BOOL Protects_Impl(OBJECTREF *ppORef)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (ppORef == gcPtrs[0]) ? TRUE : FALSE;
-    }
-
-#endif
-
-private:
-    PTR_OBJECTREF gcPtrs[1];
-};
-
-
-//-----------------------------------------------------------------------------
-// HelperMethodFrame_2OBJ
-//-----------------------------------------------------------------------------
-
-typedef DPTR(class HelperMethodFrame_2OBJ) PTR_HelperMethodFrame_2OBJ;
-
-class HelperMethodFrame_2OBJ : public HelperMethodFrame
-{
-public:
-#if !defined(DACCESS_COMPILE)
-    HelperMethodFrame_2OBJ(
-            void* fCallFtnEntry,
-            unsigned attribs,
-            OBJECTREF* aGCPtr1,
-            OBJECTREF* aGCPtr2)
-        : HelperMethodFrame(fCallFtnEntry, attribs, FrameIdentifier::HelperMethodFrame_2OBJ)
-    {
-            LIMITED_METHOD_CONTRACT;
-        gcPtrs[0] = aGCPtr1;
-        gcPtrs[1] = aGCPtr2;
-        INDEBUG(Thread::ObjectRefProtected(aGCPtr1);)
-        INDEBUG(Thread::ObjectRefProtected(aGCPtr2);)
-        INDEBUG((*aGCPtr1).Validate ();)
-        INDEBUG((*aGCPtr2).Validate ();)
-    }
-#endif
-
-    void GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
-    {
-        WRAPPER_NO_CONTRACT;
-        DoPromote(fn, sc, gcPtrs[0], FALSE);
-        DoPromote(fn, sc, gcPtrs[1], FALSE);
-        HelperMethodFrame::GcScanRoots_Impl(fn, sc);
-    }
-
-#ifdef _DEBUG
-#ifndef DACCESS_COMPILE
-    void Pop()
-    {
-        WRAPPER_NO_CONTRACT;
-        HelperMethodFrame::Pop();
-        Thread::ObjectRefNew(gcPtrs[0]);
-        Thread::ObjectRefNew(gcPtrs[1]);
-    }
-#endif // DACCESS_COMPILE
-
-    BOOL Protects_Impl(OBJECTREF *ppORef)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (ppORef == gcPtrs[0] || ppORef == gcPtrs[1]) ? TRUE : FALSE;
-    }
-#endif
-
-private:
-    PTR_OBJECTREF gcPtrs[2];
-};
-
-//-----------------------------------------------------------------------------
-// HelperMethodFrame_3OBJ
-//-----------------------------------------------------------------------------
-
-typedef DPTR(class HelperMethodFrame_3OBJ) PTR_HelperMethodFrame_3OBJ;
-
-class HelperMethodFrame_3OBJ : public HelperMethodFrame
-{
-public:
-#if !defined(DACCESS_COMPILE)
-    HelperMethodFrame_3OBJ(
-            void* fCallFtnEntry,
-            unsigned attribs,
-            OBJECTREF* aGCPtr1,
-            OBJECTREF* aGCPtr2,
-            OBJECTREF* aGCPtr3)
-        : HelperMethodFrame(fCallFtnEntry, attribs, FrameIdentifier::HelperMethodFrame_3OBJ)
-    {
-        LIMITED_METHOD_CONTRACT;
-        gcPtrs[0] = aGCPtr1;
-        gcPtrs[1] = aGCPtr2;
-        gcPtrs[2] = aGCPtr3;
-        INDEBUG(Thread::ObjectRefProtected(aGCPtr1);)
-        INDEBUG(Thread::ObjectRefProtected(aGCPtr2);)
-        INDEBUG(Thread::ObjectRefProtected(aGCPtr3);)
-        INDEBUG((*aGCPtr1).Validate();)
-        INDEBUG((*aGCPtr2).Validate();)
-        INDEBUG((*aGCPtr3).Validate();)
-    }
-#endif
-
-    void GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
-    {
-        WRAPPER_NO_CONTRACT;
-        DoPromote(fn, sc, gcPtrs[0], FALSE);
-        DoPromote(fn, sc, gcPtrs[1], FALSE);
-        DoPromote(fn, sc, gcPtrs[2], FALSE);
-        HelperMethodFrame::GcScanRoots_Impl(fn, sc);
-    }
-
-#ifdef _DEBUG
-#ifndef DACCESS_COMPILE
-    void Pop()
-    {
-        WRAPPER_NO_CONTRACT;
-        HelperMethodFrame::Pop();
-        Thread::ObjectRefNew(gcPtrs[0]);
-        Thread::ObjectRefNew(gcPtrs[1]);
-        Thread::ObjectRefNew(gcPtrs[2]);
-    }
-#endif // DACCESS_COMPILE
-
-    BOOL Protects_Impl(OBJECTREF *ppORef)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (ppORef == gcPtrs[0] || ppORef == gcPtrs[1] || ppORef == gcPtrs[2]) ? TRUE : FALSE;
-    }
-#endif
-
-private:
-    PTR_OBJECTREF gcPtrs[3];
-};
-
-
-//-----------------------------------------------------------------------------
-// HelperMethodFrame_PROTECTOBJ
-//-----------------------------------------------------------------------------
-
-typedef DPTR(class HelperMethodFrame_PROTECTOBJ) PTR_HelperMethodFrame_PROTECTOBJ;
-
-class HelperMethodFrame_PROTECTOBJ : public HelperMethodFrame
-{
-public:
-#if !defined(DACCESS_COMPILE)
-    HelperMethodFrame_PROTECTOBJ(void* fCallFtnEntry, unsigned attribs, OBJECTREF* pObjRefs, int numObjRefs)
-        : HelperMethodFrame(fCallFtnEntry, attribs, FrameIdentifier::HelperMethodFrame_PROTECTOBJ)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pObjRefs = pObjRefs;
-        m_numObjRefs = numObjRefs;
-#ifdef _DEBUG
-        for (UINT i = 0; i < m_numObjRefs; i++) {
-            Thread::ObjectRefProtected(&m_pObjRefs[i]);
-            m_pObjRefs[i].Validate();
-        }
-#endif
-    }
-#endif
-
-    void GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
-    {
-        WRAPPER_NO_CONTRACT;
-        for (UINT i = 0; i < m_numObjRefs; i++) {
-            DoPromote(fn, sc, &m_pObjRefs[i], FALSE);
-        }
-        HelperMethodFrame::GcScanRoots_Impl(fn, sc);
-    }
-
-#ifdef _DEBUG
-#ifndef DACCESS_COMPILE
-    void Pop()
-    {
-        WRAPPER_NO_CONTRACT;
-        HelperMethodFrame::Pop();
-        for (UINT i = 0; i < m_numObjRefs; i++) {
-            Thread::ObjectRefNew(&m_pObjRefs[i]);
-        }
-    }
-#endif // DACCESS_COMPILE
-
-    BOOL Protects_Impl(OBJECTREF *ppORef)
-    {
-        LIMITED_METHOD_CONTRACT;
-        for (UINT i = 0; i < m_numObjRefs; i++) {
-            if (ppORef == &m_pObjRefs[i])
-                return TRUE;
-        }
-        return FALSE;
-    }
-#endif
-
-private:
-    PTR_OBJECTREF m_pObjRefs;
-    UINT       m_numObjRefs;
-};
-
 class FramedMethodFrame : public TransitionFrame
 {
     TADDR m_pTransitionBlock;
@@ -1672,7 +1226,7 @@ public:
     {
 #ifdef TARGET_AMD64
         // Floating point spill area is between return value and transition block for frames that need it
-        // (code:TPMethodFrame and code:CLRToCOMMethodFrame)
+        // (see code:CLRToCOMMethodFrame)
         return -(4 * 0x10 /* floating point args */ + 0x8 /* alignment pad */ + TransitionBlock::GetNegSpaceSize()) + (iArg * 0x10);
 #endif
     }
@@ -1698,7 +1252,7 @@ public:
         TADDR p = GetTransitionBlock() - TransitionBlock::GetNegSpaceSize();
 #endif
         // Return value is right before the transition block (or floating point spill area on AMD64) for frames that need it
-        // (code:TPMethodFrame and code:CLRToCOMMethodFrame)
+        // (see code:CLRToCOMMethodFrame)
 #ifdef ENREGISTERED_RETURNTYPE_MAXSIZE
         p -= ENREGISTERED_RETURNTYPE_MAXSIZE;
 #else
@@ -2231,7 +1785,6 @@ public:
 
 typedef DPTR(class ExternalMethodFrame) PTR_ExternalMethodFrame;
 
-#ifdef FEATURE_READYTORUN
 class DynamicHelperFrame : public FramedMethodFrame
 {
     int m_dynamicHelperFrameFlags;
@@ -2253,7 +1806,6 @@ public:
 };
 
 typedef DPTR(class DynamicHelperFrame) PTR_DynamicHelperFrame;
-#endif // FEATURE_READYTORUN
 
 #ifdef FEATURE_COMINTEROP
 
@@ -2363,45 +1915,6 @@ private:
     UINT          m_numObjRefs;
     BOOL          m_MaybeInterior;
 };
-
-//-----------------------------------------------------------------------------
-
-struct ByRefInfo;
-typedef DPTR(ByRefInfo) PTR_ByRefInfo;
-
-struct ByRefInfo
-{
-    PTR_ByRefInfo pNext;
-    INT32      argIndex;
-    CorElementType typ;
-    TypeHandle typeHandle;
-    char       data[1];
-};
-
-//-----------------------------------------------------------------------------
-// ProtectByRefsFrame
-//-----------------------------------------------------------------------------
-
-typedef DPTR(class ProtectByRefsFrame) PTR_ProtectByRefsFrame;
-
-class ProtectByRefsFrame : public Frame
-{
-public:
-#ifndef DACCESS_COMPILE
-    ProtectByRefsFrame(Thread *pThread, ByRefInfo *brInfo)
-        : Frame(FrameIdentifier::ProtectByRefsFrame), m_brInfo(brInfo)
-    {
-        WRAPPER_NO_CONTRACT;
-        Frame::Push(pThread);
-    }
-#endif
-
-    void GcScanRoots_Impl(promote_func *fn, ScanContext *sc);
-
-private:
-    PTR_ByRefInfo m_brInfo;
-};
-
 
 //-----------------------------------------------------------------------------
 
@@ -2830,7 +2343,17 @@ public:
     }
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats = false);
+
+    friend struct cdac_data<TailCallFrame>;
 };
+
+template<>
+struct cdac_data<TailCallFrame>
+{
+    static constexpr size_t CalleeSavedRegisters = offsetof(TailCallFrame, m_regs);
+    static constexpr size_t ReturnAddress = offsetof(TailCallFrame, m_ReturnAddress);
+};
+
 #endif // TARGET_X86 && !UNIX_X86_ABI
 
 //------------------------------------------------------------------------
@@ -2884,7 +2407,13 @@ typedef DPTR(class InterpreterFrame) PTR_InterpreterFrame;
 
 class InterpreterFrame : public FramedMethodFrame
 {
+    static void DummyFuncletCaller() {}
 public:
+
+    // This is a special value representing a caller of the first interpreter frame
+    // in a block of interpreter frames belonging to a single InterpreterFrame.
+    static TADDR DummyCallerIP;
+
 #ifndef DACCESS_COMPILE
     InterpreterFrame(TransitionBlock* pTransitionBlock, InterpMethodContextFrame* pContextFrame)
         : FramedMethodFrame(FrameIdentifier::InterpreterFrame, pTransitionBlock, NULL),
@@ -3008,8 +2537,7 @@ private:
 //     a compiler error if you forget to code a maching GCPROTECT_END.
 //
 //   - If you are GCPROTECTing something, it means you are expecting a GC to occur.
-//     So we assert that GC is not forbidden. If you hit this assert, you probably need
-//     a HELPER_METHOD_FRAME to protect the region that can cause the GC.
+//     So we assert that GC is not forbidden.
 //------------------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
@@ -3071,6 +2599,8 @@ private:
 
 
 #define ASSERT_ADDRESS_IN_STACK(address) _ASSERTE (Thread::IsAddressInCurrentStack (address));
+
+class GCRefMapBuilder;
 
 void ComputeCallRefMap(MethodDesc* pMD,
                        GCRefMapBuilder * pBuilder,

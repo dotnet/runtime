@@ -14,7 +14,7 @@ using System.Text.Unicode;
 
 namespace System.Reflection
 {
-    internal static unsafe class BlobUtilities
+    internal static class BlobUtilities
     {
         public static void WriteBytes(this byte[] buffer, int start, byte value, int byteCount)
         {
@@ -28,7 +28,10 @@ namespace System.Reflection
 #if NET
             WriteUInt64(buffer, start, BitConverter.DoubleToUInt64Bits(value));
 #else
-            WriteUInt64(buffer, start, *(ulong*)&value);
+            unsafe
+            {
+                WriteUInt64(buffer, start, *(ulong*)&value);
+            }
 #endif
         }
 
@@ -37,7 +40,10 @@ namespace System.Reflection
 #if NET
             WriteUInt32(buffer, start, BitConverter.SingleToUInt32Bits(value));
 #else
-            WriteUInt32(buffer, start, *(uint*)&value);
+            unsafe
+            {
+                WriteUInt32(buffer, start, *(uint*)&value);
+            }
 #endif
         }
 
@@ -86,35 +92,38 @@ namespace System.Reflection
             // This function is not public, callers have to ensure that enough space is available.
             Debug.Assert(written);
 #else
-            fixed (byte* dst = &buffer[start])
+            unsafe
             {
-                byte* src = (byte*)&value;
-
-                uint a = *(uint*)(src + 0);
-                unchecked
+                fixed (byte* dst = &buffer[start])
                 {
-                    dst[0] = (byte)a;
-                    dst[1] = (byte)(a >> 8);
-                    dst[2] = (byte)(a >> 16);
-                    dst[3] = (byte)(a >> 24);
+                    byte* src = (byte*)&value;
 
-                    ushort b = *(ushort*)(src + 4);
-                    dst[4] = (byte)b;
-                    dst[5] = (byte)(b >> 8);
+                    uint a = *(uint*)(src + 0);
+                    unchecked
+                    {
+                        dst[0] = (byte)a;
+                        dst[1] = (byte)(a >> 8);
+                        dst[2] = (byte)(a >> 16);
+                        dst[3] = (byte)(a >> 24);
 
-                    ushort c = *(ushort*)(src + 6);
-                    dst[6] = (byte)c;
-                    dst[7] = (byte)(c >> 8);
+                        ushort b = *(ushort*)(src + 4);
+                        dst[4] = (byte)b;
+                        dst[5] = (byte)(b >> 8);
+
+                        ushort c = *(ushort*)(src + 6);
+                        dst[6] = (byte)c;
+                        dst[7] = (byte)(c >> 8);
+                    }
+
+                    dst[8] = src[8];
+                    dst[9] = src[9];
+                    dst[10] = src[10];
+                    dst[11] = src[11];
+                    dst[12] = src[12];
+                    dst[13] = src[13];
+                    dst[14] = src[14];
+                    dst[15] = src[15];
                 }
-
-                dst[8] = src[8];
-                dst[9] = src[9];
-                dst[10] = src[10];
-                dst[11] = src[11];
-                dst[12] = src[12];
-                dst[13] = src[13];
-                dst[14] = src[14];
-                dst[15] = src[15];
             }
 #endif
         }
@@ -157,81 +166,84 @@ namespace System.Reflection
             bytesWritten = destinationLength - destination.Length;
         }
 #else
-        public static unsafe void WriteUtf8(ReadOnlySpan<char> source, Span<byte> destination, out int charsRead, out int bytesWritten, bool allowUnpairedSurrogates)
+        public static void WriteUtf8(ReadOnlySpan<char> source, Span<byte> destination, out int charsRead, out int bytesWritten, bool allowUnpairedSurrogates)
         {
             const char ReplacementCharacter = '\uFFFD';
 
             int sourceLength = source.Length;
             int destinationLength = destination.Length;
 
-            fixed (char* pSource = &MemoryMarshal.GetReference(source))
-            fixed (byte* pDestination = &MemoryMarshal.GetReference(destination))
+            unsafe
             {
-                char* src = pSource, srcEnd = pSource + source.Length;
-                byte* dst = pDestination, dstEnd = pDestination + destination.Length;
-
-                while (src < srcEnd)
+                fixed (char* pSource = &MemoryMarshal.GetReference(source))
+                fixed (byte* pDestination = &MemoryMarshal.GetReference(destination))
                 {
-                    char c = *src;
-                    if (c < 0x80)
+                    char* src = pSource, srcEnd = pSource + source.Length;
+                    byte* dst = pDestination, dstEnd = pDestination + destination.Length;
+
+                    while (src < srcEnd)
                     {
-                        if (dstEnd - dst < 1)
+                        char c = *src;
+                        if (c < 0x80)
                         {
-                            break;
-                        }
-                        *dst++ = (byte)c;
-                        src++;
-                    }
-                    else if (c < 0x7FF)
-                    {
-                        if (dstEnd - dst < 2)
-                        {
-                            break;
-                        }
-                        *dst++ = (byte)((c >> 6) | 0xC0);
-                        *dst++ = (byte)((c & 0x3F) | 0x80);
-                        src++;
-                    }
-                    else
-                    {
-                        if (char.IsSurrogate(c))
-                        {
-                            // surrogate pair
-                            if (char.IsHighSurrogate(c) && src - srcEnd < 2 && src[1] is char cLow && char.IsLowSurrogate(cLow))
+                            if (dstEnd - dst < 1)
                             {
-                                if (dstEnd - dst < 4)
+                                break;
+                            }
+                            *dst++ = (byte)c;
+                            src++;
+                        }
+                        else if (c < 0x7FF)
+                        {
+                            if (dstEnd - dst < 2)
+                            {
+                                break;
+                            }
+                            *dst++ = (byte)((c >> 6) | 0xC0);
+                            *dst++ = (byte)((c & 0x3F) | 0x80);
+                            src++;
+                        }
+                        else
+                        {
+                            if (char.IsSurrogate(c))
+                            {
+                                // surrogate pair
+                                if (char.IsHighSurrogate(c) && src - srcEnd < 2 && src[1] is char cLow && char.IsLowSurrogate(cLow))
                                 {
-                                    break;
+                                    if (dstEnd - dst < 4)
+                                    {
+                                        break;
+                                    }
+                                    int codepoint = ((c - 0xd800) << 10) + cLow - 0xdc00 + 0x10000;
+                                    *dst++ = (byte)((codepoint >> 18) | 0xF0);
+                                    *dst++ = (byte)(((codepoint >> 12) & 0x3F) | 0x80);
+                                    *dst++ = (byte)(((codepoint >> 6) & 0x3F) | 0x80);
+                                    *dst++ = (byte)((codepoint & 0x3F) | 0x80);
+                                    src += 2;
+                                    continue;
                                 }
-                                int codepoint = ((c - 0xd800) << 10) + cLow - 0xdc00 + 0x10000;
-                                *dst++ = (byte)((codepoint >> 18) | 0xF0);
-                                *dst++ = (byte)(((codepoint >> 12) & 0x3F) | 0x80);
-                                *dst++ = (byte)(((codepoint >> 6) & 0x3F) | 0x80);
-                                *dst++ = (byte)((codepoint & 0x3F) | 0x80);
-                                src += 2;
-                                continue;
+
+                                // unpaired high/low surrogate
+                                if (!allowUnpairedSurrogates)
+                                {
+                                    c = ReplacementCharacter;
+                                }
                             }
 
-                            // unpaired high/low surrogate
-                            if (!allowUnpairedSurrogates)
+                            if (dstEnd - dst < 3)
                             {
-                                c = ReplacementCharacter;
+                                break;
                             }
+                            *dst++ = (byte)((c >> 12) | 0xE0);
+                            *dst++ = (byte)(((c >> 6) & 0x3F) | 0x80);
+                            *dst++ = (byte)((c & 0x3F) | 0x80);
+                            src++;
                         }
-
-                        if (dstEnd - dst < 3)
-                        {
-                            break;
-                        }
-                        *dst++ = (byte)((c >> 12) | 0xE0);
-                        *dst++ = (byte)(((c >> 6) & 0x3F) | 0x80);
-                        *dst++ = (byte)((c & 0x3F) | 0x80);
-                        src++;
                     }
-                }
 
-                charsRead = (int)(src - pSource);
-                bytesWritten = (int)(dst - pDestination);
+                    charsRead = (int)(src - pSource);
+                    bytesWritten = (int)(dst - pDestination);
+                }
             }
         }
 #endif

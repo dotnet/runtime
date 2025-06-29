@@ -192,12 +192,17 @@ namespace ILCompiler
 
             CompilationModuleGroup compilationGroup;
             List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
+            TypeMapManager typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.Empty);
             bool multiFile = Get(_command.MultiFile);
             if (singleMethod != null)
             {
                 // Compiling just a single method
                 compilationGroup = new SingleMethodCompilationModuleGroup(singleMethod);
                 compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
+                if (singleMethod.OwningType is MetadataType { Module.Assembly: EcmaAssembly assembly })
+                {
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(assembly, typeSystemContext));
+                }
             }
             else
             {
@@ -307,6 +312,11 @@ namespace ILCompiler
                         throw new CommandLineException($"'{linkTrimFilePath}' doesn't exist");
                     compilationRoots.Add(new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode(linkTrimFilePath));
                 }
+
+                if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
+                {
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext));
+                }
             }
 
             // Root whatever assemblies were specified on the command line
@@ -412,7 +422,6 @@ namespace ILCompiler
 
                 resBlockingPolicy = new ManifestResourceBlockingPolicy(logger, featureSwitches, resourceBlocks);
 
-                metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
                 if (Get(_command.CompleteTypesMetadata))
                     metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
                 if (Get(_command.ScanReflection))
@@ -468,7 +477,8 @@ namespace ILCompiler
             var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitPolicy, new StaticReadOnlyFieldPolicy(), flowAnnotations);
             builder
                 .UseILProvider(ilProvider)
-                .UsePreinitializationManager(preinitManager);
+                .UsePreinitializationManager(preinitManager)
+                .UseTypeMapManager(typeMapManager);
 
 #if DEBUG
             List<TypeDesc> scannerConstructedTypes = null;
@@ -491,6 +501,7 @@ namespace ILCompiler
                     .UseMetadataManager(metadataManager)
                     .UseParallelism(parallelism)
                     .UseInteropStubManager(interopStubManager)
+                    .UseTypeMapManager(typeMapManager)
                     .UseLogger(logger);
 
                 string scanDgmlLogFileName = Get(_command.ScanDgmlLogFileName);
@@ -513,6 +524,8 @@ namespace ILCompiler
                 DevirtualizationManager devirtualizationManager = scanResults.GetDevirtualizationManager();
 
                 metadataManager = ((UsageBasedMetadataManager)metadataManager).ToAnalysisBasedMetadataManager();
+
+                builder.UseTypeMapManager(scanResults.GetTypeMapManager());
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
 
@@ -789,7 +802,7 @@ namespace ILCompiler
         private static int Main(string[] args) =>
             new CommandLineConfiguration(new ILCompilerRootCommand(args)
                 .UseVersion()
-                .UseExtendedHelp(ILCompilerRootCommand.GetExtendedHelp))
+                .UseExtendedHelp(ILCompilerRootCommand.PrintExtendedHelp))
             {
                 ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
                 EnableDefaultExceptionHandler = false,

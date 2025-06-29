@@ -311,11 +311,11 @@ void PEImage::OpenMDImport()
         if(pMeta==NULL)
             return;
 
-        IfFailThrow(GetMetaDataInternalInterface((void *) pMeta,
-                                                 cMeta,
-                                                 ofRead,
-                                                 IID_IMDInternalImport,
-                                                 (void **) &m_pNewImport));
+        IfFailThrow(GetMDInternalInterface((void *) pMeta,
+                                           cMeta,
+                                           ofRead,
+                                           IID_IMDInternalImport,
+                                           (void **) &m_pNewImport));
 
         if(InterlockedCompareExchangeT(&m_pMDImport, m_pNewImport, NULL))
         {
@@ -370,11 +370,11 @@ void PEImage::GetMVID(GUID *pMvid)
 
     SafeComHolder<IMDInternalImport> pMDImport;
 
-    IfFailThrow(GetMetaDataInternalInterface((void *) pMeta,
-                                             cMeta,
-                                             ofRead,
-                                             IID_IMDInternalImport,
-                                             (void **) &pMDImport));
+    IfFailThrow(GetMDInternalInterface((void *) pMeta,
+                                       cMeta,
+                                       ofRead,
+                                       IID_IMDInternalImport,
+                                       (void **) &pMDImport));
 
     pMDImport->GetScopeProps(NULL, &MvidDEBUG);
 

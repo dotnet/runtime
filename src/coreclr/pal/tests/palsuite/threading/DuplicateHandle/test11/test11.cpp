@@ -54,7 +54,7 @@ PALTEST(threading_DuplicateHandle_test11_paltest_duplicatehandle_test11, "thread
     HANDLE hDupChildProcess;
 
     char  rgchDirName[_MAX_DIR];
-    char  absPathBuf[_MAX_PATH];
+    char  absPathBuf[MAX_PATH];
     char* rgchAbsPathName;
 
     BOOL ret = FAIL;
