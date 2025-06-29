@@ -10,6 +10,23 @@ namespace System.Linq.Expressions.Interpreter
 {
     internal sealed class InterpretedFrame
     {
+        public readonly struct DataView(object?[] objects)
+        {
+            public object? this[int index]
+            {
+                get =>
+                    objects[index] switch
+                    {
+                        FieldData fieldData => fieldData.ToObject(),
+                        var nonFieldData => nonFieldData
+                    };
+
+                set => objects[index] = value;
+            }
+
+            public object? GetRaw(int index) => objects[index];
+        }
+
         [ThreadStatic]
         private static InterpretedFrame? s_currentFrame;
 
@@ -21,7 +38,8 @@ namespace System.Linq.Expressions.Interpreter
         private int _pendingContinuation;
         private object? _pendingValue;
 
-        public readonly object?[] Data;
+        private readonly object?[] _rawData;
+        public readonly DataView Data;
 
         public readonly IStrongBox[]? Closure;
 
@@ -38,7 +56,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             Interpreter = interpreter;
             StackIndex = interpreter.LocalCount;
-            Data = new object[StackIndex + interpreter.Instructions.MaxStackDepth];
+            _rawData = new object[StackIndex + interpreter.Instructions.MaxStackDepth];
+            Data = new DataView(_rawData);
 
             int c = interpreter.Instructions.MaxContinuationDepth;
             if (c > 0)
@@ -96,6 +115,11 @@ namespace System.Linq.Expressions.Interpreter
             Data[StackIndex++] = value;
         }
 
+        public object? PopRaw()
+        {
+            return _rawData[--StackIndex];
+        }
+
         public object? Pop()
         {
             return Data[--StackIndex];
@@ -114,7 +138,7 @@ namespace System.Linq.Expressions.Interpreter
         public void Dup()
         {
             int i = StackIndex;
-            Data[i] = Data[i - 1];
+            Data[i] = Data.GetRaw(i - 1);
             StackIndex = i + 1;
         }
 

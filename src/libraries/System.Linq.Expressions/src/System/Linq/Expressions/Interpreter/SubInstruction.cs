@@ -21,7 +21,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object?[] stack = frame.Data;
+                InterpretedFrame.DataView stack = frame.Data;
                 object? left = stack[index - 2];
                 if (left != null)
                 {
@@ -39,7 +39,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object?[] stack = frame.Data;
+                InterpretedFrame.DataView stack = frame.Data;
                 object? left = stack[index - 2];
                 if (left != null)
                 {
@@ -57,7 +57,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object?[] stack = frame.Data;
+                InterpretedFrame.DataView stack = frame.Data;
                 object? left = stack[index - 2];
                 if (left != null)
                 {
@@ -75,7 +75,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object?[] stack = frame.Data;
+                InterpretedFrame.DataView stack = frame.Data;
                 object? left = stack[index - 2];
                 if (left != null)
                 {
@@ -93,7 +93,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object?[] stack = frame.Data;
+                InterpretedFrame.DataView stack = frame.Data;
                 object? left = stack[index - 2];
                 if (left != null)
                 {
@@ -111,7 +111,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object?[] stack = frame.Data;
+                InterpretedFrame.DataView stack = frame.Data;
                 object? left = stack[index - 2];
                 if (left != null)
                 {
@@ -129,7 +129,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object?[] stack = frame.Data;
+                InterpretedFrame.DataView stack = frame.Data;
                 object? left = stack[index - 2];
                 if (left != null)
                 {
@@ -147,7 +147,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object?[] stack = frame.Data;
+                InterpretedFrame.DataView stack = frame.Data;
                 object? left = stack[index - 2];
                 if (left != null)
                 {
@@ -193,7 +193,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object?[] stack = frame.Data;
+                InterpretedFrame.DataView stack = frame.Data;
                 object? left = stack[index - 2];
                 if (left != null)
                 {
@@ -211,7 +211,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object?[] stack = frame.Data;
+                InterpretedFrame.DataView stack = frame.Data;
                 object? left = stack[index - 2];
                 if (left != null)
                 {
@@ -229,7 +229,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object?[] stack = frame.Data;
+                InterpretedFrame.DataView stack = frame.Data;
                 object? left = stack[index - 2];
                 if (left != null)
                 {
@@ -247,7 +247,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object?[] stack = frame.Data;
+                InterpretedFrame.DataView stack = frame.Data;
                 object? left = stack[index - 2];
                 if (left != null)
                 {
@@ -265,7 +265,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object?[] stack = frame.Data;
+                InterpretedFrame.DataView stack = frame.Data;
                 object? left = stack[index - 2];
                 if (left != null)
                 {
@@ -283,7 +283,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object?[] stack = frame.Data;
+                InterpretedFrame.DataView stack = frame.Data;
                 object? left = stack[index - 2];
                 if (left != null)
                 {

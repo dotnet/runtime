@@ -177,6 +177,7 @@
     <Compile Include="System\Linq\Expressions\Interpreter\DivInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\EqualInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\ExclusiveOrInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\FieldData.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\FieldOperations.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\GreaterThanInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\GreaterThanOrEqualInstruction.cs" />

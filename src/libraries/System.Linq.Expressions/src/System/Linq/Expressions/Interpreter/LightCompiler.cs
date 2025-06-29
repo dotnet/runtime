@@ -3194,8 +3194,23 @@ namespace System.Linq.Expressions.Interpreter
 
         public override void Update(InterpretedFrame frame, object? value)
         {
-            object? obj = _object == null ? null : frame.Data[_object.GetValueOrDefault().Index];
-            _field.SetValue(obj, value);
+            if (_object is null)
+            {
+                _field.SetValue(null, value);
+            }
+            else
+            {
+                var rawObject = frame.Data.GetRaw(_object.GetValueOrDefault().Index);
+
+                if (rawObject is FieldData fieldData)
+                {
+                    fieldData.SetValueDirect(_field, value);
+                }
+                else
+                {
+                    _field.SetValue(rawObject, value);
+                }
+            }
         }
 
         public override void UndefineTemps(InstructionList instructions, LocalVariables locals)
