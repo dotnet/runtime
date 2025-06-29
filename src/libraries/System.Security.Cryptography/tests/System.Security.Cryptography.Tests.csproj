@@ -267,6 +267,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\DecryptorReusability.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesFactory.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesFactory.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaFactoryTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaFactoryTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherOneShotTests.cs"
@@ -795,8 +797,6 @@
              Link="CommonTest\System\Security\Cryptography\MLKemCngTests.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PqcBlobHelpers.cs"
              Link="Common\System\Security\Cryptography\PqcBlobHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\PqcBlobHelpers.MLKem.cs"
-             Link="Common\System\Security\Cryptography\PqcBlobHelpers.MLKem.cs" />
 
     <Compile Include="MLKemOpenSslTests.NotSupported.cs" />
     <Compile Include="SlhDsaOpenSslConstructionTests.NotSupported.cs" />
