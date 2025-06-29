@@ -6942,6 +6942,8 @@ bool IsPacPresent(EECodeInfo *pCodeInfo)
     // We should always get a function entry for a managed method
     _ASSERTE(FunctionEntry != NULL);
     DWORD_PTR ImageBase = pCodeInfo->GetModuleBase();
+
+    _ASSERTE((FunctionEntry->UnwindData & 3) == 0); // Packed unwind data are not used with managed code
     ULONG_PTR UnwindDataPtr = (ULONG_PTR)(ImageBase + FunctionEntry->UnwindData);
 
     // Read the header word. For unwind info layout details refer https://learn.microsoft.com/en-us/cpp/build/arm64-exception-handling?view=msvc-170#arm64-exception-handling-information

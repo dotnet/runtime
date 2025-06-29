@@ -10,7 +10,7 @@ enum CFI_OPCODE
    CFI_ADJUST_CFA_OFFSET,    // Offset is adjusted relative to the current one.
    CFI_DEF_CFA_REGISTER,     // New register is used to compute CFA
    CFI_REL_OFFSET,           // Register is saved at offset from the current CFA
-   CFI_DEF_CFA,              // Used by ILC, not emitted by JIT
+   CFI_DEF_CFA,              // Take address from register and add offset to it
    CFI_NEGATE_RA_STATE,      // Sign the return address in lr with paciaz
 };
 
