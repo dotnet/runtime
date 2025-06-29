@@ -202,7 +202,9 @@ namespace System.Security.Cryptography.Cose
 #pragma warning disable SYSLIB5006
                 case KeyType.MLDsa:
                     Debug.Assert(_mldsaKey != null);
-                    return _mldsaKey.SignData(toBeSigned, destination);
+                    Span<byte> mldsaSignature = destination.Slice(0, _mldsaKey.Algorithm.SignatureSizeInBytes);
+                    _mldsaKey.SignData(toBeSigned, mldsaSignature);
+                    return mldsaSignature.Length;
 #pragma warning restore SYSLIB5006
                 default:
                     Debug.Fail("Unknown key type");
