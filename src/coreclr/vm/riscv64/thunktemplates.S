@@ -5,6 +5,7 @@
 #include "asmconstants.h"
 
 LEAF_ENTRY StubPrecodeCode
+    fence r,rw
     auipc t1, 0x4
     ld t2, (StubPrecodeData__SecretParam)(t1)
     ld t1, (StubPrecodeData__Target)(t1)
@@ -16,13 +17,15 @@ LEAF_ENTRY FixupPrecodeCode
     ld t2, (FixupPrecodeData__Target)(t2)
     c.jr t2
 
+    fence r,rw
     auipc t2, 0x4
-    ld t1, (FixupPrecodeData__PrecodeFixupThunk - 0xa)(t2)
-    ld t2, (FixupPrecodeData__MethodDesc - 0xa)(t2)
+    ld t1, (FixupPrecodeData__PrecodeFixupThunk - 0xe)(t2)
+    ld t2, (FixupPrecodeData__MethodDesc - 0xe)(t2)
     jr t1
 LEAF_END_MARKED FixupPrecodeCode
 
 LEAF_ENTRY CallCountingStubCode
+    fence r,rw
     auipc t2, 0x4
     ld t3, (CallCountingStubData__RemainingCallCountCell)(t2)
     lh t1, 0(t3)
