@@ -1220,6 +1220,10 @@ namespace System.Tests
 
             // Single[] -> primitive[]
             yield return new object[] { new float[] { 1, 2.2f, 3 }, 0, new double[3], 0, 3, new double[] { 1, 2.2f, 3 } };
+
+            // SByteEnum[] -> primitive[]
+            yield return new object[] { new SByteEnum[] { (SByteEnum)1, (SByteEnum)2, (SByteEnum)3 }, 0, new int[3], 0, 3, new int[] { 1, 2, 3 } };
+            yield return new object[] { new SByteEnum[] { (SByteEnum)1, (SByteEnum)2, (SByteEnum)3 }, 0, new Int32Enum[3], 0, 3, new Int32Enum[] { (Int32Enum)1, (Int32Enum)2, (Int32Enum)3 } };
         }
 
         public static IEnumerable<object[]> Copy_SZArray_UnreliableConversion_CanPerform_TestData()
