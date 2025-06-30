@@ -15,18 +15,19 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
-        internal static bool SupportsAny() => false;
+        internal static bool SupportsAny() => ManagedCompositeMLDsaComposer.SupportsAny();
 
-        internal static bool IsAlgorithmSupportedImpl(CompositeMLDsaAlgorithm algorithm) => false;
+        internal static bool IsAlgorithmSupportedImpl(CompositeMLDsaAlgorithm algorithm) =>
+            ManagedCompositeMLDsaComposer.IsAlgorithmSupportedImpl(algorithm);
 
         internal static CompositeMLDsa GenerateKeyImpl(CompositeMLDsaAlgorithm algorithm) =>
             throw new PlatformNotSupportedException();
 
         internal static CompositeMLDsa ImportCompositeMLDsaPublicKeyImpl(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
-            throw new PlatformNotSupportedException();
+            ManagedCompositeMLDsaComposer.ImportCompositeMLDsaPublicKeyImpl(algorithm, source);
 
         internal static CompositeMLDsa ImportCompositeMLDsaPrivateKeyImpl(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
-            throw new PlatformNotSupportedException();
+            ManagedCompositeMLDsaComposer.ImportCompositeMLDsaPrivateKeyImpl(algorithm, source);
 
         protected override bool TrySignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination, out int bytesWritten) =>
             throw new PlatformNotSupportedException();

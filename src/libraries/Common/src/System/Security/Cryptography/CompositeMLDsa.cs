@@ -137,7 +137,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             // TODO If we know exact size of signature, then we can allocate instead of renting and copying.
-            byte[] rented = CryptoPool.Rent(Algorithm.MaxSignatureSizeInBytes);
+            byte[] rented = CryptoPool.Rent(32 + Algorithm.MaxSignatureSizeInBytes);
 
             try
             {
@@ -204,7 +204,7 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            if (destination.Length < Algorithm.MLDsaAlgorithm.SignatureSizeInBytes)
+            if (destination.Length < 32 + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes)
             {
                 bytesWritten = 0;
                 return false;
@@ -316,7 +316,8 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            if (signature.Length < Algorithm.MLDsaAlgorithm.SignatureSizeInBytes)
+            // TODO change this to 32 + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes. Check other places too.
+            if (signature.Length < 32 + Algorithm.MLDsaAlgorithm.SignatureSizeInBytes)
             {
                 return false;
             }
@@ -1514,7 +1515,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             // TODO The private key has a max size so add it as CompositeMLDsaAlgorithm.MaxPrivateKeySize and use it here.
-            int initalSize = 1;
+            int initalSize = Algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes;
 
             return ExportWithCallback(
                 initalSize,
@@ -1570,7 +1571,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        protected abstract bool TryExportCompositeMLDsaPublicKeyCore(ReadOnlySpan<byte> destination, out int bytesWritten);
+        protected abstract bool TryExportCompositeMLDsaPublicKeyCore(Span<byte> destination, out int bytesWritten);
 
         /// <summary>
         ///   When overridden in a derived class, attempts to export the private key portion of the current key.
@@ -1591,7 +1592,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        protected abstract bool TryExportCompositeMLDsaPrivateKeyCore(ReadOnlySpan<byte> destination, out int bytesWritten);
+        protected abstract bool TryExportCompositeMLDsaPrivateKeyCore(Span<byte> destination, out int bytesWritten);
 
         /// <summary>
         ///   Releases all resources used by the <see cref="CompositeMLDsa"/> class.
@@ -1710,7 +1711,7 @@ namespace System.Security.Cryptography
         {
             // TODO RSA is the only algo without a strict max size. The exponent can be arbitrarily large,
             // but in practice it is always 65537. Add an internal CompositeMLDsaAlgorithm.EstimatedMaxPublicKeySizeInBytes and use that here.
-            int initialSize = 1;
+            int initialSize = Algorithm.MLDsaAlgorithm.PublicKeySizeInBytes;
 
             return ExportWithCallback(
                 initialSize,
@@ -1771,7 +1772,7 @@ namespace System.Security.Cryptography
             return algorithm;
         }
 
-        internal static void ThrowIfNotSupported()
+        private static void ThrowIfNotSupported()
         {
             if (!IsSupported)
             {
@@ -1779,7 +1780,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static void ThrowIfNotSupported(CompositeMLDsaAlgorithm algorithm)
+        private static void ThrowIfNotSupported(CompositeMLDsaAlgorithm algorithm)
         {
             if (!IsSupported || !IsAlgorithmSupported(algorithm))
             {
