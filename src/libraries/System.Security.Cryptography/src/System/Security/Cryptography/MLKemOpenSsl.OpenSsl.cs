@@ -22,6 +22,12 @@ namespace System.Security.Cryptography
             out bool hasDecapsulationKey)
         {
             ArgumentNullException.ThrowIfNull(pkeyHandle);
+
+            if (pkeyHandle.IsInvalid)
+            {
+                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
+            }
+
             upRefHandle = pkeyHandle.DuplicateHandle();
 
             try
@@ -53,17 +59,20 @@ namespace System.Security.Cryptography
         /// <inheritdoc />
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
-
             if (disposing)
             {
                 _key.Dispose();
             }
+
+            base.Dispose(disposing);
         }
 
         /// <inheritdoc />
         protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
         {
+            // This cannot use _hasDecapsulationKey here because this field only indicates if it is exportable, not if
+            // it is usable. This instance could represent an ML-KEM instance with a decapsulation key in hardware,
+            // for example.
             Interop.Crypto.EvpKemDecapsulate(_key, ciphertext, sharedSecret);
         }
 
@@ -76,12 +85,14 @@ namespace System.Security.Cryptography
         /// <inheritdoc />
         protected override void ExportPrivateSeedCore(Span<byte> destination)
         {
+            ThrowIfNoSeed(_hasSeed);
             Interop.Crypto.EvpKemExportPrivateSeed(_key, destination);
         }
 
         /// <inheritdoc />
         protected override void ExportDecapsulationKeyCore(Span<byte> destination)
         {
+            ThrowIfNoDecapsulationKey(_hasDecapsulationKey);
             Interop.Crypto.EvpKemExportDecapsulationKey(_key, destination);
         }
 

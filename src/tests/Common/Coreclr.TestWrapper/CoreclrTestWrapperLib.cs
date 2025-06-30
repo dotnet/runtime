@@ -335,6 +335,28 @@ namespace CoreclrTestLib
                 Console.WriteLine(error);
 
                 TryPrintStackTraceFromCrashReport(crashDumpPath + ".crashreport.json", outputWriter);
+
+                // Ensure the dump is accessible by current user
+                Process chown = new Process();
+                chown.StartInfo.FileName = "sudo";
+                chown.StartInfo.Arguments = $"chown \"{Environment.UserName}\" \"{crashDumpPath}\"";
+
+                chown.StartInfo.UseShellExecute = false;
+                chown.StartInfo.RedirectStandardOutput = true;
+                chown.StartInfo.RedirectStandardError = true;
+
+                Console.WriteLine($"Invoking: {chown.StartInfo.FileName} {chown.StartInfo.Arguments}");
+                chown.Start();
+                copyOutput = chown.StandardOutput.ReadToEndAsync();
+                copyError = chown.StandardError.ReadToEndAsync();
+
+                chown.WaitForExit(DEFAULT_TIMEOUT_MS);
+
+                Task.WaitAll(copyError, copyOutput);
+                Console.WriteLine("chown stdout:");
+                Console.WriteLine(copyOutput.Result);
+                Console.WriteLine("chown stderr:");
+                Console.WriteLine(copyError.Result);
             }
             else
             {
@@ -681,15 +703,25 @@ namespace CoreclrTestLib
         // The children are sorted in the order they should be dumped
         static unsafe IEnumerable<Process> FindChildProcessesByName(Process process, string childName)
         {
-            Console.WriteLine($"Finding all child processes of '{process.ProcessName}' (ID: {process.Id}) with name '{childName}'");
+            process.TryGetProcessName(out string parentProcessName);
+            process.TryGetProcessId(out int parentProcessId);
+            Console.WriteLine($"Finding all child processes of '{parentProcessName}' (ID: {parentProcessId}) with name '{childName}'");
 
             var children = new Stack<Process>();
             Queue<Process> childrenToCheck = new Queue<Process>();
             HashSet<int> seen = new HashSet<int>();
 
-            seen.Add(process.Id);
-            foreach (var child in process.GetChildren())
-                childrenToCheck.Enqueue(child);
+            seen.Add(parentProcessId);
+
+            try
+            {
+                foreach (var child in process.GetChildren())
+                    childrenToCheck.Enqueue(child);
+            }
+            catch
+            {
+                // Process exited
+            }
 
             while (childrenToCheck.Count != 0)
             {
@@ -707,8 +739,15 @@ namespace CoreclrTestLib
                 Console.WriteLine($"Checking child process: '{processName}' (ID: {processId})");
                 seen.Add(processId);
 
-                foreach (var grandchild in child.GetChildren())
-                    childrenToCheck.Enqueue(grandchild);
+                try
+                {
+                    foreach (var grandchild in child.GetChildren())
+                        childrenToCheck.Enqueue(grandchild);
+                }
+                catch
+                {
+                    // Process exited
+                }
 
                 if (processName.Equals(childName, StringComparison.OrdinalIgnoreCase))
                 {
@@ -844,7 +883,9 @@ namespace CoreclrTestLib
                         Console.WriteLine($"\t{"ID",-6} ProcessName");
                         foreach (var activeProcess in Process.GetProcesses())
                         {
-                            Console.WriteLine($"\t{activeProcess.Id,-6} {activeProcess.ProcessName}");
+                            activeProcess.TryGetProcessName(out string activeProcessName);
+                            activeProcess.TryGetProcessId(out int activeProcessId);
+                            Console.WriteLine($"\t{activeProcessId,-6} {activeProcessName}");
                         }
 
                         if (OperatingSystem.IsWindows())

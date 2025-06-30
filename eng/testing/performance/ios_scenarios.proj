@@ -71,5 +71,11 @@
         ]]>
       </CustomCommands>
     </XHarnessAppBundleToTest>
+    <HelixWorkItem Include="Build Time - iOS $(RuntimeType) HelloWorld$(RunConfigsString)">
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <PreCommands>cd $(ScenarioDirectory)helloios;mkdir traces;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldBinlog/msbuild.binlog traces</PreCommands>
+      <Command>$(Python) test.py buildtime --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs) --binlog-path ./msbuild.binlog</Command>
+      <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
   </ItemGroup>
 </Project>

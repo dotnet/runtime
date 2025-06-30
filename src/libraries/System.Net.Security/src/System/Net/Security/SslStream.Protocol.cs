@@ -604,7 +604,9 @@ namespace System.Net.Security
                     _sslAuthenticationOptions.EncryptionPolicy,
                     _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck,
                     _sslAuthenticationOptions.AllowTlsResume,
-                    sendTrustList: false);
+                    sendTrustList: false,
+                    _sslAuthenticationOptions.AllowRsaPssPadding,
+                    _sslAuthenticationOptions.AllowRsaPkcs1Padding);
 
                 // We can probably do some optimization here. If the selectedCert is returned by the delegate
                 // we can always go ahead and use the certificate to create our credential
@@ -742,15 +744,16 @@ namespace System.Net.Security
             //
             // Note selectedCert is a safe ref possibly cloned from the user passed Cert object
             //
-            byte[] guessedThumbPrint = selectedCert.GetCertHash(HashAlgorithmName.SHA512);
-            bool sendTrustedList = _sslAuthenticationOptions.CertificateContext!.Trust?._sendTrustInHandshake ?? false;
+            byte[] guessedThumbPrint = selectedCert.GetCertHash(HashAlgorithmName.SHA512); bool sendTrustedList = _sslAuthenticationOptions.CertificateContext!.Trust?._sendTrustInHandshake ?? false;
             SafeFreeCredentials? cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint,
                                                                 _sslAuthenticationOptions.EnabledSslProtocols,
                                                                 _sslAuthenticationOptions.IsServer,
                                                                 _sslAuthenticationOptions.EncryptionPolicy,
                                                                 _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck,
                                                                 _sslAuthenticationOptions.AllowTlsResume,
-                                                                sendTrustedList);
+                                                                sendTrustedList,
+                                                                _sslAuthenticationOptions.AllowRsaPssPadding,
+                                                                _sslAuthenticationOptions.AllowRsaPkcs1Padding);
             if (cachedCredentialHandle != null)
             {
                 _credentialsHandle = cachedCredentialHandle;
@@ -952,7 +955,9 @@ namespace System.Net.Security
                             _sslAuthenticationOptions.EncryptionPolicy,
                             _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck,
                             _sslAuthenticationOptions.AllowTlsResume,
-                            sendTrustList);
+                            sendTrustList,
+                            _sslAuthenticationOptions.AllowRsaPssPadding,
+                            _sslAuthenticationOptions.AllowRsaPkcs1Padding);
                     }
                 }
             }
@@ -1056,8 +1061,9 @@ namespace System.Net.Security
                     return true;
                 }
 
-                _remoteCertificate = certificate;
-                if (_remoteCertificate == null)
+                // don't assign to _remoteCertificate yet, this prevents weird exceptions if SslStream is disposed in parallel with X509Chain building
+
+                if (certificate == null)
                 {
                     if (NetEventSource.Log.IsEnabled() && RemoteCertRequired) NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
                     sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
@@ -1099,15 +1105,17 @@ namespace System.Net.Security
                     sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(
                         _securityContext!,
                         chain,
-                        _remoteCertificate,
+                        certificate,
                         _sslAuthenticationOptions.CheckCertName,
                         _sslAuthenticationOptions.IsServer,
                         TargetHostNameHelper.NormalizeHostName(_sslAuthenticationOptions.TargetHost));
                 }
 
+                _remoteCertificate = certificate;
+
                 if (remoteCertValidationCallback != null)
                 {
-                    success = remoteCertValidationCallback(this, _remoteCertificate, chain, sslPolicyErrors);
+                    success = remoteCertValidationCallback(this, certificate, chain, sslPolicyErrors);
                 }
                 else
                 {

@@ -157,18 +157,8 @@ namespace System
         /// <returns>The number containing the product of the specified numbers.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe ulong BigMul(uint a, uint b)
+        public static ulong BigMul(uint a, uint b)
         {
-#if false // TARGET_32BIT
-            // This generates slower code currently than the simple multiplication
-            // https://github.com/dotnet/runtime/issues/11782
-            if (Bmi2.IsSupported)
-            {
-                uint low;
-                uint high = Bmi2.MultiplyNoFlags(a, b, &low);
-                return ((ulong)high << 32) | low;
-            }
-#endif
             return ((ulong)a) * b;
         }
 
@@ -905,7 +895,7 @@ namespace System
                 }
 
                 Debug.Assert(double.IsSubnormal(x));
-                return double.MinExponent - (BitOperations.TrailingZeroCount(x.TrailingSignificand) - double.BiasedExponentLength);
+                return double.MinExponent - (BitOperations.LeadingZeroCount(x.TrailingSignificand) - double.BiasedExponentLength);
             }
 
             return x.Exponent;
@@ -936,6 +926,7 @@ namespace System
             return Log(a) / Log(newBase);
         }
 
+        [Intrinsic]
         [NonVersionable]
         public static byte Max(byte val1, byte val2)
         {
@@ -971,18 +962,21 @@ namespace System
             return double.IsNegative(val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         [NonVersionable]
         public static short Max(short val1, short val2)
         {
             return (val1 >= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         [NonVersionable]
         public static int Max(int val1, int val2)
         {
             return (val1 >= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         [NonVersionable]
         public static long Max(long val1, long val2)
         {
@@ -993,6 +987,7 @@ namespace System
         /// <param name="val1">The first of two native signed integers to compare.</param>
         /// <param name="val2">The second of two native signed integers to compare.</param>
         /// <returns>Parameter <paramref name="val1" /> or <paramref name="val2" />, whichever is larger.</returns>
+        [Intrinsic]
         [NonVersionable]
         public static nint Max(nint val1, nint val2)
         {
@@ -1000,6 +995,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static sbyte Max(sbyte val1, sbyte val2)
         {
@@ -1030,6 +1026,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static ushort Max(ushort val1, ushort val2)
         {
@@ -1037,6 +1034,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static uint Max(uint val1, uint val2)
         {
@@ -1044,6 +1042,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static ulong Max(ulong val1, ulong val2)
         {
@@ -1055,6 +1054,7 @@ namespace System
         /// <param name="val2">The second of two native unsigned integers to compare.</param>
         /// <returns>Parameter <paramref name="val1" /> or <paramref name="val2" />, whichever is larger.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static nuint Max(nuint val1, nuint val2)
         {
@@ -1086,6 +1086,7 @@ namespace System
             return y;
         }
 
+        [Intrinsic]
         [NonVersionable]
         public static byte Min(byte val1, byte val2)
         {
@@ -1121,18 +1122,21 @@ namespace System
             return double.IsNegative(val1) ? val1 : val2;
         }
 
+        [Intrinsic]
         [NonVersionable]
         public static short Min(short val1, short val2)
         {
             return (val1 <= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         [NonVersionable]
         public static int Min(int val1, int val2)
         {
             return (val1 <= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         [NonVersionable]
         public static long Min(long val1, long val2)
         {
@@ -1143,6 +1147,7 @@ namespace System
         /// <param name="val1">The first of two native signed integers to compare.</param>
         /// <param name="val2">The second of two native signed integers to compare.</param>
         /// <returns>Parameter <paramref name="val1" /> or <paramref name="val2" />, whichever is smaller.</returns>
+        [Intrinsic]
         [NonVersionable]
         public static nint Min(nint val1, nint val2)
         {
@@ -1150,6 +1155,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static sbyte Min(sbyte val1, sbyte val2)
         {
@@ -1180,6 +1186,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static ushort Min(ushort val1, ushort val2)
         {
@@ -1187,6 +1194,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static uint Min(uint val1, uint val2)
         {
@@ -1194,6 +1202,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static ulong Min(ulong val1, ulong val2)
         {
@@ -1205,6 +1214,7 @@ namespace System
         /// <param name="val2">The second of two native unsigned integers to compare.</param>
         /// <returns>Parameter <paramref name="val1" /> or <paramref name="val2" />, whichever is smaller.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static nuint Min(nuint val1, nuint val2)
         {

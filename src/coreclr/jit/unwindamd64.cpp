@@ -95,6 +95,30 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
         case REG_R23:
             dwarfReg = 23;
             break;
+        case REG_R24:
+            dwarfReg = 24;
+            break;
+        case REG_R25:
+            dwarfReg = 25;
+            break;
+        case REG_R26:
+            dwarfReg = 26;
+            break;
+        case REG_R27:
+            dwarfReg = 27;
+            break;
+        case REG_R28:
+            dwarfReg = 28;
+            break;
+        case REG_R29:
+            dwarfReg = 29;
+            break;
+        case REG_R30:
+            dwarfReg = 30;
+            break;
+        case REG_R31:
+            dwarfReg = 31;
+            break;
         default:
             noway_assert(!"unexpected REG_NUM");
     }
@@ -201,6 +225,27 @@ void Compiler::unwindPush(regNumber reg)
     }
 }
 
+//------------------------------------------------------------------------
+// Compiler::unwindPush2Windows: Record  push/save of 2 registers simultaneously.
+//
+// Arguments:
+//    reg1 - The first register being pushed/saved.
+//    reg2 - The second register being pushed/saved.
+//
+void Compiler::unwindPush2(regNumber reg1, regNumber reg2)
+{
+#ifdef UNIX_AMD64_ABI
+    if (generateCFIUnwindCodes())
+    {
+        unwindPush2Pop2CFI(reg1, reg2);
+    }
+    else
+#endif // UNIX_AMD64_ABI
+    {
+        unwindPush2Windows(reg1, reg2);
+    }
+}
+
 void Compiler::unwindPushWindows(regNumber reg)
 {
     assert(compGeneratingProlog);
@@ -234,6 +279,20 @@ void Compiler::unwindPushWindows(regNumber reg)
         code->UnwindOp = UWOP_ALLOC_SMALL;
         code->OpInfo   = 0;
     }
+}
+
+//------------------------------------------------------------------------
+// Compiler::unwindPush2Windows: Record  push/save of 2 registers simultaneously in windows OS.
+//
+// Arguments:
+//    reg1 - The first register being pushed/saved.
+//    reg2 - The second register being pushed/saved.
+//
+void Compiler::unwindPush2Windows(regNumber reg1, regNumber reg2)
+{
+    // ToDo: This is a placeholder till Windows OS has unwind support for push2/pop2.
+    unwindPushWindows(reg1);
+    unwindPushWindows(reg2);
 }
 
 #ifdef UNIX_AMD64_ABI

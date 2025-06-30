@@ -14,17 +14,10 @@ FRAME_TYPE_NAME(ResumableFrame)
 FRAME_TYPE_NAME(RedirectedThreadFrame)
 #endif // FEATURE_HIJACK
 FRAME_TYPE_NAME(FaultingExceptionFrame)
-#ifdef FEATURE_EH_FUNCLETS
 FRAME_TYPE_NAME(SoftwareExceptionFrame)
-#endif // FEATURE_EH_FUNCLETS
 #ifdef DEBUGGING_SUPPORTED
 FRAME_TYPE_NAME(FuncEvalFrame)
 #endif // DEBUGGING_SUPPORTED
-FRAME_TYPE_NAME(HelperMethodFrame)
-FRAME_TYPE_NAME(HelperMethodFrame_1OBJ)
-FRAME_TYPE_NAME(HelperMethodFrame_2OBJ)
-FRAME_TYPE_NAME(HelperMethodFrame_3OBJ)
-FRAME_TYPE_NAME(HelperMethodFrame_PROTECTOBJ)
 #ifdef FEATURE_COMINTEROP
 FRAME_TYPE_NAME(ComMethodFrame)
 FRAME_TYPE_NAME(CLRToCOMMethodFrame)
@@ -38,10 +31,7 @@ FRAME_TYPE_NAME(PrestubMethodFrame)
 FRAME_TYPE_NAME(CallCountingHelperFrame)
 FRAME_TYPE_NAME(StubDispatchFrame)
 FRAME_TYPE_NAME(ExternalMethodFrame)
-#ifdef FEATURE_READYTORUN
 FRAME_TYPE_NAME(DynamicHelperFrame)
-#endif
-FRAME_TYPE_NAME(ProtectByRefsFrame)
 FRAME_TYPE_NAME(ProtectValueClassFrame)
 FRAME_TYPE_NAME(DebuggerClassInitMarkFrame)
 FRAME_TYPE_NAME(DebuggerExitFrame)

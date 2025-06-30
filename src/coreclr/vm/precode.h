@@ -225,7 +225,7 @@ struct StubPrecode
         pData->Target = (PCODE)target;
     }
 
-    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
+    static void GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size);
 
 #endif // !DACCESS_COMPILE
 };
@@ -364,6 +364,12 @@ struct InterpreterPrecode
         LIMITED_METHOD_CONTRACT;
         return PINSTRToPCODE(dac_cast<TADDR>(this));
     }
+
+    static InterpreterPrecode* FromEntryPoint(PCODE entryPoint)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (InterpreterPrecode*)PCODEToPINSTR(entryPoint);
+    }
 };
 #endif // FEATURE_INTERPRETER
 
@@ -428,7 +434,7 @@ struct FixupPrecode
 
     static void StaticInitialize();
 
-    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
+    static void GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size);
 
     PTR_FixupPrecodeData GetData() const
     {
@@ -645,13 +651,6 @@ private:
 #ifdef DACCESS_COMPILE
         DacError(E_UNEXPECTED);
 #else
-#ifdef _PREFIX_
-        // We only use __UNREACHABLE here since otherwise it would be a hint
-        // for the compiler to fold this case with the other cases in a switch
-        // statement. However, we would rather have this case be a separate
-        // code path so that we will get a clean crash sooner.
-        __UNREACHABLE("Unexpected precode type");
-#endif
         CONSISTENCY_CHECK_MSGF(false, ("%s: Unexpected precode type: 0x%02x.", originator, precodeType));
 #endif
     }
@@ -867,5 +866,10 @@ public:
     static void Init(PrecodeMachineDescriptor* dest);
 };
 #endif //DACCESS_COMPILE
+
+extern InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
+#ifdef HAS_FIXUP_PRECODE
+extern InterleavedLoaderHeapConfig s_fixupStubPrecodeHeapConfig;
+#endif
 
 #endif // __PRECODE_H__

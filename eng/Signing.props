@@ -14,7 +14,7 @@
         We have specific jobs that produce RID-agnostic packages or packages for multiple RIDs set this property.
       - Mono AOT LLVM builds only publish LLVM-specific packages always.
 
-      VMR jobs can control whether or not a vertical has EnableDefaultRidSpecificArtifacts set to true or false in DotNetBuild.props.
+      The VMR orchestrator will set EnableDefaultRidSpecificArtifacts=true as a global property based on its configuration.
 
       Packages that do not meet the above rules are added with Vertical visibility in the VMR and excluded in non-VMR builds.
     -->
@@ -22,12 +22,8 @@
     <EnableBlobArtifacts>true</EnableBlobArtifacts>
     <EnableBlobArtifacts Condition="'$(MonoAOTEnableLLVM)' == 'true'">false</EnableBlobArtifacts>
 
-    <!-- Set the TargetRid property to our PackageRID, which is the right RID to use for selecting packages from our repo. -->
-    <TargetRid>$(PackageRID)</TargetRid>
-
     <!-- The final stage of the runtime official build should publish everything. -->
-    <EnableDefaultRidSpecificArtifacts Condition="'$(DotNetFinalPublish)' != ''">false</EnableDefaultRidSpecificArtifacts>
-    <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == ''">true</EnableDefaultRidSpecificArtifacts>
+    <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == '' and '$(DotNetBuildFromVMR)' != 'true'">true</EnableDefaultRidSpecificArtifacts>
 
     <UseDotNetCertificate>true</UseDotNetCertificate>
   </PropertyGroup>
@@ -45,7 +41,9 @@
 
     <!-- On MacOS, we need to sign a number of our executables with the Mac developer cert with hardening enabled.
          Avoid doing this on Linux, which has the same executable names -->
-    <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="dotnet;apphost;corerun;createdump;singlefilehost;crossgen2;ilasm;ilc;ildasm;llc;mono-aot-cross;opt;Mono" CertificateName="MacDeveloperHarden" />
+    <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="dotnet;apphost;createdump;singlefilehost;crossgen2" CertificateName="MacDeveloperHarden" />
+    <!-- Sign these Mac binaries without hardening enabled, making them compatible with hardening needs more work -->
+    <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="corerun;ilc;ilasm;ildasm;mono-aot-cross;Mono;llc;opt" CertificateName="MacDeveloper" />
     <!-- Additionally, we need to notarize any .pkg files -->
     <MacOSPkg Include="$(ArtifactsPackagesDir)**/dotnet-runtime*.pkg" Exclude="$(ArtifactsPackagesDir)**/dotnet-runtime-internal*.pkg" />
     <FileSignInfo Include="@(MacOSPkg->'%(Filename)%(Extension)')" CertificateName="MacDeveloperWithNotarization" />
@@ -62,7 +60,7 @@
     <FileSignInfo Include="Mono.Cecil.Rocks.dll" CertificateName="3PartySHA2" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(DotNetFinalPublish)' != 'true'">
+  <ItemGroup>
     <BlobArtifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
                            $(ArtifactsPackagesDir)**\*.zip;
                            $(ArtifactsPackagesDir)**\*.deb;
@@ -76,14 +74,6 @@
       <!-- Exclude wixpack.zip files from checksum generation -->
       <ChecksumPath Condition="$([System.String]::Copy('%(Filename)%(Extension)').EndsWith('.wixpack.zip')) != 'true'">%(FullPath).sha512</ChecksumPath>
     </BlobArtifact>
-  </ItemGroup>
-
-  <!-- In the runtime official build, we only sign a subset of files. -->
-  <ItemGroup Condition="'$(DotNetFinalPublish)' == 'true'">
-    <BlobArtifact Include="$(ArtifactsPackagesDir)**\*.msi;
-                    $(ArtifactsPackagesDir)**\*.exe;
-                    $(ArtifactsPackagesDir)**\*.zip"
-                  SkipPublish="true" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(EnableBlobArtifacts)' == 'true'">
@@ -114,29 +104,29 @@
   <Choose>
     <When Condition="'$(MonoAOTEnableLLVM)' == 'true'">
       <ItemGroup>
-        <PackageArtifacts Include="$(ArtifactsPackagesDir)**\*.LLVM.AOT.$(PackageRID).*.nupkg" />
+        <PackageArtifacts Include="$(ArtifactsPackagesDir)**\*.LLVM.AOT.$(TargetRid).*.nupkg" />
         <Artifact Include="@(PackageArtifacts)"
                   IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))"
                   Kind="Package" />
       </ItemGroup>
     </When>
     <When Condition="'$(EnableDefaultRidSpecificArtifacts)' == 'true'">
-      <ItemGroup Condition="'$(PackageRID)' == 'ios-arm64'">
+      <ItemGroup Condition="'$(TargetRid)' == 'ios-arm64'">
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.iOS.Sample.Mono.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.LibraryBuilder.Sdk.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.MonoAOTCompiler.Task.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.MonoTargets.Sdk.*.nupkg" />
       </ItemGroup>
-      <ItemGroup Condition="'$(PackageRID)' == 'android-arm64'">
+      <ItemGroup Condition="'$(TargetRid)' == 'android-arm64'">
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.Android.Sample.Mono.*.nupkg" />
       </ItemGroup>
-      <ItemGroup Condition="'$(PackageRID)' == 'wasi-wasm'">
+      <ItemGroup Condition="'$(TargetRid)' == 'wasi-wasm'">
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.*.nupkg" />
       </ItemGroup>
-      <ItemGroup Condition="'$(PackageRID)' == 'browser-wasm' and '$(WasmEnableThreads)' != 'true'">
+      <ItemGroup Condition="'$(TargetRid)' == 'browser-wasm' and '$(WasmEnableThreads)' != 'true'">
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.wasm.Sample.Mono.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WorkloadTesting.Internal.*.nupkg;

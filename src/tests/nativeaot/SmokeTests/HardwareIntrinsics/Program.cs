@@ -43,149 +43,260 @@ unsafe class Program
 
         bool ExpectedVectorsAccelerated = true;
 
+        bool? ExpectedX86Base = true;
         bool? ExpectedSse = true;
         bool? ExpectedSse2 = true;
 
 #if BASELINE_INTRINSICS
         bool? ExpectedSse3 = null;
         bool? ExpectedSsse3 = null;
-        bool? ExpectedAes = null;
-        bool? ExpectedLzcnt = null;
-        bool? ExpectedPclmulqdq = null;
-        bool? ExpectedPclmulqdqV256 = false;
-        bool? ExpectedPclmulqdqV512 = false;
         bool? ExpectedSse41 = null;
         bool? ExpectedSse42 = null;
         bool? ExpectedPopcnt = null;
+        bool? ExpectedAes = null;
+        bool? ExpectedPclmulqdq = null;
+        bool? ExpectedGfni = null;
+        bool? ExpectedSha = null;
+        bool? ExpectedWaitPkg = null;
+        bool? ExpectedX86Serialize = null;
+
         bool? ExpectedAvx = false;
         bool? ExpectedAvx2 = false;
-        bool? ExpectedFma = false;
         bool? ExpectedBmi1 = false;
         bool? ExpectedBmi2 = false;
-        bool? ExpectedAvxVnni = false;
-        bool? ExpectedAvx10v1 = false;
-        bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedF16c = false;
+        bool? ExpectedFma = false;
+        bool? ExpectedLzcnt = false;
         bool? ExpectedAvx512F = false;
         bool? ExpectedAvx512BW = false;
         bool? ExpectedAvx512CD = false;
         bool? ExpectedAvx512DQ = false;
         bool? ExpectedAvx512Vbmi = false;
-        bool? ExpectedX86Serialize = null;
-        bool? ExpectedGfni = null;
+        bool? ExpectedAvx512Bitalg = false;
+        bool? ExpectedAvx512Vbmi2 = false;
+        bool? ExpectedAvx512Vpopcntdq = false;
+        bool? ExpectedAvx512Bf16 = false;
+        bool? ExpectedAvx512Fp16 = false;
+        bool? ExpectedAvx10v1 = false;
+        bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedAvx512Vp2intersect = false;
+        bool? ExpectedAvxIfma = false;
+        bool? ExpectedAvxVnni = false;
         bool? ExpectedGfniV256 = false;
         bool? ExpectedGfniV512 = false;
+        bool? ExpectedAesV256 = false;
+        bool? ExpectedAesV512 = false;
+        bool? ExpectedPclmulqdqV256 = false;
+        bool? ExpectedPclmulqdqV512 = false;
 #elif SSE42_INTRINSICS
         bool? ExpectedSse3 = true;
         bool? ExpectedSsse3 = true;
-        bool? ExpectedAes = null;
-        bool? ExpectedLzcnt = null;
-        bool? ExpectedPclmulqdq = null;
-        bool? ExpectedPclmulqdqV256 = false;
-        bool? ExpectedPclmulqdqV512 = false;
         bool? ExpectedSse41 = true;
         bool? ExpectedSse42 = true;
-        bool? ExpectedPopcnt = null;
+        bool? ExpectedPopcnt = true;
+
+        bool? ExpectedAes = null;
+        bool? ExpectedPclmulqdq = null;
+        bool? ExpectedGfni = null;
+        bool? ExpectedSha = null;
+        bool? ExpectedWaitPkg = null;
+        bool? ExpectedX86Serialize = null;
+
         bool? ExpectedAvx = false;
         bool? ExpectedAvx2 = false;
-        bool? ExpectedFma = false;
         bool? ExpectedBmi1 = false;
         bool? ExpectedBmi2 = false;
-        bool? ExpectedAvxVnni = false;
-        bool? ExpectedAvx10v1 = false;
-        bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedF16c = false;
+        bool? ExpectedFma = false;
+        bool? ExpectedLzcnt = false;
         bool? ExpectedAvx512F = false;
         bool? ExpectedAvx512BW = false;
         bool? ExpectedAvx512CD = false;
         bool? ExpectedAvx512DQ = false;
         bool? ExpectedAvx512Vbmi = false;
-        bool? ExpectedX86Serialize = null;
-        bool? ExpectedGfni = null;
+        bool? ExpectedAvx512Bitalg = false;
+        bool? ExpectedAvx512Vbmi2 = false;
+        bool? ExpectedAvx512Vpopcntdq = false;
+        bool? ExpectedAvx512Bf16 = false;
+        bool? ExpectedAvx512Fp16 = false;
+        bool? ExpectedAvx10v1 = false;
+        bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedAvx512Vp2intersect = false;
+        bool? ExpectedAvxIfma = false;
+        bool? ExpectedAvxVnni = false;
         bool? ExpectedGfniV256 = false;
         bool? ExpectedGfniV512 = false;
+        bool? ExpectedAesV256 = false;
+        bool? ExpectedAesV512 = false;
+        bool? ExpectedPclmulqdqV256 = false;
+        bool? ExpectedPclmulqdqV512 = false;
 #elif AVX_INTRINSICS
         bool? ExpectedSse3 = true;
         bool? ExpectedSsse3 = true;
-        bool? ExpectedAes = null;
-        bool? ExpectedLzcnt = null;
-        bool? ExpectedPclmulqdq = null;
-        bool? ExpectedPclmulqdqV256 = null;
-        bool? ExpectedPclmulqdqV512 = false;
         bool? ExpectedSse41 = true;
         bool? ExpectedSse42 = true;
-        bool? ExpectedPopcnt = null;
+        bool? ExpectedPopcnt = true;
         bool? ExpectedAvx = true;
-        bool? ExpectedAvx2 = false; // TODO: Fix once opportunistic Avx2 is allowed
-        bool? ExpectedFma = null;
+
+        bool? ExpectedAvx2 = null;
         bool? ExpectedBmi1 = null;
         bool? ExpectedBmi2 = null;
-        bool? ExpectedAvxVnni = false; // TODO: Fix once opportunistic Avx2 is allowed
-        bool? ExpectedAvx10v1 = false;
-        bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedF16c = null;
+        bool? ExpectedFma = null;
+        bool? ExpectedLzcnt = null;
+        bool? ExpectedAes = null;
+        bool? ExpectedPclmulqdq = null;
+        bool? ExpectedAvxIfma = null;
+        bool? ExpectedAvxVnni = null;
+        bool? ExpectedGfni = null;
+        bool? ExpectedGfniV256 = null;
+        bool? ExpectedSha = null;
+        bool? ExpectedAesV256 = null;
+        bool? ExpectedPclmulqdqV256 = null;
+        bool? ExpectedWaitPkg = null;
+        bool? ExpectedX86Serialize = null;
+
         bool? ExpectedAvx512F = false;
         bool? ExpectedAvx512BW = false;
         bool? ExpectedAvx512CD = false;
         bool? ExpectedAvx512DQ = false;
         bool? ExpectedAvx512Vbmi = false;
-        bool? ExpectedX86Serialize = null;
+        bool? ExpectedAvx512Bitalg = false;
+        bool? ExpectedAvx512Vbmi2 = false;
+        bool? ExpectedAvx512Vpopcntdq = false;
+        bool? ExpectedAvx512Bf16 = false;
+        bool? ExpectedAvx512Fp16 = false;
+        bool? ExpectedAvx10v1 = false;
+        bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedAvx512Vp2intersect = false;
+        bool? ExpectedGfniV512 = false;
+        bool? ExpectedAesV512 = false;
+        bool? ExpectedPclmulqdqV512 = false;
+#elif AVX_INTRINSICS_NO_AVX2
+        bool? ExpectedSse3 = true;
+        bool? ExpectedSsse3 = true;
+        bool? ExpectedSse41 = true;
+        bool? ExpectedSse42 = true;
+        bool? ExpectedPopcnt = true;
+        bool? ExpectedAvx = true;
+
+        bool? ExpectedAes = null;
+        bool? ExpectedPclmulqdq = null;
         bool? ExpectedGfni = null;
         bool? ExpectedGfniV256 = null;
+        bool? ExpectedSha = null;
+        bool? ExpectedAesV256 = null;
+        bool? ExpectedPclmulqdqV256 = null;
+        bool? ExpectedWaitPkg = null;
+        bool? ExpectedX86Serialize = null;
+
+        bool? ExpectedAvx2 = false;
+        bool? ExpectedBmi1 = false;
+        bool? ExpectedBmi2 = false;
+        bool? ExpectedF16c = false;
+        bool? ExpectedFma = false;
+        bool? ExpectedLzcnt = false;
+        bool? ExpectedAvx512F = false;
+        bool? ExpectedAvx512BW = false;
+        bool? ExpectedAvx512CD = false;
+        bool? ExpectedAvx512DQ = false;
+        bool? ExpectedAvx512Vbmi = false;
+        bool? ExpectedAvx512Bitalg = false;
+        bool? ExpectedAvx512Vbmi2 = false;
+        bool? ExpectedAvx512Vpopcntdq = false;
+        bool? ExpectedAvx512Bf16 = false;
+        bool? ExpectedAvx512Fp16 = false;
+        bool? ExpectedAvx10v1 = false;
+        bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedAvx512Vp2intersect = false;
+        bool? ExpectedAvxIfma = false;
+        bool? ExpectedAvxVnni = false;
         bool? ExpectedGfniV512 = false;
+        bool? ExpectedAesV512 = false;
+        bool? ExpectedPclmulqdqV512 = false;
 #elif AVX2_INTRINSICS
         bool? ExpectedSse3 = true;
         bool? ExpectedSsse3 = true;
-        bool? ExpectedAes = null;
-        bool? ExpectedLzcnt = null;
-        bool? ExpectedPclmulqdq = null;
-        bool? ExpectedPclmulqdqV256 = null;
-        bool? ExpectedPclmulqdqV512 = false;
         bool? ExpectedSse41 = true;
         bool? ExpectedSse42 = true;
-        bool? ExpectedPopcnt = null;
+        bool? ExpectedPopcnt = true;
         bool? ExpectedAvx = true;
         bool? ExpectedAvx2 = true;
-        bool? ExpectedFma = null;
-        bool? ExpectedBmi1 = null;
-        bool? ExpectedBmi2 = null;
+        bool? ExpectedBmi1 = true;
+        bool? ExpectedBmi2 = true;
+        bool? ExpectedF16c = true;
+        bool? ExpectedFma = true;
+        bool? ExpectedLzcnt = true;
+
+        bool? ExpectedAes = null;
+        bool? ExpectedPclmulqdq = null;
+        bool? ExpectedAvxIfma = null;
         bool? ExpectedAvxVnni = null;
-        bool? ExpectedAvx10v1 = false;
-        bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedGfni = null;
+        bool? ExpectedGfniV256 = null;
+        bool? ExpectedSha = null;
+        bool? ExpectedAesV256 = null;
+        bool? ExpectedPclmulqdqV256 = null;
+        bool? ExpectedWaitPkg = null;
+        bool? ExpectedX86Serialize = null;
+
         bool? ExpectedAvx512F = false;
         bool? ExpectedAvx512BW = false;
         bool? ExpectedAvx512CD = false;
         bool? ExpectedAvx512DQ = false;
         bool? ExpectedAvx512Vbmi = false;
-        bool? ExpectedX86Serialize = null;
-        bool? ExpectedGfni = null;
-        bool? ExpectedGfniV256 = null;
+        bool? ExpectedAvx512Bitalg = false;
+        bool? ExpectedAvx512Vbmi2 = false;
+        bool? ExpectedAvx512Vpopcntdq = false;
+        bool? ExpectedAvx512Bf16 = false;
+        bool? ExpectedAvx512Fp16 = false;
+        bool? ExpectedAvx10v1 = false;
+        bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedAvx512Vp2intersect = false;
         bool? ExpectedGfniV512 = false;
+        bool? ExpectedAesV512 = false;
+        bool? ExpectedPclmulqdqV512 = false;
 #elif AVX512_INTRINSICS
         bool? ExpectedSse3 = true;
         bool? ExpectedSsse3 = true;
-        bool? ExpectedAes = null;
-        bool? ExpectedLzcnt = null;
-        bool? ExpectedPclmulqdq = null;
-        bool? ExpectedPclmulqdqV256 = null;
-        bool? ExpectedPclmulqdqV512 = null;
         bool? ExpectedSse41 = true;
         bool? ExpectedSse42 = true;
-        bool? ExpectedPopcnt = null;
+        bool? ExpectedPopcnt = true;
         bool? ExpectedAvx = true;
         bool? ExpectedAvx2 = true;
+        bool? ExpectedBmi1 = true;
+        bool? ExpectedBmi2 = true;
+        bool? ExpectedF16c = true;
         bool? ExpectedFma = true;
-        bool? ExpectedBmi1 = null;
-        bool? ExpectedBmi2 = null;
-        bool? ExpectedAvxVnni = null;
-        bool? ExpectedAvx10v1 = null;
-        bool? ExpectedAvx10v1V512 = null;
+        bool? ExpectedLzcnt = true;
         bool? ExpectedAvx512F = true;
         bool? ExpectedAvx512BW = true;
         bool? ExpectedAvx512CD = true;
         bool? ExpectedAvx512DQ = true;
+
         bool? ExpectedAvx512Vbmi = null;
-        bool? ExpectedX86Serialize = null;
+        bool? ExpectedAvx512Bitalg = null;
+        bool? ExpectedAvx512Vbmi2 = null;
+        bool? ExpectedAvx512Vpopcntdq = null;
+        bool? ExpectedAvx512Bf16 = null;
+        bool? ExpectedAvx512Fp16 = null;
+        bool? ExpectedAvx10v1 = null;
+        bool? ExpectedAvx10v1V512 = null;
+        bool? ExpectedAes = null;
+        bool? ExpectedPclmulqdq = null;
+        bool? ExpectedAvx512Vp2intersect = null;
+        bool? ExpectedAvxIfma = null;
+        bool? ExpectedAvxVnni = null;
         bool? ExpectedGfni = null;
         bool? ExpectedGfniV256 = null;
         bool? ExpectedGfniV512 = null;
+        bool? ExpectedSha = null;
+        bool? ExpectedAesV256 = null;
+        bool? ExpectedAesV512 = null;
+        bool? ExpectedPclmulqdqV256 = null;
+        bool? ExpectedPclmulqdqV512 = null;
+        bool? ExpectedWaitPkg = null;
+        bool? ExpectedX86Serialize = null;
 #else
 #error Who dis?
 #endif
@@ -210,6 +321,9 @@ unsafe class Program
             throw new Exception($"Unexpected vector length - expected {byteVectorLength}, got {Vector<byte>.Count}");
         }
 
+        Check("X86Base", ExpectedX86Base, &X86BaseIsSupported, X86Base.IsSupported, () => { X86Base.Pause(); return true; });
+        Check("X86Base.X64", ExpectedX86Base, &X86BaseX64IsSupported, X86Base.IsSupported, null);
+
         Check("Sse", ExpectedSse, &SseIsSupported, Sse.IsSupported, () => Sse.Subtract(Vector128<float>.Zero, Vector128<float>.Zero).Equals(Vector128<float>.Zero));
         Check("Sse.X64", ExpectedSse, &SseX64IsSupported, Sse.X64.IsSupported, () => Sse.X64.ConvertToInt64WithTruncation(Vector128<float>.Zero) == 0);
 
@@ -228,8 +342,8 @@ unsafe class Program
         Check("Sse42", ExpectedSse42, &Sse42IsSupported, Sse42.IsSupported, () => Sse42.Crc32(0, 0) == 0);
         Check("Sse42.X64", ExpectedSse42, &Sse42X64IsSupported, Sse42.X64.IsSupported, () => Sse42.X64.Crc32(0, 0) == 0);
 
-        Check("Aes", ExpectedAes, &AesIsSupported, Aes.IsSupported, () => Aes.KeygenAssist(Vector128<byte>.Zero, 0).Equals(Vector128.Create((byte)99)));
-        Check("Aes.X64", ExpectedAes, &AesX64IsSupported, Aes.X64.IsSupported, null);
+        Check("Popcnt", ExpectedPopcnt, &PopcntIsSupported, Popcnt.IsSupported, () => Popcnt.PopCount(0) == 0);
+        Check("Popcnt.X64", ExpectedPopcnt, &PopcntX64IsSupported, Popcnt.X64.IsSupported, () => Popcnt.X64.PopCount(0) == 0);
 
         Check("Avx", ExpectedAvx, &AvxIsSupported, Avx.IsSupported, () => Avx.Add(Vector256<double>.Zero, Vector256<double>.Zero).Equals(Vector256<double>.Zero));
         Check("Avx.X64", ExpectedAvx, &AvxX64IsSupported, Avx.X64.IsSupported, null);
@@ -243,28 +357,14 @@ unsafe class Program
         Check("Bmi2", ExpectedBmi2, &Bmi2IsSupported, Bmi2.IsSupported, () => Bmi2.MultiplyNoFlags(0, 0) == 0);
         Check("Bmi2.X64", ExpectedBmi2, &Bmi2X64IsSupported, Bmi2.X64.IsSupported, () => Bmi2.X64.MultiplyNoFlags(0, 0) == 0);
 
+        // Check("F16c", ExpectedF16c, &F16cIsSupported, F16c.IsSupported, null);
+        // Check("F16c.X64", ExpectedF16c, &F16cX64IsSupported, F16c.X64.IsSupported, null);
+
         Check("Fma", ExpectedFma, &FmaIsSupported, Fma.IsSupported, () => Fma.MultiplyAdd(Vector128<float>.Zero, Vector128<float>.Zero, Vector128<float>.Zero).Equals(Vector128<float>.Zero));
         Check("Fma.X64", ExpectedFma, &FmaX64IsSupported, Fma.X64.IsSupported, null);
 
         Check("Lzcnt", ExpectedLzcnt, &LzcntIsSupported, Lzcnt.IsSupported, () => Lzcnt.LeadingZeroCount(0) == 32);
         Check("Lzcnt.X64", ExpectedLzcnt, &LzcntX64IsSupported, Lzcnt.X64.IsSupported, () => Lzcnt.X64.LeadingZeroCount(0) == 64);
-
-        Check("Pclmulqdq", ExpectedPclmulqdq, &PclmulqdqIsSupported, Pclmulqdq.IsSupported, () => Pclmulqdq.CarrylessMultiply(Vector128<long>.Zero, Vector128<long>.Zero, 0).Equals(Vector128<long>.Zero));
-        Check("Pclmulqdq.V256", ExpectedPclmulqdqV256, &PclmulqdqV256IsSupported, Pclmulqdq.V256.IsSupported, () => Pclmulqdq.V256.CarrylessMultiply(Vector256<long>.Zero, Vector256<long>.Zero, 0).Equals(Vector256<long>.Zero));
-        Check("Pclmulqdq.V512", ExpectedPclmulqdqV512, &PclmulqdqV512IsSupported, Pclmulqdq.V512.IsSupported, () => Pclmulqdq.V512.CarrylessMultiply(Vector512<long>.Zero, Vector512<long>.Zero, 0).Equals(Vector512<long>.Zero));
-        Check("Pclmulqdq.X64", ExpectedPclmulqdq, &PclmulqdqX64IsSupported, Pclmulqdq.X64.IsSupported, null);
-
-        Check("Popcnt", ExpectedPopcnt, &PopcntIsSupported, Popcnt.IsSupported, () => Popcnt.PopCount(0) == 0);
-        Check("Popcnt.X64", ExpectedPopcnt, &PopcntX64IsSupported, Popcnt.X64.IsSupported, () => Popcnt.X64.PopCount(0) == 0);
-
-        Check("AvxVnni", ExpectedAvxVnni, &AvxVnniIsSupported, AvxVnni.IsSupported, () => AvxVnni.MultiplyWideningAndAdd(Vector128<int>.Zero, Vector128<byte>.Zero, Vector128<sbyte>.Zero).Equals(Vector128<int>.Zero));
-        Check("AvxVnni.X64", ExpectedAvxVnni, &AvxVnniX64IsSupported, AvxVnni.X64.IsSupported, null);
-
-        Check("Avx10v1", ExpectedAvx10v1, &Avx10v1IsSupported, Avx10v1.IsSupported, () => Avx10v1.Abs(Vector128<long>.Zero).Equals(Vector128<ulong>.Zero));
-        Check("Avx10v1.X64", ExpectedAvx10v1, &Avx10v1X64IsSupported, Avx10v1.X64.IsSupported, null);
-
-        Check("Avx10v1.V512", ExpectedAvx10v1V512, &Avx10v1V512IsSupported, Avx10v1.V512.IsSupported, () => Avx10v1.V512.Abs(Vector512<long>.Zero).Equals(Vector512<ulong>.Zero));
-        Check("Avx10v1.V512.X64", ExpectedAvx10v1V512, &Avx10v1V512X64IsSupported, Avx10v1.V512.X64.IsSupported, null);
 
         Check("Avx512F", ExpectedAvx512F, &Avx512FIsSupported, Avx512F.IsSupported, () => Avx512F.Abs(Vector512<int>.Zero).Equals(Vector512<uint>.Zero));
         Check("Avx512F.VL", ExpectedAvx512F, &Avx512FVLIsSupported, Avx512F.VL.IsSupported, null);
@@ -286,13 +386,67 @@ unsafe class Program
         Check("Avx512Vbmi.VL", ExpectedAvx512Vbmi, &Avx512VbmiVLIsSupported, Avx512Vbmi.VL.IsSupported, null);
         Check("Avx512Vbmi.X64", ExpectedAvx512Vbmi, &Avx512VbmiX64IsSupported, Avx512Vbmi.X64.IsSupported, null);
 
-        Check("X86Serialize", ExpectedX86Serialize, &X86SerializeIsSupported, X86Serialize.IsSupported, () => { X86Serialize.Serialize(); return true; } );
-        Check("X86Serialize.X64", ExpectedX86Serialize, &X86SerializeX64IsSupported, X86Serialize.X64.IsSupported, null);
+        // Check("Avx512Bitalg", ExpectedAvx512Bitalg, &Avx512BitalgIsSupported, Avx512Bitalg.IsSupported, null);
+        // Check("Avx512Bitalg.VL", ExpectedAvx512Bitalg, &Avx512BitalgVLIsSupported, Avx512Bitalg.VL.IsSupported, null);
+        // Check("Avx512Bitalg.X64", ExpectedAvx512Bitalg, &Avx512BitalgX64IsSupported, Avx512Bitalg.X64.IsSupported, null);
+
+        Check("Avx512Vbmi2", ExpectedAvx512Vbmi2, &Avx512Vbmi2IsSupported, Avx512Vbmi2.IsSupported, null);
+        Check("Avx512Vbmi2.VL", ExpectedAvx512Vbmi2, &Avx512Vbmi2VLIsSupported, Avx512Vbmi2.VL.IsSupported, null);
+        Check("Avx512Vbmi2.X64", ExpectedAvx512Vbmi2, &Avx512Vbmi2X64IsSupported, Avx512Vbmi2.X64.IsSupported, null);
+
+        // Check("Avx512Vpopcntdq", ExpectedAvx512Vpopcntdq, &Avx512VpopcntdqIsSupported, Avx512Vpopcntdq.IsSupported, null);
+        // Check("Avx512Vpopcntdq.VL", ExpectedAvx512Vpopcntdq, &Avx512VpopcntdqVLIsSupported, Avx512Vpopcntdq.VL.IsSupported, null);
+        // Check("Avx512Vpopcntdq.X64", ExpectedAvx512Vpopcntdq, &Avx512VpopcntdqX64IsSupported, Avx512Vpopcntdq.X64.IsSupported, null);
+
+        // Check("Avx512Bf16", ExpectedAvx512Bf16, &Avx512Bf16IsSupported, Avx512Bf16.IsSupported, null);
+        // Check("Avx512Bf16.VL", ExpectedAvx512Bf16, &Avx512Bf16VLIsSupported, Avx512Bf16.VL.IsSupported, null);
+        // Check("Avx512Bf16.X64", ExpectedAvx512Bf16, &Avx512Bf16X64IsSupported, Avx512Bf16.X64.IsSupported, null);
+
+        // Check("Avx512Fp16", ExpectedAvx512Fp16, &Avx512Fp16IsSupported, Avx512Fp16.IsSupported, null);
+        // Check("Avx512Fp16.VL", ExpectedAvx512Fp16, &Avx512Fp16VLIsSupported, Avx512Fp16.VL.IsSupported, null);
+        // Check("Avx512Fp16.X64", ExpectedAvx512Fp16, &Avx512Fp16X64IsSupported, Avx512Fp16.X64.IsSupported, null);
+
+        Check("Avx10v1", ExpectedAvx10v1, &Avx10v1IsSupported, Avx10v1.IsSupported, () => Avx10v1.Abs(Vector128<long>.Zero).Equals(Vector128<ulong>.Zero));
+        Check("Avx10v1.X64", ExpectedAvx10v1, &Avx10v1X64IsSupported, Avx10v1.X64.IsSupported, null);
+
+        Check("Avx10v1.V512", ExpectedAvx10v1V512, &Avx10v1V512IsSupported, Avx10v1.V512.IsSupported, () => Avx10v1.V512.Abs(Vector512<long>.Zero).Equals(Vector512<ulong>.Zero));
+        Check("Avx10v1.V512.X64", ExpectedAvx10v1V512, &Avx10v1V512X64IsSupported, Avx10v1.V512.X64.IsSupported, null);
+
+        Check("Aes", ExpectedAes, &AesIsSupported, Aes.IsSupported, () => Aes.KeygenAssist(Vector128<byte>.Zero, 0).Equals(Vector128.Create((byte)99)));
+        Check("Aes.X64", ExpectedAes, &AesX64IsSupported, Aes.X64.IsSupported, null);
+
+        Check("Pclmulqdq", ExpectedPclmulqdq, &PclmulqdqIsSupported, Pclmulqdq.IsSupported, () => Pclmulqdq.CarrylessMultiply(Vector128<long>.Zero, Vector128<long>.Zero, 0).Equals(Vector128<long>.Zero));
+        Check("Pclmulqdq.X64", ExpectedPclmulqdq, &PclmulqdqX64IsSupported, Pclmulqdq.X64.IsSupported, null);
+
+        // Check("Avx512Vp2intersect", ExpectedAvx512Vp2intersect, &Avx512Vp2intersectIsSupported, Avx512Vp2intersect.IsSupported, null);
+        // Check("Avx512Vp2intersect.VL", ExpectedAvx512Vp2intersect, &Avx512Vp2intersectVLIsSupported, Avx512Vp2intersect.VL.IsSupported, null);
+        // Check("Avx512Vp2intersect.X64", ExpectedAvx512Vp2intersect, &Avx512Vp2intersectX64IsSupported, Avx512Vp2intersect.X64.IsSupported, null);
+
+        // Check("AvxIfma", ExpectedAvxIfma, &AvxIfmaIsSupported, AvxIfma.IsSupported, null);
+        // Check("AvxIfma.X64", ExpectedAvxIfma, &AvxIfmaX64IsSupported, AvxIfma.X64.IsSupported, null);
+
+        Check("AvxVnni", ExpectedAvxVnni, &AvxVnniIsSupported, AvxVnni.IsSupported, () => AvxVnni.MultiplyWideningAndAdd(Vector128<int>.Zero, Vector128<byte>.Zero, Vector128<sbyte>.Zero).Equals(Vector128<int>.Zero));
+        Check("AvxVnni.X64", ExpectedAvxVnni, &AvxVnniX64IsSupported, AvxVnni.X64.IsSupported, null);
 
         Check("Gfni", ExpectedGfni, &GfniIsSupported, Gfni.IsSupported, () => Gfni.GaloisFieldMultiply(Vector128<byte>.Zero, Vector128<byte>.Zero).Equals(Vector128<byte>.Zero));
         Check("Gfni.V256", ExpectedGfniV256, &GfniV256IsSupported, Gfni.V256.IsSupported, () => Gfni.V256.GaloisFieldMultiply(Vector256<byte>.Zero, Vector256<byte>.Zero).Equals(Vector256<byte>.Zero));
         Check("Gfni.V512", ExpectedGfniV512, &GfniV512IsSupported, Gfni.V512.IsSupported, () => Gfni.V512.GaloisFieldMultiply(Vector512<byte>.Zero, Vector512<byte>.Zero).Equals(Vector512<byte>.Zero));
         Check("Gfni.X64", ExpectedGfni, &GfniX64IsSupported, Gfni.X64.IsSupported, null);
+
+        // Check("Sha", ExpectedSha, &ShaIsSupported, Sha.IsSupported, null);
+        // Check("Sha.X64", ExpectedSha, &ShaX64IsSupported, Sha.X64.IsSupported, null);
+
+        // Check("Aes.V256", ExpectedAesV256, &AesV256IsSupported, Aes.V256.IsSupported, null);
+        // Check("Aes.V512", ExpectedAesV512, &AesV512IsSupported, Aes.V512.IsSupported, null);
+
+        Check("Pclmulqdq.V256", ExpectedPclmulqdqV256, &PclmulqdqV256IsSupported, Pclmulqdq.V256.IsSupported, () => Pclmulqdq.V256.CarrylessMultiply(Vector256<long>.Zero, Vector256<long>.Zero, 0).Equals(Vector256<long>.Zero));
+        Check("Pclmulqdq.V512", ExpectedPclmulqdqV512, &PclmulqdqV512IsSupported, Pclmulqdq.V512.IsSupported, () => Pclmulqdq.V512.CarrylessMultiply(Vector512<long>.Zero, Vector512<long>.Zero, 0).Equals(Vector512<long>.Zero));
+
+        // Check("WaitPkg", ExpectedWaitPkg, &WaitPkgIsSupported, WaitPkg.IsSupported, null);
+        // Check("WaitPkg.X64", ExpectedWaitPkg, &WaitPkgX64IsSupported, WaitPkg.X64.IsSupported, null);
+
+        Check("X86Serialize", ExpectedX86Serialize, &X86SerializeIsSupported, X86Serialize.IsSupported, () => { X86Serialize.Serialize(); return true; } );
+        Check("X86Serialize.X64", ExpectedX86Serialize, &X86SerializeX64IsSupported, X86Serialize.X64.IsSupported, null);
 
         return s_success ? 100 : 1;
     }
@@ -300,65 +454,131 @@ unsafe class Program
     static bool s_success;
 
     // Need these because properties cannot have their address taken
+    static bool X86BaseIsSupported() => X86Base.IsSupported;
+    static bool X86BaseX64IsSupported() => X86Base.X64.IsSupported;
+
     static bool SseIsSupported() => Sse.IsSupported;
     static bool SseX64IsSupported() => Sse.X64.IsSupported;
+
     static bool Sse2IsSupported() => Sse2.IsSupported;
     static bool Sse2X64IsSupported() => Sse2.X64.IsSupported;
+
     static bool Sse3IsSupported() => Sse3.IsSupported;
     static bool Sse3X64IsSupported() => Sse3.X64.IsSupported;
+
     static bool Ssse3IsSupported() => Ssse3.IsSupported;
     static bool Ssse3X64IsSupported() => Ssse3.X64.IsSupported;
+
     static bool Sse41IsSupported() => Sse41.IsSupported;
     static bool Sse41X64IsSupported() => Sse41.X64.IsSupported;
+
     static bool Sse42IsSupported() => Sse42.IsSupported;
     static bool Sse42X64IsSupported() => Sse42.X64.IsSupported;
-    static bool AesIsSupported() => Aes.IsSupported;
-    static bool AesX64IsSupported() => Aes.X64.IsSupported;
-    static bool AvxIsSupported() => Avx.IsSupported;
-    static bool AvxX64IsSupported() => Avx.X64.IsSupported;
-    static bool Avx2IsSupported() => Avx2.IsSupported;
-    static bool Avx2X64IsSupported() => Avx2.X64.IsSupported;
-    static bool Bmi1IsSupported() => Bmi1.IsSupported;
-    static bool Bmi1X64IsSupported() => Bmi1.X64.IsSupported;
-    static bool Bmi2IsSupported() => Bmi2.IsSupported;
-    static bool Bmi2X64IsSupported() => Bmi2.X64.IsSupported;
-    static bool FmaIsSupported() => Fma.IsSupported;
-    static bool FmaX64IsSupported() => Fma.X64.IsSupported;
-    static bool LzcntIsSupported() => Lzcnt.IsSupported;
-    static bool LzcntX64IsSupported() => Lzcnt.X64.IsSupported;
-    static bool PclmulqdqIsSupported() => Pclmulqdq.IsSupported;
-    static bool PclmulqdqV256IsSupported() => Pclmulqdq.V256.IsSupported;
-    static bool PclmulqdqV512IsSupported() => Pclmulqdq.V512.IsSupported;
-    static bool PclmulqdqX64IsSupported() => Pclmulqdq.X64.IsSupported;
+
     static bool PopcntIsSupported() => Popcnt.IsSupported;
     static bool PopcntX64IsSupported() => Popcnt.X64.IsSupported;
-    static bool AvxVnniIsSupported() => AvxVnni.IsSupported;
-    static bool AvxVnniX64IsSupported() => AvxVnni.X64.IsSupported;
+
+    static bool AvxIsSupported() => Avx.IsSupported;
+    static bool AvxX64IsSupported() => Avx.X64.IsSupported;
+
+    static bool Avx2IsSupported() => Avx2.IsSupported;
+    static bool Avx2X64IsSupported() => Avx2.X64.IsSupported;
+
+    static bool Bmi1IsSupported() => Bmi1.IsSupported;
+    static bool Bmi1X64IsSupported() => Bmi1.X64.IsSupported;
+
+    static bool Bmi2IsSupported() => Bmi2.IsSupported;
+    static bool Bmi2X64IsSupported() => Bmi2.X64.IsSupported;
+
+    // static bool F16cIsSupported() => F16c.IsSupported;
+    // static bool F16cX64IsSupported() => F16c.X64.IsSupported;
+
+    static bool FmaIsSupported() => Fma.IsSupported;
+    static bool FmaX64IsSupported() => Fma.X64.IsSupported;
+
+    static bool LzcntIsSupported() => Lzcnt.IsSupported;
+    static bool LzcntX64IsSupported() => Lzcnt.X64.IsSupported;
+
+    static bool Avx512FIsSupported() => Avx512F.IsSupported;
+    static bool Avx512FVLIsSupported() => Avx512F.VL.IsSupported;
+    static bool Avx512FX64IsSupported() => Avx512F.X64.IsSupported;
+
+    static bool Avx512BWIsSupported() => Avx512BW.IsSupported;
+    static bool Avx512BWVLIsSupported() => Avx512BW.VL.IsSupported;
+    static bool Avx512BWX64IsSupported() => Avx512BW.X64.IsSupported;
+
+    static bool Avx512CDIsSupported() => Avx512CD.IsSupported;
+    static bool Avx512CDVLIsSupported() => Avx512CD.VL.IsSupported;
+    static bool Avx512CDX64IsSupported() => Avx512CD.X64.IsSupported;
+
+    static bool Avx512DQIsSupported() => Avx512DQ.IsSupported;
+    static bool Avx512DQVLIsSupported() => Avx512DQ.VL.IsSupported;
+    static bool Avx512DQX64IsSupported() => Avx512DQ.X64.IsSupported;
+
+    static bool Avx512VbmiIsSupported() => Avx512Vbmi.IsSupported;
+    static bool Avx512VbmiVLIsSupported() => Avx512Vbmi.VL.IsSupported;
+    static bool Avx512VbmiX64IsSupported() => Avx512Vbmi.X64.IsSupported;
+
+    // static bool Avx512BitalgIsSupported() => Avx512Bitalg.IsSupported;
+    // static bool Avx512BitalgVLIsSupported() => Avx512Bitalg.VL.IsSupported;
+    // static bool Avx512BitalgX64IsSupported() => Avx512Bitalg.X64.IsSupported;
+
+    static bool Avx512Vbmi2IsSupported() => Avx512Vbmi2.IsSupported;
+    static bool Avx512Vbmi2VLIsSupported() => Avx512Vbmi2.VL.IsSupported;
+    static bool Avx512Vbmi2X64IsSupported() => Avx512Vbmi2.X64.IsSupported;
+
+    // static bool Avx512VpopcntdqIsSupported() => Avx512Vpopcntdq.IsSupported;
+    // static bool Avx512VpopcntdqVLIsSupported() => Avx512Vpopcntdq.VL.IsSupported;
+    // static bool Avx512VpopcntdqX64IsSupported() => Avx512Vpopcntdq.X64.IsSupported;
+
+    // static bool Avx512Bf16IsSupported() => Avx512Bf16.IsSupported;
+    // static bool Avx512Bf16VLIsSupported() => Avx512Bf16.VL.IsSupported;
+    // static bool Avx512Bf16X64IsSupported() => Avx512Bf16.X64.IsSupported;
+
+    // static bool Avx512Fp16IsSupported() => Avx512Fp16.IsSupported;
+    // static bool Avx512Fp16VLIsSupported() => Avx512Fp16.VL.IsSupported;
+    // static bool Avx512Fp16X64IsSupported() => Avx512Fp16.X64.IsSupported;
+
     static bool Avx10v1IsSupported() => Avx10v1.IsSupported;
     static bool Avx10v1X64IsSupported() => Avx10v1.X64.IsSupported;
     static bool Avx10v1V512IsSupported() => Avx10v1.V512.IsSupported;
     static bool Avx10v1V512X64IsSupported() => Avx10v1.V512.X64.IsSupported;
-    static bool Avx512FIsSupported() => Avx512F.IsSupported;
-    static bool Avx512FVLIsSupported() => Avx512F.VL.IsSupported;
-    static bool Avx512FX64IsSupported() => Avx512F.X64.IsSupported;
-    static bool Avx512BWIsSupported() => Avx512BW.IsSupported;
-    static bool Avx512BWVLIsSupported() => Avx512BW.VL.IsSupported;
-    static bool Avx512BWX64IsSupported() => Avx512BW.X64.IsSupported;
-    static bool Avx512CDIsSupported() => Avx512CD.IsSupported;
-    static bool Avx512CDVLIsSupported() => Avx512CD.VL.IsSupported;
-    static bool Avx512CDX64IsSupported() => Avx512CD.X64.IsSupported;
-    static bool Avx512DQIsSupported() => Avx512DQ.IsSupported;
-    static bool Avx512DQVLIsSupported() => Avx512DQ.VL.IsSupported;
-    static bool Avx512DQX64IsSupported() => Avx512DQ.X64.IsSupported;
-    static bool Avx512VbmiIsSupported() => Avx512Vbmi.IsSupported;
-    static bool Avx512VbmiVLIsSupported() => Avx512Vbmi.VL.IsSupported;
-    static bool Avx512VbmiX64IsSupported() => Avx512Vbmi.X64.IsSupported;
-    static bool X86SerializeIsSupported() => X86Serialize.IsSupported;
-    static bool X86SerializeX64IsSupported() => X86Serialize.X64.IsSupported;
+
+    static bool AesIsSupported() => Aes.IsSupported;
+    static bool AesX64IsSupported() => Aes.X64.IsSupported;
+
+    static bool PclmulqdqIsSupported() => Pclmulqdq.IsSupported;
+    static bool PclmulqdqX64IsSupported() => Pclmulqdq.X64.IsSupported;
+
+    // static bool Avx512Vp2intersectIsSupported() => Avx512Vp2intersect.IsSupported;
+    // static bool Avx512Vp2intersectVLIsSupported() => Avx512Vp2intersect.VL.IsSupported;
+    // static bool Avx512Vp2intersectX64IsSupported() => Avx512Vp2intersect.X64.IsSupported;
+
+    // static bool AvxIfmaIsSupported() => AvxIfma.IsSupported;
+    // static bool AvxIfmaX64IsSupported() => AvxIfma.X64.IsSupported;
+
+    static bool AvxVnniIsSupported() => AvxVnni.IsSupported;
+    static bool AvxVnniX64IsSupported() => AvxVnni.X64.IsSupported;
+
     static bool GfniIsSupported() => Gfni.IsSupported;
     static bool GfniV256IsSupported() => Gfni.V256.IsSupported;
     static bool GfniV512IsSupported() => Gfni.V512.IsSupported;
     static bool GfniX64IsSupported() => Gfni.X64.IsSupported;
+
+    // static bool ShaIsSupported() => Sha.IsSupported;
+    // static bool ShaX64IsSupported() => Sha.X64.IsSupported;
+
+    // static bool AesV256IsSupported() => Aes.V256.IsSupported;
+    // static bool AesV512IsSupported() => Aes.V512.IsSupported;
+
+    static bool PclmulqdqV256IsSupported() => Pclmulqdq.V256.IsSupported;
+    static bool PclmulqdqV512IsSupported() => Pclmulqdq.V512.IsSupported;
+
+    // static bool WaitPkgIsSupported() => WaitPkg.IsSupported;
+    // static bool WaitPkgX64IsSupported() => WaitPkg.X64.IsSupported;
+
+    static bool X86SerializeIsSupported() => X86Serialize.IsSupported;
+    static bool X86SerializeX64IsSupported() => X86Serialize.X64.IsSupported;
 
     static bool IsConstantTrue(delegate*<bool> code)
     {

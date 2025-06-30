@@ -8,6 +8,9 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
 
+// PQC types are used throughout, but only when the caller requests them.
+#pragma warning disable SYSLIB5006
+
 namespace System.Security.Cryptography.X509Certificates.Tests.Common
 {
     // This class represents only a portion of what is required to be a proper Certificate Authority.
@@ -994,6 +997,8 @@ SingleResponse ::= SEQUENCE {
             {
                 RSA rsa => cert.CopyWithPrivateKey(rsa),
                 ECDsa ecdsa => cert.CopyWithPrivateKey(ecdsa),
+                MLDsa mldsa => cert.CopyWithPrivateKey(mldsa),
+                SlhDsa slhDsa => cert.CopyWithPrivateKey(slhDsa),
                 DSA dsa => cert.CopyWithPrivateKey(dsa),
                 _ => throw new InvalidOperationException(
                     $"Had no handler for key of type {key?.GetType().FullName ?? "null"}")
@@ -1007,6 +1012,12 @@ SingleResponse ::= SEQUENCE {
 
             internal static KeyFactory ECDsa { get; } =
                 new(() => Cryptography.ECDsa.Create(ECCurve.NamedCurves.nistP384));
+
+            internal static KeyFactory MLDsa { get; } =
+                new(() => Cryptography.MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65));
+
+            internal static KeyFactory SlhDsa { get; } =
+                new(() => Cryptography.SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f));
 
             private Func<IDisposable> _factory;
 
@@ -1027,7 +1038,19 @@ SingleResponse ::= SEQUENCE {
 
             internal static KeyFactory[] BuildVariantFactories()
             {
-                return [RSA, ECDsa];
+                List<KeyFactory> factories = [RSA, ECDsa];
+
+                if (Cryptography.MLDsa.IsSupported)
+                {
+                    factories.Add(MLDsa);
+                }
+
+                if (Cryptography.SlhDsa.IsSupported)
+                {
+                    factories.Add(SlhDsa);
+                }
+
+                return factories.ToArray();
             }
         }
 
@@ -1047,6 +1070,8 @@ SingleResponse ::= SEQUENCE {
                 _key =
                     cert.GetRSAPrivateKey() ??
                     cert.GetECDsaPrivateKey() ??
+                    cert.GetMLDsaPrivateKey() ??
+                    cert.GetSlhDsaPrivateKey() ??
                     (IDisposable)cert.GetDSAPrivateKey() ??
                     throw new NotSupportedException();
             }
@@ -1067,6 +1092,8 @@ SingleResponse ::= SEQUENCE {
                 {
                     RSA rsa => new CertificateRequest(subject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
                     ECDsa ecdsa => new CertificateRequest(subject, ecdsa, HashAlgorithmName.SHA256),
+                    MLDsa mldsa => new CertificateRequest(subject, mldsa),
+                    SlhDsa slhDsa => new CertificateRequest(subject, slhDsa),
                     _ => throw new NotSupportedException(),
                 };
             }
@@ -1077,6 +1104,8 @@ SingleResponse ::= SEQUENCE {
                 {
                     RSA rsa => X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1),
                     ECDsa ecdsa => X509SignatureGenerator.CreateForECDsa(ecdsa),
+                    MLDsa mldsa => X509SignatureGenerator.CreateForMLDsa(mldsa),
+                    SlhDsa slhDsa => X509SignatureGenerator.CreateForSlhDsa(slhDsa),
                     _ => throw new NotSupportedException(),
                 };
             }

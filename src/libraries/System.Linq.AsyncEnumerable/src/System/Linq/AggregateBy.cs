@@ -38,9 +38,9 @@ namespace System.Linq
             IEqualityComparer<TKey>? keyComparer = null)
             where TKey : notnull
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(func);
 
             return
                 source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, TAccumulate>>() :
@@ -109,9 +109,9 @@ namespace System.Linq
             IEqualityComparer<TKey>? keyComparer = null)
             where TKey : notnull
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(func);
 
             return
                 source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, TAccumulate>>() :
@@ -175,10 +175,10 @@ namespace System.Linq
             Func<TAccumulate, TSource, TAccumulate> func,
             IEqualityComparer<TKey>? keyComparer = null) where TKey : notnull
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(seedSelector);
-            ThrowHelper.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(seedSelector);
+            ArgumentNullException.ThrowIfNull(func);
 
             return
                 source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, TAccumulate>>() :
@@ -247,10 +247,10 @@ namespace System.Linq
             Func<TAccumulate, TSource, CancellationToken, ValueTask<TAccumulate>> func,
             IEqualityComparer<TKey>? keyComparer = null) where TKey : notnull
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(seedSelector);
-            ThrowHelper.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(seedSelector);
+            ArgumentNullException.ThrowIfNull(func);
 
             return
                 source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, TAccumulate>>() :

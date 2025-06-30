@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
@@ -9,7 +10,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class CertificateRequestChainTests
     {
-        public static bool PlatformSupportsPss { get; } = DetectPssSupport();
+        // Android supports PSS at the algorithms layer, but does not support it
+        // being used in cert chains.
+        public static bool PlatformSupportsPss { get; } = !PlatformDetection.IsAndroid && PlatformSupport.IsRsaPssSupported;
 
         [Fact]
         public static void CreateChain_ECC()
@@ -25,6 +28,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     intermed1Key,
                     intermed2Key,
                     leafPubKey);
+            }
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void CreateChain_MLDSA()
+        {
+            using (MLDsa rootKey = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa87))
+            using (MLDsa intermed1Key = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65))
+            using (MLDsa intermed2Key = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65))
+            using (MLDsa leafKey = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa44))
+            {
+                byte[] pubKey = new byte[leafKey.Algorithm.PublicKeySizeInBytes];
+                leafKey.ExportMLDsaPublicKey(pubKey);
+
+                using (MLDsa leafPubKey = MLDsa.ImportMLDsaPublicKey(leafKey.Algorithm, pubKey))
+                {
+                    CreateAndTestChain(
+                        rootKey,
+                        intermed1Key,
+                        intermed2Key,
+                        leafPubKey);
+                }
             }
         }
 
@@ -44,6 +69,27 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     intermed1Key,
                     intermed2Key,
                     leafPubKey);
+            }
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void CreateChain_SlhDsa()
+        {
+            using (SlhDsa rootKey = SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f))
+            using (SlhDsa intermed1Key = SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f))
+            using (SlhDsa intermed2Key = SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f))
+            using (SlhDsa leafKey = SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f))
+            {
+                byte[] pubKey = leafKey.ExportSlhDsaPublicKey();
+
+                using (SlhDsa leafPubKey = SlhDsa.ImportSlhDsaPublicKey(leafKey.Algorithm, pubKey))
+                {
+                    CreateAndTestChain(
+                        rootKey,
+                        intermed1Key,
+                        intermed2Key,
+                        leafPubKey);
+                }
             }
         }
 
@@ -210,6 +256,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 RSA rsa => new CertificateRequest(x500dn, rsa, hashAlgorithm, RSASignaturePadding.Pkcs1),
                 ECDsa ecdsa => new CertificateRequest(x500dn, ecdsa, hashAlgorithm),
                 ECDiffieHellman ecdh => new CertificateRequest(x500dn, new PublicKey(ecdh), hashAlgorithm),
+                MLDsa mldsa => new CertificateRequest(x500dn, mldsa),
+                SlhDsa slhdsa => new CertificateRequest(x500dn, slhdsa),
                 _ => throw new InvalidOperationException(
                     $"Had no handler for key of type {key?.GetType().FullName ?? "null"}")
             };
@@ -221,6 +269,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             {
                 RSA rsa => X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1),
                 ECDsa ecdsa => X509SignatureGenerator.CreateForECDsa(ecdsa),
+                MLDsa mldsa => X509SignatureGenerator.CreateForMLDsa(mldsa),
+                SlhDsa slhdsa => X509SignatureGenerator.CreateForSlhDsa(slhdsa),
                 _ => throw new InvalidOperationException(
                     $"Had no handler for key of type {key?.GetType().FullName ?? "null"}")
             };
@@ -501,37 +551,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     rootCertWithKey?.Dispose();
                 }
             }
-        }
-
-        private static bool DetectPssSupport()
-        {
-            if (PlatformDetection.IsAndroid)
-            {
-                // Android supports PSS at the algorithms layer, but does not support it
-                // being used in cert chains.
-                return false;
-            }
-
-            if (PlatformDetection.IsBrowser)
-            {
-                // Browser doesn't support PSS or RSA at all.
-                return false;
-            }
-
-            using (X509Certificate2 cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
-            using (RSA rsa = cert.GetRSAPrivateKey())
-            {
-                try
-                {
-                    rsa.SignData(Array.Empty<byte>(), HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
-                }
-                catch (CryptographicException)
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
     }
 }

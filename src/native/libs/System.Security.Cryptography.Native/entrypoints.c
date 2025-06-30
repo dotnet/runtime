@@ -25,6 +25,7 @@
 #include "pal_evp_pkey_eckey.h"
 #include "pal_evp_pkey_rsa.h"
 #include "pal_evp_pkey_ml_dsa.h"
+#include "pal_evp_pkey_slh_dsa.h"
 #include "pal_hmac.h"
 #include "pal_ocsp.h"
 #include "pal_pkcs7.h"
@@ -175,6 +176,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_EvpPKeyCreateRsa)
     DllImportEntry(CryptoNative_EvpPKeyDeriveSecretAgreement)
     DllImportEntry(CryptoNative_EvpPkeyDestroy)
+    DllImportEntry(CryptoNative_EvpPKeyFamily)
     DllImportEntry(CryptoNative_EvpPKeyFromData)
     DllImportEntry(CryptoNative_EvpPkeyGetDsa)
     DllImportEntry(CryptoNative_EvpPkeyGetEcKey)
@@ -253,6 +255,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_MLDsaExportSeed)
     DllImportEntry(CryptoNative_MLDsaExportPublicKey)
     DllImportEntry(CryptoNative_MLDsaGenerateKey)
+    DllImportEntry(CryptoNative_MLDsaGetPalId)
     DllImportEntry(CryptoNative_MLDsaSignPure)
     DllImportEntry(CryptoNative_MLDsaVerifyPure)
     DllImportEntry(CryptoNative_NewX509Stack)
@@ -280,6 +283,14 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_RsaGenerateKey)
     DllImportEntry(CryptoNative_RsaSignHash)
     DllImportEntry(CryptoNative_RsaVerifyHash)
+    DllImportEntry(CryptoNative_SlhDsaExportPublicKey)
+    DllImportEntry(CryptoNative_SlhDsaExportSecretKey)
+    DllImportEntry(CryptoNative_SlhDsaGenerateKey)
+    DllImportEntry(CryptoNative_SlhDsaGetPalId)
+    DllImportEntry(CryptoNative_SlhDsaSignPure)
+    DllImportEntry(CryptoNative_SlhDsaVerifyPure)
+    DllImportEntry(CryptoNative_SlhDsaSignPreEncoded)
+    DllImportEntry(CryptoNative_SlhDsaVerifyPreEncoded)
     DllImportEntry(CryptoNative_UpRefEvpPkey)
     DllImportEntry(CryptoNative_EvpPKeyType)
     DllImportEntry(CryptoNative_X509BuildOcspRequest)
@@ -388,6 +399,8 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslSetSession)
     DllImportEntry(CryptoNative_SslSetTlsExtHostName)
     DllImportEntry(CryptoNative_SslSetVerifyPeer)
+    DllImportEntry(CryptoNative_SslSetSigalgs)
+    DllImportEntry(CryptoNative_SslSetClientSigalgs)
     DllImportEntry(CryptoNative_SslShutdown)
     DllImportEntry(CryptoNative_SslStapleOcsp)
     DllImportEntry(CryptoNative_SslUseCertificate)
@@ -398,6 +411,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_X509DecodeOcspToExpiration)
     DllImportEntry(CryptoNative_X509Duplicate)
     DllImportEntry(CryptoNative_SslGet0AlpnSelected)
+    DllImportEntry(CryptoNative_GetDefaultSignatureAlgorithms)
 };
 
 EXTERN_C const void* CryptoResolveDllImport(const char* name);

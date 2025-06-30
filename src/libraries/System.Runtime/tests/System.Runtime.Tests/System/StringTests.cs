@@ -993,6 +993,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(NonRandomizedGetHashCode_EquivalentForStringAndSpan_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116815", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void NonRandomizedGetHashCode_EquivalentForStringAndSpan(int charValueLimit, bool ignoreCase)
         {
             // This is testing internal API. If that API changes, this test will need to be updated.
@@ -1043,7 +1044,7 @@ namespace System.Tests
             try
             {
                 // Unsafe.AsPointer is safe since it's pinned by the gc handle
-                Assert.Equal((IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in rChar)), gcHandle.AddrOfPinnedObject());
+                Assert.Equal((IntPtr)Unsafe.AsPointer(in rChar), gcHandle.AddrOfPinnedObject());
             }
             finally
             {

@@ -446,6 +446,46 @@ enum idAddrUnionTag
     iaut_SHIFT = 2
 };
 
+enum EmitCallType
+{
+    EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method (call/bl addr with IP-relative encoding)
+#ifdef TARGET_XARCH
+    EC_FUNC_TOKEN_INDIR, // Indirect call to a helper/static/nonvirtual/global method (call [addr]/call [rip+addr])
+#endif
+    EC_INDIR_R, // Indirect call via register (call/bl reg)
+#ifdef TARGET_XARCH
+    EC_INDIR_ARD, // Indirect call via an addressing mode (call [rax+rdx*8+disp])
+#endif
+
+    EC_COUNT
+};
+
+struct EmitCallParams
+{
+    EmitCallType          callType = EC_COUNT;
+    CORINFO_METHOD_HANDLE methHnd  = NO_METHOD_HANDLE;
+#ifdef DEBUG
+    // Used to report call sites to the EE
+    CORINFO_SIG_INFO* sigInfo = nullptr;
+#endif
+    void*    addr    = nullptr;
+    ssize_t  argSize = 0;
+    emitAttr retSize = EA_PTRSIZE;
+    // For multi-reg args with GC returns in the second arg
+    emitAttr  secondRetSize = EA_UNKNOWN;
+    bool      hasAsyncRet   = false;
+    BitVec    ptrVars       = BitVecOps::UninitVal();
+    regMaskTP gcrefRegs     = RBM_NONE;
+    regMaskTP byrefRegs     = RBM_NONE;
+    DebugInfo debugInfo;
+    regNumber ireg        = REG_NA;
+    regNumber xreg        = REG_NA;
+    unsigned  xmul        = 0;
+    ssize_t   disp        = 0;
+    bool      isJump      = false;
+    bool      noSafePoint = false;
+};
+
 class emitter
 {
     friend class emitLocation;
@@ -552,7 +592,7 @@ protected:
 
     void emitRecomputeIGoffsets();
 
-    void emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flags);
+    void emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flags) const;
 
     /************************************************************************/
     /*          The following describes a single instruction                */
@@ -623,8 +663,8 @@ protected:
     private:
 // The assembly instruction
 #if defined(TARGET_XARCH)
-        static_assert_no_msg(INS_count <= 1024);
-        instruction _idIns : 10;
+        static_assert_no_msg(INS_count <= 2048);
+        instruction _idIns : 11;
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
 #define INSTR_ENCODED_SIZE 4
@@ -712,8 +752,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         17 bits
-        // amd64:       17 bits
+        // x86:         18 bits
+        // amd64:       18 bits
         // arm:         16 bits
         // arm64:       21 bits
         // loongarch64: 14 bits
@@ -746,19 +786,22 @@ protected:
 
         // The idReg1 and idReg2 fields hold the first and second register
         // operand(s), whenever these are present. Note that currently the
-        // size of these fields is 6 bits on all targets, and care needs to
-        // be taken to make sure all of these fields stay reasonably packed.
+        // size of these fields is 6 bits on most targets, but 7 on others,
+        // and care needs to be taken to make sure all of these fields stay
+        // reasonably packed.
 
         // Note that we use the _idReg1 and _idReg2 fields to hold
         // the live gcrefReg mask for the call instructions on x86/x64
         //
+#if !defined(TARGET_XARCH)
         regNumber _idReg1 : REGNUM_BITS; // register num
         regNumber _idReg2 : REGNUM_BITS;
+#endif
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         38 bits
-        // amd64:       38 bits
+        // x86:         27 bits
+        // amd64:       27 bits
         // arm:         32 bits
         // arm64:       46 bits
         // loongarch64: 28 bits
@@ -776,6 +819,10 @@ protected:
         unsigned _idCustom1 : 1;
         unsigned _idCustom2 : 1;
         unsigned _idCustom3 : 1;
+#if defined(TARGET_XARCH)
+        regNumber _idReg1 : REGNUM_BITS; // register num
+        regNumber _idReg2 : REGNUM_BITS;
+#endif
 
 #define _idBound          _idCustom1 /* jump target / frame offset bound */
 #define _idTlsGD          _idCustom2 /* Used to store information related to TLS GD access on linux */
@@ -806,11 +853,14 @@ protected:
         // We repurpose 4 bits for the default flag value bits for ccmp instructions.
 #define _idEvexDFV (_idCustom4 << 3) | (_idCustom3 << 2) | (_idCustom2 << 1) | _idCustom1
 
-        // In certian cases, we do not allow instructions to be promoted to APX-EVEX.
+        unsigned _idCustom7 : 1;
+        // In certain cases, we do not allow instructions to be promoted to APX-EVEX.
         // e.g. instructions like add/and/or/inc/dec can be used with LOCK prefix, but cannot be prefixed by LOCK and
         // EVEX together.
-        unsigned _idNoApxEvexXPromotion : 1;
-#endif //  TARGET_XARCH
+#define _idNoApxEvexXPromotion _idCustom7
+        // We repurpose _idCustom7 for the APX-EVEX.ppx context for Push/Pop/Push2/Pop2.
+#define _idApxPpxContext _idCustom7 /* bits used for the APX-EVEX.ppx context for Push/Pop/Push2/Pop2 */
+#endif                              //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
         unsigned _idLclVar     : 1; // access a local on stack
@@ -842,8 +892,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         49 bits
-        // amd64:       49 bits
+        // x86:         50 bits
+        // amd64:       52 bits
         // arm:         48 bits
         // arm64:       55 bits
         // loongarch64: 46 bits
@@ -860,8 +910,10 @@ protected:
 #define ID_EXTRA_BITFIELD_BITS (23)
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
-#elif defined(TARGET_XARCH)
-#define ID_EXTRA_BITFIELD_BITS (17)
+#elif defined(TARGET_X86)
+#define ID_EXTRA_BITFIELD_BITS (18)
+#elif defined(TARGET_AMD64)
+#define ID_EXTRA_BITFIELD_BITS (20)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -895,8 +947,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
-        // x86:         55/51 bits
-        // amd64:       56/51 bits
+        // x86:         56/52 bits
+        // amd64:       59/54 bits
         // arm:         54/50 bits
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
@@ -907,12 +959,11 @@ protected:
         /* Use whatever bits are left over for small constants */
 
 #define ID_BIT_SMALL_CNS (32 - ID_EXTRA_BITS)
-        C_ASSERT(ID_BIT_SMALL_CNS > 0);
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size (with/without prev offset, assuming host==target):
-        // x86:         10/14 bits
-        // amd64:       9/14 bits
+        // x86:          8/12 bits
+        // amd64:        5/10 bits
         // arm:         10/14 bits
         // arm64:        2/7 bits
         // loongarch64: 11/16 bits
@@ -1753,9 +1804,20 @@ protected:
             _idEvexNfContext = 1;
         }
 
+        bool idIsApxPpxContextSet() const
+        {
+            return (_idApxPpxContext != 0) && (HasApxPpx(_idIns));
+        }
+
+        void idSetApxPpxContext()
+        {
+            assert(!idIsApxPpxContextSet());
+            _idApxPpxContext = 1;
+        }
+
         bool idIsNoApxEvexPromotion() const
         {
-            return _idNoApxEvexXPromotion != 0;
+            return (_idNoApxEvexXPromotion != 0) && !(HasApxPpx(_idIns));
         }
 
         void idSetNoApxEvexPromotion()
@@ -2214,6 +2276,18 @@ protected:
     };
 #endif
 
+#ifdef TARGET_RISCV64
+    struct instrDescLoadImm : instrDescCns
+    {
+        instrDescLoadImm() = delete;
+
+        static const int absMaxInsCount = 8;
+
+        instruction ins[absMaxInsCount];
+        int32_t     values[absMaxInsCount];
+    };
+#endif // TARGET_RISCV64
+
     struct instrDescCGCA : instrDesc // call with ...
     {
         instrDescCGCA() = delete;
@@ -2234,8 +2308,19 @@ protected:
         {
             _idcSecondRetRegGCType = gctype;
         }
+#endif
+
+        bool hasAsyncContinuationRet() const
+        {
+            return _hasAsyncContinuationRet;
+        }
+        void hasAsyncContinuationRet(bool value)
+        {
+            _hasAsyncContinuationRet = value;
+        }
 
     private:
+#if MULTIREG_HAS_SECOND_GC_RET
         // This member stores the GC-ness of the second register in a 2 register returned struct on System V.
         // It is added to the call struct since it is not needed by the base instrDesc struct, which keeps GC-ness
         // of the first register for the instCall nodes.
@@ -2245,6 +2330,7 @@ protected:
         // The base struct's member keeping the GC-ness of the first return register is _idGCref.
         GCtype _idcSecondRetRegGCType : 2; // ... GC type for the second return register.
 #endif                                     // MULTIREG_HAS_SECOND_GC_RET
+        bool _hasAsyncContinuationRet : 1;
     };
 
     // TODO-Cleanup: Uses of stack-allocated instrDescs should be refactored to be unnecessary.
@@ -2295,12 +2381,12 @@ protected:
 
 #ifdef TARGET_XARCH
 
-    ssize_t emitGetInsCns(instrDesc* id);
-    ssize_t emitGetInsDsp(instrDesc* id);
-    ssize_t emitGetInsAmd(instrDesc* id);
+    ssize_t emitGetInsCns(instrDesc* id) const;
+    ssize_t emitGetInsDsp(instrDesc* id) const;
+    ssize_t emitGetInsAmd(instrDesc* id) const;
 
-    ssize_t  emitGetInsCIdisp(instrDesc* id);
-    unsigned emitGetInsCIargs(instrDesc* id);
+    ssize_t  emitGetInsCIdisp(instrDesc* id) const;
+    unsigned emitGetInsCIargs(instrDesc* id) const;
 
     inline emitAttr emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast = false) const;
 
@@ -2308,6 +2394,7 @@ protected:
     int emitGetInsCDinfo(instrDesc* id);
 
     static const IS_INFO emitGetSchedInfo(insFormat f);
+    static bool          HasApxPpx(instruction ins);
 #endif // TARGET_XARCH
 
     cnsval_ssize_t emitGetInsSC(const instrDesc* id) const;
@@ -2359,6 +2446,7 @@ protected:
     void emitDispEmbBroadcastCount(instrDesc* id) const;
     void emitDispEmbRounding(instrDesc* id) const;
     void emitDispEmbMasking(instrDesc* id) const;
+    void emitDispConstant(const instrDesc* id, bool skipComma = false) const;
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,
@@ -2588,10 +2676,9 @@ private:
     CORINFO_FIELD_HANDLE emitSimd8Const(simd8_t constValue);
     CORINFO_FIELD_HANDLE emitSimd16Const(simd16_t constValue);
 #if defined(TARGET_XARCH)
-    CORINFO_FIELD_HANDLE emitSimd32Const(simd32_t constValue);
-    CORINFO_FIELD_HANDLE emitSimd64Const(simd64_t constValue);
+    CORINFO_FIELD_HANDLE emitSimdConst(simd_t* constValue, emitAttr attr);
+    void                 emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, regNumber targetReg);
 #endif // TARGET_XARCH
-
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     CORINFO_FIELD_HANDLE emitSimdMaskConst(simdmask_t constValue);
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -2599,12 +2686,13 @@ private:
 
 #if defined(TARGET_XARCH)
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src, regNumber targetReg = REG_NA);
+    void emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem, insOpts instOptions = INS_OPTS_NONE);
 #else
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
+    void      emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem);
 #endif
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
     void      emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
-    void      emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem);
     void      emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommon* varNode);
     insFormat emitMapFmtForIns(insFormat fmt, instruction ins);
     insFormat emitMapFmtAtoM(insFormat fmt);
@@ -2615,6 +2703,8 @@ private:
     bool emitIsInstrWritingToReg(instrDesc* id, regNumber reg);
     bool emitDoesInsModifyFlags(instruction ins);
 #endif // TARGET_XARCH
+
+    void emitIns_Call(const EmitCallParams& params);
 
     /************************************************************************/
     /*      The logic that creates and keeps track of instruction groups    */
@@ -2761,6 +2851,14 @@ private:
 
     bool emitForceStoreGCState;
 
+    // This flag is used together with `emitForceStoreGCState`. After we set
+    // emitForceStoreGCState = true, we will mark `emitAddedLabel` to true whenever
+    // we see a label IG. In emitSavIG, we will reset `emitForceStoreGCState = false`
+    // only after seeing `emitAddedLabel == true`. Until then, we will keep recording
+    // GC_VARS on the IGs.
+
+    bool emitAddedLabel;
+
     // emitThis* variables are used during emission, to track GC updates
     // on a per-instruction basis. During code generation, per-instruction
     // tracking is done with variables gcVarPtrSetCur, gcRegGCrefSetCur,
@@ -2812,11 +2910,9 @@ private:
 
     void emitNewIG();
 
-#if !defined(JIT32_GCENCODER)
     void emitDisableGC();
     void emitEnableGC();
     bool emitGCDisabled();
-#endif // !defined(JIT32_GCENCODER)
 
 #if defined(TARGET_XARCH)
     static bool emitAlignInstHasNoCode(instrDesc* id);
@@ -3148,6 +3244,10 @@ private:
 #else
     instrDesc* emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns);
 #endif // !TARGET_ARM64
+
+#ifdef TARGET_RISCV64
+    instrDesc* emitNewInstrLoadImm(emitAttr attr, cnsval_ssize_t cns);
+#endif // TARGET_RISCV64
 
     static const BYTE emitFmtToOps[];
 
@@ -3981,6 +4081,18 @@ inline emitter::instrDesc* emitter::emitNewInstrReloc(emitAttr attr, BYTE* addr)
 
 #endif // TARGET_ARM
 
+#ifdef TARGET_RISCV64
+
+inline emitter::instrDesc* emitter::emitNewInstrLoadImm(emitAttr attr, cnsval_ssize_t cns)
+{
+    instrDescLoadImm* id = static_cast<instrDescLoadImm*>(emitAllocAnyInstr(sizeof(instrDescLoadImm), attr));
+    id->idInsOpt(INS_OPTS_I);
+    id->idcCnsVal = cns;
+    return id;
+}
+
+#endif // TARGET_RISCV64
+
 #ifdef TARGET_XARCH
 
 /*****************************************************************************
@@ -3989,12 +4101,12 @@ inline emitter::instrDesc* emitter::emitNewInstrReloc(emitAttr attr, BYTE* addr)
  *  get stored in different places within the instruction descriptor.
  */
 
-inline ssize_t emitter::emitGetInsCns(instrDesc* id)
+inline ssize_t emitter::emitGetInsCns(instrDesc* id) const
 {
     return id->idIsLargeCns() ? ((instrDescCns*)id)->idcCnsVal : id->idSmallCns();
 }
 
-inline ssize_t emitter::emitGetInsDsp(instrDesc* id)
+inline ssize_t emitter::emitGetInsDsp(instrDesc* id) const
 {
     if (id->idIsLargeDsp())
     {
@@ -4012,7 +4124,7 @@ inline ssize_t emitter::emitGetInsDsp(instrDesc* id)
  *  Get hold of the argument count for an indirect call.
  */
 
-inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
+inline unsigned emitter::emitGetInsCIargs(instrDesc* id) const
 {
     if (id->idIsLargeCall())
     {

@@ -5,11 +5,11 @@ using System;
 
 namespace Mono.Linker
 {
-	[Flags]
-	public enum TypePreserveMembers
-	{
-		Visible = 1 << 1,
-		Internal = 1 << 2,
-		Library = 1 << 3
-	}
+    [Flags]
+    public enum TypePreserveMembers
+    {
+        Visible = 1 << 1,
+        Internal = 1 << 2,
+        Library = 1 << 3
+    }
 }

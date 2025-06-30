@@ -22,6 +22,11 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal static unsafe int GetBytes(this Encoding encoding, string str, Span<byte> destination)
+        {
+            return GetBytes(encoding, str.AsSpan(), destination);
+        }
+
         internal static unsafe int GetBytes(this Encoding encoding, ReadOnlySpan<char> str, Span<byte> destination)
         {
             if (str.IsEmpty)
@@ -148,18 +153,4 @@ namespace System.Security.Cryptography
         }
     }
 #endif
-}
-
-namespace System.Runtime.CompilerServices
-{
-    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
-    internal sealed class CallerArgumentExpressionAttribute : Attribute
-    {
-        public CallerArgumentExpressionAttribute(string parameterName)
-        {
-            ParameterName = parameterName;
-        }
-
-        public string ParameterName { get; }
-    }
 }

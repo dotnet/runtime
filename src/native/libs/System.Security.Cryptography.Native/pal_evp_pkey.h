@@ -13,6 +13,17 @@ struct EvpPKeyExtraHandle_st
     OSSL_PROVIDER* prov;
 };
 
+typedef enum
+{
+    PalPKeyFamilyId_Unknown = 0,
+    PalPKeyFamilyId_RSA = 1,
+    PalPKeyFamilyId_DSA = 2,
+    PalPKeyFamilyId_ECC = 3,
+    PalPKeyFamilyId_MLKem = 4,
+    PalPKeyFamilyId_SlhDsa = 5,
+    PalPKeyFamilyId_MLDsa = 6,
+} PalPKeyFamilyId;
+
 typedef struct EvpPKeyExtraHandle_st EvpPKeyExtraHandle;
 
 /*
@@ -55,6 +66,11 @@ Returns one of the following 4 values for the given EVP_PKEY:
     EVP_PKEY_DSA - DSA
 */
 PALEXPORT int32_t CryptoNative_EvpPKeyType(EVP_PKEY* key);
+
+/*
+Returns the family identifier for the algorithm. See PalPKeyFamilyId for the return values.
+*/
+PALEXPORT int32_t CryptoNative_EvpPKeyFamily(const EVP_PKEY* key);
 
 /*
 Decodes an X.509 SubjectPublicKeyInfo into an EVP_PKEY*, verifying the interpreted algorithm type.
@@ -144,9 +160,9 @@ EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle);
 Internal function to get the octet string parameter from the given EVP_PKEY.
 */
 int32_t EvpPKeyGetKeyOctetStringParam(const EVP_PKEY* pKey,
-    const char* name,
-    uint8_t* destination,
-    int32_t destinationLength);
+                                      const char* name,
+                                      uint8_t* destination,
+                                      int32_t destinationLength);
 
 /*
 Internal function to determine if an EVP_PKEY has a given octet string property.

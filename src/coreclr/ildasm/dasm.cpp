@@ -477,10 +477,6 @@ HRESULT IsClassRefInScope(mdTypeRef classref)
     return hr;
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 BOOL EnumClasses()
 {
     HRESULT         hr;
@@ -869,9 +865,6 @@ BOOL EnumClasses()
     } // end for(i = 0; i <= g_NumClasses; i++)
     return TRUE;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 void DumpMscorlib(void* GUICookie)
 {
@@ -1576,7 +1569,7 @@ mdToken TypeRefToTypeDef(mdToken tk, IMDInternalImport *pIMDI, IMDInternalImport
             IUnknown *pUnk;
             if(FAILED(pIAMDI[0]->QueryInterface(IID_IUnknown, (void**)&pUnk))) goto AssignAndReturn;
 
-            if (FAILED(GetMetaDataInternalInterfaceFromPublic(
+            if (FAILED(GetMDInternalInterfaceFromPublic(
                 pUnk,
                 IID_IMDInternalImport,
                 (LPVOID *)ppIMDInew)))
@@ -1754,11 +1747,6 @@ AGAIN:
     return(ptr);
 }
 
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                              BYTE* dataPtr,
                              BYTE* dataEnd,
@@ -2116,9 +2104,6 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
     if(CloseParenthesis) appendStr(out,")");
     return dataPtr;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 BOOL PrettyPrintCustomAttributeNVPairs(unsigned nPairs, BYTE* dataPtr, BYTE* dataEnd, CQuickBytes* out, void* GUICookie)
 {
@@ -3483,10 +3468,6 @@ void PrettyPrintOverrideDecl(ULONG i, __inout __nullterminated char* szString, v
     if(g_fDumpTokens) szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),COMMENT(" /*%08X::%08X*/ "),tkDeclParent,(*g_pmi_list)[i].tkDecl);
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointToken,void *GUICookie,BOOL DumpBody)
 {
     const char      *pszMemberName = NULL;//[MAX_MEMBER_LENGTH];
@@ -3770,6 +3751,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
     if(IsMiAggressiveInlining(dwImplAttrs)) szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," aggressiveinlining");
     if(IsMiNoOptimization(dwImplAttrs))     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," nooptimization");
     if(IsMiAggressiveOptimization(dwImplAttrs)) szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," aggressiveoptimization");
+    if(IsMiAsync(dwImplAttrs))              szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," async");
     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),KEYWORD((char*)-1));
     printLine(GUICookie, szString);
     VDELETE(buff);
@@ -3950,9 +3932,6 @@ ItsMiNative:
     g_tkMVarOwner = tkMVarOwner;
     return TRUE;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 BOOL DumpField(mdToken FuncToken, const char *pszClassName,void *GUICookie, BOOL DumpBody)
 {
@@ -5514,10 +5493,6 @@ void DumpEntryPoint(DWORD dwAddrOfEntryPoint,DWORD dwEntryPointSize,void* GUICoo
             VAL32(Directory.VirtualAddress), VAL32(Directory.Size)); \
     printLine(GUICookie,szStr)
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 void DumpHeader(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
 {
     char* szStr = &szString[0];
@@ -5804,10 +5779,6 @@ void DumpHeader(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
 
     DumpMetadataHeader("Metadata Header",&(CORHeader->MetaData),GUICookie);
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
 
 void DumpHeaderDetails(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
 {
@@ -5913,12 +5884,6 @@ void DumpTable(unsigned long Table, const char *TableName, void* GUICookie)
     }
 }
 
-
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 void DumpStatistics(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
 {
     int     fileSize, miscPESize, miscCOMPlusSize, methodHeaderSize, methodBodySize;
@@ -6492,9 +6457,6 @@ void DumpStatistics(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
     if(g_fDumpToPerfWriter)
         CloseHandle((char*) g_PerfDataFilePtr);
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 void DumpHexbytes(__inout __nullterminated char* szptr,BYTE *pb, DWORD fromPtr, DWORD toPtr, DWORD limPtr)
 {
@@ -6971,8 +6933,7 @@ void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ con
     if(pch && (!_wcsicmp(pch+1,W("lib")) || !_wcsicmp(pch+1,W("obj"))))
     {   // This works only when all the rest does not
         // Init and run.
-        if (SUCCEEDED(MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
-            IID_IMetaDataDispenserEx, (void **)&g_pDisp)))
+        if (SUCCEEDED(CreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void **)&g_pDisp)))
         {
             WCHAR *pwzObjFileName=NULL;
             if (pszObjFileName)
@@ -6993,8 +6954,7 @@ void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ con
         HRESULT hr = S_OK;
         if(g_pDisp == NULL)
         {
-            hr = MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
-                IID_IMetaDataDispenserEx, (void **)&g_pDisp);
+            hr = CreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void **)&g_pDisp);
         }
         if(SUCCEEDED(hr))
         {
@@ -7086,7 +7046,7 @@ void DumpSummary()
             }
             qbMemberSig.Shrink(0);
             pcSig = cComSig ? PrettyPrintSig(pComSig, cComSig, "", &qbMemberSig, g_pImport,NULL) : "NO SIGNATURE";
-            PREFIX_ASSUME(ProperName((char*)pcMember) != 0);
+            _ASSERTE(ProperName((char*)pcMember) != 0);
             sprintf_s(szString,SZSTRING_SIZE,"// %08X [GLM] %s : %s", tkMember,ProperName((char*)pcMember),pcSig);
             printLine(g_pFile,szString);
         }
@@ -7105,7 +7065,7 @@ void DumpSummary()
             }
             qbMemberSig.Shrink(0);
             pcSig = cComSig ? PrettyPrintSig(pComSig, cComSig, "", &qbMemberSig, g_pImport,NULL) : "NO SIGNATURE";
-            PREFIX_ASSUME(ProperName((char*)pcMember) != 0);
+            _ASSERTE(ProperName((char*)pcMember) != 0);
             sprintf_s(szString,SZSTRING_SIZE,"// %08X [GLF] %s : %s", tkMember,ProperName((char*)pcMember),pcSig);
             printLine(g_pFile,szString);
         }
@@ -7120,7 +7080,7 @@ void DumpSummary()
             printLine(g_pFile, szString);
             continue;
         }
-        PREFIX_ASSUME(ProperName((char*)pcClass) != 0);
+        _ASSERTE(ProperName((char*)pcClass) != 0);
         if(*pcNS) sprintf_s(szFQN,4096,"%s.%s", ProperName((char*)pcNS),ProperName((char*)pcClass));
         else strcpy_s(szFQN,4096,ProperName((char*)pcClass));
         sprintf_s(szString,SZSTRING_SIZE,"// %08X [CLS] %s", g_cl_list[i],szFQN);
@@ -7138,7 +7098,7 @@ void DumpSummary()
                 }
                 qbMemberSig.Shrink(0);
                 pcSig = cComSig ? PrettyPrintSig(pComSig, cComSig, "", &qbMemberSig, g_pImport,NULL) : "NO SIGNATURE";
-                PREFIX_ASSUME(ProperName((char*)pcMember) != 0);
+                _ASSERTE(ProperName((char*)pcMember) != 0);
                 sprintf_s(szString,SZSTRING_SIZE,"// %08X [MET] %s::%s : %s", tkMember,szFQN,ProperName((char*)pcMember),pcSig);
                 printLine(g_pFile,szString);
             }
@@ -7157,7 +7117,7 @@ void DumpSummary()
                 }
                 qbMemberSig.Shrink(0);
                 pcSig = cComSig ? PrettyPrintSig(pComSig, cComSig, "", &qbMemberSig, g_pImport,NULL) : "NO SIGNATURE";
-                PREFIX_ASSUME(ProperName((char*)pcMember) != 0);
+                _ASSERTE(ProperName((char*)pcMember) != 0);
                 sprintf_s(szString,SZSTRING_SIZE,"// %08X [FLD] %s::%s : %s", tkMember,szFQN,ProperName((char*)pcMember),pcSig);
                 printLine(g_pFile,szString);
             }
@@ -7188,7 +7148,7 @@ void DumpSummary()
                                     break;
                         }
                 }
-                PREFIX_ASSUME(ProperName((char*)pcMember) != 0);
+                _ASSERTE(ProperName((char*)pcMember) != 0);
                 sprintf_s(szString,SZSTRING_SIZE,"// %08X [EVT] %s::%s : %s", tkMember,szFQN,ProperName((char*)pcMember),pcSig);
                 printLine(g_pFile,szString);
             }
@@ -7206,7 +7166,7 @@ void DumpSummary()
                 }
                 qbMemberSig.Shrink(0);
                 pcSig = cComSig ? PrettyPrintSig(pComSig, cComSig, "", &qbMemberSig, g_pImport,NULL) : "NO SIGNATURE";
-                PREFIX_ASSUME(ProperName((char*)pcMember) != 0);
+                _ASSERTE(ProperName((char*)pcMember) != 0);
                 sprintf_s(szString,SZSTRING_SIZE,"// %08X [PRO] %s::%s : %s", tkMember,szFQN,ProperName((char*)pcMember),pcSig);
                 printLine(g_pFile,szString);
             }
@@ -7376,10 +7336,6 @@ FILE* OpenOutput(_In_ __nullterminated const char* szFileName)
 //
 // Init PELoader, dump file header info
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 BOOL DumpFile()
 {
     BOOL        fSuccess = FALSE;
@@ -7506,7 +7462,7 @@ BOOL DumpFile()
         g_cbMetaData = VAL32(g_CORHeader->MetaData.Size);
     }
 
-    if (FAILED(GetMetaDataInternalInterface(
+    if (FAILED(GetMDInternalInterface(
         (BYTE *)g_pMetaData,
         g_cbMetaData,
         openFlags,
@@ -7520,7 +7476,7 @@ BOOL DumpFile()
     }
 
     TokenSigInit(g_pImport);
-    if (FAILED(MetaDataGetDispenser(CLSID_CorMetaDataDispenser, IID_IMetaDataDispenser, (LPVOID*)&pMetaDataDispenser)))
+    if (FAILED(CreateMetaDataDispenser(IID_IMetaDataDispenser, (LPVOID*)&pMetaDataDispenser)))
     {
         if (g_fDumpHeader)
             DumpHeader(g_CORHeader, g_pFile);
@@ -7824,9 +7780,6 @@ exit:
         pMetaDataDispenser->Release();
     return fSuccess;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 #ifdef _MSC_VER
 #pragma warning(default : 4640)

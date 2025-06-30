@@ -1,14 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: DacDbiImpl.cpp
 //
-
-//
 // Implement DAC/DBI interface
-//
 //*****************************************************************************
-
 
 #include "stdafx.h"
 
@@ -59,7 +56,7 @@
 
 
 
-// Global allocator for DD. Access is protected under the g_dacCritSec lock.
+// Global allocator for DD. Access is protected under the g_dacMutex lock.
 IDacDbiInterface::IAllocator * g_pAllocator = NULL;
 
 //---------------------------------------------------------------------------------------
@@ -362,7 +359,7 @@ interface IMDInternalImport* DacDbiInterfaceImpl::GetMDImport(
     const ReflectionModule * pReflectionModule,
     bool fThrowEx)
 {
-    // Since this is called from an existing DAC-primitive, we already hold the g_dacCritSec lock.
+    // Since this is called from an existing DAC-primitive, we already hold the g_dacMutex lock.
     // The lock conveniently protects our cache.
     SUPPORTS_DAC;
 
@@ -411,7 +408,7 @@ interface IMDInternalImport* DacDbiInterfaceImpl::GetMDImport(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (pInternal == NULL)
     {
@@ -1579,8 +1576,7 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
             if (pFD->IsRVA())
             {
                 // RVA statics are relative to a base module address
-                DWORD offset = pFD->GetOffset();
-                PTR_VOID addr = pFD->GetModule()->GetRvaField(offset);
+                PTR_VOID addr = pFD->GetStaticAddressHandle(NULL);
                 if (pCurrentFieldData->OkToGetOrSetStaticAddress())
                 {
                     pCurrentFieldData->SetStaticAddress(PTR_TO_TADDR(addr));
@@ -5141,9 +5137,9 @@ void DacDbiInterfaceImpl::Hijack(
     CORDB_ADDRESS esp = GetSP(&ctx);
 
     //
-    // Find out where the OS exception dispatcher has pushed the EXCEPTION_RECORD and CONTEXT. The ExInfo and
-    // ExceptionTracker have pointers to these data structures, but when we get the unhandled exception
-    // notification, the OS exception dispatcher is no longer on the stack, so these pointers are no longer
+    // Find out where the OS exception dispatcher has pushed the EXCEPTION_RECORD and CONTEXT. The ExInfo
+    // has pointers to these data structures, but when we get the unhandled exception notification,
+    // the OS exception dispatcher is no longer on the stack, so these pointers are no longer
     // valid.  We need to either update these pointers in the ExInfo/ExcepionTracker, or reuse the stack
     // space used by the OS exception dispatcher.  We are using the latter approach here.
     //
@@ -5158,8 +5154,8 @@ void DacDbiInterfaceImpl::Hijack(
         // The managed exception may not be related to the unhandled exception for which we are trying to
         // hijack.  An example would be when a thread hits a managed exception, VS tries to do func eval on
         // the thread, but the func eval causes an unhandled exception (e.g. AV in mscorwks.dll).  In this
-        // case, the pointers stored on the ExInfo/ExceptionTracker are closer to the root than the current
-        // SP of the thread.  The check below makes sure we don't reuse the pointers in this case.
+        // case, the pointers stored on the ExInfo are closer to the root than the current SP of the thread.
+        // The check below makes sure we don't reuse the pointers in this case.
         if (espOSContext < esp)
         {
             SafeWriteStructOrThrow(espOSContext, &ctx);
@@ -5425,29 +5421,21 @@ BOOL DacDbiInterfaceImpl::IsThreadAtGCSafePlace(VMPTR_Thread vmThread)
     BOOL fIsGCSafe = FALSE;
     Thread * pThread = vmThread.GetDacPtr();
 
-    // Check if the runtime has entered "Shutdown for Finalizer" mode.
-    if ((g_fEEShutDown & ShutDown_Finalize2) != 0)
+    T_CONTEXT ctx;
+    REGDISPLAY rd;
+    SetUpRegdisplayForStackWalk(pThread, &ctx, &rd);
+
+    ULONG32 flags = (QUICKUNWIND | HANDLESKIPPEDFRAMES | DISABLE_MISSING_FRAME_DETECTION);
+
+    StackFrameIterator iter;
+    iter.Init(pThread, pThread->GetFrame(), &rd, flags);
+
+    CrawlFrame * pCF = &(iter.m_crawl);
+    if (pCF->IsFrameless() && pCF->IsActiveFunc())
     {
-        fIsGCSafe = TRUE;
-    }
-    else
-    {
-        T_CONTEXT ctx;
-        REGDISPLAY rd;
-        SetUpRegdisplayForStackWalk(pThread, &ctx, &rd);
-
-        ULONG32 flags = (QUICKUNWIND | HANDLESKIPPEDFRAMES | DISABLE_MISSING_FRAME_DETECTION);
-
-        StackFrameIterator iter;
-        iter.Init(pThread, pThread->GetFrame(), &rd, flags);
-
-        CrawlFrame * pCF = &(iter.m_crawl);
-        if (pCF->IsFrameless() && pCF->IsActiveFunc())
+        if (pCF->IsGcSafe())
         {
-            if (pCF->IsGcSafe())
-            {
-                fIsGCSafe = TRUE;
-            }
+            fIsGCSafe = TRUE;
         }
     }
 
@@ -5641,7 +5629,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
 
             // Going through thread Frames and looking for first (deepest one) one that
             // that has context available for stackwalking (SP and PC)
-            // For example: RedirectedThreadFrame, InlinedCallFrame, HelperMethodFrame, CLRToCOMMethodFrame
+            // For example: RedirectedThreadFrame, InlinedCallFrame, DynamicHelperFrame, CLRToCOMMethodFrame
             Frame *frame = pThread->GetFrame();
             while (frame != NULL && frame != FRAME_TOP)
             {
@@ -5650,7 +5638,12 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
                 {
                     UpdateContextFromRegDisp(&tmpRd, &tmpContext);
                     CopyMemory(pContextBuffer, &tmpContext, sizeof(*pContextBuffer));
-                    pContextBuffer->ContextFlags = DT_CONTEXT_CONTROL;
+                    pContextBuffer->ContextFlags = DT_CONTEXT_CONTROL 
+#if defined(TARGET_AMD64) || defined(TARGET_ARM)
+                                                | DT_CONTEXT_INTEGER  // DT_CONTEXT_INTEGER is needed to include the frame register on ARM32 and AMD64 architectures
+                                                                      // DT_CONTEXT_CONTROL already includes the frame register for X86 and ARM64 architectures
+#endif
+                    ;
                     return;
                 }
                 frame = frame->Next();
@@ -5754,7 +5747,7 @@ BOOL DacDbiInterfaceImpl::IsVmObjectHandleValid(VMPTR_OBJECTHANDLE vmHandle)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return ret;
 }
@@ -5840,7 +5833,7 @@ HRESULT DacDbiInterfaceImpl::FastSanityCheckObject(PTR_Object objPtr)
         LOG((LF_CORDB, LL_INFO10000, "GOI: exception indicated ref is bad.\n"));
         hr = E_INVALIDARG;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }   // DacDbiInterfaceImpl::FastSanityCheckObject
@@ -6387,7 +6380,7 @@ bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
     {
         ret = false;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return ret;
 }
@@ -6950,7 +6943,7 @@ bool DacDbiInterfaceImpl::IsValidObject(CORDB_ADDRESS addr)
         {
             isValid = false;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     return isValid;
