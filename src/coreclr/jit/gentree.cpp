@@ -21971,10 +21971,10 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(var_types   type,
 // Return Value:
 //    The node converted to the a mask type
 //
-GenTreeHWIntrinsic* Compiler::gtNewSimdCvtVectorToMaskNode(var_types   type,
-                                                           GenTree*    op1,
-                                                           CorInfoType simdBaseJitType,
-                                                           unsigned    simdSize)
+GenTree* Compiler::gtNewSimdCvtVectorToMaskNode(var_types   type,
+                                                GenTree*    op1,
+                                                CorInfoType simdBaseJitType,
+                                                unsigned    simdSize)
 {
     assert(varTypeIsMask(type));
     assert(varTypeIsSIMD(op1));

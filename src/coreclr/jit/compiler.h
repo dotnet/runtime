@@ -3205,7 +3205,7 @@ public:
                                     unsigned    simdSize);
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-    GenTreeHWIntrinsic* gtNewSimdCvtVectorToMaskNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
+    GenTree* gtNewSimdCvtVectorToMaskNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
     GenTree* gtNewSimdCreateBroadcastNode(

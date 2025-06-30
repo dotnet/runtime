@@ -1193,9 +1193,8 @@ GenTree* Lowering::LowerCnsMask(GenTreeMskCon* mask)
     EvaluateSimdCvtMaskToVector<simd16_t>(parentBaseType, &vecCon->gtSimdVal, mask->gtSimdMaskVal);
     BlockRange().InsertBefore(mask, vecCon);
 
-    GenTreeHWIntrinsic* convertedVec =
-        comp->gtNewSimdCvtVectorToMaskNode(TYP_MASK, vecCon, parentSimdBaseJitType, parentSimdSize);
-    BlockRange().InsertBefore(mask, convertedVec->Op(1));
+    GenTree* convertedVec = comp->gtNewSimdCvtVectorToMaskNode(TYP_MASK, vecCon, parentSimdBaseJitType, parentSimdSize);
+    BlockRange().InsertBefore(mask, convertedVec->AsHWIntrinsic()->Op(1));
     BlockRange().InsertBefore(mask, convertedVec);
 
     use.ReplaceWith(convertedVec);
