@@ -471,7 +471,8 @@ namespace System
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(startIndex, 0);
             ArgumentOutOfRangeException.ThrowIfLessThan(count, 0);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex - count, Length);
+            ArgumentOutOfRangeException.ThrowIfLessThan(startIndex - count + 1, 0);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, Length - 1);
 
             int endIndex = startIndex - count;
 
