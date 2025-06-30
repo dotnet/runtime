@@ -114,7 +114,7 @@ namespace System.Reflection.Metadata.Tests.Metadata
             yield return new object[] { "B-BB", PlatformDetection.IsNetFramework ? "B-BB" : "b-BB" };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(CultureNameGetLoweredByToAssemblyName_Arguments))]
         public void CultureNameGetLoweredByToAssemblyName(string input, string expected)
         {
