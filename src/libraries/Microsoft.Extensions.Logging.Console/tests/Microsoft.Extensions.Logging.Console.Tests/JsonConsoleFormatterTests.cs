@@ -104,12 +104,12 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(3, sink.Writes.Count);
             Assert.Equal(
                 "{\"EventId\":0,\"LogLevel\":\"Critical\",\"Category\":\"test\",\"Message\":\"[null]\""
-                + ",\"State\":{\"Message\":\"[null]\",\"{OriginalFormat}\":\"[null]\"}}"
+                + ",\"State\":{\"{OriginalFormat}\":\"[null]\"}}"
                 + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg)));
             Assert.Equal(
                 "{\"EventId\":0,\"LogLevel\":\"Critical\",\"Category\":\"test\",\"Message\":\"[null]\""
-                + ",\"State\":{\"Message\":\"[null]\",\"{OriginalFormat}\":\"[null]\"}}"
+                + ",\"State\":{\"{OriginalFormat}\":\"[null]\"}}"
                 + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(1 * t.WritesPerMsg, t.WritesPerMsg)));
 
@@ -117,7 +117,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 "{\"EventId\":0,\"LogLevel\":\"Critical\",\"Category\":\"test\""
                 + ",\"Message\":\"[null]\""
                 + ",\"Exception\":\"System.InvalidOperationException: Invalid value\""
-                + ",\"State\":{\"Message\":\"[null]\",\"{OriginalFormat}\":\"[null]\"}}"
+                + ",\"State\":{\"{OriginalFormat}\":\"[null]\"}}"
                 + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(2 * t.WritesPerMsg, t.WritesPerMsg)));
         }
@@ -154,7 +154,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 "{\"EventId\":0,\"LogLevel\":\"Information\",\"Category\":\"test\""
                 + ",\"Message\":\"exception message with stacktrace\""
                 + ",\"Exception\":\"System.InvalidOperationException: Invalid value\""
-                + ",\"State\":{\"Message\":\"exception message with stacktrace\",\"0\":\"stacktrace\",\"{OriginalFormat}\":\"exception message with {0}\"}"
+                + ",\"State\":{\"0\":\"stacktrace\",\"{OriginalFormat}\":\"exception message with {0}\"}"
                 + ",\"Scopes\":[]"
                 + "}" + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg)));
@@ -162,7 +162,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 "{\"EventId\":0,\"LogLevel\":\"Information\",\"Category\":\"test\""
                 + ",\"Message\":\"exception message\""
                 + ",\"Exception\":\"System.InvalidOperationException: Invalid value\""
-                + ",\"State\":{\"Message\":\"exception message\"}"
+                + ",\"State\":{}"
                 + ",\"Scopes\":[]"
                 + "}" + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(1 * t.WritesPerMsg, t.WritesPerMsg)));
@@ -170,7 +170,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 "{\"EventId\":0,\"LogLevel\":\"Information\",\"Category\":\"test\""
                 + ",\"Message\":\"exception message\""
                 + ",\"Exception\":\"System.InvalidOperationException: Invalid value\""
-                + ",\"State\":{\"Message\":\"exception message\"}"
+                + ",\"State\":{}"
                 + ",\"Scopes\":[{\"Message\":\"scope1 123\",\"name1\":123,\"{OriginalFormat}\":\"scope1 {name1}\"},{\"Message\":\"scope2 456 789\",\"name1\":456,\"name2\":789,\"{OriginalFormat}\":\"scope2 {name1} {name2}\"}]"
                 + "}" + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(2 * t.WritesPerMsg, t.WritesPerMsg)));
@@ -203,7 +203,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(
                 "{\"EventId\":0,\"LogLevel\":\"Information\",\"Category\":\"test\""
                 + ",\"Message\":\"exception message\""
-                + ",\"State\":{\"Message\":\"exception message\"}"
+                + ",\"State\":{}"
                 + ",\"Scopes\":[{\"Message\":\"scope1 123\",\"name1\":123,\"{OriginalFormat}\":\"scope1 {name1}\"},{\"Message\":\"scope2 456 789\",\"name1\":456,\"name2\":789,\"{OriginalFormat}\":\"scope2 {name1} {name2}\"}]"
                 + "}" + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg)));
@@ -238,7 +238,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(
                 "{\"EventId\":0,\"LogLevel\":\"Information\",\"Category\":\"test\""
                 + ",\"Message\":\"1\""
-                + ",\"State\":{\"Message\":\"1\",\"LogEntryNumber\":1,\"{OriginalFormat}\":\"{LogEntryNumber}\"}"
+                + ",\"State\":{\"LogEntryNumber\":1,\"{OriginalFormat}\":\"{LogEntryNumber}\"}"
                 + ",\"Scopes\":[{\"Message\":\"2\",\"Number\":2,\"{OriginalFormat}\":\"{Number}\"},{\"Message\":\"3\",\"AnotherNumber\":3,\"{OriginalFormat}\":\"{AnotherNumber}\"}]"
                 + "}" + Environment.NewLine,
                 GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg)));
