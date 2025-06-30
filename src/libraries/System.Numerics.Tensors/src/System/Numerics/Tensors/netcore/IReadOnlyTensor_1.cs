@@ -9,10 +9,9 @@ namespace System.Numerics.Tensors
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="T">The element type.</typeparam>
     public interface IReadOnlyTensor<TSelf, T> : IReadOnlyTensor
-#if NET9_0_OR_GREATER
-        where TSelf : IReadOnlyTensor<TSelf, T>, allows ref struct
-#else
         where TSelf : IReadOnlyTensor<TSelf, T>
+#if NET9_0_OR_GREATER
+        , allows ref struct
 #endif
     {
         /// <summary>Gets an empty tensor.</summary>

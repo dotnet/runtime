@@ -69,10 +69,9 @@ namespace System.Numerics.Tensors
         System.ReadOnlySpan<nint> Strides { get; }
     }
     public partial interface IReadOnlyTensor<TSelf, T> : System.Numerics.Tensors.IReadOnlyTensor
-#if NET9_0_OR_GREATER
-        where TSelf : System.Numerics.Tensors.IReadOnlyTensor<TSelf, T>, allows ref struct
-#else
         where TSelf : System.Numerics.Tensors.IReadOnlyTensor<TSelf, T>
+#if NET9_0_OR_GREATER
+        , allows ref struct
 #endif
     {
         static abstract TSelf Empty { get; }
@@ -103,10 +102,9 @@ namespace System.Numerics.Tensors
         void Fill(object value);
     }
     public partial interface ITensor<TSelf, T> : System.Numerics.Tensors.IReadOnlyTensor, System.Numerics.Tensors.IReadOnlyTensor<TSelf, T>, System.Numerics.Tensors.ITensor
-#if NET9_0_OR_GREATER
-        where TSelf : System.Numerics.Tensors.ITensor<TSelf, T>, allows ref struct
-#else
         where TSelf : System.Numerics.Tensors.ITensor<TSelf, T>
+#if NET9_0_OR_GREATER
+        , allows ref struct
 #endif
     {
         new ref T this[params scoped System.ReadOnlySpan<System.Buffers.NIndex> indexes] { get; }
