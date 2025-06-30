@@ -72,69 +72,69 @@ namespace System
             if (TypeHandle.AreSameType(srcTH, destTH)) // This check kicks for different array kind or dimensions
                 return ArrayAssignType.SimpleCopy;
 
-            if (!srcTH.IsTypeDesc && !destTH.IsTypeDesc)
-            {
-                MethodTable* pMTsrc = srcTH.AsMethodTable();
-                MethodTable* pMTdest = destTH.AsMethodTable();
-
-                // Value class boxing
-                if (pMTsrc->IsValueType && !pMTdest->IsValueType)
-                {
-                    if (srcTH.CanCastTo(destTH))
-                        return ArrayAssignType.BoxValueClassOrPrimitive;
-                    else
-                        return ArrayAssignType.WrongType;
-                }
-
-                // Value class unboxing.
-                if (!pMTsrc->IsValueType && pMTdest->IsValueType)
-                {
-                    if (srcTH.CanCastTo(destTH))
-                        return ArrayAssignType.UnboxValueClass;
-                    else if (destTH.CanCastTo(srcTH))   // V extends IV. Copying from IV to V, or Object to V.
-                        return ArrayAssignType.UnboxValueClass;
-                    else
-                        return ArrayAssignType.WrongType;
-                }
-
-                // Copying primitives from one type to another
-                if (pMTsrc->IsPrimitive && pMTdest->IsPrimitive)
-                {
-                    CorElementType srcElType = pMTsrc->GetPrimitiveCorElementType();
-                    CorElementType destElType = pMTdest->GetPrimitiveCorElementType();
-
-                    if (GetNormalizedIntegralArrayElementType(srcElType) == GetNormalizedIntegralArrayElementType(destElType))
-                        return ArrayAssignType.SimpleCopy;
-                    else if (RuntimeHelpers.CanPrimitiveWiden(srcElType, destElType))
-                        return ArrayAssignType.PrimitiveWiden;
-                    else
-                        return ArrayAssignType.WrongType;
-                }
-
-                // src Object extends dest
-                if (srcTH.CanCastTo(destTH))
-                    return ArrayAssignType.SimpleCopy;
-
-                // dest Object extends src
-                if (destTH.CanCastTo(srcTH))
-                    return ArrayAssignType.MustCast;
-
-                // class X extends/implements src and implements dest.
-                if (pMTdest->IsInterface)
-                    return ArrayAssignType.MustCast;
-
-                // class X implements src and extends/implements dest
-                if (pMTsrc->IsInterface)
-                    return ArrayAssignType.MustCast;
-            }
-            else
+            if (srcTH.IsTypeDesc || destTH.IsTypeDesc)
             {
                 // Only pointers are valid for TypeDesc in array element
 
                 // Compatible pointers
                 if (srcTH.CanCastTo(destTH))
                     return ArrayAssignType.SimpleCopy;
+                else
+                    return ArrayAssignType.WrongType;
             }
+
+            MethodTable* pMTsrc = srcTH.AsMethodTable();
+            MethodTable* pMTdest = destTH.AsMethodTable();
+
+            // Value class boxing
+            if (pMTsrc->IsValueType && !pMTdest->IsValueType)
+            {
+                if (srcTH.CanCastTo(destTH))
+                    return ArrayAssignType.BoxValueClassOrPrimitive;
+                else
+                    return ArrayAssignType.WrongType;
+            }
+
+            // Value class unboxing.
+            if (!pMTsrc->IsValueType && pMTdest->IsValueType)
+            {
+                if (srcTH.CanCastTo(destTH))
+                    return ArrayAssignType.UnboxValueClass;
+                else if (destTH.CanCastTo(srcTH))   // V extends IV. Copying from IV to V, or Object to V.
+                    return ArrayAssignType.UnboxValueClass;
+                else
+                    return ArrayAssignType.WrongType;
+            }
+
+            // Copying primitives from one type to another
+            if (pMTsrc->IsPrimitive && pMTdest->IsPrimitive)
+            {
+                CorElementType srcElType = pMTsrc->GetPrimitiveCorElementType();
+                CorElementType destElType = pMTdest->GetPrimitiveCorElementType();
+
+                if (GetNormalizedIntegralArrayElementType(srcElType) == GetNormalizedIntegralArrayElementType(destElType))
+                    return ArrayAssignType.SimpleCopy;
+                else if (RuntimeHelpers.CanPrimitiveWiden(srcElType, destElType))
+                    return ArrayAssignType.PrimitiveWiden;
+                else
+                    return ArrayAssignType.WrongType;
+            }
+
+            // src Object extends dest
+            if (srcTH.CanCastTo(destTH))
+                return ArrayAssignType.SimpleCopy;
+
+            // dest Object extends src
+            if (destTH.CanCastTo(srcTH))
+                return ArrayAssignType.MustCast;
+
+            // class X extends/implements src and implements dest.
+            if (pMTdest->IsInterface)
+                return ArrayAssignType.MustCast;
+
+            // class X implements src and extends/implements dest
+            if (pMTsrc->IsInterface)
+                return ArrayAssignType.MustCast;
 
             return ArrayAssignType.WrongType;
         }
