@@ -135,4 +135,9 @@
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' == 'linux'">
+    <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Threading.Channels" />
+  </ItemGroup>
+
 </Project>
