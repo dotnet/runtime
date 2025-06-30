@@ -76,6 +76,7 @@ namespace System
                 {
                     lock (s_syncObject)
                     {
+                        // comment
                         if (s_inputEncoding == null)
                         {
                             Volatile.Write(ref s_inputEncoding, ConsolePal.InputEncoding);
