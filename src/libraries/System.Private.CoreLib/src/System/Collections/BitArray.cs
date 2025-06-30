@@ -114,7 +114,9 @@ namespace System.Collections
 
         private void ClearHighExtraBits()
         {
-            (uint index, uint extraBits) = Math.DivRem((uint)_bitLength, BitsPerInt32);
+            uint uBitLength = (uint)_bitLength;
+            uint index = uBitLength >> 5;     // equivalent to uBitLength / BitsPerInt32
+            uint extraBits = uBitLength & 31; // equivalent to uBitLength % BitsPerInt32
             if (extraBits != 0)
             {
                 MemoryMarshal.Cast<byte, int>((Span<byte>)_array)[(int)index] &= ReverseIfBE((1 << (int)extraBits) - 1);
@@ -213,7 +215,8 @@ namespace System.Collections
             {
                 if (values[i])
                 {
-                    (uint byteIndex, uint bitOffset) = Math.DivRem(i, BitsPerByte);
+                    uint byteIndex = i >> 3; // equivalent to i / BitsPerByte
+                    uint bitOffset = i & 7;  // equivalent to i % BitsPerByte
                     _array[byteIndex] |= (byte)(1 << (int)bitOffset);
                 }
             }
@@ -297,7 +300,9 @@ namespace System.Collections
                 ThrowArgumentOutOfRangeException(index);
             }
 
-            (uint byteIndex, uint bitOffset) = Math.DivRem((uint)index, BitsPerByte);
+            uint uIndex = (uint)index;
+            uint byteIndex = uIndex >> 3; // equivalent to uIndex / BitsPerByte
+            uint bitOffset = uIndex & 7;  // equivalent to uIndex % BitsPerByte
             return ((_array[byteIndex]) & (1 << (int)bitOffset)) != 0;
         }
 
@@ -316,7 +321,9 @@ namespace System.Collections
                 ThrowArgumentOutOfRangeException(index);
             }
 
-            (uint byteIndex, uint bitOffset) = Math.DivRem((uint)index, BitsPerByte);
+            uint uIndex = (uint)index;
+            uint byteIndex = uIndex >> 3; // equivalent to uIndex / BitsPerByte
+            uint bitOffset = uIndex & 7;  // equivalent to uIndex % BitsPerByte
 
             ref byte segment = ref _array[byteIndex];
             byte bitMask = (byte)(1 << (int)bitOffset);
@@ -519,8 +526,9 @@ namespace System.Collections
             int ints = GetInt32ArrayLengthFromBitLength(_bitLength);
             if (count < _bitLength)
             {
-                // We can not use Math.DivRem without taking a dependency on System.Runtime.Extensions
-                (int fromIndex, int shiftCount) = Math.DivRem(count, 32);
+                // Use bit operations for better performance in WASM
+                int fromIndex = count >> 5;    // equivalent to count / 32 (BitsPerInt32)
+                int shiftCount = count & 31;   // equivalent to count % 32 (BitsPerInt32)
                 int extraBits = (int)((uint)_bitLength % 32);
                 if (shiftCount == 0)
                 {
@@ -583,7 +591,8 @@ namespace System.Collections
             {
                 int lastIndex = (int)((uint)(_bitLength - 1) / BitsPerInt32);
 
-                (lengthToClear, int shiftCount) = Math.DivRem(count, BitsPerInt32);
+                lengthToClear = count >> 5;      // equivalent to count / BitsPerInt32
+                int shiftCount = count & 31;     // equivalent to count % BitsPerInt32
 
                 if (shiftCount == 0)
                 {
@@ -852,8 +861,9 @@ namespace System.Collections
             Remainder:
                 for (; i < (uint)_bitLength; i++)
                 {
-                    (uint byteIndex, uint extraBits) = Math.DivRem(i, BitsPerByte);
-                    boolArray[(uint)index + i] = (_array[byteIndex] & (1 << (int)extraBits)) != 0;
+                    uint byteIndex = i >> 3; // equivalent to i / BitsPerByte
+                    uint bitOffset = i & 7;  // equivalent to i % BitsPerByte
+                    boolArray[(uint)index + i] = (_array[byteIndex] & (1 << (int)bitOffset)) != 0;
                 }
             }
             else
