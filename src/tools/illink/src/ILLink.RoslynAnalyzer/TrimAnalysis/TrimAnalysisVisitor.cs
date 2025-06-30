@@ -176,7 +176,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                 return constValue;
 
             var current = state.Current;
-            return GetFieldTargetValue(fieldRef.Field, fieldRef, in current.Context);
+            return GetFieldTargetValue(fieldRef, in current.Context);
         }
 
         public override MultiValue VisitTypeOf(ITypeOfOperation typeOfOperation, StateValue state)
@@ -224,16 +224,32 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         // - method calls
         // - value returned from a method
 
-        public override MultiValue GetFieldTargetValue(IFieldSymbol field, IFieldReferenceOperation fieldReferenceOperation, in FeatureContext featureContext)
+        public override MultiValue GetFieldTargetValue(IFieldReferenceOperation fieldReference, in FeatureContext featureContext)
         {
+            var field = fieldReference.Field;
+
             TrimAnalysisPatterns.Add(
-                new TrimAnalysisFieldAccessPattern(field, fieldReferenceOperation, OwningSymbol, featureContext)
+                new TrimAnalysisFieldAccessPattern(field, fieldReference, OwningSymbol, featureContext)
             );
 
-            ProcessGenericArgumentDataFlow(field, fieldReferenceOperation, featureContext);
+            ProcessGenericArgumentDataFlow(field, fieldReference, featureContext);
 
             return new FieldValue(field);
         }
+
+        public override MultiValue GetBackingFieldTargetValue(IPropertyReferenceOperation propertyReference, in FeatureContext featureContext)
+        {
+            var property = propertyReference.Property;
+
+            TrimAnalysisPatterns.Add(
+                new TrimAnalysisBackingFieldAccessPattern(propertyReference.Property, propertyReference, OwningSymbol, featureContext)
+            );
+
+            ProcessGenericArgumentDataFlow(property, propertyReference, featureContext);
+
+            return new FieldValue(property);
+        }
+
 
         public override MultiValue GetParameterTargetValue(IParameterSymbol parameter)
             => new MethodParameterValue(parameter);
@@ -447,6 +463,21 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             {
                 TrimAnalysisPatterns.Add(new TrimAnalysisGenericInstantiationPattern(
                     field,
+                    operation,
+                    OwningSymbol,
+                    featureContext));
+            }
+        }
+
+        private void ProcessGenericArgumentDataFlow(IPropertySymbol property, IOperation operation, in FeatureContext featureContext)
+        {
+            if (!property.IsStatic)
+                return;
+
+            if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(property))
+            {
+                TrimAnalysisPatterns.Add(new TrimAnalysisGenericInstantiationPattern(
+                    property,
                     operation,
                     OwningSymbol,
                     featureContext));
