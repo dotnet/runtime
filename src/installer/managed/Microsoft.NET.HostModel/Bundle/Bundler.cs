@@ -234,7 +234,7 @@ namespace Microsoft.NET.HostModel.Bundle
             return FileType.Unknown;
         }
 
-        public static ImmutableArray<byte> BundleHeaderPlaceholder = [
+        internal static ReadOnlySpan<byte> BundleHeaderPlaceholder => [
             // 8 bytes represent the bundle header-offset
             // Zero for non-bundle apphosts (default).
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -245,7 +245,7 @@ namespace Microsoft.NET.HostModel.Bundle
             0xee, 0x3b, 0x2d, 0xce, 0x24, 0xb3, 0x6a, 0xae
         ];
 
-        public static ReadOnlySpan<byte> BundleHeaderSignature => BundleHeaderPlaceholder.AsSpan().Slice(8);
+        public static ReadOnlySpan<byte> BundleHeaderSignature => BundleHeaderPlaceholder.Slice(8);
 
         /// <summary>
         /// Generate a bundle, given the specification of embedded files
@@ -374,7 +374,7 @@ namespace Microsoft.NET.HostModel.Bundle
                     ulong endOfBundle = (ulong)bundleStream.Position;
                     Debug.Assert((long)endOfBundle == endOfBundledFiles + bundleManifestLength, $"Bundle manifest is unexpected size. Expected {bundleManifestLength}, but got {(long)endOfBundle - endOfBundledFiles}");
                     BinaryUtils.SearchAndReplace(accessor,
-                                                BundleHeaderPlaceholder.AsSpan(),
+                                                BundleHeaderPlaceholder,
                                                 BitConverter.GetBytes(headerOffset),
                                                 pad0s: false);
                     if (_target.IsOSX && machFile is not null)

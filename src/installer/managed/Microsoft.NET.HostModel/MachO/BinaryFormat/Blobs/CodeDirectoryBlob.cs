@@ -114,7 +114,6 @@ internal sealed class CodeDirectoryBlob : IBlob
     private byte HashSize => _cdHeader.HashSize;
     private uint HashesOffset => _cdHeader.HashesOffset;
 
-
     public static CodeDirectoryBlob Create(
         IMachOFileReader accessor,
         long signatureStart,
