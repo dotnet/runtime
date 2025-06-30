@@ -32852,8 +32852,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     break;
                 }
 
-                assert(!op1->IsVectorAllBitsSet() && !op1->IsVectorZero());
-
                 if (op1->IsTrueMask(simdBaseType))
                 {
                     if ((op3->gtFlags & GTF_SIDE_EFFECT) != 0)
