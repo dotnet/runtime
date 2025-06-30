@@ -21,6 +21,8 @@ public class AA
     public static ushort Static1(ref char[, ,] param1, ref byte[, ,] param2, ulong
         param3, bool[, ,] param4)
     {
+ unsafe { *(int*)-0x12345 = 42; }
+
         short local1 = App.m_shFwd1;
         while (App.m_bFwd2)
         {
