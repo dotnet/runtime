@@ -317,10 +317,6 @@ export function set_arg_i32 (arg: JSMarshalerArgument, value: number): void {
 
 export function set_arg_intptr (arg: JSMarshalerArgument, value: VoidPtr | bigint | number): void {
     mono_assert(arg, "Null arg");
-    if (typeof arg === "number" || typeof arg === "bigint") {
-        mono_log_debug("set_arg_intptr:  is already a pointer/address, skipping set");
-        return;
-    }
     if (isWasm64) {
         setI64Big(<any>arg, value as bigint);
     } else {
