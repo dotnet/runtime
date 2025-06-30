@@ -504,6 +504,22 @@ void CodeGen::inst_SET(emitJumpKind condition, regNumber reg, insOpts instOption
     // If using ZU feature, we need to promote the SETcc to the new instruction.
     if ((instOptions & INS_OPTS_EVEX_zu_MASK) != 0)
     {
+        assert(INS_setzuo  == (INS_seto  + 16));
+        assert(INS_setzuno == (INS_setno + 16));
+        assert(INS_setzub  == (INS_setb  + 16));
+        assert(INS_setzuae == (INS_setae + 16));
+        assert(INS_setzue  == (INS_sete  + 16));
+        assert(INS_setzune == (INS_setne + 16));
+        assert(INS_setzube == (INS_setbe + 16));
+        assert(INS_setzua  == (INS_seta  + 16));
+        assert(INS_setzus  == (INS_sets  + 16));
+        assert(INS_setzuns == (INS_setns + 16));
+        assert(INS_setzup  == (INS_setp  + 16));
+        assert(INS_setzunp == (INS_setnp + 16));
+        assert(INS_setzul  == (INS_setl  + 16));
+        assert(INS_setzuge == (INS_setge + 16));
+        assert(INS_setzule == (INS_setle + 16));
+        assert(INS_setzug  == (INS_setg  + 16));
         ins = (instruction)(ins + 16);
     }
 #endif

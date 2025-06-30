@@ -571,7 +571,7 @@ void SetEvexNfIfNeeded(instrDesc* id, insOpts instOptions)
 }
 
 //------------------------------------------------------------------------
-// SetEvexNdIfNeeded: set Evex.zu on instrDesc
+// SetEvexZuIfNeeded: set Evex.zu on instrDesc
 //
 // Arguments:
 //    id          - instruction descriptor

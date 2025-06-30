@@ -1285,6 +1285,8 @@ INST1(setle,            "setle",            IUM_WR, 0x0F009E,                   
 INST1(setg,             "setg",             IUM_WR, 0x0F009F,                                                            INS_TT_NONE,    Reads_OF | Reads_SF      | Reads_ZF | Encoding_REX2)
 
 #ifdef TARGET_AMD64
+// The following instructions shall always be next to SETcc instructions group, the offset between the original instruction and the ZU variant should be 16.
+// No new instruction should be inserted from INS_seto to setzug.
 INST1(setzuo,             "setzuo",         IUM_WR, 0x40,                                                                INS_TT_NONE,    Reads_OF)
 INST1(setzuno,            "setzuno",        IUM_WR, 0x41,                                                                INS_TT_NONE,    Reads_OF)
 INST1(setzub,             "setzub",         IUM_WR, 0x42,                                                                INS_TT_NONE,    Reads_CF)
