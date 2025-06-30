@@ -370,8 +370,6 @@ namespace System.Security.Cryptography
 
             if (header != 0xA65959A6UL || pad > 7 || destination.Slice(slen).IndexOfAnyExcept((byte)0) >= 0)
             {
-                //string padding = pad < 8 ? Convert.ToHexString(destination.Slice(slen)) : "N/A";
-                //Console.WriteLine($"header={header:X}, len={len}, pad={pad}, padding={padding}");
                 throw new CryptographicException(SR.Cryptography_KeyWrap_DecryptFailed);
             }
 
@@ -407,21 +405,12 @@ namespace System.Security.Cryptography
             {
                 Span<byte> buf = stackalloc byte[16];
 
-                BinaryPrimitives.WriteUInt64BigEndian(buf, iv - 7);
+                BinaryPrimitives.WriteUInt64BigEndian(buf, iv);
                 Span<byte> keyPart = buf.Slice(8);
                 // Fill keyPart with zeros, then copy the key in to the beginning.
                 keyPart.Clear();
                 source.CopyTo(keyPart);
-                //if (source.Length == 8)
-                //{
-                //    EncryptEcb(buf, destination, PaddingMode.None);
-                //    Console.WriteLine($"Short: KEK: {Convert.ToHexString(Key)}, BadOutput: {Convert.ToHexString(destination)}");
-                //}
 
-                BinaryPrimitives.WriteUInt64BigEndian(buf, iv);
-                // Fill keyPart with zeros, then copy the key in to the beginning.
-                keyPart.Clear();
-                source.CopyTo(keyPart);
                 EncryptEcb(buf, destination, PaddingMode.None);
 
                 // Clear out the copy we made of the key.
@@ -429,9 +418,6 @@ namespace System.Security.Cryptography
             }
             else if (source.Length % 8 == 0)
             {
-                //Rfc3394Wrap(iv - 8, source, destination);
-                //Console.WriteLine($"Aligned: KEK: {Convert.ToHexString(Key)}, BadOutput: {Convert.ToHexString(destination)}");
-
                 Rfc3394Wrap(iv, source, destination);
             }
             else
@@ -443,8 +429,6 @@ namespace System.Security.Cryptography
                 {
                     source.CopyTo(lease.Span);
                     lease.Span.Slice(source.Length).Clear();
-                    //Rfc3394Wrap(iv - (uint)source.Length, lease.Span, destination);
-                    //Console.WriteLine($"MBP: KEK: {Convert.ToHexString(Key)}, BadOutput: {Convert.ToHexString(destination)}");
 
                     Rfc3394Wrap(iv, lease.Span, destination);
                 }
@@ -465,8 +449,6 @@ namespace System.Security.Cryptography
             source.CopyTo(destination.Slice(8));
             BinaryPrimitives.WriteUInt64BigEndian(A, iv);
 
-            //Console.WriteLine($"A={Convert.ToHexString(A)}");
-
             for (uint j = 0; j < 6; j++)
             {
                 Span<byte> R = destination.Slice(8);
@@ -474,20 +456,14 @@ namespace System.Security.Cryptography
                 for (uint i = 0; i < source.Length; i += 8, t++, R = R.Slice(8))
                 {
                     R.Slice(0, 8).CopyTo(B.Slice(8));
-                    //string msg = $"Encrypt({Convert.ToHexString(B)}) => ";
                     EncryptEcb(B, B, PaddingMode.None);
-                    //msg += Convert.ToHexString(B);
 
                     uint al = BinaryPrimitives.ReadUInt32BigEndian(ALo);
                     al ^= t;
                     BinaryPrimitives.WriteUInt32BigEndian(ALo, al);
 
-                    //msg += $", t={t} => A={Convert.ToHexString(A)}";
-                    //Console.WriteLine(msg);
                     B.Slice(8, 8).CopyTo(R);
                 }
-
-                //Console.WriteLine($"Wrap:j={j},R={Convert.ToHexString(destination.Slice(8))}");
             }
 
             A.CopyTo(destination);
@@ -510,24 +486,16 @@ namespace System.Security.Cryptography
                 {
                     Span<byte> R = destination.Slice(rOffset);
 
-                    //string msg = $"Removing t={t}, A={Convert.ToHexString(A)}. ";
-
                     uint al = BinaryPrimitives.ReadUInt32BigEndian(ALo);
                     al ^= t;
                     BinaryPrimitives.WriteUInt32BigEndian(ALo, al);
 
                     R.Slice(0, 8).CopyTo(B.Slice(8));
-                    //msg += $"Decrypt({Convert.ToHexString(B)}) => ";
                     DecryptEcb(B, B, PaddingMode.None);
-                    //msg += Convert.ToHexString(B);
-                    //Console.WriteLine(msg);
                     B.Slice(8).CopyTo(R);
                 }
-
-                //Console.WriteLine($"Unwrap:j={5-j},destination={Convert.ToHexString(destination)}");
             }
 
-            //Console.WriteLine($"A={Convert.ToHexString(A)}");
             return BinaryPrimitives.ReadUInt64BigEndian(A);
         }
 
