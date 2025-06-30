@@ -125,6 +125,17 @@ namespace System.IO
         {
         }
 
+        public virtual void Write(Rune value)
+        {
+            // Convert value to span
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = value.EncodeToUtf16(chars);
+            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
+
+            // Write span
+            Write(charsSlice);
+        }
+
         // Writes a character array to the text stream. This default method calls
         // Write(char) for each of the characters in the character array.
         // If the character array is null, nothing is written.
@@ -343,6 +354,17 @@ namespace System.IO
             WriteLine();
         }
 
+        public virtual void WriteLine(Rune value)
+        {
+            // Convert value to span
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = value.EncodeToUtf16(chars);
+            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
+
+            // Write span
+            WriteLine(charsSlice);
+        }
+
         // Writes an array of characters followed by a line terminator to the text
         // stream.
         //
@@ -534,16 +556,13 @@ namespace System.IO
             WriteLine(string.Format(FormatProvider, format, arg));
         }
 
-        public virtual void Write(Rune value)
-        {
-            // Convert value to span
-            Span<char> chars = stackalloc char[2];
-            int charsWritten = value.EncodeToUtf16(chars);
-            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
-
-            // Write span
-            Write(charsSlice);
-        }
+        #region Task based Async APIs
+        public virtual Task WriteAsync(char value) =>
+            Task.Factory.StartNew(static state =>
+            {
+                var t = (TupleSlim<TextWriter, char>)state!;
+                t.Item1.Write(t.Item2);
+            }, new TupleSlim<TextWriter, char>(this, value), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
         public virtual Task WriteAsync(Rune value)
         {
@@ -567,48 +586,6 @@ namespace System.IO
                 return WriteAsync(charsSlice[0]);
             }
         }
-
-        public virtual void WriteLine(Rune value)
-        {
-            // Convert value to span
-            Span<char> chars = stackalloc char[2];
-            int charsWritten = value.EncodeToUtf16(chars);
-            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
-
-            // Write span
-            WriteLine(charsSlice);
-        }
-
-        public virtual Task WriteLineAsync(Rune value)
-        {
-            // Convert value to span
-            Span<char> chars = stackalloc char[2];
-            int charsWritten = value.EncodeToUtf16(chars);
-            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
-
-            // Write chars individually (can't use span with async)
-            if (charsSlice.Length == 2)
-            {
-                async Task WriteLineAsyncPair(char highSurrogate, char lowSurrogate)
-                {
-                    await WriteAsync(highSurrogate).ConfigureAwait(false);
-                    await WriteLineAsync(lowSurrogate).ConfigureAwait(false);
-                }
-                return WriteLineAsyncPair(charsSlice[0], charsSlice[1]);
-            }
-            else
-            {
-                return WriteLineAsync(charsSlice[0]);
-            }
-        }
-
-        #region Task based Async APIs
-        public virtual Task WriteAsync(char value) =>
-            Task.Factory.StartNew(static state =>
-            {
-                var t = (TupleSlim<TextWriter, char>)state!;
-                t.Item1.Write(t.Item2);
-            }, new TupleSlim<TextWriter, char>(this, value), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
         public virtual Task WriteAsync(string? value) =>
             Task.Factory.StartNew(static state =>
@@ -672,6 +649,29 @@ namespace System.IO
                 var t = (TupleSlim<TextWriter, char>)state!;
                 t.Item1.WriteLine(t.Item2);
             }, new TupleSlim<TextWriter, char>(this, value), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+
+        public virtual Task WriteLineAsync(Rune value)
+        {
+            // Convert value to span
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = value.EncodeToUtf16(chars);
+            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
+
+            // Write chars individually (can't use span with async)
+            if (charsSlice.Length == 2)
+            {
+                async Task WriteLineAsyncPair(char highSurrogate, char lowSurrogate)
+                {
+                    await WriteAsync(highSurrogate).ConfigureAwait(false);
+                    await WriteLineAsync(lowSurrogate).ConfigureAwait(false);
+                }
+                return WriteLineAsyncPair(charsSlice[0], charsSlice[1]);
+            }
+            else
+            {
+                return WriteLineAsync(charsSlice[0]);
+            }
+        }
 
         public virtual Task WriteLineAsync(string? value) =>
             Task.Factory.StartNew(static state =>
