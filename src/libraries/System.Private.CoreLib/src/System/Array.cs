@@ -437,12 +437,10 @@ namespace System
 
             int srcLB = sourceArray.GetLowerBound(0);
             ArgumentOutOfRangeException.ThrowIfLessThan(sourceIndex, srcLB);
-            ArgumentOutOfRangeException.ThrowIfNegative(sourceIndex - srcLB, nameof(sourceIndex));
             sourceIndex -= srcLB;
 
             int dstLB = destinationArray.GetLowerBound(0);
             ArgumentOutOfRangeException.ThrowIfLessThan(destinationIndex, dstLB);
-            ArgumentOutOfRangeException.ThrowIfNegative(destinationIndex - dstLB, nameof(destinationIndex));
             destinationIndex -= dstLB;
 
             if ((uint)(sourceIndex + length) > sourceArray.NativeLength)
