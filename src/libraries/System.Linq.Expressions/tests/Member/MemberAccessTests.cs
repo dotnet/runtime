@@ -890,9 +890,15 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(42, src.Item.Item.Item.Item);
         }
 
+        struct Tuple2Ints
+        {
+            public int Item1;
+            public int Item2;
+        }
+
         class PassStructMembersMemberToRefFunctionClass
         {
-            public (int, int) Tuple2Ints;
+            public Tuple2Ints Tuple2Ints;
 
             public static void SetIntToFortyTwo(ref int value) => value = 42;
         }
@@ -920,7 +926,7 @@ namespace System.Linq.Expressions.Tests
 
             Action<PassStructMembersMemberToRefFunctionClass> f = e.Compile(useInterpreter);
 
-            PassStructMembersMemberToRefFunctionClass src = new PassStructMembersMemberToRefFunctionClass { Tuple2Ints = (0, 0) };
+            PassStructMembersMemberToRefFunctionClass src = new PassStructMembersMemberToRefFunctionClass { Tuple2Ints = new Tuple2Ints { Item1 = 0, Item2 = 0 } };
 
             Assert.Equal(0, src.Tuple2Ints.Item1);
 
@@ -954,7 +960,7 @@ namespace System.Linq.Expressions.Tests
 
             Action<PassStructMembersMemberToRefFunctionClass> f = e.Compile(useInterpreter);
 
-            PassStructMembersMemberToRefFunctionClass src = new PassStructMembersMemberToRefFunctionClass { Tuple2Ints = (0, 0) };
+            PassStructMembersMemberToRefFunctionClass src = new PassStructMembersMemberToRefFunctionClass { Tuple2Ints = new Tuple2Ints{ Item1 = 0, Item2 = 0 } };
 
             Assert.Equal(0, src.Tuple2Ints.Item1);
 
@@ -994,7 +1000,7 @@ namespace System.Linq.Expressions.Tests
 
             Action<PassStructMembersMemberToRefFunctionClass> f = e.Compile(useInterpreter);
 
-            PassStructMembersMemberToRefFunctionClass src = new PassStructMembersMemberToRefFunctionClass { Tuple2Ints = (0, 0) };
+            PassStructMembersMemberToRefFunctionClass src = new PassStructMembersMemberToRefFunctionClass { Tuple2Ints = new Tuple2Ints { Item1 = 0, Item2 = 0 } };
 
             Assert.Equal(0, src.Tuple2Ints.Item1);
 
