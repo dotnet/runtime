@@ -83,19 +83,19 @@ jobs:
 
     # iOS Simulator/Mac Catalyst arm64
     - ${{ if in(parameters.platform, 'maccatalyst_arm64', 'iossimulator_arm64') }}:
-      - osx.arm64.scouting.open
+      - OSX.14.Arm64.Open
 
     # iOS/tvOS Simulator x64 & MacCatalyst x64
     - ${{ if in(parameters.platform, 'iossimulator_x64', 'tvossimulator_x64', 'maccatalyst_x64') }}:
-      - osx.amd64.scouting.open
+      - OSX.15.Amd64.Open
 
     # iOS devices
     - ${{ if in(parameters.platform, 'ios_arm64') }}:
-      - osx.amd64.iphone.scouting.open
+      - OSX.13.Amd64.Iphone.Open
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvos_arm64') }}:
-      - osx.amd64.appletv.scouting.open
+      - OSX.13.Amd64.AppleTV.Open
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
