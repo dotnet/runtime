@@ -2530,7 +2530,7 @@ public:
                                          // them as special cases.
     CordbSafeHashTable<CordbType>        m_sharedtypes;
 
-    CordbAssembly * CacheAssembly(VMPTR_Assembly vmAssembly);
+    CordbAssembly * CacheAssembly(VMPTR_Assembly vmAssembly, VMPTR_DomainAssembly);
 
 
     // Cache of modules in this appdomain. In the VM, modules live in an assembly.
