@@ -240,7 +240,7 @@ namespace System.Numerics.Tensors
             }
             Span<T> dstSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)totalLength);
 
-            if (dimension is 0 or (-1))
+            if (dimension is 0 or -1)
             {
                 for (int i = 0; i < tensors.Length; i++)
                 {
