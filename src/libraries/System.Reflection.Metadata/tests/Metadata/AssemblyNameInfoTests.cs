@@ -107,24 +107,19 @@ namespace System.Reflection.Metadata.Tests.Metadata
             Assert.Throws<ArgumentException>(() => AssemblyNameInfo.Parse("".AsSpan()));
         }
 
-
-        public static IEnumerable<object[]> CultureNameGetLoweredByToAssemblyName_Arguments()
-        {
-            yield return new object[] { "aA", "aa" };
-            yield return new object[] { "B-BB", PlatformDetection.IsNetFramework ? "B-BB" : "b-BB" };
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [MemberData(nameof(CultureNameGetLoweredByToAssemblyName_Arguments))]
-        public void CultureNameGetLoweredByToAssemblyName(string input, string expected)
+        [Theory]
+        [InlineData("aA")]
+        [InlineData("B-BB")]
+        public void ToAssemblyNameReturnsSameCultureNameAsCultureInfo(string input)
         {
             AssemblyNameInfo assemblyNameInfo = AssemblyNameInfo.Parse($"test,culture={input}".AsSpan());
             Assert.Equal(input, assemblyNameInfo.CultureName);
             // When converting to AssemblyName, the culture name is lower-cased
             // by the CultureInfo ctor that calls CultureData.GetCultureData
             // which lowers the name for caching and normalization purposes.
-            // It lowers only the part before the `-` character.
-            Assert.Equal(expected, assemblyNameInfo.ToAssemblyName().CultureName);
+            // It lowers only the part before the `-` character,
+            // but not for all configurations (Full Framework, Nano and more).
+            Assert.Equal(new CultureInfo(input).Name, assemblyNameInfo.ToAssemblyName().CultureName);
         }
 
         [Theory]
