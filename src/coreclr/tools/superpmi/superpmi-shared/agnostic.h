@@ -203,6 +203,8 @@ struct Agnostic_CORINFO_ASYNC_INFO
     DWORDLONG continuationDataFldHnd;
     DWORDLONG continuationGCDataFldHnd;
     DWORD continuationsNeedMethodHandle;
+    DWORDLONG captureExecutionContextMethHnd;
+    DWORDLONG restoreExecutionContextMethHnd;
 };
 
 struct Agnostic_GetOSRInfo

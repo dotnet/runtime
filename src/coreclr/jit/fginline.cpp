@@ -1721,9 +1721,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 JITDUMP("Inlinee is not nested inside any EH region\n");
             }
 
-            // Grow the EH table.
-            //
-            // TODO: verify earlier that this won't fail...
+            // Grow the EH table. We verified in fgFindBasicBlocks that this won't fail.
             //
             EHblkDsc* const outermostEbd =
                 fgTryAddEHTableEntries(insertBeforeIndex, inlineeRegionCount, /* deferAdding */ false);
@@ -2397,7 +2395,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 //    If the call we're inlining is in tail position then
 //    we skip nulling the locals, since it can interfere
 //    with tail calls introduced by the local.
-
+//
 void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmtAfter)
 {
     // Null out any gc ref locals

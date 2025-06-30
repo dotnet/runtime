@@ -28,6 +28,7 @@ CompPhaseNameMacro(PHASE_IMPORTATION,                "Importation",             
 CompPhaseNameMacro(PHASE_INDXCALL,                   "Indirect call transform",        false, -1, true)
 CompPhaseNameMacro(PHASE_PATCHPOINTS,                "Expand patchpoints",             false, -1, true)
 CompPhaseNameMacro(PHASE_POST_IMPORT,                "Post-import",                    false, -1, false)
+CompPhaseNameMacro(PHASE_ASYNC_SAVE_CONTEXTS,        "Save contexts around async calls",false, -1, false)
 CompPhaseNameMacro(PHASE_IBCPREP,                    "Profile instrumentation prep",   false, -1, false)
 CompPhaseNameMacro(PHASE_IBCINSTR,                   "Profile instrumentation",        false, -1, false)
 CompPhaseNameMacro(PHASE_INCPROFILE,                 "Profile incorporation",          false, -1, false)

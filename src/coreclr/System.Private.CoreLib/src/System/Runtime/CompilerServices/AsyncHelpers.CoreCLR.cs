@@ -406,5 +406,22 @@ namespace System.Runtime.CompilerServices
                     return continuation;
             }
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ExecutionContext? CaptureExecutionContext()
+        {
+            return Thread.CurrentThreadAssumedInitialized._executionContext;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void RestoreExecutionContext(ExecutionContext? previousExecutionCtx)
+        {
+            Thread thread = Thread.CurrentThreadAssumedInitialized;
+            ExecutionContext? currentExecutionCtx = thread._executionContext;
+            if (previousExecutionCtx != currentExecutionCtx)
+            {
+                ExecutionContext.RestoreChangedContextToThread(thread, previousExecutionCtx, currentExecutionCtx);
+            }
+        }
     }
 }

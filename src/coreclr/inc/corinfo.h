@@ -1733,6 +1733,10 @@ struct CORINFO_ASYNC_INFO
     // Whether or not the continuation needs to be allocated through the
     // helper that also takes a method handle
     bool continuationsNeedMethodHandle;
+    // Method handle for AsyncHelpers.CaptureExecutionContext
+    CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
+    // Method handle for AsyncHelpers.RestoreExecutionContext
+    CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
 };
 
 // Flags passed from JIT to runtime.

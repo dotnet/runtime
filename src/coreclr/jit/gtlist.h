@@ -317,7 +317,7 @@ GTNODE(NO_OP            , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE) // A NOP
 // Suspend an async method, returning a continuation.
 // Before lowering this is a seemingly normal TYP_VOID node with a lot of side effects (GTF_CALL | GTF_GLOB_REF | GTF_ORDER_SIDEEFF).
 // Lowering then removes all successor nodes and leaves it as the terminator node.
-GTNODE(RETURN_SUSPEND   , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE) // Return a continuation in an async method
+GTNODE(RETURN_SUSPEND   , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 
 GTNODE(START_NONGC      , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group that will be non-gc interruptible.
 GTNODE(START_PREEMPTGC  , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group where preemptive GC is enabled.
