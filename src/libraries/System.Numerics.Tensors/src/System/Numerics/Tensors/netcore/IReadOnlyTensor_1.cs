@@ -62,6 +62,11 @@ namespace System.Numerics.Tensors
         /// <remarks>This method copies all of the source tensor to <paramref name="destination" /> even if they overlap.</remarks>
         void FlattenTo(scoped Span<T> destination);
 
+        /// <summary>Returns a span that can be used to access the flattened elements for a given dimension.</summary>
+        /// <param name="dimension">The dimension for which the span should be created.</param>
+        /// <returns>A span that can be used to access the flattened elements for a given dimension.</returns>
+        ReadOnlyTensorDimensionSpan<T> GetDimensionSpan(int dimension);
+
         /// <summary>Returns a reference to an object of type <typeparamref name="T" /> that can be used for pinning.</summary>
         /// <returns>A reference to the element of the tensor at index 0, or <c>null</c> if the tensor is empty.</returns>
         /// <remarks>This method is intended to support .NET compilers and is not intended to be called by user code.</remarks>
@@ -86,7 +91,7 @@ namespace System.Numerics.Tensors
         /// <returns>The current tensor if it is already dense; otherwise, a new tensor that contains the elements of this tensor.</returns>
         /// <remarks>
         ///   <para>A dense tensor is one where the elements are ordered sequentially in memory and where no gaps exist between the elements.</para>
-        ///   <para>For a 2x2 Tensor, this would mean it has <c>FlattendLength: 4; Lengths: [2, 2]; Strides: [4, 1]</c>. The elements would be sequentially accessed via indexes: <c>[0, 0]; [0, 1]; [1, 0]; [1, 1]</c></para>
+        ///   <para>For a 2x2 Tensor, this would mean it has <c>FlattendLength: 4; Lengths: [2, 2]; Strides: [4, 1]</c>. The elements would be sequentially accessed via indexes: <c>[0, 0]; [0, 1]; [1, 0]; [1, 1]</c>.</para>
         /// </remarks>
         TSelf ToDenseTensor();
 

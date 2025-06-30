@@ -280,7 +280,7 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
 
     // Wire up the edges
     //
-    comp->fgRedirectTargetEdge(prevBb, lowerBndBb);
+    comp->fgRedirectEdge(prevBb->TargetEdgeRef(), lowerBndBb);
     FlowEdge* fallbackToNextBb       = comp->fgAddRefPred(lastBb, fallbackBb);
     FlowEdge* lowerBndToUpperBndEdge = comp->fgAddRefPred(upperBndBb, lowerBndBb);
     FlowEdge* lowerBndToFallbackEdge = comp->fgAddRefPred(fallbackBb, lowerBndBb);

@@ -21,6 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 #include "stacklevelsetter.h"
 #include "patchpointinfo.h"
+#include "fgprofilesynthesis.h"
 #include "jitstd/algorithm.h"
 #include "minipal/time.h"
 
@@ -1666,22 +1667,24 @@ void Compiler::compDone()
 #endif // LATE_DISASM
 }
 
-void* Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum, /* IN  */
-                                 void**          ppIndirection)   /* OUT */
+CORINFO_CONST_LOOKUP Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum)
 {
-    void* addr;
+    CORINFO_CONST_LOOKUP lookup;
 
     if (info.compMatchedVM)
     {
-        addr = info.compCompHnd->getHelperFtn(ftnNum, ppIndirection);
+        info.compCompHnd->getHelperFtn(ftnNum, &lookup);
+        // The JIT only expects these two possible access types
+        assert(lookup.accessType == IAT_VALUE || lookup.accessType == IAT_PVALUE);
     }
     else
     {
         // If we don't have a matched VM, we won't get valid results when asking for a helper function.
-        addr = (void*)(uintptr_t)(0xCA11CA11); // "callcall"
+        lookup.addr       = (void*)(uintptr_t)(0xCA11CA11); // "callcall"
+        lookup.accessType = IAT_VALUE;
     }
 
-    return addr;
+    return lookup;
 }
 
 unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
@@ -4409,6 +4412,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Try and resolve GDV checks if improved types were found during inlining
+        //
+        DoPhase(this, PHASE_RESOLVE_GDVS, &Compiler::fgResolveGDVs);
+
         // Build post-order and remove dead blocks
         //
         DoPhase(this, PHASE_DFS_BLOCKS1, &Compiler::fgDfsBlocksAndRemove);
@@ -4576,10 +4583,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_2, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
 
-        // Invert loops
-        //
-        DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
-
         // Run some flow graph optimizations (but don't reorder)
         //
         DoPhase(this, PHASE_OPTIMIZE_FLOW, &Compiler::optOptimizeFlow);
@@ -4594,6 +4597,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_DFS_BLOCKS3, &Compiler::fgDfsBlocksAndRemove);
 
+        auto adjustThrowEdgeLikelihoods = [this]() -> PhaseStatus {
+            return ProfileSynthesis::AdjustThrowEdgeLikelihoods(this);
+        };
+
+        // Adjust heuristic-derived edge likelihoods into paths that are known to throw.
+        //
+        DoPhase(this, PHASE_ADJUST_THROW_LIKELIHOODS, adjustThrowEdgeLikelihoods);
+
         // Discover and classify natural loops (e.g. mark iterative loops as such).
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
@@ -4601,6 +4612,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Re-establish profile consistency, now that inlining and morph have run.
         //
         DoPhase(this, PHASE_REPAIR_PROFILE_POST_MORPH, &Compiler::fgRepairProfile);
+
+        // Invert loops
+        //
+        DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
 
         // Scale block weights and mark run rarely blocks.
         //

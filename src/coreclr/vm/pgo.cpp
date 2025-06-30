@@ -972,8 +972,9 @@ HRESULT PgoManager::getPgoInstrumentationResultsFromText(MethodDesc* pMD, BYTE**
     EX_CATCH
     {
         hr = E_FAIL;
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions)
+    EX_END_CATCH
 
     return hr;
 }

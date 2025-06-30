@@ -138,7 +138,7 @@ static int UtilMessageBoxNonLocalized(
     {
         result = IDCANCEL;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return result;
 }
@@ -170,7 +170,7 @@ int NotifyUserOfFaultMessageBox(
     {
         result = IDCANCEL;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return result;
 }
