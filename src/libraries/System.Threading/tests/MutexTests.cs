@@ -975,6 +975,9 @@ namespace System.Threading.Tests
         {
             var names  =  new TheoryData<string>() { Guid.NewGuid().ToString("N") };
 
+            // Windows native named mutexes and in-proc named mutexes support very long (1000+ char) names.
+            // Non-Windows cross-process named mutexes are emulated using file system. It imposed limits
+            // on maximum name length.
             if (PlatformDetection.IsWindows || !IsCrossProcessNamedMutexSupported)
                 names.Add(Guid.NewGuid().ToString("N") + new string('a', 1000));
 
