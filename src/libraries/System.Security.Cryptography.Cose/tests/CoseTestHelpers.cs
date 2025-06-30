@@ -383,9 +383,9 @@ namespace System.Security.Cryptography.Cose.Tests
             {
                 return algorithm switch
                 {
-                    CoseAlgorithm.ES256 => CoseKey.FromKey(ecdsaKey, HashAlgorithmName.SHA256),
-                    CoseAlgorithm.ES384 => CoseKey.FromKey(ecdsaKey, HashAlgorithmName.SHA384),
-                    CoseAlgorithm.ES512 => CoseKey.FromKey(ecdsaKey, HashAlgorithmName.SHA512),
+                    CoseAlgorithm.ES256 => new CoseKey(ecdsaKey, HashAlgorithmName.SHA256),
+                    CoseAlgorithm.ES384 => new CoseKey(ecdsaKey, HashAlgorithmName.SHA384),
+                    CoseAlgorithm.ES512 => new CoseKey(ecdsaKey, HashAlgorithmName.SHA512),
                     _ => throw new Exception($"Unknown algorithm {algorithm} for {key.GetType().Name}")
                 };
             }
@@ -393,12 +393,12 @@ namespace System.Security.Cryptography.Cose.Tests
             {
                 return algorithm switch
                 {
-                    CoseAlgorithm.RS256 => CoseKey.FromKey(rsaKey, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA256),
-                    CoseAlgorithm.RS384 => CoseKey.FromKey(rsaKey, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA384),
-                    CoseAlgorithm.RS512 => CoseKey.FromKey(rsaKey, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA512),
-                    CoseAlgorithm.PS256 => CoseKey.FromKey(rsaKey, RSASignaturePadding.Pss, HashAlgorithmName.SHA256),
-                    CoseAlgorithm.PS384 => CoseKey.FromKey(rsaKey, RSASignaturePadding.Pss, HashAlgorithmName.SHA384),
-                    CoseAlgorithm.PS512 => CoseKey.FromKey(rsaKey, RSASignaturePadding.Pss, HashAlgorithmName.SHA512),
+                    CoseAlgorithm.RS256 => new CoseKey(rsaKey, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA256),
+                    CoseAlgorithm.RS384 => new CoseKey(rsaKey, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA384),
+                    CoseAlgorithm.RS512 => new CoseKey(rsaKey, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA512),
+                    CoseAlgorithm.PS256 => new CoseKey(rsaKey, RSASignaturePadding.Pss, HashAlgorithmName.SHA256),
+                    CoseAlgorithm.PS384 => new CoseKey(rsaKey, RSASignaturePadding.Pss, HashAlgorithmName.SHA384),
+                    CoseAlgorithm.PS512 => new CoseKey(rsaKey, RSASignaturePadding.Pss, HashAlgorithmName.SHA512),
                     _ => throw new Exception($"Unknown algorithm {algorithm} for {key.GetType().Name}")
                 };
             }
@@ -413,7 +413,7 @@ namespace System.Security.Cryptography.Cose.Tests
                 };
 
                 CoseKey FromKeyWithExpectedAlgorithm(MLDsaAlgorithm expected, MLDsa key)
-                    => key.Algorithm.Name == expected.Name ? CoseKey.FromKey(key) : throw new Exception($"Unknown algorithm {algorithm} for {key.GetType().Name}");
+                    => key.Algorithm.Name == expected.Name ? new CoseKey(key) : throw new Exception($"Unknown algorithm {algorithm} for {key.GetType().Name}");
             }
             else
             {
@@ -665,7 +665,7 @@ namespace System.Security.Cryptography.Cose.Tests
             if (key is MLDsa mldsa)
             {
                 AssertExtensions.FalseExpression(hash.HasValue);
-                CoseKey mldsaKey = CoseKey.FromKey(mldsa);
+                CoseKey mldsaKey = new CoseKey(mldsa);
                 return new CoseSigner(mldsaKey, protectedHeaders, unprotectedHeaders);
             }
 

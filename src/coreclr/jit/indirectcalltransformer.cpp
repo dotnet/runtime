@@ -973,7 +973,7 @@ private:
                 //
                 if (inlineInfo->arrayInterface)
                 {
-                    methodHnd = call->gtCallMethHnd;
+                    methodHnd = inlineInfo->originalMethodHandle;
                     context   = inlineInfo->originalContextHandle;
                 }
 
@@ -1305,7 +1305,7 @@ private:
             // Rewire the cold block to jump to the else block,
             // not fall through to the check block.
             //
-            compiler->fgRedirectTargetEdge(coldBlock, elseBlock);
+            compiler->fgRedirectEdge(coldBlock->TargetEdgeRef(), elseBlock);
 
             // Update the profile data
             //
