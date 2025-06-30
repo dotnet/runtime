@@ -390,7 +390,7 @@ namespace System
             }
 
             // Less common
-            CopyImpl(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), length, reliable: false);
+            CopyImpl(sourceArray, sourceArray?.GetLowerBound(0) ?? 0, destinationArray, destinationArray?.GetLowerBound(0) ?? 0, length, reliable: false);
         }
 
         // Copies length elements from sourceArray, starting at sourceIndex, to
@@ -422,10 +422,10 @@ namespace System
             }
 
             // Less common
-            CopyImpl(sourceArray!, sourceIndex, destinationArray!, destinationIndex, length, reliable: false);
+            CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: false);
         }
 
-        private static unsafe void CopyImpl(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
+        private static unsafe void CopyImpl(Array? sourceArray, int sourceIndex, Array? destinationArray, int destinationIndex, int length, bool reliable)
         {
             ArgumentNullException.ThrowIfNull(sourceArray);
             ArgumentNullException.ThrowIfNull(destinationArray);
