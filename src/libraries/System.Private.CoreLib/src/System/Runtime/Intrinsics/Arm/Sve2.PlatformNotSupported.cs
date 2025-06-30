@@ -258,6 +258,83 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> AddCarryWideningUpper(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) { throw new PlatformNotSupportedException(); }
 
+        // Add narrow high part (bottom)
+
+        /// <summary>
+        /// svuint8_t svaddhnb[_u16](svuint16_t op1, svuint16_t op2)
+        ///   ADDHNB Zresult.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<byte> AddHighNarrowingEven(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svaddhnb[_s32](svint32_t op1, svint32_t op2)
+        ///   ADDHNB Zresult.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<short> AddHighNarrowingEven(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svaddhnb[_s64](svint64_t op1, svint64_t op2)
+        ///   ADDHNB Zresult.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<int> AddHighNarrowingEven(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svaddhnb[_s16](svint16_t op1, svint16_t op2)
+        ///   ADDHNB Zresult.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<sbyte> AddHighNarrowingEven(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svaddhnb[_u32](svuint32_t op1, svuint32_t op2)
+        ///   ADDHNB Zresult.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ushort> AddHighNarrowingEven(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svaddhnb[_u64](svuint64_t op1, svuint64_t op2)
+        ///   ADDHNB Zresult.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<uint> AddHighNarrowingEven(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        // Add narrow high part (top)
+
+        /// <summary>
+        /// svuint8_t svaddhnt[_u16](svuint8_t even, svuint16_t op1, svuint16_t op2)
+        ///   ADDHNT Ztied.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<byte> AddHighNarrowingOdd(Vector<byte> even, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svaddhnt[_s32](svint16_t even, svint32_t op1, svint32_t op2)
+        ///   ADDHNT Ztied.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<short> AddHighNarrowingOdd(Vector<short> even, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svaddhnt[_s64](svint32_t even, svint64_t op1, svint64_t op2)
+        ///   ADDHNT Ztied.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<int> AddHighNarrowingOdd(Vector<int> even, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svaddhnt[_s16](svint8_t even, svint16_t op1, svint16_t op2)
+        ///   ADDHNT Ztied.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<sbyte> AddHighNarrowingOdd(Vector<sbyte> even, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svaddhnt[_u32](svuint16_t even, svuint32_t op1, svuint32_t op2)
+        ///   ADDHNT Ztied.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<ushort> AddHighNarrowingOdd(Vector<ushort> even, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svaddhnt[_u64](svuint32_t even, svuint64_t op1, svuint64_t op2)
+        ///   ADDHNT Ztied.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<uint> AddHighNarrowingOdd(Vector<uint> even, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
         // Bitwise clear and exclusive OR
 
         /// <summary>

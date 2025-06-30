@@ -270,6 +270,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     TValue instanceValue = Visit(propertyRef.Instance, state);
                     TValue value = Visit(operation.Value, state);
                     IMethodSymbol? setMethod = propertyRef.Property.GetSetMethod();
+
                     if (setMethod == null ||
                         (OwningSymbol is IPropertySymbol && (ControlFlowGraph.OriginalOperation is not IAttributeOperation)))
                     {

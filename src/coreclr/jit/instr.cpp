@@ -36,12 +36,12 @@ const char* CodeGen::genInsName(instruction ins)
     const char * const insNames[] =
     {
 #if defined(TARGET_XARCH)
-        #define INST0(id, nm, um, mr,                 tt, flags) nm,
-        #define INST1(id, nm, um, mr,                 tt, flags) nm,
-        #define INST2(id, nm, um, mr, mi,             tt, flags) nm,
-        #define INST3(id, nm, um, mr, mi, rm,         tt, flags) nm,
-        #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) nm,
-        #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) nm,
+        #define INST0(id, nm, um, mr,                 lat, tp, tt, flags) nm,
+        #define INST1(id, nm, um, mr,                 lat, tp, tt, flags) nm,
+        #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags) nm,
+        #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags) nm,
+        #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags) nm,
+        #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) nm,
         #include "instrs.h"
 
 #elif defined(TARGET_ARM)

@@ -245,6 +245,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                 TrimAnalysisPatterns.Add(
                     new TrimAnalysisBackingFieldAccessPattern(property, fieldReference, OwningSymbol, featureContext)
                 );
+                ProcessGenericArgumentDataFlow(field, fieldReference, featureContext);
                 return GetBackingFieldTargetValue(fieldReference, featureContext);
             }
             else
@@ -252,30 +253,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                 TrimAnalysisPatterns.Add(
                     new TrimAnalysisFieldAccessPattern(field, fieldReference, OwningSymbol, featureContext)
                 );
+                ProcessGenericArgumentDataFlow(field, fieldReference, featureContext);
+                return new FieldValue(field);
             }
-
-            ProcessGenericArgumentDataFlow(field, fieldReference, featureContext);
-            return new FieldValue(field);
-        }
-
-        /// <summary>
-        /// Gets the target value for a backing field access.
-        /// </summary>
-        /// <param name="fieldOrPropertyReference">The operation representing the 'field' keyword or property reference.</param>
-        /// <param name="property">The property symbol associated with the backing field.</param>
-        /// <param name="featureContext">The feature context for the analysis.</param>
-        /// <returns>The multi-value representing the target value.</returns>
-        public override MultiValue GetBackingFieldTargetValue(IPropertyReferenceOperation fieldOrPropertyReference, in FeatureContext featureContext)
-        {
-            var property = fieldOrPropertyReference.Property;
-
-            TrimAnalysisPatterns.Add(
-                new TrimAnalysisBackingFieldAccessPattern(property, fieldOrPropertyReference, OwningSymbol, featureContext)
-            );
-
-            ProcessGenericArgumentDataFlow(property, fieldOrPropertyReference, featureContext);
-
-            return new FieldValue(property);
         }
 
         public override MultiValue GetBackingFieldTargetValue(IFieldReferenceOperation fieldOrPropertyReference, in FeatureContext featureContext)
@@ -292,6 +272,20 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
             return new FieldValue(property);
         }
+
+        public override MultiValue GetBackingFieldTargetValue(IPropertyReferenceOperation propertyReference, in FeatureContext featureContext)
+        {
+            var property = propertyReference.Property;
+
+            TrimAnalysisPatterns.Add(
+                new TrimAnalysisBackingFieldAccessPattern(property, propertyReference, OwningSymbol, featureContext)
+            );
+
+            ProcessGenericArgumentDataFlow(property, propertyReference, featureContext);
+
+            return new FieldValue(property);
+        }
+
 
         public override MultiValue GetParameterTargetValue(IParameterSymbol parameter)
             => new MethodParameterValue(parameter);

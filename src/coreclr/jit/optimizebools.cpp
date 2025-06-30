@@ -1239,7 +1239,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
             // We will now reach via B1 true.
             // Modify flow for true side of B1
             //
-            m_comp->fgRedirectTrueEdge(m_b1, m_b2->GetTrueTarget());
+            m_comp->fgRedirectEdge(m_b1->TrueEdgeRef(), m_b2->GetTrueTarget());
             origB1TrueEdge->setHeuristicBased(origB2TrueEdge->isHeuristicBased());
 
             newB1TrueLikelihood =
