@@ -1586,6 +1586,9 @@ namespace System.Tests
 
             // ValueType[] -> InterfaceNotImplementedByValueType[] never works
             yield return new object[] { new StructWithNonGenericInterface1[1], new NonGenericInterface2[1] };
+
+            // ValueType[] -> ValueType[] never works
+            yield return new object[] { new StructWithNonGenericInterface1[1], new StructWithNonGenericInterface1_2[1] };
         }
 
         [Theory]
