@@ -13,6 +13,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             WithMethods = typeof(FieldKeyword);
             WithFields = typeof(FieldKeyword);
+            _ = MismatchAssignedFromField;
+            _ = MismatchAssignedToField;
+            MismatchAssignedFromValue = null;
             AssignNoneToMethods();
         }
 
@@ -25,7 +28,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
         static Type MismatchAssignedToField
         {
-            // [method: ExpectedWarning("IL2074", nameof(WithNone))]
+            [method: ExpectedWarning("IL2074", nameof(WithNone), Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/117065")]
             get
             {
                 field = WithNone;
@@ -37,6 +40,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         static Type MismatchAssignedFromField
         {
             [method: ExpectedWarning("IL2077", nameof(MismatchAssignedFromField), nameof(WithMethods))]
+            [method: UnexpectedWarning("IL2078", Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/117176")]
             get
             {
                 WithMethods = field;
