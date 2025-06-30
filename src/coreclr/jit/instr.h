@@ -20,12 +20,12 @@
 enum instruction : uint32_t
 {
 #if defined(TARGET_XARCH)
-    #define INST0(id, nm, um, mr,                 tt, flags) INS_##id,
-    #define INST1(id, nm, um, mr,                 tt, flags) INS_##id,
-    #define INST2(id, nm, um, mr, mi,             tt, flags) INS_##id,
-    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) INS_##id,
-    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) INS_##id,
-    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) INS_##id,
+    #define INST0(id, nm, um, mr,                 lat, tp, tt, flags) INS_##id,
+    #define INST1(id, nm, um, mr,                 lat, tp, tt, flags) INS_##id,
+    #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags) INS_##id,
+    #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags) INS_##id,
+    #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags) INS_##id,
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) INS_##id,
     #include "instrs.h"
 
 #elif defined(TARGET_ARM)
@@ -294,6 +294,10 @@ enum insOpts: unsigned
     INS_OPTS_EVEX_dfv_MASK = 0xF00,
 
     INS_OPTS_EVEX_NoApxPromotion = 1 << 12,    // Do not promote to APX-EVEX
+
+    INS_OPTS_APX_ppx = 1 << 13,      // PPX hint for APX-EVEX
+    // One-bit:  0b10_0000_0000_0000
+    INS_OPTS_APX_ppx_MASK = 0x2000,   // mask for APX-EVEX.ppx feature.
 
 };
 

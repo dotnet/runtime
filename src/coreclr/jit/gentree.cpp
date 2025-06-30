@@ -29097,9 +29097,60 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
 // GetOperForHWIntrinsicId: Returns oper based on the intrinsic ID and base type
 //
 // Arguments:
-//    id           - The intrinsic ID for which to get the oper
-//    simdBaseType - The base type on which id is executed
-//    isScalar     - On return, contains true if the oper is over scalar data; otherwise false
+//    isScalar       - On return, contains true if the oper is over scalar data; otherwise false
+//    getEffectiveOp - true to check for certain special patterns and return the effective operation
+//
+// Returns:
+//    The oper based on the intrinsic ID and base type
+//
+genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(bool* isScalar, bool getEffectiveOp) const
+{
+    var_types  simdBaseType = GetSimdBaseType();
+    genTreeOps oper         = GetOperForHWIntrinsicId(GetHWIntrinsicId(), simdBaseType, isScalar);
+
+    if (getEffectiveOp)
+    {
+        if (oper == GT_SUB)
+        {
+            GenTree* op1 = Op(1);
+
+            if (varTypeIsIntegral(simdBaseType))
+            {
+                if (op1->IsVectorZero())
+                {
+                    oper = GT_NEG;
+                }
+                else if (isScalar && op1->IsCnsVec() && op1->AsVecCon()->IsScalarZero(simdBaseType))
+                {
+                    oper = GT_NEG;
+                }
+            }
+        }
+        else if (oper == GT_XOR)
+        {
+            GenTree* op2 = Op(2);
+
+            if (op2->IsVectorAllBitsSet())
+            {
+                oper = GT_NOT;
+            }
+            else if (varTypeIsFloating(simdBaseType) && op2->IsVectorNegativeZero(simdBaseType))
+            {
+                oper = GT_NEG;
+            }
+        }
+    }
+
+    return oper;
+}
+
+//------------------------------------------------------------------------------
+// GetOperForHWIntrinsicId: Returns oper based on the intrinsic ID and base type
+//
+// Arguments:
+//    id             - The intrinsic ID for which to get the oper
+//    simdBaseType   - The base type on which id is executed
+//    isScalar       - On return, contains true if the oper is over scalar data; otherwise false
 //
 // Returns:
 //    The oper based on the intrinsic ID and base type
@@ -30405,6 +30456,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
 //    simdBaseType - The base type on which oper is executed
 //    simdSize     - The simd size on which oper is executed
 //    isScalar     - True if the oper is over scalar data; otherwise false
+//    reverseCond  - True if the oper should be reversed; otherwise false
 //
 // Returns:
 //    The intrinsic ID based on the oper, base type, and simd size
@@ -30416,7 +30468,8 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
                                                             GenTree*   op2,
                                                             var_types  simdBaseType,
                                                             unsigned   simdSize,
-                                                            bool       isScalar)
+                                                            bool       isScalar,
+                                                            bool       reverseCond)
 {
     var_types simdType = comp->getSIMDTypeForSize(simdSize);
     assert(varTypeIsMask(type) || (type == simdType));
@@ -30452,6 +30505,27 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
     }
 
     NamedIntrinsic id = NI_Illegal;
+
+    if (reverseCond)
+    {
+        oper = ReverseRelop(oper);
+
+        if (varTypeIsIntegral(simdBaseType))
+        {
+            reverseCond = false;
+        }
+#if defined(TARGET_ARM64)
+        else if (oper != GT_EQ)
+        {
+            // Unlike xarch, there is no reverse comparison
+            // for floating-point and so we cannot actually
+            // optimize these. The exception is GT_NE which
+            // becomes GT_EQ
+
+            return NI_Illegal;
+        }
+#endif
+    }
 
     switch (oper)
     {
@@ -30507,7 +30581,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 #if defined(TARGET_XARCH)
             if (varTypeIsMask(type))
             {
-                id = NI_AVX512_CompareGreaterThanOrEqualMask;
+                id = reverseCond ? NI_AVX512_CompareNotLessThanMask : NI_AVX512_CompareGreaterThanOrEqualMask;
             }
             else if (varTypeIsIntegral(simdBaseType))
             {
@@ -30516,11 +30590,15 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             }
             else if (simdSize == 32)
             {
-                id = NI_AVX_CompareGreaterThanOrEqual;
+                id = reverseCond ? NI_AVX_CompareNotLessThan : NI_AVX_CompareGreaterThanOrEqual;
+            }
+            else if (isScalar)
+            {
+                id = reverseCond ? NI_X86Base_CompareScalarNotLessThan : NI_X86Base_CompareScalarGreaterThanOrEqual;
             }
             else
             {
-                id = isScalar ? NI_X86Base_CompareScalarGreaterThanOrEqual : NI_X86Base_CompareGreaterThanOrEqual;
+                id = reverseCond ? NI_X86Base_CompareNotLessThan : NI_X86Base_CompareGreaterThanOrEqual;
             }
 #elif defined(TARGET_ARM64)
             if (genTypeSize(simdBaseType) == 8)
@@ -30543,7 +30621,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 #if defined(TARGET_XARCH)
             if (varTypeIsMask(type))
             {
-                id = NI_AVX512_CompareGreaterThanMask;
+                id = reverseCond ? NI_AVX512_CompareNotLessThanOrEqualMask : NI_AVX512_CompareGreaterThanMask;
             }
             else if (varTypeIsIntegral(simdBaseType))
             {
@@ -30574,11 +30652,15 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             }
             else if (simdSize == 32)
             {
-                id = NI_AVX_CompareGreaterThan;
+                id = reverseCond ? NI_AVX_CompareNotLessThanOrEqual : NI_AVX_CompareGreaterThan;
+            }
+            else if (isScalar)
+            {
+                reverseCond ? NI_X86Base_CompareScalarNotLessThanOrEqual : NI_X86Base_CompareScalarGreaterThan;
             }
             else
             {
-                id = isScalar ? NI_X86Base_CompareScalarGreaterThan : NI_X86Base_CompareGreaterThan;
+                id = reverseCond ? NI_X86Base_CompareNotLessThanOrEqual : NI_X86Base_CompareGreaterThan;
             }
 #elif defined(TARGET_ARM64)
             if (genTypeSize(simdBaseType) == 8)
@@ -30600,7 +30682,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 #if defined(TARGET_XARCH)
             if (varTypeIsMask(type))
             {
-                id = NI_AVX512_CompareLessThanOrEqualMask;
+                id = reverseCond ? NI_AVX512_CompareNotGreaterThanMask : NI_AVX512_CompareLessThanOrEqualMask;
             }
             else if (varTypeIsIntegral(simdBaseType))
             {
@@ -30609,11 +30691,15 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             }
             else if (simdSize == 32)
             {
-                id = NI_AVX_CompareLessThanOrEqual;
+                id = reverseCond ? NI_AVX_CompareNotGreaterThan : NI_AVX_CompareLessThanOrEqual;
+            }
+            else if (isScalar)
+            {
+                id = reverseCond ? NI_X86Base_CompareScalarNotGreaterThan : NI_X86Base_CompareScalarLessThanOrEqual;
             }
             else
             {
-                id = isScalar ? NI_X86Base_CompareScalarLessThanOrEqual : NI_X86Base_CompareLessThanOrEqual;
+                id = reverseCond ? NI_X86Base_CompareNotGreaterThan : NI_X86Base_CompareLessThanOrEqual;
             }
 #elif defined(TARGET_ARM64)
             if (genTypeSize(simdBaseType) == 8)
@@ -30633,10 +30719,12 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
         {
             assert(op2->TypeIs(simdType));
 
+            // !GE
+
 #if defined(TARGET_XARCH)
             if (varTypeIsMask(type))
             {
-                id = NI_AVX512_CompareLessThanMask;
+                id = reverseCond ? NI_AVX512_CompareNotGreaterThanOrEqualMask : NI_AVX512_CompareLessThanMask;
             }
             else if (varTypeIsIntegral(simdBaseType))
             {
@@ -30667,11 +30755,15 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             }
             else if (simdSize == 32)
             {
-                id = NI_AVX_CompareLessThan;
+                id = reverseCond ? NI_AVX_CompareNotGreaterThanOrEqual : NI_AVX_CompareLessThan;
+            }
+            else if (isScalar)
+            {
+                id = reverseCond ? NI_X86Base_CompareScalarNotGreaterThanOrEqual : NI_X86Base_CompareScalarLessThan;
             }
             else
             {
-                id = isScalar ? NI_X86Base_CompareScalarLessThan : NI_X86Base_CompareLessThan;
+                id = reverseCond ? NI_X86Base_CompareNotGreaterThanOrEqual : NI_X86Base_CompareLessThan;
             }
 #elif defined(TARGET_ARM64)
             if (genTypeSize(simdBaseType) == 8)
@@ -30729,6 +30821,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 //    type         - The expected IR type of the comparison
 //    simdBaseType - The base type on which oper is executed
 //    simdSize     - The simd size on which oper is executed
+//    reverseCond  - True if the oper should be reversed; otherwise false
 //
 // Returns:
 //    The lookup type for the given operation given the expected IR type, base type, and simd size
@@ -30739,7 +30832,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 //    may expect a TYP_SIMD16 but the underlying instruction may produce a TYP_MASK.
 //
 var_types GenTreeHWIntrinsic::GetLookupTypeForCmpOp(
-    Compiler* comp, genTreeOps oper, var_types type, var_types simdBaseType, unsigned simdSize)
+    Compiler* comp, genTreeOps oper, var_types type, var_types simdBaseType, unsigned simdSize, bool reverseCond)
 {
     var_types simdType = comp->getSIMDTypeForSize(simdSize);
     assert(varTypeIsMask(type) || (type == simdType));
@@ -30750,6 +30843,11 @@ var_types GenTreeHWIntrinsic::GetLookupTypeForCmpOp(
     var_types lookupType = type;
 
 #if defined(TARGET_XARCH)
+    if (reverseCond)
+    {
+        oper = ReverseRelop(oper);
+    }
+
     switch (oper)
     {
         case GT_EQ:

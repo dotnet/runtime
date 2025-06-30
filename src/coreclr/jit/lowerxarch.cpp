@@ -9888,7 +9888,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         LIR::Use use;
 
-                        if ((oper == GT_XOR) && BlockRange().TryGetUse(node, &use) &&
+                        if ((oper == GT_XOR) && isEmbeddedBroadcastCompatible && BlockRange().TryGetUse(node, &use) &&
                             use.User()->OperIsVectorFusedMultiplyOp())
                         {
                             // xor is bitwise and the actual xor node might be a different base type

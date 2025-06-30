@@ -755,7 +755,7 @@ HRESULT CorHost2::CreateDelegate(
         }
         else
         {
-            UMEntryThunk* pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
+            UMEntryThunkData* pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
             *fnPtr = (INT_PTR)pUMEntryThunk->GetCode();
         }
     }

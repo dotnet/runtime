@@ -5,12 +5,12 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal class HijackArgsX86 : IData<HijackArgsX86>
+internal class HijackArgs : IData<HijackArgs>
 {
-    static HijackArgsX86 IData<HijackArgsX86>.Create(Target target, TargetPointer address)
-        => new HijackArgsX86(target, address);
+    static HijackArgs IData<HijackArgs>.Create(Target target, TargetPointer address)
+        => new HijackArgs(target, address);
 
-    public HijackArgsX86(Target target, TargetPointer address)
+    public HijackArgs(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.HijackArgs);
 
