@@ -108,7 +108,11 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para><paramref name="destination"/> is not precisely sized.</para>
         /// </exception>
-        /// <exception cref="CryptographicException">An error occurred during the cryptographic operation.</exception>
+        /// <exception cref="CryptographicException">
+        ///   <para><paramref name="plaintext"/> and <paramref name="destination"/> overlap.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred during the cryptographic operation.</para>
+        /// </exception>
         /// <seealso cref="GetKeyWrapPaddedLength"/>
         public void EncryptKeyWrapPadded(ReadOnlySpan<byte> plaintext, Span<byte> destination)
         {
@@ -122,6 +126,11 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, requiredLength),
                     nameof(destination));
+            }
+
+            if (plaintext.Overlaps(destination))
+            {
+                throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
             EncryptKeyWrapPaddedCore(plaintext, destination);
@@ -186,6 +195,8 @@ namespace System.Security.Cryptography
         ///   </para>
         /// </exception>
         /// <exception cref="CryptographicException">
+        ///   <para><paramref name="ciphertext"/> and <paramref name="destination"/> overlap.</para>
+        ///   <para>-or-</para>
         ///   <para>The unwrap algorithm failed to unwrap the ciphertext.</para>
         ///   <para>-or-</para>
         ///   <para>An error occurred during the cryptographic operation.</para>
@@ -194,8 +205,6 @@ namespace System.Security.Cryptography
         {
             if (ciphertext.Length < 16 || ciphertext.Length % 8 != 0)
                 throw new ArgumentException(SR.Cryptography_KeyWrap_InvalidLength, nameof(ciphertext));
-            if (destination.Length < ciphertext.Length - 16)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
             if (TryDecryptKeyWrapPadded(ciphertext, destination, out int bytesWritten))
             {
@@ -227,6 +236,8 @@ namespace System.Security.Cryptography
         ///   to the output of the Key Wrap with Padding algorithm.
         /// </exception>
         /// <exception cref="CryptographicException">
+        ///   <para><paramref name="ciphertext"/> and <paramref name="destination"/> overlap.</para>
+        ///   <para>-or-</para>
         ///   <para>The unwrap algorithm failed to unwrap the ciphertext.</para>
         ///   <para>-or-</para>
         ///   <para>An error occurred during the cryptographic operation.</para>
@@ -248,6 +259,11 @@ namespace System.Security.Cryptography
             if (destination.Length > maxOutput)
             {
                 destination = destination.Slice(0, maxOutput);
+            }
+
+            if (ciphertext.Overlaps(destination))
+            {
+                throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
             }
 
             CryptoPoolLease lease = CryptoPoolLease.RentConditionally(maxOutput, destination, skipClearIfNotRented: true);
