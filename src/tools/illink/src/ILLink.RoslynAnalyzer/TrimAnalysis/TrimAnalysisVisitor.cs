@@ -94,6 +94,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             return returnValue;
         }
 
+        public override MultiValue VisitInvalid(IInvalidOperation invalidOperation, StateValue argument)
+        {
+            if (invalidOperation.Syntax.ToString() == "field"
+                && invalidOperation.FindContainingSymbol(OwningSymbol) is IMethodSymbol methodSymbol
+                && methodSymbol.AssociatedSymbol is IPropertySymbol propertySymbol)
+            {
+                return new FieldValue(propertySymbol);
+            }
+
+            return base.VisitInvalid(invalidOperation, argument);
+        }
+
         public override MultiValue VisitArrayCreation(IArrayCreationOperation operation, StateValue state)
         {
             var value = base.VisitArrayCreation(operation, state);
@@ -176,7 +188,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                 return constValue;
 
             var current = state.Current;
-            return GetFieldTargetValue(fieldRef.Field, fieldRef, in current.Context);
+            return GetFieldTargetValue(fieldRef, in current.Context);
         }
 
         public override MultiValue VisitTypeOf(ITypeOfOperation typeOfOperation, StateValue state)
@@ -224,15 +236,38 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         // - method calls
         // - value returned from a method
 
-        public override MultiValue GetFieldTargetValue(IFieldSymbol field, IFieldReferenceOperation fieldReferenceOperation, in FeatureContext featureContext)
+        public override MultiValue GetFieldTargetValue(IFieldReferenceOperation fieldReference, in FeatureContext featureContext)
         {
+            var field = fieldReference.Field;
+            if (field.AssociatedSymbol is IPropertySymbol property)
+            {
+                // If the field is a backing field for a property, we need to track the property as well.
+                TrimAnalysisPatterns.Add(
+                    new TrimAnalysisBackingFieldAccessPattern(property, fieldReference, OwningSymbol, featureContext)
+                );
+            }
+            else
+            {
+                TrimAnalysisPatterns.Add(
+                    new TrimAnalysisFieldAccessPattern(field, fieldReference, OwningSymbol, featureContext)
+                );
+            }
+
+            ProcessGenericArgumentDataFlow(field, fieldReference, featureContext);
+            return new FieldValue(field);
+        }
+
+        public override MultiValue GetBackingFieldTargetValue(IPropertyReferenceOperation propertyReference, in FeatureContext featureContext)
+        {
+            var property = propertyReference.Property;
+
             TrimAnalysisPatterns.Add(
-                new TrimAnalysisFieldAccessPattern(field, fieldReferenceOperation, OwningSymbol, featureContext)
+                new TrimAnalysisBackingFieldAccessPattern(propertyReference.Property, propertyReference, OwningSymbol, featureContext)
             );
 
-            ProcessGenericArgumentDataFlow(field, fieldReferenceOperation, featureContext);
+            ProcessGenericArgumentDataFlow(property, propertyReference, featureContext);
 
-            return new FieldValue(field);
+            return new FieldValue(property);
         }
 
         public override MultiValue GetParameterTargetValue(IParameterSymbol parameter)
@@ -447,6 +482,21 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             {
                 TrimAnalysisPatterns.Add(new TrimAnalysisGenericInstantiationPattern(
                     field,
+                    operation,
+                    OwningSymbol,
+                    featureContext));
+            }
+        }
+
+        private void ProcessGenericArgumentDataFlow(IPropertySymbol property, IOperation operation, in FeatureContext featureContext)
+        {
+            if (!property.IsStatic)
+                return;
+
+            if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(property))
+            {
+                TrimAnalysisPatterns.Add(new TrimAnalysisGenericInstantiationPattern(
+                    property,
                     operation,
                     OwningSymbol,
                     featureContext));

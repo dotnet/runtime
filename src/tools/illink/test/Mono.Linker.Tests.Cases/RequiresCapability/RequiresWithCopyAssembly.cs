@@ -42,8 +42,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         }
 
         [ExpectedWarning("IL2026", "--Method--")]
-        [ExpectedWarning("IL3002", "--Method--", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "--Method--", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "--Method--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "--Method--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         static void TestRequiresInMethodFromCopiedAssembly()
         {
             var tmp = new RequiresInCopyAssembly();

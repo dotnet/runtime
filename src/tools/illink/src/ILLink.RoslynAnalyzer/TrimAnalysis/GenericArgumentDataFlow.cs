@@ -33,6 +33,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             ProcessGenericArgumentDataFlow(location, field.ContainingType, reportDiagnostic);
         }
 
+        public static void ProcessGenericArgumentDataFlow(Location location, IPropertySymbol property, Action<Diagnostic> reportDiagnostic)
+        {
+            ProcessGenericArgumentDataFlow(location, property.ContainingType, reportDiagnostic);
+        }
+
         private static void ProcessGenericArgumentDataFlow(
             Location location,
             ImmutableArray<ITypeSymbol> typeArguments,
@@ -100,6 +105,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         public static bool RequiresGenericArgumentDataFlow(IFieldSymbol field)
         {
             return RequiresGenericArgumentDataFlow(field.ContainingType);
+        }
+
+        public static bool RequiresGenericArgumentDataFlow(IPropertySymbol property)
+        {
+            return RequiresGenericArgumentDataFlow(property.ContainingType);
         }
 
         private static bool RequiresGenericArgumentDataFlow(ImmutableArray<ITypeParameterSymbol> typeParameters)

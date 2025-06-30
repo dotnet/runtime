@@ -168,6 +168,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task FieldKeyword()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task FileScopedClasses()
         {
             return RunTest();
