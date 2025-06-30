@@ -1240,11 +1240,9 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     m_compScopeHnd = methodInfo->scope;
     m_compHnd = compHnd;
     m_methodInfo = methodInfo;
-
-#ifdef DEBUG
-
     m_classHnd   = compHnd->getMethodClass(m_methodHnd);
 
+#ifdef DEBUG
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
                             /* includeAssembly */ false,
                             /* includeClass */ true,
