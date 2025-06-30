@@ -448,7 +448,7 @@ namespace System
             if ((uint)(destinationIndex + length) > destinationArray.NativeLength)
                 throw new ArgumentException(SR.Arg_LongerThanDestArray, nameof(destinationArray));
 
-            ArrayAssignType assignType = ArrayAssignType.WrongType;
+            ArrayAssignType assignType;
 
             if (sourceArray.GetType() == destinationArray.GetType()
                 || (assignType = CanAssignArrayType(sourceArray, destinationArray)) == ArrayAssignType.SimpleCopy)
