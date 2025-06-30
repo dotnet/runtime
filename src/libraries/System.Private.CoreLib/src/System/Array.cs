@@ -367,28 +367,26 @@ namespace System
         // destinationArray, starting at index 0.
         public static unsafe void Copy(Array sourceArray, Array destinationArray, int length)
         {
-            if (sourceArray is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.sourceArray);
-            if (destinationArray is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destinationArray);
-
-            MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
-            if (MethodTable.AreSameType(pMT, RuntimeHelpers.GetMethodTable(destinationArray)) &&
-                pMT->IsSzArray &&
-                (uint)length <= sourceArray.NativeLength &&
-                (uint)length <= destinationArray.NativeLength)
+            if (sourceArray != null && destinationArray != null)
             {
-                nuint byteCount = (uint)length * (nuint)pMT->ComponentSize;
-                ref byte src = ref Unsafe.As<RawArrayData>(sourceArray).Data;
-                ref byte dst = ref Unsafe.As<RawArrayData>(destinationArray).Data;
+                MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
+                if (MethodTable.AreSameType(pMT, RuntimeHelpers.GetMethodTable(destinationArray)) &&
+                    pMT->IsSzArray &&
+                    (uint)length <= sourceArray.NativeLength &&
+                    (uint)length <= destinationArray.NativeLength)
+                {
+                    nuint byteCount = (uint)length * (nuint)pMT->ComponentSize;
+                    ref byte src = ref Unsafe.As<RawArrayData>(sourceArray).Data;
+                    ref byte dst = ref Unsafe.As<RawArrayData>(destinationArray).Data;
 
-                if (pMT->ContainsGCPointers)
-                    Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
-                else
-                    SpanHelpers.Memmove(ref dst, ref src, byteCount);
+                    if (pMT->ContainsGCPointers)
+                        Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+                    else
+                        SpanHelpers.Memmove(ref dst, ref src, byteCount);
 
-                // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
-                return;
+                    // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
+                    return;
+                }
             }
 
             // Less common
@@ -429,10 +427,8 @@ namespace System
 
         private static unsafe void CopyImpl(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
-            if (sourceArray == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.sourceArray);
-            if (destinationArray == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destinationArray);
+            ArgumentNullException.ThrowIfNull(sourceArray);
+            ArgumentNullException.ThrowIfNull(destinationArray);
 
             if (sourceArray.GetType() != destinationArray.GetType() && sourceArray.Rank != destinationArray.Rank)
                 throw new RankException(SR.Rank_MustMatch);
