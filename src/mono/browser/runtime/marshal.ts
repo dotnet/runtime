@@ -387,8 +387,7 @@ export function set_gc_handle (arg: JSMarshalerArgument, gcHandle: GCHandle): vo
 
 export function get_string_root (arg: JSMarshalerArgument): WasmRoot<MonoString> {
     mono_assert(arg, "Null arg");
-    const ptr = get_arg_intptr(arg);
-    return mono_wasm_new_external_root<MonoString>(<any>ptr);
+    return mono_wasm_new_external_root<MonoString>(<any>arg);
 }
 
 export function get_arg_length (arg: JSMarshalerArgument): number {
