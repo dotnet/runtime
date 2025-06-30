@@ -160,8 +160,13 @@ namespace System.Security.Cryptography
 
         protected override void Dispose(bool disposing)
         {
-            _key?.Dispose();
-            _key = null!;
+            if (disposing)
+            {
+                _key?.Dispose();
+                _key = null!;
+            }
+
+            base.Dispose(disposing);
         }
 
         private void ExportKey(string keyBlobType, int expectedKeySize, Span<byte> destination)
