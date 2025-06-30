@@ -280,7 +280,7 @@ export function getI32 (offset: MemOffset): number {
     } else {
         n = offset as number;
     }
-    return new DataView(Module.HEAPU8.buffer).getInt32(n, true);
+    return Module.HEAP32[<any>n >>> 2];
 }
 
 // does not check for growable heap
