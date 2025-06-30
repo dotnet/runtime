@@ -11,7 +11,7 @@
 // for numeric_limits
 #include <limits>
 
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
+void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE overrideTarget = NULL)
 {
     CONTRACTL
     {
@@ -44,7 +44,11 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
         }
     }
 
-    pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode()); // The method to call
+    if (overrideTarget)
+        // Interpreter-FIXME: Is this a race condition?
+        pHeader->SetTarget(overrideTarget);
+    else
+        pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode()); // The method to call
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
@@ -1696,6 +1700,28 @@ MAIN_LOOP:
                     ip += 5;
 
                     InvokeCalliStub(LOCAL_VAR(calliFunctionPointerVar, PCODE), pCallStub, stack + callArgsOffset, stack + returnOffset);
+                    break;
+                }
+
+                case INTOP_CALL_PINVOKE:
+                {
+                    // This opcode handles p/invokes that don't use a managed wrapper for marshaling. These
+                    //  calls are special in that they need an InlinedCallFrame in order for proper EH to happen
+
+                    returnOffset = ip[1];
+                    callArgsOffset = ip[2];
+                    methodSlot = ip[3];
+                    int32_t targetAddrSlot = ip[4];
+
+                    ip += 5;
+                    targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
+                    PCODE callTarget = *(PCODE*)pMethod->pDataItems[targetAddrSlot];
+
+                    {
+                        // Interpreter-FIXME: Create InlinedCallFrame.
+                        GCX_PREEMP();
+                        InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+                    }
                     break;
                 }
 
