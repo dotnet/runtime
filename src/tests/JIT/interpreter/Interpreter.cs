@@ -1993,14 +1993,14 @@ public class InterpreterTest
         MyPreciseInitClass<short>.TriggerCctorMethod<int>();
         if (preciseInitCctorsRun != 2)
         {
-            Console.WriteLine("TriggerCctorClass should return 2, but did not");
+            Console.WriteLine("TriggerCctorClass should return 2, but is {0}", preciseInitCctorsRun);
             return false;
         }
 
         object o = new MyPreciseInitClass<double>();
         if (preciseInitCctorsRun != 3)
         {
-            Console.WriteLine("TriggerCctorClass should return 3, but did not");
+            Console.WriteLine("TriggerCctorClass should return 3, but is {0}", preciseInitCctorsRun);
             return false;
         }
 
@@ -2013,14 +2013,14 @@ public class InterpreterTest
         MyPreciseInitClass<string>.TriggerCctorMethod<object>();
         if (preciseInitCctorsRun != 5)
         {
-            Console.WriteLine("TriggerCctorClass should return 5, but did not");
+            Console.WriteLine("TriggerCctorClass should return 5, but is {0}", preciseInitCctorsRun);
             return false;
         }
 
         o = new MyPreciseInitClass<Type>();
         if (preciseInitCctorsRun != 6)
         {
-            Console.WriteLine("TriggerCctorClass should return 6, but did not");
+            Console.WriteLine("TriggerCctorClass should return 6,  but is {0}", preciseInitCctorsRun);
             return false;
         }
 
