@@ -3365,9 +3365,11 @@ mono_interp_leave (InterpFrame* parent_frame)
 	 * to check the abort threshold. For this to work we use frame as a
 	 * dummy frame that is stored in the lmf and serves as the transition frame
 	 */
-	
+	MH_LOG_INDENT();
+	MH_LOG("Calling do_icall_wrapper for mono_thread_get_undeniable_exception\n");
 	do_icall_wrapper (&frame, NULL, MINT_ICALLSIG_V_P, &tmp_sp, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE, &gc_transitions);
-
+	MH_LOG("..Finished calling do_icall_wrapper for mono_thread_get_undeniable_exception\n");
+	MH_LOG_UNINDENT();
 	return (MonoException*)tmp_sp.data.p;
 }
 
