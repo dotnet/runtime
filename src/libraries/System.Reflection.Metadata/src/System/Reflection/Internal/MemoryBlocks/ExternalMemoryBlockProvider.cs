@@ -14,7 +14,7 @@ namespace System.Reflection.Internal
         private byte* _memory;
         private int _size;
 
-        public unsafe ExternalMemoryBlockProvider(byte* memory, int size)
+        public ExternalMemoryBlockProvider(byte* memory, int size)
         {
             _memory = memory;
             _size = size;
@@ -31,12 +31,6 @@ namespace System.Reflection.Internal
         protected override AbstractMemoryBlock GetMemoryBlockImpl(int start, int size)
         {
             return new ExternalMemoryBlock(this, _memory + start, size);
-        }
-
-        public override Stream GetStream(out StreamConstraints constraints)
-        {
-            constraints = new StreamConstraints(null, 0, _size);
-            return new UnmanagedMemoryStream(_memory, _size);
         }
 
         protected override void Dispose(bool disposing)

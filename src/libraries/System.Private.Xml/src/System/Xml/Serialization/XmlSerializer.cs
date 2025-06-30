@@ -400,7 +400,6 @@ namespace System.Xml.Serialization
                 }
                 else if (_tempAssembly == null || _typedSerializer)
                 {
-                    // The contion for the block is never true, thus the block is never hit.
                     XmlSerializationWriter writer = CreateWriter();
                     writer.Init(xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
                     Serialize(o, writer);

@@ -235,10 +235,14 @@ typedef uint64_t regMaskSmall;
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 #define HAS_MORE_THAN_64_REGISTERS 1
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 || TARGET_AMD64
 
+#define REG_LOW_BASE 0
+#ifdef HAS_MORE_THAN_64_REGISTERS
+#define REG_HIGH_BASE 64
+#endif
 // TODO: Rename regMaskSmall as RegSet64 (at least for 64-bit)
 typedef regMaskSmall    SingleTypeRegSet;
 inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg);
@@ -260,7 +264,7 @@ public:
     void RemoveRegNumFromMask(regNumber reg, var_types type);
     bool IsRegNumInMask(regNumber reg, var_types type) const;
 #endif
-    void                       AddGprRegs(SingleTypeRegSet gprRegs);
+    void                       AddGprRegs(SingleTypeRegSet gprRegs DEBUG_ARG(regMaskTP availableIntRegs));
     void                       AddRegNum(regNumber reg, var_types type);
     void                       AddRegNumInMask(regNumber reg);
     void                       AddRegsetForType(SingleTypeRegSet regsToAdd, var_types type);
@@ -377,6 +381,11 @@ public:
 #else
         return getLow();
 #endif
+    }
+
+    static regMaskTP FromIntRegSet(SingleTypeRegSet intRegs)
+    {
+        return regMaskTP(intRegs);
     }
 
     void operator|=(const regMaskTP& second)
@@ -1068,16 +1077,6 @@ inline SingleTypeRegSet getSingleTypeRegMask(regNumber reg, var_types regType)
 
 /*****************************************************************************
  *
- *  These arrays list the callee-saved register numbers (and bitmaps, respectively) for
- *  the current architecture.
- */
-extern const regMaskTP raRbmCalleeSaveOrder[CNT_CALL_GC_REGS];
-
-// This method takes a "compact" bitset of the callee-saved registers, and "expands" it to a full register mask.
-regMaskTP genRegMaskFromCalleeSavedMask(unsigned short);
-
-/*****************************************************************************
- *
  *  Assumes that "reg" is of the given "type". Return the next unused reg number after "reg"
  *  of this type, else REG_NA if there are no more.
  */
@@ -1147,15 +1146,25 @@ inline bool isFloatRegType(var_types type)
 #endif
 #endif
 
+// RBM_ALLINT is not known at compile time on TARGET_AMD64 since it's dependent on APX support.
+// Check should still be functional minus eGPR registers
 /*****************************************************************************/
 // Some sanity checks on some of the register masks
 // Stack pointer is never part of RBM_ALLINT
+#if defined(TARGET_AMD64)
+C_ASSERT((RBM_ALLINT_ALL & RBM_SPBASE) == RBM_NONE);
+#else
 C_ASSERT((RBM_ALLINT & RBM_SPBASE) == RBM_NONE);
+#endif
 C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_SPBASE) == RBM_NONE);
 
 #if ETW_EBP_FRAMED
 // Frame pointer isn't either if we're supporting ETW frame chaining
+#if defined(TARGET_AMD64)
+C_ASSERT((RBM_ALLINT_ALL & RBM_FPBASE) == RBM_NONE);
+#else
 C_ASSERT((RBM_ALLINT & RBM_FPBASE) == RBM_NONE);
+#endif
 C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);
 #endif
 /*****************************************************************************/

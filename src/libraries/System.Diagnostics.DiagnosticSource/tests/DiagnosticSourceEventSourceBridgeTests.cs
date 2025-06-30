@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
+using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -1353,7 +1354,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72801", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void NoExceptionThrownWhenProcessingStaticActivityProperties()
         {
             // Ensures that no exception is thrown when static properties on the Activity type are passed to EventListener.
@@ -1439,6 +1439,52 @@ namespace System.Diagnostics.Tests
 
                 Assert.Equal(1, eventSourceListener.EventCount);
             }, spec, errorMessage).Dispose();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(1)]
+        [InlineData(5)]
+        [InlineData(50)]
+        [InlineData(100)]
+        public void TestRateLimitingSampler(int maxOperationPerSecond)
+        {
+            RemoteExecutor.Invoke((maxOpPerSecond) =>
+            {
+                // Test RateLimitingSampler behavior
+                using TestDiagnosticSourceEventListener eventSourceListener = new TestDiagnosticSourceEventListener();
+                Activity a = new Activity(""); // we need this to ensure DiagnosticSourceEventSource.Logger creation.
+                Assert.Equal("", a.Source.Name);
+
+                Assert.Equal(0, eventSourceListener.EventCount);
+
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+
+                eventSourceListener.Enable($"[AS]*/-ParentRateLimitingSampler({maxOpPerSecond})");
+
+                while (sw.ElapsedMilliseconds < 3000)  // run for 3 seconds
+                {
+                    // ensure we are creating a root activity
+                    Activity.Current = null;
+                    using var nextRoot = a.Source.StartActivity("NextRoot");
+                }
+
+                int maxOps = int.Parse(maxOpPerSecond, CultureInfo.InvariantCulture);
+                // maxOperationPerSecond sampling allowed per second
+                // 2 events for every sampling (activity start and stop)
+                // 3 seconds of sampling
+                // tolerance of extra sample can be done if the second turn after the loop check sw.ElapsedMilliseconds. 2 extra events (start and stop).
+                Assert.True(maxOps * 2 * 3 + 2 >= eventSourceListener.EventCount, $"{eventSourceListener.EventCount} events were recorded, while maxOpPerSecond is {maxOpPerSecond}");
+
+                Thread.Sleep(1000); // ensure new allowance for root creation
+                Activity.Current = null;
+                using var root = a.Source.StartActivity("root");
+                Assert.NotNull(root);
+                Assert.True(root.Recorded);
+
+                using var child = a.Source.StartActivity("child");
+                Assert.NotNull(child); // Child should be created as the parent is recorded.
+            },  maxOperationPerSecond.ToString(CultureInfo.InvariantCulture)).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

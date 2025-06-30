@@ -104,7 +104,7 @@ namespace System.Formats.Tar
                 return;
             }
 
-            InitializeExtendedAttributesWithExisting(dictionaryFromExtendedAttributesHeader);
+            AddExtendedAttributes(dictionaryFromExtendedAttributesHeader);
 
             // Find all the extended attributes with known names and save them in the expected standard attribute.
 
@@ -386,7 +386,7 @@ namespace System.Formats.Tar
             TarHeader header = new(initialFormat,
                 name: TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.Name, FieldLengths.Name)),
                 mode: TarHelpers.ParseNumeric<int>(buffer.Slice(FieldLocations.Mode, FieldLengths.Mode)),
-                mTime: TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(TarHelpers.ParseNumeric<long>(buffer.Slice(FieldLocations.MTime, FieldLengths.MTime))),
+                mTime: ParseAsTimestamp(buffer.Slice(FieldLocations.MTime, FieldLengths.MTime)),
                 typeFlag: (TarEntryType)buffer[FieldLocations.TypeFlag])
             {
                 _checksum = checksum,
@@ -536,14 +536,24 @@ namespace System.Formats.Tar
         // Throws if any conversion fails.
         private void ReadGnuAttributes(ReadOnlySpan<byte> buffer)
         {
-            // Convert byte arrays
-            long aTime = TarHelpers.ParseNumeric<long>(buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
-            _aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(aTime);
+            _aTime = ParseAsTimestamp(buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
 
-            long cTime = TarHelpers.ParseNumeric<long>(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
-            _cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(cTime);
+            _cTime = ParseAsTimestamp(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
 
             // TODO: Read the bytes of the currently unsupported GNU fields, in case user wants to write this entry into another GNU archive, they need to be preserved. https://github.com/dotnet/runtime/issues/68230
+        }
+
+        private static DateTimeOffset ParseAsTimestamp(ReadOnlySpan<byte> buffer)
+        {
+            // When all bytes are zero, the timestamp is not initialized, and we map it to default.
+            bool allZeros = !buffer.ContainsAnyExcept((byte)0);
+            if (allZeros)
+            {
+                return default(DateTimeOffset);
+            }
+
+            long time = TarHelpers.ParseNumeric<long>(buffer);
+            return TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(time);
         }
 
         // Reads the ustar prefix attribute.

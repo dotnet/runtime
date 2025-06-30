@@ -89,6 +89,32 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             }
         }
 
+        [Fact]
+        public void LoadLibrary_IgnoreWorkingDirectory()
+        {
+            using (TestArtifact cwd = TestArtifact.Create("cwd"))
+            {
+                // Validate that hosting components in the working directory will not be used
+                File.Copy(Binaries.CoreClr.MockPath, Path.Combine(cwd.Location, Binaries.CoreClr.FileName));
+                File.Copy(Binaries.HostFxr.MockPath_5_0, Path.Combine(cwd.Location, Binaries.HostFxr.FileName));
+                File.Copy(Binaries.HostPolicy.MockPath, Path.Combine(cwd.Location, Binaries.HostPolicy.FileName));
+
+                string [] args = {
+                    "ijwhost",
+                    sharedState.IjwApp.AppDll,
+                    "NativeEntryPoint"
+                };
+                sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
+                    .WorkingDirectory(cwd.Location)
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
+                    .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext")
+                    .And.ResolveHostFxr(TestContext.BuiltDotNet)
+                    .And.ResolveHostPolicy(TestContext.BuiltDotNet)
+                    .And.ResolveCoreClr(TestContext.BuiltDotNet);
+            }
+        }
 
         [Fact]
         public void LoadLibraryWithoutRuntimeConfigButActiveRuntime()
@@ -154,9 +180,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 string ijwhostName = "ijwhost.dll";
                 File.Copy(Path.Combine(RepoDirectoriesProvider.Default.HostArtifacts, ijwhostName), Path.Combine(folder, ijwhostName));
 
-                // Copy over the C++/CLI test library
+                // Copy over the C++/CLI test library and any dependencies
                 string ijwLibraryName = "ijw.dll";
                 File.Copy(Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, ijwLibraryName), Path.Combine(folder, ijwLibraryName));
+                string ijwDependencies = Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, "ijw-deps");
+                if (Directory.Exists(ijwDependencies))
+                {
+                    foreach(string file in Directory.GetFiles(ijwDependencies))
+                    {
+                        File.Copy(file, Path.Combine(folder, Path.GetFileName(file)));
+                    }
+                }
 
                 // Create a runtimeconfig.json for the C++/CLI test library
                 new RuntimeConfig(Path.Combine(folder, "ijw.runtimeconfig.json"))

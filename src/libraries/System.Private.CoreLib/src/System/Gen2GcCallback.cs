@@ -15,7 +15,7 @@ namespace System
     {
         private readonly Func<bool>? _callback0;
         private readonly Func<object, bool>? _callback1;
-        private GCHandle _weakTargetObj;
+        private WeakGCHandle<object> _weakTargetObj;
 
         private Gen2GcCallback(Func<bool> callback)
         {
@@ -25,7 +25,7 @@ namespace System
         private Gen2GcCallback(Func<object, bool> callback, object targetObj)
         {
             _callback1 = callback;
-            _weakTargetObj = GCHandle.Alloc(targetObj, GCHandleType.Weak);
+            _weakTargetObj = new WeakGCHandle<object>(targetObj);
         }
 
         /// <summary>
@@ -56,11 +56,10 @@ namespace System
             if (_weakTargetObj.IsAllocated)
             {
                 // Check to see if the target object is still alive.
-                object? targetObj = _weakTargetObj.Target;
-                if (targetObj == null)
+                if (!_weakTargetObj.TryGetTarget(out object? targetObj))
                 {
                     // The target object is dead, so this callback object is no longer needed.
-                    _weakTargetObj.Free();
+                    _weakTargetObj.Dispose();
                     return;
                 }
 
@@ -71,7 +70,7 @@ namespace System
                     if (!_callback1(targetObj))
                     {
                         // If the callback returns false, this callback object is no longer needed.
-                        _weakTargetObj.Free();
+                        _weakTargetObj.Dispose();
                         return;
                     }
                 }

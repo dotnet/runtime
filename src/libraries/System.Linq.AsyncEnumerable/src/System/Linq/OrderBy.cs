@@ -33,8 +33,15 @@ namespace System.Linq
         public static IOrderedAsyncEnumerable<TSource> OrderBy<TSource, TKey>( // satisfies the C# query-expression pattern
             this IAsyncEnumerable<TSource> source,
             Func<TSource, TKey> keySelector,
-            IComparer<TKey>? comparer = null) =>
-            new OrderedIterator<TSource, TKey>(source, keySelector, comparer, false, null);
+            IComparer<TKey>? comparer = null)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+
+            return
+                source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
+                new OrderedIterator<TSource, TKey>(source, keySelector, comparer, false, null);
+        }
 
         /// <summary>Sorts the elements of a sequence in ascending order.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -48,8 +55,15 @@ namespace System.Linq
         public static IOrderedAsyncEnumerable<TSource> OrderBy<TSource, TKey>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
-            IComparer<TKey>? comparer = null) =>
-            new OrderedIterator<TSource, TKey>(source, keySelector, comparer, false, null);
+            IComparer<TKey>? comparer = null)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+
+            return
+                source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
+                new OrderedIterator<TSource, TKey>(source, keySelector, comparer, false, null);
+        }
 
         /// <summary>Sorts the elements of a sequence in descending order.</summary>
         /// <typeparam name="T">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -74,8 +88,15 @@ namespace System.Linq
         public static IOrderedAsyncEnumerable<TSource> OrderByDescending<TSource, TKey>( // satisfies the C# query-expression pattern
             this IAsyncEnumerable<TSource> source,
             Func<TSource, TKey> keySelector,
-            IComparer<TKey>? comparer = null) =>
-            new OrderedIterator<TSource, TKey>(source, keySelector, comparer, true, null);
+            IComparer<TKey>? comparer = null)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+
+            return
+                source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
+                new OrderedIterator<TSource, TKey>(source, keySelector, comparer, true, null);
+        }
 
         /// <summary>Sorts the elements of a sequence in descending order.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -89,8 +110,15 @@ namespace System.Linq
         public static IOrderedAsyncEnumerable<TSource> OrderByDescending<TSource, TKey>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
-            IComparer<TKey>? comparer = null) =>
-            new OrderedIterator<TSource, TKey>(source, keySelector, comparer, true, null);
+            IComparer<TKey>? comparer = null)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+
+            return
+                source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
+                new OrderedIterator<TSource, TKey>(source, keySelector, comparer, true, null);
+        }
 
         /// <summary>Performs a subsequent ordering of the elements in a sequence in ascending order.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -106,7 +134,7 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return source.CreateOrderedAsyncEnumerable(keySelector, comparer, descending: false);
         }
@@ -125,7 +153,7 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return source.CreateOrderedAsyncEnumerable(keySelector, comparer, descending: false);
         }
@@ -144,7 +172,7 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return source.CreateOrderedAsyncEnumerable(keySelector, comparer, descending: true);
         }
@@ -163,7 +191,7 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return source.CreateOrderedAsyncEnumerable(keySelector, comparer, descending: true);
         }
@@ -198,9 +226,6 @@ namespace System.Linq
             internal OrderedIterator(IAsyncEnumerable<TElement> source, object keySelector, IComparer<TKey>? comparer, bool descending, OrderedIterator<TElement>? parent) :
                 base(source)
             {
-                ThrowHelper.ThrowIfNull(source);
-                ThrowHelper.ThrowIfNull(keySelector);
-
                 Debug.Assert(keySelector is Func<TElement, TKey> or Func<TElement, CancellationToken, ValueTask<TKey>>);
 
                 _parent = parent;
@@ -231,10 +256,10 @@ namespace System.Linq
 
             public override async IAsyncEnumerator<TElement> GetAsyncEnumerator(CancellationToken cancellationToken)
             {
-                TElement[] buffer = await _source.ToArrayAsync(cancellationToken).ConfigureAwait(false);
+                TElement[] buffer = await _source.ToArrayAsync(cancellationToken);
                 if (buffer.Length > 0)
                 {
-                    int[] map = await CreateSortedMapAsync(buffer, cancellationToken).ConfigureAwait(false);
+                    int[] map = await CreateSortedMapAsync(buffer, cancellationToken);
                     for (int i = 0; i < map.Length; i++)
                     {
                         yield return buffer[map[i]];
@@ -258,7 +283,7 @@ namespace System.Linq
 
             internal async ValueTask<int[]> SortAsync(TElement[] elements, int count, CancellationToken cancellationToken)
             {
-                await ComputeKeysAsync(elements, count, cancellationToken).ConfigureAwait(false);
+                await ComputeKeysAsync(elements, count, cancellationToken);
 
                 int[] map = new int[count];
                 for (int i = 0; i < map.Length; i++)
@@ -317,7 +342,7 @@ namespace System.Linq
                         var asyncSelector = (Func<TElement, CancellationToken, ValueTask<TKey>>)keySelector;
                         for (int i = 0; i < keys.Length; i++)
                         {
-                            keys[i] = await asyncSelector(elements[i], cancellationToken).ConfigureAwait(false);
+                            keys[i] = await asyncSelector(elements[i], cancellationToken);
                         }
                     }
                     _keys = keys;

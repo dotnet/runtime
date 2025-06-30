@@ -115,8 +115,8 @@
       "packs": [
         "Microsoft.NETCore.App.Runtime.Mono.net9.osx-arm64",
         "Microsoft.NETCore.App.Runtime.Mono.net9.osx-x64",
-        "Microsoft.NETCore.App.Runtime.osx-arm64",
-        "Microsoft.NETCore.App.Runtime.osx-x64"
+        "Microsoft.NETCore.App.Runtime.net9.osx-arm64",
+        "Microsoft.NETCore.App.Runtime.net9.osx-x64"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling-net9" ],
       "platforms": [ "osx-arm64", "osx-x64" ]

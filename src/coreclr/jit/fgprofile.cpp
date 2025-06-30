@@ -89,6 +89,11 @@ bool Compiler::fgHaveSufficientProfileWeights()
         case ICorJitInfo::PgoSource::Blend:
             return true;
 
+        case ICorJitInfo::PgoSource::Synthesis:
+            // Single-edge methods always have sufficient profile data.
+            // Assuming we don't synthesize value and class profile data (which we don't currently).
+            return fgPgoSingleEdge;
+
         case ICorJitInfo::PgoSource::Static:
         {
             // We sometimes call this very early, eg evaluating the prejit root.
@@ -134,6 +139,12 @@ bool Compiler::fgHaveTrustedProfileWeights()
         case ICorJitInfo::PgoSource::Blend:
         case ICorJitInfo::PgoSource::Text:
             return true;
+
+        case ICorJitInfo::PgoSource::Synthesis:
+            // Single-edge methods with synthetic profile are trustful.
+            // Assuming we don't synthesize value and class profile data (which we don't currently).
+            return fgPgoSingleEdge;
+
         default:
             return false;
     }
@@ -2504,10 +2515,10 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     // We enable edge profiling by default, except when:
     //
     // * disabled by option
-    // * we are prejitting
+    // * we are AOT compiling
     //
     const bool edgesEnabled    = (JitConfig.JitEdgeProfiling() > 0);
-    const bool prejit          = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool prejit          = IsAot();
     const bool useEdgeProfiles = edgesEnabled && !prejit;
     const bool minimalProfiling =
         prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
@@ -2666,14 +2677,14 @@ PhaseStatus Compiler::fgInstrumentMethod()
     // Optionally, when jitting, if there were no class probes, no value probes and only one count probe,
     // suppress instrumentation.
     //
-    // We leave instrumentation in place when prejitting as the sample hits in the method
-    // may be used to determine if the method should be prejitted or not.
+    // We leave instrumentation in place for AOT as the sample hits in the method
+    // may be used to determine if the method should be AOT or not.
     //
     // For jitting, no information is conveyed by the count in a single=block method.
     //
     bool minimalProbeMode = false;
 
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    if (IsAot())
     {
         minimalProbeMode = (JitConfig.JitMinimalPrejitProfiling() > 0);
     }
@@ -2942,7 +2953,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
         // We now always run repair, to get consistent initial counts
         //
-        JITDUMP("\n%sRepairing profile...\n", opts.IsOSR() ? "blending" : "repairing");
+        JITDUMP("\nRepairing profile...\n");
         ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
     }
 
@@ -4167,9 +4178,8 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
             "; marking for peeling\n",
             dominantCase, dominantEdge->m_targetBlock->bbNum, fraction);
 
-    block->GetSwitchTargets()->bbsHasDominantCase  = true;
-    block->GetSwitchTargets()->bbsDominantCase     = dominantCase;
-    block->GetSwitchTargets()->bbsDominantFraction = fraction;
+    block->GetSwitchTargets()->bbsHasDominantCase = true;
+    block->GetSwitchTargets()->bbsDominantCase    = dominantCase;
 }
 
 //------------------------------------------------------------------------
@@ -4210,10 +4220,7 @@ bool Compiler::fgIncorporateEdgeCounts()
 //
 PhaseStatus Compiler::fgComputeBlockWeights()
 {
-    const bool usingProfileWeights = fgIsUsingProfileWeights();
-    bool       madeChanges         = false;
-    fgModified                     = false;
-    fgCalledCount                  = BB_UNITY_WEIGHT;
+    fgModified = false;
 
 #if DEBUG
     if (verbose)
@@ -4223,40 +4230,28 @@ PhaseStatus Compiler::fgComputeBlockWeights()
     }
 #endif // DEBUG
 
-    weight_t returnWeight = BB_UNITY_WEIGHT;
-
-    madeChanges |= fgComputeMissingBlockWeights(&returnWeight);
-
-    if (usingProfileWeights)
+    if (fgIsUsingProfileWeights())
     {
-        madeChanges |= fgComputeCalledCount(returnWeight);
-    }
-    else
-    {
-        JITDUMP(" -- no profile data, so using default called count\n");
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+    return fgComputeMissingBlockWeights() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //-------------------------------------------------------------
 // fgComputeMissingBlockWeights: determine weights for blocks
 //   that were not profiled and do not yet have weights.
 //
-// Arguments
-//    returnWeight [out] - sum of weights for all return and throw blocks
-//
 // Returns:
 //    true if any changes made
 //
-bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
+bool Compiler::fgComputeMissingBlockWeights()
 {
     BasicBlock* bSrc;
     BasicBlock* bDst;
     unsigned    iterations = 0;
     bool        changed;
     bool        modified = false;
-    weight_t    weight;
 
     // If we have any blocks that did not have profile derived weight
     // we will try to fix their weight up here
@@ -4265,7 +4260,6 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
     do // while (changed)
     {
         changed = false;
-        weight  = 0;
         iterations++;
 
         for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->Next())
@@ -4376,14 +4370,6 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     bDst->bbSetRunRarely();
                 }
             }
-
-            // Sum up the weights of all of the return blocks and throw blocks
-            // This is used when we have a back-edge into block 1
-            //
-            if (bDst->hasProfileWeight() && bDst->KindIs(BBJ_RETURN, BBJ_THROW))
-            {
-                weight += bDst->bbWeight;
-            }
         }
     }
     // Generally when we synthesize profile estimates we do it in a way where this algorithm will converge
@@ -4400,82 +4386,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
     }
 #endif
 
-    *returnWeight = weight;
-
     return modified;
-}
-
-//-------------------------------------------------------------
-// fgComputeCalledCount: when profile information is in use,
-//   compute fgCalledCount
-//
-// Argument:
-//   returnWeight - sum of weights for all return and throw blocks
-//
-// Returns:
-//   true if any changes were made
-//
-bool Compiler::fgComputeCalledCount(weight_t returnWeight)
-{
-    // When we are not using profile data we have already setup fgCalledCount
-    // only set it here if we are using profile data
-    assert(fgIsUsingProfileWeights());
-    bool madeChanges = false;
-
-    BasicBlock* firstILBlock = fgFirstBB; // The first block for IL code (i.e. for the IL code at offset 0)
-
-    // OSR methods can have complex entry flow, and so
-    // for OSR we ensure fgFirstBB has plausible profile data.
-    //
-    if (!opts.IsOSR())
-    {
-        // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
-        //
-        while (firstILBlock->HasFlag(BBF_INTERNAL))
-        {
-            firstILBlock = firstILBlock->Next();
-        }
-    }
-
-    // The 'firstILBlock' is now expected to have a profile-derived weight
-    assert(firstILBlock->hasProfileWeight());
-
-    // If the first block only has one ref then we use its weight for fgCalledCount.
-    // Otherwise we have backedges into the first block, so instead we use the sum
-    // of the return block weights for fgCalledCount.
-    //
-    // If the profile data has a 0 for the returnWeight
-    // (i.e. the function never returns because it always throws)
-    // then just use the first block weight rather than 0.
-    //
-    if ((firstILBlock->countOfInEdges() == 1) || (returnWeight == BB_ZERO_WEIGHT))
-    {
-        fgCalledCount = firstILBlock->bbWeight;
-    }
-    else
-    {
-        fgCalledCount = returnWeight;
-    }
-
-    // If we allocated a scratch block as the first BB then we need
-    // to set its profile-derived weight to be fgCalledCount
-    if (fgFirstBB->HasFlag(BBF_INTERNAL))
-    {
-        fgFirstBB->setBBProfileWeight(fgCalledCount);
-        madeChanges = true;
-        JITDUMP("fgComputeCalledCount: Modified method entry weight. Data %s inconsistent.\n",
-                fgPgoConsistent ? "is now" : "was already");
-        fgPgoConsistent = false;
-    }
-
-#if DEBUG
-    if (verbose)
-    {
-        printf("We are using the Profile Weights and fgCalledCount is " FMT_WT "\n", fgCalledCount);
-    }
-#endif
-
-    return madeChanges;
 }
 
 //------------------------------------------------------------------------
@@ -4886,20 +4797,12 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
     weight_t       incomingLikelyWeight = 0;
     unsigned       missingLikelyWeight  = 0;
     bool           foundPreds           = false;
-    bool           foundEHPreds         = false;
 
     for (FlowEdge* const predEdge : block->PredEdges())
     {
         if (predEdge->hasLikelihood())
         {
-            if (BasicBlock::sameHndRegion(block, predEdge->getSourceBlock()))
-            {
-                incomingLikelyWeight += predEdge->getLikelyWeight();
-            }
-            else
-            {
-                foundEHPreds = true;
-            }
+            incomingLikelyWeight += predEdge->getLikelyWeight();
         }
         else
         {
@@ -4911,29 +4814,11 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
         foundPreds = true;
     }
 
-    // We almost certainly won't get the likelihoods on a BBJ_EHFINALLYRET right,
-    // so special-case BBJ_CALLFINALLYRET incoming flow.
-    //
-    if (block->isBBCallFinallyPairTail())
-    {
-        incomingLikelyWeight = block->Prev()->bbWeight;
-        foundEHPreds         = false;
-    }
-
-    // We almost certainly won't get the likelihoods on a BBJ_EHFINALLYRET right,
-    // so special-case BBJ_CALLFINALLYRET incoming flow.
-    //
-    if (block->isBBCallFinallyPairTail())
-    {
-        incomingLikelyWeight = block->Prev()->bbWeight;
-        foundEHPreds         = false;
-    }
-
     bool likelyWeightsValid = true;
 
     // If we have EH preds we may not have consistent incoming flow.
     //
-    if (foundPreds && !foundEHPreds)
+    if (foundPreds)
     {
         if (verifyLikelyWeights)
         {
@@ -4989,7 +4874,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
     //
     const unsigned numSuccs = block->NumSucc(this);
 
-    if ((numSuccs > 0) && !block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET))
+    if ((numSuccs > 0) && !block->KindIs(BBJ_EHFAULTRET, BBJ_EHFILTERRET))
     {
         weight_t const blockWeight        = block->bbWeight;
         weight_t       outgoingLikelihood = 0;
@@ -5077,8 +4962,37 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
 #endif // DEBUG
 
 //------------------------------------------------------------------------
+// fgRepairProfile: If we have PGO data and the profile is inconsistent,
+//   run synthesis to re-establish consistency.
+//
+// Returns:
+//   PhaseStatus indicating if profile synthesis ran or not.
+//
+PhaseStatus Compiler::fgRepairProfile()
+{
+    if (fgIsUsingProfileWeights())
+    {
+        if (fgPgoConsistent)
+        {
+            JITDUMP("Profile is already consistent.\n");
+        }
+        else
+        {
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::RetainLikelihoods);
+            return PhaseStatus::MODIFIED_EVERYTHING;
+        }
+    }
+    else
+    {
+        JITDUMP("No PGO data. Skipping profile repair.\n");
+    }
+
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
+//------------------------------------------------------------------------
 // fgRepairProfileCondToUncond: attempt to repair profile after modifying
-//   a conditinal branch to an unconditional branch.
+//   a conditional branch to an unconditional branch.
 //
 // Arguments:
 //   block        - block that was just altered

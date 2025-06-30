@@ -164,7 +164,9 @@ namespace Microsoft.Interop
                         }
                     }
 
-                    if (boundaryBehavior != ValueBoundaryBehavior.ManagedIdentifier)
+                    // Declare a separate managed identifier when a separate managed and native identifier is needed
+                    // and the marshaller is not the "managed exception" marshaller (whose managed identifier is defined by the catch clause).
+                    if (boundaryBehavior != ValueBoundaryBehavior.ManagedIdentifier && !marshaller.TypeInfo.IsManagedExceptionPosition)
                     {
                         statementsToUpdate.Add(Declare(
                             marshaller.TypeInfo.ManagedType.Syntax,

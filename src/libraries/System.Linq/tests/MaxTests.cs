@@ -13,56 +13,29 @@ namespace System.Linq.Tests
         {
             for (int length = 2; length < 65; length++)
             {
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (byte)i)), (byte)(length + length - 1)];
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (byte)i).ToArray()), (byte)(length + length - 1)];
+                yield return [Enumerable.Range(length, length).Select(i => (byte)i).Shuffle(), (byte)(length + length - 1)];
+                yield return [Enumerable.Range(length, length).Select(i => (byte)i).ToArray().Shuffle(), (byte)(length + length - 1)];
 
                 // Unit Tests does +T.One so we should generate data up to one value below sbyte.MaxValue
                 if ((length + length) < sbyte.MaxValue) {
-                    yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (sbyte)i)), (sbyte)(length + length - 1)];
-                    yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (sbyte)i).ToArray()), (sbyte)(length + length - 1)];
+                    yield return [Enumerable.Range(length, length).Select(i => (sbyte)i).Shuffle(), (sbyte)(length + length - 1)];
+                    yield return [Enumerable.Range(length, length).Select(i => (sbyte)i).ToArray().Shuffle(), (sbyte)(length + length - 1)];
                 }
 
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ushort)i)), (ushort)(length + length - 1)];
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ushort)i).ToArray()), (ushort)(length + length - 1)];
-
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (short)i)), (short)(length + length - 1)];
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (short)i).ToArray()), (short)(length + length - 1)];
-
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (char)i)), (char)(length + length - 1)];
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (char)i).ToArray()), (char)(length + length - 1)];
-
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (uint)i)), (uint)(length + length - 1)];
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (uint)i).ToArray()), (uint)(length + length - 1)];
-
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (int)i)), (int)(length + length - 1)];
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (int)i).ToArray()), (int)(length + length - 1)];
-
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ulong)i)), (ulong)(length + length - 1)];
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ulong)i).ToArray()), (ulong)(length + length - 1)];
-
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (long)i)), (long)(length + length - 1)];
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (long)i).ToArray()), (long)(length + length - 1)];
-
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (float)i)), (float)(length + length - 1)];
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (float)i).ToArray()), (float)(length + length - 1)];
-
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (double)i)), (double)(length + length - 1)];
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (double)i).ToArray()), (double)(length + length - 1)];
-
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (decimal)i)), (decimal)(length + length - 1)];
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (decimal)i).ToArray()), (decimal)(length + length - 1)];
-
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (nuint)i)), (nuint)(length + length - 1)];
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (nuint)i).ToArray()), (nuint)(length + length - 1)];
-
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (nint)i)), (nint)(length + length - 1)];
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (nint)i).ToArray()), (nint)(length + length - 1)];
-
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (Int128)i)), (Int128)(length + length - 1)];
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (Int128)i).ToArray()), (Int128)(length + length - 1)];
-
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (UInt128)i)), (UInt128)(length + length - 1)];
-                yield return [Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (UInt128)i).ToArray()), (UInt128)(length + length - 1)];
+                yield return [Enumerable.Range(length, length).Select(i => (ushort)i).Shuffle(), (ushort)(length + length - 1)];
+                yield return [Enumerable.Range(length, length).Select(i => (short)i).Shuffle(), (short)(length + length - 1)];
+                yield return [Enumerable.Range(length, length).Select(i => (char)i).Shuffle(), (char)(length + length - 1)];
+                yield return [Enumerable.Range(length, length).Select(i => (uint)i).Shuffle(), (uint)(length + length - 1)];
+                yield return [Enumerable.Range(length, length).Select(i => (int)i).Shuffle(), (int)(length + length - 1)];
+                yield return [Enumerable.Range(length, length).Select(i => (ulong)i).Shuffle(), (ulong)(length + length - 1)];
+                yield return [Enumerable.Range(length, length).Select(i => (long)i).Shuffle(), (long)(length + length - 1)];
+                yield return [Enumerable.Range(length, length).Select(i => (float)i).Shuffle(), (float)(length + length - 1)];
+                yield return [Enumerable.Range(length, length).Select(i => (double)i).Shuffle(), (double)(length + length - 1)];
+                yield return [Enumerable.Range(length, length).Select(i => (decimal)i).Shuffle(), (decimal)(length + length - 1)];
+                yield return [Enumerable.Range(length, length).Select(i => (nuint)i).Shuffle(), (nuint)(length + length - 1)];
+                yield return [Enumerable.Range(length, length).Select(i => (nint)i).Shuffle(), (nint)(length + length - 1)];
+                yield return [Enumerable.Range(length, length).Select(i => (Int128)i).Shuffle(), (Int128)(length + length - 1)];
+                yield return [Enumerable.Range(length, length).Select(i => (UInt128)i).Shuffle(), (UInt128)(length + length - 1)];
             }
         }
 

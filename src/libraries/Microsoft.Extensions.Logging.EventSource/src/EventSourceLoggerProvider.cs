@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// <param name="eventSource">The logging event source.</param>
         public EventSourceLoggerProvider(LoggingEventSource eventSource)
         {
-            ThrowHelper.ThrowIfNull(eventSource);
+            ArgumentNullException.ThrowIfNull(eventSource);
 
             _eventSource = eventSource;
             _factoryID = Interlocked.Increment(ref _globalFactoryID);

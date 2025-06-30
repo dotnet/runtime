@@ -22,6 +22,19 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => AsyncEnumerable.IntersectBy(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<int>(), (Func<string, CancellationToken, ValueTask<int>>)null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            IAsyncEnumerable<int> empty = AsyncEnumerable.Empty<int>();
+            IAsyncEnumerable<int> nonEmpty = CreateSource(1, 2, 3);
+
+            Assert.Same(empty, empty.IntersectBy(nonEmpty, x => x));
+            Assert.Same(empty, empty.IntersectBy(nonEmpty, async (x, ct) => x));
+
+            Assert.Same(empty, nonEmpty.IntersectBy(empty, x => x));
+            Assert.Same(empty, nonEmpty.IntersectBy(empty, async (x, ct) => x));
+        }
+
 #if NET
         [Theory]
         [InlineData(new int[0], new int[0])]

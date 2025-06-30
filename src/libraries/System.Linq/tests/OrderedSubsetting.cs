@@ -224,7 +224,7 @@ namespace System.Linq.Tests
             Assert.Equal(Enumerable.Range(10, 1), ordered.Take(11).Skip(10));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         public void TakeAndSkip_DoesntIterateRangeUnlessNecessary()
         {
             Assert.Empty(Enumerable.Range(0, int.MaxValue).Take(int.MaxValue).OrderBy(i => i).Skip(int.MaxValue - 4).Skip(15));

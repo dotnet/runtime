@@ -29,14 +29,30 @@ CLREventStatic g_FinalizerDoneEvent;
 
 static HANDLE g_lowMemoryNotification = NULL;
 
+#ifdef TARGET_WINDOWS
+static bool g_ComAndFlsInitSucceeded = false;
+#endif
+
 EXTERN_C void QCALLTYPE ProcessFinalizers();
 
-// Unmanaged front-end to the finalizer thread. We require this because at the point the GC creates the
-// finalizer thread we can't run managed code. Instead this method waits
+// Unmanaged front-end to the finalizer thread. We require this because at the point when this thread is
+// created we can't run managed code. Instead this method waits
 // for the first finalization request (by which time everything must be up and running) and kicks off the
 // managed portion of the thread at that point
 uint32_t WINAPI FinalizerStart(void* pContext)
 {
+#ifdef TARGET_WINDOWS
+    g_ComAndFlsInitSucceeded = PalInitComAndFlsSlot();
+    // handshake with EE initialization, as now we can attach Thread objects to native threads.
+    UInt32_BOOL res = PalSetEvent(g_FinalizerDoneEvent.GetOSEvent());
+    ASSERT(res);
+
+    // if FLS initialization failed do not attach the current thread and just exit instead.
+    // we are going to fail the runtime initialization.
+    if (!g_ComAndFlsInitSucceeded)
+        return 0;
+#endif // DEBUG
+
     HANDLE hFinalizerEvent = (HANDLE)pContext;
 
     PalSetCurrentThreadName(".NET Finalizer");
@@ -86,12 +102,16 @@ bool RhInitializeFinalization()
     return true;
 }
 
-void RhEnableFinalization()
+#ifdef TARGET_WINDOWS
+bool RhWaitForFinalizerThreadStart()
 {
-    g_FinalizerEvent.Set();
+    g_FinalizerDoneEvent.Wait(INFINITE,FALSE);
+    g_FinalizerDoneEvent.Reset();
+    return g_ComAndFlsInitSucceeded;
 }
+#endif
 
-EXTERN_C void QCALLTYPE RhInitializeFinalizerThread()
+void RhEnableFinalization()
 {
     g_FinalizerEvent.Set();
 }

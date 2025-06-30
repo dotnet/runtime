@@ -69,7 +69,12 @@ public unsafe partial class GenericsTest
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void TestVectorC()
     {
-        if (Vector<short>.Count == 16)
+        if (Vector<short>.Count == 32)
+        {
+            // TODO: P/Invoke tests do not yet handle 512-bit Vector<T>
+            return;
+        }
+        else if (Vector<short>.Count == 16)
         {
             TestVectorC256();
         }

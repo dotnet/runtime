@@ -698,7 +698,7 @@ simd_valuetuple_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 	MonoGenericInst *class_inst = mono_class_get_generic_class (klass)->context.class_inst;
 	MonoType *etype = class_inst->type_argv [0];
 	g_assert (etype->type == MONO_TYPE_GENERICINST);
-	MonoClass *eklass = etype->data.generic_class->cached_class;
+	MonoClass *eklass = m_type_data_get_generic_class_unchecked (etype)->cached_class;
 	LLVMTypeRef ltype = simd_class_to_llvm_type (ctx, eklass);
 	return LLVMArrayType (ltype, class_inst->type_argc);
 }
@@ -10449,20 +10449,29 @@ MONO_RESTORE_WARNING
 			break;
 		}
 		case OP_WASM_SIMD_SWIZZLE: {
+			LLVMValueRef bidx = LLVMBuildBitCast (builder, rhs, LLVMVectorType (i1_t, 16), "");
 			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
-			if (nelems == 16) {
-				LLVMValueRef args [] = { lhs, rhs };
-				values [ins->dreg] = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
-				break;
+			if (nelems < 16) {
+				int shift = nelems == 8 ? 1 : (nelems == 4 ? 2 : 3);
+				LLVMValueRef fill = LLVMConstNull (LLVMVectorType (i1_t, 16));
+				LLVMValueRef offset = LLVMConstNull (LLVMVectorType (i1_t, 16));
+				int stride = 16 / nelems;
+				for (int i = 0; i < nelems; ++i) {
+					for (int j = 0; j < stride; ++j) {
+						offset = LLVMBuildInsertElement (builder, offset, const_int8 (j), const_int8 (i * stride + j), "");
+						fill = LLVMBuildInsertElement (builder, fill, const_int8 (i * stride), const_int8 (i * stride + j), "");
+					}
+				}
+				LLVMValueRef shiftv = create_shift_vector (ctx, bidx, const_int32 (shift));
+				bidx  = LLVMBuildShl (builder, bidx, shiftv, "");
+				LLVMValueRef args [] = { bidx, fill };
+				bidx = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
+				bidx = LLVMBuildAdd (builder, bidx, offset, "");
 			}
-
-			LLVMValueRef indexes [16];
-			for (int i = 0; i < nelems; ++i)
-				indexes [i] = LLVMBuildExtractElement (builder, rhs, const_int32 (i), "");
-			LLVMValueRef shuffle_val = LLVMConstNull (LLVMVectorType (i4_t, nelems));
-			for (int i = 0; i < nelems; ++i)
-				shuffle_val = LLVMBuildInsertElement (builder, shuffle_val, convert (ctx, indexes [i], i4_t), const_int32 (i), "");
-			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, LLVMGetUndef (LLVMTypeOf (lhs)), shuffle_val, "");
+			LLVMValueRef lhs_b = LLVMBuildBitCast (builder, lhs, LLVMVectorType (i1_t, 16), "");
+			LLVMValueRef args [] = { lhs_b, bidx };
+			LLVMValueRef result_b = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
+			values [ins->dreg] = LLVMBuildBitCast (builder, result_b, LLVMTypeOf (lhs), "");
 			break;
 		}
 		case OP_WASM_EXTRACT_NARROW: {
@@ -11736,7 +11745,7 @@ MONO_RESTORE_WARNING
 			default:
 				g_assert_not_reached ();
 				break;
-			
+
 			}
 
 			lhs = LLVMBuildLoad2 (builder, ret_t, addresses [ins->sreg1]->value, "");
@@ -11944,7 +11953,7 @@ MONO_RESTORE_WARNING
 				default:
 					g_assert_not_reached ();
 					break;
-				
+
 				}
 			}
 
@@ -12386,22 +12395,38 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #endif
-#ifdef TARGET_WASM
-		case OP_WASM_ONESCOMPLEMENT: {
-			LLVMTypeRef i4v128_t = LLVMVectorType (i4_t, 4);
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
+		case OP_ONES_COMPLEMENT: {
 			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
-			LLVMValueRef cast = LLVMBuildBitCast (builder, lhs, i4v128_t, "");
-			LLVMValueRef result = LLVMBuildNot (builder, cast, "wasm_not");
-			values [ins->dreg] = LLVMBuildBitCast (builder, result, ret_t, "");
+			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
+			result = LLVMBuildNot (builder, result, "v128_not");
+			result = convert (ctx, result, ret_t);
+			values [ins->dreg] = result;
 			break;
 		}
+#if defined(TARGET_WASM)
+		case OP_WASM_BITSELECT: // Fall through to OP_BSL:
 #endif
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		case OP_BSL: {
+			LLVMValueRef select;
+			LLVMValueRef left;
+			LLVMValueRef right;
+
+			if (ins->opcode == OP_BSL) {
+				// OP_BSL: Vector128.ConditionalSelect
+				// (mask, left, right)
+				select = bitcast_to_integral (ctx, lhs);
+				left = bitcast_to_integral (ctx, rhs);
+				right = bitcast_to_integral (ctx, arg3);
+			} else {
+				// OP_WASM_BITSELECT: PackedSimd.BitwiseSelect
+				// (left, right, mask)
+				select = bitcast_to_integral (ctx, arg3);
+				left = bitcast_to_integral (ctx, lhs);
+				right = bitcast_to_integral (ctx, rhs);
+			}
+
 			LLVMTypeRef ret_t = LLVMTypeOf (rhs);
-			LLVMValueRef select = bitcast_to_integral (ctx, lhs);
-			LLVMValueRef left = bitcast_to_integral (ctx, rhs);
-			LLVMValueRef right = bitcast_to_integral (ctx, arg3);
 			LLVMValueRef result1 = LLVMBuildAnd (builder, select, left, "bit_select");
 			LLVMValueRef result2 = LLVMBuildAnd (builder, LLVMBuildNot (builder, select, ""), right, "");
 			LLVMValueRef result = LLVMBuildOr (builder, result1, result2, "");
@@ -12479,16 +12504,7 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #endif
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
-		case OP_ONES_COMPLEMENT: {
-			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
-			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
-			result = LLVMBuildNot (builder, result, "");
-			result = convert (ctx, result, ret_t);
-			values [ins->dreg] = result;
-			break;
-		}
-#endif
+
 		case OP_DUMMY_USE:
 			break;
 

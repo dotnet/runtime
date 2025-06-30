@@ -16,6 +16,7 @@ using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
 
 using Debug = System.Diagnostics.Debug;
+using Internal.NativeFormat;
 
 namespace ILCompiler
 {
@@ -275,6 +276,11 @@ namespace ILCompiler
             return new ScannedReadOnlyPolicy(MarkedNodes);
         }
 
+        public TypeMapManager GetTypeMapManager()
+        {
+            return new ScannedTypeMapManager(_factory);
+        }
+
         private sealed class ScannedVTableProvider : VTableSliceProvider
         {
             private readonly Dictionary<TypeDesc, MethodDesc[]> _vtableSlices = new Dictionary<TypeDesc, MethodDesc[]>();
@@ -436,6 +442,7 @@ namespace ILCompiler
         private sealed class ScannedDevirtualizationManager : DevirtualizationManager
         {
             private HashSet<TypeDesc> _constructedMethodTables = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _reflectionVisibleGenericDefinitionMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
@@ -454,6 +461,11 @@ namespace ILCompiler
                     if (node is IMethodBodyNode { Method.IsVirtual: true, Method.HasInstantiation: false } virtualMethodBody)
                     {
                         _generatedVirtualMethods.Add(virtualMethodBody.Method);
+                    }
+
+                    if (node is ReflectionVisibleGenericDefinitionEETypeNode reflectionVisibleMT)
+                    {
+                        _reflectionVisibleGenericDefinitionMethodTables.Add(reflectionVisibleMT.Type);
                     }
 
                     TypeDesc type = node switch
@@ -630,8 +642,7 @@ namespace ILCompiler
                 }
 
                 if (baseType.IsCanonicalSubtype(CanonicalFormKind.Any)
-                    || baseType.ConvertToCanonForm(CanonicalFormKind.Specific) != baseType
-                    || baseType.Context.SupportsUniversalCanon)
+                    || baseType.ConvertToCanonForm(CanonicalFormKind.Specific) != baseType)
                 {
                     // If the interface has a canonical form, we might not have a full view of all implementers.
                     // E.g. if we have:
@@ -734,6 +745,12 @@ namespace ILCompiler
                 Debug.Assert(type.NormalizeInstantiation() == type);
                 Debug.Assert(ConstructedEETypeNode.CreationAllowed(type));
                 return _constructedMethodTables.Contains(type) || _canonConstructedMethodTables.Contains(type);
+            }
+
+            public override bool IsGenericDefinitionMethodTableReflectionVisible(TypeDesc type)
+            {
+                Debug.Assert(type.IsGenericDefinition);
+                return _reflectionVisibleGenericDefinitionMethodTables.Contains(type);
             }
 
             public override TypeDesc[] GetImplementingClasses(TypeDesc type)
@@ -971,6 +988,50 @@ namespace ILCompiler
 
                 return !_writtenFields.Contains(field);
             }
+        }
+
+        private sealed class ScannedTypeMapManager : TypeMapManager
+        {
+            private ImmutableArray<IExternalTypeMapNode> _externalTypeMapNodes;
+            private ImmutableArray<IProxyTypeMapNode> _proxyTypeMapNodes;
+
+            public ScannedTypeMapManager(NodeFactory factory)
+            {
+                ImmutableArray<IExternalTypeMapNode>.Builder externalTypeMapNodes = ImmutableArray.CreateBuilder<IExternalTypeMapNode>();
+                ImmutableArray<IProxyTypeMapNode>.Builder proxyTypeMapNodes = ImmutableArray.CreateBuilder<IProxyTypeMapNode>();
+                foreach (var externalTypeMapNode in factory.TypeMapManager.GetExternalTypeMaps())
+                {
+                    externalTypeMapNodes.Add(externalTypeMapNode.ToAnalysisBasedNode(factory));
+                }
+
+                foreach (var proxyTypeMapNode in factory.TypeMapManager.GetProxyTypeMaps())
+                {
+                    proxyTypeMapNodes.Add(proxyTypeMapNode.ToAnalysisBasedNode(factory));
+                }
+
+                _externalTypeMapNodes = externalTypeMapNodes.ToImmutable();
+                _proxyTypeMapNodes = proxyTypeMapNodes.ToImmutable();
+            }
+
+            protected override bool IsEmpty => _externalTypeMapNodes.Length == 0 && _proxyTypeMapNodes.Length == 0;
+
+            public override void AddCompilationRoots(IRootingServiceProvider rootProvider)
+            {
+                const string reason = "Used Type Map Group";
+
+                foreach (IExternalTypeMapNode externalTypeMap in _externalTypeMapNodes)
+                {
+                    rootProvider.AddCompilationRoot(externalTypeMap, reason);
+                }
+
+                foreach (IProxyTypeMapNode proxyTypeMap in _proxyTypeMapNodes)
+                {
+                    rootProvider.AddCompilationRoot(proxyTypeMap, reason);
+                }
+            }
+
+            internal override IEnumerable<IExternalTypeMapNode> GetExternalTypeMaps() => _externalTypeMapNodes;
+            internal override IEnumerable<IProxyTypeMapNode> GetProxyTypeMaps() => _proxyTypeMapNodes;
         }
     }
 }

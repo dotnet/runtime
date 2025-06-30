@@ -12,6 +12,13 @@ namespace System.Net.Security
     internal sealed class SslAuthenticationOptions
     {
         private const string EnableOcspStaplingContextSwitchName = "System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux";
+
+        internal static readonly X509RevocationMode DefaultRevocationMode =
+            AppContextSwitchHelper.GetBooleanConfig(
+                "System.Net.Security.NoRevocationCheckByDefault",
+                "DOTNET_SYSTEM_NET_SECURITY_NOREVOCATIONCHECKBYDEFAULT")
+                ? X509RevocationMode.NoCheck : X509RevocationMode.Online;
+
         internal SslAuthenticationOptions()
         {
             TargetHost = string.Empty;
@@ -51,6 +58,17 @@ namespace System.Net.Security
             RemoteCertRequired = true;
             CertificateContext = sslClientAuthenticationOptions.ClientCertificateContext;
             TargetHost = sslClientAuthenticationOptions.TargetHost ?? string.Empty;
+
+            AllowRsaPssPadding = sslClientAuthenticationOptions.AllowRsaPssPadding;
+            AllowRsaPkcs1Padding = sslClientAuthenticationOptions.AllowRsaPkcs1Padding;
+
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux())
+            {
+                if (!sslClientAuthenticationOptions.AllowRsaPssPadding || !sslClientAuthenticationOptions.AllowRsaPkcs1Padding)
+                {
+                    throw new PlatformNotSupportedException(SR.net_ssl_allow_rsa_padding_not_supported);
+                }
+            }
 
             // Client specific options.
             CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
@@ -110,6 +128,18 @@ namespace System.Net.Security
             RemoteCertRequired = sslServerAuthenticationOptions.ClientCertificateRequired;
             CipherSuitesPolicy = sslServerAuthenticationOptions.CipherSuitesPolicy;
             CertificateRevocationCheckMode = sslServerAuthenticationOptions.CertificateRevocationCheckMode;
+
+            AllowRsaPssPadding = sslServerAuthenticationOptions.AllowRsaPssPadding;
+            AllowRsaPkcs1Padding = sslServerAuthenticationOptions.AllowRsaPkcs1Padding;
+
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux())
+            {
+                if (!sslServerAuthenticationOptions.AllowRsaPssPadding || !sslServerAuthenticationOptions.AllowRsaPkcs1Padding)
+                {
+                    throw new PlatformNotSupportedException(SR.net_ssl_allow_rsa_padding_not_supported);
+                }
+            }
+
             if (sslServerAuthenticationOptions.ServerCertificateContext != null)
             {
                 CertificateContext = sslServerAuthenticationOptions.ServerCertificateContext;
@@ -185,6 +215,8 @@ namespace System.Net.Security
         internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; set; }
         internal X509ChainPolicy? CertificateChainPolicy { get; set; }
         internal bool AllowTlsResume { get; set; }
+        internal bool AllowRsaPssPadding { get; set; }
+        internal bool AllowRsaPkcs1Padding { get; set; }
 
 #if TARGET_ANDROID
         internal SslStream.JavaProxy? SslStreamProxy { get; set; }

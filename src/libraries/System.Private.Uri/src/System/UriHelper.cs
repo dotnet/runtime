@@ -10,7 +10,7 @@ namespace System
 {
     internal static class UriHelper
     {
-        public static unsafe string SpanToLowerInvariantString(ReadOnlySpan<char> span)
+        public static string SpanToLowerInvariantString(ReadOnlySpan<char> span)
         {
             return string.Create(span.Length, span, static (buffer, span) =>
             {
@@ -212,7 +212,7 @@ namespace System
             return result;
         }
 
-        internal static unsafe void EscapeString(scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
+        internal static void EscapeString(scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
             bool checkExistingEscaped, SearchValues<char> noEscape)
         {
             Debug.Assert(!noEscape.Contains('%'), "Need to treat % specially; it should be part of any escaped set");
@@ -365,7 +365,7 @@ namespace System
         {
             if ((unescapeMode & UnescapeMode.EscapeUnescape) == UnescapeMode.CopyOnly)
             {
-                dest.Append(pStr + start, end - start);
+                dest.Append(new ReadOnlySpan<char>(pStr + start, end - start));
                 return;
             }
 
@@ -591,7 +591,7 @@ namespace System
             char.IsBetween(ch, '\u200E', '\u202E') && !char.IsBetween(ch, '\u2010', '\u2029');
 
         // Strip Bidirectional control characters from this string
-        internal static unsafe string StripBidiControlCharacters(ReadOnlySpan<char> strToClean, string? backingString = null)
+        internal static string StripBidiControlCharacters(ReadOnlySpan<char> strToClean, string? backingString = null)
         {
             Debug.Assert(backingString is null || strToClean.Length == backingString.Length);
 

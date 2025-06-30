@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
@@ -14,8 +14,6 @@
              Link="Common\src\Extensions\ChangeCallbackRegistrar.cs" />
     <Compile Include="$(CommonPath)Extensions\EmptyDisposable.cs"
              Link="Common\src\Extensions\EmptyDisposable.cs" />
-    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
-             Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
 </Project>

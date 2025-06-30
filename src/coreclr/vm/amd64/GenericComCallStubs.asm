@@ -10,7 +10,6 @@ extern CallDescrWorkerUnwindFrameChainHandler:proc
 extern ReverseComUnwindFrameChainHandler:proc
 extern COMToCLRWorker:proc
 extern JIT_FailFast:proc
-extern s_gsCookie:qword
 
 
 NESTED_ENTRY GenericComCallStub, _TEXT, ReverseComUnwindFrameChainHandler
@@ -30,7 +29,6 @@ NESTED_ENTRY GenericComCallStub, _TEXT, ReverseComUnwindFrameChainHandler
 ; UnmanagedToManagedFrame::m_Datum
 ; Frame::m_Next
 ; __VFN_table                                   <-- rsp + GenericComCallStub_ComMethodFrame_OFFSET
-; GSCookie
 ; (optional padding to qword align xmm save area)
 ; xmm3
 ; xmm2
@@ -54,8 +52,6 @@ GenericComCallStub_STACK_FRAME_SIZE = 0
 GenericComCallStub_STACK_FRAME_SIZE = GenericComCallStub_STACK_FRAME_SIZE + (SIZEOF__ComMethodFrame - 8)
 GenericComCallStub_ComMethodFrame_NEGOFFSET = GenericComCallStub_STACK_FRAME_SIZE
 
-GenericComCallStub_STACK_FRAME_SIZE = GenericComCallStub_STACK_FRAME_SIZE + SIZEOF_GSCookie
-
 ; Ensure that the offset of the XMM save area will be 16-byte aligned.
 if ((GenericComCallStub_STACK_FRAME_SIZE + 8) MOD 16) ne 0
 GenericComCallStub_STACK_FRAME_SIZE = GenericComCallStub_STACK_FRAME_SIZE + 8
@@ -74,7 +70,6 @@ GenericComCallStub_STACK_FRAME_SIZE = GenericComCallStub_STACK_FRAME_SIZE + Gene
 ; top, so negate them to make them relative to the post-prologue rsp.
 GenericComCallStub_ComMethodFrame_OFFSET = GenericComCallStub_STACK_FRAME_SIZE - GenericComCallStub_ComMethodFrame_NEGOFFSET
 GenericComCallStub_XMM_SAVE_OFFSET = GenericComCallStub_STACK_FRAME_SIZE - GenericComCallStub_XMM_SAVE_NEGOFFSET
-OFFSETOF_GSCookie = GenericComCallStub_ComMethodFrame_OFFSET - SIZEOF_GSCookie
 
         .allocstack     8                       ; UnmanagedToManagedFrame::m_Datum, pushed by prepad
 
@@ -103,23 +98,12 @@ OFFSETOF_GSCookie = GenericComCallStub_ComMethodFrame_OFFSET - SIZEOF_GSCookie
 
         END_PROLOGUE
 
-        mov            rcx, s_gsCookie
-        mov            [rsp + OFFSETOF_GSCookie], rcx
-
         ;
         ; Call COMToCLRWorker.
         ;
 
         mov             rcx, r10
         call            COMToCLRWorker
-
-ifdef _DEBUG
-        mov             rcx, s_gsCookie
-        cmp             [rsp + OFFSETOF_GSCookie], rcx
-        je              GoodGSCookie
-        call            JIT_FailFast
-GoodGSCookie:
-endif ; _DEBUG
 
         ;
         ; epilogue

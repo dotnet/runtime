@@ -47,5 +47,13 @@ namespace Internal.TypeSystem
             Debug.Assert(_offset == FieldAndOffset.InvalidOffset || _offset == offset);
             _offset = offset;
         }
+
+        public virtual LayoutInt MetadataOffset
+        {
+            get
+            {
+                return LayoutInt.Indeterminate;
+            }
+        }
     }
 }
