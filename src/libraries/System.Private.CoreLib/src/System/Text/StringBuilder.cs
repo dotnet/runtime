@@ -860,17 +860,6 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder Append(Rune value)
-        {
-            // Convert value to span
-            Span<char> chars = stackalloc char[2];
-            int charsWritten = value.EncodeToUtf16(chars);
-            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
-
-            // Append span
-            return Append(charsSlice);
-        }
-
         public StringBuilder AppendLine() => Append(Environment.NewLine);
 
         public StringBuilder AppendLine(string? value)
@@ -1037,6 +1026,17 @@ namespace System.Text
             Debug.Assert(m_ChunkLength == 0, "A new block was not created.");
             m_ChunkChars[0] = value;
             m_ChunkLength++;
+        }
+
+        public StringBuilder Append(Rune value)
+        {
+            // Convert value to span
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = value.EncodeToUtf16(chars);
+            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
+
+            // Append span
+            return Append(charsSlice);
         }
 
         [CLSCompliant(false)]
@@ -1339,6 +1339,17 @@ namespace System.Text
             return this;
         }
 
+        public StringBuilder Insert(int index, Rune value)
+        {
+            // Convert value to span
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = value.EncodeToUtf16(chars);
+            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
+
+            // Insert span
+            return Insert(index, charsSlice);
+        }
+
         public StringBuilder Insert(int index, char[]? value)
         {
             if ((uint)index > (uint)Length)
@@ -1419,13 +1430,6 @@ namespace System.Text
             }
 
             return this;
-        }
-
-        public StringBuilder Insert(int index, Rune value)
-        {
-            Span<char> chars = stackalloc char[2];
-            int charsWritten = value.EncodeToUtf16(chars);
-            return Insert(index, chars[..charsWritten]);
         }
 
         private StringBuilder InsertSpanFormattable<T>(int index, T value) where T : ISpanFormattable
@@ -1971,26 +1975,6 @@ namespace System.Text
         /// </remarks>
         public StringBuilder Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue) => Replace(oldValue, newValue, 0, Length);
 
-        public StringBuilder Replace(Rune oldRune, Rune newRune)
-        {
-            return Replace(oldRune, newRune, 0, Length);
-        }
-        public StringBuilder Replace(Rune oldRune, Rune newRune, int startIndex, int count)
-        {
-            // Convert oldRune to span
-            Span<char> leftChars = stackalloc char[2];
-            int leftCharsWritten = oldRune.EncodeToUtf16(leftChars);
-            ReadOnlySpan<char> leftCharsSlice = leftChars[..leftCharsWritten];
-
-            // Convert newRune to span
-            Span<char> rightChars = stackalloc char[2];
-            int rightCharsWritten = newRune.EncodeToUtf16(rightChars);
-            ReadOnlySpan<char> rightCharsSlice = rightChars[..rightCharsWritten];
-
-            // Replace span with span
-            return Replace(leftCharsSlice, rightCharsSlice, startIndex, count);
-        }
-
         /// <summary>
         /// Determines if the contents of this builder are equal to the contents of another builder.
         /// </summary>
@@ -2285,6 +2269,26 @@ namespace System.Text
 
             AssertInvariants();
             return this;
+        }
+
+        public StringBuilder Replace(Rune oldRune, Rune newRune)
+        {
+            return Replace(oldRune, newRune, 0, Length);
+        }
+        public StringBuilder Replace(Rune oldRune, Rune newRune, int startIndex, int count)
+        {
+            // Convert oldRune to span
+            Span<char> leftChars = stackalloc char[2];
+            int leftCharsWritten = oldRune.EncodeToUtf16(leftChars);
+            ReadOnlySpan<char> leftCharsSlice = leftChars[..leftCharsWritten];
+
+            // Convert newRune to span
+            Span<char> rightChars = stackalloc char[2];
+            int rightCharsWritten = newRune.EncodeToUtf16(rightChars);
+            ReadOnlySpan<char> rightCharsSlice = rightChars[..rightCharsWritten];
+
+            // Replace span with span
+            return Replace(leftCharsSlice, rightCharsSlice, startIndex, count);
         }
 
         /// <summary>
@@ -2851,8 +2855,7 @@ namespace System.Text
             ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Length);
 
             // Get span at StringBuilder index
-            bool twoCharsAvailable = index + 1 < Length;
-            Span<char> chars = twoCharsAvailable
+            Span<char> chars = index + 1 < Length
                 ? [this[index], this[index + 1]]
                 : [this[index]];
 

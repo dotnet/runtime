@@ -610,6 +610,15 @@ namespace System
             return ((uint)lastPos < (uint)Length) && this[lastPos] == value;
         }
 
+        public bool EndsWith(char value, StringComparison comparisonType)
+        {
+            if (Length == 0)
+            {
+                return false;
+            }
+            return this[^1].Equals(value, comparisonType);
+        }
+
         public bool EndsWith(Rune value)
         {
             return EndsWith(value, StringComparison.Ordinal);
@@ -622,15 +631,6 @@ namespace System
                 return result.Equals(value, comparisonType);
             }
             return false;
-        }
-
-        public bool EndsWith(char value, StringComparison comparisonType)
-        {
-            if (Length == 0)
-            {
-                return false;
-            }
-            return this[^1].Equals(value, comparisonType);
         }
 
         // Determines whether two strings match.
@@ -1206,6 +1206,15 @@ namespace System
             return Length != 0 && _firstChar == value;
         }
 
+        public bool StartsWith(char value, StringComparison comparisonType)
+        {
+            if (this.Length == 0)
+            {
+                return false;
+            }
+            return this[0].Equals(value, comparisonType);
+        }
+
         public bool StartsWith(Rune value)
         {
             return StartsWith(value, StringComparison.Ordinal);
@@ -1218,15 +1227,6 @@ namespace System
                 return result.Equals(value, comparisonType);
             }
             return false;
-        }
-
-        public bool StartsWith(char value, StringComparison comparisonType)
-        {
-            if (this.Length == 0)
-            {
-                return false;
-            }
-            return this[0].Equals(value, comparisonType);
         }
 
         internal static void CheckStringComparison(StringComparison comparisonType)
