@@ -245,7 +245,7 @@ namespace Microsoft.NET.HostModel.Bundle
             0xee, 0x3b, 0x2d, 0xce, 0x24, 0xb3, 0x6a, 0xae
         ];
 
-        public static ReadOnlySpan<byte> BundleHeaderSignature => BundleHeaderPlaceholder.Slice(8);
+        internal static ReadOnlySpan<byte> BundleHeaderSignature => BundleHeaderPlaceholder.Slice(8);
 
         /// <summary>
         /// Generate a bundle, given the specification of embedded files
