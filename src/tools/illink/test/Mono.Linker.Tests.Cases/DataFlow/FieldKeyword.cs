@@ -5,30 +5,61 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-    [SkipKeptItemsValidation]
     [ExpectedNoWarnings]
+    [Kept]
     public class FieldKeyword
     {
+        [Kept]
         public static void Main()
         {
             WithMethods = typeof(FieldKeyword);
             WithFields = typeof(FieldKeyword);
+            _ = WithNone;
+            WithNone = null;
+            _ = WithFields;
+            _ = WithMethods;
             _ = MismatchAssignedFromField;
             _ = MismatchAssignedToField;
             MismatchAssignedFromValue = null;
             AssignNoneToMethods();
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
-        static Type WithMethods { get => field; set => field = value; }
+        [Kept]
+        [KeptBackingField]
+        static Type WithNone { [Kept] get => field; [Kept] set => field = value; }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
-        static Type WithFields { get => field; set => field = value; }
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods),
+            KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+        [Kept]
+        [KeptBackingField]
+        static Type WithMethods
+        {
+            [Kept]
+            get => field;
+            [Kept]
+            set => field = value;
+        }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields),
+            KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+        [Kept]
+        [KeptBackingField]
+        static Type WithFields
+        {
+            [Kept]
+            get => field;
+            [Kept]
+            set => field = value;
+        }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields),
+            KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+        [Kept]
+        [KeptBackingField]
         static Type MismatchAssignedToField
         {
-            [method: ExpectedWarning("IL2074", nameof(WithNone), Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/117065")]
+            [ExpectedWarning("IL2074", nameof(WithNone), Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/117065")]
+            [Kept]
             get
             {
                 field = WithNone;
@@ -36,11 +67,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields),
+            KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+        [Kept]
+        [KeptBackingField]
         static Type MismatchAssignedFromField
         {
-            [method: ExpectedWarning("IL2077", nameof(MismatchAssignedFromField), nameof(WithMethods))]
-            [method: UnexpectedWarning("IL2078", Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/117176")]
+            [Kept]
+            [ExpectedWarning("IL2077", nameof(MismatchAssignedFromField), nameof(WithMethods))]
             get
             {
                 WithMethods = field;
@@ -48,19 +82,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields),
+            KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+        [Kept]
+        [KeptBackingField]
         static Type MismatchAssignedFromValue
         {
-            [method: ExpectedWarning("IL2067", nameof(WithMethods))]
+            [ExpectedWarning("IL2067", nameof(WithMethods))]
+            [Kept]
             set
             {
                 WithMethods = value;
+                field = value;
             }
         }
 
-        static Type WithNone { get => field; set => field = value; }
-
         [ExpectedWarning("IL2072")]
+        [Kept]
         static void AssignNoneToMethods()
         {
             WithMethods = WithNone;
