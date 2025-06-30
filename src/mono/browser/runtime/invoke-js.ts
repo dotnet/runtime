@@ -3,6 +3,8 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
+//import isWasm64 from "consts:isWasm64"
+const isWasm64 = true; // TODO: remove hardcoding!
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs, marshal_task_to_cs } from "./marshal-to-cs";
 import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid, get_sync_done_semaphore_ptr, get_arg } from "./marshal";
@@ -18,10 +20,6 @@ import { threads_c_functions as tcwraps } from "./cwraps";
 import { monoThreadInfo } from "./pthreads";
 import { stringToUTF16Ptr } from "./strings";
 
-export function isWasm64 (): boolean {
-    // This is a common runtime check, adjust if you have a better flag
-    return typeof Module.HEAP64 !== "undefined";
-}
 export function safeBigIntToNumber (ptr: bigint): number {
     if (ptr > BigInt(Number.MAX_SAFE_INTEGER) || ptr < BigInt(Number.MIN_SAFE_INTEGER)) {
         throw new Error(`Pointer value ${ptr} is out of safe integer range for JavaScript numbers.`);
@@ -35,16 +33,16 @@ function toPointerForWasm (signature: number, wasm64: boolean): number | bigint 
 }
 
 export function mono_wasm_bind_js_import_ST (signature: JSFunctionSignature): number | bigint {
-    if (WasmEnableThreads) return isWasm64() ? 0n : 0;
+    if (WasmEnableThreads) return isWasm64 ? 0n : 0;
     assert_js_interop();
     signature = fixupPointer(signature, 0);
     try {
         bind_js_import(signature);
-        return isWasm64() ? (BigInt("0") as any) : 0;
+        return isWasm64 ? (BigInt("0") as any) : 0;
     } catch (ex: any) {
         const ptr = stringToUTF16Ptr(normalize_exception(ex));
         // @ts-expect-error TS2352: convert VoidPtr (number) to bigint for wasm64, or keep it as number for wasm32.
-        return toPointerForWasm(ptr as number, isWasm64());
+        return toPointerForWasm(ptr as number, isWasm64);
     }
 }
 

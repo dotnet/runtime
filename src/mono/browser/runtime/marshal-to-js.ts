@@ -170,7 +170,7 @@ function _marshal_double_to_js (arg: JSMarshalerArgument): number | null {
     return get_arg_f64(arg);
 }
 
-function _marshal_intptr_to_js (arg: JSMarshalerArgument): number | null {
+function _marshal_intptr_to_js (arg: JSMarshalerArgument): number | bigint | null {
     const type = get_arg_type(arg);
     if (type == MarshalerType.None) {
         return null;

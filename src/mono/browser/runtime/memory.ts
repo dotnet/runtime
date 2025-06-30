@@ -403,6 +403,18 @@ export function compareExchangeI32 (offset: MemOffset, value: number, expected: 
     return globalThis.Atomics.compareExchange(localHeapViewI32(), <any>offset >>> 2, expected, value);
 }
 
+export function compareExchangeI64 (offset: MemOffset, value: bigint, expected: bigint): bigint {
+    mono_assert((<any>offset & 7) === 0, () => `compareExchangeI64: offset must be 8-byte aligned, got ${offset}`);
+    if (!WasmEnableThreads) {
+        const actual = getI64Big(offset);
+        if (actual === expected) {
+            setI64Big(offset, value);
+        }
+        return actual;
+    }
+    return globalThis.Atomics.compareExchange(localHeapViewI64Big(), <any>offset >>> 3, expected, value);
+}
+
 export function storeI32 (offset: MemOffset, value: number): void {
     mono_assert((<any>offset & 3) === 0, () => `storeI32: offset must be 4-byte aligned, got ${offset}`);
     if (!WasmEnableThreads) return setI32(offset, value);

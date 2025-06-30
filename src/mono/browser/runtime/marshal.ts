@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
+import isWasm64 from "consts:isWasm64";
+//const isWasm64 = true; // TODO: remove hardcoding!
 
 import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles";
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
@@ -11,6 +13,7 @@ import { GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerAr
 import { TypedArray, VoidPtr } from "./types/emscripten";
 import { utf16ToString } from "./strings";
 import { get_managed_stack_trace } from "./managed-exports";
+import { mono_log_debug } from "./logging";
 
 export const cs_to_js_marshalers = new Map<MarshalerType, MarshalerToJs>();
 export const js_to_cs_marshalers = new Map<MarshalerType, MarshalerToCs>();
@@ -18,8 +21,8 @@ export const bound_cs_function_symbol = Symbol.for("wasm bound_cs_function");
 export const bound_js_function_symbol = Symbol.for("wasm bound_js_function");
 export const imported_js_function_symbol = Symbol.for("wasm imported_js_function");
 export const proxy_debug_symbol = Symbol.for("wasm proxy_debug");
-
 export const JavaScriptMarshalerArgSize = 32;
+
 // keep in sync with JSMarshalerArgumentImpl offsets
 const enum JSMarshalerArgumentOffsets {
     BooleanValue = 0,
@@ -146,16 +149,19 @@ export function get_signature_res_type (sig: JSMarshalerType): MarshalerType {
 
 export function get_signature_arg1_type (sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
+    mono_log_debug(`get_signature_arg1_type for sig '${sig}' is '${getU8(add_offset(sig, JSBindingTypeOffsets.Arg1MarshalerType))}'`);
     return getU8(add_offset(sig, JSBindingTypeOffsets.Arg1MarshalerType)) as any;
 }
 
 export function get_signature_arg2_type (sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
+    mono_log_debug(`get_signature_arg3_type for sig '${sig}' is '${getU8(add_offset(sig, JSBindingTypeOffsets.Arg2MarshalerType))}'`);
     return getU8(add_offset(sig, JSBindingTypeOffsets.Arg2MarshalerType)) as any;
 }
 
 export function get_signature_arg3_type (sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
+    mono_log_debug(`get_signature_arg3_type for sig '${sig}' is '${getU8(add_offset(sig, JSBindingTypeOffsets.Arg3MarshalerType))}'`);
     return getU8(add_offset(sig, JSBindingTypeOffsets.Arg3MarshalerType)) as any;
 }
 
@@ -250,9 +256,9 @@ export function get_arg_i32 (arg: JSMarshalerArgument): number {
     return getI32(<any>arg);
 }
 
-export function get_arg_intptr (arg: JSMarshalerArgument): number {
+export function get_arg_intptr (arg: JSMarshalerArgument): number | bigint {
     mono_assert(arg, "Null arg");
-    return getU32(<any>arg);
+    return isWasm64 ? getI64Big(<any>arg) : getU32(<any>arg);
 }
 
 export function get_arg_i52 (arg: JSMarshalerArgument): number {
@@ -309,9 +315,17 @@ export function set_arg_i32 (arg: JSMarshalerArgument, value: number): void {
     setI32(<any>arg, value);
 }
 
-export function set_arg_intptr (arg: JSMarshalerArgument, value: VoidPtr): void {
+export function set_arg_intptr (arg: JSMarshalerArgument, value: VoidPtr | bigint | number): void {
     mono_assert(arg, "Null arg");
-    setU32(<any>arg, <any>value);
+    if (typeof arg === "number" || typeof arg === "bigint") {
+        mono_log_debug("set_arg_intptr:  is already a pointer/address, skipping set");
+        return;
+    }
+    if (isWasm64) {
+        setI64Big(<any>arg, value as bigint);
+    } else {
+        setU32(<any>arg, value as number);
+    }
 }
 
 export function set_arg_i52 (arg: JSMarshalerArgument, value: number): void {
@@ -373,7 +387,8 @@ export function set_gc_handle (arg: JSMarshalerArgument, gcHandle: GCHandle): vo
 
 export function get_string_root (arg: JSMarshalerArgument): WasmRoot<MonoString> {
     mono_assert(arg, "Null arg");
-    return mono_wasm_new_external_root<MonoString>(<any>arg);
+    const ptr = get_arg_intptr(arg);
+    return mono_wasm_new_external_root<MonoString>(<any>ptr);
 }
 
 export function get_arg_length (arg: JSMarshalerArgument): number {

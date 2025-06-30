@@ -403,7 +403,7 @@ export interface JSMarshalerArgument extends NativePointer {
     __brand: "JSMarshalerArgument"
 }
 
-export type MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
+export type MemOffset = number | VoidPtr | NativePointer | ManagedPointer | bigint;
 export type NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
 
 export interface WasmRoot<T extends MonoObject> {

@@ -5,6 +5,7 @@ import ProductVersion from "consts:productVersion";
 import BuildConfiguration from "consts:configuration";
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import WasmEnableSIMD from "consts:wasmEnableSIMD";
+import IsWasm64 from "consts:isWasm64";
 import WasmEnableExceptionHandling from "consts:wasmEnableExceptionHandling";
 
 import { type RuntimeAPI } from "./types";
@@ -63,6 +64,7 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
             wasmEnableThreads: WasmEnableThreads,
             wasmEnableSIMD: WasmEnableSIMD,
             wasmEnableExceptionHandling: WasmEnableExceptionHandling,
+            IsWasm64: IsWasm64
         },
         ...API,
     });

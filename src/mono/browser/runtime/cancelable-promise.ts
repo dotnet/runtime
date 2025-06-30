@@ -1,14 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
-import WasmEnableThreads from "consts:wasmEnableThreads";
-
 import { _lookup_js_owned_object, teardown_managed_proxy, upgrade_managed_proxy_to_strong_ref } from "./gc-handles";
 import { createPromiseController, loaderHelpers, mono_assert } from "./globals";
 import { ControllablePromise, GCHandle, MarshalerToCs } from "./types/internal";
 import { ManagedObject } from "./marshal";
-import { compareExchangeI32, forceThreadMemoryViewRefresh } from "./memory";
-import { mono_log_debug } from "./logging";
+import { compareExchangeI32, compareExchangeI64, forceThreadMemoryViewRefresh } from "./memory";
+import { mono_log_debug } from "../runtime/logging";
 import { complete_task } from "./managed-exports";
 import { marshal_cs_object_to_cs } from "./marshal-to-cs";
 import { invoke_later_when_on_ui_thread_async } from "./invoke-js";
@@ -56,6 +53,8 @@ const enum PromiseHolderState {
 }
 
 const promise_holder_symbol = Symbol.for("wasm promise_holder");
+const WasmEnableThreads = false;
+const IsWasm64 = false;
 
 export class PromiseHolder extends ManagedObject {
     public isResolved = false;
@@ -65,19 +64,30 @@ export class PromiseHolder extends ManagedObject {
     public reason: any = undefined;
     public constructor (public promise: Promise<any>,
         private gc_handle: GCHandle,
-        private promiseHolderPtr: number, // could be null for GCV_handle
+        private promiseHolderPtr: number | bigint, // could be null for GCV_handle
         private res_converter?: MarshalerToCs) {
         super();
     }
-
     // returns false if the promise is being canceled by another thread in managed code
     setIsResolving (): boolean {
         if (!WasmEnableThreads || this.promiseHolderPtr === 0) {
             return true;
         }
         forceThreadMemoryViewRefresh();
-        if (compareExchangeI32(this.promiseHolderPtr + PromiseHolderState.IsResolving, 1, 0) === 0) {
-            return true;
+        if (IsWasm64) {
+            const ptr = typeof this.promiseHolderPtr === "bigint"
+                ? this.promiseHolderPtr + BigInt(PromiseHolderState.IsResolving) // PromiseHolderState.IsResolving is 0
+                : BigInt(this.promiseHolderPtr) + BigInt(0);
+            if (compareExchangeI64(ptr, 1n, 0n) === 0n) {
+                return true;
+            }
+        } else {
+            const ptr = typeof this.promiseHolderPtr === "number"
+                ? this.promiseHolderPtr + PromiseHolderState.IsResolving // PromiseHolderState.IsResolving is 0
+                : Number(this.promiseHolderPtr) + PromiseHolderState.IsResolving;
+            if (compareExchangeI32(ptr, 1, 0) === 0) {
+                return true;
+            }
         }
         return false;
     }

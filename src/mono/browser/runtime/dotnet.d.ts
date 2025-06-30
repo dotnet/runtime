@@ -642,6 +642,7 @@ type RuntimeAPI = {
         wasmEnableThreads: boolean;
         wasmEnableSIMD: boolean;
         wasmEnableExceptionHandling: boolean;
+        isWasm64: boolean;
     };
 } & APIType;
 type ModuleAPI = {
