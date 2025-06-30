@@ -887,8 +887,7 @@ extends:
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           publishArtifactsForWorkload: true
           publishWBT: true
-          
-      # Don't publish artifacts, https://github.com/dotnet/runtime/issues/116492
+
       - template: /eng/pipelines/common/templates/wasm-build-only.yml
         parameters:
           platforms:

@@ -363,7 +363,7 @@ extends:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
                   name: MonoRuntimePacks
-      # don't publish for workloads, https://github.com/dotnet/runtime/issues/116492
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -381,7 +381,6 @@ extends:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
                   name: MonoRuntimePacks
-
 
       # Build Mono AOT offset headers once, for consumption elsewhere
       #
