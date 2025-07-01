@@ -219,10 +219,7 @@ namespace ILCompiler
 
         public virtual TypeDesc[] GetImplementingClasses(TypeDesc type) => null;
 
-        public virtual bool CanHaveDynamicInterfaceImplementations(TypeDesc type)
-        {
-            return !type.Context.IsIDynamicInterfaceCastableInterface(type.GetClosestDefType());
-        }
+        public virtual bool CanHaveDynamicInterfaceImplementations(TypeDesc type) => true;
 #endif
     }
 }

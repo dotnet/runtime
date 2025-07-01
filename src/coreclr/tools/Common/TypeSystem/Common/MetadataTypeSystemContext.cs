@@ -101,7 +101,7 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        public sealed override bool IsIDynamicInterfaceCastableInterface(DefType type)
+        protected internal sealed override bool IsIDynamicInterfaceCastableInterface(DefType type)
         {
             MetadataType t = (MetadataType)type;
             return t.Module == SystemModule

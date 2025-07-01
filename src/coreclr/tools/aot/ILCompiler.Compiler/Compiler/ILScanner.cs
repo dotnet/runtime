@@ -819,7 +819,7 @@ namespace ILCompiler
                 return null;
             }
 
-            public override bool CanHaveDynamicInterfaceImplementations(TypeDesc type) => base.CanHaveDynamicInterfaceImplementations(type) && _canHaveDynamicInterfaceImplementations;
+            public override bool CanHaveDynamicInterfaceImplementations(TypeDesc type) => _canHaveDynamicInterfaceImplementations;
         }
 
         private sealed class ScannedInliningPolicy : IInliningPolicy

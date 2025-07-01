@@ -36,7 +36,7 @@ namespace Internal.Runtime.TypeLoader
             return s_noMetadataRuntimeInterfacesAlgorithm;
         }
 
-        public sealed override bool IsIDynamicInterfaceCastableInterface(DefType type)
+        protected internal sealed override bool IsIDynamicInterfaceCastableInterface(DefType type)
         {
             throw new NotImplementedException();
         }
